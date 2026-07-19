@@ -5,16 +5,22 @@ class FinanceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
+        scrolledUnderElevation: 0,
+        title: Text(
           "Finance",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
-        centerTitle: false,
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -25,57 +31,62 @@ class FinanceScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFF2563EB),
+                color: theme.colorScheme.primary,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     "Total Balance",
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
+                    style: TextStyle(
+                      color: theme.colorScheme.onPrimary.withOpacity(.75),
+                      fontSize: 15,
+                    ),
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   Text(
                     "\$12,850.00",
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 34,
+                      color: theme.colorScheme.onPrimary,
                       fontWeight: FontWeight.bold,
+                      fontSize: 34,
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 25),
+            const SizedBox(height: 28),
 
-            // Quick Actions
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _action(Icons.send, "Send"),
-                _action(Icons.account_balance_wallet, "Top Up"),
-                _action(Icons.receipt_long, "Bills"),
-                _action(Icons.bar_chart, "Report"),
+                _ActionButton(icon: Icons.send, text: "Send"),
+                _ActionButton(
+                  icon: Icons.account_balance_wallet,
+                  text: "Top Up",
+                ),
+                _ActionButton(icon: Icons.receipt_long, text: "Bills"),
+                _ActionButton(icon: Icons.bar_chart, text: "Report"),
               ],
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 32),
 
-            const Align(
+            Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 "Recent Transactions",
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
+                  color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
+                  fontSize: 20,
                 ),
               ),
             ),
 
-            const SizedBox(height: 15),
+            const SizedBox(height: 18),
 
             Expanded(
               child: ListView(
@@ -99,8 +110,8 @@ class FinanceScreen extends StatelessWidget {
                     icon: Icons.local_cafe,
                   ),
                   TransactionTile(
-                    title: "Shopping",
-                    subtitle: "Nike",
+                    title: "Nike",
+                    subtitle: "Shopping",
                     amount: "- \$149.00",
                     icon: Icons.shopping_bag,
                   ),
@@ -112,20 +123,37 @@ class FinanceScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  static Widget _action(IconData icon, String text) {
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _ActionButton({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(18),
+          width: 72,
+          height: 72,
           decoration: BoxDecoration(
-            color: Colors.white10,
-            borderRadius: BorderRadius.circular(18),
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(20),
           ),
-          child: Icon(icon, color: Colors.white),
+          child: Icon(icon, color: theme.colorScheme.primary),
         ),
         const SizedBox(height: 8),
-        Text(text, style: const TextStyle(color: Colors.white70)),
+        Text(
+          text,
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
@@ -147,42 +175,53 @@ class TransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
+      margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white10,
-        borderRadius: BorderRadius.circular(18),
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: Colors.white24,
-            child: Icon(icon, color: Colors.white),
+            radius: 24,
+            backgroundColor: theme.colorScheme.primary.withOpacity(.12),
+            child: Icon(icon, color: theme.colorScheme.primary),
           ),
           const SizedBox(width: 15),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
                 ),
-                Text(subtitle, style: const TextStyle(color: Colors.white54)),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(.6),
+                  ),
+                ),
               ],
             ),
           ),
+
           Text(
             amount,
             style: TextStyle(
-              color: amount.startsWith("+")
-                  ? Colors.greenAccent
-                  : Colors.redAccent,
+              color: amount.startsWith("+") ? Colors.green : Colors.red,
               fontWeight: FontWeight.bold,
+              fontSize: 15,
             ),
           ),
         ],

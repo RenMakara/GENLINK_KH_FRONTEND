@@ -1,50 +1,85 @@
 name: genlink_frontend
+
 description: "This project for Genlink KH frontend design"
+
 publish_to: 'none'
 
 version: 1.0.0+1
 
+
 environment:
   sdk: ^3.12.2
+
 
 dependencies:
   flutter:
     sdk: flutter
-  provider: ^6.1.5
 
-  # GetX is the app-level routing, binding, and state management foundation.
+  # ==============================
+  # State Management
+  # ==============================
+  provider: ^6.1.5
   get: ^4.7.2
 
+  # ==============================
+  # UI Icons
+  # ==============================
   cupertino_icons: ^1.0.8
 
-  # HTTP client for API communication.
+  # ==============================
+  # API Communication
+  # ==============================
   dio: ^5.4.0
 
-  # Encrypted storage for tokens and sensitive credentials.
-  flutter_secure_storage: ^9.0.0
+  # ==============================
+  # Secure Local Storage
+  # ==============================
+  flutter_secure_storage: ^10.3.1
 
-  # Device information for refresh token tracking.
-  device_info_plus: ^9.1.1
+  # ==============================
+  # Device Information
+  # ==============================
+  device_info_plus: ^13.2.0
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  # Flutter recommended lint rules
   flutter_lints: ^6.0.0
 
-  # Mocking for tests.
+  # Unit testing mock library
   mocktail: ^1.0.3
+
 
 flutter:
   uses-material-design: true
 
+
+  # ==============================
+  # Assets
+  # ==============================
   assets:
+
+    # Icons
     - assets/icons/svg/
     - assets/icons/png/
+
+    # Logos / Branding
     - assets/logos/
+
+    # General Images
     - assets/images/
+
+    # Illustrations
     - assets/illustrations/
+
+    # Lottie Animations
     - assets/lottie/
+
+    # Backgrounds
+    - assets/backgrounds/
     - assets/backgrounds/auth/
     - assets/backgrounds/home/
     - assets/backgrounds/community/
@@ -52,4 +87,6 @@ flutter:
     - assets/backgrounds/productivity/
     - assets/backgrounds/growth/
     - assets/backgrounds/profile/
+
+    # Textures
     - assets/textures/

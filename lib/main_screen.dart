@@ -14,10 +14,10 @@ class _MainScreenState extends State<MainScreen> {
   int currentIndex = 0;
 
   final List<Widget> pages = const [
-    // HomeScreen(),
     CommunityScreen(),
     FinanceScreen(),
-    // ProfileScreen(),
+    CommunityScreen(),
+    FinanceScreen(),
   ];
 
   void _onItemTapped(int index) {

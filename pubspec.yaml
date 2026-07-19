@@ -10,6 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  provider: ^6.1.5
 
   # GetX is the app-level routing, binding, and state management foundation.
   get: ^4.7.2

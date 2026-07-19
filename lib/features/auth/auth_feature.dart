@@ -2,6 +2,25 @@
 ///
 /// Owns authentication flows, identity state, and access-related presentation.
 /// Keep auth data, domain, and presentation code inside this feature module.
-class AuthFeature {
-  const AuthFeature();
-}
+library;
+
+export 'data/datasources/auth_remote_datasource.dart';
+export 'data/models/auth_response_model.dart';
+export 'data/models/user_response_model.dart';
+export 'data/models/api_response_model.dart';
+export 'data/models/login_request_model.dart';
+export 'data/models/register_request_model.dart';
+export 'data/models/google_login_request_model.dart';
+export 'data/models/verify_email_request_model.dart';
+export 'data/models/resend_otp_request_model.dart';
+export 'data/models/resend_verification_otp_request_model.dart';
+export 'data/models/forgot_password_request_model.dart';
+export 'data/models/reset_password_request_model.dart';
+export 'data/models/refresh_token_request_model.dart';
+export 'data/repositories/auth_repository_impl.dart';
+export 'domain/entities/user_entity.dart';
+export 'domain/entities/auth_session.dart';
+export 'domain/repositories/auth_repository.dart';
+export 'presentation/controllers/auth_controller.dart';
+export 'presentation/bindings/auth_binding.dart';
+export 'presentation/middleware/auth_middleware.dart';

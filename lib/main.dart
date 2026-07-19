@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:genlink_frontend/features/finance/screens/finance_screen.dart';
+import 'package:genlink_frontend/main_screen.dart';
 import 'package:provider/provider.dart';
 
 import 'core/theme/light_theme.dart';
@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
 
           themeMode: provider.themeMode,
 
-          home: const FinanceScreen(),
+          home: const MainScreen(),
         );
       },
     );

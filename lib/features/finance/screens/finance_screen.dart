@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/core/theme/theme_provider.dart';
+import 'package:provider/provider.dart';
 
 class FinanceScreen extends StatelessWidget {
   const FinanceScreen({super.key});
@@ -21,6 +23,21 @@ class FinanceScreen extends StatelessWidget {
             color: theme.colorScheme.onSurface,
           ),
         ),
+        actions: [
+          Consumer<ThemeProvider>(
+            builder: (context, provider, child) {
+              return IconButton(
+                icon: Icon(
+                  provider.isDark ? Icons.light_mode : Icons.dark_mode,
+                  color: theme.colorScheme.onSurface,
+                ),
+                onPressed: () {
+                  provider.toggleTheme();
+                },
+              );
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),

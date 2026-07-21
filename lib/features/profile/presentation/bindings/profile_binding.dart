@@ -8,6 +8,7 @@ import '../../data/datasources/profile_remote_datasource.dart';
 import '../../data/repositories/profile_repository_impl.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../controllers/profile_controller.dart';
+import '../controllers/profile_setup_controller.dart';
 
 /// Binding for the profile screens.
 ///
@@ -17,8 +18,11 @@ class ProfileBinding extends Bindings {
   @override
   void dependencies() {
     _registerRepository();
+    // Sub-screens (portfolio, saved, achievements, interests) share the
+    // tab's controller; fenix recreates it if GetX disposed it.
     Get.lazyPut<ProfileController>(
       () => ProfileController(repository: Get.find<ProfileRepository>()),
+      fenix: true,
     );
   }
 
@@ -34,17 +38,31 @@ class ProfileBinding extends Bindings {
   }
 }
 
+/// Binding for the post-registration profile setup flow.
+class ProfileSetupBinding extends Bindings {
+  @override
+  void dependencies() {
+    ProfileBinding._registerRepository();
+    Get.lazyPut<ProfileSetupController>(
+      () => ProfileSetupController(repository: Get.find<ProfileRepository>()),
+    );
+  }
+}
+
 /// Binding for the settings screen.
 class SettingsBinding extends Bindings {
   @override
   void dependencies() {
     ProfileBinding._registerRepository();
+    // The hub and its four sub-pages all bind this; fenix keeps one
+    // instance alive across them and revives it after disposal.
     Get.lazyPut<SettingsController>(
       () => SettingsController(
         repository: Get.find<ProfileRepository>(),
         themeController: Get.find<ThemeController>(),
         localization: Get.find<LocalizationService>(),
       ),
+      fenix: true,
     );
   }
 }

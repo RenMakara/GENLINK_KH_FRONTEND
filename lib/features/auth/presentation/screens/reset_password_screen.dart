@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../app/routes/app_routes.dart';
@@ -11,10 +10,12 @@ import '../../../../design_system/widgets/inputs/app_input.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/auth_scaffold.dart';
 
-/// Step 2 of password reset: OTP + new password.
+/// Step 3 of password reset: choose the new password.
 ///
-/// Unlike verification, reset returns only a message — the user still has
-/// to log in with the new password afterwards.
+/// The OTP arrives via `Get.arguments` from [ResetOtpScreen]; the backend
+/// validates it here, together with the password. An invalid or expired
+/// code therefore fails at this step, so the user is sent back to re-enter
+/// it rather than being stuck on a screen they cannot complete.
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
 
@@ -24,19 +25,25 @@ class ResetPasswordScreen extends StatefulWidget {
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _otp = TextEditingController();
   final _password = TextEditingController();
   final _confirmPassword = TextEditingController();
 
   AuthController get _auth => Get.find<AuthController>();
 
-  late final String _email = _auth.pendingEmail.value.isNotEmpty
-      ? _auth.pendingEmail.value
-      : (Get.arguments as String? ?? '');
+  late final String _email = _auth.pendingEmail.value;
+  late final String _otp = Get.arguments as String? ?? '';
+
+  /// Error codes that mean "the code is wrong", as opposed to "the password
+  /// is not acceptable" — only the former should bounce the user back.
+  static const _otpErrorCodes = {
+    'OTP_INVALID',
+    'OTP_EXPIRED',
+    'OTP_NOT_FOUND',
+    'OTP_MAX_ATTEMPTS',
+  };
 
   @override
   void dispose() {
-    _otp.dispose();
     _password.dispose();
     _confirmPassword.dispose();
     super.dispose();
@@ -48,25 +55,30 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     final success = await _auth.resetPassword(
       email: _email,
-      otp: _otp.text.trim(),
+      otp: _otp,
       newPassword: _password.text,
     );
+
     if (success) {
-      AppSnackbar.show('auth.resetPassword'.tr);
+      AppSnackbar.show('auth.passwordResetDone'.tr);
       Get.offAllNamed<void>(AppRoutes.login);
+      return;
+    }
+
+    if (_isOtpError(_auth.lastErrorCode.value)) {
+      AppSnackbar.error(_auth.errorMessage.value ?? 'auth.otpLength'.tr);
+      Get.back<void>();
     }
   }
 
-  Future<void> _resend() async {
-    final success = await _auth.forgotPassword(email: _email);
-    if (success) AppSnackbar.show('auth.resendCode'.tr);
-  }
+  static bool _isOtpError(String? code) =>
+      code != null && _otpErrorCodes.contains(code);
 
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
       title: 'auth.resetTitle'.tr,
-      subtitle: 'auth.resetSubtitle'.tr,
+      subtitle: 'auth.newPasswordSubtitle'.tr,
       children: [
         Form(
           key: _formKey,
@@ -74,26 +86,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Obx(() => AuthErrorBanner(message: _auth.errorMessage.value)),
-              AppInput(
-                label: 'auth.otpCode'.tr,
-                controller: _otp,
-                autofocus: true,
-                keyboardType: TextInputType.number,
-                maxLength: Validators.otpLength,
-                textInputAction: TextInputAction.next,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: Validators.otp,
-              ),
-              const SizedBox(height: AppSpacing.md),
               AppInput.password(
                 label: 'auth.newPassword'.tr,
+                hint: 'auth.passwordHint'.tr,
                 controller: _password,
+                autofocus: true,
                 textInputAction: TextInputAction.next,
                 validator: Validators.password,
               ),
               const SizedBox(height: AppSpacing.md),
               AppInput.password(
                 label: 'auth.confirmPassword'.tr,
+                hint: 'auth.passwordHint'.tr,
                 controller: _confirmPassword,
                 validator: Validators.matches(() => _password.text),
                 onSubmitted: (_) => _submit(),
@@ -106,18 +110,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   onPressed: _submit,
                 ),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Obx(() {
-                final remaining = _auth.resendCooldown.value;
-                return Center(
-                  child: AppButton.text(
-                    label: remaining > 0
-                        ? 'auth.resendIn'.trParams({'seconds': '$remaining'})
-                        : 'auth.resendCode'.tr,
-                    onPressed: remaining > 0 ? null : _resend,
-                  ),
-                );
-              }),
             ],
           ),
         ),

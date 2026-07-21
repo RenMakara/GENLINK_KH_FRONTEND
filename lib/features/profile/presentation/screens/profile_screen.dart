@@ -88,13 +88,15 @@ class ProfileScreen extends GetView<ProfileController> {
             children: [
               _Identity(profile: profile),
               const SizedBox(height: AppSpacing.lg),
+              _StatsRow(controller: controller),
+              const SizedBox(height: AppSpacing.lg),
               _CompletionCard(profile: profile),
               const SizedBox(height: AppSpacing.xl),
               _Achievements(controller: controller),
               const SizedBox(height: AppSpacing.xl),
               _CoreExpertise(controller: controller),
               const SizedBox(height: AppSpacing.xl),
-              _SavedContent(controller: controller),
+              const _QuickLinks(),
             ],
           ),
         );
@@ -237,7 +239,15 @@ class _Achievements extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'profile.achievements'.tr),
+          SectionHeader(
+            title: 'profile.achievements'.tr,
+            trailing: AppButton.text(
+              label: 'home.seeAll'.tr,
+              muted: true,
+              onPressed: () =>
+                  Get.toNamed<void>(AppRoutes.profileAchievements),
+            ),
+          ),
           const SizedBox(height: AppSpacing.md),
           SizedBox(
             height: 84,
@@ -287,7 +297,8 @@ class _CoreExpertise extends StatelessWidget {
                     emphasised: i == 0,
                   ),
                 AddChipButton(
-                  onPressed: () => Get.toNamed<void>(AppRoutes.editProfile),
+                  onPressed: () =>
+                      Get.toNamed<void>(AppRoutes.profileInterests),
                 ),
               ],
             ),
@@ -297,41 +308,87 @@ class _CoreExpertise extends StatelessWidget {
   }
 }
 
-class _SavedContent extends StatelessWidget {
-  const _SavedContent({required this.controller});
+class _StatsRow extends StatelessWidget {
+  const _StatsRow({required this.controller});
 
   final ProfileController controller;
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final saved = controller.savedItems;
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.5);
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SectionHeader(
-            title: 'profile.savedContent'.tr,
-            trailing: const Icon(Icons.bookmark_border, size: 20),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          if (saved.isEmpty)
-            MutedText(text: 'profile.emptySaved'.tr)
-          else
-            SizedBox(
-              height: 132,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: saved.length,
-                separatorBuilder: (_, _) =>
-                    const SizedBox(width: AppSpacing.md),
-                itemBuilder: (context, index) =>
-                    SavedItemCard(item: saved[index]),
+    Widget stat(String value, String label) => Expanded(
+          child: Column(
+            children: [
+              Text(
+                value,
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
-            ),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(color: muted),
+              ),
+            ],
+          ),
+        );
+
+    return Obx(() {
+      final profile = controller.profile.value;
+      final earned = controller.badges.where((b) => b.earned).length;
+      return Row(
+        children: [
+          stat('${profile?.totalXp ?? 0}', 'profile.xpStat'.tr),
+          stat('$earned', 'achievements.badges'.tr),
+          stat('${controller.savedItems.length}', 'profile.saved'.tr),
         ],
       );
     });
+  }
+}
+
+/// Navigation rows into the profile sub-screens.
+class _QuickLinks extends StatelessWidget {
+  const _QuickLinks();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    Widget tile(IconData icon, String title, String route) => ListTile(
+          leading: Icon(icon),
+          title: Text(title),
+          trailing: const Icon(Icons.chevron_right, size: 20),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          onTap: () => Get.toNamed<void>(route),
+        );
+
+    // Material, not a decorated Container: ListTile paints its ink on the
+    // nearest Material, so a DecoratedBox here would swallow the ripple.
+    return Material(
+      color: scheme.surface,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        side: BorderSide(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        children: [
+          tile(Icons.work_outline, 'profile.portfolio'.tr,
+              AppRoutes.profilePortfolio),
+          const Divider(height: 1),
+          tile(Icons.bookmark_border, 'profile.savedContent'.tr,
+              AppRoutes.profileSaved),
+          const Divider(height: 1),
+          tile(Icons.workspace_premium_outlined, 'profile.achievements'.tr,
+              AppRoutes.profileAchievements),
+        ],
+      ),
+    );
   }
 }
 

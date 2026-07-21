@@ -1,5 +1,14 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
+/// Bottom navigation: Home · Community · [+] · Financial · Profile.
+///
+/// iOS-style (CupertinoIcons) with labels: the active tab uses the filled
+/// glyph variant, full-strength colour and a bold label; inactive tabs are
+/// outlined and muted. The bar floats on a soft shadow — no hairline — and
+/// the centre "+" is a raised white circle with its own shadow, per the
+/// design.
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -15,90 +24,62 @@ class BottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-        child: SizedBox(
-          height: 90,
-          child: Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
+        padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
+        child: Container(
+          height: 84,
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(44),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
             children: [
-              Container(
-                height: 76,
-                decoration: BoxDecoration(
-                  color: theme.cardColor,
-                  borderRadius: BorderRadius.circular(40),
-                  border: Border.all(color: theme.dividerColor),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _NavItem(
-                        icon: Icons.home_rounded,
-                        label: "Home",
-                        active: currentIndex == 0,
-                        onTap: () => onTap(0),
-                      ),
-                    ),
-                    Expanded(
-                      child: _NavItem(
-                        icon: Icons.groups_rounded,
-                        label: "Community",
-                        active: currentIndex == 1,
-                        onTap: () => onTap(1),
-                      ),
-                    ),
-
-                    const SizedBox(width: 72),
-
-                    Expanded(
-                      child: _NavItem(
-                        icon: Icons.account_balance_wallet_outlined,
-                        label: "Finance",
-                        active: currentIndex == 2,
-                        onTap: () => onTap(2),
-                      ),
-                    ),
-                    Expanded(
-                      child: _NavItem(
-                        icon: Icons.person_outline,
-                        label: "Profile",
-                        active: currentIndex == 3,
-                        onTap: () => onTap(3),
-                      ),
-                    ),
-                  ],
+              Expanded(
+                child: _NavItem(
+                  icon: CupertinoIcons.house,
+                  activeIcon: CupertinoIcons.house_fill,
+                  label: 'nav.home'.tr,
+                  active: currentIndex == 0,
+                  onTap: () => onTap(0),
                 ),
               ),
-
-              Positioned(
-                top: -8,
-                child: GestureDetector(
-                  onTap: onCenterTap,
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: colorScheme.primary,
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.primary.withOpacity(.25),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.add,
-                      color: colorScheme.onPrimary,
-                      size: 34,
-                    ),
-                  ),
+              Expanded(
+                child: _NavItem(
+                  icon: CupertinoIcons.person_3,
+                  activeIcon: CupertinoIcons.person_3_fill,
+                  label: 'nav.community'.tr,
+                  active: currentIndex == 1,
+                  onTap: () => onTap(1),
+                ),
+              ),
+              _CenterButton(onTap: onCenterTap),
+              Expanded(
+                child: _NavItem(
+                  icon: CupertinoIcons.chart_bar,
+                  activeIcon: CupertinoIcons.chart_bar_fill,
+                  label: 'nav.financial'.tr,
+                  active: currentIndex == 2,
+                  onTap: () => onTap(2),
+                ),
+              ),
+              Expanded(
+                child: _NavItem(
+                  icon: CupertinoIcons.person,
+                  activeIcon: CupertinoIcons.person_fill,
+                  label: 'nav.profile'.tr,
+                  active: currentIndex == 3,
+                  onTap: () => onTap(3),
                 ),
               ),
             ],
@@ -109,14 +90,65 @@ class BottomNavBar extends StatelessWidget {
   }
 }
 
+/// The raised white "+" circle: same surface as the bar, lifted by its own
+/// shadow rather than tinted grey.
+class _CenterButton extends StatelessWidget {
+  const _CenterButton({this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.12),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          color: isDark ? scheme.surfaceContainerHighest : theme.cardColor,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: SizedBox(
+              height: 62,
+              width: 62,
+              child: Icon(
+                CupertinoIcons.plus,
+                size: 28,
+                color: scheme.onSurface,
+                semanticLabel: 'Create',
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _NavItem extends StatelessWidget {
   final IconData icon;
+  final IconData activeIcon;
   final String label;
   final bool active;
   final VoidCallback onTap;
 
   const _NavItem({
     required this.icon,
+    required this.activeIcon,
     required this.label,
     required this.active,
     required this.onTap,
@@ -124,43 +156,33 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final scheme = Theme.of(context).colorScheme;
 
-    final activeColor = theme.colorScheme.primary;
-    final inactiveColor = theme.colorScheme.onSurface.withOpacity(.55);
+    final activeColor = scheme.onSurface;
+    final inactiveColor = scheme.onSurface.withValues(alpha: 0.5);
+    final color = active ? activeColor : inactiveColor;
 
     return InkWell(
-      borderRadius: BorderRadius.circular(20),
+      customBorder: const StadiumBorder(),
       onTap: onTap,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          AnimatedScale(
-            duration: const Duration(milliseconds: 200),
-            scale: active ? 1.1 : 1,
-            child: Icon(
-              icon,
-              color: active ? activeColor : inactiveColor,
-              size: 28,
-            ),
+          Icon(
+            active ? activeIcon : icon,
+            color: color,
+            size: 28,
+            semanticLabel: label,
           ),
           const SizedBox(height: 4),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: active ? activeColor : inactiveColor,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 4),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: active ? 6 : 0,
-            height: active ? 6 : 0,
-            decoration: BoxDecoration(
-              color: activeColor,
-              shape: BoxShape.circle,
+              color: color,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+              fontSize: 13,
             ),
           ),
         ],

@@ -6,7 +6,6 @@ import '../../../../core/utils/validators.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/buttons/google_sign_in_button.dart';
-import '../../../../design_system/widgets/dialogs/app_dialog.dart';
 import '../../../../design_system/widgets/inputs/app_input.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/auth_scaffold.dart';
@@ -40,6 +39,13 @@ class _LoginScreenState extends State<LoginScreen> {
       email: _email.text.trim(),
       password: _password.text,
     );
+    if (success) Get.offAllNamed<void>(AppRoutes.home);
+  }
+
+  /// Google is both sign-in and sign-up: the backend creates the account
+  /// when the email is new, so this always lands on home.
+  Future<void> _signInWithGoogle() async {
+    final success = await _auth.signInWithGoogle();
     if (success) Get.offAllNamed<void>(AppRoutes.home);
   }
 
@@ -106,11 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: AppSpacing.lg),
               GoogleSignInButton(
                 semanticLabel: 'auth.continueWithGoogle'.tr,
-                // Google Sign-In needs the `google_sign_in` package to
-                // obtain a device idToken; the backend contract
-                // (POST /auth/google) is already wired in AuthController.
-                onPressed: () =>
-                    AppSnackbar.error('auth.googleUnavailable'.tr),
+                onPressed: _signInWithGoogle,
               ),
             ],
           ),

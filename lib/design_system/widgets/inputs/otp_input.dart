@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../radius/app_radius.dart';
 import '../../spacing/app_spacing.dart';
 
 /// Six-box OTP entry.
@@ -174,14 +173,23 @@ class _OtpBox extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final KeyEventResult Function(KeyEvent) onKey;
 
+  // Figma spec for a single box.
+  static const width = 59.0;
+  static const height = 65.0;
+  static const radius = 26.0;
+
+  /// Fill and stroke opacities from the design's glass treatment.
+  static const _fillOpacity = 0.85;
+  static const _strokeOpacity = 0.20;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
     return AspectRatio(
-      // Slightly taller than wide, matching the design's squircle boxes.
-      aspectRatio: 0.86,
+      // 59 x 65 in the design.
+      aspectRatio: _OtpBox.width / _OtpBox.height,
       child: Focus(
         onKeyEvent: (_, event) => onKey(event),
         child: TextField(
@@ -197,16 +205,14 @@ class _OtpBox extends StatelessWidget {
           decoration: InputDecoration(
             counterText: '',
             filled: true,
-            fillColor: scheme.surface,
+            // Glass fill: the surface at 85%, so the page tints through.
+            fillColor: scheme.surface.withValues(alpha: _fillOpacity),
             contentPadding: EdgeInsets.zero,
-            enabledBorder: _border(
-              hasError ? scheme.error : scheme.outlineVariant,
-            ),
-            focusedBorder: _border(
-              hasError ? scheme.error : scheme.primary,
-              1.5,
-            ),
-            border: _border(scheme.outlineVariant),
+            enabledBorder: _border(_strokeColor(scheme, hasError)),
+            // Same border on focus — the caret and fill carry the state,
+            // consistent with the other inputs.
+            focusedBorder: _border(_strokeColor(scheme, hasError)),
+            border: _border(_strokeColor(scheme, hasError)),
           ),
           onChanged: onChanged,
         ),
@@ -214,10 +220,14 @@ class _OtpBox extends StatelessWidget {
     );
   }
 
-  static OutlineInputBorder _border(Color color, [double width = 1]) {
+  static Color _strokeColor(ColorScheme scheme, bool hasError) => hasError
+      ? scheme.error
+      : scheme.onSurface.withValues(alpha: _strokeOpacity);
+
+  static OutlineInputBorder _border(Color color) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.squircle),
-      borderSide: BorderSide(color: color, width: width),
+      borderRadius: BorderRadius.circular(radius),
+      borderSide: BorderSide(color: color),
     );
   }
 }

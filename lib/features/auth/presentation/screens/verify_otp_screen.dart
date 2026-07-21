@@ -39,7 +39,9 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     FocusScope.of(context).unfocus();
 
     final success = await _auth.verifyEmail(email: _email, otp: _otp);
-    if (success) Get.offAllNamed<void>(AppRoutes.home);
+    // Verification returns a session, so the account is live from here.
+    // New accounts go through profile setup first; it is skippable.
+    if (success) Get.offAllNamed<void>(AppRoutes.profileSetup);
   }
 
   Future<void> _resend() async {

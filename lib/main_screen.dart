@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
 import 'package:genlink_frontend/features/community/screens/community_screen.dart';
 import 'package:genlink_frontend/features/finance/screens/finance_screen.dart';
+import 'package:genlink_frontend/features/home/presentation/bindings/home_binding.dart';
+import 'package:genlink_frontend/features/home/presentation/screens/home_screen.dart';
 import 'package:genlink_frontend/features/profile/presentation/bindings/profile_binding.dart';
 import 'package:genlink_frontend/features/profile/presentation/screens/profile_screen.dart';
 import 'package:genlink_frontend/shared/widgets/bottom_nav_bar.dart';
@@ -20,19 +21,20 @@ class _MainScreenState extends State<MainScreen> {
 
   /// Exactly one entry per nav item — [IndexedStack] asserts the index is
   /// in range, so a short list crashes the moment a later tab is tapped.
-  final List<Widget> pages = const [
-    _ComingSoon(label: 'Home'),
-    CommunityScreen(),
-    FinanceScreen(),
-    ProfileScreen(),
+  late final List<Widget> pages = [
+    // Home's quick actions switch tabs, which only this shell can do.
+    HomeScreen(onNavigateTab: _onItemTapped),
+    const CommunityScreen(),
+    const FinanceScreen(),
+    const ProfileScreen(),
   ];
 
   @override
   void initState() {
     super.initState();
-    // The Profile tab is rendered inline rather than pushed as a route, so
-    // its binding has to be registered here — GetView resolves the
-    // controller on first build.
+    // Inline tabs are not pushed as routes, so their bindings register
+    // here — GetView resolves each controller on first build.
+    HomeBinding().dependencies();
     ProfileBinding().dependencies();
   }
 
@@ -58,24 +60,6 @@ class _MainScreenState extends State<MainScreen> {
         currentIndex: currentIndex,
         onTap: _onItemTapped,
         onCenterTap: _onCenterTap,
-      ),
-    );
-  }
-}
-
-/// Placeholder for a tab whose screen is owned by another teammate.
-class _ComingSoon extends StatelessWidget {
-  const _ComingSoon({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(label)),
-      body: AppEmptyState(
-        message: '$label is not built yet.',
-        icon: Icons.construction_outlined,
       ),
     );
   }

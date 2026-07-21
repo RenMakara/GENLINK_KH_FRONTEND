@@ -15,6 +15,8 @@ abstract final class AppRoutes {
   static const register = '/register';
   static const verifyEmail = '/verify-email';
   static const forgotPassword = '/forgot-password';
+  /// Code entry for the password reset, between forgot and reset.
+  static const resetOtp = '/reset-otp';
   static const resetPassword = '/reset-password';
 
   /// Routes an already-authenticated user should be redirected away from.
@@ -23,6 +25,7 @@ abstract final class AppRoutes {
     register,
     verifyEmail,
     forgotPassword,
+    resetOtp,
     resetPassword,
   };
 
@@ -35,6 +38,7 @@ abstract final class AppRoutes {
     register,
     verifyEmail,
     forgotPassword,
+    resetOtp,
     resetPassword,
   };
 
@@ -42,7 +46,17 @@ abstract final class AppRoutes {
   static const home = '/home';
 
   // ── Profile & settings ────────────────────────────────────────────────
+  /// Three-step setup shown once, right after registration.
+  static const profileSetup = '/profile/setup';
   static const profile = '/profile';
   static const editProfile = '/profile/edit';
+  static const profileAchievements = '/profile/achievements';
+  static const profileSaved = '/profile/saved';
+  static const profilePortfolio = '/profile/portfolio';
+  static const profileInterests = '/profile/interests';
   static const settings = '/settings';
+  static const settingsLanguage = '/settings/language';
+  static const settingsAppearance = '/settings/appearance';
+  static const settingsPrivacy = '/settings/privacy';
+  static const settingsAccount = '/settings/account';
 }

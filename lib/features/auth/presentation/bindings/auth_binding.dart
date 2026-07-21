@@ -11,6 +11,7 @@ import '../../../../core/storage/secure_storage.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../data/services/google_auth_service_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../controllers/auth_controller.dart';
 
@@ -76,6 +77,7 @@ class AuthBinding extends Bindings {
         authRepository: authRepository,
         secureStorage: storage,
         localization: localization,
+        googleAuthService: GoogleAuthServiceImpl(),
       ),
       permanent: true,
     );

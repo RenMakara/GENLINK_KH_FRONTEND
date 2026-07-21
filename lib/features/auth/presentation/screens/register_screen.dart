@@ -6,7 +6,6 @@ import '../../../../core/utils/validators.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/buttons/google_sign_in_button.dart';
-import '../../../../design_system/widgets/dialogs/app_dialog.dart';
 import '../../../../design_system/widgets/inputs/app_input.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/auth_scaffold.dart';
@@ -53,6 +52,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     // Registration returns a message, not a session — the account is
     // PENDING until the emailed OTP is verified.
     if (success) Get.toNamed<void>(AppRoutes.verifyEmail);
+  }
+
+  /// Google is both sign-in and sign-up: the backend creates the account
+  /// when the email is new, so this always lands on home.
+  Future<void> _signInWithGoogle() async {
+    final success = await _auth.signInWithGoogle();
+    if (success) Get.offAllNamed<void>(AppRoutes.home);
   }
 
   @override
@@ -146,8 +152,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: AppSpacing.lg),
               GoogleSignInButton(
                 semanticLabel: 'auth.continueWithGoogle'.tr,
-                onPressed: () =>
-                    AppSnackbar.error('auth.googleUnavailable'.tr),
+                onPressed: _signInWithGoogle,
               ),
             ],
           ),

@@ -81,7 +81,11 @@ abstract final class DarkTheme {
 
     return InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.darkSurfacePrimary,
+      fillColor: WidgetStateColor.resolveWith(
+        (states) => states.contains(WidgetState.focused)
+            ? AppColors.darkSurfaceSecondary
+            : AppColors.darkSurfacePrimary,
+      ),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.md + 2,
@@ -90,9 +94,11 @@ abstract final class DarkTheme {
       labelStyle: text.bodyMedium?.copyWith(color: AppColors.darkTextSecondary),
       errorStyle: text.bodySmall?.copyWith(color: AppColors.danger),
       enabledBorder: border(AppColors.darkBorderSubtle),
-      focusedBorder: border(AppColors.darkPrimary, 1.5),
+      // Focus is signalled by the fill, not the outline — the border stays
+      // identical so the field does not appear to grow on tap.
+      focusedBorder: border(AppColors.darkBorderSubtle),
       errorBorder: border(AppColors.danger),
-      focusedErrorBorder: border(AppColors.danger, 1.5),
+      focusedErrorBorder: border(AppColors.danger),
       disabledBorder: border(AppColors.darkBorderSubtle),
     );
   }

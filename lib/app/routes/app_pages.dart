@@ -4,6 +4,7 @@ import '../../features/auth/presentation/middleware/auth_middleware.dart';
 import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/auth/presentation/screens/reset_otp_screen.dart';
 import '../../features/auth/presentation/screens/reset_password_screen.dart';
 import '../../features/auth/presentation/screens/verify_otp_screen.dart';
 import '../../features/onboarding/presentation/screens/language_select_screen.dart';
@@ -11,6 +12,15 @@ import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/profile/presentation/bindings/profile_binding.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/profile/presentation/screens/achievements_screen.dart';
+import '../../features/profile/presentation/screens/interests_screen.dart';
+import '../../features/profile/presentation/screens/portfolio_screen.dart';
+import '../../features/profile/presentation/screens/profile_setup_screen.dart';
+import '../../features/profile/presentation/screens/saved_items_screen.dart';
+import '../../features/settings/presentation/screens/account_settings_screen.dart';
+import '../../features/settings/presentation/screens/appearance_settings_screen.dart';
+import '../../features/settings/presentation/screens/language_settings_screen.dart';
+import '../../features/settings/presentation/screens/privacy_settings_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/splash/presentation/bindings/splash_binding.dart';
 import '../../features/splash/presentation/screens/splash_screen.dart';
@@ -63,6 +73,10 @@ abstract final class AppPages {
       page: () => const ForgotPasswordScreen(),
     ),
     GetPage<dynamic>(
+      name: AppRoutes.resetOtp,
+      page: () => const ResetOtpScreen(),
+    ),
+    GetPage<dynamic>(
       name: AppRoutes.resetPassword,
       page: () => const ResetPasswordScreen(),
     ),
@@ -76,6 +90,12 @@ abstract final class AppPages {
 
     // ── Profile & settings ──────────────────────────────────────────────
     GetPage<dynamic>(
+      name: AppRoutes.profileSetup,
+      page: () => const ProfileSetupScreen(),
+      binding: ProfileSetupBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
       name: AppRoutes.profile,
       page: () => const ProfileScreen(),
       binding: ProfileBinding(),
@@ -88,8 +108,56 @@ abstract final class AppPages {
       middlewares: [AuthMiddleware()],
     ),
     GetPage<dynamic>(
+      name: AppRoutes.profileAchievements,
+      page: () => const AchievementsScreen(),
+      binding: ProfileBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.profileSaved,
+      page: () => const SavedItemsScreen(),
+      binding: ProfileBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.profilePortfolio,
+      page: () => const PortfolioScreen(),
+      binding: ProfileBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.profileInterests,
+      page: () => const InterestsScreen(),
+      binding: ProfileBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
       name: AppRoutes.settings,
       page: () => const SettingsScreen(),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.settingsLanguage,
+      page: () => const LanguageSettingsScreen(),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.settingsAppearance,
+      page: () => const AppearanceSettingsScreen(),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.settingsPrivacy,
+      page: () => const PrivacySettingsScreen(),
+      binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.settingsAccount,
+      page: () => const AccountSettingsScreen(),
       binding: SettingsBinding(),
       middlewares: [AuthMiddleware()],
     ),

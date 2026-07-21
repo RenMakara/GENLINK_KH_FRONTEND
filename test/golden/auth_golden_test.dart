@@ -37,7 +37,11 @@ void main() {
 
   tearDown(Get.reset);
 
-  Future<void> pumpScreen(WidgetTester tester, Widget child) async {
+  Future<void> pumpScreen(
+    WidgetTester tester,
+    Widget child, {
+    Brightness brightness = Brightness.light,
+  }) async {
     tester.view.physicalSize = phone;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -47,7 +51,9 @@ void main() {
         translations: AppTranslations(),
         locale: LocalizationService.englishLocale,
         fallbackLocale: LocalizationService.englishLocale,
-        theme: AppTheme.lightFor('en'),
+        theme: brightness == Brightness.dark
+            ? AppTheme.darkFor('en')
+            : AppTheme.lightFor('en'),
         home: child,
       ),
     );
@@ -67,6 +73,20 @@ void main() {
     await expectLater(
       find.byType(RegisterScreen),
       matchesGoldenFile('goldens/register.png'),
+    );
+  });
+
+  // Dark mode specifically: the button label used to inherit an explicit
+  // colour from the text theme and render white-on-white here.
+  testWidgets('register (dark)', (tester) async {
+    await pumpScreen(
+      tester,
+      const RegisterScreen(),
+      brightness: Brightness.dark,
+    );
+    await expectLater(
+      find.byType(RegisterScreen),
+      matchesGoldenFile('goldens/register_dark.png'),
     );
   });
 

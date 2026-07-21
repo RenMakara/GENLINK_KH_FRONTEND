@@ -37,7 +37,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     FocusScope.of(context).unfocus();
 
     final success = await _auth.forgotPassword(email: _email.text.trim());
-    if (success) Get.toNamed<void>(AppRoutes.resetPassword);
+    // Straight to code entry; the new password comes after that.
+    if (success) Get.toNamed<void>(AppRoutes.resetOtp);
   }
 
   @override

@@ -33,6 +33,7 @@ class AppButton extends StatelessWidget {
     this.loading = false,
     this.expanded = true,
     this.icon,
+    this.muted = false,
   });
 
   const AppButton.secondary({
@@ -42,7 +43,8 @@ class AppButton extends StatelessWidget {
     this.loading = false,
     this.expanded = true,
     this.icon,
-  }) : variant = AppButtonVariant.secondary;
+  })  : variant = AppButtonVariant.secondary,
+        muted = false;
 
   const AppButton.text({
     super.key,
@@ -51,6 +53,7 @@ class AppButton extends StatelessWidget {
     this.loading = false,
     this.expanded = false,
     this.icon,
+    this.muted = false,
   }) : variant = AppButtonVariant.text;
 
   final String label;
@@ -60,12 +63,25 @@ class AppButton extends StatelessWidget {
   final bool expanded;
   final IconData? icon;
 
+  /// Text buttons only: renders in the muted colour used by "Skip for now",
+  /// versus the strong colour used by inline links like "Log in".
+  final bool muted;
+
   static const _height = 60.0;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final effectiveOnPressed = loading ? null : onPressed;
+
+    // Passed through ButtonStyle rather than set on the Text: the theme's
+    // labelLarge carries an explicit colour, and an explicit Text colour
+    // silently beats the button's foregroundColor — which rendered the
+    // label white-on-white in dark mode and black-on-black in light.
+    // ButtonStyleButton overlays foregroundColor onto textStyle, so routing
+    // it here also keeps the disabled and pressed states correct.
+    final textStyle = theme.textTheme.labelLarge;
 
     final child = loading
         ? SizedBox(
@@ -76,12 +92,18 @@ class AppButton extends StatelessWidget {
               color: _foregroundOf(scheme),
             ),
           )
-        : _Label(label: label, icon: icon);
+        : _Label(
+            label: label,
+            icon: icon,
+            // Text buttons read as links in the design: underlined, and
+            // muted when they are the secondary way out of a screen.
+            underline: variant == AppButtonVariant.text,
+          );
 
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppRadius.pill),
     );
-    final padding = const EdgeInsets.symmetric(horizontal: AppSpacing.lg);
+    const padding = EdgeInsets.symmetric(horizontal: AppSpacing.lg);
 
     final button = switch (variant) {
       AppButtonVariant.primary => FilledButton(
@@ -89,6 +111,7 @@ class AppButton extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: scheme.primary,
             foregroundColor: scheme.onPrimary,
+            textStyle: textStyle,
             minimumSize: const Size(0, _height),
             padding: padding,
             shape: shape,
@@ -100,6 +123,7 @@ class AppButton extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: scheme.error,
             foregroundColor: scheme.onError,
+            textStyle: textStyle,
             minimumSize: const Size(0, _height),
             padding: padding,
             shape: shape,
@@ -110,6 +134,7 @@ class AppButton extends StatelessWidget {
           onPressed: effectiveOnPressed,
           style: OutlinedButton.styleFrom(
             foregroundColor: scheme.onSurface,
+            textStyle: textStyle,
             side: BorderSide(color: scheme.outline),
             minimumSize: const Size(0, _height),
             padding: padding,
@@ -120,7 +145,10 @@ class AppButton extends StatelessWidget {
       AppButtonVariant.text => TextButton(
           onPressed: effectiveOnPressed,
           style: TextButton.styleFrom(
-            foregroundColor: scheme.onSurface,
+            foregroundColor: muted
+                ? scheme.onSurface.withValues(alpha: 0.55)
+                : scheme.onSurface,
+            textStyle: textStyle,
             minimumSize: const Size(0, 44),
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             shape: shape,
@@ -140,16 +168,24 @@ class AppButton extends StatelessWidget {
 }
 
 class _Label extends StatelessWidget {
-  const _Label({required this.label, this.icon});
+  const _Label({required this.label, this.icon, this.underline = false});
 
   final String label;
   final IconData? icon;
+  final bool underline;
 
   @override
   Widget build(BuildContext context) {
+    // No colour here on purpose — the surrounding DefaultTextStyle, which
+    // the button builds from its own foregroundColor, supplies it.
     final text = Text(
       label,
-      style: Theme.of(context).textTheme.labelLarge,
+      style: underline
+          ? const TextStyle(
+              decoration: TextDecoration.underline,
+              decorationThickness: 1.2,
+            )
+          : null,
       overflow: TextOverflow.ellipsis,
     );
     if (icon == null) return text;

@@ -9,6 +9,7 @@ import '../../../../core/storage/secure_storage.dart';
 import '../../domain/entities/auth_session.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../domain/services/google_auth_service.dart';
 
 /// Reactive auth state controller.
 ///
@@ -22,13 +23,16 @@ class AuthController extends GetxController {
     required AuthRepository authRepository,
     required SecureStorage secureStorage,
     required LocalizationService localization,
+    GoogleAuthService googleAuthService = const UnconfiguredGoogleAuthService(),
   })  : _authRepository = authRepository,
         _storage = secureStorage,
-        _localization = localization;
+        _localization = localization,
+        _google = googleAuthService;
 
   final AuthRepository _authRepository;
   final SecureStorage _storage;
   final LocalizationService _localization;
+  final GoogleAuthService _google;
 
   /// Seconds a user must wait before requesting another OTP.
   static const resendCooldownSeconds = 60;
@@ -39,6 +43,10 @@ class AuthController extends GetxController {
   final isAuthenticated = false.obs;
   final currentUser = Rxn<UserEntity>();
   final errorMessage = RxnString();
+
+  /// Error code of the last failure, so a screen can branch on the cause
+  /// (a bad OTP versus a rejected password) rather than parsing [errorMessage].
+  final lastErrorCode = RxnString();
 
   /// Email carried from register / forgot-password into the OTP screen,
   /// so the user never has to retype it.
@@ -134,6 +142,33 @@ class AuthController extends GetxController {
 
   // ── Google Login ──────────────────────────────────────────────────────
 
+  /// Full Google flow: obtain an ID token on device, then exchange it for a
+  /// session. The backend creates the account when the email is new, so this
+  /// is both "sign in" and "sign up".
+  ///
+  /// Returns `false` without setting an error when the user simply dismissed
+  /// the Google account picker — a cancel is not a failure.
+  Future<bool> signInWithGoogle() async {
+    isLoading.value = true;
+    errorMessage.value = null;
+    String? idToken;
+    try {
+      idToken = await _google.signIn();
+    } on AppError catch (e) {
+      errorMessage.value = e.message;
+      return false;
+    } catch (_) {
+      errorMessage.value = 'common.error'.tr;
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+
+    if (idToken == null) return false;
+    return googleLogin(idToken: idToken);
+  }
+
+  /// Exchanges an existing Google ID token for a GenLink session.
   Future<bool> googleLogin({required String idToken}) {
     return _run(() async {
       final session = await _authRepository.googleLogin(idToken: idToken);
@@ -208,6 +243,9 @@ class AuthController extends GetxController {
 
   Future<void> logout() async {
     try {
+      // Clear the cached Google account too, otherwise the next sign-in
+      // silently reuses it and the account picker never appears.
+      await _google.signOut();
       await _authRepository.logout();
     } catch (_) {
       // Always clear local state, even if the server call fails —
@@ -253,13 +291,16 @@ class AuthController extends GetxController {
   Future<bool> _run(Future<bool> Function() action) async {
     isLoading.value = true;
     errorMessage.value = null;
+    lastErrorCode.value = null;
     try {
       return await action();
     } on AppError catch (e) {
       errorMessage.value = e.message;
+      lastErrorCode.value = e.errorCode;
       return false;
     } catch (_) {
       errorMessage.value = 'common.error'.tr;
+      lastErrorCode.value = 'UNKNOWN';
       return false;
     } finally {
       isLoading.value = false;

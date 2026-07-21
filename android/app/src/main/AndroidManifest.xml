@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The app talks to the GenLink KH API on every screen. Without this in
+         the main manifest only debug/profile builds have network access and
+         a release build fails every request. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:label="genlink_frontend"
         android:name="${applicationName}"

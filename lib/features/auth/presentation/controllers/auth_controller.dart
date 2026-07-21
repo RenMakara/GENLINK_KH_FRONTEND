@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../../../../core/errors/app_error.dart';
+import '../../../../core/localization/localization_service.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../domain/entities/auth_session.dart';
 import '../../domain/entities/user_entity.dart';
@@ -10,15 +14,24 @@ import '../../domain/repositories/auth_repository.dart';
 ///
 /// Manages the full auth lifecycle: login, register, verify, refresh,
 /// logout. Exposes observable state for the UI layer to bind to.
+///
+/// Every action returns a `bool` so screens can decide what to do next
+/// without reading [errorMessage] to infer success.
 class AuthController extends GetxController {
   AuthController({
     required AuthRepository authRepository,
     required SecureStorage secureStorage,
+    required LocalizationService localization,
   })  : _authRepository = authRepository,
-        _storage = secureStorage;
+        _storage = secureStorage,
+        _localization = localization;
 
   final AuthRepository _authRepository;
   final SecureStorage _storage;
+  final LocalizationService _localization;
+
+  /// Seconds a user must wait before requesting another OTP.
+  static const resendCooldownSeconds = 60;
 
   // ── Observable State ──────────────────────────────────────────────────
 
@@ -27,55 +40,72 @@ class AuthController extends GetxController {
   final currentUser = Rxn<UserEntity>();
   final errorMessage = RxnString();
 
+  /// Email carried from register / forgot-password into the OTP screen,
+  /// so the user never has to retype it.
+  final pendingEmail = ''.obs;
+
+  /// Remaining seconds before "resend code" becomes tappable again.
+  final resendCooldown = 0.obs;
+
+  Timer? _cooldownTimer;
+
   // ── Lifecycle ─────────────────────────────────────────────────────────
 
   @override
-  void onInit() {
-    super.onInit();
-    _restoreSession();
+  void onClose() {
+    _cooldownTimer?.cancel();
+    super.onClose();
   }
 
-  /// Try to restore session from secure storage on app start.
-  Future<void> _restoreSession() async {
-    final token = await _storage.readAccessToken();
-    if (token == null || token.isEmpty) return;
-
+  /// Try to restore a session from secure storage.
+  ///
+  /// Returns `true` when a valid session was restored. Called by splash
+  /// before deciding where to route.
+  Future<bool> restoreSession() async {
     try {
+      // Inside the try: a failing keystore read must not propagate, or the
+      // splash screen never reaches its navigation call.
+      final token = await _storage.readAccessToken();
+      if (token == null || token.isEmpty) return false;
+
       final user = await _authRepository.getCurrentUser();
+      if (!user.isActive) {
+        // PENDING / BANNED / DELETED cannot use the app.
+        await _clearSession();
+        return false;
+      }
       currentUser.value = user;
       isAuthenticated.value = true;
+      await _localization.setLanguage(user.preferredLanguage);
+      return true;
     } catch (_) {
-      // Token invalid or expired — clear silently.
-      await _storage.clearAll();
+      // Token invalid, expired, or the account is gone — clear silently.
+      await _clearSession();
+      return false;
     }
   }
 
   // ── Login ─────────────────────────────────────────────────────────────
 
-  Future<void> login({
+  Future<bool> login({
     required String email,
     required String password,
-  }) async {
-    isLoading.value = true;
-    errorMessage.value = null;
-    try {
+  }) {
+    return _run(() async {
       final session = await _authRepository.login(
         email: email,
         password: password,
       );
       await _persistSession(session);
-    } on AppError catch (e) {
-      errorMessage.value = e.message;
-    } catch (e) {
-      errorMessage.value = 'An unexpected error occurred.';
-    } finally {
-      isLoading.value = false;
-    }
+      return true;
+    });
   }
 
   // ── Register ──────────────────────────────────────────────────────────
 
-  Future<void> register({
+  /// Registers the account and sends an OTP. No session is returned —
+  /// the caller should route to the verify screen.
+  Future<bool> register({
     required String fullName,
     required String username,
     required String email,
@@ -84,10 +114,8 @@ class AuthController extends GetxController {
     String? universityName,
     String? workStatus,
     String? preferredLanguage,
-  }) async {
-    isLoading.value = true;
-    errorMessage.value = null;
-    try {
+  }) {
+    return _run(() async {
       await _authRepository.register(
         fullName: fullName,
         username: username,
@@ -96,129 +124,84 @@ class AuthController extends GetxController {
         password: password,
         universityName: universityName,
         workStatus: workStatus,
-        preferredLanguage: preferredLanguage,
+        preferredLanguage: preferredLanguage ?? _localization.language.value,
       );
-      // Registration returns a message, not a session. The user must
-      // verify their email before logging in.
-    } on AppError catch (e) {
-      errorMessage.value = e.message;
-    } catch (e) {
-      errorMessage.value = 'An unexpected error occurred.';
-    } finally {
-      isLoading.value = false;
-    }
+      pendingEmail.value = email;
+      startResendCooldown();
+      return true;
+    });
   }
 
   // ── Google Login ──────────────────────────────────────────────────────
 
-  Future<void> googleLogin({required String idToken}) async {
-    isLoading.value = true;
-    errorMessage.value = null;
-    try {
+  Future<bool> googleLogin({required String idToken}) {
+    return _run(() async {
       final session = await _authRepository.googleLogin(idToken: idToken);
       await _persistSession(session);
-    } on AppError catch (e) {
-      errorMessage.value = e.message;
-    } catch (e) {
-      errorMessage.value = 'An unexpected error occurred.';
-    } finally {
-      isLoading.value = false;
-    }
+      return true;
+    });
   }
 
   // ── Verify Email ──────────────────────────────────────────────────────
 
-  Future<void> verifyEmail({
+  /// Verifies the OTP. The backend returns a full token pair here, so a
+  /// successful verification signs the user straight in.
+  Future<bool> verifyEmail({
     required String email,
     required String otp,
-  }) async {
-    isLoading.value = true;
-    errorMessage.value = null;
-    try {
+  }) {
+    return _run(() async {
       final session = await _authRepository.verifyEmail(
         email: email,
         otp: otp,
       );
       await _persistSession(session);
-    } on AppError catch (e) {
-      errorMessage.value = e.message;
-    } catch (e) {
-      errorMessage.value = 'An unexpected error occurred.';
-    } finally {
-      isLoading.value = false;
-    }
+      return true;
+    });
   }
 
   // ── Resend OTP ────────────────────────────────────────────────────────
 
-  Future<void> resendOtp({required String email}) async {
-    isLoading.value = true;
-    errorMessage.value = null;
-    try {
+  Future<bool> resendOtp({required String email}) {
+    return _run(() async {
       await _authRepository.resendOtp(email: email);
-    } on AppError catch (e) {
-      errorMessage.value = e.message;
-    } catch (e) {
-      errorMessage.value = 'An unexpected error occurred.';
-    } finally {
-      isLoading.value = false;
-    }
+      startResendCooldown();
+      return true;
+    });
   }
 
-  // ── Resend Verification OTP ──────────────────────────────────────────
-
-  Future<void> resendVerificationOtp({required String email}) async {
-    isLoading.value = true;
-    errorMessage.value = null;
-    try {
+  Future<bool> resendVerificationOtp({required String email}) {
+    return _run(() async {
       await _authRepository.resendVerificationOtp(email: email);
-    } on AppError catch (e) {
-      errorMessage.value = e.message;
-    } catch (e) {
-      errorMessage.value = 'An unexpected error occurred.';
-    } finally {
-      isLoading.value = false;
-    }
+      startResendCooldown();
+      return true;
+    });
   }
 
-  // ── Forgot Password ──────────────────────────────────────────────────
+  // ── Password Reset ────────────────────────────────────────────────────
 
-  Future<void> forgotPassword({required String email}) async {
-    isLoading.value = true;
-    errorMessage.value = null;
-    try {
+  Future<bool> forgotPassword({required String email}) {
+    return _run(() async {
       await _authRepository.forgotPassword(email: email);
-    } on AppError catch (e) {
-      errorMessage.value = e.message;
-    } catch (e) {
-      errorMessage.value = 'An unexpected error occurred.';
-    } finally {
-      isLoading.value = false;
-    }
+      pendingEmail.value = email;
+      startResendCooldown();
+      return true;
+    });
   }
 
-  // ── Reset Password ──────────────────────────────────────────────────
-
-  Future<void> resetPassword({
+  Future<bool> resetPassword({
     required String email,
     required String otp,
     required String newPassword,
-  }) async {
-    isLoading.value = true;
-    errorMessage.value = null;
-    try {
+  }) {
+    return _run(() async {
       await _authRepository.resetPassword(
         email: email,
         otp: otp,
         newPassword: newPassword,
       );
-    } on AppError catch (e) {
-      errorMessage.value = e.message;
-    } catch (e) {
-      errorMessage.value = 'An unexpected error occurred.';
-    } finally {
-      isLoading.value = false;
-    }
+      return true;
+    });
   }
 
   // ── Logout ───────────────────────────────────────────────────────────
@@ -227,14 +210,61 @@ class AuthController extends GetxController {
     try {
       await _authRepository.logout();
     } catch (_) {
-      // Logout should always clear local state even if the server call fails.
+      // Always clear local state, even if the server call fails —
+      // otherwise a network blip would trap the user in the session.
     }
-    await _storage.clearAll();
-    currentUser.value = null;
+    await _clearSession();
+    Get.offAllNamed<void>(AppRoutes.login);
+  }
+
+  /// Called by the network layer when a token refresh fails and the
+  /// session is unrecoverable.
+  void onSessionExpired() {
+    if (!isAuthenticated.value) return;
     isAuthenticated.value = false;
+    currentUser.value = null;
+    Get.offAllNamed<void>(AppRoutes.login);
+  }
+
+  // ── Profile sync ─────────────────────────────────────────────────────
+
+  /// Keep the cached user in step after a profile or settings update.
+  void updateCachedUser(UserEntity user) => currentUser.value = user;
+
+  // ── Cooldown ─────────────────────────────────────────────────────────
+
+  void startResendCooldown() {
+    _cooldownTimer?.cancel();
+    resendCooldown.value = resendCooldownSeconds;
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (resendCooldown.value <= 1) {
+        resendCooldown.value = 0;
+        timer.cancel();
+      } else {
+        resendCooldown.value--;
+      }
+    });
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────
+
+  /// Runs [action] with loading + error handling, returning `false` on
+  /// any failure.
+  Future<bool> _run(Future<bool> Function() action) async {
+    isLoading.value = true;
+    errorMessage.value = null;
+    try {
+      return await action();
+    } on AppError catch (e) {
+      errorMessage.value = e.message;
+      return false;
+    } catch (_) {
+      errorMessage.value = 'common.error'.tr;
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
 
   Future<void> _persistSession(AuthSession session) async {
     await _storage.saveTokenPair(
@@ -245,5 +275,14 @@ class AuthController extends GetxController {
     await _storage.saveUserId(session.user.id);
     currentUser.value = session.user;
     isAuthenticated.value = true;
+    pendingEmail.value = '';
+    // Adopt the account's language so system content comes back localized.
+    await _localization.setLanguage(session.user.preferredLanguage);
+  }
+
+  Future<void> _clearSession() async {
+    await _storage.clearAll();
+    currentUser.value = null;
+    isAuthenticated.value = false;
   }
 }

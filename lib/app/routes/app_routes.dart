@@ -1,9 +1,14 @@
 /// Central route name registry.
 ///
-/// Use this folder for typed route constants only. Feature pages should
-/// register their routes through modular route files as the app grows.
+/// Typed route constants only. Pages are registered in `app_pages.dart`.
 abstract final class AppRoutes {
-  static const initial = '/';
+  // ── Entry ─────────────────────────────────────────────────────────────
+  static const initial = splash;
+  static const splash = '/';
+
+  /// First-run flow: language select (step 1) then the onboarding slides.
+  static const languageSelect = '/language';
+  static const onboarding = '/onboarding';
 
   // ── Auth ──────────────────────────────────────────────────────────────
   static const login = '/login';
@@ -12,6 +17,32 @@ abstract final class AppRoutes {
   static const forgotPassword = '/forgot-password';
   static const resetPassword = '/reset-password';
 
+  /// Routes an already-authenticated user should be redirected away from.
+  static const authRoutes = <String>{
+    login,
+    register,
+    verifyEmail,
+    forgotPassword,
+    resetPassword,
+  };
+
+  /// Routes reachable without a session.
+  static const publicRoutes = <String>{
+    splash,
+    languageSelect,
+    onboarding,
+    login,
+    register,
+    verifyEmail,
+    forgotPassword,
+    resetPassword,
+  };
+
   // ── Main ──────────────────────────────────────────────────────────────
   static const home = '/home';
+
+  // ── Profile & settings ────────────────────────────────────────────────
+  static const profile = '/profile';
+  static const editProfile = '/profile/edit';
+  static const settings = '/settings';
 }

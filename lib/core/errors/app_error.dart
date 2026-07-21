@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 /// Centralized error model matching backend ApiResponse error format.
 ///
 /// Every backend error response is wrapped in:
@@ -47,5 +49,35 @@ class AppError implements Exception {
       errorCode: json['errorCode'] as String? ?? 'API_ERROR',
       statusCode: statusCode,
     );
+  }
+
+  /// Unwrap the [AppError] that `ErrorInterceptor` stashed on a
+  /// [DioException].
+  ///
+  /// Dio always throws a [DioException]; the interceptor puts the parsed
+  /// backend error in its `error` field. Without this conversion the
+  /// domain layer's `on AppError` clauses never match and every failure —
+  /// wrong password, offline, 500 — collapses into one generic message.
+  factory AppError.fromDio(DioException exception) {
+    final inner = exception.error;
+    if (inner is AppError) return inner;
+
+    return AppError(
+      message: exception.message ?? 'Unable to reach the server.',
+      errorCode: 'NETWORK_ERROR',
+      statusCode: exception.response?.statusCode,
+    );
+  }
+}
+
+/// Runs a Dio call and normalises its failure to [AppError].
+///
+/// Every network boundary goes through this, so nothing above the data
+/// layer ever has to know Dio's exception type.
+Future<T> guardDio<T>(Future<T> Function() request) async {
+  try {
+    return await request();
+  } on DioException catch (e) {
+    throw AppError.fromDio(e);
   }
 }

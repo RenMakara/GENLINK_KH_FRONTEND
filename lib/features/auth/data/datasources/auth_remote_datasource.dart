@@ -21,7 +21,7 @@ class AuthRemoteDatasource {
     required String email,
     required String password,
   }) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.login,
       data: {'email': email, 'password': password},
     );
@@ -40,7 +40,7 @@ class AuthRemoteDatasource {
     String? workStatus,
     String? preferredLanguage,
   }) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.register,
       data: {
         'fullName': fullName,
@@ -59,7 +59,7 @@ class AuthRemoteDatasource {
   // ── Google Login ──────────────────────────────────────────────────────
 
   Future<AuthResponseModel> googleLogin({required String idToken}) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.googleLogin,
       data: {'idToken': idToken},
     );
@@ -72,7 +72,7 @@ class AuthRemoteDatasource {
     required String email,
     required String otp,
   }) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.verifyEmail,
       data: {'email': email, 'otp': otp},
     );
@@ -83,7 +83,7 @@ class AuthRemoteDatasource {
     required String email,
     required String otp,
   }) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.verifyOtp,
       data: {'email': email, 'otp': otp},
     );
@@ -93,7 +93,7 @@ class AuthRemoteDatasource {
   // ── Resend OTP ───────────────────────────────────────────────────────
 
   Future<String> resendOtp({required String email}) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.resendOtp,
       data: {'email': email},
     );
@@ -101,7 +101,7 @@ class AuthRemoteDatasource {
   }
 
   Future<String> resendVerificationOtp({required String email}) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.resendVerificationOtp,
       data: {'email': email},
     );
@@ -111,7 +111,7 @@ class AuthRemoteDatasource {
   // ── Password Reset ───────────────────────────────────────────────────
 
   Future<String> forgotPassword({required String email}) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.forgotPassword,
       data: {'email': email},
     );
@@ -123,7 +123,7 @@ class AuthRemoteDatasource {
     required String otp,
     required String newPassword,
   }) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.resetPassword,
       data: {
         'email': email,
@@ -137,7 +137,7 @@ class AuthRemoteDatasource {
   // ── Refresh Token ────────────────────────────────────────────────────
 
   Future<AuthResponseModel> refreshToken({required String refreshToken}) async {
-    final response = await _dio.post(
+    final response = await _post(
       ApiEndpoints.refreshToken,
       data: {'refreshToken': refreshToken},
     );
@@ -147,7 +147,7 @@ class AuthRemoteDatasource {
   // ── Get Current User ─────────────────────────────────────────────────
 
   Future<UserResponseModel> getCurrentUser() async {
-    final response = await _dio.get(ApiEndpoints.me);
+    final response = await _get(ApiEndpoints.me);
     final body = response.data as Map<String, dynamic>;
     final api = ApiResponseModel<dynamic>.fromJson(body, null);
     if (!api.success || api.data == null) {
@@ -163,10 +163,18 @@ class AuthRemoteDatasource {
   // ── Logout ───────────────────────────────────────────────────────────
 
   Future<void> logout() async {
-    await _dio.post(ApiEndpoints.logout);
+    await _post(ApiEndpoints.logout);
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────
+
+  /// All requests funnel through these two so a Dio failure is converted
+  /// to [AppError] once, here, instead of leaking DioException upwards.
+  Future<Response<dynamic>> _post(String path, {Object? data}) =>
+      guardDio(() => _dio.post<dynamic>(path, data: data));
+
+  Future<Response<dynamic>> _get(String path) =>
+      guardDio(() => _dio.get<dynamic>(path));
 
   AuthResponseModel _parseAuthResponse(Response<dynamic> response) {
     final body = response.data as Map<String, dynamic>;

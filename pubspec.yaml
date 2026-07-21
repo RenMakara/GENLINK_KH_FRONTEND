@@ -16,9 +16,8 @@ dependencies:
     sdk: flutter
 
   # ==============================
-  # State Management
+  # State Management + Routing + i18n
   # ==============================
-  provider: ^6.1.5
   get: ^4.7.2
 
   # ==============================

@@ -1,37 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../controllers/auth_controller.dart';
 
 /// GetX middleware that guards routes requiring authentication.
 ///
-/// If the user is not authenticated, redirects to the login route.
-/// If the user is already authenticated, redirects away from auth routes
-/// (login, register) to the home route.
+/// Attach to protected pages only. Splash and onboarding decide their own
+/// destination and must not be guarded, or the app would bounce to login
+/// before the stored session has been restored.
 class AuthMiddleware extends GetMiddleware {
   @override
   int? get priority => 1;
 
   @override
   RouteSettings? redirect(String? route) {
-    final authController = Get.find<AuthController>();
+    // If the controller is not registered yet there is nothing to check;
+    // splash will resolve the session and route from there.
+    if (!Get.isRegistered<AuthController>()) return null;
 
-    final isAuthRoute =
-        route == '/login' || route == '/register' || route == '/verify-email';
+    final auth = Get.find<AuthController>();
+    final authenticated = auth.isAuthenticated.value;
 
-    if (isAuthRoute) {
-      // If already authenticated, redirect away from auth screens.
-      if (authController.isAuthenticated.value) {
-        return const RouteSettings(name: '/home');
-      }
-      return null; // Allow access to auth screens.
+    if (AppRoutes.authRoutes.contains(route)) {
+      // Already signed in — skip past the auth screens.
+      return authenticated
+          ? const RouteSettings(name: AppRoutes.home)
+          : null;
     }
 
-    // For protected routes, check authentication.
-    if (!authController.isAuthenticated.value) {
-      return const RouteSettings(name: '/login');
-    }
-
-    return null; // Allow access.
+    return authenticated
+        ? null
+        : const RouteSettings(name: AppRoutes.login);
   }
 }

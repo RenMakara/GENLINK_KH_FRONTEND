@@ -2,6 +2,9 @@
 ///
 /// All backend contract paths live here. Feature modules reference these
 /// constants instead of hardcoding URL strings.
+///
+/// Paths are verified against the Spring Boot controllers, not the draft
+/// API docs — profile lives under `/profile/*`, not `/users/me/*`.
 abstract final class ApiEndpoints {
   const ApiEndpoints._();
 
@@ -20,4 +23,54 @@ abstract final class ApiEndpoints {
   static const refreshToken = '$_base/auth/refresh-token';
   static const me = '$_base/auth/me';
   static const logout = '$_base/auth/logout';
+
+  // ── Profile ───────────────────────────────────────────────────────────
+  static const profileMe = '$_base/profile/me';
+  static const profileAvatar = '$_base/profile/avatar';
+
+  /// Public profile is keyed by username, nested under `/public/` so it can
+  /// never collide with the sibling literal routes.
+  static String publicProfile(String username) =>
+      '$_base/profile/public/$username';
+
+  // ── Settings ──────────────────────────────────────────────────────────
+  static const profileSettings = '$_base/profile/settings';
+
+  // ── Interests ─────────────────────────────────────────────────────────
+  /// Full catalog, names already resolved to the caller's language.
+  static const interestCatalog = '$_base/interests';
+  static const profileInterests = '$_base/profile/interests';
+
+  // ── Portfolio ─────────────────────────────────────────────────────────
+  static const profilePortfolio = '$_base/profile/portfolio';
+
+  static String profilePortfolioItem(String portfolioId) =>
+      '$_base/profile/portfolio/$portfolioId';
+
+  // ── Social links ──────────────────────────────────────────────────────
+  /// Upsert by platform: POST replaces the existing link for that platform.
+  static const profileSocialLinks = '$_base/profile/social-links';
+
+  static String profileSocialLink(String platform) =>
+      '$_base/profile/social-links/$platform';
+
+  // ── Saved items ───────────────────────────────────────────────────────
+  static const profileSaved = '$_base/profile/saved';
+  static const profileSavedCheck = '$_base/profile/saved/check';
+
+  static String profileSavedItem(String itemType, String itemId) =>
+      '$_base/profile/saved/$itemType/$itemId';
+
+  // ── Badges / achievements ─────────────────────────────────────────────
+  /// Full catalog with an `earned` flag per badge — this is what the
+  /// profile's achievements row renders (earned ones plus locked ones).
+  static const badges = '$_base/entertainment/badges';
+  static const myBadges = '$_base/entertainment/badges/mine';
+
+  // ── Mobile BFF ────────────────────────────────────────────────────────
+  static const mobileHome = '$_base/mobile/home';
+  static const mobileProfileSummary = '$_base/mobile/profile-summary';
+  static const mobileFinanceDashboard = '$_base/mobile/finance-dashboard';
+  static const mobileProductivityDashboard =
+      '$_base/mobile/productivity-dashboard';
 }

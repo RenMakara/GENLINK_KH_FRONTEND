@@ -1,0 +1,194 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../../../../core/localization/localization_service.dart';
+import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/buttons/app_button.dart';
+import '../controllers/language_select_controller.dart';
+
+/// "Choose your language" — step 1 of the first-run flow.
+class LanguageSelectScreen extends GetView<LanguageSelectController> {
+  const LanguageSelectScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                'onboarding.stepOf'.trParams({
+                  'step': '${LanguageSelectController.step}',
+                  'total': '${LanguageSelectController.totalSteps}',
+                }).toUpperCase(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'onboarding.chooseLanguage'.tr,
+                style: theme.textTheme.displayMedium,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'onboarding.chooseLanguageHint'.tr,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Obx(
+                () => Column(
+                  children: [
+                    _LanguageOption(
+                      // Always shown in its own script — a user who cannot
+                      // read the current language still recognises theirs.
+                      title: 'ភាសាខ្មែរ',
+                      subtitle: 'Khmer',
+                      selected:
+                          controller.selected.value == LocalizationService.khmer,
+                      onTap: () =>
+                          controller.select(LocalizationService.khmer),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    _LanguageOption(
+                      title: 'English',
+                      subtitle: 'English',
+                      selected: controller.selected.value ==
+                          LocalizationService.english,
+                      onTap: () =>
+                          controller.select(LocalizationService.english),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              AppButton(
+                label: 'common.continue'.tr,
+                onPressed: controller.continueToOnboarding,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'onboarding.bothLanguages'.tr,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A selectable language card: filled and checked when active, quiet
+/// surface with an empty ring when not.
+class _LanguageOption extends StatelessWidget {
+  const _LanguageOption({
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    final background = selected ? scheme.primary : scheme.surface;
+    final foreground = selected ? scheme.onPrimary : scheme.onSurface;
+
+    return Semantics(
+      selected: selected,
+      button: true,
+      child: Material(
+        color: background,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md + 2,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(
+                color: selected ? Colors.transparent : scheme.outlineVariant,
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(color: foreground),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: foreground.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _SelectionDot(selected: selected, foreground: foreground),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectionDot extends StatelessWidget {
+  const _SelectionDot({required this.selected, required this.foreground});
+
+  final bool selected;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      height: 24,
+      width: 24,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: selected ? scheme.secondary : Colors.transparent,
+        border: Border.all(
+          color: selected ? Colors.transparent : scheme.outlineVariant,
+          width: 1.5,
+        ),
+      ),
+      child: selected
+          ? Icon(Icons.check, size: 15, color: scheme.onSecondary)
+          : null,
+    );
+  }
+}

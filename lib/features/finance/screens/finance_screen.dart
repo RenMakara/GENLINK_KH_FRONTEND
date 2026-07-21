@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:genlink_frontend/core/theme/theme_provider.dart';
-import 'package:provider/provider.dart';
+import 'package:genlink_frontend/core/theme/theme_controller.dart';
+import 'package:get/get.dart';
 
 class FinanceScreen extends StatelessWidget {
   const FinanceScreen({super.key});
@@ -8,7 +8,6 @@ class FinanceScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -24,16 +23,19 @@ class FinanceScreen extends StatelessWidget {
           ),
         ),
         actions: [
-          Consumer<ThemeProvider>(
-            builder: (context, provider, child) {
-              return IconButton(
-                icon: Icon(
-                  provider.isDark ? Icons.light_mode : Icons.dark_mode,
-                  color: theme.colorScheme.onSurface,
+          Builder(
+            builder: (context) {
+              final themeController = Get.find<ThemeController>();
+              return Obx(
+                () => IconButton(
+                  icon: Icon(
+                    themeController.isDark
+                        ? Icons.light_mode
+                        : Icons.dark_mode,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  onPressed: () => themeController.toggle(context),
                 ),
-                onPressed: () {
-                  provider.toggleTheme();
-                },
               );
             },
           ),

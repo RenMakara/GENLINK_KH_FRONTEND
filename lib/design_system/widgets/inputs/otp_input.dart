@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../radius/app_radius.dart';
 import '../../spacing/app_spacing.dart';
 
 /// Six-box OTP entry.
@@ -120,26 +121,35 @@ class _OtpInputState extends State<OtpInput> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            for (var i = 0; i < widget.length; i++)
-              Flexible(
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    right: i == widget.length - 1 ? 0 : AppSpacing.sm,
+        // The boxes shrink to fit a narrow screen but stop growing at
+        // [_OtpBox.maxWidth] — left to stretch, they overshoot their height
+        // on a wide device and the field reads as a row of wide slabs
+        // instead of upright boxes.
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final gaps = AppSpacing.xs * (widget.length - 1);
+            final share = (constraints.maxWidth - gaps) / widget.length;
+            final boxWidth = share.clamp(0.0, _OtpBox.maxWidth);
+
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              spacing: AppSpacing.xs,
+              children: [
+                for (var i = 0; i < widget.length; i++)
+                  SizedBox(
+                    width: boxWidth,
+                    child: _OtpBox(
+                      controller: _controllers[i],
+                      focusNode: _nodes[i],
+                      autofocus: widget.autofocus && i == 0,
+                      hasError: widget.errorText != null,
+                      onChanged: (value) => _onChanged(i, value),
+                      onKey: (event) => _onKey(i, event),
+                    ),
                   ),
-                  child: _OtpBox(
-                    controller: _controllers[i],
-                    focusNode: _nodes[i],
-                    autofocus: widget.autofocus && i == 0,
-                    hasError: widget.errorText != null,
-                    onChanged: (value) => _onChanged(i, value),
-                    onKey: (event) => _onKey(i, event),
-                  ),
-                ),
-              ),
-          ],
+              ],
+            );
+          },
         ),
         if (widget.errorText != null) ...[
           const SizedBox(height: AppSpacing.sm),
@@ -173,23 +183,22 @@ class _OtpBox extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final KeyEventResult Function(KeyEvent) onKey;
 
-  // Figma spec for a single box.
-  static const width = 59.0;
-  static const height = 65.0;
-  static const radius = 26.0;
-
-  /// Fill and stroke opacities from the design's glass treatment.
-  static const _fillOpacity = 0.85;
-  static const _strokeOpacity = 0.20;
+  /// Box size, from the Figma spec (59 x 65).
+  ///
+  /// Height is fixed. Width is a *ceiling*: the boxes divide the content
+  /// width so they shrink on a narrow phone, but stop at [maxWidth] so a
+  /// wide screen gets six upright boxes centred in the row rather than six
+  /// stretched slabs. These are the two numbers to tune.
+  static const height = 64.0;
+  static const maxWidth = 59.0;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    return AspectRatio(
-      // 59 x 65 in the design.
-      aspectRatio: _OtpBox.width / _OtpBox.height,
+    return SizedBox(
+      height: height,
       child: Focus(
         onKeyEvent: (_, event) => onKey(event),
         child: TextField(
@@ -200,13 +209,16 @@ class _OtpBox extends StatelessWidget {
           keyboardType: TextInputType.number,
           textInputAction: TextInputAction.next,
           maxLength: 1,
-          style: theme.textTheme.headlineMedium,
+          // titleLarge, not a headline: the digit should read large inside
+          // the box without crowding the squircle's corners.
+          style: theme.textTheme.titleLarge,
           // The single-digit maxLength would otherwise show "0/1".
           decoration: InputDecoration(
             counterText: '',
             filled: true,
-            // Glass fill: the surface at 85%, so the page tints through.
-            fillColor: scheme.surface.withValues(alpha: _fillOpacity),
+            // Solid surface — the boxes sit as white cards on the page
+            // background, they are not a glass surface.
+            fillColor: scheme.surface,
             contentPadding: EdgeInsets.zero,
             enabledBorder: _border(_strokeColor(scheme, hasError)),
             // Same border on focus — the caret and fill carry the state,
@@ -220,13 +232,13 @@ class _OtpBox extends StatelessWidget {
     );
   }
 
-  static Color _strokeColor(ColorScheme scheme, bool hasError) => hasError
-      ? scheme.error
-      : scheme.onSurface.withValues(alpha: _strokeOpacity);
+  /// `outlineVariant` is the design system's `border-subtle`.
+  static Color _strokeColor(ColorScheme scheme, bool hasError) =>
+      hasError ? scheme.error : scheme.outlineVariant;
 
   static OutlineInputBorder _border(Color color) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(radius),
+      borderRadius: BorderRadius.circular(AppRadius.squircle),
       borderSide: BorderSide(color: color),
     );
   }

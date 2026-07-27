@@ -59,7 +59,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
       children: [
         const AuthBadgeIcon(icon: Icons.lock_outline),
         const SizedBox(height: AppSpacing.lg),
-        Text('auth.verifyTitle'.tr, style: theme.textTheme.displayMedium),
+        Text('auth.verifyTitle'.tr, style: theme.textTheme.displayLarge),
         const SizedBox(height: AppSpacing.sm),
         Text.rich(
           TextSpan(

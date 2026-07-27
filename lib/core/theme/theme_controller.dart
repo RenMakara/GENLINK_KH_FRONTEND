@@ -31,11 +31,21 @@ class ThemeController extends GetxController {
   bool get isDark => themeMode.value == ThemeMode.dark;
 
   /// Load the persisted preference. Call before the first frame.
+  ///
+  /// A failing keystore read (seen on fresh devices/emulators) must not
+  /// propagate: it runs inside the pre-first-frame preload, and an
+  /// unhandled throw there stops `runApp` from ever being reached — a black
+  /// screen. Falling through leaves the mode at its system default, which is
+  /// always safe.
   Future<void> load() async {
-    final stored = await _storage.readThemeMode();
-    if (stored != null) {
-      themeMode.value = _toThemeMode(stored);
-      Get.changeThemeMode(themeMode.value);
+    try {
+      final stored = await _storage.readThemeMode();
+      if (stored != null) {
+        themeMode.value = _toThemeMode(stored);
+        Get.changeThemeMode(themeMode.value);
+      }
+    } catch (_) {
+      // Keep the default ThemeMode.system.
     }
   }
 

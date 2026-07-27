@@ -5,10 +5,11 @@ import '../../../../core/localization/localization_service.dart';
 
 /// Step 1 of the first-run flow: pick the app language.
 ///
-/// The choice is applied live as the user taps, so the rest of the flow is
-/// already in their language by the time they press Continue. It is
-/// persisted by [LocalizationService]; once the user signs in, their
-/// account's `preferredLanguage` takes over.
+/// Pre-selected from the device language (Khmer device → Khmer, otherwise
+/// English). The choice is applied live as the user taps, so the rest of
+/// the flow is already in their language before they press Continue.
+/// Tapping is an explicit choice and sticks; merely continuing without
+/// tapping leaves the app following the device language.
 class LanguageSelectController extends GetxController {
   LanguageSelectController({required LocalizationService localization})
       : _localization = localization;

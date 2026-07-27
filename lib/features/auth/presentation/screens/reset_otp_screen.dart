@@ -29,6 +29,9 @@ class ResetOtpScreen extends StatefulWidget {
 class _ResetOtpScreenState extends State<ResetOtpScreen> {
   String _otp = '';
 
+  /// Brief confirmation beat once the code is complete, before moving on.
+  bool _verifying = false;
+
   AuthController get _auth => Get.find<AuthController>();
 
   late final String _email = _auth.pendingEmail.value.isNotEmpty
@@ -37,10 +40,22 @@ class _ResetOtpScreenState extends State<ResetOtpScreen> {
 
   bool get _isComplete => _otp.length == Validators.otpLength;
 
-  void _continue() {
-    if (!_isComplete) return;
+  Future<void> _continue() async {
+    if (!_isComplete || _verifying) return;
     FocusScope.of(context).unfocus();
-    Get.toNamed<void>(AppRoutes.resetPassword, arguments: _otp);
+
+    // A one-second hold so the filled code registers before the screen
+    // changes — the same reassurance a real verification call would give.
+    // The code is only checked on the reset-password screen (the backend has
+    // no standalone verify step for FORGOT_PASSWORD), so this is a UX beat,
+    // not a network wait.
+    setState(() => _verifying = true);
+    await Future<void>.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
+
+    await Get.toNamed<void>(AppRoutes.resetPassword, arguments: _otp);
+    // Reachable when the user backs out of reset-password to retry the code.
+    if (mounted) setState(() => _verifying = false);
   }
 
   Future<void> _resend() async {
@@ -76,12 +91,17 @@ class _ResetOtpScreenState extends State<ResetOtpScreen> {
           ),
         ),
         const SizedBox(height: AppSpacing.xl),
-        Obx(
-          () => OtpInput(
-            length: Validators.otpLength,
-            errorText: _auth.errorMessage.value,
-            onChanged: (value) => setState(() => _otp = value),
-            onCompleted: (_) => _continue(),
+        // Locked during the verifying beat so the code cannot be edited or
+        // resubmitted while the redirect is pending.
+        IgnorePointer(
+          ignoring: _verifying,
+          child: Obx(
+            () => OtpInput(
+              length: Validators.otpLength,
+              errorText: _auth.errorMessage.value,
+              onChanged: (value) => setState(() => _otp = value),
+              onCompleted: (_) => _continue(),
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -117,6 +137,7 @@ class _ResetOtpScreenState extends State<ResetOtpScreen> {
         const SizedBox(height: AppSpacing.lg),
         AppButton(
           label: 'common.continue'.tr,
+          loading: _verifying,
           onPressed: _isComplete ? _continue : null,
         ),
       ],

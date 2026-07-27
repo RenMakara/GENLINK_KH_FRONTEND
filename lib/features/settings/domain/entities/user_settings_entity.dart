@@ -6,7 +6,7 @@
 class UserSettingsEntity {
   const UserSettingsEntity({
     this.settingsId,
-    this.language = languageKhmer,
+    this.language = languageEnglish,
     this.theme = themeSystem,
     this.notificationEnabled = true,
     this.privacyProfile = privacyPublic,

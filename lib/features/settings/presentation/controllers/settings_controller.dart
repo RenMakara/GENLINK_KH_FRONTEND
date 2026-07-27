@@ -42,9 +42,11 @@ class SettingsController extends GetxController {
     try {
       final loaded = await _repository.getSettings();
       settings.value = loaded;
-      // The server is authoritative for a signed-in user.
+      // The server is authoritative for a signed-in user. Language is a
+      // sync (not an explicit choice) so device-following stays alive for
+      // users who never picked one themselves.
       await _theme.applyBackendTheme(loaded.theme);
-      await _localization.setLanguage(loaded.language);
+      _localization.syncFromAccount(loaded.language);
     } on AppError catch (e) {
       errorMessage.value = e.message;
     } catch (_) {

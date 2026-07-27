@@ -84,7 +84,9 @@ class AuthController extends GetxController {
       }
       currentUser.value = user;
       isAuthenticated.value = true;
-      await _localization.setLanguage(user.preferredLanguage);
+      // Sync, not setLanguage: adopting the account value must not lock
+      // the language against device-following.
+      _localization.syncFromAccount(user.preferredLanguage);
       return true;
     } catch (_) {
       // Token invalid, expired, or the account is gone — clear silently.
@@ -317,8 +319,10 @@ class AuthController extends GetxController {
     currentUser.value = session.user;
     isAuthenticated.value = true;
     pendingEmail.value = '';
-    // Adopt the account's language so system content comes back localized.
-    await _localization.setLanguage(session.user.preferredLanguage);
+    // Adopt the account's language so system content comes back localized —
+    // as a sync, so device-following keeps working for users who never
+    // explicitly chose.
+    _localization.syncFromAccount(session.user.preferredLanguage);
   }
 
   Future<void> _clearSession() async {

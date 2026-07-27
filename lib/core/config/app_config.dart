@@ -6,27 +6,31 @@ abstract final class AppConfig {
   static const appName = 'GenLink KH';
   static const tagline = 'Connect. Grow. Thrive.';
 
-  /// Port the Spring Boot server listens on.
-  ///
-  /// Must match `server.port` in `backend/src/main/resources/application.yaml`
-  /// — it is 8888, not the Spring default of 8080.
+  /// The Spring Boot server's own port. Only relevant when talking to it
+  /// DIRECTLY (local development). In production the client never uses this:
+  /// it hits Nginx on port 80, which proxies to 8888 internally.
   static const apiPort = 8888;
 
   /// Base URL of the GenLink KH API.
   ///
-  /// Override at build time without touching code:
+  /// Defaults to the **deployed server** — reached through Nginx on port 80,
+  /// so no port in the URL. A plain `flutter run` or the IDE Run button hits
+  /// production with no flags.
+  ///
+  /// Override for LOCAL development against a backend on your own machine:
   /// ```
-  /// flutter run --dart-define=API_BASE_URL=http://192.168.1.20:8888
+  /// flutter run --dart-define=API_BASE_URL=http://10.0.2.2:$apiPort         # emulator
+  /// flutter run --dart-define=API_BASE_URL=http://192.168.0.108:$apiPort    # device on LAN
   /// ```
   ///
-  /// The default host (`10.0.2.2`) is the Android **emulator's** alias for
-  /// the host machine's localhost. It does not resolve anywhere else:
-  ///  * physical Android device → use the host's LAN IP, with the phone on
-  ///    the same Wi-Fi and the server bound to `0.0.0.0`
-  ///  * iOS simulator → `http://localhost:$apiPort`
+  /// ⚠️ This default is plain `http://`. Android and iOS block cleartext HTTP
+  /// in RELEASE builds, so it works in DEBUG only (the debug Android manifest
+  /// opts in to cleartext). A shippable release build needs the HTTPS domain —
+  /// when `api.genlinkkh.com` is live, change this default to
+  /// `https://api.genlinkkh.com` and cleartext is no longer involved.
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:$apiPort',
+    defaultValue: 'http://165.22.101.156',
   );
 
   /// OAuth **Web** client id, passed to Google Sign-In as `serverClientId`.

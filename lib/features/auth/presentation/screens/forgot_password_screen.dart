@@ -55,6 +55,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               Obx(() => AuthErrorBanner(message: _auth.errorMessage.value)),
               AppInput.email(
                 label: 'auth.email'.tr,
+                hint: 'example@gmail.com'.tr,
                 controller: _email,
                 autofocus: true,
                 textInputAction: TextInputAction.done,

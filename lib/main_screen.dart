@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/features/community/screens/community_screen.dart';
-import 'package:genlink_frontend/features/finance/screens/finance_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/finance_screen.dart';
 import 'package:genlink_frontend/features/home/presentation/bindings/home_binding.dart';
 import 'package:genlink_frontend/features/home/presentation/screens/home_screen.dart';
 import 'package:genlink_frontend/features/profile/presentation/bindings/profile_binding.dart';

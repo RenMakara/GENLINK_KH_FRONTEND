@@ -240,9 +240,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
               const SizedBox(height: 14),
 
-              // ============================================================
               // CATEGORY BREAKDOWN
-              // ============================================================
               SurfaceCard(
                 color: surface,
                 borderColor: border,

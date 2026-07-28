@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/budget_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/expense_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/saving_goals_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/set_budget_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/widgets/finance_widget.dart';
 
 class FinanceScreen extends StatelessWidget {
@@ -46,9 +49,7 @@ class FinanceScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ============================================================
               // HEADER
-              // ============================================================
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -106,16 +107,12 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 18),
 
-              // ============================================================
               // BALANCE
-              // ============================================================
               _BalanceCard(isDark: isDark, surfaceSecondary: surfaceSecondary),
 
               const SizedBox(height: 16),
 
-              // ============================================================
               // MONTHLY SPENDING
-              // ============================================================
               _AppCard(
                 color: surface,
                 borderColor: border,
@@ -244,9 +241,7 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // ============================================================
               // EMERGENCY FUND
-              // ============================================================
               _AppCard(
                 color: surface,
                 borderColor: border,
@@ -321,9 +316,7 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // ============================================================
               // SMART INSIGHT
-              // ============================================================
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -388,9 +381,7 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 22),
 
-              // ============================================================
               // QUICK ACTIONS
-              // ============================================================
               Text(
                 'Quick Actions',
                 style: TextStyle(
@@ -433,6 +424,14 @@ class FinanceScreen extends StatelessWidget {
                       background: surface,
                       border: border,
                       textColor: textPrimary,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const BudgetScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ),
 
@@ -446,6 +445,14 @@ class FinanceScreen extends StatelessWidget {
                       background: surface,
                       border: border,
                       textColor: textPrimary,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SavingGoalsScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ),
 
@@ -466,9 +473,7 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // ============================================================
               // RECENT TRANSACTIONS
-              // ============================================================
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -546,9 +551,7 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // ============================================================
               // LEARN FINANCE
-              // ============================================================
               _AppCard(
                 color: surface,
                 borderColor: border,
@@ -623,10 +626,7 @@ class FinanceScreen extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // APP CARD
-// ============================================================================
-
 class _AppCard extends StatelessWidget {
   final Widget child;
   final Color color;
@@ -653,10 +653,7 @@ class _AppCard extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // BALANCE CARD
-// ============================================================================
-
 class _BalanceCard extends StatelessWidget {
   final bool isDark;
   final Color surfaceSecondary;
@@ -725,10 +722,7 @@ class _BalanceCard extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // BALANCE ITEM
-// ============================================================================
-
 class _BalanceItem extends StatelessWidget {
   final String title;
   final String amount;

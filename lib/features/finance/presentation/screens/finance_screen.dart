@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
 class FinanceScreen extends StatelessWidget {
   const FinanceScreen({super.key});
@@ -8,50 +9,76 @@ class FinanceScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Soft surface colors that work well in dark mode
-    final cardColor = isDark
-        ? theme.colorScheme.surfaceContainerHighest
-        : Colors.white;
-    final scaffoldBg = isDark
-        ? theme.colorScheme.surface
-        : const Color(0xffF6F6F6);
-    final secondaryText = theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    // =========================================================
+    // APP COLORS
+    // =========================================================
+
+    final bgPrimary = isDark
+        ? AppColors.darkBgPrimary
+        : AppColors.lightBgPrimary;
+
+    final surfacePrimary = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+
+    final surfaceSecondary = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfaceSecondary;
+
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     return Scaffold(
-      backgroundColor: scaffoldBg,
+      backgroundColor: bgPrimary,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              /// Header
+              // =========================================================
+              // HEADER
+              // =========================================================
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     "Finance",
-                    style: theme.textTheme.headlineSmall?.copyWith(
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
                   Row(
                     children: [
-                      Icon(
-                        Icons.notifications_none,
-                        color: theme.colorScheme.onSurface,
-                      ),
+                      Icon(Icons.notifications_none, color: textPrimary),
+
                       const SizedBox(width: 12),
+
                       CircleAvatar(
                         radius: 18,
-                        backgroundColor:
-                            theme.colorScheme.surfaceContainerHighest,
+                        backgroundColor: surfaceSecondary,
                         child: Text(
                           "SR",
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
+                            color: textPrimary,
                           ),
                         ),
                       ),
@@ -62,15 +89,21 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 18),
 
-              /// Balance Card (stays dark / high contrast)
+              // =========================================================
+              // BALANCE CARD
+              // =========================================================
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1C1C1E) : Colors.black87,
+                  color: isDark
+                      ? AppColors.darkSurfacePrimary
+                      : AppColors.lightPrimary,
                   borderRadius: BorderRadius.circular(20),
-                  border: isDark
-                      ? Border.all(color: theme.colorScheme.outlineVariant)
-                      : null,
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.darkBorderStrong
+                        : AppColors.lightPrimary,
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,10 +111,13 @@ class FinanceScreen extends StatelessWidget {
                     Text(
                       "Net Balance - June 2026",
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
+                        color: Colors.white.withValues(alpha: 0.70),
+                        fontSize: 14,
                       ),
                     ),
+
                     const SizedBox(height: 8),
+
                     const Text(
                       "\$4,820.50",
                       style: TextStyle(
@@ -90,60 +126,26 @@ class FinanceScreen extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+
                     const SizedBox(height: 20),
+
                     Row(
                       children: [
                         Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Income",
-                                  style: TextStyle(color: Colors.white70),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  "+\$6,200",
-                                  style: TextStyle(
-                                    color: Colors.greenAccent,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          child: _balanceItem(
+                            title: "Income",
+                            amount: "+\$6,200",
+                            amountColor: AppColors.success,
                           ),
                         ),
+
                         const SizedBox(width: 10),
+
                         Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Expenses",
-                                  style: TextStyle(color: Colors.white70),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  "-\$1,379.50",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          child: _balanceItem(
+                            title: "Expenses",
+                            amount: "-\$1,379.50",
+                            amountColor: Colors.white,
                           ),
                         ),
                       ],
@@ -154,40 +156,47 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 18),
 
-              /// Monthly Spending
+              // =========================================================
+              // MONTHLY SPENDING
+              // =========================================================
               _card(
-                color: cardColor,
+                color: surfacePrimary,
+                borderColor: borderSubtle,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "Monthly Spending",
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    _sectionTitle("Monthly Spending", textPrimary),
+
                     const SizedBox(height: 4),
-                    Text("June 2026", style: TextStyle(color: secondaryText)),
+
+                    Text("June 2026", style: TextStyle(color: textSecondary)),
+
                     const SizedBox(height: 16),
+
                     LinearProgressIndicator(
                       value: .72,
                       borderRadius: BorderRadius.circular(20),
                       minHeight: 8,
-                      backgroundColor:
-                          theme.colorScheme.surfaceContainerHighest,
-                      valueColor: const AlwaysStoppedAnimation(Colors.orange),
+                      backgroundColor: surfaceSecondary,
+                      valueColor: const AlwaysStoppedAnimation(
+                        AppColors.growthAccent,
+                      ),
                     ),
+
                     const SizedBox(height: 10),
+
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           "\$642 of \$900",
-                          style: TextStyle(color: secondaryText),
+                          style: TextStyle(color: textSecondary),
                         ),
+
                         Text(
                           "72%",
-                          style: theme.textTheme.bodyMedium?.copyWith(
+                          style: TextStyle(
+                            color: textPrimary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -199,36 +208,41 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              /// Emergency Fund
+              // =========================================================
+              // EMERGENCY FUND
+              // =========================================================
               _card(
-                color: cardColor,
+                color: surfacePrimary,
+                borderColor: borderSubtle,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "Emergency Fund",
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    _sectionTitle("Emergency Fund", textPrimary),
+
                     const SizedBox(height: 5),
+
                     Text(
                       "\$1,240 of \$3,000",
-                      style: TextStyle(color: secondaryText),
+                      style: TextStyle(color: textSecondary),
                     ),
+
                     const SizedBox(height: 14),
+
                     LinearProgressIndicator(
                       value: .41,
                       minHeight: 8,
                       borderRadius: BorderRadius.circular(20),
-                      backgroundColor:
-                          theme.colorScheme.surfaceContainerHighest,
-                      valueColor: const AlwaysStoppedAnimation(Colors.green),
+                      backgroundColor: surfaceSecondary,
+                      valueColor: const AlwaysStoppedAnimation(
+                        AppColors.financeAccent,
+                      ),
                     ),
+
                     const SizedBox(height: 8),
+
                     Text(
                       "Target: Dec 2026 • 41% complete",
-                      style: TextStyle(color: secondaryText),
+                      style: TextStyle(color: textSecondary),
                     ),
                   ],
                 ),
@@ -236,42 +250,46 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              /// Smart Insight
+              // =========================================================
+              // SMART INSIGHT
+              // =========================================================
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.green.withValues(alpha: 0.12)
-                      : const Color(0xffF2FFF7),
+                  color: AppColors.financeAccent.withValues(
+                    alpha: isDark ? 0.12 : 0.08,
+                  ),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: isDark
-                        ? Colors.green.withValues(alpha: 0.3)
-                        : Colors.green.shade200,
+                    color: AppColors.financeAccent.withValues(
+                      alpha: isDark ? 0.30 : 0.20,
+                    ),
                   ),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.bolt,
-                      color: isDark ? Colors.greenAccent : Colors.green,
-                    ),
+                    const Icon(Icons.bolt, color: AppColors.financeAccent),
+
                     const SizedBox(width: 12),
+
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             "Smart Insight",
-                            style: theme.textTheme.titleSmall?.copyWith(
+                            style: TextStyle(
+                              color: textPrimary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+
                           const SizedBox(height: 6),
+
                           Text(
                             "You're spending 15% more on food this month. Set a \$300 limit to stay on track.",
-                            style: TextStyle(color: secondaryText),
+                            style: TextStyle(color: textSecondary),
                           ),
                         ],
                       ),
@@ -282,52 +300,88 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
+              // =========================================================
+              // QUICK ACTIONS
+              // =========================================================
               Text(
                 "Quick Actions",
-                style: theme.textTheme.titleMedium?.copyWith(
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+
               const SizedBox(height: 12),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _ActionButton(Icons.add, "Add", cardColor),
-                  _ActionButton(Icons.bar_chart, "Budget", cardColor),
-                  _ActionButton(Icons.savings, "Goal", cardColor),
-                  _ActionButton(Icons.menu_book, "Learn", cardColor),
+                  _ActionButton(
+                    Icons.add,
+                    "Add",
+                    surfacePrimary,
+                    iconColor: AppColors.brandPrimary,
+                  ),
+
+                  _ActionButton(
+                    Icons.bar_chart,
+                    "Budget",
+                    surfacePrimary,
+                    iconColor: AppColors.productivityAccent,
+                  ),
+
+                  _ActionButton(
+                    Icons.savings,
+                    "Goal",
+                    surfacePrimary,
+                    iconColor: AppColors.financeAccent,
+                  ),
+
+                  _ActionButton(
+                    Icons.menu_book,
+                    "Learn",
+                    surfacePrimary,
+                    iconColor: AppColors.growthAccent,
+                  ),
                 ],
               ),
 
               const SizedBox(height: 24),
 
+              // =========================================================
+              // RECENT TRANSACTIONS
+              // =========================================================
               Text(
                 "Recent Transactions",
-                style: theme.textTheme.titleMedium?.copyWith(
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+
               const SizedBox(height: 12),
+
+              _transaction(context, "Grab Food", "-\$8.50", textPrimary),
 
               _transaction(
                 context,
-                "Grab Food",
-                "-\$8.50",
-                theme.colorScheme.onSurface,
+                "Salary Deposit",
+                "+\$2,500",
+                AppColors.success,
               ),
-              _transaction(context, "Salary Deposit", "+\$2,500", Colors.green),
-              _transaction(
-                context,
-                "Netflix",
-                "-\$15.99",
-                theme.colorScheme.onSurface,
-              ),
+
+              _transaction(context, "Netflix", "-\$15.99", textPrimary),
 
               const SizedBox(height: 20),
 
+              // =========================================================
+              // LEARN FINANCE
+              // =========================================================
               _card(
-                color: cardColor,
+                color: surfacePrimary,
+                borderColor: borderSubtle,
                 child: Row(
                   children: [
                     Expanded(
@@ -336,39 +390,48 @@ class FinanceScreen extends StatelessWidget {
                         children: [
                           Text(
                             "Learn Finance",
-                            style: theme.textTheme.titleSmall?.copyWith(
+                            style: TextStyle(
+                              color: textPrimary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+
                           const SizedBox(height: 6),
+
                           Text(
                             "3 of 5 topics completed.",
-                            style: TextStyle(color: secondaryText),
+                            style: TextStyle(color: textSecondary),
                           ),
+
                           const SizedBox(height: 12),
+
                           LinearProgressIndicator(
                             value: .6,
                             borderRadius: BorderRadius.circular(20),
-                            backgroundColor:
-                                theme.colorScheme.surfaceContainerHighest,
+                            backgroundColor: surfaceSecondary,
+                            valueColor: const AlwaysStoppedAnimation(
+                              AppColors.productivityAccent,
+                            ),
                           ),
                         ],
                       ),
                     ),
+
                     const SizedBox(width: 15),
+
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: isDark
-                            ? theme.colorScheme.primary
-                            : Colors.black,
+                            ? AppColors.darkPrimary
+                            : AppColors.lightPrimary,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
                         Icons.edit,
                         color: isDark
-                            ? theme.colorScheme.onPrimary
-                            : Colors.white,
+                            ? AppColors.darkTextInverse
+                            : AppColors.lightTextInverse,
                       ),
                     ),
                   ],
@@ -383,17 +446,74 @@ class FinanceScreen extends StatelessWidget {
     );
   }
 
-  Widget _card({required Widget child, required Color color}) {
+  // =========================================================
+  // BALANCE ITEM
+  // =========================================================
+
+  Widget _balanceItem({
+    required String title,
+    required String amount,
+    required Color amountColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("", style: TextStyle(color: Colors.white70)),
+
+          Text(title, style: const TextStyle(color: Colors.white70)),
+
+          const SizedBox(height: 4),
+
+          Text(
+            amount,
+            style: TextStyle(color: amountColor, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================
+  // CARD
+  // =========================================================
+
+  Widget _card({
+    required Widget child,
+    required Color color,
+    required Color borderColor,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
       ),
       child: child,
     );
   }
+
+  // =========================================================
+  // SECTION TITLE
+  // =========================================================
+
+  Widget _sectionTitle(String title, Color color) {
+    return Text(
+      title,
+      style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold),
+    );
+  }
+
+  // =========================================================
+  // TRANSACTION
+  // =========================================================
 
   Widget _transaction(
     BuildContext context,
@@ -402,27 +522,41 @@ class FinanceScreen extends StatelessWidget {
     Color amountColor,
   ) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surfaceContainerHighest,
+    final surface = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfaceSecondary;
+
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+
+    return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(15),
+      ),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.surface,
-          child: Icon(
-            Icons.receipt_long,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-          ),
+          backgroundColor: isDark
+              ? AppColors.darkSurfacePrimary
+              : AppColors.lightSurfacePrimary,
+          child: Icon(Icons.receipt_long, color: textMuted),
         ),
-        title: Text(title),
-        subtitle: Text(
-          "Today",
-          style: TextStyle(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
-          ),
+
+        title: Text(
+          title,
+          style: TextStyle(color: textPrimary, fontWeight: FontWeight.w500),
         ),
+
+        subtitle: Text("Today", style: TextStyle(color: textMuted)),
+
         trailing: Text(
           amount,
           style: TextStyle(color: amountColor, fontWeight: FontWeight.bold),
@@ -432,16 +566,22 @@ class FinanceScreen extends StatelessWidget {
   }
 }
 
+// =========================================================
+// ACTION BUTTON
+// =========================================================
+
 class _ActionButton extends StatefulWidget {
   final IconData icon;
   final String title;
   final Color backgroundColor;
+  final Color iconColor;
   final VoidCallback? onTap;
 
   const _ActionButton(
     this.icon,
     this.title,
     this.backgroundColor, {
+    required this.iconColor,
     this.onTap,
   });
 
@@ -456,44 +596,66 @@ class _ActionButtonState extends State<_ActionButton> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final isDark = theme.brightness == Brightness.dark;
+
+    final textColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapDown: (_) {
+        setState(() => _isPressed = true);
+      },
+
       onTapUp: (_) {
         setState(() => _isPressed = false);
         widget.onTap?.call();
       },
-      onTapCancel: () => setState(() => _isPressed = false),
+
+      onTapCancel: () {
+        setState(() => _isPressed = false);
+      },
+
       child: AnimatedScale(
         scale: _isPressed ? 0.92 : 1.0,
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
+
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           width: 75,
           padding: const EdgeInsets.symmetric(vertical: 16),
+
           decoration: BoxDecoration(
             color: widget.backgroundColor,
             borderRadius: BorderRadius.circular(16),
+
+            border: Border.all(
+              color: isDark
+                  ? AppColors.darkBorderSubtle
+                  : AppColors.lightBorderSubtle,
+            ),
+
             boxShadow: _isPressed
                 ? []
                 : [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
+                      color: Colors.black.withValues(alpha: 0.06),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
                   ],
           ),
+
           child: Column(
             children: [
-              Icon(widget.icon, color: theme.colorScheme.onSurface),
+              Icon(widget.icon, color: widget.iconColor),
+
               const SizedBox(height: 8),
+
               Text(
                 widget.title,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: theme.colorScheme.onSurface,
-                ),
+                style: TextStyle(fontSize: 12, color: textColor),
               ),
             ],
           ),

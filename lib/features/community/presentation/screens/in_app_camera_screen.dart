@@ -99,12 +99,6 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
 
     try {
       if (_isDesktopPlatform) {
-        AppNotificationBanner.showSuccess(
-          context: context,
-          title: "Desktop Platform Notice",
-          message: "Opening file picker to select a photo or video for your story...",
-        );
-
         media = _isVideoMode
             ? await picker.pickVideo(
                 source: ImageSource.gallery,

@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
@@ -19,11 +17,6 @@ class StoryCreationPickerSheet extends StatelessWidget {
       isDismissible: true,
       builder: (ctx) => const StoryCreationPickerSheet(),
     );
-  }
-
-  bool get _isDesktopPlatform {
-    if (kIsWeb) return false;
-    return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
   }
 
   Future<void> _pickFromGallery(BuildContext context) async {
@@ -66,19 +59,22 @@ class StoryCreationPickerSheet extends StatelessWidget {
 
   void _openCamera(BuildContext context) {
     Navigator.pop(context);
-    if (_isDesktopPlatform) {
-      AppNotificationBanner.showSuccess(
-        context: context,
-        title: "Desktop Platform Notice",
-        message: "Opening camera studio...",
+    try {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (ctx) => const InAppCameraScreen(initialIsVideoMode: false),
+        ),
       );
+    } catch (e) {
+      if (context.mounted) {
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: "Camera Error",
+          message: "Could not open camera screen: $e",
+        );
+      }
     }
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (ctx) => const InAppCameraScreen(initialIsVideoMode: false),
-      ),
-    );
   }
 
   void _openTextStory(BuildContext context) {

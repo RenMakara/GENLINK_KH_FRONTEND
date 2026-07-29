@@ -931,13 +931,26 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     );
   }
 
+  void _toggleZoomDoubleTap() {
+    setState(() {
+      if (_transformationController.value != Matrix4.identity()) {
+        _transformationController.value = Matrix4.identity();
+      } else {
+        _transformationController.value = Matrix4.diagonal3Values(2.0, 2.0, 1.0);
+      }
+    });
+  }
+
   Widget _buildImageCanvas(File file) {
     return GestureDetector(
-      onDoubleTap: _resetZoom,
+      onDoubleTap: _toggleZoomDoubleTap,
       child: InteractiveViewer(
         transformationController: _transformationController,
         minScale: 1.0,
         maxScale: 4.0,
+        clipBehavior: Clip.hardEdge,
+        panEnabled: true,
+        scaleEnabled: true,
         child: RotatedBox(
           quarterTurns: (_imageRotation / 90).round() % 4,
           child: Image.file(

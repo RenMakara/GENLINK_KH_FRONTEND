@@ -210,54 +210,61 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
             child: Container(
               color: const Color(0xFF111111),
               child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _isFrontCamera ? Icons.person_pin_rounded : Icons.photo_camera_rounded,
-                      color: AppColors.communityAccent,
-                      size: 96,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      _isDesktopPlatform
-                          ? "Desktop Camera Studio"
-                          : (_isFrontCamera ? "Front Camera Active" : "Rear Camera Active"),
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: Text(
-                        _isDesktopPlatform
-                            ? "Tap shutter to take picture/select photo and post your story"
-                            : (_isVideoMode ? "Tap shutter to record video (max 60s)" : "Tap shutter to take picture and post"),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white54, fontSize: 13),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 120),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _isFrontCamera ? Icons.person_pin_rounded : Icons.photo_camera_rounded,
+                        color: AppColors.communityAccent,
+                        size: 80,
                       ),
-                    ),
-                    if (_isVideoMode && _isCapturing) ...[
                       const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.danger,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.fiber_manual_record, color: Colors.white, size: 12),
-                            const SizedBox(width: 6),
-                            Text(
-                              _formatRecordingTime(_recordingSeconds),
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                            ),
-                          ],
+                      const Text(
+                        "Create Story",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 40),
+                        child: Text(
+                          "Capture a photo or choose one from your gallery.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                      if (_isVideoMode && _isCapturing) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.danger,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.fiber_manual_record, color: Colors.white, size: 12),
+                              const SizedBox(width: 6),
+                              Text(
+                                _formatRecordingTime(_recordingSeconds),
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -314,72 +321,81 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Mode Selector Switch
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        GestureDetector(
-                          onTap: () => setState(() => _isVideoMode = false),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: !_isVideoMode ? Colors.white24 : Colors.transparent,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Text(
-                              "PHOTO",
-                              style: TextStyle(
-                                color: !_isVideoMode ? Colors.white : Colors.white54,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                    // Segmented Mode Switcher ([ Photo ]  [ Video ])
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () => setState(() => _isVideoMode = false),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: !_isVideoMode ? Colors.white : Colors.transparent,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                "Photo",
+                                style: TextStyle(
+                                  color: !_isVideoMode ? Colors.black : Colors.white70,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        GestureDetector(
-                          onTap: () => setState(() => _isVideoMode = true),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: _isVideoMode ? AppColors.danger.withValues(alpha: 0.3) : Colors.transparent,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Text(
-                              "VIDEO",
-                              style: TextStyle(
-                                color: _isVideoMode ? AppColors.danger : Colors.white54,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () => setState(() => _isVideoMode = true),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: _isVideoMode ? AppColors.danger : Colors.transparent,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                "Video",
+                                style: TextStyle(
+                                  color: _isVideoMode ? Colors.white : Colors.white70,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
 
                     const SizedBox(height: 24),
 
-                    // Shutter Row (Instant Post & Capture Options)
+                    // Shutter Row (Gallery Option & Shutter Button)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // Quick Instant Post
+                        // Gallery Action Button
                         TextButton.icon(
                           onPressed: _isCapturing ? null : () => _captureMedia(instantPost: true),
-                          icon: const Icon(Icons.send_rounded, color: AppColors.communityAccent, size: 18),
-                          label: const Text("Instant Post", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                          icon: const Icon(Icons.photo_library_rounded, color: Colors.white, size: 20),
+                          label: const Text("Gallery", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
                           style: TextButton.styleFrom(
-                            backgroundColor: Colors.black.withValues(alpha: 0.6),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            backgroundColor: Colors.white.withValues(alpha: 0.12),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                              side: const BorderSide(color: Colors.white24),
+                              borderRadius: BorderRadius.circular(24),
+                              side: const BorderSide(color: Colors.white12),
                             ),
                           ),
                         ),
 
-                        // Main Shutter Button (Capture & Edit)
+                        // Main Capture Shutter Button
                         GestureDetector(
                           onTap: () => _captureMedia(instantPost: false),
                           child: Container(
@@ -411,7 +427,11 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                           ),
                         ),
 
-                        const SizedBox(width: 80),
+                        // Flip Camera Lens Action Button
+                        IconButton(
+                          icon: const Icon(Icons.flip_camera_android_rounded, color: Colors.white70, size: 26),
+                          onPressed: _toggleCameraLens,
+                        ),
                       ],
                     ),
                   ],

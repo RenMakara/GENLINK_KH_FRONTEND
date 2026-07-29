@@ -1,3 +1,4 @@
+// ignore_for_file: unused_element
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -29,7 +30,15 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   String _selectedVisibility = 'Public';
 
   String? _activeMediaPath;
+  final TextEditingController _captionController = TextEditingController();
+  double _imageRotation = 0.0;
   final TransformationController _transformationController = TransformationController();
+
+  void _rotateImage() {
+    setState(() {
+      _imageRotation = (_imageRotation + 90) % 360;
+    });
+  }
 
   int _gradientIdx = 0;
   final List<List<Color>> _gradients = [
@@ -111,6 +120,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   @override
   void dispose() {
+    _captionController.dispose();
     _transformationController.dispose();
     super.dispose();
   }
@@ -928,27 +938,30 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         transformationController: _transformationController,
         minScale: 1.0,
         maxScale: 4.0,
-        child: Image.file(
-          file,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          filterQuality: FilterQuality.high,
-          frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {
-            if (wasSynchronouslyLoaded || frame != null) {
-              return child;
-            }
-            return Container(
-              color: Colors.black,
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2.5,
+        child: RotatedBox(
+          quarterTurns: (_imageRotation / 90).round() % 4,
+          child: Image.file(
+            file,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            filterQuality: FilterQuality.high,
+            frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {
+              if (wasSynchronouslyLoaded || frame != null) {
+                return child;
+              }
+              return Container(
+                color: Colors.black,
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2.5,
+                  ),
                 ),
-              ),
-            );
-          },
-          errorBuilder: (ctx, err, stack) => _buildErrorMediaPlaceholder(),
+              );
+            },
+            errorBuilder: (ctx, err, stack) => _buildErrorMediaPlaceholder(),
+          ),
         ),
       ),
     );
@@ -987,7 +1000,10 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
     try {
       final controller = Get.find<StoryController>();
-      final textContent = _layers.isNotEmpty ? _layers.first.text : "CampusLink Story";
+      final caption = _captionController.text.trim();
+      final textContent = caption.isNotEmpty
+          ? caption
+          : (_layers.isNotEmpty ? _layers.first.text : "CampusLink Story");
 
       final success = await controller.publishStory(
         type: widget.type,
@@ -2099,48 +2115,26 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         },
                       ),
 
-                      // Floating Tool Bar Palette (Scrollable to prevent RenderFlex overflow)
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (_activeMediaPath == null)
-                                IconButton(
-                                  icon: const Icon(Icons.palette_outlined, color: Colors.white, size: 24),
-                                  onPressed: _cycleGradient,
-                                ),
-                              IconButton(
-                                icon: const Icon(Icons.add_photo_alternate_outlined, color: Colors.white, size: 24),
-                                tooltip: "Add Photo",
-                                onPressed: _showAddImagePicker,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.title_rounded, color: Colors.white, size: 24),
-                                onPressed: () => _openFloatingTextEditor(),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.sticky_note_2_outlined, color: Colors.white, size: 24),
-                                onPressed: _showStickerSheet,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.tag_rounded, color: Colors.white, size: 24),
-                                onPressed: _showHashtagSheet,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.alternate_email_rounded, color: Colors.white, size: 24),
-                                onPressed: _showMentionSheet,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.location_on_outlined, color: Colors.white, size: 24),
-                                onPressed: _showLocationSheet,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.music_note_outlined, color: Colors.white, size: 24),
-                                onPressed: _showMusicSheet,
-                              ),
-                            ],
+                      const Text(
+                        "Preview Story",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+
+                      TextButton(
+                        onPressed: _isPublishing ? null : _publishStory,
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(48, 48),
+                        ),
+                        child: Text(
+                          "Post",
+                          style: TextStyle(
+                            color: _isPublishing ? Colors.white38 : AppColors.communityAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
                       ),
@@ -2150,71 +2144,157 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               ),
             ),
 
-            // Bottom Action Controls
+            // Bottom Preview & Edit Controls Overlay (Editing Pills + Caption Input + Action Bar)
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
               child: SafeArea(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.black.withValues(alpha: 0.0),
+                        Colors.black.withValues(alpha: 0.85),
+                        Colors.black,
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Privacy Selector Pill
-                      Flexible(
-                        child: GestureDetector(
-                          onTap: _showPrivacySheet,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: AppColors.darkSurfaceSecondary,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white12),
+                      // Quick Editing Actions Toolbar (Change Photo, Rotate, Retake)
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            TextButton.icon(
+                              onPressed: _replaceMedia,
+                              icon: const Icon(Icons.photo_library_outlined, color: Colors.white, size: 18),
+                              label: const Text("Change Photo", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                              style: TextButton.styleFrom(
+                                backgroundColor: Colors.white.withValues(alpha: 0.12),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.public, color: Colors.white, size: 16),
-                                const SizedBox(width: 6),
-                                Flexible(
-                                  child: Text(
-                                    _selectedVisibility,
-                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const Icon(Icons.arrow_drop_down_rounded, color: Colors.white54, size: 18),
-                              ],
+                            const SizedBox(width: 8),
+                            TextButton.icon(
+                              onPressed: _rotateImage,
+                              icon: const Icon(Icons.rotate_right_rounded, color: Colors.white, size: 18),
+                              label: const Text("Rotate", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                              style: TextButton.styleFrom(
+                                backgroundColor: Colors.white.withValues(alpha: 0.12),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            TextButton.icon(
+                              onPressed: () async {
+                                final shouldPop = await _confirmDiscardDraft();
+                                if (shouldPop && context.mounted) {
+                                  Navigator.pop(context);
+                                }
+                              },
+                              icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 18),
+                              label: const Text("Retake", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                              style: TextButton.styleFrom(
+                                backgroundColor: Colors.white.withValues(alpha: 0.12),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
 
-                      // GenLink Black-and-White Share Story Button
-                      if (_selectedLayer?.type != LayerType.text)
-                        ElevatedButton.icon(
-                          onPressed: _isPublishing ? null : _publishStory,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            disabledBackgroundColor: Colors.white24,
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                            elevation: 2,
-                          ),
-                          icon: _isPublishing
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
-                                )
-                              : const Icon(Icons.arrow_forward_rounded, color: Colors.black, size: 18),
-                          label: Text(
-                            _isPublishing ? "Sharing..." : "Share Story",
-                            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14),
-                          ),
+                      const SizedBox(height: 12),
+
+                      // Optional Caption Input Box
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.darkSurfaceSecondary,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.darkBorderSubtle),
                         ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.edit_note_rounded, color: AppColors.darkTextMuted, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextField(
+                                controller: _captionController,
+                                minLines: 1,
+                                maxLines: 3,
+                                style: const TextStyle(color: Colors.white, fontSize: 14),
+                                decoration: const InputDecoration(
+                                  hintText: "Write something about your story...",
+                                  hintStyle: TextStyle(color: AppColors.darkTextMuted, fontSize: 14),
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      // Bottom Action Buttons (Retake & Post Story)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () async {
+                                final shouldPop = await _confirmDiscardDraft();
+                                if (shouldPop && context.mounted) {
+                                  Navigator.pop(context);
+                                }
+                              },
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Colors.white24),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: const Text(
+                                "Retake",
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: _isPublishing ? null : _publishStory,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                disabledBackgroundColor: Colors.white24,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                                elevation: 2,
+                              ),
+                              child: _isPublishing
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5),
+                                    )
+                                  : const Text(
+                                      "Post Story",
+                                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

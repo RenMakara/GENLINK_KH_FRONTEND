@@ -1974,47 +1974,47 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Horizontal Equal-Width Action Buttons (14px spacing)
+                      // Horizontal Equal-Width Action Buttons (16px spacing)
                       Row(
                         children: [
-                          // Keep Editing (Primary White Button)
+                          // Safe Action: Continue Editing (Dark Surface + White Border)
                           Expanded(
-                            child: ElevatedButton(
+                            child: OutlinedButton(
                               onPressed: () => Navigator.pop(dialogCtx, false),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.black,
-                                elevation: 0,
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: const Color(0xFF242424),
+                                foregroundColor: Colors.white,
+                                side: const BorderSide(color: Colors.white24, width: 1.0),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
                               child: const Text(
-                                "Keep Editing",
+                                "Continue Editing",
                                 style: TextStyle(
-                                  color: Colors.black,
+                                  color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 16),
 
-                          // Discard (Destructive Button)
+                          // Destructive Action: Discard Draft (Filled Red Button)
                           Expanded(
-                            child: OutlinedButton(
+                            child: ElevatedButton(
                               onPressed: () => Navigator.pop(dialogCtx, true),
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: const Color(0xFF262626),
-                                foregroundColor: AppColors.danger,
-                                side: const BorderSide(color: AppColors.danger, width: 1.2),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.danger,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
                               child: const Text(
-                                "Discard",
+                                "Discard Draft",
                                 style: TextStyle(
-                                  color: AppColors.danger,
+                                  color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),

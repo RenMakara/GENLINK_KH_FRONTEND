@@ -99,7 +99,7 @@ class StoryTrayWidget extends StatelessWidget {
                               ),
                             ),
                             child: CircleAvatar(
-                              radius: 30,
+                              radius: 28,
                               backgroundImage: group.userAvatar.startsWith('assets/')
                                   ? AssetImage(group.userAvatar) as ImageProvider
                                   : NetworkImage(group.userAvatar),

@@ -13,8 +13,7 @@ import '../../domain/repositories/profile_repository.dart';
 /// entered. Every step is skippable — the account is already usable, this
 /// only enriches it.
 class ProfileSetupController extends GetxController {
-  ProfileSetupController({required ProfileRepository repository})
-      : _repository = repository;
+  ProfileSetupController({required this._repository});
 
   final ProfileRepository _repository;
 

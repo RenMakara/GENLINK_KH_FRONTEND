@@ -22,6 +22,7 @@ import '../../features/settings/presentation/screens/appearance_settings_screen.
 import '../../features/settings/presentation/screens/language_settings_screen.dart';
 import '../../features/settings/presentation/screens/privacy_settings_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/community/presentation/bindings/community_binding.dart';
 import '../../features/splash/presentation/bindings/splash_binding.dart';
 import '../../features/splash/presentation/screens/splash_screen.dart';
 import '../../main_screen.dart';
@@ -85,6 +86,7 @@ abstract final class AppPages {
     GetPage<dynamic>(
       name: AppRoutes.home,
       page: () => const MainScreen(),
+      binding: CommunityBinding(),
       middlewares: [AuthMiddleware()],
     ),
 

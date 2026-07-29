@@ -67,9 +67,9 @@ abstract final class AppColors {
   static const accentPremium = Color(0xFFC8BFAE);
 
   /// Status colours, shared by both themes.
-  static const danger = Color(0xFFD64545);
-  static const success = Color(0xFF4BAE73);
-  static const warning = Color(0xFFF2B84B);
+  static const danger = Color(0xFFEF6A6A);
+  static const success = Color(0xFF4ADE80);
+  static const warning = Color(0xFFF5B84B);
 
   // Feature accents — highlights and badges only, never page backgrounds.
   static const brandPrimary = Color(0xFF1F6FEB);

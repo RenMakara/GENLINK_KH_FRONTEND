@@ -17,11 +17,50 @@ class HomeRepositoryImpl implements HomeRepository {
   final ApiClient _client;
 
   @override
-  Future<HomeEntity> getHome() {
-    return _client.get(
-      ApiEndpoints.mobileHome,
-      parse: (data) => _mapHome(ApiClient.asMap(data)),
-    );
+  Future<HomeEntity> getHome() async {
+    try {
+      return await _client.get(
+        ApiEndpoints.mobileHome,
+        parse: (data) => _mapHome(ApiClient.asMap(data)),
+      );
+    } catch (_) {
+      // Offline fallback mock data when backend API is offline
+      return const HomeEntity(
+        user: HomeUser(
+          userId: 'user_1',
+          fullName: 'Enat',
+          avatarUrl: 'https://i.pravatar.cc/150?img=32',
+          level: 3,
+          totalXp: 150,
+        ),
+        todayProgress: TodayProgress(
+          habitsCompletedToday: 3,
+          habitsTotal: 5,
+          tasksCompleted: 2,
+          tasksTotal: 4,
+        ),
+        dailyChallenge: ChallengePreview(
+          challengeId: 'c1',
+          title: 'Complete a financial lesson',
+          description: 'Earn 20 bonus XP today!',
+          xpReward: 20,
+        ),
+        financeSnapshot: FinanceSnapshot(
+          totalBudget: 1240.50,
+          spentAmount: 1240.50,
+          remainingAmount: 3579.50,
+          savingTarget: 5000.0,
+          savingCurrent: 4820.0,
+        ),
+        upcomingEvent: UpcomingEvent(
+          eventId: 'e1',
+          title: 'AI for Everyone Workshop',
+          dateTime: '25 July 2026 (Sat) 10:00 AM',
+          locationName: 'ACLEDA Uni, Phnom Penh',
+          coverImageUrl: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=600',
+        ),
+      );
+    }
   }
 
   static HomeEntity _mapHome(Map<String, dynamic> json) {

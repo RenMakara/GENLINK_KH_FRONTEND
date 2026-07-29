@@ -11,8 +11,7 @@ import '../../../../core/localization/localization_service.dart';
 /// Tapping is an explicit choice and sticks; merely continuing without
 /// tapping leaves the app following the device language.
 class LanguageSelectController extends GetxController {
-  LanguageSelectController({required LocalizationService localization})
-      : _localization = localization;
+  LanguageSelectController({required this._localization});
 
   final LocalizationService _localization;
 

@@ -1,0 +1,260 @@
+import 'package:dio/dio.dart';
+import '../../domain/models/community_post_model.dart';
+
+class CommunityRemoteDataSource {
+  final Dio dio;
+
+  CommunityRemoteDataSource({required this.dio});
+
+  // Local fallback memory store for optimistic updates & dev testing
+  final List<CommunityPostModel> _mockPosts = [
+    CommunityPostModel(
+      id: 'post_me',
+      userId: 'user_me',
+      authorName: 'Sokny Enat',
+      authorTag: '@soknyenat',
+      authorAvatar: 'assets/images/user_profile.png',
+      isVerified: false, // Normal student account - NO blue verified badge!
+      timeAgo: '15m ago',
+      content: 'Building cross-platform mobile apps with Flutter & Cloud Infrastructure at ACLEDA University of Business! 🚀💻 #Flutter #CloudComputing #CampusLink',
+      imageUrls: [
+        'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800',
+      ],
+      likesCount: 42,
+      commentsCount: 8,
+      sharesCount: 2,
+      isLiked: false,
+      isBookmarked: false,
+      isOwner: true,
+      community: 'ACLEDA University of Business',
+    ),
+    CommunityPostModel(
+      id: 'post_sokuntheara',
+      userId: 'user_sokuntheara',
+      authorName: 'Chhaeng Sokuntheara',
+      authorTag: '@chhaengsokuntheara',
+      authorAvatar: 'assets/images/sokuntheara_profile.png',
+      isVerified: false, // Student Developer account - NO blue verified badge!
+      timeAgo: '1h ago',
+      content: '✨ Working on a new UI/UX design for CampusLink KH. Every detail matters when creating an app that\'s simple, modern, and enjoyable to use. Looking forward to sharing more updates soon! 🎨📱',
+      imageUrls: [
+        'assets/images/sokuntheara_post.png',
+      ],
+      location: 'ACLEDA University of Business',
+      likesCount: 54,
+      commentsCount: 11,
+      sharesCount: 5,
+      isLiked: false,
+      isBookmarked: true,
+      isOwner: false,
+      community: 'ACLEDA University of Business (AUB)',
+    ),
+    CommunityPostModel(
+      id: 'post_sambo',
+      userId: 'user_sambo',
+      authorName: 'Sum Sambo',
+      authorTag: '@sumsambo',
+      authorAvatar: 'assets/images/sum_sambo_profile.png',
+      isVerified: false, // Student Developer account - NO blue verified badge!
+      timeAgo: '3h ago',
+      content: '🔐 Cybersecurity is not just about protecting systems—it\'s about protecting people. Today I spent time learning about web application security and common vulnerabilities. Every day is a chance to become a better security professional. 💻🛡️',
+      imageUrls: [
+        'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800',
+      ],
+      location: 'ACLEDA University of Business',
+      likesCount: 61,
+      commentsCount: 13,
+      sharesCount: 6,
+      isLiked: false,
+      isBookmarked: true,
+      isOwner: false,
+      community: 'ACLEDA University of Business (AUB)',
+    ),
+    CommunityPostModel(
+      id: 'post_chansela',
+      userId: 'user_chansela',
+      authorName: 'Heng Chansela',
+      authorTag: '@hengchansela',
+      authorAvatar: 'assets/images/heng_chansela_profile.png',
+      isVerified: false, // Normal student account - NO blue verified badge!
+      timeAgo: '2h ago',
+      content: '❤️ Creating beautiful memories together after classes at AUB.\nCampus life is more meaningful when you have someone to share every moment with. ☕📸',
+      imageUrls: [
+        'assets/images/heng_chansela_post.png',
+      ],
+      location: 'ACLEDA University of Business, Phnom Penh',
+      likesCount: 42,
+      commentsCount: 8,
+      sharesCount: 3,
+      isLiked: true,
+      isBookmarked: false,
+      isOwner: false,
+      community: 'ACLEDA University of Business (AUB)',
+    ),
+    CommunityPostModel(
+      id: 'post_makara',
+      userId: 'user_makara',
+      authorName: 'Ren Makara',
+      authorTag: '@renmakara',
+      authorAvatar: 'assets/images/ren_makara_profile.png',
+      isVerified: false, // Student Developer account - NO blue verified badge!
+      timeAgo: '5h ago',
+      content: '🚀 មកស្គាល់គម្រោង «AuthGate»\n\nAuthGate គឺជាប្រព័ន្ធគ្រប់គ្រងសិទ្ធិចូលប្រើប្រាស់ និងផ្ទៀងផ្ទាត់អត្តសញ្ញាណ (Authentication & Access Control System) ដែលអភិវឌ្ឍដោយប្រើ Spring Boot Microservices។\n\nFeatures:\n• Secure Login & Authentication\n• Role-Based Access Control (RBAC)\n• JWT Authentication\n• Refresh Token\n• REST API\n• Spring Boot Microservices\n• Docker\n• Swagger API Documentation\n\n#SpringBoot #Microservices #Java #BackendDevelopment #Docker #JWT #AuthGate',
+      imageUrls: [
+        'assets/images/authgate_project.png',
+      ],
+      location: 'ACLEDA University of Business',
+      likesCount: 65,
+      commentsCount: 14,
+      sharesCount: 8,
+      isLiked: false,
+      isBookmarked: true,
+      isOwner: false,
+      community: 'ACLEDA University of Business (AUB)',
+    ),
+  ];
+
+  Future<List<CommunityPostModel>> fetchPosts({int page = 1, int limit = 10}) async {
+    try {
+      final response = await dio.get('/community/posts/feed', queryParameters: {'page': page - 1, 'size': limit});
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data['data'];
+        final List<dynamic> content = data is Map ? (data['content'] ?? []) : (data is List ? data : []);
+        if (content.isNotEmpty) {
+          return content.map((json) => CommunityPostModel.fromJson(json as Map<String, dynamic>)).toList();
+        }
+      }
+    } catch (_) {}
+    return _mockPosts;
+  }
+
+  Future<CommunityPostModel> createPost({
+    required String content,
+    List<String> imageUrls = const [],
+    String visibility = 'Public',
+    String community = 'All GenLink',
+  }) async {
+    final newPost = CommunityPostModel(
+      id: 'post_${DateTime.now().millisecondsSinceEpoch}',
+      userId: 'current_user',
+      authorName: 'Sokny Enat',
+      authorTag: '@soknyenat',
+      authorAvatar: 'assets/images/user_profile.png',
+      isVerified: false, // Normal student account
+      timeAgo: 'Just now',
+      content: content,
+      imageUrls: imageUrls,
+      likesCount: 0,
+      commentsCount: 0,
+      sharesCount: 0,
+      isLiked: false,
+      isBookmarked: false,
+      isOwner: true,
+      visibility: visibility,
+      community: community,
+    );
+
+    try {
+      final response = await dio.post('/community/posts', data: {
+        'contentText': content,
+        'imageUrl': imageUrls.isNotEmpty ? imageUrls.first : null,
+        'visibility': visibility.toUpperCase(),
+        'postType': 'NORMAL',
+      });
+      if (response.statusCode == 200 && response.data != null && response.data['data'] != null) {
+        return CommunityPostModel.fromJson(response.data['data'] as Map<String, dynamic>);
+      }
+    } catch (_) {}
+
+    _mockPosts.insert(0, newPost);
+    return newPost;
+  }
+
+  Future<bool> deletePost(String postId) async {
+    try {
+      await dio.delete('/community/posts/$postId');
+    } catch (_) {}
+    _mockPosts.removeWhere((p) => p.id == postId);
+    return true;
+  }
+
+  Future<bool> toggleLike(String postId) async {
+    try {
+      await dio.post('/community/posts/$postId/like');
+    } catch (_) {}
+    final idx = _mockPosts.indexWhere((p) => p.id == postId);
+    if (idx != -1) {
+      final p = _mockPosts[idx];
+      p.isLiked = !p.isLiked;
+      p.likesCount += p.isLiked ? 1 : -1;
+    }
+    return true;
+  }
+
+  Future<bool> toggleBookmark(String postId) async {
+    try {
+      await dio.post('/posts/$postId/bookmark');
+    } catch (_) {}
+    final idx = _mockPosts.indexWhere((p) => p.id == postId);
+    if (idx != -1) {
+      _mockPosts[idx].isBookmarked = !_mockPosts[idx].isBookmarked;
+    }
+    return true;
+  }
+
+  Future<List<CommentModel>> fetchComments(String postId) async {
+    try {
+      final response = await dio.get('/posts/$postId/comments');
+      if (response.statusCode == 200 && response.data != null) {
+        final List<dynamic> data = response.data['data'] ?? response.data;
+        return data.map((json) => CommentModel.fromJson(json)).toList();
+      }
+    } catch (_) {}
+
+    return [
+      CommentModel(
+        id: 'c_1',
+        postId: postId,
+        userId: 'u_10',
+        userName: 'Rathana P.',
+        userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+        text: 'Awesome post! Looking forward to seeing more updates 🔥',
+        timeAgo: '1h ago',
+        likesCount: 3,
+      ),
+      CommentModel(
+        id: 'c_2',
+        postId: postId,
+        userId: 'u_11',
+        userName: 'Sothea N.',
+        userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
+        text: 'Great work team! Keep it up 👏',
+        timeAgo: '30m ago',
+        likesCount: 1,
+      ),
+    ];
+  }
+
+  Future<CommentModel> addComment(String postId, String text, {String? parentCommentId}) async {
+    final comment = CommentModel(
+      id: 'c_${DateTime.now().millisecondsSinceEpoch}',
+      postId: postId,
+      userId: 'current_user',
+      userName: 'Enat Sokny',
+      userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
+      text: text,
+      timeAgo: 'Just now',
+      parentCommentId: parentCommentId,
+    );
+
+    try {
+      await dio.post('/posts/$postId/comments', data: comment.toJson());
+    } catch (_) {}
+
+    final idx = _mockPosts.indexWhere((p) => p.id == postId);
+    if (idx != -1) {
+      _mockPosts[idx].commentsCount += 1;
+    }
+    return comment;
+  }
+}

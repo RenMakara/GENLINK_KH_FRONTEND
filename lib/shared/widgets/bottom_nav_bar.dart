@@ -158,7 +158,7 @@ class _NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    final activeColor = scheme.onSurface;
+    final activeColor = Colors.white;
     final inactiveColor = scheme.onSurface.withValues(alpha: 0.5);
     final color = active ? activeColor : inactiveColor;
 

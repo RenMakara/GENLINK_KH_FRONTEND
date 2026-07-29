@@ -10,8 +10,7 @@ import '../../domain/repositories/profile_repository.dart';
 /// Each section loads independently so one failing call (say, portfolio)
 /// does not blank the whole screen.
 class ProfileController extends GetxController {
-  ProfileController({required ProfileRepository repository})
-      : _repository = repository;
+  ProfileController({required this._repository});
 
   final ProfileRepository _repository;
 

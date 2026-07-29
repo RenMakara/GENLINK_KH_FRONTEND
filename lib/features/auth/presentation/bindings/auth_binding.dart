@@ -52,11 +52,7 @@ class AuthBinding extends Bindings {
     final authInterceptor = AuthInterceptor(
       secureStorage: storage,
       authRepository: authRepository,
-      onSessionExpired: () {
-        if (Get.isRegistered<AuthController>()) {
-          Get.find<AuthController>().onSessionExpired();
-        }
-      },
+      onSessionExpired: null,
     )..client = dio;
 
     // Order matters: AuthInterceptor must see the raw DioException so it

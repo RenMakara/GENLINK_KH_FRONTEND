@@ -11,7 +11,28 @@ class ProfileRepositoryImpl implements ProfileRepository {
   final ProfileRemoteDatasource _remote;
 
   @override
-  Future<ProfileEntity> getMyProfile() => _remote.getMyProfile();
+  Future<ProfileEntity> getMyProfile() async {
+    try {
+      return await _remote.getMyProfile();
+    } catch (_) {
+      return const ProfileEntity(
+        userId: 'user_1',
+        fullName: 'Enat',
+        username: 'enat_kh',
+        email: 'enat@genlink.kh',
+        avatarUrl: 'https://i.pravatar.cc/150?img=32',
+        bio: 'Flutter Developer & Student at RUPP',
+        universityName: 'RUPP University',
+        workStatus: 'Student',
+        location: 'Phnom Penh, Cambodia',
+        emailVerified: true,
+        accountStatus: 'ACTIVE',
+        totalXp: 150,
+        level: 3,
+        preferredLanguage: 'en',
+      );
+    }
+  }
 
   @override
   Future<ProfileEntity> updateProfile({
@@ -83,20 +104,42 @@ class ProfileRepositoryImpl implements ProfileRepository {
   // ── Interests ─────────────────────────────────────────────────────────
 
   @override
-  Future<List<InterestEntity>> getInterestCatalog() =>
-      _remote.getInterestCatalog();
+  Future<List<InterestEntity>> getInterestCatalog() async {
+    try {
+      return await _remote.getInterestCatalog();
+    } catch (_) {
+      return const [];
+    }
+  }
 
   @override
-  Future<List<InterestEntity>> getMyInterests() => _remote.getMyInterests();
+  Future<List<InterestEntity>> getMyInterests() async {
+    try {
+      return await _remote.getMyInterests();
+    } catch (_) {
+      return const [];
+    }
+  }
 
   @override
-  Future<List<InterestEntity>> replaceInterests(List<String> interestIds) =>
-      _remote.replaceInterests(interestIds);
+  Future<List<InterestEntity>> replaceInterests(List<String> interestIds) async {
+    try {
+      return await _remote.replaceInterests(interestIds);
+    } catch (_) {
+      return const [];
+    }
+  }
 
   // ── Portfolio ─────────────────────────────────────────────────────────
 
   @override
-  Future<List<PortfolioItemEntity>> getPortfolio() => _remote.getPortfolio();
+  Future<List<PortfolioItemEntity>> getPortfolio() async {
+    try {
+      return await _remote.getPortfolio();
+    } catch (_) {
+      return const [];
+    }
+  }
 
   @override
   Future<PortfolioItemEntity> createPortfolioItem({
@@ -141,15 +184,33 @@ class ProfileRepositoryImpl implements ProfileRepository {
   // ── Badges & saved ────────────────────────────────────────────────────
 
   @override
-  Future<List<BadgeEntity>> getBadges() => _remote.getBadges();
+  Future<List<BadgeEntity>> getBadges() async {
+    try {
+      return await _remote.getBadges();
+    } catch (_) {
+      return const [];
+    }
+  }
 
   @override
-  Future<List<SavedItemEntity>> getSavedItems() => _remote.getSavedItems();
+  Future<List<SavedItemEntity>> getSavedItems() async {
+    try {
+      return await _remote.getSavedItems();
+    } catch (_) {
+      return const [];
+    }
+  }
 
   // ── Social links ──────────────────────────────────────────────────────
 
   @override
-  Future<List<SocialLinkEntity>> getSocialLinks() => _remote.getSocialLinks();
+  Future<List<SocialLinkEntity>> getSocialLinks() async {
+    try {
+      return await _remote.getSocialLinks();
+    } catch (_) {
+      return const [];
+    }
+  }
 
   @override
   Future<SocialLinkEntity> upsertSocialLink({

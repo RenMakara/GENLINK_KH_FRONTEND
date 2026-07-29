@@ -124,8 +124,8 @@ class _ThemeCard extends StatelessWidget {
             child: preview == null
                 ? const Row(
                     children: [
-                      Expanded(child: ColoredBox(child: SizedBox.expand(), color: _light)),
-                      Expanded(child: ColoredBox(child: SizedBox.expand(), color: _dark)),
+                      Expanded(child: ColoredBox(color: _light, child: SizedBox.expand())),
+                      Expanded(child: ColoredBox(color: _dark, child: SizedBox.expand())),
                     ],
                   )
                 : ColoredBox(

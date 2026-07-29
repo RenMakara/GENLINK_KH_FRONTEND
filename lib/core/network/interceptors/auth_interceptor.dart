@@ -18,10 +18,9 @@ import '../../../features/auth/domain/repositories/auth_repository.dart';
 class AuthInterceptor extends Interceptor {
   AuthInterceptor({
     required SecureStorage secureStorage,
-    required AuthRepository authRepository,
+    required this._authRepository,
     this.onSessionExpired,
-  })  : _storage = secureStorage,
-        _authRepository = authRepository;
+  })  : _storage = secureStorage;
 
   final SecureStorage _storage;
   final AuthRepository _authRepository;

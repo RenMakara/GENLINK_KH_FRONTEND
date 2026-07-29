@@ -10,8 +10,7 @@ import '../../domain/entities/home_entity.dart';
 /// state, so a partial failure never blanks the whole screen — only a
 /// failure of the call itself shows the retry state.
 class HomeController extends GetxController {
-  HomeController({required HomeRepository repository})
-      : _repository = repository;
+  HomeController({required this._repository});
 
   final HomeRepository _repository;
 

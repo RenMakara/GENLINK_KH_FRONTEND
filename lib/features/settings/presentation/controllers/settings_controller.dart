@@ -14,12 +14,10 @@ import '../../domain/entities/user_settings_entity.dart';
 /// value is rolled back, so the two never silently disagree.
 class SettingsController extends GetxController {
   SettingsController({
-    required ProfileRepository repository,
+    required this._repository,
     required ThemeController themeController,
-    required LocalizationService localization,
-  })  : _repository = repository,
-        _theme = themeController,
-        _localization = localization;
+    required this._localization,
+  })  : _theme = themeController;
 
   final ProfileRepository _repository;
   final ThemeController _theme;

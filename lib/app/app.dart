@@ -49,7 +49,7 @@ class GenLinkKhApp extends StatelessWidget {
         fallbackLocale: LocalizationService.fallbackLocale,
 
         // Routing
-        initialRoute: AppRoutes.splash,
+        initialRoute: AppRoutes.home,
         getPages: AppPages.pages,
         unknownRoute: AppPages.unknownRoute,
       ),

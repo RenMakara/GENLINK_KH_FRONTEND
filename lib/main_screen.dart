@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:genlink_frontend/features/community/screens/community_screen.dart';
+import 'package:genlink_frontend/features/community/presentation/bindings/community_binding.dart';
+import 'package:genlink_frontend/features/community/presentation/screens/community_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/finance_screen.dart';
 import 'package:genlink_frontend/features/home/presentation/bindings/home_binding.dart';
 import 'package:genlink_frontend/features/home/presentation/screens/home_screen.dart';
@@ -17,7 +18,7 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int currentIndex = 0;
+  int currentIndex = 1;
 
   /// Exactly one entry per nav item — [IndexedStack] asserts the index is
   /// in range, so a short list crashes the moment a later tab is tapped.
@@ -36,6 +37,7 @@ class _MainScreenState extends State<MainScreen> {
     // here — GetView resolves each controller on first build.
     HomeBinding().dependencies();
     ProfileBinding().dependencies();
+    CommunityBinding().dependencies();
   }
 
   void _onItemTapped(int index) {

@@ -133,64 +133,73 @@ class StoryCreationPickerSheet extends StatelessWidget {
           const SizedBox(height: 16),
 
           // 1. Camera Action
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            leading: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
+          Material(
+            color: Colors.transparent,
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              leading: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 22),
               ),
-              child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 22),
+              title: const Text(
+                "Camera",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              onTap: () => _openCamera(context),
             ),
-            title: const Text(
-              "Camera",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            onTap: () => _openCamera(context),
           ),
 
           const SizedBox(height: 4),
 
           // 2. Gallery Action
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            leading: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
+          Material(
+            color: Colors.transparent,
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              leading: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.photo_library_rounded, color: Colors.white, size: 22),
               ),
-              child: const Icon(Icons.photo_library_rounded, color: Colors.white, size: 22),
+              title: const Text(
+                "Gallery",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              onTap: () => _pickFromGallery(context),
             ),
-            title: const Text(
-              "Gallery",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            onTap: () => _pickFromGallery(context),
           ),
 
           const SizedBox(height: 4),
 
           // 3. Text Story Action
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            leading: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
+          Material(
+            color: Colors.transparent,
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              leading: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.title_rounded, color: Colors.white, size: 22),
               ),
-              child: const Icon(Icons.title_rounded, color: Colors.white, size: 22),
+              title: const Text(
+                "Text Story",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              onTap: () => _openTextStory(context),
             ),
-            title: const Text(
-              "Text Story",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            onTap: () => _openTextStory(context),
           ),
 
           const SizedBox(height: 8),

@@ -164,14 +164,17 @@ class EventSuccessScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white10),
       ),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.white70, size: 20),
-        title: Text(
-          title,
-          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          leading: Icon(icon, color: Colors.white70, size: 20),
+          title: Text(
+            title,
+            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+          trailing: const Icon(Icons.chevron_right, color: Colors.white38),
+          onTap: onTap,
         ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.white38),
-        onTap: onTap,
       ),
     );
   }

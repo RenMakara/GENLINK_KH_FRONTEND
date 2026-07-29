@@ -104,49 +104,61 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: const Icon(Icons.bookmark_border, color: Colors.white),
-              title: Text(
-                widget.post.isBookmarked ? "Remove Bookmark" : "Save Bookmark",
-                style: const TextStyle(color: Colors.white),
+            Material(
+              color: Colors.transparent,
+              child: ListTile(
+                leading: const Icon(Icons.bookmark_border, color: Colors.white),
+                title: Text(
+                  widget.post.isBookmarked ? "Remove Bookmark" : "Save Bookmark",
+                  style: const TextStyle(color: Colors.white),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  widget.controller.toggleBookmark(widget.post.id);
+                  if (widget.post.isBookmarked) {
+                    AppNotificationBanner.showInfo(
+                      context: context,
+                      title: "Saved",
+                      message: "Added to bookmarks.",
+                      icon: Icons.bookmark_added_rounded,
+                    );
+                  }
+                },
               ),
-              onTap: () {
-                Navigator.pop(ctx);
-                widget.controller.toggleBookmark(widget.post.id);
-                if (widget.post.isBookmarked) {
-                  AppNotificationBanner.showInfo(
-                    context: context,
-                    title: "Saved",
-                    message: "Added to bookmarks.",
-                    icon: Icons.bookmark_added_rounded,
-                  );
-                }
-              },
             ),
-            ListTile(
-              leading: const Icon(Icons.repeat_rounded, color: Colors.white),
-              title: const Text("Repost", style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.pop(ctx);
-                _showRepostDialog(context);
-              },
+            Material(
+              color: Colors.transparent,
+              child: ListTile(
+                leading: const Icon(Icons.repeat_rounded, color: Colors.white),
+                title: const Text("Repost", style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showRepostDialog(context);
+                },
+              ),
             ),
             if (widget.post.isOwner) ...[
-              ListTile(
-                leading: const Icon(Icons.edit_outlined, color: AppColors.communityAccent),
-                title: const Text("Edit Post", style: TextStyle(color: AppColors.communityAccent)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _showEditDialog(context);
-                },
+              Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  leading: const Icon(Icons.edit_outlined, color: AppColors.communityAccent),
+                  title: const Text("Edit Post", style: TextStyle(color: AppColors.communityAccent)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showEditDialog(context);
+                  },
+                ),
               ),
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: AppColors.danger),
-                title: const Text("Delete Post", style: TextStyle(color: AppColors.danger)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _confirmDeletePost(context);
-                },
+              Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  leading: const Icon(Icons.delete_outline, color: AppColors.danger),
+                  title: const Text("Delete Post", style: TextStyle(color: AppColors.danger)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _confirmDeletePost(context);
+                  },
+                ),
               ),
             ],
           ],

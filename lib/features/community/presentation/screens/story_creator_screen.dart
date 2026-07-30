@@ -54,9 +54,16 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   final FocusNode _fullScreenTextFocusNode = FocusNode();
   Color _activeTextColor = Colors.white;
   TextStyleType _activeFontStyle = TextStyleType.bold;
-  TextBgStyle _activeTextBgStyle = TextBgStyle.rounded;
+  TextBgStyle _activeTextBgStyle = TextBgStyle.none;
   TextAlign _activeTextAlign = TextAlign.center;
-  final double _activeFontSize = 24.0;
+
+  /// Responsive font size: scales with the narrowest screen dimension.
+  double get _activeFontSize {
+    final shortSide = MediaQuery.of(context).size.shortestSide;
+    if (shortSide < 360) return 20.0;
+    if (shortSide < 400) return 22.0;
+    return 24.0;
+  }
 
   int _gradientIdx = 0;
   TextAlign _textAlign = TextAlign.center;
@@ -170,7 +177,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         _fullScreenTextController.clear();
         _activeTextColor = Colors.white;
         _activeFontStyle = TextStyleType.bold;
-        _activeTextBgStyle = TextBgStyle.rounded;
+        _activeTextBgStyle = TextBgStyle.none; // transparent by default
         _activeTextAlign = TextAlign.center;
       }
     });
@@ -1091,64 +1098,72 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   }
 
   TextStyle _getLayerTextStyle(TextStyleType fontStyle, Color color, TextBgStyle bgStyle) {
-    FontWeight weight = FontWeight.normal;
+    FontWeight weight = FontWeight.w600;
     FontStyle style = FontStyle.normal;
+    double letterSpacing = 0.2;
+    double height = 1.25;
+    List<Shadow>? textShadows;
 
     switch (fontStyle) {
-      case TextStyleType.bold:
-        weight = FontWeight.w900;
-        break;
-      case TextStyleType.modern:
-        weight = FontWeight.bold;
-        break;
-      case TextStyleType.handwriting:
-        style = FontStyle.italic;
-        break;
-      case TextStyleType.serif:
-        weight = FontWeight.w600;
-        break;
-      case TextStyleType.monospace:
-        weight = FontWeight.w500;
-        break;
-      case TextStyleType.minimal:
-        weight = FontWeight.w300;
-        break;
-      case TextStyleType.elegant:
-        style = FontStyle.italic;
-        weight = FontWeight.w500;
-        break;
-      case TextStyleType.campus:
-        weight = FontWeight.w900;
-        break;
-      case TextStyleType.coding:
-        weight = FontWeight.w600;
-        break;
-      case TextStyleType.khmer:
-        weight = FontWeight.bold;
-        break;
       case TextStyleType.classic:
         weight = FontWeight.w600;
+        letterSpacing = 0.2;
         break;
+      case TextStyleType.elegant: // Deco
+        style = FontStyle.italic;
+        weight = FontWeight.w600;
+        letterSpacing = 0.8;
+        break;
+      case TextStyleType.bold: // Bubble
+        weight = FontWeight.w900;
+        letterSpacing = -0.3;
+        break;
+      case TextStyleType.modern: // Outline
+        weight = FontWeight.w800;
+        letterSpacing = 0.6;
+        break;
+      case TextStyleType.minimal: // Neon
+        weight = FontWeight.w700;
+        letterSpacing = 1.2;
+        textShadows = [
+          Shadow(blurRadius: 8.0, color: color.withValues(alpha: 0.90), offset: Offset.zero),
+          Shadow(blurRadius: 20.0, color: color.withValues(alpha: 0.80), offset: Offset.zero),
+          Shadow(blurRadius: 36.0, color: color, offset: Offset.zero),
+        ];
+        break;
+      default:
+        weight = FontWeight.w700;
+        break;
+    }
+
+    if (textShadows == null && bgStyle == TextBgStyle.none) {
+      textShadows = [
+        Shadow(blurRadius: 6.0, color: Colors.black.withValues(alpha: 0.75), offset: const Offset(0, 1)),
+        Shadow(blurRadius: 14.0, color: Colors.black.withValues(alpha: 0.40), offset: const Offset(0, 2)),
+      ];
     }
 
     return TextStyle(
       color: color,
-      fontSize: 22,
+      fontSize: 24,
       fontWeight: weight,
       fontStyle: style,
-      shadows: bgStyle == TextBgStyle.none
-          ? const [Shadow(blurRadius: 4.0, color: Colors.black54, offset: Offset(1, 1))]
-          : null,
+      letterSpacing: letterSpacing,
+      height: height,
+      shadows: textShadows,
     );
   }
 
-  double _gestureBaseScale = 1.0;
-  double _gestureBaseRotation = 0.0;
   bool _isInteractingLayer = false;
   bool _isHoveringDeleteZone = false;
 
   Widget _buildLayerWidget(MovableStoryLayer layer) {
+    if (_isFullScreenTextEditing && _editingTextLayer?.id == layer.id) {
+      return const SizedBox.shrink();
+    }
+
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     final maxCanvasWidth = screenWidth * 0.85;
 
     Widget content;
@@ -1187,24 +1202,35 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         break;
 
       case LayerType.text:
+        final hasBackground = layer.bgStyle != TextBgStyle.none;
+        final baseStyle = _getLayerTextStyle(layer.fontStyle, layer.color, layer.bgStyle);
+
         content = ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-          child: IntrinsicWidth(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: layer.bgStyle == TextBgStyle.rounded || layer.bgStyle == TextBgStyle.filled
-                    ? Colors.black.withValues(alpha: 0.6)
-                    : (layer.bgStyle == TextBgStyle.highlight ? AppColors.communityAccent : Colors.transparent),
-                borderRadius: BorderRadius.circular(layer.bgStyle == TextBgStyle.rounded ? 12 : 4),
-                border: layer.bgStyle == TextBgStyle.outline ? Border.all(color: layer.color, width: 2) : null,
-              ),
-              child: Text(
-                layer.text,
-                softWrap: true,
-                textAlign: layer.alignment,
-                style: _getLayerTextStyle(layer.fontStyle, layer.color, layer.bgStyle),
-              ),
+          constraints: BoxConstraints(maxWidth: maxCanvasWidth * 0.88),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeInOut,
+            padding: hasBackground
+                ? const EdgeInsets.symmetric(horizontal: 14, vertical: 8)
+                : const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            decoration: BoxDecoration(
+              color: hasBackground
+                  ? (layer.bgStyle == TextBgStyle.filled
+                      ? Colors.black.withValues(alpha: 0.78)
+                      : (layer.bgStyle == TextBgStyle.rounded
+                          ? Colors.black.withValues(alpha: 0.55)
+                          : Colors.transparent))
+                  : Colors.transparent,
+              borderRadius: hasBackground ? BorderRadius.circular(10) : null,
+              border: layer.bgStyle == TextBgStyle.outline
+                  ? Border.all(color: layer.color.withValues(alpha: 0.85), width: 1.8)
+                  : null,
+            ),
+            child: Text(
+              layer.text,
+              softWrap: true,
+              textAlign: layer.alignment,
+              style: baseStyle,
             ),
           ),
         );
@@ -1221,21 +1247,17 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 layer.text,
                 width: 120,
                 fit: BoxFit.contain,
-                errorBuilder: (ctx, err, stack) => Text(
+                errorBuilder: (ctx, err, st) => Text(
                   layer.text,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(fontSize: 48),
                 ),
               ),
             ),
           );
         } else {
-          content = AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.all(6),
-            child: Text(
-              layer.text,
-              style: const TextStyle(fontSize: 48),
-            ),
+          content = Text(
+            layer.text,
+            style: const TextStyle(fontSize: 54),
           );
         }
         break;
@@ -1258,126 +1280,84 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         break;
 
       case LayerType.mention:
-        final isSelectedMention = _selectedLayer != null && _selectedLayer!.id == layer.id;
-        final cleanMention = layer.text.replaceAll(RegExp(r'^@+'), '');
-
-        // 3 Distinct Color Styles (White -> Dark -> Glass)
-        final isDarkStyle = layer.bgStyle == TextBgStyle.filled;
-        final isGlassStyle = layer.bgStyle == TextBgStyle.outline;
-
-        final bgColor = isDarkStyle
-            ? const Color(0xFF141414)
-            : (isGlassStyle ? Colors.black54 : Colors.white);
-
-        final textColor = (isDarkStyle || isGlassStyle) ? Colors.white : Colors.black;
-        final badgeBg = isDarkStyle
-            ? Colors.white
-            : (isGlassStyle ? Colors.white24 : Colors.black);
-        final badgeIconColor = (isDarkStyle || isGlassStyle) ? Colors.black : Colors.white;
+        final cleanMention = layer.text.startsWith('@') ? layer.text : '@${layer.text}';
+        final hasBg = layer.bgStyle != TextBgStyle.none;
+        final textColor = layer.bgStyle == TextBgStyle.filled ? Colors.black : Colors.white;
 
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelectedMention
-                    ? Colors.white
-                    : (isDarkStyle ? Colors.white30 : (isGlassStyle ? Colors.white24 : Colors.black12)),
-                width: isSelectedMention ? 2.5 : 1.0,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isSelectedMention ? Colors.white30 : Colors.black26,
-                  blurRadius: isSelectedMention ? 12 : 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+              color: layer.bgStyle == TextBgStyle.filled
+                  ? Colors.white
+                  : (layer.bgStyle == TextBgStyle.rounded
+                      ? Colors.black.withValues(alpha: 0.65)
+                      : Colors.transparent),
+              borderRadius: BorderRadius.circular(12),
+              border: layer.bgStyle == TextBgStyle.outline
+                  ? Border.all(color: Colors.white, width: 2.0)
+                  : null,
+              boxShadow: hasBg
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    color: badgeBg,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.alternate_email_rounded,
-                    color: badgeIconColor,
-                    size: 10,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 200),
-                  style: TextStyle(
-                    color: textColor,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
-                    letterSpacing: 0.1,
-                  ),
-                  child: Text(cleanMention),
-                ),
-              ],
+            child: Text(
+              cleanMention,
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
         );
         break;
 
       case LayerType.location:
-        final isSelectedLocation = _selectedLayer != null && _selectedLayer!.id == layer.id;
-        final cleanLocation = layer.text.replaceAll(RegExp(r'^[📍\s]+'), '');
-
-        // 3 Distinct Color Styles (Dark -> White -> Glass)
-        final isWhiteStyle = layer.bgStyle == TextBgStyle.filled;
-        final isGlassStyle = layer.bgStyle == TextBgStyle.outline;
-
-        final bgColor = isWhiteStyle
-            ? Colors.white
-            : (isGlassStyle ? Colors.black54 : Colors.black87);
-
-        final textColor = isWhiteStyle ? Colors.black : Colors.white;
-        final pinColor = isWhiteStyle
-            ? Colors.black
-            : (isGlassStyle ? Colors.white : AppColors.danger);
-        final borderColor = isSelectedLocation
-            ? Colors.white
-            : (isWhiteStyle ? Colors.black : (isGlassStyle ? Colors.white38 : AppColors.danger));
+        final cleanLocation = layer.text.replaceAll('📍', '').trim();
+        final hasBg = layer.bgStyle != TextBgStyle.none;
+        final textColor = layer.bgStyle == TextBgStyle.filled ? Colors.black : Colors.white;
 
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: borderColor,
-                width: isSelectedLocation ? 2.5 : 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isSelectedLocation ? Colors.white30 : Colors.black38,
-                  blurRadius: isSelectedLocation ? 12 : 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+              color: layer.bgStyle == TextBgStyle.filled
+                  ? AppColors.communityAccent
+                  : (layer.bgStyle == TextBgStyle.rounded
+                      ? Colors.black.withValues(alpha: 0.65)
+                      : Colors.transparent),
+              borderRadius: BorderRadius.circular(20),
+              border: layer.bgStyle == TextBgStyle.outline
+                  ? Border.all(color: AppColors.communityAccent, width: 2.0)
+                  : null,
+              boxShadow: hasBg
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.location_on_rounded,
-                  color: pinColor,
+                  color: textColor,
                   size: 16,
                 ),
                 const SizedBox(width: 6),
@@ -1432,7 +1412,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
     final isSelected = _selectedLayer?.id == layer.id;
     final isDeleting = _deletingLayerIds.contains(layer.id);
-    final screenHeight = MediaQuery.of(context).size.height;
 
     return Positioned(
       left: layer.offset.dx,
@@ -1446,24 +1425,25 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           curve: Curves.easeOutCubic,
           scale: isDeleting ? 0.9 : 1.0,
           child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () {
-              setState(() {
-                _selectedLayer = layer;
-
-                // Cycle color style variant on tap for Mention and Location tags
-                if (layer.type == LayerType.mention || layer.type == LayerType.location) {
-                  if (layer.bgStyle == TextBgStyle.rounded) {
-                    layer.bgStyle = TextBgStyle.filled;
-                  } else if (layer.bgStyle == TextBgStyle.filled) {
-                    layer.bgStyle = TextBgStyle.outline;
-                  } else {
-                    layer.bgStyle = TextBgStyle.rounded;
-                  }
-                }
-              });
-
-              if (layer.type == LayerType.text) {
+              if (_selectedLayer?.id == layer.id && layer.type == LayerType.text) {
                 _openFloatingTextEditor(layer);
+              } else {
+                setState(() {
+                  _selectedLayer = layer;
+
+                  // Cycle color style variant on tap for Mention and Location tags
+                  if (layer.type == LayerType.mention || layer.type == LayerType.location) {
+                    if (layer.bgStyle == TextBgStyle.rounded) {
+                      layer.bgStyle = TextBgStyle.filled;
+                    } else if (layer.bgStyle == TextBgStyle.filled) {
+                      layer.bgStyle = TextBgStyle.outline;
+                    } else {
+                      layer.bgStyle = TextBgStyle.rounded;
+                    }
+                  }
+                });
               }
             },
             onDoubleTap: () {
@@ -1476,15 +1456,26 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 });
               }
             },
-            onScaleStart: (details) {
-              _gestureBaseScale = layer.scale;
-              _gestureBaseRotation = layer.rotation;
+            onPanStart: (details) {
               setState(() {
                 _selectedLayer = layer;
                 _isInteractingLayer = true;
               });
             },
-            onScaleEnd: (details) {
+            onPanUpdate: (details) {
+              setState(() {
+                _selectedLayer = layer;
+                final maxX = screenWidth - 20.0;
+                final maxY = screenHeight - 60.0;
+
+                final nextX = (layer.offset.dx + details.delta.dx).clamp(-120.0, maxX);
+                final nextY = (layer.offset.dy + details.delta.dy).clamp(10.0, maxY);
+
+                layer.offset = Offset(nextX, nextY);
+                _isHoveringDeleteZone = layer.offset.dy > (screenHeight - 160.0);
+              });
+            },
+            onPanEnd: (details) {
               final isOverDeleteArea = layer.offset.dy > (screenHeight - 160.0);
               if (isOverDeleteArea) {
                 _deleteLayerInstantly(layer);
@@ -1494,43 +1485,57 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 _isHoveringDeleteZone = false;
               });
             },
-            onScaleUpdate: (details) {
-              setState(() {
-                _selectedLayer = layer;
-
-                if (details.scale != 1.0) {
-                  layer.scale = (_gestureBaseScale * details.scale).clamp(0.4, 3.8);
-                }
-
-                if (details.rotation != 0.0) {
-                  layer.rotation = _gestureBaseRotation + details.rotation;
-                }
-
-                final maxX = screenWidth - 30.0;
-                final maxY = screenHeight - 90.0;
-
-                final nextX = (layer.offset.dx + details.focalPointDelta.dx).clamp(-40.0, maxX);
-                final nextY = (layer.offset.dy + details.focalPointDelta.dy).clamp(40.0, maxY);
-
-                layer.offset = Offset(nextX, nextY);
-                _isHoveringDeleteZone = layer.offset.dy > (screenHeight - 160.0);
-              });
-            },
             child: Transform.scale(
               scale: layer.scale,
               child: Transform.rotate(
                 angle: layer.rotation,
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: isSelected && _isInteractingLayer
-                        ? Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1.0)
-                        : null,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(2.0),
-                    child: content,
-                  ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Selection ring — subtle dashed outline, only when selected & idle (text type)
+                    if (isSelected && layer.type == LayerType.text && !_isInteractingLayer)
+                      Positioned(
+                        top: -6,
+                        left: -6,
+                        right: -6,
+                        bottom: -6,
+                        child: IgnorePointer(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.55),
+                                width: 1.2,
+                                strokeAlign: BorderSide.strokeAlignOutside,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    // Interaction ring — solid white while dragging/scaling
+                    if (isSelected && _isInteractingLayer)
+                      Positioned(
+                        top: -4,
+                        left: -4,
+                        right: -4,
+                        bottom: -4,
+                        child: IgnorePointer(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.3),
+                                width: 1.0,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.all(2.0),
+                      child: content,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -2630,6 +2635,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             _editingTextLayer!.alignment = _activeTextAlign;
             _selectedLayer = _editingTextLayer;
           } else {
+            // Place new text at true canvas center
             final newLayer = MovableStoryLayer(
               id: "text_${DateTime.now().microsecondsSinceEpoch}",
               type: LayerType.text,
@@ -2638,7 +2644,10 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               fontStyle: _activeFontStyle,
               bgStyle: _activeTextBgStyle,
               alignment: _activeTextAlign,
-              offset: Offset(size.width * 0.15, size.height * 0.38 + (_layers.length * 10)),
+              offset: Offset(
+                size.width * 0.5 - 80,
+                size.height * 0.42,
+              ),
               scale: 1.0,
             );
             _layers.add(newLayer);
@@ -2657,49 +2666,86 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   Widget _buildFullScreenTextEditorOverlay() {
     if (!_isFullScreenTextEditing) return const SizedBox.shrink();
 
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final mq = MediaQuery.of(context);
+    final keyboardHeight = mq.viewInsets.bottom;
+    final screenWidth = mq.size.width;
+    final isBoldActive = _activeFontStyle == TextStyleType.bold || _activeFontStyle == TextStyleType.campus;
+    final hasBackground = _activeTextBgStyle != TextBgStyle.none;
+    final fontSize = _activeFontSize;
 
-    final primaryColors = [
+    // --- Data ---
+    const textColors = [
       Colors.white,
       Colors.black,
-      const Color(0xFFFACC15),
-      const Color(0xFFF43F5E),
-      const Color(0xFF38BDF8),
-      const Color(0xFFA855F7),
-      const Color(0xFF34D399),
-      const Color(0xFFFB923C),
-      const Color(0xFFEF4444),
+      Color(0xFFFACC15), // Amber
+      Color(0xFFF43F5E), // Rose
+      Color(0xFF38BDF8), // Sky
+      Color(0xFFA855F7), // Violet
+      Color(0xFF34D399), // Emerald
+      Color(0xFFFB923C), // Orange
+      Color(0xFFE879F9), // Fuchsia
+      Color(0xFF4ADE80), // Green
     ];
 
-    final fontPresets = [
-      TextStyleType.bold,
-      TextStyleType.modern,
-      TextStyleType.classic,
-      TextStyleType.campus,
-      TextStyleType.handwriting,
+    const fontPresets = [
+      (TextStyleType.classic,     'Classic',     FontWeight.w600, FontStyle.normal),
+      (TextStyleType.elegant,     'Deco',        FontWeight.w600, FontStyle.italic),
+      (TextStyleType.bold,        'Bubble',      FontWeight.w900, FontStyle.normal),
+      (TextStyleType.modern,      'Outline',     FontWeight.w800, FontStyle.normal),
+      (TextStyleType.minimal,     'Neon',        FontWeight.w700, FontStyle.normal),
     ];
+
+    // Resolve text preview style (live update)
+    final liveTextStyle = _getLayerTextStyle(
+      _activeFontStyle,
+      _activeTextColor,
+      _activeTextBgStyle,
+    ).copyWith(
+      fontSize: fontSize,
+      shadows: hasBackground ? null : [
+        Shadow(blurRadius: 8, color: Colors.black.withValues(alpha: 0.80), offset: const Offset(0, 1)),
+      ],
+    );
 
     return Positioned.fill(
-      child: Material(
-        color: Colors.black.withValues(alpha: 0.65),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        _activeTextAlign == TextAlign.left
-                            ? Icons.format_align_left_rounded
-                            : (_activeTextAlign == TextAlign.right ? Icons.format_align_right_rounded : Icons.format_align_center_rounded),
-                        color: Colors.white,
-                        size: 22,
+      child: AnimatedOpacity(
+        opacity: _isFullScreenTextEditing ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        child: Material(
+          color: Colors.black.withValues(alpha: 0.62),
+          child: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+
+                // ═══════════════════ TOP BAR ═══════════════════
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.04,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      // Cancel
+                      _buildTextEditorPill(
+                        label: 'Cancel',
+                        onTap: () => _closeFullScreenTextEditor(save: false),
+                        filled: false,
                       ),
-                      onPressed: () {
-                        setState(() {
+
+                      const Spacer(),
+
+                      // Align
+                      _buildEditorIconBtn(
+                        icon: _activeTextAlign == TextAlign.left
+                            ? Icons.format_align_left_rounded
+                            : _activeTextAlign == TextAlign.right
+                                ? Icons.format_align_right_rounded
+                                : Icons.format_align_center_rounded,
+                        active: false,
+                        tooltip: 'Alignment',
+                        onTap: () => setState(() {
                           if (_activeTextAlign == TextAlign.center) {
                             _activeTextAlign = TextAlign.left;
                           } else if (_activeTextAlign == TextAlign.left) {
@@ -2707,162 +2753,317 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                           } else {
                             _activeTextAlign = TextAlign.center;
                           }
-                        });
-                      },
-                    ),
-
-                    IconButton(
-                      icon: Icon(
-                        _activeTextBgStyle == TextBgStyle.none
-                            ? Icons.font_download_outlined
-                            : (_activeTextBgStyle == TextBgStyle.filled ? Icons.subtitles_rounded : Icons.subtitles_outlined),
-                        color: Colors.white,
-                        size: 22,
+                        }),
                       ),
-                      onPressed: () {
-                        setState(() {
-                          if (_activeTextBgStyle == TextBgStyle.none) {
-                            _activeTextBgStyle = TextBgStyle.rounded;
-                          } else if (_activeTextBgStyle == TextBgStyle.rounded) {
-                            _activeTextBgStyle = TextBgStyle.filled;
-                          } else if (_activeTextBgStyle == TextBgStyle.filled) {
-                            _activeTextBgStyle = TextBgStyle.outline;
-                          } else {
-                            _activeTextBgStyle = TextBgStyle.none;
-                          }
-                        });
-                      },
-                    ),
 
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: fontPresets.map((fStyle) {
-                          final isSel = _activeFontStyle == fStyle;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: GestureDetector(
+                      const SizedBox(width: 8),
+
+                      // Bold
+                      _buildEditorIconBtn(
+                        icon: Icons.format_bold_rounded,
+                        active: isBoldActive,
+                        tooltip: 'Bold',
+                        onTap: () => setState(() {
+                          _activeFontStyle =
+                              isBoldActive ? TextStyleType.classic : TextStyleType.bold;
+                        }),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      // Background
+                      _buildEditorIconBtn(
+                        icon: hasBackground
+                            ? Icons.rectangle_rounded
+                            : Icons.crop_free_rounded,
+                        active: hasBackground,
+                        tooltip: 'Background',
+                        onTap: () => setState(() {
+                          _activeTextBgStyle = hasBackground
+                              ? TextBgStyle.none
+                              : TextBgStyle.rounded;
+                        }),
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      // Done
+                      _buildTextEditorPill(
+                        label: 'Done',
+                        onTap: () => _closeFullScreenTextEditor(save: true),
+                        filled: true,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ═════════════════ TEXT INPUT AREA ═════════════════
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _fullScreenTextFocusNode.requestFocus(),
+                    behavior: HitTestBehavior.opaque,
+                    child: Center(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeInOut,
+                          padding: hasBackground
+                              ? const EdgeInsets.symmetric(horizontal: 14, vertical: 10)
+                              : EdgeInsets.zero,
+                          decoration: BoxDecoration(
+                            color: _activeTextBgStyle == TextBgStyle.rounded
+                                ? Colors.black.withValues(alpha: 0.52)
+                                : _activeTextBgStyle == TextBgStyle.filled
+                                    ? Colors.black.withValues(alpha: 0.76)
+                                    : Colors.transparent,
+                            borderRadius: hasBackground
+                                ? BorderRadius.circular(8)
+                                : null,
+                            border: _activeTextBgStyle == TextBgStyle.outline
+                                ? Border.all(
+                                    color: _activeTextColor.withValues(alpha: 0.85),
+                                    width: 1.5,
+                                  )
+                                : null,
+                          ),
+                          child: TextField(
+                            controller: _fullScreenTextController,
+                            focusNode: _fullScreenTextFocusNode,
+                            autofocus: true,
+                            maxLines: null,
+                            keyboardType: TextInputType.multiline,
+                            textInputAction: TextInputAction.newline,
+                            textAlign: _activeTextAlign,
+                            textCapitalization: TextCapitalization.sentences,
+                            style: liveTextStyle,
+                            cursorColor: _activeTextColor,
+                            cursorWidth: 2.0,
+                            cursorRadius: const Radius.circular(1),
+                            decoration: InputDecoration(
+                              hintText: 'Start typing...',
+                              hintStyle: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.28),
+                                fontSize: fontSize,
+                                fontWeight: FontWeight.w400,
+                                height: 1.3,
+                              ),
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ═════════════════ BOTTOM TOOLBAR ═════════════════
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                  margin: EdgeInsets.only(
+                    left: 12,
+                    right: 12,
+                    bottom: keyboardHeight > 0 ? keyboardHeight + 10 : 24,
+                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xF2111111),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        blurRadius: 28,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+
+                      // ── Font row ──
+                      SizedBox(
+                        height: 36,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: fontPresets.length,
+                          separatorBuilder: (_, _) => const SizedBox(width: 8),
+                          itemBuilder: (_, i) {
+                            final (fStyle, label, fw, fi) = fontPresets[i];
+                            final isSel = _activeFontStyle == fStyle;
+                            return GestureDetector(
                               onTap: () => setState(() => _activeFontStyle = fStyle),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                curve: Curves.easeOut,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                                 decoration: BoxDecoration(
-                                  color: isSel ? Colors.white : Colors.white12,
-                                  borderRadius: BorderRadius.circular(12),
+                                  color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: isSel
+                                      ? null
+                                      : Border.all(color: Colors.white.withValues(alpha: 0.12)),
                                 ),
                                 child: Text(
-                                  fStyle.name.toUpperCase(),
+                                  label,
                                   style: TextStyle(
-                                    color: isSel ? Colors.black : Colors.white70,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
+                                    color: isSel ? Colors.black : Colors.white.withValues(alpha: 0.65),
+                                    fontSize: 12.5,
+                                    fontWeight: isSel ? fw : FontWeight.w400,
+                                    fontStyle: isSel ? fi : FontStyle.normal,
+                                    letterSpacing: 0.1,
                                   ),
                                 ),
                               ),
+                            );
+                          },
+                        ),
+                      ),
+
+                      // Divider
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        child: Container(
+                          height: 1,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.transparent,
+                                Colors.white.withValues(alpha: 0.12),
+                                Colors.white.withValues(alpha: 0.12),
+                                Colors.transparent,
+                              ],
                             ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    GestureDetector(
-                      onTap: () => _closeFullScreenTextEditor(save: true),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          "Done",
-                          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13.5),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
 
-              Expanded(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: TextField(
-                      controller: _fullScreenTextController,
-                      focusNode: _fullScreenTextFocusNode,
-                      autofocus: true,
-                      maxLines: null,
-                      textAlign: _activeTextAlign,
-                      style: _getLayerTextStyle(_activeFontStyle, _activeTextColor, _activeTextBgStyle).copyWith(
-                        fontSize: _activeFontSize,
-                      ),
-                      decoration: const InputDecoration(
-                        hintText: "Start typing...",
-                        hintStyle: TextStyle(color: Colors.white38, fontSize: 24, fontWeight: FontWeight.normal),
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+                      // ── Color row ──
+                      SizedBox(
+                        height: 38,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: textColors.length,
+                          separatorBuilder: (_, _) => const SizedBox(width: 10),
+                          itemBuilder: (_, i) {
+                            final col = textColors[i];
+                            final isSel = _activeTextColor == col;
+                            // Compute contrasting check icon color
+                            final lum = col.computeLuminance();
+                            final checkColor = lum > 0.5 ? Colors.black : Colors.white;
 
-              Container(
-                padding: EdgeInsets.only(bottom: keyboardHeight > 0 ? 12 : 24, top: 10),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.transparent, Colors.black87],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: primaryColors.map((col) {
-                          final isSelected = _activeTextColor == col;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 12),
-                            child: GestureDetector(
+                            return GestureDetector(
                               onTap: () => setState(() => _activeTextColor = col),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 180),
-                                width: isSelected ? 34 : 28,
-                                height: isSelected ? 34 : 28,
+                                curve: Curves.easeOut,
+                                width: isSel ? 36 : 30,
+                                height: isSel ? 36 : 30,
                                 decoration: BoxDecoration(
                                   color: col,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: isSelected ? Colors.white : Colors.white24,
-                                    width: isSelected ? 3.0 : 1.2,
+                                    color: isSel
+                                        ? Colors.white
+                                        : Colors.white.withValues(alpha: 0.25),
+                                    width: isSel ? 2.5 : 1.0,
                                   ),
-                                  boxShadow: isSelected
-                                      ? [BoxShadow(color: col.withValues(alpha: 0.6), blurRadius: 10)]
+                                  boxShadow: isSel
+                                      ? [
+                                          BoxShadow(
+                                            color: col.withValues(alpha: 0.60),
+                                            blurRadius: 10,
+                                            spreadRadius: 1,
+                                          )
+                                        ]
                                       : null,
                                 ),
-                                child: isSelected
-                                    ? Icon(
-                                        Icons.check_rounded,
-                                        color: col == Colors.white ? Colors.black : Colors.white,
-                                        size: 16,
-                                      )
+                                child: isSel
+                                    ? Icon(Icons.check_rounded, size: 15, color: checkColor)
                                     : null,
                               ),
-                            ),
-                          );
-                        }).toList(),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Pill-shaped button for Cancel / Done in the text editor top bar.
+  Widget _buildTextEditorPill({
+    required String label,
+    required VoidCallback onTap,
+    required bool filled,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+        decoration: BoxDecoration(
+          color: filled ? Colors.white : Colors.white.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(22),
+          border: filled ? null : Border.all(color: Colors.white.withValues(alpha: 0.22)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: filled ? Colors.black : Colors.white.withValues(alpha: 0.80),
+            fontWeight: filled ? FontWeight.bold : FontWeight.w500,
+            fontSize: 13.5,
+            letterSpacing: 0.1,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Circular icon button used in the text editor top bar.
+  Widget _buildEditorIconBtn({
+    required IconData icon,
+    required bool active,
+    required VoidCallback onTap,
+    String? tooltip,
+  }) {
+    return Tooltip(
+      message: tooltip ?? '',
+      preferBelow: false,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: active ? Colors.white : Colors.white.withValues(alpha: 0.10),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: active ? Colors.white : Colors.white.withValues(alpha: 0.22),
+            ),
+            boxShadow: active
+                ? [BoxShadow(color: Colors.white.withValues(alpha: 0.25), blurRadius: 8)]
+                : null,
+          ),
+          child: Icon(icon, size: 18, color: active ? Colors.black : Colors.white),
         ),
       ),
     );

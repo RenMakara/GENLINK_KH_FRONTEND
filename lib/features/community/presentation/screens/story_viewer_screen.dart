@@ -81,9 +81,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with SingleTicker
     _isClosing = true;
     _storyTimer?.cancel();
     _storyTimer = null;
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
+    Get.back();
   }
 
   void _startStoryTimer() {
@@ -499,8 +497,35 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with SingleTicker
       );
     }
 
+    // 1. Remote HTTP/HTTPS Network Image
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: Colors.black,
+            child: const Center(
+              child: SizedBox(
+                width: 36,
+                height: 36,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2.5,
+                ),
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => _buildErrorMediaPlaceholder(),
+      );
+    }
+
+    // 2. Local Device File Image
     final localFile = _resolveFile(url);
-    if (localFile.existsSync() || url.startsWith('/') || url.contains(':\\') || url.contains(':/')) {
+    if (localFile.existsSync() || url.startsWith('/') || url.contains(':\\')) {
       return Image.file(
         localFile,
         fit: BoxFit.cover,
@@ -509,26 +534,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with SingleTicker
       );
     }
 
+    // 3. Network Fallback
     return Image.network(
       url,
       fit: BoxFit.cover,
       alignment: Alignment.center,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Container(
-          color: Colors.black,
-          child: const Center(
-            child: SizedBox(
-              width: 36,
-              height: 36,
-              child: CircularProgressIndicator(
-                color: AppColors.communityAccent,
-                strokeWidth: 2.5,
-              ),
-            ),
-          ),
-        );
-      },
       errorBuilder: (context, error, stackTrace) => _buildErrorMediaPlaceholder(),
     );
   }

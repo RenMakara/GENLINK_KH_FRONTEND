@@ -7,6 +7,7 @@ import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../domain/models/story_model.dart';
 import '../controllers/story_controller.dart';
+import 'in_app_camera_screen.dart';
 
 class StoryCreatorScreen extends StatefulWidget {
   final StoryType type;
@@ -34,19 +35,39 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   double _imageRotation = 0.0;
   final TransformationController _transformationController = TransformationController();
 
+  double _bgImageScale = 1.0;
+  Offset _bgImageOffset = Offset.zero;
+  double _bgBaseScale = 1.0;
+  Offset _bgBaseFocalPoint = Offset.zero;
+  Offset _bgBaseOffset = Offset.zero;
+
   void _rotateImage() {
     setState(() {
       _imageRotation = (_imageRotation + 90) % 360;
     });
   }
 
+  // Full-Screen Immersive Text Editor State
+  bool _isFullScreenTextEditing = false;
+  MovableStoryLayer? _editingTextLayer;
+  final TextEditingController _fullScreenTextController = TextEditingController();
+  final FocusNode _fullScreenTextFocusNode = FocusNode();
+  Color _activeTextColor = Colors.white;
+  TextStyleType _activeFontStyle = TextStyleType.bold;
+  TextBgStyle _activeTextBgStyle = TextBgStyle.rounded;
+  TextAlign _activeTextAlign = TextAlign.center;
+  final double _activeFontSize = 24.0;
+
   int _gradientIdx = 0;
+  TextAlign _textAlign = TextAlign.center;
+  TextStyleType _fontStyle = TextStyleType.bold;
   final List<List<Color>> _gradients = [
     [const Color(0xFF000000), const Color(0xFF111827)],
     [const Color(0xFF0F172A), const Color(0xFF1E293B)],
     [const Color(0xFF312E81), const Color(0xFF1E1B4B)],
     [const Color(0xFF065F46), const Color(0xFF022C22)],
     [const Color(0xFF831843), const Color(0xFF500724)],
+    [const Color(0xFF4C1D95), const Color(0xFF1E1B4B)],
   ];
 
   // Exclusive GenLink Campus Stickers
@@ -73,14 +94,15 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     '🔥 Trending': ['🔥', '🚀', '💯', '✨', '⚡', '🎉', '🌟', '💪', '🏆'],
     '💻 Dev & Tech': ['💻 Flutter', '☕ Java', '🚀 Docker', '⚡ SpringBoot', '🤖 AI Lab', '🌐 Cloud'],
   };
+  final List<String> _recentStickers = ['🔥', '🚀', '📚', '☕', '💯'];
 
   final List<String> _locationOptions = [
-    '📍 ACLEDA University of Business',
-    '📍 Main Library',
-    '📍 Phnom Penh, Cambodia',
-    '📍 CADT Innovation Lab',
-    '📍 RUPP Campus',
-    '📍 Campus Cafe',
+    'ACLEDA University of Business',
+    'Main Library',
+    'Phnom Penh, Cambodia',
+    'CADT Innovation Lab',
+    'RUPP Campus',
+    'Campus Cafe',
   ];
 
   final List<String> _musicOptions = [
@@ -122,6 +144,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   void dispose() {
     _captionController.dispose();
     _transformationController.dispose();
+    _fullScreenTextController.dispose();
+    _fullScreenTextFocusNode.dispose();
     super.dispose();
   }
 
@@ -131,99 +155,29 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     });
   }
 
+  // Immersive Full-Screen Text Editor — replaces old popup dialog
   void _openFloatingTextEditor([MovableStoryLayer? existingLayer]) {
-    final textController = TextEditingController(text: existingLayer?.text ?? '');
-
-    showDialog(
-      context: context,
-      barrierColor: Colors.black54,
-      builder: (dlgCtx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(20),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFF141414),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFF262626)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: textController,
-                autofocus: true,
-                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                maxLines: 4,
-                minLines: 1,
-                textAlign: existingLayer?.alignment ?? TextAlign.center,
-                onChanged: (val) {
-                  if (existingLayer != null) {
-                    setState(() {
-                      existingLayer.text = val;
-                    });
-                  }
-                },
-                onSubmitted: (val) {
-                  final textVal = val.trim();
-                  if (textVal.isNotEmpty) {
-                    if (existingLayer != null) {
-                      setState(() => existingLayer.text = textVal);
-                    } else {
-                      final newLayer = MovableStoryLayer(
-                        id: DateTime.now().microsecondsSinceEpoch.toString(),
-                        type: LayerType.text,
-                        text: textVal,
-                        offset: Offset(80, 200 + (_layers.length * 20)),
-                      );
-                      setState(() {
-                        _layers.add(newLayer);
-                        _selectedLayer = newLayer;
-                      });
-                    }
-                  }
-                  Navigator.pop(dlgCtx);
-                },
-                decoration: const InputDecoration(
-                  hintText: "Type story text...",
-                  hintStyle: TextStyle(color: Colors.white38, fontSize: 18),
-                  border: InputBorder.none,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.check_rounded, color: Colors.white, size: 24),
-                    onPressed: () {
-                      final textVal = textController.text.trim();
-                      if (textVal.isNotEmpty) {
-                        if (existingLayer != null) {
-                          setState(() => existingLayer.text = textVal);
-                        } else {
-                          final newLayer = MovableStoryLayer(
-                            id: DateTime.now().microsecondsSinceEpoch.toString(),
-                            type: LayerType.text,
-                            text: textVal,
-                            offset: Offset(80, 200 + (_layers.length * 20)),
-                          );
-                          setState(() {
-                            _layers.add(newLayer);
-                            _selectedLayer = newLayer;
-                          });
-                        }
-                      }
-                      Navigator.pop(dlgCtx);
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    setState(() {
+      _editingTextLayer = existingLayer;
+      _isFullScreenTextEditing = true;
+      if (existingLayer != null) {
+        _fullScreenTextController.text = existingLayer.text;
+        _activeTextColor = existingLayer.color;
+        _activeFontStyle = existingLayer.fontStyle;
+        _activeTextBgStyle = existingLayer.bgStyle;
+        _activeTextAlign = existingLayer.alignment;
+      } else {
+        _fullScreenTextController.clear();
+        _activeTextColor = Colors.white;
+        _activeFontStyle = TextStyleType.bold;
+        _activeTextBgStyle = TextBgStyle.rounded;
+        _activeTextAlign = TextAlign.center;
+      }
+    });
+    // Small delay so the overlay is built before requesting focus
+    Future.delayed(const Duration(milliseconds: 80), () {
+      if (mounted) _fullScreenTextFocusNode.requestFocus();
+    });
   }
 
   void _showStickerSheet() {
@@ -660,15 +614,19 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   }
 
   void _addMentionLayer(String mention) {
+    final size = MediaQuery.of(context).size;
+    final formatted = mention.startsWith('@') ? mention : '@$mention';
+
     setState(() {
-      _layers.add(
-        MovableStoryLayer(
-          id: DateTime.now().microsecondsSinceEpoch.toString(),
-          type: LayerType.mention,
-          text: mention,
-          offset: Offset(90, 240 + (_layers.length * 15)),
-        ),
+      final newLayer = MovableStoryLayer(
+        id: "mention_${DateTime.now().microsecondsSinceEpoch}",
+        type: LayerType.mention,
+        text: formatted,
+        offset: Offset(size.width * 0.22, size.height * 0.28 + (_layers.length * 20)),
+        scale: 1.0,
       );
+      _layers.add(newLayer);
+      _selectedLayer = newLayer;
     });
   }
 
@@ -709,6 +667,34 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     );
   }
 
+  Future<void> _addPhotoLayer() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? media = await picker.pickMedia(imageQuality: 95);
+      if (media != null && mounted) {
+        final newLayer = MovableStoryLayer(
+          id: DateTime.now().microsecondsSinceEpoch.toString(),
+          type: LayerType.image,
+          text: media.path,
+          offset: Offset(60, 180 + (_layers.length * 25)),
+          scale: 1.0,
+        );
+        setState(() {
+          _layers.add(newLayer);
+          _selectedLayer = newLayer;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: "Photo Selection Error",
+          message: "Could not pick image: $e",
+        );
+      }
+    }
+  }
+
   Future<void> _replaceMedia() async {
     try {
       final picker = ImagePicker();
@@ -716,6 +702,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       if (media != null && mounted) {
         setState(() {
           _activeMediaPath = media.path;
+          _transformationController.value = Matrix4.identity();
+          _imageRotation = 0.0;
         });
       }
     } catch (e) {
@@ -933,7 +921,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   void _toggleZoomDoubleTap() {
     setState(() {
-      if (_transformationController.value != Matrix4.identity()) {
+      final currentScale = _transformationController.value.getMaxScaleOnAxis();
+      if (currentScale > 1.05) {
         _transformationController.value = Matrix4.identity();
       } else {
         _transformationController.value = Matrix4.diagonal3Values(2.0, 2.0, 1.0);
@@ -942,38 +931,66 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   }
 
   Widget _buildImageCanvas(File file) {
+    final size = MediaQuery.of(context).size;
+
     return GestureDetector(
-      onDoubleTap: _toggleZoomDoubleTap,
-      child: InteractiveViewer(
-        transformationController: _transformationController,
-        minScale: 1.0,
-        maxScale: 4.0,
-        clipBehavior: Clip.hardEdge,
-        panEnabled: true,
-        scaleEnabled: true,
-        child: RotatedBox(
-          quarterTurns: (_imageRotation / 90).round() % 4,
-          child: Image.file(
-            file,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-            filterQuality: FilterQuality.high,
-            frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {
-              if (wasSynchronouslyLoaded || frame != null) {
-                return child;
-              }
-              return Container(
-                color: Colors.black,
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2.5,
-                  ),
+      onTap: () {
+        setState(() => _selectedLayer = null);
+      },
+      onDoubleTap: () {
+        setState(() {
+          if (_bgImageScale > 1.05) {
+            _bgImageScale = 1.0;
+            _bgImageOffset = Offset.zero;
+          } else {
+            _bgImageScale = 2.0;
+          }
+        });
+      },
+      onScaleStart: (details) {
+        _bgBaseScale = _bgImageScale;
+        _bgBaseOffset = _bgImageOffset;
+        _bgBaseFocalPoint = details.focalPoint;
+      },
+      onScaleUpdate: (details) {
+        setState(() {
+          // 1. Smooth Pinch-to-Zoom (0.1x to 4.0x)
+          if (details.scale != 1.0) {
+            _bgImageScale = (_bgBaseScale * details.scale).clamp(0.10, 4.0);
+          }
+
+          // 2. Smooth 360° Multi-Directional Pan (Left, Right, Up, Down)
+          final delta = details.focalPoint - _bgBaseFocalPoint;
+          final maxPanX = size.width * 0.85;
+          final maxPanY = size.height * 0.85;
+
+          final nextX = (_bgBaseOffset.dx + delta.dx).clamp(-maxPanX, maxPanX);
+          final nextY = (_bgBaseOffset.dy + delta.dy).clamp(-maxPanY, maxPanY);
+
+          _bgImageOffset = Offset(nextX, nextY);
+        });
+      },
+      child: Container(
+        color: Colors.black,
+        width: double.infinity,
+        height: double.infinity,
+        child: Center(
+          child: Transform.translate(
+            offset: _bgImageOffset,
+            child: Transform.scale(
+              scale: _bgImageScale,
+              child: RotatedBox(
+                quarterTurns: (_imageRotation / 90).round() % 4,
+                child: Image.file(
+                  file,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  height: double.infinity,
+                  filterQuality: FilterQuality.high,
+                  errorBuilder: (ctx, err, stack) => _buildErrorMediaPlaceholder(),
                 ),
-              );
-            },
-            errorBuilder: (ctx, err, stack) => _buildErrorMediaPlaceholder(),
+              ),
+            ),
           ),
         ),
       ),
@@ -982,12 +999,35 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   Widget _buildMediaCanvas() {
     if (_activeMediaPath == null || _activeMediaPath!.isEmpty) {
+      final text = _captionController.text.trim().isNotEmpty
+          ? _captionController.text.trim()
+          : "Share your moment...";
+
       return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: _gradients[_gradientIdx],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Text(
+              text,
+              textAlign: _textAlign,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 26,
+                fontWeight: _fontStyle == TextStyleType.bold ? FontWeight.w900 : FontWeight.w600,
+                fontStyle: _fontStyle == TextStyleType.handwriting ? FontStyle.italic : FontStyle.normal,
+                height: 1.35,
+                shadows: const [
+                  Shadow(color: Colors.black45, blurRadius: 12, offset: Offset(0, 4)),
+                ],
+              ),
+            ),
           ),
         ),
       );
@@ -1029,7 +1069,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       if (mounted) {
         setState(() => _isPublishing = false);
         if (success) {
-          Navigator.pop(context);
+          Get.until((route) => route.isFirst);
           AppNotificationBanner.showSuccess(
             context: context,
             title: "✓ Story Live",
@@ -1105,6 +1145,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   double _gestureBaseScale = 1.0;
   double _gestureBaseRotation = 0.0;
   bool _isInteractingLayer = false;
+  bool _isHoveringDeleteZone = false;
 
   Widget _buildLayerWidget(MovableStoryLayer layer) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -1113,6 +1154,38 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     Widget content;
 
     switch (layer.type) {
+      case LayerType.image:
+        final file = File(layer.text);
+        content = ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxCanvasWidth),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _selectedLayer?.id == layer.id ? Colors.white : Colors.transparent,
+                width: 2.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Image.file(
+                file,
+                width: 180,
+                fit: BoxFit.cover,
+                errorBuilder: (ctx, err, stack) => _buildErrorMediaPlaceholder(),
+              ),
+            ),
+          ),
+        );
+        break;
+
       case LayerType.text:
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
@@ -1138,44 +1211,30 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         break;
 
       case LayerType.sticker:
-        final isCatSticker = layer.text.contains('Cat') || layer.text.contains('Kittens') || layer.text.contains('Hugging') || layer.text.startsWith('assets/');
-        if (isCatSticker) {
+        final isAssetSticker = layer.text.startsWith('assets/');
+        if (isAssetSticker) {
           content = ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxCanvasWidth),
             child: Container(
               padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.asset(
-                  'assets/images/cat_stickers.png',
-                  width: 150,
-                  fit: BoxFit.contain,
-                  errorBuilder: (ctx, err, stack) => Text(
-                    layer.text,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
+              child: Image.asset(
+                layer.text,
+                width: 120,
+                fit: BoxFit.contain,
+                errorBuilder: (ctx, err, stack) => Text(
+                  layer.text,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
             ),
           );
         } else {
-          content = ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.darkSurfacePrimary.withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white24),
-              ),
-              child: Text(
-                layer.text,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+          content = AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.all(6),
+            child: Text(
+              layer.text,
+              style: const TextStyle(fontSize: 48),
             ),
           );
         }
@@ -1199,42 +1258,141 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         break;
 
       case LayerType.mention:
+        final isSelectedMention = _selectedLayer != null && _selectedLayer!.id == layer.id;
+        final cleanMention = layer.text.replaceAll(RegExp(r'^@+'), '');
+
+        // 3 Distinct Color Styles (White -> Dark -> Glass)
+        final isDarkStyle = layer.bgStyle == TextBgStyle.filled;
+        final isGlassStyle = layer.bgStyle == TextBgStyle.outline;
+
+        final bgColor = isDarkStyle
+            ? const Color(0xFF141414)
+            : (isGlassStyle ? Colors.black54 : Colors.white);
+
+        final textColor = (isDarkStyle || isGlassStyle) ? Colors.white : Colors.black;
+        final badgeBg = isDarkStyle
+            ? Colors.white
+            : (isGlassStyle ? Colors.white24 : Colors.black);
+        final badgeIconColor = (isDarkStyle || isGlassStyle) ? Colors.black : Colors.white;
+
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: bgColor,
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelectedMention
+                    ? Colors.white
+                    : (isDarkStyle ? Colors.white30 : (isGlassStyle ? Colors.white24 : Colors.black12)),
+                width: isSelectedMention ? 2.5 : 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isSelectedMention ? Colors.white30 : Colors.black26,
+                  blurRadius: isSelectedMention ? 12 : 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
-            child: Text(
-              layer.text,
-              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: badgeBg,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.alternate_email_rounded,
+                    color: badgeIconColor,
+                    size: 10,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    letterSpacing: 0.1,
+                  ),
+                  child: Text(cleanMention),
+                ),
+              ],
             ),
           ),
         );
         break;
 
       case LayerType.location:
+        final isSelectedLocation = _selectedLayer != null && _selectedLayer!.id == layer.id;
+        final cleanLocation = layer.text.replaceAll(RegExp(r'^[📍\s]+'), '');
+
+        // 3 Distinct Color Styles (Dark -> White -> Glass)
+        final isWhiteStyle = layer.bgStyle == TextBgStyle.filled;
+        final isGlassStyle = layer.bgStyle == TextBgStyle.outline;
+
+        final bgColor = isWhiteStyle
+            ? Colors.white
+            : (isGlassStyle ? Colors.black54 : Colors.black87);
+
+        final textColor = isWhiteStyle ? Colors.black : Colors.white;
+        final pinColor = isWhiteStyle
+            ? Colors.black
+            : (isGlassStyle ? Colors.white : AppColors.danger);
+        final borderColor = isSelectedLocation
+            ? Colors.white
+            : (isWhiteStyle ? Colors.black : (isGlassStyle ? Colors.white38 : AppColors.danger));
+
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.black87,
+              color: bgColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.danger, width: 1.5),
+              border: Border.all(
+                color: borderColor,
+                width: isSelectedLocation ? 2.5 : 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isSelectedLocation ? Colors.white30 : Colors.black38,
+                  blurRadius: isSelectedLocation ? 12 : 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.location_on_rounded, color: AppColors.danger, size: 16),
-                const SizedBox(width: 4),
+                Icon(
+                  Icons.location_on_rounded,
+                  color: pinColor,
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
                 Flexible(
-                  child: Text(
-                    layer.text,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                    overflow: TextOverflow.ellipsis,
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                    child: Text(
+                      cleanLocation,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ],
@@ -1270,31 +1428,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           ),
         );
         break;
-
-      case LayerType.image:
-        final localFile = _resolveFile(layer.text);
-        Widget imgWidget;
-        if (localFile.existsSync()) {
-          imgWidget = Image.file(localFile, fit: BoxFit.cover);
-        } else if (layer.text.startsWith('assets/')) {
-          imgWidget = Image.asset(layer.text, fit: BoxFit.cover);
-        } else {
-          imgWidget = Image.network(layer.text, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image, color: Colors.white54));
-        }
-
-        content = Container(
-          width: 140,
-          height: 140,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 8, offset: Offset(0, 3))],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: imgWidget,
-          ),
-        );
-        break;
     }
 
     final isSelected = _selectedLayer?.id == layer.id;
@@ -1314,7 +1447,24 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           scale: isDeleting ? 0.9 : 1.0,
           child: GestureDetector(
             onTap: () {
-              setState(() => _selectedLayer = layer);
+              setState(() {
+                _selectedLayer = layer;
+
+                // Cycle color style variant on tap for Mention and Location tags
+                if (layer.type == LayerType.mention || layer.type == LayerType.location) {
+                  if (layer.bgStyle == TextBgStyle.rounded) {
+                    layer.bgStyle = TextBgStyle.filled;
+                  } else if (layer.bgStyle == TextBgStyle.filled) {
+                    layer.bgStyle = TextBgStyle.outline;
+                  } else {
+                    layer.bgStyle = TextBgStyle.rounded;
+                  }
+                }
+              });
+
+              if (layer.type == LayerType.text) {
+                _openFloatingTextEditor(layer);
+              }
             },
             onDoubleTap: () {
               if (layer.type == LayerType.text) {
@@ -1335,8 +1485,13 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               });
             },
             onScaleEnd: (details) {
+              final isOverDeleteArea = layer.offset.dy > (screenHeight - 160.0);
+              if (isOverDeleteArea) {
+                _deleteLayerInstantly(layer);
+              }
               setState(() {
                 _isInteractingLayer = false;
+                _isHoveringDeleteZone = false;
               });
             },
             onScaleUpdate: (details) {
@@ -1344,20 +1499,21 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 _selectedLayer = layer;
 
                 if (details.scale != 1.0) {
-                  layer.scale = (_gestureBaseScale * details.scale).clamp(0.5, 3.5);
+                  layer.scale = (_gestureBaseScale * details.scale).clamp(0.4, 3.8);
                 }
 
                 if (details.rotation != 0.0) {
                   layer.rotation = _gestureBaseRotation + details.rotation;
                 }
 
-                final maxX = (screenWidth * 0.88 - 40.0).clamp(40.0, screenWidth);
-                final maxY = (screenHeight - 120.0).clamp(100.0, screenHeight);
+                final maxX = screenWidth - 30.0;
+                final maxY = screenHeight - 90.0;
 
-                final nextX = (layer.offset.dx + details.focalPointDelta.dx).clamp(8.0, maxX);
-                final nextY = (layer.offset.dy + details.focalPointDelta.dy).clamp(50.0, maxY);
+                final nextX = (layer.offset.dx + details.focalPointDelta.dx).clamp(-40.0, maxX);
+                final nextY = (layer.offset.dy + details.focalPointDelta.dy).clamp(40.0, maxY);
 
                 layer.offset = Offset(nextX, nextY);
+                _isHoveringDeleteZone = layer.offset.dy > (screenHeight - 160.0);
               });
             },
             child: Transform.scale(
@@ -1395,31 +1551,46 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) {
           final filtered = _locationOptions.where((loc) => loc.toLowerCase().contains(query.toLowerCase())).toList();
+          final mediaQuery = MediaQuery.of(ctx);
+          final maxHeight = mediaQuery.size.height * 0.75;
 
           return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
             child: Container(
-              padding: const EdgeInsets.all(24),
+              height: maxHeight,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
               decoration: const BoxDecoration(
                 color: AppColors.darkSurfacePrimary,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              child: SingleChildScrollView(
+              child: SafeArea(
+                top: false,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text("Add Location Sticker", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text("Add Location Tag", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                         IconButton(
                           icon: const Icon(Icons.close_rounded, color: Colors.white54),
                           onPressed: () => Navigator.pop(ctx),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 10),
 
                     // Rounded Search Bar
                     TextField(
@@ -1427,7 +1598,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       style: const TextStyle(color: Colors.white, fontSize: 14),
                       onChanged: (val) => setSheetState(() => query = val),
                       decoration: InputDecoration(
-                        hintText: "Search university, city or landmark...",
+                        hintText: "Search location...",
                         hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
                         prefixIcon: const Icon(Icons.search_rounded, color: Colors.white38, size: 20),
                         filled: true,
@@ -1436,36 +1607,63 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
-                    const Text("SUGGESTED CAMPUS LOCATIONS", style: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8)),
-                    const SizedBox(height: 8),
-
-                    ...filtered.map((loc) {
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: AppColors.danger.withValues(alpha: 0.15), shape: BoxShape.circle),
-                          child: const Icon(Icons.location_on_rounded, color: AppColors.danger, size: 18),
-                        ),
-                        title: Text(loc, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                        subtitle: const Text("Verified Campus Pin", style: TextStyle(color: Colors.white38, fontSize: 12)),
-                        onTap: () {
-                          setState(() {
-                            _layers.add(
-                              MovableStoryLayer(
-                                id: DateTime.now().microsecondsSinceEpoch.toString(),
-                                type: LayerType.location,
-                                text: loc,
-                                offset: Offset(80, 200 + (_layers.length * 15)),
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "No locations found",
+                                style: TextStyle(color: Colors.white38, fontSize: 13),
                               ),
-                            );
-                          });
-                          Navigator.pop(ctx);
-                        },
-                      );
-                    }),
+                            )
+                          : ListView.builder(
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: filtered.length,
+                              itemBuilder: (context, index) {
+                                final loc = filtered[index];
+                                final distances = ["250 m", "600 m", "1.2 km", "1.8 km", "2.5 km"];
+                                final distanceStr = distances[index % distances.length];
+
+                                return ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 2),
+                                  leading: Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.08),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.location_on_rounded, color: Colors.white, size: 18),
+                                  ),
+                                  title: Text(
+                                    loc,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                                  ),
+                                  subtitle: Text(
+                                    distanceStr,
+                                    style: const TextStyle(color: Colors.white38, fontSize: 12),
+                                  ),
+                                  onTap: () {
+                                    final size = MediaQuery.of(context).size;
+                                    setState(() {
+                                      final newLayer = MovableStoryLayer(
+                                        id: "location_${DateTime.now().microsecondsSinceEpoch}",
+                                        type: LayerType.location,
+                                        text: loc,
+                                        offset: Offset(size.width * 0.20, size.height * 0.32 + (_layers.length * 15)),
+                                      );
+                                      _layers.add(newLayer);
+                                      _selectedLayer = newLayer;
+                                    });
+                                    Navigator.pop(ctx);
+                                  },
+                                );
+                              },
+                            ),
+                    ),
                   ],
                 ),
               ),
@@ -1804,9 +2002,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   void _deleteLayerInstantly(MovableStoryLayer layer) {
     if (_deletingLayerIds.contains(layer.id)) return;
 
-    final deletedIndex = _layers.indexOf(layer);
-    final deletedLayer = layer;
-
     setState(() {
       _deletingLayerIds.add(layer.id);
       if (_selectedLayer?.id == layer.id) {
@@ -1814,57 +2009,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       }
       _layers.removeWhere((l) => l.id == layer.id);
     });
-
-    String labelText;
-    switch (deletedLayer.type) {
-      case LayerType.text:
-        labelText = "Text removed";
-        break;
-      case LayerType.image:
-        labelText = "Image removed";
-        break;
-      case LayerType.sticker:
-        labelText = "Sticker removed";
-        break;
-      default:
-        labelText = "Element removed";
-        break;
-    }
-
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: const Duration(seconds: 3),
-        backgroundColor: const Color(0xFF1C1C1C),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFF2F2F2F)),
-        ),
-        content: Text(
-          labelText,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-        ),
-        action: SnackBarAction(
-          label: "Undo",
-          textColor: Colors.white,
-          onPressed: () {
-            if (mounted) {
-              setState(() {
-                if (deletedIndex >= 0 && deletedIndex <= _layers.length) {
-                  _layers.insert(deletedIndex, deletedLayer);
-                } else {
-                  _layers.add(deletedLayer);
-                }
-                _deletingLayerIds.remove(deletedLayer.id);
-                _selectedLayer = deletedLayer;
-              });
-            }
-          },
-        ),
-      ),
-    );
   }
 
   Future<void> _showAddImagePicker() async {
@@ -1987,49 +2131,65 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Horizontal Equal-Width Action Buttons (16px spacing)
+                      // Horizontal Equal-Width & Fixed Height Action Buttons (12px spacing)
                       Row(
                         children: [
-                          // Safe Action: Continue Editing (Dark Surface + White Border)
+                          // Safe Action: Keep Editing (Dark Surface + White Border)
                           Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.pop(dialogCtx, false),
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: const Color(0xFF242424),
-                                foregroundColor: Colors.white,
-                                side: const BorderSide(color: Colors.white24, width: 1.0),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                              ),
-                              child: const Text(
-                                "Continue Editing",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                            child: SizedBox(
+                              height: 46,
+                              child: OutlinedButton(
+                                onPressed: () => Get.back(result: false),
+                                style: OutlinedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF242424),
+                                  foregroundColor: Colors.white,
+                                  side: const BorderSide(color: Colors.white24, width: 1.0),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                ),
+                                child: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    "Keep Editing",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13.5,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 12),
 
                           // Destructive Action: Discard Draft (Filled Red Button)
                           Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.pop(dialogCtx, true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.danger,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                              ),
-                              child: const Text(
-                                "Discard Draft",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                            child: SizedBox(
+                              height: 46,
+                              child: ElevatedButton(
+                                onPressed: () => Get.back(result: true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.danger,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                ),
+                                child: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    "Discard Draft",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13.5,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -2049,6 +2209,917 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     return confirmed ?? false;
   }
 
+  void _showCustomizeTextSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (bCtx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          decoration: const BoxDecoration(
+            color: Color(0xFF1C1C1E),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Customize Story",
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+
+              // Background Gradients Row
+              const Text("Background Gradient", style: TextStyle(color: Colors.white70, fontSize: 13)),
+              const SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: List.generate(_gradients.length, (idx) {
+                    final isSel = idx == _gradientIdx;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() => _gradientIdx = idx);
+                        setSheetState(() {});
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 12),
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(colors: _gradients[idx]),
+                          border: isSel ? Border.all(color: Colors.white, width: 2.5) : Border.all(color: Colors.white24),
+                        ),
+                        child: isSel ? const Icon(Icons.check, color: Colors.white, size: 20) : null,
+                      ),
+                    );
+                  }),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Font Style & Alignment Controls Row
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Font Style", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                        const SizedBox(height: 8),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              if (_fontStyle == TextStyleType.bold) {
+                                _fontStyle = TextStyleType.handwriting;
+                              } else if (_fontStyle == TextStyleType.handwriting) {
+                                _fontStyle = TextStyleType.minimal;
+                              } else {
+                                _fontStyle = TextStyleType.bold;
+                              }
+                            });
+                            setSheetState(() {});
+                          },
+                          icon: const Icon(Icons.font_download_outlined, size: 18),
+                          label: Text(_fontStyle.name.toUpperCase(), style: const TextStyle(fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.darkSurfaceSecondary,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 42),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Alignment", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                        const SizedBox(height: 8),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              if (_textAlign == TextAlign.center) {
+                                _textAlign = TextAlign.left;
+                              } else if (_textAlign == TextAlign.left) {
+                                _textAlign = TextAlign.right;
+                              } else {
+                                _textAlign = TextAlign.center;
+                              }
+                            });
+                            setSheetState(() {});
+                          },
+                          icon: Icon(
+                            _textAlign == TextAlign.center
+                                ? Icons.format_align_center_rounded
+                                : (_textAlign == TextAlign.left ? Icons.format_align_left_rounded : Icons.format_align_right_rounded),
+                            size: 18,
+                          ),
+                          label: Text(_textAlign.name.toUpperCase(), style: const TextStyle(fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.darkSurfaceSecondary,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 42),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openEmojiPicker() {
+    final searchController = TextEditingController();
+    String query = '';
+    String selectedCategory = 'Trending';
+
+    final Map<String, List<String>> stickerCategories = {
+      '🐱 Cute Cats': [
+        'assets/stickers/cats/cat_waving.png',
+        'assets/stickers/cats/cat_surprised.png',
+        'assets/stickers/cats/cat_winking.png',
+        'assets/stickers/cats/cat_begging.png',
+        'assets/stickers/cats/cat_cool.png',
+        'assets/stickers/cats/cat_crying.png',
+      ],
+      'Trending': ['🔥', '🚀', '💯', '✨', '⚡', '🎉', '🌟', '💪', '🏆', '👑', '🎯', '💥'],
+      'Emoji': ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '🥹', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘'],
+      'Student Life': ['📚', '💻', '☕', '📝', '🎓', '📖', '✍️', '🏫', '🎒', '🧠', '💡', '📊'],
+      'Celebration': ['🎉', '🥳', '🍾', '🎈', '🎊', '🎁', '🎂', '🥂', '🎇', '🎆', '✨', '🏆'],
+      'Funny': ['🤪', '😜', '👻', '🤡', '🤖', '👽', '💩', '🙈', '🙉', '🙊', '🐸', '🦄'],
+      'Love': ['❤️', '💖', '💗', '💓', '💞', '💕', '💘', '💌', '😍', '🥰', '🌹', '💐'],
+      'Campus': ['🎓', '🏛️', '🏫', '🤝', '📜', '📢', '💡', '🏆', '📖', '💻', '☕', '📝'],
+      'Khmer': ['🇰🇭', '🏛️', '🥭', '🌴', '🐘', '🌾', '🍜', '☕', '🥥', '🛵', '⛵', '🌅'],
+      'Custom': ['✨', '🌟', '🎨', '📸', '🎵', '🎬', '💎', '🌈', '🔥', '⚡', '🍀', '🌸'],
+    };
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bCtx) => StatefulBuilder(
+        builder: (bCtx, setSheetState) {
+          final mediaQuery = MediaQuery.of(bCtx);
+          final maxHeight = mediaQuery.size.height * 0.75;
+
+          List<String> displayStickers;
+          if (query.trim().isNotEmpty) {
+            displayStickers = stickerCategories.values
+                .expand((element) => element)
+                .where((stk) => stk.contains(query.trim()))
+                .toSet()
+                .toList();
+          } else {
+            displayStickers = stickerCategories[selectedCategory] ?? [];
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
+            child: Container(
+              height: maxHeight,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              decoration: const BoxDecoration(
+                color: Color(0xFF141414),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Stickers & Emojis",
+                          style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
+                          onPressed: () => Navigator.pop(bCtx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    TextField(
+                      controller: searchController,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      onChanged: (val) => setSheetState(() => query = val),
+                      decoration: InputDecoration(
+                        hintText: "Search stickers & emojis...",
+                        hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                        prefixIcon: const Icon(Icons.search_rounded, color: Colors.white38, size: 18),
+                        filled: true,
+                        fillColor: AppColors.darkSurfaceSecondary,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    SizedBox(
+                      height: 34,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: stickerCategories.keys.map((cat) {
+                            final isSel = selectedCategory == cat && query.isEmpty;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: GestureDetector(
+                                onTap: () {
+                                  setSheetState(() {
+                                    selectedCategory = cat;
+                                    query = '';
+                                    searchController.clear();
+                                  });
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    cat,
+                                    style: TextStyle(
+                                      color: isSel ? Colors.black : Colors.white70,
+                                      fontSize: 12.5,
+                                      fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    if (query.isEmpty && _recentStickers.isNotEmpty) ...[
+                      const Text(
+                        "RECENTLY USED",
+                        style: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 52,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: _recentStickers.length,
+                          itemBuilder: (context, index) {
+                            final stk = _recentStickers[index];
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.pop(bCtx);
+                                _addStickerToCanvas(stk);
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 10),
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: stk.startsWith('assets/')
+                                    ? Image.asset(stk, width: 34, height: 34, fit: BoxFit.contain)
+                                    : Text(stk, style: const TextStyle(fontSize: 22)),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+
+                    Text(
+                      query.isNotEmpty ? "SEARCH RESULTS (${displayStickers.length})" : selectedCategory.toUpperCase(),
+                      style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                    ),
+                    const SizedBox(height: 10),
+
+                    Expanded(
+                      child: displayStickers.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "No stickers found",
+                                style: TextStyle(color: Colors.white38, fontSize: 13),
+                              ),
+                            )
+                          : GridView.builder(
+                              physics: const BouncingScrollPhysics(),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 4,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                childAspectRatio: 1.0,
+                              ),
+                              itemCount: displayStickers.length,
+                              itemBuilder: (context, index) {
+                                final sticker = displayStickers[index];
+                                final isAsset = sticker.startsWith('assets/');
+                                return GestureDetector(
+                                  onTap: () {
+                                    if (!_recentStickers.contains(sticker)) {
+                                      setState(() => _recentStickers.insert(0, sticker));
+                                    }
+                                    Navigator.pop(bCtx);
+                                    _addStickerToCanvas(sticker);
+                                  },
+                                  child: Container(
+                                    alignment: Alignment.center,
+                                    padding: EdgeInsets.all(isAsset ? 8 : 0),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.07),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: Colors.white10),
+                                    ),
+                                    child: isAsset
+                                        ? Image.asset(sticker, fit: BoxFit.contain)
+                                        : Text(
+                                            sticker,
+                                            style: const TextStyle(fontSize: 32),
+                                          ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _addStickerToCanvas(String stickerText) {
+    final size = MediaQuery.of(context).size;
+    final newLayer = MovableStoryLayer(
+      id: "sticker_${DateTime.now().microsecondsSinceEpoch}",
+      type: LayerType.sticker,
+      text: stickerText,
+      offset: Offset(size.width * 0.35, size.height * 0.35 + (_layers.length * 15)),
+      scale: 1.5,
+    );
+    setState(() {
+      _layers.add(newLayer);
+      _selectedLayer = newLayer;
+    });
+  }
+
+  void _closeFullScreenTextEditor({bool save = true}) {
+    _fullScreenTextFocusNode.unfocus();
+
+    if (save) {
+      final text = _fullScreenTextController.text.trim();
+      if (text.isNotEmpty) {
+        final size = MediaQuery.of(context).size;
+        setState(() {
+          if (_editingTextLayer != null) {
+            _editingTextLayer!.text = text;
+            _editingTextLayer!.color = _activeTextColor;
+            _editingTextLayer!.fontStyle = _activeFontStyle;
+            _editingTextLayer!.bgStyle = _activeTextBgStyle;
+            _editingTextLayer!.alignment = _activeTextAlign;
+            _selectedLayer = _editingTextLayer;
+          } else {
+            final newLayer = MovableStoryLayer(
+              id: "text_${DateTime.now().microsecondsSinceEpoch}",
+              type: LayerType.text,
+              text: text,
+              color: _activeTextColor,
+              fontStyle: _activeFontStyle,
+              bgStyle: _activeTextBgStyle,
+              alignment: _activeTextAlign,
+              offset: Offset(size.width * 0.15, size.height * 0.38 + (_layers.length * 10)),
+              scale: 1.0,
+            );
+            _layers.add(newLayer);
+            _selectedLayer = newLayer;
+          }
+        });
+      }
+    }
+
+    setState(() {
+      _isFullScreenTextEditing = false;
+      _editingTextLayer = null;
+    });
+  }
+
+  Widget _buildFullScreenTextEditorOverlay() {
+    if (!_isFullScreenTextEditing) return const SizedBox.shrink();
+
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
+    final primaryColors = [
+      Colors.white,
+      Colors.black,
+      const Color(0xFFFACC15),
+      const Color(0xFFF43F5E),
+      const Color(0xFF38BDF8),
+      const Color(0xFFA855F7),
+      const Color(0xFF34D399),
+      const Color(0xFFFB923C),
+      const Color(0xFFEF4444),
+    ];
+
+    final fontPresets = [
+      TextStyleType.bold,
+      TextStyleType.modern,
+      TextStyleType.classic,
+      TextStyleType.campus,
+      TextStyleType.handwriting,
+    ];
+
+    return Positioned.fill(
+      child: Material(
+        color: Colors.black.withValues(alpha: 0.65),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        _activeTextAlign == TextAlign.left
+                            ? Icons.format_align_left_rounded
+                            : (_activeTextAlign == TextAlign.right ? Icons.format_align_right_rounded : Icons.format_align_center_rounded),
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          if (_activeTextAlign == TextAlign.center) {
+                            _activeTextAlign = TextAlign.left;
+                          } else if (_activeTextAlign == TextAlign.left) {
+                            _activeTextAlign = TextAlign.right;
+                          } else {
+                            _activeTextAlign = TextAlign.center;
+                          }
+                        });
+                      },
+                    ),
+
+                    IconButton(
+                      icon: Icon(
+                        _activeTextBgStyle == TextBgStyle.none
+                            ? Icons.font_download_outlined
+                            : (_activeTextBgStyle == TextBgStyle.filled ? Icons.subtitles_rounded : Icons.subtitles_outlined),
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          if (_activeTextBgStyle == TextBgStyle.none) {
+                            _activeTextBgStyle = TextBgStyle.rounded;
+                          } else if (_activeTextBgStyle == TextBgStyle.rounded) {
+                            _activeTextBgStyle = TextBgStyle.filled;
+                          } else if (_activeTextBgStyle == TextBgStyle.filled) {
+                            _activeTextBgStyle = TextBgStyle.outline;
+                          } else {
+                            _activeTextBgStyle = TextBgStyle.none;
+                          }
+                        });
+                      },
+                    ),
+
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: fontPresets.map((fStyle) {
+                          final isSel = _activeFontStyle == fStyle;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: GestureDetector(
+                              onTap: () => setState(() => _activeFontStyle = fStyle),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isSel ? Colors.white : Colors.white12,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  fStyle.name.toUpperCase(),
+                                  style: TextStyle(
+                                    color: isSel ? Colors.black : Colors.white70,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    GestureDetector(
+                      onTap: () => _closeFullScreenTextEditor(save: true),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          "Done",
+                          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: TextField(
+                      controller: _fullScreenTextController,
+                      focusNode: _fullScreenTextFocusNode,
+                      autofocus: true,
+                      maxLines: null,
+                      textAlign: _activeTextAlign,
+                      style: _getLayerTextStyle(_activeFontStyle, _activeTextColor, _activeTextBgStyle).copyWith(
+                        fontSize: _activeFontSize,
+                      ),
+                      decoration: const InputDecoration(
+                        hintText: "Start typing...",
+                        hintStyle: TextStyle(color: Colors.white38, fontSize: 24, fontWeight: FontWeight.normal),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              Container(
+                padding: EdgeInsets.only(bottom: keyboardHeight > 0 ? 12 : 24, top: 10),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.transparent, Colors.black87],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: primaryColors.map((col) {
+                          final isSelected = _activeTextColor == col;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: GestureDetector(
+                              onTap: () => setState(() => _activeTextColor = col),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                width: isSelected ? 34 : 28,
+                                height: isSelected ? 34 : 28,
+                                decoration: BoxDecoration(
+                                  color: col,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isSelected ? Colors.white : Colors.white24,
+                                    width: isSelected ? 3.0 : 1.2,
+                                  ),
+                                  boxShadow: isSelected
+                                      ? [BoxShadow(color: col.withValues(alpha: 0.6), blurRadius: 10)]
+                                      : null,
+                                ),
+                                child: isSelected
+                                    ? Icon(
+                                        Icons.check_rounded,
+                                        color: col == Colors.white ? Colors.black : Colors.white,
+                                        size: 16,
+                                      )
+                                    : null,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openLocationPicker() {
+    _showLocationSheet();
+  }
+
+  void _showPlaceholderInfo(String title, String message) {
+    AppNotificationBanner.showInfo(
+      context: context,
+      title: title,
+      message: message,
+    );
+  }
+
+  Widget _buildHorizontalToolItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isPlaceholder = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isPlaceholder
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : AppColors.darkSurfaceSecondary.withValues(alpha: 0.90),
+                shape: BoxShape.circle,
+                border: isPlaceholder
+                    ? Border.all(color: Colors.white12, width: 1.0)
+                    : null,
+              ),
+              child: Icon(
+                icon,
+                color: isPlaceholder ? Colors.white38 : Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              label,
+              style: TextStyle(
+                color: isPlaceholder ? Colors.white38 : Colors.white70,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPhotoSourceSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (bCtx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        decoration: const BoxDecoration(
+          color: Color(0xFF141414),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                "Photo Source",
+                style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // 1. Camera
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              leading: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 20),
+              ),
+              title: const Text("Camera", style: TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.bold)),
+              subtitle: const Text("Capture a new photo using camera", style: TextStyle(color: AppColors.darkTextMuted, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(bCtx);
+                Get.to(() => const InAppCameraScreen(initialIsVideoMode: false));
+              },
+            ),
+
+            // 2. Gallery
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              leading: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.photo_library_rounded, color: Colors.white, size: 20),
+              ),
+              title: const Text("Gallery", style: TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.bold)),
+              subtitle: const Text("Add photo layer from gallery", style: TextStyle(color: AppColors.darkTextMuted, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(bCtx);
+                _addPhotoLayer();
+              },
+            ),
+
+            const SizedBox(height: 8),
+
+            // Cancel Button
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: TextButton(
+                onPressed: () => Navigator.pop(bCtx),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white70,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showMoreOptionsSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (bCtx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        decoration: const BoxDecoration(
+          color: Color(0xFF141414),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                "More Options",
+                style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // 1. Rotate Image
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              leading: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.rotate_right_rounded, color: Colors.white, size: 20),
+              ),
+              title: const Text("Rotate Image", style: TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.bold)),
+              subtitle: const Text("Rotate image by 90 degrees", style: TextStyle(color: AppColors.darkTextMuted, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(bCtx);
+                _rotateImage();
+              },
+            ),
+
+            // 2. Remove Photo
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              leading: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.danger.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 20),
+              ),
+              title: const Text("Remove Photo", style: TextStyle(color: AppColors.danger, fontSize: 14.5, fontWeight: FontWeight.bold)),
+              subtitle: const Text("Discard draft and return to home", style: TextStyle(color: AppColors.darkTextMuted, fontSize: 12)),
+              onTap: () async {
+                Navigator.pop(bCtx);
+                final shouldPop = await _confirmDiscardDraft();
+                if (shouldPop) {
+                  Get.back();
+                }
+              },
+            ),
+
+            const SizedBox(height: 8),
+
+            // Cancel Button
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: TextButton(
+                onPressed: () => Navigator.pop(bCtx),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white70,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -2056,8 +3127,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       onPopInvokedWithResult: (didPop, _) async {
         if (!didPop) {
           final shouldPop = await _confirmDiscardDraft();
-          if (shouldPop && context.mounted) {
-            Navigator.pop(context);
+          if (shouldPop) {
+            Get.back();
           }
         }
       },
@@ -2065,250 +3136,251 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         backgroundColor: Colors.black,
         body: Stack(
           children: [
-            // 1. Fullscreen Canvas Viewport
+            // 1. Primary Full-Screen Immersive Canvas (Media / Text)
             Positioned.fill(
-              child: _buildMediaCanvas(),
-            ),
-
-            // Canvas Tap Handler (Deselects Layer)
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () => setState(() => _selectedLayer = null),
-              ),
-            ),
-
-            // Gradient overlay for contrast
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.black.withValues(alpha: 0.5),
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.7),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: () {
+                        setState(() => _selectedLayer = null);
+                      },
+                      child: _buildMediaCanvas(),
                     ),
                   ),
-                ),
+
+                  // Movable Overlays (Text / Stickers)
+                  ..._layers.map((layer) => _buildLayerWidget(layer)),
+
+                  // Inline TikTok Text Formatting Bar for Selected Text Layer
+                  if (_selectedLayer != null && _selectedLayer!.type == LayerType.text && !_isFullScreenTextEditing)
+                    _buildTikTokInlineTextToolbar(_selectedLayer!),
+
+                  // Full-Screen Immersive Text Editor Overlay
+                  _buildFullScreenTextEditorOverlay(),
+                ],
               ),
             ),
 
-            // 2. Render Stack of Movable Canvas Layers
-            ..._layers.map((layer) => _buildLayerWidget(layer)),
-
-            // 3. Floating Quick Actions Toolbar for Selected Layer
-            if (_selectedLayer != null) ...[
-              _buildObjectToolbar(_selectedLayer!),
-              if (_selectedLayer!.type == LayerType.text)
-                _buildTikTokInlineTextToolbar(_selectedLayer!),
-            ],
-
-            // Top Header Bar
+            // 2. Top Header Overlay Bar (Floating gradient header)
             Positioned(
               top: 0,
               left: 0,
               right: 0,
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
-                        onPressed: () async {
-                          final shouldPop = await _confirmDiscardDraft();
-                          if (shouldPop && context.mounted) {
-                            Navigator.pop(context);
-                          }
-                        },
-                      ),
-
-                      const Text(
-                        "Preview Story",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+              child: Container(
+                padding: const EdgeInsets.only(top: 8),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.black87, Colors.black45, Colors.transparent],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
+                          onPressed: () async {
+                            final shouldPop = await _confirmDiscardDraft();
+                            if (shouldPop) {
+                              Get.back();
+                            }
+                          },
                         ),
-                      ),
 
-                      TextButton(
-                        onPressed: _isPublishing ? null : _publishStory,
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(48, 48),
-                        ),
-                        child: Text(
-                          "Post",
-                          style: TextStyle(
-                            color: _isPublishing ? Colors.white38 : AppColors.communityAccent,
+                        Text(
+                          widget.type == StoryType.text ? "Create Story" : "Preview Story",
+                          style: const TextStyle(
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: 18,
+                            shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
                           ),
                         ),
-                      ),
-                    ],
+
+                        // Placeholder for symmetric centering
+                        const SizedBox(width: 48, height: 48),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
 
-            // Bottom Preview & Edit Controls Overlay (Editing Pills + Caption Input + Action Bar)
+            // 2.5 Animated Floating Trash Delete Target (Active ONLY while dragging elements)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
+              bottom: _isInteractingLayer ? 125 : -80,
+              left: 0,
+              right: 0,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _isInteractingLayer ? 1.0 : 0.0,
+                child: Center(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _isHoveringDeleteZone
+                          ? AppColors.danger.withValues(alpha: 0.95)
+                          : Colors.black.withValues(alpha: 0.75),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: _isHoveringDeleteZone ? Colors.white : Colors.white24,
+                        width: _isHoveringDeleteZone ? 2.0 : 1.0,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _isHoveringDeleteZone ? AppColors.danger.withValues(alpha: 0.6) : Colors.black45,
+                          blurRadius: 16,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.delete_outline_rounded,
+                          color: Colors.white,
+                          size: _isHoveringDeleteZone ? 22 : 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _isHoveringDeleteZone ? "Release to Delete" : "Drag here to delete",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: _isHoveringDeleteZone ? 13.5 : 12.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // 3. Bottom Control Deck Overlay (Floating over canvas bottom)
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
-              child: SafeArea(
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.black.withValues(alpha: 0.0),
-                        Colors.black.withValues(alpha: 0.85),
-                        Colors.black,
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.transparent, Colors.black54, Colors.black87, Colors.black],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Quick Editing Actions Toolbar (Change Photo, Rotate, Retake)
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            TextButton.icon(
-                              onPressed: _replaceMedia,
-                              icon: const Icon(Icons.photo_library_outlined, color: Colors.white, size: 18),
-                              label: const Text("Change Photo", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                              style: TextButton.styleFrom(
-                                backgroundColor: Colors.white.withValues(alpha: 0.12),
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            TextButton.icon(
-                              onPressed: _rotateImage,
-                              icon: const Icon(Icons.rotate_right_rounded, color: Colors.white, size: 18),
-                              label: const Text("Rotate", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                              style: TextButton.styleFrom(
-                                backgroundColor: Colors.white.withValues(alpha: 0.12),
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            TextButton.icon(
-                              onPressed: () async {
-                                final shouldPop = await _confirmDiscardDraft();
-                                if (shouldPop && context.mounted) {
-                                  Navigator.pop(context);
-                                }
-                              },
-                              icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 18),
-                              label: const Text("Retake", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                              style: TextButton.styleFrom(
-                                backgroundColor: Colors.white.withValues(alpha: 0.12),
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Horizontally Scrollable Tool Strip (Icon + Short Label)
+                        SizedBox(
+                          height: 70,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Row(
+                              children: [
+                                // 1. Photo Source (Active)
+                                if (widget.type != StoryType.text)
+                                  _buildHorizontalToolItem(
+                                    icon: Icons.photo_library_outlined,
+                                    label: "Photo",
+                                    onTap: _showPhotoSourceSheet,
+                                  ),
 
-                      const SizedBox(height: 12),
-
-                      // Optional Caption Input Box
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.darkSurfaceSecondary,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.darkBorderSubtle),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.edit_note_rounded, color: AppColors.darkTextMuted, size: 20),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextField(
-                                controller: _captionController,
-                                minLines: 1,
-                                maxLines: 3,
-                                style: const TextStyle(color: Colors.white, fontSize: 14),
-                                decoration: const InputDecoration(
-                                  hintText: "Write something about your story...",
-                                  hintStyle: TextStyle(color: AppColors.darkTextMuted, fontSize: 14),
-                                  border: InputBorder.none,
-                                  isDense: true,
+                                // 2. Add Text Overlay (Active)
+                                _buildHorizontalToolItem(
+                                  icon: Icons.title_rounded,
+                                  label: "Text",
+                                  onTap: () => _openFloatingTextEditor(),
                                 ),
-                              ),
+
+                                // 3. Emoji Sticker (Active)
+                                _buildHorizontalToolItem(
+                                  icon: Icons.emoji_emotions_outlined,
+                                  label: "Emoji",
+                                  onTap: _openEmojiPicker,
+                                ),
+
+                                // 4. Location Tag (Active)
+                                _buildHorizontalToolItem(
+                                  icon: Icons.location_on_outlined,
+                                  label: "Location",
+                                  onTap: _openLocationPicker,
+                                ),
+
+                                // 5. Rotate Image (Active)
+                                if (widget.type != StoryType.text)
+                                  _buildHorizontalToolItem(
+                                    icon: Icons.rotate_right_rounded,
+                                    label: "Rotate",
+                                    onTap: _rotateImage,
+                                  ),
+
+                                // 6. Style / Background (Text Story Mode)
+                                if (widget.type == StoryType.text)
+                                  _buildHorizontalToolItem(
+                                    icon: Icons.palette_outlined,
+                                    label: "Style",
+                                    onTap: _showCustomizeTextSheet,
+                                  ),
+
+                                // 7. Mention Tag (@) (Active)
+                                _buildHorizontalToolItem(
+                                  icon: Icons.alternate_email_rounded,
+                                  label: "Mention",
+                                  onTap: _showMentionSheet,
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
 
-                      const SizedBox(height: 14),
+                        const SizedBox(height: 14),
 
-                      // Bottom Action Buttons (Retake & Post Story)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () async {
-                                final shouldPop = await _confirmDiscardDraft();
-                                if (shouldPop && context.mounted) {
-                                  Navigator.pop(context);
-                                }
-                              },
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.white24),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                              child: const Text(
-                                "Retake",
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                              ),
+                        // Single Primary White "Post Story" Call-To-Action Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: _isPublishing ? null : _publishStory,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              disabledBackgroundColor: Colors.white24,
+                              foregroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                              elevation: 2,
                             ),
+                            child: _isPublishing
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5),
+                                  )
+                                : const Text(
+                                    "Post Story",
+                                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
+                                  ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: _isPublishing ? null : _publishStory,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                disabledBackgroundColor: Colors.white24,
-                                foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                                elevation: 2,
-                              ),
-                              child: _isPublishing
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5),
-                                    )
-                                  : const Text(
-                                      "Post Story",
-                                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
-                                    ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

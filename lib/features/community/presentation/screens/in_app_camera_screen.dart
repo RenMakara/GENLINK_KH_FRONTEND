@@ -127,7 +127,7 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
           );
 
           if (mounted) {
-            Navigator.pop(context);
+            Get.back();
             if (success) {
               AppNotificationBanner.showSuccess(
                 context: context,
@@ -138,13 +138,10 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
             }
           }
         } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (ctx) => StoryCreatorScreen(
-                type: _isVideoMode ? StoryType.video : StoryType.photo,
-                mediaPath: media!.path,
-              ),
+          Get.to(
+            () => StoryCreatorScreen(
+              type: _isVideoMode ? StoryType.video : StoryType.photo,
+              mediaPath: media!.path,
             ),
           );
         }
@@ -162,13 +159,10 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
             : await picker.pickImage(source: ImageSource.gallery, imageQuality: 95);
 
         if (media != null && mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (ctx) => StoryCreatorScreen(
-                type: _isVideoMode ? StoryType.video : StoryType.photo,
-                mediaPath: media!.path,
-              ),
+          Get.to(
+            () => StoryCreatorScreen(
+              type: _isVideoMode ? StoryType.video : StoryType.photo,
+              mediaPath: media!.path,
             ),
           );
         } else {
@@ -277,7 +271,7 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => Get.back(),
                     ),
                     Row(
                       children: [

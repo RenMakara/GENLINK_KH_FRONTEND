@@ -226,14 +226,6 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
     // Show only the latest 3 recent searches
     final displayRecent = _recentSearches.take(3).toList();
 
-    final exploreCategories = [
-      (Icons.article_outlined, 'Posts'),
-      (Icons.people_outline_rounded, 'People'),
-      (Icons.groups_outlined, 'Communities'),
-      (Icons.work_outline_rounded, 'Jobs'),
-      (Icons.event_outlined, 'Events'),
-    ];
-
     final trendingHashtags = [
       '#Flutter',
       '#Internship',
@@ -300,48 +292,7 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
             const SizedBox(height: 18),
           ],
 
-          // ── 2. Explore Categories (Compact Chips) ──
-          const Text(
-            "Explore Categories",
-            style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: exploreCategories.map((cat) {
-              final (icon, name) = cat;
-              return InkWell(
-                onTap: () {
-                  setState(() => _selectedCategory = name);
-                  _searchController.text = name;
-                  _onQueryChanged(name);
-                },
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: AppColors.darkSurfaceSecondary,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.darkBorderSubtle),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(icon, color: AppColors.communityAccent, size: 15),
-                      const SizedBox(width: 6),
-                      Text(
-                        name,
-                        style: const TextStyle(color: AppColors.darkTextPrimary, fontSize: 12.5, fontWeight: FontWeight.w500),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-
-          const SizedBox(height: 18),
+          // ── 2. Trending Topics (Compact Hashtag Chips) ──
 
           // ── 3. Trending Topics (Compact Chips) ──
           const Text(

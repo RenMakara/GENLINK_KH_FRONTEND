@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
 // TRANSACTION
 class Transaction extends StatelessWidget {
@@ -216,5 +217,275 @@ class _DonutPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _DonutPainter oldDelegate) {
     return true;
+  }
+}
+
+// QUICK ACTION
+class QuickAction extends StatefulWidget {
+  final IconData icon;
+  final String title;
+  final Color accent;
+  final Color background;
+  final Color border;
+  final Color textColor;
+  final VoidCallback? onTap;
+
+  const QuickAction({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.accent,
+    required this.background,
+    required this.border,
+    required this.textColor,
+    this.onTap,
+  });
+
+  @override
+  State<QuickAction> createState() => _QuickActionState();
+}
+
+class _QuickActionState extends State<QuickAction> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+
+      onTapDown: (_) {
+        setState(() {
+          _isPressed = true;
+        });
+      },
+
+      onTapUp: (_) {
+        setState(() {
+          _isPressed = false;
+        });
+      },
+
+      onTapCancel: () {
+        setState(() {
+          _isPressed = false;
+        });
+      },
+
+      child: AnimatedScale(
+        scale: _isPressed ? 0.94 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          height: 92,
+          decoration: BoxDecoration(
+            color: _isPressed
+                ? widget.accent.withValues(alpha: .08)
+                : widget.background,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: _isPressed ? widget.accent : widget.border,
+            ),
+            boxShadow: _isPressed
+                ? [
+                    BoxShadow(
+                      color: widget.accent.withValues(alpha: .15),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : [],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: widget.accent.withValues(
+                    alpha: _isPressed ? .18 : .10,
+                  ),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: AnimatedScale(
+                  scale: _isPressed ? 1.1 : 1.0,
+                  duration: const Duration(milliseconds: 120),
+                  child: Icon(widget.icon, size: 20, color: widget.accent),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: Text(
+                  widget.title,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: widget.textColor,
+                    fontSize: 10,
+                    fontWeight: _isPressed ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// APP CARD
+class AppCard extends StatelessWidget {
+  final Widget child;
+  final Color color;
+  final Color borderColor;
+
+  const AppCard({
+    super.key,
+    required this.child,
+    required this.color,
+    required this.borderColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: child,
+    );
+  }
+}
+
+// BALANCE CARD
+class BalanceCard extends StatelessWidget {
+  final bool isDark;
+  final Color surfaceSecondary;
+
+  const BalanceCard({
+    super.key,
+    required this.isDark,
+    required this.surfaceSecondary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurfacePrimary : AppColors.lightPrimary,
+        borderRadius: BorderRadius.circular(20),
+        border: isDark ? Border.all(color: AppColors.darkBorderStrong) : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Net Balance · June 2026',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: .65),
+              fontSize: 12,
+            ),
+          ),
+
+          const SizedBox(height: 5),
+
+          const Text(
+            '\$4,820.50',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.6,
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          Row(
+            children: [
+              Expanded(
+                child: _BalanceItem(
+                  title: 'Income',
+                  amount: '+\$6,200',
+                  amountColor: AppColors.financeAccent,
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              Expanded(
+                child: _BalanceItem(
+                  title: 'Expenses',
+                  amount: '-\$1,379.50',
+                  amountColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// BALANCE ITEM
+class _BalanceItem extends StatelessWidget {
+  final String title;
+  final String amount;
+  final Color amountColor;
+
+  const _BalanceItem({
+    required this.title,
+    required this.amount,
+    required this.amountColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: .55),
+              fontSize: 11,
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          Text(
+            amount,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: amountColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

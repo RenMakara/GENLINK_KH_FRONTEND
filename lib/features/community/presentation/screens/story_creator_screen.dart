@@ -1187,39 +1187,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
         Widget textWidget;
 
-        // Custom stroke outline renderer for Outline font style
-        if (layer.fontStyle == TextStyleType.modern && !hasBackground) {
-          final strokeColor = textLuminance > 0.5 ? Colors.black : Colors.white;
-          textWidget = Stack(
-            children: [
-              Text(
-                layer.text,
-                softWrap: true,
-                textAlign: layer.alignment,
-                style: baseStyle.copyWith(
-                  foreground: Paint()
-                    ..style = PaintingStyle.stroke
-                    ..strokeWidth = 3.5
-                    ..color = strokeColor,
-                  shadows: null,
-                ),
-              ),
-              Text(
-                layer.text,
-                softWrap: true,
-                textAlign: layer.alignment,
-                style: baseStyle.copyWith(shadows: null),
-              ),
-            ],
-          );
-        } else {
-          textWidget = Text(
-            layer.text,
-            softWrap: true,
-            textAlign: layer.alignment,
-            style: baseStyle,
-          );
-        }
+        textWidget = Text(
+          layer.text,
+          softWrap: true,
+          textAlign: layer.alignment,
+          style: baseStyle,
+        );
 
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth * 0.9),

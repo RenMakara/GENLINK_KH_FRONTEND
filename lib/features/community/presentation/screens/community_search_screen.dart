@@ -23,7 +23,6 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
   final FocusNode _focusNode = FocusNode();
 
   String _query = '';
-  late String _selectedCategory;
   bool _isLoading = false;
 
   final List<String> _recentSearches = [
@@ -33,24 +32,9 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
     'Senior Dev Mentors',
   ];
 
-  // Single unified navigation/filter bar
-  final List<String> _categories = [
-    'All',
-    'Posts',
-    'People',
-    'Events',
-    'Jobs',
-    'Communities',
-  ];
-
   @override
   void initState() {
     super.initState();
-    // Map initial tab if matched, default to 'All'
-    _selectedCategory = _categories.firstWhere(
-      (c) => c.toLowerCase() == widget.activeTab.toLowerCase(),
-      orElse: () => 'All',
-    );
     _focusNode.requestFocus();
   }
 
@@ -160,50 +144,6 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
-
-          // ── Single Unified Category Filter Bar ──
-          SizedBox(
-            height: 34,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _categories.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (ctx, i) {
-                final category = _categories[i];
-                final isSelected = _selectedCategory == category;
-                return InkWell(
-                  onTap: () => setState(() => _selectedCategory = category),
-                  borderRadius: BorderRadius.circular(16),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.communityAccent
-                          : AppColors.darkSurfaceSecondary,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.communityAccent
-                            : AppColors.darkBorderSubtle,
-                      ),
-                    ),
-                    child: Text(
-                      category,
-                      style: TextStyle(
-                        color: isSelected ? Colors.black : AppColors.darkTextSecondary,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-
           const SizedBox(height: 12),
 
           // ── Dynamic Body: Idle State vs Live Results ──
@@ -424,12 +364,10 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
       },
     ];
 
-    // Filter by query and category filter
+    // Filter by query match
     final filtered = results.where((item) {
-      final queryMatch = item['title']!.toLowerCase().contains(_query.toLowerCase()) ||
+      return item['title']!.toLowerCase().contains(_query.toLowerCase()) ||
           item['subtitle']!.toLowerCase().contains(_query.toLowerCase());
-      final categoryMatch = _selectedCategory == 'All' || item['category'] == _selectedCategory;
-      return queryMatch && categoryMatch;
     }).toList();
 
     if (filtered.isEmpty) {

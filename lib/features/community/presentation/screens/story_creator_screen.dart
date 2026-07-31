@@ -3071,9 +3071,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     final mq = MediaQuery.of(context);
     final keyboardHeight = mq.viewInsets.bottom;
     final screenWidth = mq.size.width;
-    final textLength = _fullScreenTextController.text.length;
 
-    // Resolve text preview style (live update)
+    // Live text style preview
     final liveTextStyle = _getLayerTextStyle(
       _activeFontStyle,
       _activeTextColor,
@@ -3094,69 +3093,66 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
         child: Material(
-          color: Colors.black.withValues(alpha: 0.35),
+          color: Colors.black.withValues(alpha: 0.55),
           child: SafeArea(
             child: Column(
               children: [
 
-                // ── 1. Top Bar: Cancel (Left), Conditional Counter, Done (Right) ──
+                // ══════ TOP BAR ══════
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: 10),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      TextButton(
-                        onPressed: () => _closeFullScreenTextEditor(save: false),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          backgroundColor: Colors.black45,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      // Cancel pill
+                      GestureDetector(
+                        onTap: () => _closeFullScreenTextEditor(save: false),
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
+                          ),
+                          child: Text('Cancel',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.80),
+                              fontWeight: FontWeight.w500,
+                              fontSize: 13.5,
+                            ),
+                          ),
                         ),
-                        child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                       ),
 
-                      // Counter Badge (ONLY visible when approaching maximum 300 character limit)
-                      if (textLength >= 260)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: textLength >= 300
-                                ? AppColors.danger
-                                : Colors.amber.shade800,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            "$textLength / 300",
-                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                        ),
+                      const Spacer(),
 
-                      ElevatedButton(
-                        onPressed: () => _closeFullScreenTextEditor(save: true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          elevation: 2,
+                      // Done pill
+                      GestureDetector(
+                        onTap: () => _closeFullScreenTextEditor(save: true),
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 9),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                          child: const Text('Done',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13.5,
+                            ),
+                          ),
                         ),
-                        child: const Text("Done", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       ),
                     ],
                   ),
                 ),
 
-                // ── 2. Pure Canvas Direct Typing Area (ZERO Box, ZERO Frame) ──
+                // ══════ TEXT INPUT — no box, pure floating text ══════
                 Expanded(
                   child: GestureDetector(
-                    onTap: () {
-                      if (_fullScreenTextController.text.trim().isNotEmpty) {
-                        _closeFullScreenTextEditor(save: true);
-                      } else {
-                        _closeFullScreenTextEditor(save: false);
-                      }
-                    },
+                    onTap: () => _fullScreenTextFocusNode.requestFocus(),
                     behavior: HitTestBehavior.opaque,
                     child: Center(
                       child: SingleChildScrollView(
@@ -3168,17 +3164,20 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                           maxLines: null,
                           maxLength: 300,
                           keyboardType: TextInputType.multiline,
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _closeFullScreenTextEditor(save: true),
+                          textInputAction: TextInputAction.newline,
                           textAlign: _activeTextAlign,
                           textCapitalization: TextCapitalization.sentences,
                           style: liveTextStyle,
                           cursorColor: _activeTextColor,
                           cursorWidth: 2.5,
                           cursorRadius: const Radius.circular(2),
-                          decoration: const InputDecoration(
-                            hintText: "Start typing...",
-                            hintStyle: TextStyle(color: Colors.white54, fontWeight: FontWeight.w500),
+                          decoration: InputDecoration(
+                            hintText: 'Start typing...',
+                            hintStyle: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.30),
+                              fontSize: _activeFontSize,
+                              fontWeight: FontWeight.w400,
+                            ),
                             border: InputBorder.none,
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
@@ -3190,10 +3189,58 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   ),
                 ),
 
-                // ── 3. Ultra-Clean Instagram Control Deck (Above Keyboard) ──
-                _buildInstagramTextEditorControlBar(),
+                // ══════ BOTTOM CONTROL CARD ══════
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                  margin: EdgeInsets.only(
+                    left: 14,
+                    right: 14,
+                    bottom: keyboardHeight > 0 ? keyboardHeight + 10 : 20,
+                  ),
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xF2111111),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        blurRadius: 28,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // ── Icon tool row: Align, Bold, BG, Font styles ──
+                      _buildIconToolRow(),
 
-                SizedBox(height: keyboardHeight > 0 ? keyboardHeight + 8 : 16),
+                      // Gradient divider
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Container(
+                          height: 1,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.transparent,
+                                Colors.white.withValues(alpha: 0.12),
+                                Colors.white.withValues(alpha: 0.12),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // ── Color picker row ──
+                      _buildColorPickerRow(),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -3202,145 +3249,218 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     );
   }
 
-  Widget _buildInstagramTextEditorControlBar() {
-    const textStylePills = [
-      (TextStyleType.classic, 'Classic'),
-      (TextStyleType.bold, 'Bubble'),
-      (TextStyleType.modern, 'Outline'),
-      (TextStyleType.minimal, 'Neon'),
+  /// Icon-only tool row: Alignment, Bold, Background toggle, and 4 font style icons
+  Widget _buildIconToolRow() {
+    final isBoldActive = _activeFontStyle == TextStyleType.bold ||
+        _activeFontStyle == TextStyleType.campus;
+    final hasBg = _activeTextBgStyle != TextBgStyle.none;
+
+    // Font style icon mappings (icon-only, no labels)
+    final fontStyles = [
+      (TextStyleType.classic, Icons.text_fields_rounded, 'Aa'),
+      (TextStyleType.modern, Icons.auto_awesome_rounded, null),
+      (TextStyleType.minimal, Icons.light_mode_outlined, null),
+      (TextStyleType.handwriting, Icons.edit_rounded, null),
     ];
 
-    const primaryColors = [
+    return Row(
+      children: [
+        // Alignment
+        _buildToolIcon(
+          icon: _activeTextAlign == TextAlign.center
+              ? Icons.format_align_center_rounded
+              : _activeTextAlign == TextAlign.left
+                  ? Icons.format_align_left_rounded
+                  : Icons.format_align_right_rounded,
+          active: false,
+          onTap: () => setState(() {
+            if (_activeTextAlign == TextAlign.center) {
+              _activeTextAlign = TextAlign.left;
+            } else if (_activeTextAlign == TextAlign.left) {
+              _activeTextAlign = TextAlign.right;
+            } else {
+              _activeTextAlign = TextAlign.center;
+            }
+          }),
+        ),
+
+        const SizedBox(width: 6),
+
+        // Bold
+        _buildToolIcon(
+          icon: Icons.format_bold_rounded,
+          active: isBoldActive,
+          onTap: () => setState(() {
+            _activeFontStyle = isBoldActive ? TextStyleType.classic : TextStyleType.bold;
+            if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+              _selectedLayer!.fontStyle = _activeFontStyle;
+            }
+          }),
+        ),
+
+        const SizedBox(width: 6),
+
+        // Background toggle
+        _buildToolIcon(
+          icon: hasBg ? Icons.rectangle_rounded : Icons.crop_free_rounded,
+          active: hasBg,
+          onTap: () => setState(() {
+            if (_activeTextBgStyle == TextBgStyle.none) {
+              _activeTextBgStyle = TextBgStyle.rounded;
+            } else if (_activeTextBgStyle == TextBgStyle.rounded) {
+              _activeTextBgStyle = TextBgStyle.filled;
+            } else if (_activeTextBgStyle == TextBgStyle.filled) {
+              _activeTextBgStyle = TextBgStyle.outline;
+            } else {
+              _activeTextBgStyle = TextBgStyle.none;
+            }
+          }),
+        ),
+
+        // Vertical separator
+        Container(
+          width: 1,
+          height: 24,
+          margin: const EdgeInsets.symmetric(horizontal: 10),
+          color: Colors.white.withValues(alpha: 0.12),
+        ),
+
+        // Font style icons
+        ...fontStyles.map((item) {
+          final (fStyle, iconData, textLabel) = item;
+          final isSel = _activeFontStyle == fStyle;
+          return Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: GestureDetector(
+              onTap: () => setState(() {
+                _activeFontStyle = fStyle;
+                if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+                  _selectedLayer!.fontStyle = fStyle;
+                }
+              }),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.07),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.15),
+                  ),
+                ),
+                child: Center(
+                  child: textLabel != null
+                      ? Text(
+                          textLabel,
+                          style: TextStyle(
+                            color: isSel ? Colors.black : Colors.white.withValues(alpha: 0.70),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : Icon(
+                          iconData,
+                          size: 17,
+                          color: isSel ? Colors.black : Colors.white.withValues(alpha: 0.70),
+                        ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  /// Color picker row with glow on selected color
+  Widget _buildColorPickerRow() {
+    const colors = [
       Colors.white,
       Colors.black,
-      Color(0xFFFACC15), // Amber
-      Color(0xFFF43F5E), // Rose
-      Color(0xFF38BDF8), // Sky
-      Color(0xFFA855F7), // Violet
-      Color(0xFF34D399), // Emerald
-      Color(0xFFFB923C), // Orange
+      Color(0xFFFACC15),
+      Color(0xFFF43F5E),
+      Color(0xFF38BDF8),
+      Color(0xFFA855F7),
+      Color(0xFF34D399),
+      Color(0xFFFB923C),
+      Color(0xFFE879F9),
+      Color(0xFF4ADE80),
     ];
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ── Text Style Selector Pills (Classic / Bubble / Outline / Neon) ──
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: textStylePills.map((item) {
-              final (fStyle, label) = item;
-              final isSel = _activeFontStyle == fStyle;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _activeFontStyle = fStyle;
-                    if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
-                      _selectedLayer!.fontStyle = fStyle;
-                    }
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isSel ? Colors.white : Colors.black.withValues(alpha: 0.45),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: isSel ? Colors.white : Colors.white24,
-                      width: 1.0,
-                    ),
-                  ),
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: isSel ? Colors.black : Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12.5,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: colors.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
+        itemBuilder: (_, i) {
+          final c = colors[i];
+          final isSel = _activeTextColor == c;
+          final lum = c.computeLuminance();
+          final checkColor = lum > 0.5 ? Colors.black : Colors.white;
 
-          const SizedBox(height: 10),
-
-          // ── Font Selector & Color Dots Row ──
-          Row(
-            children: [
-              // Alignment Toggle Button
-              IconButton(
-                icon: Icon(
-                  _activeTextAlign == TextAlign.center
-                      ? Icons.format_align_center_rounded
-                      : (_activeTextAlign == TextAlign.left
-                          ? Icons.format_align_left_rounded
-                          : Icons.format_align_right_rounded),
-                  color: Colors.white,
-                  size: 22,
+          return GestureDetector(
+            onTap: () => setState(() {
+              _activeTextColor = c;
+              if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+                _selectedLayer!.color = c;
+              }
+            }),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              width: isSel ? 36 : 30,
+              height: isSel ? 36 : 30,
+              decoration: BoxDecoration(
+                color: c,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.25),
+                  width: isSel ? 2.5 : 1.0,
                 ),
-                onPressed: () {
-                  setState(() {
-                    if (_activeTextAlign == TextAlign.center) {
-                      _activeTextAlign = TextAlign.left;
-                    } else if (_activeTextAlign == TextAlign.left) {
-                      _activeTextAlign = TextAlign.right;
-                    } else {
-                      _activeTextAlign = TextAlign.center;
-                    }
-                  });
-                },
+                boxShadow: isSel
+                    ? [
+                        BoxShadow(
+                          color: c.withValues(alpha: 0.60),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        )
+                      ]
+                    : null,
               ),
+              child: isSel
+                  ? Icon(Icons.check_rounded, size: 15, color: checkColor)
+                  : null,
+            ),
+          );
+        },
+      ),
+    );
+  }
 
-              const SizedBox(width: 4),
-
-              // Color Swatches Horizontal Scroll
-              Expanded(
-                child: SizedBox(
-                  height: 32,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: primaryColors.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 8),
-                    itemBuilder: (_, i) {
-                      final c = primaryColors[i];
-                      final isSel = _activeTextColor == c;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _activeTextColor = c;
-                            if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
-                              _selectedLayer!.color = c;
-                            }
-                          });
-                        },
-                        child: Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: c,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSel ? Colors.white : Colors.white30,
-                              width: isSel ? 2.5 : 1.0,
-                            ),
-                          ),
-                          child: isSel
-                              ? Icon(Icons.check_rounded, size: 14, color: c == Colors.white ? Colors.black : Colors.white)
-                              : null,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ],
+  /// Small circular icon button for the editor tool row
+  Widget _buildToolIcon({
+    required IconData icon,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: active ? Colors.white : Colors.white.withValues(alpha: 0.08),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: active ? Colors.white : Colors.white.withValues(alpha: 0.18),
           ),
-        ],
+        ),
+        child: Icon(icon, size: 18, color: active ? Colors.black : Colors.white),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/budget_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/ewallet.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/expense_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/learn_finance.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/saving_goals_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/widgets/finance_widget.dart';
 
@@ -645,7 +646,8 @@ class FinanceScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const SavingGoalsScreen(),
+                                builder: (context) =>
+                                    const LearnFinanceScreen(),
                               ),
                             );
                           },

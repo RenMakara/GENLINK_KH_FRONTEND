@@ -292,9 +292,7 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
             const SizedBox(height: 18),
           ],
 
-          // ── 2. Trending Topics (Compact Hashtag Chips) ──
-
-          // ── 3. Trending Topics (Compact Chips) ──
+          // ── 2. Trending Topics (Compact Chips) ──
           const Text(
             "🔥 Trending",
             style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),

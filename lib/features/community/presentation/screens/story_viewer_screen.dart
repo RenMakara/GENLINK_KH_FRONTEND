@@ -208,6 +208,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
   bool _isPaused = false;
   bool _showHeartAnimation = false;
   bool _isClosing = false;
+  bool _isGoingNext = true;
 
   final TextEditingController _replyController = TextEditingController();
 
@@ -391,6 +392,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
 
   void _nextStory() {
     _progressAnimController.stop();
+    _isGoingNext = true;
     final group = _currentGroup;
     if (group == null) {
       _closeViewer();
@@ -418,6 +420,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
 
   void _previousStory() {
     _progressAnimController.stop();
+    _isGoingNext = false;
     final group = _currentGroup;
     if (group == null) {
       _closeViewer();
@@ -1798,6 +1801,32 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     return File(clean);
   }
 
+  Widget _buildUnifiedStoryPageContent(StoryItemModel story, StoryGroupModel group) {
+    return Stack(
+      children: [
+        Positioned.fill(child: _buildMediaWidget(story, group)),
+        ...story.layers.map((layer) => _buildViewerLayerWidget(layer)),
+        if (story.layers.isEmpty && story.textContent != null && story.textContent!.trim().isNotEmpty)
+          Positioned(
+            left: 28,
+            right: 28,
+            bottom: 120,
+            child: Text(
+              story.textContent!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                height: 1.35,
+                shadows: [Shadow(color: Colors.black87, blurRadius: 16)],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildMediaWidget(StoryItemModel story, StoryGroupModel group) {
     Color gStartColor = const Color(0xFF0F172A);
     Color gEndColor = const Color(0xFF1E293B);
@@ -2317,15 +2346,31 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
         },
         child: Stack(
           children: [
-            // Full Screen Story Media with Smooth Fade Transitions (BoxFit.cover)
+            // Full Screen Story Content with Ultra-Comfortable 100ms Anchored Crossfade (WhatsApp / Instagram Comfort Standard)
             Positioned.fill(
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 280),
+                duration: const Duration(milliseconds: 100),
                 switchInCurve: Curves.easeOut,
-                switchOutCurve: Curves.easeIn,
+                switchOutCurve: Curves.easeOut,
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  final isNewChild = (child.key as ValueKey<String>).value == "story_${story.id}";
+                  // Micro-shift of ~8px (0.02 screen width) for direction hint while keeping content visually anchored
+                  final double microShift = _isGoingNext ? 0.02 : -0.02;
+
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: isNewChild ? Offset(microShift, 0.0) : Offset.zero,
+                        end: isNewChild ? Offset.zero : Offset(-microShift, 0.0),
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  );
+                },
                 child: KeyedSubtree(
-                  key: ValueKey("media_${story.id}"),
-                  child: _buildMediaWidget(story, group),
+                  key: ValueKey("story_${story.id}"),
+                  child: _buildUnifiedStoryPageContent(story, group),
                 ),
               ),
             ),
@@ -2369,28 +2414,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                 ),
               ),
             ),
-
-            // Faithful Story Canvas Layers Overlay
-            ...story.layers.map((layer) => _buildViewerLayerWidget(layer)),
-
-            // Fallback Story Text Overlay (if no canvas layers exist)
-            if (story.layers.isEmpty && story.textContent != null && story.textContent!.trim().isNotEmpty)
-              Positioned(
-                left: 28,
-                right: 28,
-                bottom: 120,
-                child: Text(
-                  story.textContent!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    height: 1.35,
-                    shadows: [Shadow(color: Colors.black87, blurRadius: 16)],
-                  ),
-                ),
-              ),
 
             // Left/Right Touch Gesture Detection Zones
             Positioned.fill(

@@ -35,6 +35,9 @@ class StoryController extends GetxController {
     String? bgGradientStart,
     String? bgGradientEnd,
     List<MovableStoryLayer>? layers,
+    double bgScale = 1.0,
+    dynamic bgOffset,
+    double bgRotation = 0.0,
   }) async {
     if (isUploading.value) return false;
     isUploading.value = true;
@@ -48,13 +51,18 @@ class StoryController extends GetxController {
         bgGradientStart: bgGradientStart,
         bgGradientEnd: bgGradientEnd,
         layers: layers,
+        bgScale: bgScale,
+        bgOffset: bgOffset,
+        bgRotation: bgRotation,
       );
 
-      // Optimistically update owner story group in reactive tray list
+      // Update owner story group in reactive tray list (preventing duplicates)
       final ownerGroupIdx = storyGroups.indexWhere((g) => g.isOwner);
       if (ownerGroupIdx != -1) {
         final group = storyGroups[ownerGroupIdx];
-        group.stories.insert(0, newStory);
+        if (!group.stories.any((s) => s.id == newStory.id)) {
+          group.stories.insert(0, newStory);
+        }
         storyGroups[ownerGroupIdx] = StoryGroupModel(
           userId: group.userId,
           userName: group.userName,

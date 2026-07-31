@@ -35,6 +35,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   /// these two match the design and cover the common cases.
   static const _linkedIn = 'LINKEDIN';
   static const _website = 'WEBSITE';
+  static const _github = 'GITHUB';
+  static const _telegram = 'TELEGRAM';
 
   final _formKey = GlobalKey<FormState>();
   final _fullName = TextEditingController();
@@ -43,8 +45,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _university = TextEditingController();
   final _location = TextEditingController();
   final _avatarUrl = TextEditingController();
+  final _coverUrl = TextEditingController();
   final _linkedInUrl = TextEditingController();
   final _websiteUrl = TextEditingController();
+  final _githubUrl = TextEditingController();
+  final _telegramUrl = TextEditingController();
 
   String? _workStatus;
 
@@ -65,6 +70,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
     _linkedInUrl.text = _existingLink(_linkedIn);
     _websiteUrl.text = _existingLink(_website);
+    _githubUrl.text = _existingLink(_github);
+    _telegramUrl.text = _existingLink(_telegram);
   }
 
   String _existingLink(String platform) {
@@ -81,8 +88,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _university.dispose();
     _location.dispose();
     _avatarUrl.dispose();
+    _coverUrl.dispose();
     _linkedInUrl.dispose();
     _websiteUrl.dispose();
+    _githubUrl.dispose();
+    _telegramUrl.dispose();
     super.dispose();
   }
 
@@ -104,10 +114,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     // Avatar has its own endpoint; only call it when it actually changed.
     final avatar = _avatarUrl.text.trim();
-    if (avatar != previousAvatar) await _controller.updateAvatar(avatar);
+    if (avatar != previousAvatar && avatar.isNotEmpty) {
+      await _controller.updateAvatar(avatar);
+    }
 
     await _saveSocialLink(_linkedIn, _linkedInUrl.text.trim());
     await _saveSocialLink(_website, _websiteUrl.text.trim());
+    await _saveSocialLink(_github, _githubUrl.text.trim());
+    await _saveSocialLink(_telegram, _telegramUrl.text.trim());
 
     Get.back<void>();
   }
@@ -234,6 +248,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   keyboardType: TextInputType.url,
                   prefixIcon: Icons.public,
                   hint: 'https://…',
+                ),
+                const SizedBox(height: AppSpacing.md),
+                AppInput(
+                  label: 'GitHub',
+                  controller: _githubUrl,
+                  keyboardType: TextInputType.url,
+                  prefixIcon: Icons.code,
+                  hint: 'https://github.com/…',
+                ),
+                const SizedBox(height: AppSpacing.md),
+                AppInput(
+                  label: 'Telegram',
+                  controller: _telegramUrl,
+                  keyboardType: TextInputType.url,
+                  prefixIcon: Icons.send_rounded,
+                  hint: 'https://t.me/…',
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 AppButton(

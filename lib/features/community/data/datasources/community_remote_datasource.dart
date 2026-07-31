@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import '../../../../core/errors/app_error.dart';
+import '../../../../core/network/api_endpoints.dart';
 import '../../domain/models/community_post_model.dart';
 
 class CommunityRemoteDataSource {
@@ -14,9 +16,10 @@ class CommunityRemoteDataSource {
       authorName: 'Sokny Enat',
       authorTag: '@soknyenat',
       authorAvatar: 'assets/images/user_profile.png',
-      isVerified: false, // Normal student account - NO blue verified badge!
+      isVerified: false,
       timeAgo: '15m ago',
-      content: 'Building cross-platform mobile apps with Flutter & Cloud Infrastructure at ACLEDA University of Business! 🚀💻 #Flutter #CloudComputing #CampusLink',
+      content:
+          'Building cross-platform mobile apps with Flutter & Cloud Infrastructure at ACLEDA University of Business! 🚀💻 #Flutter #CloudComputing #CampusLink',
       imageUrls: [
         'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800',
       ],
@@ -34,9 +37,10 @@ class CommunityRemoteDataSource {
       authorName: 'Chhaeng Sokuntheara',
       authorTag: '@chhaengsokuntheara',
       authorAvatar: 'assets/images/sokuntheara_profile.png',
-      isVerified: false, // Student Developer account - NO blue verified badge!
+      isVerified: false,
       timeAgo: '1h ago',
-      content: '✨ Working on a new UI/UX design for CampusLink KH. Every detail matters when creating an app that\'s simple, modern, and enjoyable to use. Looking forward to sharing more updates soon! 🎨📱',
+      content:
+          '✨ Working on a new UI/UX design for CampusLink KH. Every detail matters when creating an app that\'s simple, modern, and enjoyable to use. Looking forward to sharing more updates soon! 🎨📱',
       imageUrls: [
         'assets/images/sokuntheara_post.png',
       ],
@@ -55,9 +59,10 @@ class CommunityRemoteDataSource {
       authorName: 'Sum Sambo',
       authorTag: '@sumsambo',
       authorAvatar: 'assets/images/sum_sambo_profile.png',
-      isVerified: false, // Student Developer account - NO blue verified badge!
+      isVerified: false,
       timeAgo: '3h ago',
-      content: '🔐 Cybersecurity is not just about protecting systems—it\'s about protecting people. Today I spent time learning about web application security and common vulnerabilities. Every day is a chance to become a better security professional. 💻🛡️',
+      content:
+          '🔐 Cybersecurity is not just about protecting systems—it\'s about protecting people. Today I spent time learning about web application security and common vulnerabilities. Every day is a chance to become a better security professional. 💻🛡️',
       imageUrls: [
         'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800',
       ],
@@ -76,9 +81,10 @@ class CommunityRemoteDataSource {
       authorName: 'Heng Chansela',
       authorTag: '@hengchansela',
       authorAvatar: 'assets/images/heng_chansela_profile.png',
-      isVerified: false, // Normal student account - NO blue verified badge!
+      isVerified: false,
       timeAgo: '2h ago',
-      content: '❤️ Creating beautiful memories together after classes at AUB.\nCampus life is more meaningful when you have someone to share every moment with. ☕📸',
+      content:
+          '❤️ Creating beautiful memories together after classes at AUB.\nCampus life is more meaningful when you have someone to share every moment with. ☕📸',
       imageUrls: [
         'assets/images/heng_chansela_post.png',
       ],
@@ -97,9 +103,10 @@ class CommunityRemoteDataSource {
       authorName: 'Ren Makara',
       authorTag: '@renmakara',
       authorAvatar: 'assets/images/ren_makara_profile.png',
-      isVerified: false, // Student Developer account - NO blue verified badge!
+      isVerified: false,
       timeAgo: '5h ago',
-      content: '🚀 មកស្គាល់គម្រោង «AuthGate»\n\nAuthGate គឺជាប្រព័ន្ធគ្រប់គ្រងសិទ្ធិចូលប្រើប្រាស់ និងផ្ទៀងផ្ទាត់អត្តសញ្ញាណ (Authentication & Access Control System) ដែលអភិវឌ្ឍដោយប្រើ Spring Boot Microservices។\n\nFeatures:\n• Secure Login & Authentication\n• Role-Based Access Control (RBAC)\n• JWT Authentication\n• Refresh Token\n• REST API\n• Spring Boot Microservices\n• Docker\n• Swagger API Documentation\n\n#SpringBoot #Microservices #Java #BackendDevelopment #Docker #JWT #AuthGate',
+      content:
+          '🚀 មកស្គាល់គម្រោង «AuthGate»\n\nAuthGate គឺជាប្រព័ន្ធគ្រប់គ្រងសិទ្ធិចូលប្រើប្រាស់ និងផ្ទៀងផ្ទាត់អត្តសញ្ញាណ (Authentication & Access Control System) ដែលអភិវឌ្ឍដោយប្រើ Spring Boot Microservices។\n\nFeatures:\n• Secure Login & Authentication\n• Role-Based Access Control (RBAC)\n• JWT Authentication\n• Refresh Token\n• REST API\n• Spring Boot Microservices\n• Docker\n• Swagger API Documentation\n\n#SpringBoot #Microservices #Java #BackendDevelopment #Docker #JWT #AuthGate',
       imageUrls: [
         'assets/images/authgate_project.png',
       ],
@@ -114,14 +121,41 @@ class CommunityRemoteDataSource {
     ),
   ];
 
-  Future<List<CommunityPostModel>> fetchPosts({int page = 1, int limit = 10}) async {
+  Future<List<CommunityPostModel>> fetchPosts({
+    int page = 1,
+    int limit = 10,
+  }) async {
     try {
-      final response = await dio.get('/community/posts/feed', queryParameters: {'page': page - 1, 'size': limit});
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityFeed,
+          queryParameters: {'page': page - 1, 'size': limit},
+        ),
+      );
       if (response.statusCode == 200 && response.data != null) {
-        final data = response.data['data'];
-        final List<dynamic> content = data is Map ? (data['content'] ?? []) : (data is List ? data : []);
+        final body = response.data;
+        dynamic rawData;
+        if (body is Map<String, dynamic>) {
+          rawData = body['data'];
+        } else {
+          rawData = body;
+        }
+
+        List<dynamic> content = [];
+        if (rawData is Map<String, dynamic>) {
+          content = (rawData['content'] as List<dynamic>?) ?? [];
+        } else if (rawData is List) {
+          content = rawData;
+        }
+
         if (content.isNotEmpty) {
-          return content.map((json) => CommunityPostModel.fromJson(json as Map<String, dynamic>)).toList();
+          return content
+              .map(
+                (json) => CommunityPostModel.fromJson(
+                  json as Map<String, dynamic>,
+                ),
+              )
+              .toList();
         }
       }
     } catch (_) {}
@@ -140,7 +174,7 @@ class CommunityRemoteDataSource {
       authorName: 'Sokny Enat',
       authorTag: '@soknyenat',
       authorAvatar: 'assets/images/user_profile.png',
-      isVerified: false, // Normal student account
+      isVerified: false,
       timeAgo: 'Just now',
       content: content,
       imageUrls: imageUrls,
@@ -155,14 +189,23 @@ class CommunityRemoteDataSource {
     );
 
     try {
-      final response = await dio.post('/community/posts', data: {
-        'contentText': content,
-        'imageUrl': imageUrls.isNotEmpty ? imageUrls.first : null,
-        'visibility': visibility.toUpperCase(),
-        'postType': 'NORMAL',
-      });
-      if (response.statusCode == 200 && response.data != null && response.data['data'] != null) {
-        return CommunityPostModel.fromJson(response.data['data'] as Map<String, dynamic>);
+      final response = await guardDio(
+        () => dio.post<dynamic>(
+          ApiEndpoints.communityPosts,
+          data: {
+            'contentText': content,
+            'imageUrl': imageUrls.isNotEmpty ? imageUrls.first : null,
+            'visibility': visibility.toUpperCase(),
+            'postType': 'NORMAL',
+          },
+        ),
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final body = response.data;
+        final data = body is Map<String, dynamic> ? body['data'] : null;
+        if (data is Map<String, dynamic>) {
+          return CommunityPostModel.fromJson(data);
+        }
       }
     } catch (_) {}
 
@@ -172,7 +215,9 @@ class CommunityRemoteDataSource {
 
   Future<bool> deletePost(String postId) async {
     try {
-      await dio.delete('/community/posts/$postId');
+      await guardDio(
+        () => dio.delete<dynamic>(ApiEndpoints.communityPostDetail(postId)),
+      );
     } catch (_) {}
     _mockPosts.removeWhere((p) => p.id == postId);
     return true;
@@ -180,7 +225,9 @@ class CommunityRemoteDataSource {
 
   Future<bool> toggleLike(String postId) async {
     try {
-      await dio.post('/community/posts/$postId/like');
+      await guardDio(
+        () => dio.post<dynamic>(ApiEndpoints.communityPostLike(postId)),
+      );
     } catch (_) {}
     final idx = _mockPosts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
@@ -193,7 +240,9 @@ class CommunityRemoteDataSource {
 
   Future<bool> toggleBookmark(String postId) async {
     try {
-      await dio.post('/posts/$postId/bookmark');
+      await guardDio(
+        () => dio.post<dynamic>(ApiEndpoints.communityPostBookmark(postId)),
+      );
     } catch (_) {}
     final idx = _mockPosts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
@@ -204,10 +253,20 @@ class CommunityRemoteDataSource {
 
   Future<List<CommentModel>> fetchComments(String postId) async {
     try {
-      final response = await dio.get('/posts/$postId/comments');
+      final response = await guardDio(
+        () => dio.get<dynamic>(ApiEndpoints.communityPostComments(postId)),
+      );
       if (response.statusCode == 200 && response.data != null) {
-        final List<dynamic> data = response.data['data'] ?? response.data;
-        return data.map((json) => CommentModel.fromJson(json)).toList();
+        final body = response.data;
+        final rawData =
+            body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        if (rawData is List) {
+          return rawData
+              .map(
+                (json) => CommentModel.fromJson(json as Map<String, dynamic>),
+              )
+              .toList();
+        }
       }
     } catch (_) {}
 
@@ -217,7 +276,8 @@ class CommunityRemoteDataSource {
         postId: postId,
         userId: 'u_10',
         userName: 'Rathana P.',
-        userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+        userAvatar:
+            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
         text: 'Awesome post! Looking forward to seeing more updates 🔥',
         timeAgo: '1h ago',
         likesCount: 3,
@@ -227,7 +287,8 @@ class CommunityRemoteDataSource {
         postId: postId,
         userId: 'u_11',
         userName: 'Sothea N.',
-        userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
+        userAvatar:
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
         text: 'Great work team! Keep it up 👏',
         timeAgo: '30m ago',
         likesCount: 1,
@@ -235,20 +296,32 @@ class CommunityRemoteDataSource {
     ];
   }
 
-  Future<CommentModel> addComment(String postId, String text, {String? parentCommentId}) async {
+  Future<CommentModel> addComment(
+    String postId,
+    String text, {
+    String? parentCommentId,
+  }) async {
     final comment = CommentModel(
       id: 'c_${DateTime.now().millisecondsSinceEpoch}',
       postId: postId,
       userId: 'current_user',
-      userName: 'Enat Sokny',
-      userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
+      userName: 'Sokny Enat',
+      userAvatar: 'assets/images/user_profile.png',
       text: text,
       timeAgo: 'Just now',
       parentCommentId: parentCommentId,
     );
 
     try {
-      await dio.post('/posts/$postId/comments', data: comment.toJson());
+      await guardDio(
+        () => dio.post<dynamic>(
+          ApiEndpoints.communityPostComments(postId),
+          data: {
+            'text': text,
+            'parentCommentId': parentCommentId,
+          },
+        ),
+      );
     } catch (_) {}
 
     final idx = _mockPosts.indexWhere((p) => p.id == postId);

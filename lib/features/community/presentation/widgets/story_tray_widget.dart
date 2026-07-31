@@ -66,20 +66,13 @@ class StoryTrayWidget extends StatelessWidget {
                 child: GestureDetector(
                   onTap: () {
                     if (group.stories.isNotEmpty) {
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          opaque: false,
-                          transitionDuration: const Duration(milliseconds: 250),
-                          reverseTransitionDuration: const Duration(milliseconds: 250),
-                          pageBuilder: (context, animation, secondaryAnimation) => StoryViewerScreen(
-                            initialGroupIndex: idx,
-                            groups: groups,
-                          ),
-                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                            return FadeTransition(opacity: animation, child: child);
-                          },
+                      Get.to(
+                        () => StoryViewerScreen(
+                          initialGroupIndex: idx,
+                          groups: groups,
                         ),
+                        opaque: false,
+                        transition: Transition.fadeIn,
                       );
                     } else {
                       _showCreateStorySheet(context, controller);
@@ -142,20 +135,13 @@ class StoryTrayWidget extends StatelessWidget {
               padding: const EdgeInsets.only(right: 14),
               child: GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    PageRouteBuilder(
-                      opaque: false,
-                      transitionDuration: const Duration(milliseconds: 250),
-                      reverseTransitionDuration: const Duration(milliseconds: 250),
-                      pageBuilder: (context, animation, secondaryAnimation) => StoryViewerScreen(
-                        initialGroupIndex: idx,
-                        groups: groups,
-                      ),
-                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                        return FadeTransition(opacity: animation, child: child);
-                      },
+                  Get.to(
+                    () => StoryViewerScreen(
+                      initialGroupIndex: idx,
+                      groups: groups,
                     ),
+                    opaque: false,
+                    transition: Transition.fadeIn,
                   );
                 },
                 child: Column(

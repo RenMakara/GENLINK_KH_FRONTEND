@@ -1,6 +1,5 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../domain/models/story_model.dart';
@@ -21,21 +20,14 @@ class StoryCreationPickerSheet extends StatelessWidget {
     );
   }
 
-  bool get _isDesktopPlatform {
-    if (kIsWeb) return false;
-    return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
-  }
-
   Future<void> _pickFromGallery(BuildContext context) async {
     try {
       final picker = ImagePicker();
       final XFile? media = await picker.pickMedia(imageQuality: 95);
 
-      if (context.mounted) {
-        Navigator.pop(context);
-      }
+      Get.back();
 
-      if (media != null && context.mounted) {
+      if (media != null) {
         final pathLower = media.path.toLowerCase();
         final isVideo = pathLower.endsWith('.mp4') ||
             pathLower.endsWith('.mov') ||
@@ -43,13 +35,10 @@ class StoryCreationPickerSheet extends StatelessWidget {
             pathLower.endsWith('.mkv') ||
             pathLower.endsWith('.webm');
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (ctx) => StoryCreatorScreen(
-              type: isVideo ? StoryType.video : StoryType.photo,
-              mediaPath: media.path,
-            ),
+        Get.to(
+          () => StoryCreatorScreen(
+            type: isVideo ? StoryType.video : StoryType.photo,
+            mediaPath: media.path,
           ),
         );
       }
@@ -65,30 +54,23 @@ class StoryCreationPickerSheet extends StatelessWidget {
   }
 
   void _openCamera(BuildContext context) {
-    Navigator.pop(context);
-    if (_isDesktopPlatform) {
-      AppNotificationBanner.showSuccess(
-        context: context,
-        title: "Desktop Platform Notice",
-        message: "Opening camera studio...",
-      );
+    Get.back();
+    try {
+      Get.to(() => const InAppCameraScreen(initialIsVideoMode: false));
+    } catch (e) {
+      if (context.mounted) {
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: "Camera Error",
+          message: "Could not open camera screen: $e",
+        );
+      }
     }
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (ctx) => const InAppCameraScreen(initialIsVideoMode: false),
-      ),
-    );
   }
 
   void _openTextStory(BuildContext context) {
-    Navigator.pop(context);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (ctx) => const StoryCreatorScreen(type: StoryType.text),
-      ),
-    );
+    Get.back();
+    Get.to(() => const StoryCreatorScreen(type: StoryType.text));
   }
 
   @override

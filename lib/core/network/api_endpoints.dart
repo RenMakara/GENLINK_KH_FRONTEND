@@ -73,4 +73,27 @@ abstract final class ApiEndpoints {
   static const mobileFinanceDashboard = '$_base/mobile/finance-dashboard';
   static const mobileProductivityDashboard =
       '$_base/mobile/productivity-dashboard';
+
+  // ── Community ─────────────────────────────────────────────────────────
+  static const communityFeed = '$_base/community/posts/feed';
+  static const communityPosts = '$_base/community/posts';
+
+  static String communityPostDetail(String postId) =>
+      '$_base/community/posts/$postId';
+
+  static String communityPostLike(String postId) =>
+      '$_base/community/posts/$postId/like';
+
+  static String communityPostBookmark(String postId) =>
+      '$_base/community/posts/$postId/bookmark';
+
+  static String communityPostComments(String postId) =>
+      '$_base/community/posts/$postId/comments';
+
+  // ── Notifications ─────────────────────────────────────────────────────
+  static const notifications = '$_base/notifications';
+
+  // ── Chats ─────────────────────────────────────────────────────────────
+  static const chats = '$_base/community/chats';
 }
+

@@ -45,6 +45,10 @@ abstract final class AppRoutes {
   // ── Main ──────────────────────────────────────────────────────────────
   static const home = '/home';
 
+  static const notifications = '/notifications';
+  static const chat = '/chat';
+  static const chatDetail = '/chat/detail';
+
   // ── Profile & settings ────────────────────────────────────────────────
   /// Three-step setup shown once, right after registration.
   static const profileSetup = '/profile/setup';
@@ -60,3 +64,4 @@ abstract final class AppRoutes {
   static const settingsPrivacy = '/settings/privacy';
   static const settingsAccount = '/settings/account';
 }
+

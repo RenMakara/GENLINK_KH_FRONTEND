@@ -1,6 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
+import '../../../../core/errors/app_error.dart';
+import '../../../../core/network/dio_provider.dart';
 import '../../data/datasources/community_remote_datasource.dart';
 import '../../data/repositories/community_repository_impl.dart';
 import '../../domain/models/community_post_model.dart';
@@ -14,7 +17,15 @@ class CommunityController extends GetxController {
   final selectedCategory = 'Feed'.obs;
   final categories = ['Feed', 'Forum', 'Career', 'Event'];
 
+  // Feed State & Pagination
   final isLoadingFeed = false.obs;
+  final isRefreshingFeed = false.obs;
+  final isLoadingMore = false.obs;
+  final hasMorePosts = true.obs;
+  final currentPage = 1.obs;
+  final hasError = false.obs;
+  final errorMessage = ''.obs;
+
   final isUploadingPost = false.obs;
   final uploadProgress = 0.0.obs;
 
@@ -23,15 +34,36 @@ class CommunityController extends GetxController {
   final isLoadingComments = false.obs;
 
   final stories = <StoryModel>[
-    StoryModel(id: '1', name: 'Your Story', avatarText: 'S', isUser: true, hasActiveStory: false),
+    StoryModel(
+      id: '1',
+      name: 'Your Story',
+      avatarText: 'S',
+      isUser: true,
+      hasActiveStory: false,
+    ),
     StoryModel(id: '2', name: 'Dary', avatarText: 'D', hasActiveStory: true),
-    StoryModel(id: '3', name: 'AIS Tech Club', avatarText: 'AIS', hasActiveStory: true),
+    StoryModel(
+      id: '3',
+      name: 'AIS Tech Club',
+      avatarText: 'AIS',
+      hasActiveStory: true,
+    ),
     StoryModel(id: '4', name: 'MayMay', avatarText: 'M', hasActiveStory: true),
   ].obs;
 
   final recommendedGroups = <RecommendedGroupModel>[
-    RecommendedGroupModel(id: 'g1', name: 'IT Club Cambodia', memberCount: '1.2k Members', iconText: 'IT'),
-    RecommendedGroupModel(id: 'g2', name: 'UI/UX Design KH', memberCount: '850 Members', iconText: 'UX'),
+    RecommendedGroupModel(
+      id: 'g1',
+      name: 'IT Club Cambodia',
+      memberCount: '1.2k Members',
+      iconText: 'IT',
+    ),
+    RecommendedGroupModel(
+      id: 'g2',
+      name: 'UI/UX Design KH',
+      memberCount: '850 Members',
+      iconText: 'UX',
+    ),
   ].obs;
 
   final suggestedUsers = <SuggestedUserModel>[
@@ -39,42 +71,106 @@ class CommunityController extends GetxController {
       id: 'u1',
       name: 'Rathana P.',
       role: 'Mobile Dev at CADT',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      avatarUrl:
+          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
     ),
     SuggestedUserModel(
       id: 'u2',
       name: 'Sothea N.',
       role: 'Product Designer',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+      avatarUrl:
+          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
     ),
   ].obs;
 
   @override
   void onInit() {
     super.onInit();
-    final dio = Dio(BaseOptions(baseUrl: 'https://api.genlink.kh/api/v1'));
+    final dio =
+        Get.isRegistered<Dio>() ? Get.find<Dio>() : DioProvider.create();
     final dataSource = CommunityRemoteDataSource(dio: dio);
     repository = CommunityRepositoryImpl(remoteDataSource: dataSource);
+
+    scrollController.addListener(_onScrollListener);
     fetchPosts();
+  }
+
+  @override
+  void onClose() {
+    scrollController.removeListener(_onScrollListener);
+    scrollController.dispose();
+    super.onClose();
+  }
+
+  void _onScrollListener() {
+    if (scrollController.hasClients &&
+        scrollController.position.pixels >=
+            scrollController.position.maxScrollExtent - 200 &&
+        !isLoadingMore.value &&
+        !isLoadingFeed.value &&
+        hasMorePosts.value &&
+        selectedCategory.value == 'Feed') {
+      loadMorePosts();
+    }
   }
 
   void setCategory(String cat) {
     selectedCategory.value = cat;
   }
 
-  Future<void> fetchPosts() async {
-    isLoadingFeed.value = true;
+  /// Initial or fresh load of posts
+  Future<void> fetchPosts({bool isRefresh = false}) async {
+    if (isRefresh) {
+      isRefreshingFeed.value = true;
+    } else {
+      isLoadingFeed.value = true;
+    }
+    hasError.value = false;
+    errorMessage.value = '';
+
     try {
+      currentPage.value = 1;
       final fetched = await repository.getPosts(page: 1, limit: 10);
       posts.assignAll(fetched);
-    } catch (_) {
+      hasMorePosts.value = fetched.length >= 10;
+    } catch (e) {
+      hasError.value = true;
+      if (e is AppError) {
+        errorMessage.value = e.message;
+      } else {
+        errorMessage.value = 'Failed to load community feed.';
+      }
     } finally {
       isLoadingFeed.value = false;
+      isRefreshingFeed.value = false;
     }
   }
 
+  /// Pagination: load next page of posts
+  Future<void> loadMorePosts() async {
+    if (isLoadingMore.value || !hasMorePosts.value) return;
+
+    isLoadingMore.value = true;
+    try {
+      final nextPage = currentPage.value + 1;
+      final fetched = await repository.getPosts(page: nextPage, limit: 10);
+      if (fetched.isNotEmpty) {
+        posts.addAll(fetched);
+        currentPage.value = nextPage;
+        hasMorePosts.value = fetched.length >= 10;
+      } else {
+        hasMorePosts.value = false;
+      }
+    } catch (_) {
+      // Keep existing posts on pagination error
+    } finally {
+      isLoadingMore.value = false;
+    }
+  }
+
+  /// Pull-to-refresh handler
   Future<void> refreshFeed() async {
-    await fetchPosts();
+    await fetchPosts(isRefresh: true);
   }
 
   /// Optimistic post creation: Inserts at TOP of feed immediately
@@ -93,12 +189,10 @@ class CommunityController extends GetxController {
     bool allowMultipleAnswers = false,
   }) async {
     isUploadingPost.value = true;
-    uploadProgress.value = 0.2;
+    uploadProgress.value = 0.3;
 
-    await Future.delayed(const Duration(milliseconds: 200));
-    uploadProgress.value = 0.6;
-    await Future.delayed(const Duration(milliseconds: 200));
-    uploadProgress.value = 1.0;
+    await Future.delayed(const Duration(milliseconds: 150));
+    uploadProgress.value = 0.7;
 
     try {
       final createdPost = await repository.createPost(
@@ -120,30 +214,50 @@ class CommunityController extends GetxController {
       );
 
       posts.insert(0, richPost);
+      uploadProgress.value = 1.0;
       isUploadingPost.value = false;
       return true;
     } catch (e) {
       isUploadingPost.value = false;
+      final errorText = e is AppError ? e.message : 'Could not publish post.';
       Get.snackbar(
         "Upload Failed",
-        "Could not publish post. Please check your internet connection.",
+        errorText,
         snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.redAccent.withValues(alpha: 0.9),
+        colorText: Colors.white,
       );
       return false;
     }
   }
 
+  /// Optimistic toggle like with network sync
   void toggleLike(String postId) {
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
       final p = posts[idx];
+      final previousState = p.isLiked;
+      final previousCount = p.likesCount;
+
       p.isLiked = !p.isLiked;
       p.likesCount += p.isLiked ? 1 : -1;
       posts[idx] = p.copyWith();
-      repository.toggleLike(postId);
+
+      repository.toggleLike(postId).catchError((_) {
+        // Revert on error
+        final currentIdx = posts.indexWhere((item) => item.id == postId);
+        if (currentIdx != -1) {
+          final item = posts[currentIdx];
+          item.isLiked = previousState;
+          item.likesCount = previousCount;
+          posts[currentIdx] = item.copyWith();
+        }
+        return false;
+      });
     }
   }
 
+  /// Optimistic toggle bookmark with network sync
   void toggleBookmark(String postId) {
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
@@ -157,13 +271,22 @@ class CommunityController extends GetxController {
   CommunityPostModel? _recentlyDeletedPost;
   int _recentlyDeletedIndex = 0;
 
+  /// Delete post with optimistic removal & instant undo support
   void deletePost(String postId) {
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
       _recentlyDeletedIndex = idx;
       _recentlyDeletedPost = posts[idx];
       posts.removeAt(idx);
-      repository.deletePost(postId);
+
+      repository.deletePost(postId).catchError((_) {
+        // Revert on deletion failure
+        if (_recentlyDeletedPost != null) {
+          posts.insert(_recentlyDeletedIndex.clamp(0, posts.length), _recentlyDeletedPost!);
+          _recentlyDeletedPost = null;
+        }
+        return false;
+      });
     }
   }
 
@@ -295,7 +418,7 @@ class CommunityController extends GetxController {
         commentsCount: 0,
         sharesCount: 0,
         isOwner: true,
-        repostedBy: 'Enat Sokny',
+        repostedBy: 'Sokny Enat',
         repostCaption: caption,
         visibility: original.visibility,
         community: original.community,
@@ -309,6 +432,7 @@ class CommunityController extends GetxController {
     try {
       final comments = await repository.getComments(postId);
       activeComments.assignAll(comments);
+    } catch (_) {
     } finally {
       isLoadingComments.value = false;
     }
@@ -316,15 +440,17 @@ class CommunityController extends GetxController {
 
   Future<void> addComment(String postId, String text) async {
     if (text.trim().isEmpty) return;
-    final comment = await repository.addComment(postId, text);
-    activeComments.add(comment);
+    try {
+      final comment = await repository.addComment(postId, text);
+      activeComments.add(comment);
 
-    final idx = posts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      final p = posts[idx];
-      p.commentsCount += 1;
-      posts[idx] = p.copyWith();
-    }
+      final idx = posts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        final p = posts[idx];
+        p.commentsCount += 1;
+        posts[idx] = p.copyWith();
+      }
+    } catch (_) {}
   }
 
   void toggleGroupJoin(String groupId) {

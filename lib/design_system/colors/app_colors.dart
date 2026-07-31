@@ -70,6 +70,8 @@ abstract final class AppColors {
   static const danger = Color(0xFFEF6A6A);
   static const success = Color(0xFF4ADE80);
   static const warning = Color(0xFFF5B84B);
+  static const info = Color(0xFF5DADEC);
+
 
   // Feature accents — highlights and badges only, never page backgrounds.
   static const brandPrimary = Color(0xFF1F6FEB);

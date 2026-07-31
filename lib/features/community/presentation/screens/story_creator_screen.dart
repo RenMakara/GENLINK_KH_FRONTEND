@@ -1,3 +1,4 @@
+// ignore_for_file: unused_element
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,6 +7,80 @@ import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../domain/models/story_model.dart';
 import '../controllers/story_controller.dart';
+
+class StoryTemplateModel {
+  final String id;
+  final String name;
+  final String icon;
+  final List<Color> backgroundColors;
+  final Color textColor;
+  final TextStyleType defaultFontStyle;
+  final Color cardBorderColor;
+  final Color cardBackgroundColor;
+  final String? badgeLabel;
+  final IconData? badgeIcon;
+  final bool showQuotes;
+  final bool showNotebookLines;
+  final bool showDotGrid;
+
+  const StoryTemplateModel({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.backgroundColors,
+    this.textColor = Colors.white,
+    this.defaultFontStyle = TextStyleType.bold,
+    this.cardBorderColor = Colors.transparent,
+    this.cardBackgroundColor = Colors.transparent,
+    this.badgeLabel,
+    this.badgeIcon,
+    this.showQuotes = false,
+    this.showNotebookLines = false,
+    this.showDotGrid = false,
+  });
+}
+
+class _NotebookLinesPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.08)
+      ..strokeWidth = 1.0;
+
+    final marginPaint = Paint()
+      ..color = const Color(0xFFEF4444).withValues(alpha: 0.3)
+      ..strokeWidth = 1.5;
+
+    canvas.drawLine(const Offset(48, 0), Offset(48, size.height), marginPaint);
+
+    const double lineSpacing = 32.0;
+    for (double y = 80; y < size.height - 100; y += lineSpacing) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _DotGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final dotPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.15)
+      ..style = PaintingStyle.fill;
+
+    const double spacing = 28.0;
+    for (double x = 20; x < size.width; x += spacing) {
+      for (double y = 100; y < size.height - 120; y += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.2, dotPaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
 
 class StoryCreatorScreen extends StatefulWidget {
   final StoryType type;
@@ -29,15 +104,230 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   String _selectedVisibility = 'Public';
 
   String? _activeMediaPath;
+  final TextEditingController _captionController = TextEditingController();
+  double _imageRotation = 0.0;
   final TransformationController _transformationController = TransformationController();
 
+  double _bgImageScale = 1.0;
+  Offset _bgImageOffset = Offset.zero;
+  double _bgBaseScale = 1.0;
+  Offset _bgBaseFocalPoint = Offset.zero;
+  Offset _bgBaseOffset = Offset.zero;
+
+  void _rotateImage() {
+    setState(() {
+      _imageRotation = (_imageRotation + 90) % 360;
+    });
+  }
+
+  // Full-Screen Immersive Text Editor State
+  bool _isFullScreenTextEditing = false;
+  MovableStoryLayer? _editingTextLayer;
+  final TextEditingController _fullScreenTextController = TextEditingController();
+  final FocusNode _fullScreenTextFocusNode = FocusNode();
+  Color _activeTextColor = Colors.white;
+  TextStyleType _activeFontStyle = TextStyleType.bold;
+  TextBgStyle _activeTextBgStyle = TextBgStyle.none;
+  TextAlign _activeTextAlign = TextAlign.center;
+
+  /// Responsive font size: scales with the narrowest screen dimension.
+  double get _activeFontSize {
+    final shortSide = MediaQuery.of(context).size.shortestSide;
+    if (shortSide < 360) return 20.0;
+    if (shortSide < 400) return 22.0;
+    return 24.0;
+  }
+
+  int _selectedTemplateIdx = 0;
   int _gradientIdx = 0;
+  TextAlign _textAlign = TextAlign.center;
+  TextStyleType _fontStyle = TextStyleType.bold;
   final List<List<Color>> _gradients = [
     [const Color(0xFF000000), const Color(0xFF111827)],
     [const Color(0xFF0F172A), const Color(0xFF1E293B)],
     [const Color(0xFF312E81), const Color(0xFF1E1B4B)],
     [const Color(0xFF065F46), const Color(0xFF022C22)],
     [const Color(0xFF831843), const Color(0xFF500724)],
+    [const Color(0xFF4C1D95), const Color(0xFF1E1B4B)],
+  ];
+
+  static const List<StoryTemplateModel> _storyTemplates = [
+    StoryTemplateModel(
+      id: 'minimal',
+      name: 'Minimal',
+      icon: '✨',
+      backgroundColors: [Color(0xFF000000), Color(0xFF111827)],
+      textColor: Colors.white,
+      defaultFontStyle: TextStyleType.bold,
+      cardBorderColor: Colors.white24,
+      showDotGrid: true,
+    ),
+    StoryTemplateModel(
+      id: 'notebook',
+      name: 'Notebook',
+      icon: '📝',
+      backgroundColors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+      textColor: Color(0xFFF8FAFC),
+      defaultFontStyle: TextStyleType.classic,
+      showNotebookLines: true,
+    ),
+    StoryTemplateModel(
+      id: 'sticky_note',
+      name: 'Sticky Note',
+      icon: '📌',
+      backgroundColors: [Color(0xFF18181B), Color(0xFF09090B)],
+      textColor: Color(0xFF1C1917),
+      defaultFontStyle: TextStyleType.bold,
+      cardBackgroundColor: Color(0xFFFEF08A),
+      cardBorderColor: Color(0xFFFDE047),
+    ),
+    StoryTemplateModel(
+      id: 'quote',
+      name: 'Quote',
+      icon: '💬',
+      backgroundColors: [Color(0xFF090D16), Color(0xFF1E293B)],
+      textColor: Colors.white,
+      defaultFontStyle: TextStyleType.minimal,
+      showQuotes: true,
+    ),
+    StoryTemplateModel(
+      id: 'campus',
+      name: 'Campus',
+      icon: '🎓',
+      backgroundColors: [Color(0xFF064E3B), Color(0xFF022C22)],
+      textColor: Colors.white,
+      defaultFontStyle: TextStyleType.bold,
+      badgeLabel: 'ACLEDA Campus KH',
+      badgeIcon: Icons.school_rounded,
+      cardBorderColor: Color(0xFF10B981),
+    ),
+    StoryTemplateModel(
+      id: 'career',
+      name: 'Career',
+      icon: '💼',
+      backgroundColors: [Color(0xFF0F172A), Color(0xFF0284C7)],
+      textColor: Colors.white,
+      defaultFontStyle: TextStyleType.modern,
+      badgeLabel: 'Career & Tech',
+      badgeIcon: Icons.work_rounded,
+      cardBorderColor: Color(0xFF38BDF8),
+    ),
+    StoryTemplateModel(
+      id: 'pastel',
+      name: 'Pastel',
+      icon: '🎨',
+      backgroundColors: [Color(0xFF2A2038), Color(0xFF1E1E2E)],
+      textColor: Color(0xFFF472B6),
+      defaultFontStyle: TextStyleType.classic,
+      cardBorderColor: Color(0xFFC084FC),
+    ),
+    StoryTemplateModel(
+      id: 'dark',
+      name: 'Dark',
+      icon: '🌙',
+      backgroundColors: [Color(0xFF000000), Color(0xFF050505)],
+      textColor: Colors.white,
+      defaultFontStyle: TextStyleType.minimal,
+      cardBorderColor: Colors.white38,
+    ),
+    StoryTemplateModel(
+      id: 'gradient',
+      name: 'Gradient',
+      icon: '🌈',
+      backgroundColors: [Color(0xFF4C1D95), Color(0xFF1E1B4B)],
+      textColor: Colors.white,
+      defaultFontStyle: TextStyleType.bold,
+      cardBackgroundColor: Colors.white10,
+      cardBorderColor: Colors.white24,
+    ),
+    StoryTemplateModel(
+      id: 'nature',
+      name: 'Nature',
+      icon: '🌿',
+      backgroundColors: [Color(0xFF065F46), Color(0xFF064E3B)],
+      textColor: Color(0xFFECFDF5),
+      defaultFontStyle: TextStyleType.classic,
+      badgeLabel: 'Eco Vibe',
+      badgeIcon: Icons.eco_rounded,
+      cardBorderColor: Color(0xFF34D399),
+    ),
+    StoryTemplateModel(
+      id: 'cute',
+      name: 'Cute',
+      icon: '🩷',
+      backgroundColors: [Color(0xFF831843), Color(0xFF500724)],
+      textColor: Color(0xFFF472B6),
+      defaultFontStyle: TextStyleType.classic,
+      badgeLabel: 'Cute Vibe',
+      badgeIcon: Icons.favorite_rounded,
+      cardBorderColor: Color(0xFFF472B6),
+    ),
+    StoryTemplateModel(
+      id: 'happy',
+      name: 'Happy',
+      icon: '☀️',
+      backgroundColors: [Color(0xFF78350F), Color(0xFF451A03)],
+      textColor: Color(0xFFFDE047),
+      defaultFontStyle: TextStyleType.bold,
+      badgeLabel: 'Sunshine',
+      badgeIcon: Icons.wb_sunny_rounded,
+      cardBorderColor: Color(0xFFFACC15),
+    ),
+    StoryTemplateModel(
+      id: 'sad',
+      name: 'Sad',
+      icon: '🌧',
+      backgroundColors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+      textColor: Color(0xFF94A3B8),
+      defaultFontStyle: TextStyleType.classic,
+      badgeLabel: 'Rainy Vibe',
+      badgeIcon: Icons.water_drop_rounded,
+      cardBorderColor: Color(0xFF64748B),
+    ),
+    StoryTemplateModel(
+      id: 'angry',
+      name: 'Angry',
+      icon: '😡',
+      backgroundColors: [Color(0xFF450A0A), Color(0xFF180202)],
+      textColor: Color(0xFFF87171),
+      defaultFontStyle: TextStyleType.bold,
+      badgeLabel: 'Intensity',
+      badgeIcon: Icons.local_fire_department_rounded,
+      cardBorderColor: Color(0xFFEF4444),
+    ),
+    StoryTemplateModel(
+      id: 'tired',
+      name: 'Tired',
+      icon: '😴',
+      backgroundColors: [Color(0xFF1E1B4B), Color(0xFF0F0E26)],
+      textColor: Color(0xFFA5B4FC),
+      defaultFontStyle: TextStyleType.minimal,
+      badgeLabel: 'Late Night',
+      badgeIcon: Icons.bedtime_rounded,
+      cardBorderColor: Color(0xFF818CF8),
+    ),
+    StoryTemplateModel(
+      id: 'fun',
+      name: 'Fun',
+      icon: '🎉',
+      backgroundColors: [Color(0xFF581C87), Color(0xFF2E1065)],
+      textColor: Color(0xFFE879F9),
+      defaultFontStyle: TextStyleType.bold,
+      badgeLabel: 'Party & Doodles',
+      badgeIcon: Icons.celebration_rounded,
+      cardBorderColor: Color(0xFFC084FC),
+    ),
+    StoryTemplateModel(
+      id: 'love',
+      name: 'Love',
+      icon: '❤️',
+      backgroundColors: [Color(0xFF701A75), Color(0xFF4A044E)],
+      textColor: Color(0xFFF472B6),
+      defaultFontStyle: TextStyleType.classic,
+      badgeLabel: 'Romance',
+      badgeIcon: Icons.favorite_rounded,
+      cardBorderColor: Color(0xFFF472B6),
+    ),
   ];
 
   // Exclusive GenLink Campus Stickers
@@ -64,14 +354,15 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     '🔥 Trending': ['🔥', '🚀', '💯', '✨', '⚡', '🎉', '🌟', '💪', '🏆'],
     '💻 Dev & Tech': ['💻 Flutter', '☕ Java', '🚀 Docker', '⚡ SpringBoot', '🤖 AI Lab', '🌐 Cloud'],
   };
+  final List<String> _recentStickers = ['🔥', '🚀', '📚', '☕', '💯'];
 
   final List<String> _locationOptions = [
-    '📍 ACLEDA University of Business',
-    '📍 Main Library',
-    '📍 Phnom Penh, Cambodia',
-    '📍 CADT Innovation Lab',
-    '📍 RUPP Campus',
-    '📍 Campus Cafe',
+    'ACLEDA University of Business',
+    'Main Library',
+    'Phnom Penh, Cambodia',
+    'CADT Innovation Lab',
+    'RUPP Campus',
+    'Campus Cafe',
   ];
 
   final List<String> _musicOptions = [
@@ -93,25 +384,29 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   void initState() {
     super.initState();
     _activeMediaPath = widget.mediaPath;
-
+    _fullScreenTextController.addListener(_onTextChanged);
     if (widget.type == StoryType.text) {
-      _layers.add(
-        MovableStoryLayer(
-          id: 'initial_text',
-          type: LayerType.text,
-          text: 'Share your moment...',
-          offset: const Offset(60, 280),
-          scale: 1.2,
-          fontStyle: TextStyleType.bold,
-          bgStyle: TextBgStyle.rounded,
-        ),
-      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _openFloatingTextEditor();
+        }
+      });
+    }
+  }
+
+  void _onTextChanged() {
+    if (mounted && _isFullScreenTextEditing) {
+      setState(() {});
     }
   }
 
   @override
   void dispose() {
+    _fullScreenTextController.removeListener(_onTextChanged);
+    _captionController.dispose();
     _transformationController.dispose();
+    _fullScreenTextController.dispose();
+    _fullScreenTextFocusNode.dispose();
     super.dispose();
   }
 
@@ -121,99 +416,31 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     });
   }
 
+  // Immersive Full-Screen Text Editor — replaces old popup dialog
   void _openFloatingTextEditor([MovableStoryLayer? existingLayer]) {
-    final textController = TextEditingController(text: existingLayer?.text ?? '');
-
-    showDialog(
-      context: context,
-      barrierColor: Colors.black54,
-      builder: (dlgCtx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(20),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFF141414),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFF262626)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: textController,
-                autofocus: true,
-                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                maxLines: 4,
-                minLines: 1,
-                textAlign: existingLayer?.alignment ?? TextAlign.center,
-                onChanged: (val) {
-                  if (existingLayer != null) {
-                    setState(() {
-                      existingLayer.text = val;
-                    });
-                  }
-                },
-                onSubmitted: (val) {
-                  final textVal = val.trim();
-                  if (textVal.isNotEmpty) {
-                    if (existingLayer != null) {
-                      setState(() => existingLayer.text = textVal);
-                    } else {
-                      final newLayer = MovableStoryLayer(
-                        id: DateTime.now().microsecondsSinceEpoch.toString(),
-                        type: LayerType.text,
-                        text: textVal,
-                        offset: Offset(80, 200 + (_layers.length * 20)),
-                      );
-                      setState(() {
-                        _layers.add(newLayer);
-                        _selectedLayer = newLayer;
-                      });
-                    }
-                  }
-                  Navigator.pop(dlgCtx);
-                },
-                decoration: const InputDecoration(
-                  hintText: "Type story text...",
-                  hintStyle: TextStyle(color: Colors.white38, fontSize: 18),
-                  border: InputBorder.none,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.check_rounded, color: Colors.white, size: 24),
-                    onPressed: () {
-                      final textVal = textController.text.trim();
-                      if (textVal.isNotEmpty) {
-                        if (existingLayer != null) {
-                          setState(() => existingLayer.text = textVal);
-                        } else {
-                          final newLayer = MovableStoryLayer(
-                            id: DateTime.now().microsecondsSinceEpoch.toString(),
-                            type: LayerType.text,
-                            text: textVal,
-                            offset: Offset(80, 200 + (_layers.length * 20)),
-                          );
-                          setState(() {
-                            _layers.add(newLayer);
-                            _selectedLayer = newLayer;
-                          });
-                        }
-                      }
-                      Navigator.pop(dlgCtx);
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    setState(() {
+      _editingTextLayer = existingLayer;
+      _isFullScreenTextEditing = true;
+      if (existingLayer != null) {
+        _fullScreenTextController.text = existingLayer.text;
+        _activeTextColor = existingLayer.color;
+        _activeFontStyle = existingLayer.fontStyle;
+        _activeTextBgStyle = existingLayer.bgStyle;
+        _activeTextAlign = existingLayer.alignment;
+        _activeTextScale = existingLayer.scale;
+      } else {
+        _fullScreenTextController.clear();
+        _activeTextColor = Colors.white;
+        _activeFontStyle = TextStyleType.bold;
+        _activeTextBgStyle = TextBgStyle.none; // transparent by default
+        _activeTextAlign = TextAlign.center;
+        _activeTextScale = 1.0;
+      }
+    });
+    // Small delay so the overlay is built before requesting focus
+    Future.delayed(const Duration(milliseconds: 80), () {
+      if (mounted) _fullScreenTextFocusNode.requestFocus();
+    });
   }
 
   void _showStickerSheet() {
@@ -650,15 +877,19 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   }
 
   void _addMentionLayer(String mention) {
+    final size = MediaQuery.of(context).size;
+    final formatted = mention.startsWith('@') ? mention : '@$mention';
+
     setState(() {
-      _layers.add(
-        MovableStoryLayer(
-          id: DateTime.now().microsecondsSinceEpoch.toString(),
-          type: LayerType.mention,
-          text: mention,
-          offset: Offset(90, 240 + (_layers.length * 15)),
-        ),
+      final newLayer = MovableStoryLayer(
+        id: "mention_${DateTime.now().microsecondsSinceEpoch}",
+        type: LayerType.mention,
+        text: formatted,
+        offset: Offset(size.width * 0.22, size.height * 0.28 + (_layers.length * 20)),
+        scale: 1.0,
       );
+      _layers.add(newLayer);
+      _selectedLayer = newLayer;
     });
   }
 
@@ -699,6 +930,34 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     );
   }
 
+  Future<void> _addPhotoLayer() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? media = await picker.pickMedia(imageQuality: 95);
+      if (media != null && mounted) {
+        final newLayer = MovableStoryLayer(
+          id: DateTime.now().microsecondsSinceEpoch.toString(),
+          type: LayerType.image,
+          text: media.path,
+          offset: Offset(60, 180 + (_layers.length * 25)),
+          scale: 1.0,
+        );
+        setState(() {
+          _layers.add(newLayer);
+          _selectedLayer = newLayer;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: "Photo Selection Error",
+          message: "Could not pick image: $e",
+        );
+      }
+    }
+  }
+
   Future<void> _replaceMedia() async {
     try {
       final picker = ImagePicker();
@@ -706,6 +965,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       if (media != null && mounted) {
         setState(() {
           _activeMediaPath = media.path;
+          _transformationController.value = Matrix4.identity();
+          _imageRotation = 0.0;
         });
       }
     } catch (e) {
@@ -921,50 +1182,302 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     );
   }
 
+  void _toggleZoomDoubleTap() {
+    setState(() {
+      final currentScale = _transformationController.value.getMaxScaleOnAxis();
+      if (currentScale > 1.05) {
+        _transformationController.value = Matrix4.identity();
+      } else {
+        _transformationController.value = Matrix4.diagonal3Values(2.0, 2.0, 1.0);
+      }
+    });
+  }
+
   Widget _buildImageCanvas(File file) {
+    final size = MediaQuery.of(context).size;
+
     return GestureDetector(
-      onDoubleTap: _resetZoom,
-      child: InteractiveViewer(
-        transformationController: _transformationController,
-        minScale: 1.0,
-        maxScale: 4.0,
-        child: Image.file(
-          file,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          filterQuality: FilterQuality.high,
-          frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {
-            if (wasSynchronouslyLoaded || frame != null) {
-              return child;
-            }
-            return Container(
-              color: Colors.black,
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2.5,
+      onTap: () {
+        setState(() => _selectedLayer = null);
+      },
+      onDoubleTap: () {
+        setState(() {
+          if (_bgImageScale > 1.05) {
+            _bgImageScale = 1.0;
+            _bgImageOffset = Offset.zero;
+          } else {
+            _bgImageScale = 2.0;
+          }
+        });
+      },
+      onScaleStart: (details) {
+        _bgBaseScale = _bgImageScale;
+        _bgBaseOffset = _bgImageOffset;
+        _bgBaseFocalPoint = details.focalPoint;
+      },
+      onScaleUpdate: (details) {
+        setState(() {
+          // 1. Smooth Pinch-to-Zoom (0.1x to 4.0x)
+          if (details.scale != 1.0) {
+            _bgImageScale = (_bgBaseScale * details.scale).clamp(0.10, 4.0);
+          }
+
+          // 2. Smooth 360° Multi-Directional Pan (Left, Right, Up, Down)
+          final delta = details.focalPoint - _bgBaseFocalPoint;
+          final maxPanX = size.width * 0.85;
+          final maxPanY = size.height * 0.85;
+
+          final nextX = (_bgBaseOffset.dx + delta.dx).clamp(-maxPanX, maxPanX);
+          final nextY = (_bgBaseOffset.dy + delta.dy).clamp(-maxPanY, maxPanY);
+
+          _bgImageOffset = Offset(nextX, nextY);
+        });
+      },
+      child: Container(
+        color: Colors.black,
+        width: double.infinity,
+        height: double.infinity,
+        child: Center(
+          child: Transform.translate(
+            offset: _bgImageOffset,
+            child: Transform.scale(
+              scale: _bgImageScale,
+              child: RotatedBox(
+                quarterTurns: (_imageRotation / 90).round() % 4,
+                child: Image.file(
+                  file,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  filterQuality: FilterQuality.high,
+                  errorBuilder: (ctx, err, stack) => _buildErrorMediaPlaceholder(),
                 ),
               ),
-            );
-          },
-          errorBuilder: (ctx, err, stack) => _buildErrorMediaPlaceholder(),
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildMediaCanvas() {
-    if (_activeMediaPath == null || _activeMediaPath!.isEmpty) {
-      return Container(
+  Widget _buildTextStoryTemplateCanvas() {
+    final tpl = _storyTemplates[_selectedTemplateIdx.clamp(0, _storyTemplates.length - 1)];
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: Container(
+        key: ValueKey(tpl.id),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: _gradients[_gradientIdx],
+            colors: tpl.backgroundColors,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
-      );
+        child: Stack(
+          children: [
+            // Notebook Lines Pattern
+            if (tpl.showNotebookLines)
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _NotebookLinesPainter(),
+                ),
+              ),
+
+            // Dot Grid Pattern
+            if (tpl.showDotGrid)
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _DotGridPainter(),
+                ),
+              ),
+
+            // Card Frame or Card Surface
+            if (tpl.cardBackgroundColor != Colors.transparent || tpl.cardBorderColor != Colors.transparent)
+              Center(
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.85,
+                  height: MediaQuery.of(context).size.height * 0.52,
+                  decoration: BoxDecoration(
+                    color: tpl.cardBackgroundColor,
+                    borderRadius: BorderRadius.circular(24),
+                    border: tpl.cardBorderColor != Colors.transparent
+                        ? Border.all(color: tpl.cardBorderColor, width: 1.5)
+                        : null,
+                    boxShadow: tpl.cardBackgroundColor != Colors.transparent
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.4),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ]
+                        : null,
+                  ),
+                ),
+              ),
+
+            // Quotes Decorative Marks
+            if (tpl.showQuotes) ...[
+              Positioned(
+                top: 100,
+                left: 28,
+                child: Text(
+                  "“",
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    fontSize: 120,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'serif',
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 140,
+                right: 28,
+                child: Text(
+                  "”",
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    fontSize: 120,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'serif',
+                  ),
+                ),
+              ),
+            ],
+
+            // Badge Header (Campus / Career / Nature)
+            if (tpl.badgeLabel != null)
+              Positioned(
+                top: 110,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white24, width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (tpl.badgeIcon != null) ...[
+                          Icon(tpl.badgeIcon, size: 14, color: Colors.white),
+                          const SizedBox(width: 6),
+                        ],
+                        Text(
+                          tpl.badgeLabel!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStoryTemplateSelectorStrip() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 16, bottom: 8),
+          child: Row(
+            children: [
+              Icon(Icons.style_rounded, size: 14, color: Colors.white70),
+              SizedBox(width: 6),
+              Text(
+                "TEMPLATES",
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 68,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _storyTemplates.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 10),
+            itemBuilder: (ctx, idx) {
+              final tpl = _storyTemplates[idx];
+              final isSel = _selectedTemplateIdx == idx;
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedTemplateIdx = idx;
+                    _gradientIdx = idx % _gradients.length;
+                    if (tpl.textColor != Colors.white) {
+                      _activeTextColor = tpl.textColor;
+                    }
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 58,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: tpl.backgroundColors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isSel ? Colors.white : Colors.white24,
+                      width: isSel ? 2.5 : 1.0,
+                    ),
+                    boxShadow: isSel
+                        ? [BoxShadow(color: Colors.white.withValues(alpha: 0.3), blurRadius: 8)]
+                        : null,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(tpl.icon, style: const TextStyle(fontSize: 18)),
+                      const SizedBox(height: 2),
+                      Text(
+                        tpl.name,
+                        style: TextStyle(
+                          color: isSel ? Colors.white : Colors.white70,
+                          fontSize: 10,
+                          fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+      ],
+    );
+  }
+
+  Widget _buildMediaCanvas() {
+    if (_activeMediaPath == null || _activeMediaPath!.isEmpty || widget.type == StoryType.text) {
+      return _buildTextStoryTemplateCanvas();
     }
 
     final isVideo = _isVideoFile(_activeMediaPath!);
@@ -987,7 +1500,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
     try {
       final controller = Get.find<StoryController>();
-      final textContent = _layers.isNotEmpty ? _layers.first.text : "CampusLink Story";
+      final caption = _captionController.text.trim();
+      final String? textContent = caption.isNotEmpty ? caption : null;
 
       final success = await controller.publishStory(
         type: widget.type,
@@ -995,12 +1509,15 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         textContent: textContent,
         visibility: _selectedVisibility,
         layers: List.from(_layers),
+        bgScale: _bgImageScale,
+        bgOffset: _bgImageOffset,
+        bgRotation: _imageRotation,
       );
 
       if (mounted) {
         setState(() => _isPublishing = false);
         if (success) {
-          Navigator.pop(context);
+          Get.until((route) => route.isFirst);
           AppNotificationBanner.showSuccess(
             context: context,
             title: "✓ Story Live",
@@ -1022,132 +1539,152 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   }
 
   TextStyle _getLayerTextStyle(TextStyleType fontStyle, Color color, TextBgStyle bgStyle) {
-    FontWeight weight = FontWeight.normal;
+    FontWeight weight = FontWeight.w600;
     FontStyle style = FontStyle.normal;
+    double letterSpacing = 0.2;
+    double height = 1.25;
+    List<Shadow>? textShadows;
 
     switch (fontStyle) {
-      case TextStyleType.bold:
-        weight = FontWeight.w900;
-        break;
-      case TextStyleType.modern:
-        weight = FontWeight.bold;
-        break;
-      case TextStyleType.handwriting:
-        style = FontStyle.italic;
-        break;
-      case TextStyleType.serif:
-        weight = FontWeight.w600;
-        break;
-      case TextStyleType.monospace:
-        weight = FontWeight.w500;
-        break;
-      case TextStyleType.minimal:
-        weight = FontWeight.w300;
-        break;
-      case TextStyleType.elegant:
-        style = FontStyle.italic;
-        weight = FontWeight.w500;
-        break;
-      case TextStyleType.campus:
-        weight = FontWeight.w900;
-        break;
-      case TextStyleType.coding:
-        weight = FontWeight.w600;
-        break;
-      case TextStyleType.khmer:
-        weight = FontWeight.bold;
-        break;
       case TextStyleType.classic:
         weight = FontWeight.w600;
+        letterSpacing = 0.2;
         break;
+      case TextStyleType.elegant: // Deco
+        style = FontStyle.italic;
+        weight = FontWeight.w600;
+        letterSpacing = 0.8;
+        break;
+      case TextStyleType.bold: // Bubble
+        weight = FontWeight.w900;
+        letterSpacing = -0.3;
+        break;
+      case TextStyleType.modern: // Outline
+        weight = FontWeight.w800;
+        letterSpacing = 0.6;
+        break;
+      case TextStyleType.minimal: // Neon
+        weight = FontWeight.w700;
+        letterSpacing = 1.2;
+        textShadows = [
+          Shadow(blurRadius: 8.0, color: color.withValues(alpha: 0.90), offset: Offset.zero),
+          Shadow(blurRadius: 20.0, color: color.withValues(alpha: 0.80), offset: Offset.zero),
+          Shadow(blurRadius: 36.0, color: color, offset: Offset.zero),
+        ];
+        break;
+      default:
+        weight = FontWeight.w700;
+        break;
+    }
+
+    if (textShadows == null && bgStyle == TextBgStyle.none) {
+      textShadows = [
+        Shadow(blurRadius: 6.0, color: Colors.black.withValues(alpha: 0.75), offset: const Offset(0, 1)),
+        Shadow(blurRadius: 14.0, color: Colors.black.withValues(alpha: 0.40), offset: const Offset(0, 2)),
+      ];
     }
 
     return TextStyle(
       color: color,
-      fontSize: 22,
+      fontSize: 24,
       fontWeight: weight,
       fontStyle: style,
-      shadows: bgStyle == TextBgStyle.none
-          ? const [Shadow(blurRadius: 4.0, color: Colors.black54, offset: Offset(1, 1))]
-          : null,
+      letterSpacing: letterSpacing,
+      height: height,
+      shadows: textShadows,
     );
   }
 
   double _gestureBaseScale = 1.0;
   double _gestureBaseRotation = 0.0;
+  double _activeTextScale = 1.0;
   bool _isInteractingLayer = false;
+  bool _isHoveringDeleteZone = false;
 
   Widget _buildLayerWidget(MovableStoryLayer layer) {
+    if (_isFullScreenTextEditing &&
+        (layer.type == LayerType.text ||
+         layer.type == LayerType.hashtag ||
+         layer.type == LayerType.location ||
+         layer.type == LayerType.music)) {
+      return const SizedBox.shrink();
+    }
+
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     final maxCanvasWidth = screenWidth * 0.85;
 
     Widget content;
 
     switch (layer.type) {
-      case LayerType.text:
+      case LayerType.image:
+        final file = File(layer.text);
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-          child: IntrinsicWidth(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: layer.bgStyle == TextBgStyle.rounded || layer.bgStyle == TextBgStyle.filled
-                    ? Colors.black.withValues(alpha: 0.6)
-                    : (layer.bgStyle == TextBgStyle.highlight ? AppColors.communityAccent : Colors.transparent),
-                borderRadius: BorderRadius.circular(layer.bgStyle == TextBgStyle.rounded ? 12 : 4),
-                border: layer.bgStyle == TextBgStyle.outline ? Border.all(color: layer.color, width: 2) : null,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _selectedLayer?.id == layer.id ? Colors.white : Colors.transparent,
+                width: 2.0,
               ),
-              child: Text(
-                layer.text,
-                softWrap: true,
-                textAlign: layer.alignment,
-                style: _getLayerTextStyle(layer.fontStyle, layer.color, layer.bgStyle),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Image.file(
+                file,
+                width: 180,
+                fit: BoxFit.cover,
+                errorBuilder: (ctx, err, stack) => _buildErrorMediaPlaceholder(),
               ),
             ),
           ),
         );
         break;
 
+      case LayerType.text:
+        final baseStyle = _getLayerTextStyle(layer.fontStyle, layer.color, layer.bgStyle);
+
+        content = ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxCanvasWidth * 0.92),
+          child: Text(
+            layer.text,
+            softWrap: true,
+            textAlign: layer.alignment,
+            style: baseStyle,
+          ),
+        );
+        break;
+
       case LayerType.sticker:
-        final isCatSticker = layer.text.contains('Cat') || layer.text.contains('Kittens') || layer.text.contains('Hugging') || layer.text.startsWith('assets/');
-        if (isCatSticker) {
+        final isAssetSticker = layer.text.startsWith('assets/');
+        if (isAssetSticker) {
           content = ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxCanvasWidth),
             child: Container(
               padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.asset(
-                  'assets/images/cat_stickers.png',
-                  width: 150,
-                  fit: BoxFit.contain,
-                  errorBuilder: (ctx, err, stack) => Text(
-                    layer.text,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
+              child: Image.asset(
+                layer.text,
+                width: 120,
+                fit: BoxFit.contain,
+                errorBuilder: (ctx, err, st) => Text(
+                  layer.text,
+                  style: const TextStyle(fontSize: 48),
                 ),
               ),
             ),
           );
         } else {
-          content = ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.darkSurfacePrimary.withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white24),
-              ),
-              child: Text(
-                layer.text,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ),
+          content = Text(
+            layer.text,
+            style: const TextStyle(fontSize: 54),
           );
         }
         break;
@@ -1170,42 +1707,99 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         break;
 
       case LayerType.mention:
+        final cleanMention = layer.text.startsWith('@') ? layer.text : '@${layer.text}';
+        final hasBg = layer.bgStyle != TextBgStyle.none;
+        final textColor = layer.bgStyle == TextBgStyle.filled ? Colors.black : Colors.white;
+
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              color: layer.bgStyle == TextBgStyle.filled
+                  ? Colors.white
+                  : (layer.bgStyle == TextBgStyle.rounded
+                      ? Colors.black.withValues(alpha: 0.65)
+                      : Colors.transparent),
+              borderRadius: BorderRadius.circular(12),
+              border: layer.bgStyle == TextBgStyle.outline
+                  ? Border.all(color: Colors.white, width: 2.0)
+                  : null,
+              boxShadow: hasBg
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
             ),
             child: Text(
-              layer.text,
-              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
+              cleanMention,
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
         );
         break;
 
       case LayerType.location:
+        final cleanLocation = layer.text.replaceAll('📍', '').trim();
+        final hasBg = layer.bgStyle != TextBgStyle.none;
+        final textColor = layer.bgStyle == TextBgStyle.filled ? Colors.black : Colors.white;
+
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              color: Colors.black87,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.danger, width: 1.5),
+              color: layer.bgStyle == TextBgStyle.filled
+                  ? AppColors.communityAccent
+                  : (layer.bgStyle == TextBgStyle.rounded
+                      ? Colors.black.withValues(alpha: 0.65)
+                      : Colors.transparent),
+              borderRadius: BorderRadius.circular(20),
+              border: layer.bgStyle == TextBgStyle.outline
+                  ? Border.all(color: AppColors.communityAccent, width: 2.0)
+                  : null,
+              boxShadow: hasBg
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.location_on_rounded, color: AppColors.danger, size: 16),
-                const SizedBox(width: 4),
+                Icon(
+                  Icons.location_on_rounded,
+                  color: textColor,
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
                 Flexible(
-                  child: Text(
-                    layer.text,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                    overflow: TextOverflow.ellipsis,
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                    child: Text(
+                      cleanLocation,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ],
@@ -1241,36 +1835,9 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           ),
         );
         break;
-
-      case LayerType.image:
-        final localFile = _resolveFile(layer.text);
-        Widget imgWidget;
-        if (localFile.existsSync()) {
-          imgWidget = Image.file(localFile, fit: BoxFit.cover);
-        } else if (layer.text.startsWith('assets/')) {
-          imgWidget = Image.asset(layer.text, fit: BoxFit.cover);
-        } else {
-          imgWidget = Image.network(layer.text, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image, color: Colors.white54));
-        }
-
-        content = Container(
-          width: 140,
-          height: 140,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 8, offset: Offset(0, 3))],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: imgWidget,
-          ),
-        );
-        break;
     }
 
-    final isSelected = _selectedLayer?.id == layer.id;
     final isDeleting = _deletingLayerIds.contains(layer.id);
-    final screenHeight = MediaQuery.of(context).size.height;
 
     return Positioned(
       left: layer.offset.dx,
@@ -1284,8 +1851,26 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           curve: Curves.easeOutCubic,
           scale: isDeleting ? 0.9 : 1.0,
           child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () {
-              setState(() => _selectedLayer = layer);
+              if (layer.type == LayerType.text) {
+                _openFloatingTextEditor(layer);
+              } else {
+                setState(() {
+                  _selectedLayer = layer;
+
+                  // Cycle color style variant on tap for Mention and Location tags
+                  if (layer.type == LayerType.mention || layer.type == LayerType.location) {
+                    if (layer.bgStyle == TextBgStyle.rounded) {
+                      layer.bgStyle = TextBgStyle.filled;
+                    } else if (layer.bgStyle == TextBgStyle.filled) {
+                      layer.bgStyle = TextBgStyle.outline;
+                    } else {
+                      layer.bgStyle = TextBgStyle.rounded;
+                    }
+                  }
+                });
+              }
             },
             onDoubleTap: () {
               if (layer.type == LayerType.text) {
@@ -1305,48 +1890,43 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 _isInteractingLayer = true;
               });
             },
-            onScaleEnd: (details) {
-              setState(() {
-                _isInteractingLayer = false;
-              });
-            },
             onScaleUpdate: (details) {
               setState(() {
                 _selectedLayer = layer;
 
                 if (details.scale != 1.0) {
-                  layer.scale = (_gestureBaseScale * details.scale).clamp(0.5, 3.5);
+                  layer.scale = (_gestureBaseScale * details.scale).clamp(0.4, 3.8);
                 }
 
                 if (details.rotation != 0.0) {
                   layer.rotation = _gestureBaseRotation + details.rotation;
                 }
 
-                final maxX = (screenWidth * 0.88 - 40.0).clamp(40.0, screenWidth);
-                final maxY = (screenHeight - 120.0).clamp(100.0, screenHeight);
+                final maxX = screenWidth - 20.0;
+                final maxY = screenHeight - 60.0;
 
-                final nextX = (layer.offset.dx + details.focalPointDelta.dx).clamp(8.0, maxX);
-                final nextY = (layer.offset.dy + details.focalPointDelta.dy).clamp(50.0, maxY);
+                final nextX = (layer.offset.dx + details.focalPointDelta.dx).clamp(-120.0, maxX);
+                final nextY = (layer.offset.dy + details.focalPointDelta.dy).clamp(10.0, maxY);
 
                 layer.offset = Offset(nextX, nextY);
+                _isHoveringDeleteZone = layer.offset.dy > (screenHeight - 160.0);
+              });
+            },
+            onScaleEnd: (details) {
+              final isOverDeleteArea = layer.offset.dy > (screenHeight - 160.0);
+              if (isOverDeleteArea) {
+                _deleteLayerInstantly(layer);
+              }
+              setState(() {
+                _isInteractingLayer = false;
+                _isHoveringDeleteZone = false;
               });
             },
             child: Transform.scale(
               scale: layer.scale,
               child: Transform.rotate(
                 angle: layer.rotation,
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: isSelected && _isInteractingLayer
-                        ? Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1.0)
-                        : null,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(2.0),
-                    child: content,
-                  ),
-                ),
+                child: content,
               ),
             ),
           ),
@@ -1366,31 +1946,46 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) {
           final filtered = _locationOptions.where((loc) => loc.toLowerCase().contains(query.toLowerCase())).toList();
+          final mediaQuery = MediaQuery.of(ctx);
+          final maxHeight = mediaQuery.size.height * 0.75;
 
           return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
             child: Container(
-              padding: const EdgeInsets.all(24),
+              height: maxHeight,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
               decoration: const BoxDecoration(
                 color: AppColors.darkSurfacePrimary,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              child: SingleChildScrollView(
+              child: SafeArea(
+                top: false,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text("Add Location Sticker", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text("Add Location Tag", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                         IconButton(
                           icon: const Icon(Icons.close_rounded, color: Colors.white54),
                           onPressed: () => Navigator.pop(ctx),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 10),
 
                     // Rounded Search Bar
                     TextField(
@@ -1398,7 +1993,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       style: const TextStyle(color: Colors.white, fontSize: 14),
                       onChanged: (val) => setSheetState(() => query = val),
                       decoration: InputDecoration(
-                        hintText: "Search university, city or landmark...",
+                        hintText: "Search location...",
                         hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
                         prefixIcon: const Icon(Icons.search_rounded, color: Colors.white38, size: 20),
                         filled: true,
@@ -1407,36 +2002,63 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
-                    const Text("SUGGESTED CAMPUS LOCATIONS", style: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8)),
-                    const SizedBox(height: 8),
-
-                    ...filtered.map((loc) {
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: AppColors.danger.withValues(alpha: 0.15), shape: BoxShape.circle),
-                          child: const Icon(Icons.location_on_rounded, color: AppColors.danger, size: 18),
-                        ),
-                        title: Text(loc, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                        subtitle: const Text("Verified Campus Pin", style: TextStyle(color: Colors.white38, fontSize: 12)),
-                        onTap: () {
-                          setState(() {
-                            _layers.add(
-                              MovableStoryLayer(
-                                id: DateTime.now().microsecondsSinceEpoch.toString(),
-                                type: LayerType.location,
-                                text: loc,
-                                offset: Offset(80, 200 + (_layers.length * 15)),
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "No locations found",
+                                style: TextStyle(color: Colors.white38, fontSize: 13),
                               ),
-                            );
-                          });
-                          Navigator.pop(ctx);
-                        },
-                      );
-                    }),
+                            )
+                          : ListView.builder(
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: filtered.length,
+                              itemBuilder: (context, index) {
+                                final loc = filtered[index];
+                                final distances = ["250 m", "600 m", "1.2 km", "1.8 km", "2.5 km"];
+                                final distanceStr = distances[index % distances.length];
+
+                                return ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 2),
+                                  leading: Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.08),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.location_on_rounded, color: Colors.white, size: 18),
+                                  ),
+                                  title: Text(
+                                    loc,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                                  ),
+                                  subtitle: Text(
+                                    distanceStr,
+                                    style: const TextStyle(color: Colors.white38, fontSize: 12),
+                                  ),
+                                  onTap: () {
+                                    final size = MediaQuery.of(context).size;
+                                    setState(() {
+                                      final newLayer = MovableStoryLayer(
+                                        id: "location_${DateTime.now().microsecondsSinceEpoch}",
+                                        type: LayerType.location,
+                                        text: loc,
+                                        offset: Offset(size.width * 0.20, size.height * 0.32 + (_layers.length * 15)),
+                                      );
+                                      _layers.add(newLayer);
+                                      _selectedLayer = newLayer;
+                                    });
+                                    Navigator.pop(ctx);
+                                  },
+                                );
+                              },
+                            ),
+                    ),
                   ],
                 ),
               ),
@@ -1775,9 +2397,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   void _deleteLayerInstantly(MovableStoryLayer layer) {
     if (_deletingLayerIds.contains(layer.id)) return;
 
-    final deletedIndex = _layers.indexOf(layer);
-    final deletedLayer = layer;
-
     setState(() {
       _deletingLayerIds.add(layer.id);
       if (_selectedLayer?.id == layer.id) {
@@ -1785,57 +2404,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       }
       _layers.removeWhere((l) => l.id == layer.id);
     });
-
-    String labelText;
-    switch (deletedLayer.type) {
-      case LayerType.text:
-        labelText = "Text removed";
-        break;
-      case LayerType.image:
-        labelText = "Image removed";
-        break;
-      case LayerType.sticker:
-        labelText = "Sticker removed";
-        break;
-      default:
-        labelText = "Element removed";
-        break;
-    }
-
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: const Duration(seconds: 3),
-        backgroundColor: const Color(0xFF1C1C1C),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFF2F2F2F)),
-        ),
-        content: Text(
-          labelText,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-        ),
-        action: SnackBarAction(
-          label: "Undo",
-          textColor: Colors.white,
-          onPressed: () {
-            if (mounted) {
-              setState(() {
-                if (deletedIndex >= 0 && deletedIndex <= _layers.length) {
-                  _layers.insert(deletedIndex, deletedLayer);
-                } else {
-                  _layers.add(deletedLayer);
-                }
-                _deletingLayerIds.remove(deletedLayer.id);
-                _selectedLayer = deletedLayer;
-              });
-            }
-          },
-        ),
-      ),
-    );
   }
 
   Future<void> _showAddImagePicker() async {
@@ -1851,7 +2419,14 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
     try {
       final picker = ImagePicker();
-      final List<XFile> images = await picker.pickMultiImage(imageQuality: 95);
+      List<XFile> images = await picker.pickMultiImage(imageQuality: 95);
+
+      if (images.isEmpty) {
+        final XFile? singleMedia = await picker.pickMedia(imageQuality: 95);
+        if (singleMedia != null) {
+          images = [singleMedia];
+        }
+      }
 
       if (images.isNotEmpty && mounted) {
         final remainingSlots = 10 - currentImagesCount;
@@ -1873,7 +2448,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             final clampedY = startY.clamp(80.0, screenHeight - 200.0);
 
             final newLayer = MovableStoryLayer(
-              id: DateTime.now().microsecondsSinceEpoch.toString() + count.toString(),
+              id: "${DateTime.now().microsecondsSinceEpoch}_$count",
               type: LayerType.image,
               text: img.path,
               offset: Offset(clampedX, clampedY),
@@ -1958,49 +2533,65 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Horizontal Equal-Width Action Buttons (14px spacing)
+                      // Horizontal Equal-Width & Fixed Height Action Buttons (12px spacing)
                       Row(
                         children: [
-                          // Keep Editing (Primary White Button)
+                          // Safe Action: Keep Editing (Dark Surface + White Border)
                           Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.pop(dialogCtx, false),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.black,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                              ),
-                              child: const Text(
-                                "Keep Editing",
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                            child: SizedBox(
+                              height: 46,
+                              child: OutlinedButton(
+                                onPressed: () => Get.back(result: false),
+                                style: OutlinedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF242424),
+                                  foregroundColor: Colors.white,
+                                  side: const BorderSide(color: Colors.white24, width: 1.0),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                ),
+                                child: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    "Keep Editing",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13.5,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 12),
 
-                          // Discard (Destructive Button)
+                          // Destructive Action: Discard Draft (Filled Red Button)
                           Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.pop(dialogCtx, true),
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: const Color(0xFF262626),
-                                foregroundColor: AppColors.danger,
-                                side: const BorderSide(color: AppColors.danger, width: 1.2),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                              ),
-                              child: const Text(
-                                "Discard",
-                                style: TextStyle(
-                                  color: AppColors.danger,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                            child: SizedBox(
+                              height: 46,
+                              child: ElevatedButton(
+                                onPressed: () => Get.back(result: true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.danger,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                ),
+                                child: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    "Discard Draft",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13.5,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -2020,6 +2611,1067 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     return confirmed ?? false;
   }
 
+  void _showCustomizeTextSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (bCtx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          decoration: const BoxDecoration(
+            color: Color(0xFF1C1C1E),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Customize Story",
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+
+              // Background Gradients Row
+              const Text("Background Gradient", style: TextStyle(color: Colors.white70, fontSize: 13)),
+              const SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: List.generate(_gradients.length, (idx) {
+                    final isSel = idx == _gradientIdx;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() => _gradientIdx = idx);
+                        setSheetState(() {});
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 12),
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(colors: _gradients[idx]),
+                          border: isSel ? Border.all(color: Colors.white, width: 2.5) : Border.all(color: Colors.white24),
+                        ),
+                        child: isSel ? const Icon(Icons.check, color: Colors.white, size: 20) : null,
+                      ),
+                    );
+                  }),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Font Style & Alignment Controls Row
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Font Style", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                        const SizedBox(height: 8),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              if (_fontStyle == TextStyleType.bold) {
+                                _fontStyle = TextStyleType.handwriting;
+                              } else if (_fontStyle == TextStyleType.handwriting) {
+                                _fontStyle = TextStyleType.minimal;
+                              } else {
+                                _fontStyle = TextStyleType.bold;
+                              }
+                            });
+                            setSheetState(() {});
+                          },
+                          icon: const Icon(Icons.font_download_outlined, size: 18),
+                          label: Text(_fontStyle.name.toUpperCase(), style: const TextStyle(fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.darkSurfaceSecondary,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 42),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Alignment", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                        const SizedBox(height: 8),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              if (_textAlign == TextAlign.center) {
+                                _textAlign = TextAlign.left;
+                              } else if (_textAlign == TextAlign.left) {
+                                _textAlign = TextAlign.right;
+                              } else {
+                                _textAlign = TextAlign.center;
+                              }
+                            });
+                            setSheetState(() {});
+                          },
+                          icon: Icon(
+                            _textAlign == TextAlign.center
+                                ? Icons.format_align_center_rounded
+                                : (_textAlign == TextAlign.left ? Icons.format_align_left_rounded : Icons.format_align_right_rounded),
+                            size: 18,
+                          ),
+                          label: Text(_textAlign.name.toUpperCase(), style: const TextStyle(fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.darkSurfaceSecondary,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 42),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openEmojiPicker() {
+    final searchController = TextEditingController();
+    String query = '';
+    String selectedCategory = 'Trending';
+
+    final Map<String, List<String>> stickerCategories = {
+      '🐱 Cute Cats': [
+        'assets/stickers/cats/cat_waving.png',
+        'assets/stickers/cats/cat_surprised.png',
+        'assets/stickers/cats/cat_winking.png',
+        'assets/stickers/cats/cat_begging.png',
+        'assets/stickers/cats/cat_cool.png',
+        'assets/stickers/cats/cat_crying.png',
+      ],
+      'Trending': ['🔥', '🚀', '💯', '✨', '⚡', '🎉', '🌟', '💪', '🏆', '👑', '🎯', '💥'],
+      'Emoji': ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '🥹', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘'],
+      'Student Life': ['📚', '💻', '☕', '📝', '🎓', '📖', '✍️', '🏫', '🎒', '🧠', '💡', '📊'],
+      'Celebration': ['🎉', '🥳', '🍾', '🎈', '🎊', '🎁', '🎂', '🥂', '🎇', '🎆', '✨', '🏆'],
+      'Funny': ['🤪', '😜', '👻', '🤡', '🤖', '👽', '💩', '🙈', '🙉', '🙊', '🐸', '🦄'],
+      'Love': ['❤️', '💖', '💗', '💓', '💞', '💕', '💘', '💌', '😍', '🥰', '🌹', '💐'],
+      'Campus': ['🎓', '🏛️', '🏫', '🤝', '📜', '📢', '💡', '🏆', '📖', '💻', '☕', '📝'],
+      'Khmer': ['🇰🇭', '🏛️', '🥭', '🌴', '🐘', '🌾', '🍜', '☕', '🥥', '🛵', '⛵', '🌅'],
+      'Custom': ['✨', '🌟', '🎨', '📸', '🎵', '🎬', '💎', '🌈', '🔥', '⚡', '🍀', '🌸'],
+    };
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bCtx) => StatefulBuilder(
+        builder: (bCtx, setSheetState) {
+          final mediaQuery = MediaQuery.of(bCtx);
+          final maxHeight = mediaQuery.size.height * 0.75;
+
+          List<String> displayStickers;
+          if (query.trim().isNotEmpty) {
+            displayStickers = stickerCategories.values
+                .expand((element) => element)
+                .where((stk) => stk.contains(query.trim()))
+                .toSet()
+                .toList();
+          } else {
+            displayStickers = stickerCategories[selectedCategory] ?? [];
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
+            child: Container(
+              height: maxHeight,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              decoration: const BoxDecoration(
+                color: Color(0xFF141414),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Stickers & Emojis",
+                          style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
+                          onPressed: () => Navigator.pop(bCtx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    TextField(
+                      controller: searchController,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      onChanged: (val) => setSheetState(() => query = val),
+                      decoration: InputDecoration(
+                        hintText: "Search stickers & emojis...",
+                        hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                        prefixIcon: const Icon(Icons.search_rounded, color: Colors.white38, size: 18),
+                        filled: true,
+                        fillColor: AppColors.darkSurfaceSecondary,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    SizedBox(
+                      height: 34,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: stickerCategories.keys.map((cat) {
+                            final isSel = selectedCategory == cat && query.isEmpty;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: GestureDetector(
+                                onTap: () {
+                                  setSheetState(() {
+                                    selectedCategory = cat;
+                                    query = '';
+                                    searchController.clear();
+                                  });
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    cat,
+                                    style: TextStyle(
+                                      color: isSel ? Colors.black : Colors.white70,
+                                      fontSize: 12.5,
+                                      fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    if (query.isEmpty && _recentStickers.isNotEmpty) ...[
+                      const Text(
+                        "RECENTLY USED",
+                        style: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 52,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: _recentStickers.length,
+                          itemBuilder: (context, index) {
+                            final stk = _recentStickers[index];
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.pop(bCtx);
+                                _addStickerToCanvas(stk);
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 10),
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: stk.startsWith('assets/')
+                                    ? Image.asset(stk, width: 34, height: 34, fit: BoxFit.contain)
+                                    : Text(stk, style: const TextStyle(fontSize: 22)),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+
+                    Text(
+                      query.isNotEmpty ? "SEARCH RESULTS (${displayStickers.length})" : selectedCategory.toUpperCase(),
+                      style: const TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                    ),
+                    const SizedBox(height: 10),
+
+                    Expanded(
+                      child: displayStickers.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "No stickers found",
+                                style: TextStyle(color: Colors.white38, fontSize: 13),
+                              ),
+                            )
+                          : GridView.builder(
+                              physics: const BouncingScrollPhysics(),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 4,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                childAspectRatio: 1.0,
+                              ),
+                              itemCount: displayStickers.length,
+                              itemBuilder: (context, index) {
+                                final sticker = displayStickers[index];
+                                final isAsset = sticker.startsWith('assets/');
+                                return GestureDetector(
+                                  onTap: () {
+                                    if (!_recentStickers.contains(sticker)) {
+                                      setState(() => _recentStickers.insert(0, sticker));
+                                    }
+                                    Navigator.pop(bCtx);
+                                    _addStickerToCanvas(sticker);
+                                  },
+                                  child: Container(
+                                    alignment: Alignment.center,
+                                    padding: EdgeInsets.all(isAsset ? 8 : 0),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.07),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: Colors.white10),
+                                    ),
+                                    child: isAsset
+                                        ? Image.asset(sticker, fit: BoxFit.contain)
+                                        : Text(
+                                            sticker,
+                                            style: const TextStyle(fontSize: 32),
+                                          ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _addStickerToCanvas(String stickerText) {
+    final size = MediaQuery.of(context).size;
+    final newLayer = MovableStoryLayer(
+      id: "sticker_${DateTime.now().microsecondsSinceEpoch}",
+      type: LayerType.sticker,
+      text: stickerText,
+      offset: Offset(size.width * 0.35, size.height * 0.35 + (_layers.length * 15)),
+      scale: 1.5,
+    );
+    setState(() {
+      _layers.add(newLayer);
+      _selectedLayer = newLayer;
+    });
+  }
+
+  void _closeFullScreenTextEditor({bool save = true}) {
+    _fullScreenTextFocusNode.unfocus();
+
+    if (save) {
+      final text = _fullScreenTextController.text.trim();
+      if (text.isNotEmpty) {
+        final size = MediaQuery.of(context).size;
+        setState(() {
+          if (_editingTextLayer != null) {
+            _editingTextLayer!.text = text;
+            _editingTextLayer!.color = _activeTextColor;
+            _editingTextLayer!.fontStyle = _activeFontStyle;
+            _editingTextLayer!.bgStyle = _activeTextBgStyle;
+            _editingTextLayer!.alignment = _activeTextAlign;
+            _editingTextLayer!.scale = _activeTextScale;
+            _selectedLayer = _editingTextLayer;
+          } else {
+            // Stagger new text layers vertically so multiple text layers don't stack directly over each other
+            final existingTextCount = _layers.where((l) => l.type == LayerType.text).length;
+            final startY = (size.height * 0.30) + (existingTextCount * 55.0);
+            final clampedY = startY.clamp(80.0, size.height - 220.0);
+
+            final newLayer = MovableStoryLayer(
+              id: "text_${DateTime.now().microsecondsSinceEpoch}",
+              type: LayerType.text,
+              text: text,
+              color: _activeTextColor,
+              fontStyle: _activeFontStyle,
+              bgStyle: _activeTextBgStyle,
+              alignment: _activeTextAlign,
+              offset: Offset(
+                size.width * 0.15,
+                clampedY,
+              ),
+              scale: _activeTextScale,
+            );
+            _layers.add(newLayer);
+            _selectedLayer = newLayer;
+          }
+        });
+      }
+    }
+
+    setState(() {
+      _isFullScreenTextEditing = false;
+      _editingTextLayer = null;
+    });
+  }
+
+  Widget _buildFullScreenTextEditorOverlay() {
+    if (!_isFullScreenTextEditing) return const SizedBox.shrink();
+
+    final mq = MediaQuery.of(context);
+    final keyboardHeight = mq.viewInsets.bottom;
+    final screenWidth = mq.size.width;
+    final textLength = _fullScreenTextController.text.length;
+
+    // Resolve text preview style (live update)
+    final liveTextStyle = _getLayerTextStyle(
+      _activeFontStyle,
+      _activeTextColor,
+      _activeTextBgStyle,
+    ).copyWith(
+      fontSize: _activeFontSize,
+      shadows: _activeTextBgStyle == TextBgStyle.none
+          ? [
+              Shadow(blurRadius: 10, color: Colors.black.withValues(alpha: 0.85), offset: const Offset(0, 2)),
+              Shadow(blurRadius: 20, color: Colors.black.withValues(alpha: 0.50), offset: const Offset(0, 4)),
+            ]
+          : null,
+    );
+
+    return Positioned.fill(
+      child: AnimatedOpacity(
+        opacity: _isFullScreenTextEditing ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        child: Material(
+          color: Colors.black.withValues(alpha: 0.35),
+          child: SafeArea(
+            child: Column(
+              children: [
+
+                // ── 1. Top Bar: Cancel (Left), Conditional Counter, Done (Right) ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () => _closeFullScreenTextEditor(save: false),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          backgroundColor: Colors.black45,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        ),
+                        child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      ),
+
+                      // Counter Badge (ONLY visible when approaching maximum 300 character limit)
+                      if (textLength >= 260)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: textLength >= 300
+                                ? AppColors.danger
+                                : Colors.amber.shade800,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            "$textLength / 300",
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+
+                      ElevatedButton(
+                        onPressed: () => _closeFullScreenTextEditor(save: true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          elevation: 2,
+                        ),
+                        child: const Text("Done", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── 2. Pure Canvas Direct Typing Area (ZERO Box, ZERO Frame) ──
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (_fullScreenTextController.text.trim().isNotEmpty) {
+                        _closeFullScreenTextEditor(save: true);
+                      } else {
+                        _closeFullScreenTextEditor(save: false);
+                      }
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: Center(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
+                        child: TextField(
+                          controller: _fullScreenTextController,
+                          focusNode: _fullScreenTextFocusNode,
+                          autofocus: true,
+                          maxLines: null,
+                          maxLength: 300,
+                          keyboardType: TextInputType.multiline,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) => _closeFullScreenTextEditor(save: true),
+                          textAlign: _activeTextAlign,
+                          textCapitalization: TextCapitalization.sentences,
+                          style: liveTextStyle,
+                          cursorColor: _activeTextColor,
+                          cursorWidth: 2.5,
+                          cursorRadius: const Radius.circular(2),
+                          decoration: const InputDecoration(
+                            hintText: "Start typing...",
+                            hintStyle: TextStyle(color: Colors.white54, fontWeight: FontWeight.w500),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            counterText: '',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ── 3. Ultra-Clean Instagram Control Deck (Above Keyboard) ──
+                _buildInstagramTextEditorControlBar(),
+
+                SizedBox(height: keyboardHeight > 0 ? keyboardHeight + 8 : 16),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInstagramTextEditorControlBar() {
+    const textStylePills = [
+      (TextStyleType.classic, 'Classic'),
+      (TextStyleType.bold, 'Bubble'),
+      (TextStyleType.modern, 'Outline'),
+      (TextStyleType.minimal, 'Neon'),
+    ];
+
+    const primaryColors = [
+      Colors.white,
+      Colors.black,
+      Color(0xFFFACC15), // Amber
+      Color(0xFFF43F5E), // Rose
+      Color(0xFF38BDF8), // Sky
+      Color(0xFFA855F7), // Violet
+      Color(0xFF34D399), // Emerald
+      Color(0xFFFB923C), // Orange
+    ];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ── Text Style Selector Pills (Classic / Bubble / Outline / Neon) ──
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: textStylePills.map((item) {
+              final (fStyle, label) = item;
+              final isSel = _activeFontStyle == fStyle;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _activeFontStyle = fStyle;
+                    if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+                      _selectedLayer!.fontStyle = fStyle;
+                    }
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isSel ? Colors.white : Colors.black.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: isSel ? Colors.white : Colors.white24,
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: isSel ? Colors.black : Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 10),
+
+          // ── Font Selector & Color Dots Row ──
+          Row(
+            children: [
+              // Alignment Toggle Button
+              IconButton(
+                icon: Icon(
+                  _activeTextAlign == TextAlign.center
+                      ? Icons.format_align_center_rounded
+                      : (_activeTextAlign == TextAlign.left
+                          ? Icons.format_align_left_rounded
+                          : Icons.format_align_right_rounded),
+                  color: Colors.white,
+                  size: 22,
+                ),
+                onPressed: () {
+                  setState(() {
+                    if (_activeTextAlign == TextAlign.center) {
+                      _activeTextAlign = TextAlign.left;
+                    } else if (_activeTextAlign == TextAlign.left) {
+                      _activeTextAlign = TextAlign.right;
+                    } else {
+                      _activeTextAlign = TextAlign.center;
+                    }
+                  });
+                },
+              ),
+
+              const SizedBox(width: 4),
+
+              // Color Swatches Horizontal Scroll
+              Expanded(
+                child: SizedBox(
+                  height: 32,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: primaryColors.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 8),
+                    itemBuilder: (_, i) {
+                      final c = primaryColors[i];
+                      final isSel = _activeTextColor == c;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _activeTextColor = c;
+                            if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+                              _selectedLayer!.color = c;
+                            }
+                          });
+                        },
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: c,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isSel ? Colors.white : Colors.white30,
+                              width: isSel ? 2.5 : 1.0,
+                            ),
+                          ),
+                          child: isSel
+                              ? Icon(Icons.check_rounded, size: 14, color: c == Colors.white ? Colors.black : Colors.white)
+                              : null,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Circular icon button used in the text editor top bar.
+  Widget _buildEditorIconBtn({
+    required IconData icon,
+    required bool active,
+    required VoidCallback onTap,
+    String? tooltip,
+  }) {
+    return Tooltip(
+      message: tooltip ?? '',
+      preferBelow: false,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: active ? Colors.white : Colors.white.withValues(alpha: 0.10),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: active ? Colors.white : Colors.white.withValues(alpha: 0.22),
+            ),
+            boxShadow: active
+                ? [BoxShadow(color: Colors.white.withValues(alpha: 0.25), blurRadius: 8)]
+                : null,
+          ),
+          child: Icon(icon, size: 18, color: active ? Colors.black : Colors.white),
+        ),
+      ),
+    );
+  }
+
+  void _openLocationPicker() {
+    _showLocationSheet();
+  }
+
+  void _showPlaceholderInfo(String title, String message) {
+    AppNotificationBanner.showInfo(
+      context: context,
+      title: title,
+      message: message,
+    );
+  }
+
+  Widget _buildHorizontalToolItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isPlaceholder = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isPlaceholder
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : AppColors.darkSurfaceSecondary.withValues(alpha: 0.90),
+                shape: BoxShape.circle,
+                border: isPlaceholder
+                    ? Border.all(color: Colors.white12, width: 1.0)
+                    : null,
+              ),
+              child: Icon(
+                icon,
+                color: isPlaceholder ? Colors.white38 : Colors.white,
+                size: 20,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+
+  void _showMoreOptionsSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (bCtx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        decoration: const BoxDecoration(
+          color: Color(0xFF141414),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                "More Options",
+                style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // 1. Rotate Image
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              leading: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.rotate_right_rounded, color: Colors.white, size: 20),
+              ),
+              title: const Text("Rotate Image", style: TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.bold)),
+              subtitle: const Text("Rotate image by 90 degrees", style: TextStyle(color: AppColors.darkTextMuted, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(bCtx);
+                _rotateImage();
+              },
+            ),
+
+            // 2. Remove Photo
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              leading: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.danger.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 20),
+              ),
+              title: const Text("Remove Photo", style: TextStyle(color: AppColors.danger, fontSize: 14.5, fontWeight: FontWeight.bold)),
+              subtitle: const Text("Discard draft and return to home", style: TextStyle(color: AppColors.darkTextMuted, fontSize: 12)),
+              onTap: () async {
+                Navigator.pop(bCtx);
+                final shouldPop = await _confirmDiscardDraft();
+                if (shouldPop) {
+                  Get.back();
+                }
+              },
+            ),
+
+            const SizedBox(height: 8),
+
+            // Cancel Button
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: TextButton(
+                onPressed: () => Navigator.pop(bCtx),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white70,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextStyleAndColorCard() {
+    const textColors = [
+      Colors.white,
+      Colors.black,
+      Color(0xFFFACC15), // Amber
+      Color(0xFFF43F5E), // Rose
+      Color(0xFF38BDF8), // Sky
+      Color(0xFFA855F7), // Violet
+      Color(0xFF34D399), // Emerald
+      Color(0xFFFB923C), // Orange
+      Color(0xFFE879F9), // Fuchsia
+      Color(0xFF4ADE80), // Green
+    ];
+
+    const fontPresets = [
+      (TextStyleType.classic,     'Classic',     FontWeight.w600, FontStyle.normal),
+      (TextStyleType.elegant,     'Deco',        FontWeight.w600, FontStyle.italic),
+      (TextStyleType.bold,        'Bubble',      FontWeight.w900, FontStyle.normal),
+      (TextStyleType.modern,      'Outline',     FontWeight.w800, FontStyle.normal),
+      (TextStyleType.minimal,     'Neon',        FontWeight.w700, FontStyle.normal),
+    ];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: const Color(0xF2111111),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Font Presets Row ──
+          SizedBox(
+            height: 34,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: fontPresets.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (_, i) {
+                final (fStyle, label, fw, fi) = fontPresets[i];
+                final isSel = _activeFontStyle == fStyle;
+                return GestureDetector(
+                  onTap: () => setState(() {
+                    _activeFontStyle = fStyle;
+                    if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+                      _selectedLayer!.fontStyle = fStyle;
+                    }
+                  }),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(18),
+                      border: isSel
+                          ? null
+                          : Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                    ),
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        color: isSel ? Colors.black : Colors.white.withValues(alpha: 0.70),
+                        fontSize: 12,
+                        fontWeight: isSel ? fw : FontWeight.w400,
+                        fontStyle: isSel ? fi : FontStyle.normal,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // ── Color Swatches Row ──
+          SizedBox(
+            height: 32,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: textColors.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (_, i) {
+                final col = textColors[i];
+                final isSel = _activeTextColor == col;
+                final lum = col.computeLuminance();
+                final checkColor = lum > 0.5 ? Colors.black : Colors.white;
+
+                return GestureDetector(
+                  onTap: () => setState(() {
+                    _activeTextColor = col;
+                    if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+                      _selectedLayer!.color = col;
+                    }
+                  }),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    width: isSel ? 32 : 28,
+                    height: isSel ? 32 : 28,
+                    decoration: BoxDecoration(
+                      color: col,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.25),
+                        width: isSel ? 2.2 : 1.0,
+                      ),
+                      boxShadow: isSel
+                          ? [
+                              BoxShadow(
+                                color: col.withValues(alpha: 0.55),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              )
+                            ]
+                          : null,
+                    ),
+                    child: isSel
+                        ? Icon(Icons.check_rounded, size: 14, color: checkColor)
+                        : null,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -2027,8 +3679,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       onPopInvokedWithResult: (didPop, _) async {
         if (!didPop) {
           final shouldPop = await _confirmDiscardDraft();
-          if (shouldPop && context.mounted) {
-            Navigator.pop(context);
+          if (shouldPop) {
+            Get.back();
           }
         }
       },
@@ -2036,186 +3688,364 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         backgroundColor: Colors.black,
         body: Stack(
           children: [
-            // 1. Fullscreen Canvas Viewport
+            // 1. Primary Full-Screen Immersive Canvas (Media / Text)
             Positioned.fill(
-              child: _buildMediaCanvas(),
-            ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: () {
+                        if (!_isInteractingLayer) {
+                          setState(() => _selectedLayer = null);
+                          if (widget.type == StoryType.text) {
+                            _cycleGradient();
+                          }
+                        }
+                      },
+                      child: _buildMediaCanvas(),
+                    ),
+                  ),
 
-            // Canvas Tap Handler (Deselects Layer)
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () => setState(() => _selectedLayer = null),
+                  // Movable Overlays (Text / Stickers)
+                  ..._layers.map((layer) => _buildLayerWidget(layer)),
+
+                  // Full-Screen Immersive Text Editor Overlay
+                  _buildFullScreenTextEditorOverlay(),
+                ],
               ),
             ),
 
-            // Gradient overlay for contrast
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.black.withValues(alpha: 0.5),
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.7),
+            // 2. Top Header Overlay Bar (Floating gradient header)
+            if (!_isFullScreenTextEditing)
+              Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.only(top: 8),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.black87, Colors.black45, Colors.transparent],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Row 1: Header (Close X button + Centered Title)
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
+                              onPressed: () async {
+                                final shouldPop = await _confirmDiscardDraft();
+                                if (shouldPop) {
+                                  Get.back();
+                                }
+                              },
+                            ),
+
+                            Expanded(
+                              child: Center(
+                                child: Text(
+                                  widget.type == StoryType.text ? "Create Story" : "Preview Story",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                    shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            // Placeholder to balance close button
+                            const SizedBox(width: 48, height: 48),
+                          ],
+                        ),
+
+                        // Row 2: Text Editing Controls ([Align] [Bold] [Background])
+                        // Displayed ONLY when editing text OR when a text layer is selected!
+                        if (_isFullScreenTextEditing || (_selectedLayer != null && _selectedLayer!.type == LayerType.text))
+                          Padding(
+                            padding: const EdgeInsets.only(top: 14, bottom: 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // 1. Align
+                                _buildEditorIconBtn(
+                                  icon: _activeTextAlign == TextAlign.left
+                                      ? Icons.format_align_left_rounded
+                                      : _activeTextAlign == TextAlign.right
+                                          ? Icons.format_align_right_rounded
+                                          : Icons.format_align_center_rounded,
+                                  active: false,
+                                  tooltip: 'Alignment',
+                                  onTap: () => setState(() {
+                                    if (_activeTextAlign == TextAlign.center) {
+                                      _activeTextAlign = TextAlign.left;
+                                    } else if (_activeTextAlign == TextAlign.left) {
+                                      _activeTextAlign = TextAlign.right;
+                                    } else {
+                                      _activeTextAlign = TextAlign.center;
+                                    }
+                                    if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+                                      _selectedLayer!.alignment = _activeTextAlign;
+                                    }
+                                  }),
+                                ),
+
+                                const SizedBox(width: 18),
+
+                                // 2. Bold
+                                _buildEditorIconBtn(
+                                  icon: Icons.format_bold_rounded,
+                                  active: _activeFontStyle == TextStyleType.bold || _activeFontStyle == TextStyleType.campus,
+                                  tooltip: 'Bold',
+                                  onTap: () => setState(() {
+                                    final isBold = _activeFontStyle == TextStyleType.bold || _activeFontStyle == TextStyleType.campus;
+                                    _activeFontStyle = isBold ? TextStyleType.classic : TextStyleType.bold;
+                                    if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+                                      _selectedLayer!.fontStyle = _activeFontStyle;
+                                    }
+                                  }),
+                                ),
+
+                                const SizedBox(width: 18),
+
+                                // 3. Background Style
+                                _buildEditorIconBtn(
+                                  icon: _activeTextBgStyle != TextBgStyle.none
+                                      ? Icons.rectangle_rounded
+                                      : Icons.crop_free_rounded,
+                                  active: _activeTextBgStyle != TextBgStyle.none,
+                                  tooltip: 'Background',
+                                  onTap: () => setState(() {
+                                    if (_activeTextBgStyle == TextBgStyle.none) {
+                                      _activeTextBgStyle = TextBgStyle.rounded;
+                                    } else if (_activeTextBgStyle == TextBgStyle.rounded) {
+                                      _activeTextBgStyle = TextBgStyle.filled;
+                                    } else if (_activeTextBgStyle == TextBgStyle.filled) {
+                                      _activeTextBgStyle = TextBgStyle.outline;
+                                    } else {
+                                      _activeTextBgStyle = TextBgStyle.none;
+                                    }
+                                    if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+                                      _selectedLayer!.bgStyle = _activeTextBgStyle;
+                                    }
+                                  }),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
                     ),
                   ),
                 ),
               ),
             ),
 
-            // 2. Render Stack of Movable Canvas Layers
-            ..._layers.map((layer) => _buildLayerWidget(layer)),
-
-            // 3. Floating Quick Actions Toolbar for Selected Layer
-            if (_selectedLayer != null) ...[
-              _buildObjectToolbar(_selectedLayer!),
-              if (_selectedLayer!.type == LayerType.text)
-                _buildTikTokInlineTextToolbar(_selectedLayer!),
-            ],
-
-            // Top Header Bar
-            Positioned(
-              top: 0,
+            // 2.5 Animated Floating Trash Delete Target (Active ONLY while dragging elements)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
+              bottom: _isInteractingLayer ? 125 : -80,
               left: 0,
               right: 0,
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
-                        onPressed: () async {
-                          final shouldPop = await _confirmDiscardDraft();
-                          if (shouldPop && context.mounted) {
-                            Navigator.pop(context);
-                          }
-                        },
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _isInteractingLayer ? 1.0 : 0.0,
+                child: Center(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _isHoveringDeleteZone
+                          ? AppColors.danger.withValues(alpha: 0.95)
+                          : Colors.black.withValues(alpha: 0.75),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: _isHoveringDeleteZone ? Colors.white : Colors.white24,
+                        width: _isHoveringDeleteZone ? 2.0 : 1.0,
                       ),
-
-                      // Floating Tool Bar Palette (Scrollable to prevent RenderFlex overflow)
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (_activeMediaPath == null)
-                                IconButton(
-                                  icon: const Icon(Icons.palette_outlined, color: Colors.white, size: 24),
-                                  onPressed: _cycleGradient,
-                                ),
-                              IconButton(
-                                icon: const Icon(Icons.add_photo_alternate_outlined, color: Colors.white, size: 24),
-                                tooltip: "Add Photo",
-                                onPressed: _showAddImagePicker,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.title_rounded, color: Colors.white, size: 24),
-                                onPressed: () => _openFloatingTextEditor(),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.sticky_note_2_outlined, color: Colors.white, size: 24),
-                                onPressed: _showStickerSheet,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.tag_rounded, color: Colors.white, size: 24),
-                                onPressed: _showHashtagSheet,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.alternate_email_rounded, color: Colors.white, size: 24),
-                                onPressed: _showMentionSheet,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.location_on_outlined, color: Colors.white, size: 24),
-                                onPressed: _showLocationSheet,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.music_note_outlined, color: Colors.white, size: 24),
-                                onPressed: _showMusicSheet,
-                              ),
-                            ],
+                      boxShadow: [
+                        BoxShadow(
+                          color: _isHoveringDeleteZone ? AppColors.danger.withValues(alpha: 0.6) : Colors.black45,
+                          blurRadius: 16,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.delete_outline_rounded,
+                          color: Colors.white,
+                          size: _isHoveringDeleteZone ? 22 : 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _isHoveringDeleteZone ? "Release to Delete" : "Drag here to delete",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: _isHoveringDeleteZone ? 13.5 : 12.5,
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
 
-            // Bottom Action Controls
-            Positioned(
+
+
+            // 3. Bottom Control Deck Overlay (Floating over canvas bottom)
+            if (!_isFullScreenTextEditing)
+              Positioned(
               bottom: 0,
               left: 0,
               right: 0,
-              child: SafeArea(
+              child: AnimatedPadding(
+                duration: const Duration(milliseconds: 180),
+                padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Privacy Selector Pill
-                      Flexible(
-                        child: GestureDetector(
-                          onTap: _showPrivacySheet,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: AppColors.darkSurfaceSecondary,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white12),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.public, color: Colors.white, size: 16),
-                                const SizedBox(width: 6),
-                                Flexible(
-                                  child: Text(
-                                    _selectedVisibility,
-                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const Icon(Icons.arrow_drop_down_rounded, color: Colors.white54, size: 18),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.transparent, Colors.black54, Colors.black87, Colors.black],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Horizontally Scrollable Story Templates Strip (Text Story Mode ONLY)
+                          if (widget.type == StoryType.text)
+                            _buildStoryTemplateSelectorStrip(),
 
-                      // GenLink Black-and-White Share Story Button
-                      if (_selectedLayer?.type != LayerType.text)
-                        ElevatedButton.icon(
-                          onPressed: _isPublishing ? null : _publishStory,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            disabledBackgroundColor: Colors.white24,
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                            elevation: 2,
+                          // Horizontally Scrollable Tool Strip (Icon-Only Buttons)
+                          SizedBox(
+                            height: 52,
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: Row(
+                                children: [
+                                  // 1. Add Photo (Only for Image / Video Stories)
+                                  if (widget.type != StoryType.text)
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.photo_library_outlined,
+                                      label: "Photo",
+                                      onTap: _showAddImagePicker,
+                                    ),
+
+                                  // 2. Add Text Overlay
+                                  _buildHorizontalToolItem(
+                                    icon: Icons.title_rounded,
+                                    label: "Text",
+                                    onTap: () => _openFloatingTextEditor(),
+                                  ),
+
+                                  // 3. Emoji Sticker
+                                  _buildHorizontalToolItem(
+                                    icon: Icons.emoji_emotions_outlined,
+                                    label: "Emoji",
+                                    onTap: _openEmojiPicker,
+                                  ),
+
+                                  // 4. Location Tag
+                                  _buildHorizontalToolItem(
+                                    icon: Icons.location_on_outlined,
+                                    label: "Location",
+                                    onTap: _openLocationPicker,
+                                  ),
+
+                                  // 5. Mention Tag (@)
+                                  _buildHorizontalToolItem(
+                                    icon: Icons.alternate_email_rounded,
+                                    label: "Mention",
+                                    onTap: _showMentionSheet,
+                                  ),
+
+                                  // 6. Rotate (Image/Video Stories only)
+                                  if (widget.type != StoryType.text)
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.rotate_right_rounded,
+                                      label: "Rotate",
+                                      onTap: _rotateImage,
+                                    ),
+
+                                  // 7. Music (Image/Video Stories only)
+                                  if (widget.type != StoryType.text)
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.music_note_rounded,
+                                      label: "Music",
+                                      onTap: _showMusicSheet,
+                                    ),
+
+                                  // 8. Background Gradient Style (Text Story Mode only)
+                                  if (widget.type == StoryType.text)
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.palette_outlined,
+                                      label: "Style",
+                                      onTap: () {
+                                        if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+                                          _openFloatingTextEditor(_selectedLayer);
+                                        } else if (_layers.any((l) => l.type == LayerType.text)) {
+                                          _openFloatingTextEditor(_layers.firstWhere((l) => l.type == LayerType.text));
+                                        } else {
+                                          _cycleGradient();
+                                        }
+                                      },
+                                    ),
+                                ],
+                              ),
+                            ),
                           ),
-                          icon: _isPublishing
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
-                                )
-                              : const Icon(Icons.arrow_forward_rounded, color: Colors.black, size: 18),
-                          label: Text(
-                            _isPublishing ? "Sharing..." : "Share Story",
-                            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14),
+
+                          const SizedBox(height: 12),
+
+                          // 3. Single Primary White "Post Story" Call-To-Action Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: _isPublishing ? null : _publishStory,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                disabledBackgroundColor: Colors.white24,
+                                foregroundColor: Colors.black,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                                elevation: 2,
+                              ),
+                              child: _isPublishing
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5),
+                                    )
+                                  : const Text(
+                                      "Post Story",
+                                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
+                                    ),
+                            ),
                           ),
-                        ),
-                    ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import '../../domain/models/story_model.dart';
 import '../../domain/repositories/story_repository.dart';
 
@@ -101,6 +102,9 @@ class StoryRepositoryImpl implements StoryRepository {
     String? bgGradientStart,
     String? bgGradientEnd,
     List<MovableStoryLayer>? layers,
+    double bgScale = 1.0,
+    dynamic bgOffset,
+    double bgRotation = 0.0,
   }) async {
     await Future.delayed(const Duration(milliseconds: 400));
     final newStory = StoryItemModel(
@@ -113,6 +117,9 @@ class StoryRepositoryImpl implements StoryRepository {
       bgGradientStart: bgGradientStart ?? '0xFF0F172A',
       bgGradientEnd: bgGradientEnd ?? '0xFF1E293B',
       layers: layers ?? const [],
+      bgScale: bgScale,
+      bgOffset: bgOffset ?? Offset.zero,
+      bgRotation: bgRotation,
       timeAgo: 'Just now',
       createdAt: DateTime.now(),
     );

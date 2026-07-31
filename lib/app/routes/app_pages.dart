@@ -23,6 +23,8 @@ import '../../features/settings/presentation/screens/language_settings_screen.da
 import '../../features/settings/presentation/screens/privacy_settings_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/community/presentation/bindings/community_binding.dart';
+import '../../features/chat/chat_feature.dart';
+import '../../features/notification/notification_feature.dart';
 import '../../features/splash/presentation/bindings/splash_binding.dart';
 import '../../features/splash/presentation/screens/splash_screen.dart';
 import '../../main_screen.dart';
@@ -89,6 +91,25 @@ abstract final class AppPages {
       binding: CommunityBinding(),
       middlewares: [AuthMiddleware()],
     ),
+    GetPage<dynamic>(
+      name: AppRoutes.notifications,
+      page: () => const NotificationScreen(),
+      binding: NotificationBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.chat,
+      page: () => const ChatListScreen(),
+      binding: ChatBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.chatDetail,
+      page: () => const ChatDetailScreen(),
+      binding: ChatBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+
 
     // ── Profile & settings ──────────────────────────────────────────────
     GetPage<dynamic>(

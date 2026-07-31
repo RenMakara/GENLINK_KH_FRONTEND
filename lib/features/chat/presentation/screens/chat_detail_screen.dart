@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../domain/models/chat_models.dart';
 import '../controllers/chat_controller.dart';
@@ -184,6 +185,86 @@ class ChatDetailScreen extends GetView<ChatController> {
                         ),
                       ),
                     ),
+
+                  // ── Story Reply Preview Card inside DM Bubble ──
+                  if (msg.messageType == 'story_reply') ...[
+                    GestureDetector(
+                      onTap: () {
+                        AppNotificationBanner.showSuccess(
+                          context: context,
+                          title: "Story Preview",
+                          message: "Reopening story...",
+                          icon: Icons.auto_awesome,
+                        );
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isMine
+                              ? Colors.black.withValues(alpha: 0.15)
+                              : Colors.white.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isMine ? Colors.black26 : Colors.white12,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: Colors.black45,
+                                borderRadius: BorderRadius.circular(6),
+                                image: (msg.mediaUrl != null && msg.mediaUrl!.isNotEmpty)
+                                    ? DecorationImage(
+                                        image: NetworkImage(msg.mediaUrl!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: (msg.mediaUrl == null || msg.mediaUrl!.isEmpty)
+                                  ? const Center(
+                                      child: Text(
+                                        "Aa",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "↩ Replied to Story",
+                                  style: TextStyle(
+                                    color: isMine ? Colors.black87 : Colors.white70,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                Text(
+                                  "Tap to view story",
+                                  style: TextStyle(
+                                    color: isMine ? Colors.black54 : Colors.white54,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+
                   Text(
                     msg.content,
                     style: TextStyle(

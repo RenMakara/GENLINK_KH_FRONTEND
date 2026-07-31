@@ -87,6 +87,56 @@ class ChatController extends GetxController {
     _scrollToBottom();
   }
 
+  Future<ChatMessageModel> sendStoryReply({
+    required String userName,
+    required String userAvatar,
+    required String message,
+    String? mediaUrl,
+  }) async {
+    // 1. Find existing conversation or create a new one
+    var convIndex = conversations.indexWhere((c) => c.name == userName);
+    ChatConversationModel conv;
+
+    if (convIndex != -1) {
+      conv = conversations.removeAt(convIndex);
+    } else {
+      conv = ChatConversationModel(
+        id: 'conv_story_${userName}_${DateTime.now().millisecondsSinceEpoch}',
+        name: userName,
+        avatar: userAvatar,
+        isGroup: false,
+        isOnline: true,
+        lastMessage: message,
+        lastMessageTime: 'Just now',
+        unreadCount: 0,
+      );
+    }
+
+    // 2. Call Repository send message API
+    final newMsg = await repository.sendMessage(
+      conv.id,
+      message,
+      messageType: 'story_reply',
+      mediaUrl: mediaUrl,
+    );
+
+    // Update conversation metadata
+    conv.lastMessage = message;
+    conv.lastMessageTime = 'Just now';
+
+    // Move to top of conversations list (Index 0)
+    conversations.insert(0, conv);
+    conversations.refresh();
+
+    // If active conversation matches, append message
+    if (activeConversation.value?.id == conv.id) {
+      activeMessages.add(newMsg);
+      _scrollToBottom();
+    }
+
+    return newMsg;
+  }
+
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (scrollController.hasClients) {

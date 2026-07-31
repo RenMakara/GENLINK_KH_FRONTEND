@@ -89,55 +89,49 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         titleSpacing: 0,
-        title: Container(
-          height: 42,
-          margin: const EdgeInsets.only(right: 16),
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: AppColors.darkSurfaceSecondary,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: _focusNode.hasFocus
-                  ? AppColors.communityAccent.withValues(alpha: 0.50)
-                  : AppColors.darkBorderSubtle,
-              width: 1.0,
-            ),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.search_rounded, color: AppColors.darkTextMuted, size: 18),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  focusNode: _focusNode,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  onChanged: _onQueryChanged,
-                  onSubmitted: (val) => _addToRecentSearches(val),
-                  decoration: const InputDecoration(
-                    hintText: 'Search posts, people, jobs, events...',
-                    hintStyle: TextStyle(color: AppColors.darkTextMuted, fontSize: 13),
-                    border: InputBorder.none,
-                    isDense: true,
+        title: Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: SizedBox(
+            height: 42,
+            child: TextField(
+              controller: _searchController,
+              focusNode: _focusNode,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              onChanged: _onQueryChanged,
+              onSubmitted: (val) => _addToRecentSearches(val),
+              decoration: InputDecoration(
+                hintText: 'Search posts, people, jobs, events...',
+                hintStyle: const TextStyle(color: AppColors.darkTextMuted, fontSize: 13),
+                prefixIcon: const Icon(Icons.search_rounded, color: AppColors.darkTextMuted, size: 19),
+                suffixIcon: _query.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 16),
+                        onPressed: () {
+                          _searchController.clear();
+                          _onQueryChanged('');
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: AppColors.darkSurfaceSecondary,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: const BorderSide(color: AppColors.darkBorderSubtle, width: 1.0),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: const BorderSide(color: AppColors.darkBorderSubtle, width: 1.0),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    width: 1.2,
                   ),
                 ),
               ),
-              if (_query.isNotEmpty)
-                GestureDetector(
-                  onTap: () {
-                    _searchController.clear();
-                    _onQueryChanged('');
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
-                      color: Colors.white24,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.close_rounded, color: Colors.white, size: 12),
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
       ),
@@ -194,7 +188,7 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                   onTap: _clearAllRecentSearches,
                   child: const Text(
                     "Clear",
-                    style: TextStyle(color: AppColors.communityAccent, fontSize: 12, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -259,7 +253,7 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                   child: Text(
                     tag,
                     style: const TextStyle(
-                      color: AppColors.communityAccent,
+                      color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -379,14 +373,14 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
             children: [
               const Icon(Icons.search_off_rounded, color: AppColors.darkTextMuted, size: 48),
               const SizedBox(height: 12),
-              Text(
-                "No results found for \"$_query\"",
+              const Text(
+                "No results found.",
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.bold),
+                style: TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               const Text(
-                "Try searching for another keyword or category.",
+                "Try searching for another keyword.",
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.darkTextMuted, fontSize: 12.5),
               ),
@@ -403,13 +397,28 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
       separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, idx) {
         final res = filtered[idx];
-        final cat = res['category']!;
+        final rawCat = res['category']!;
 
+        // Map category to concise badge text
+        String badgeText = rawCat;
         IconData catIcon = Icons.article_outlined;
-        if (cat == 'People') catIcon = Icons.person_outline_rounded;
-        if (cat == 'Jobs') catIcon = Icons.work_outline_rounded;
-        if (cat == 'Events') catIcon = Icons.event_outlined;
-        if (cat == 'Communities') catIcon = Icons.groups_outlined;
+
+        if (rawCat == 'People') {
+          badgeText = 'People';
+          catIcon = Icons.person_outline_rounded;
+        } else if (rawCat == 'Jobs') {
+          badgeText = 'Job';
+          catIcon = Icons.work_outline_rounded;
+        } else if (rawCat == 'Events') {
+          badgeText = 'Event';
+          catIcon = Icons.event_outlined;
+        } else if (rawCat == 'Communities') {
+          badgeText = 'Community';
+          catIcon = Icons.groups_outlined;
+        } else if (rawCat == 'Posts') {
+          badgeText = 'Post';
+          catIcon = Icons.article_outlined;
+        }
 
         return Container(
           padding: const EdgeInsets.all(12),
@@ -424,10 +433,10 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: AppColors.communityAccent.withValues(alpha: 0.12),
+                  color: Colors.white.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(catIcon, color: AppColors.communityAccent, size: 18),
+                child: Icon(catIcon, color: Colors.white70, size: 18),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -446,15 +455,17 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.06),
+                  color: Colors.white.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
                 ),
                 child: Text(
-                  cat,
-                  style: const TextStyle(color: AppColors.darkTextMuted, fontSize: 10.5, fontWeight: FontWeight.w500),
+                  badgeText,
+                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
                 ),
               ),
             ],

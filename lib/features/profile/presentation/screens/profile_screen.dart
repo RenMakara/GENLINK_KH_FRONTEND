@@ -88,6 +88,8 @@ class ProfileScreen extends GetView<ProfileController> {
             children: [
               _Identity(profile: profile),
               const SizedBox(height: AppSpacing.lg),
+              _PinnedHighlights(),
+              const SizedBox(height: AppSpacing.lg),
               _StatsRow(controller: controller),
               const SizedBox(height: AppSpacing.lg),
               _CompletionCard(profile: profile),
@@ -105,7 +107,7 @@ class ProfileScreen extends GetView<ProfileController> {
   }
 }
 
-/// Avatar with ring + edit badge, name, handle, and the work-status chip.
+/// Avatar with ring + edit badge, name, handle, bio, location, and work-status chip.
 class _Identity extends StatelessWidget {
   const _Identity({required this.profile});
 
@@ -114,6 +116,7 @@ class _Identity extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.6);
 
     return Column(
       children: [
@@ -129,13 +132,153 @@ class _Identity extends StatelessWidget {
         Text(
           '@${profile.username}',
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+            color: muted,
           ),
         ),
         if (profile.workStatus != null) ...[
           const SizedBox(height: AppSpacing.sm + 2),
           StatusChip(label: enumToLabel(profile.workStatus!)),
         ],
+        if (profile.bio != null && profile.bio!.trim().isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.sm + 4),
+          Text(
+            profile.bio!,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+        if (profile.universityName != null || profile.location != null) ...[
+          const SizedBox(height: AppSpacing.sm + 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (profile.universityName != null && profile.universityName!.isNotEmpty) ...[
+                Icon(Icons.school_outlined, size: 15, color: muted),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    profile.universityName!,
+                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (profile.location != null && profile.location!.isNotEmpty)
+                  const SizedBox(width: 12),
+              ],
+              if (profile.location != null && profile.location!.isNotEmpty) ...[
+                Icon(Icons.location_on_outlined, size: 15, color: muted),
+                const SizedBox(width: 4),
+                Text(
+                  profile.location!,
+                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                ),
+              ],
+            ],
+          ),
+        ],
+        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+          width: 160,
+          child: AppButton.secondary(
+            label: 'profile.edit'.tr,
+            icon: Icons.edit_outlined,
+            onPressed: () => Get.toNamed<void>(AppRoutes.editProfile),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Pinned Highlights / Featured Story section.
+class _PinnedHighlights extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    final highlights = [
+      {'title': 'CADT Hackathon 🏆', 'icon': Icons.emoji_events_outlined},
+      {'title': 'Flutter Dev 🚀', 'icon': Icons.code_rounded},
+      {'title': 'Campus Life 🎓', 'icon': Icons.school_outlined},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "📌 Pinned Highlights",
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            Icon(Icons.push_pin_outlined, size: 16, color: scheme.onSurface.withValues(alpha: 0.5)),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm + 4),
+        SizedBox(
+          height: 80,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: highlights.length + 1,
+            separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.md),
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return InkWell(
+                  onTap: () {},
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  child: Container(
+                    width: 72,
+                    decoration: BoxDecoration(
+                      color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      border: Border.all(color: scheme.outlineVariant),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_rounded, color: scheme.primary, size: 22),
+                        const SizedBox(height: 4),
+                        Text(
+                          "New",
+                          style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              final item = highlights[index - 1];
+              return Container(
+                width: 100,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: scheme.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(color: scheme.outlineVariant),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(item['icon'] as IconData, size: 22, color: scheme.primary),
+                    const SizedBox(height: 4),
+                    Text(
+                      item['title'] as String,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(fontSize: 10.5, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
       ],
     );
   }

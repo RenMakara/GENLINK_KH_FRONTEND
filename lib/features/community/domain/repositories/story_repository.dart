@@ -11,6 +11,9 @@ abstract class StoryRepository {
     String? bgGradientStart,
     String? bgGradientEnd,
     List<MovableStoryLayer>? layers,
+    double bgScale = 1.0,
+    dynamic bgOffset,
+    double bgRotation = 0.0,
   });
   Future<void> deleteStory(String storyId);
   Future<void> toggleLikeStory(String storyId);

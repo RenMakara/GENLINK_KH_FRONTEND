@@ -197,32 +197,96 @@ class CommunityScreen extends GetView<CommunityController> {
             const SizedBox(height: 12),
 
             // Feed Posts List
-            Obx(
-              () => controller.isLoadingFeed.value
-                  ? const Padding(
-                      padding: EdgeInsets.all(32.0),
+            Obx(() {
+              if (controller.isLoadingFeed.value) {
+                return const Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.communityAccent,
+                    ),
+                  ),
+                );
+              }
+
+              if (controller.hasError.value && controller.posts.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    children: [
+                      const Icon(
+                        Icons.wifi_off_rounded,
+                        color: AppColors.darkTextMuted,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        controller.errorMessage.value.isNotEmpty
+                            ? controller.errorMessage.value
+                            : 'Could not load feed',
+                        style: const TextStyle(
+                          color: AppColors.darkTextSecondary,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () => controller.fetchPosts(),
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('Retry'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.communityAccent,
+                          foregroundColor: Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              if (controller.posts.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Center(
+                    child: Text(
+                      'No community posts yet.',
+                      style: TextStyle(color: AppColors.darkTextMuted),
+                    ),
+                  ),
+                );
+              }
+
+              return Column(
+                children: [
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: controller.posts.length,
+                    itemBuilder: (context, index) {
+                      final post = controller.posts[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: PostCardWidget(
+                          post: post,
+                          controller: controller,
+                        ),
+                      );
+                    },
+                  ),
+                  if (controller.isLoadingMore.value)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
                       child: Center(
                         child: CircularProgressIndicator(
                           color: AppColors.communityAccent,
+                          strokeWidth: 2.5,
                         ),
                       ),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: controller.posts.length,
-                      itemBuilder: (context, index) {
-                        final post = controller.posts[index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: PostCardWidget(
-                            post: post,
-                            controller: controller,
-                          ),
-                        );
-                      },
                     ),
-            ),
+                ],
+              );
+            }),
 
             const SizedBox(height: 40),
           ],

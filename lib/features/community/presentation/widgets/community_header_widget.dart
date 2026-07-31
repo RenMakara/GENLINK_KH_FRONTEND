@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
+import 'package:genlink_frontend/features/chat/presentation/screens/chat_list_screen.dart';
+import 'package:genlink_frontend/features/notification/presentation/screens/notification_screen.dart';
 import '../screens/community_search_screen.dart';
 
 /// Redesigned production-grade header for GenLink KH Community module.
@@ -129,12 +131,7 @@ class _CommunityHeaderWidgetState extends State<CommunityHeaderWidget>
                             )
                           : null,
                       onTap: () {
-                        AppNotificationBanner.showInfo(
-                          context: context,
-                          title: "Messages",
-                          message: "Direct messaging features active.",
-                          icon: Icons.forum_rounded,
-                        );
+                        Get.to(() => const ChatListScreen());
                       },
                     ),
 
@@ -160,12 +157,7 @@ class _CommunityHeaderWidgetState extends State<CommunityHeaderWidget>
                             )
                           : null,
                       onTap: () {
-                        AppNotificationBanner.showInfo(
-                          context: context,
-                          title: "Notifications",
-                          message: "You have 3 new campus notifications.",
-                          icon: Icons.notifications_active_rounded,
-                        );
+                        Get.to(() => const NotificationScreen());
                       },
                     ),
                   ],
@@ -178,6 +170,7 @@ class _CommunityHeaderWidgetState extends State<CommunityHeaderWidget>
     );
   }
 }
+
 
 /// Reusable Material 3 Header Action Button with 48x48 touch target, 95% press scale & ink ripple.
 class _HeaderActionButton extends StatefulWidget {

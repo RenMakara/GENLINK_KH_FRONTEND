@@ -31,7 +31,7 @@ class MovableStoryLayer {
     this.color = Colors.white,
     this.bgColor,
     this.fontStyle = TextStyleType.bold,
-    this.bgStyle = TextBgStyle.rounded,
+    this.bgStyle = TextBgStyle.none,
     this.alignment = TextAlign.center,
   });
 
@@ -82,6 +82,9 @@ class StoryItemModel {
   bool isLiked;
   int viewersCount;
   final List<StoryViewerModel> viewers;
+  final double bgScale;
+  final Offset bgOffset;
+  final double bgRotation;
 
   StoryItemModel({
     required this.id,
@@ -99,6 +102,9 @@ class StoryItemModel {
     this.isLiked = false,
     this.viewersCount = 0,
     this.viewers = const [],
+    this.bgScale = 1.0,
+    this.bgOffset = Offset.zero,
+    this.bgRotation = 0.0,
   });
 
   bool get isExpired => DateTime.now().difference(createdAt).inHours >= 24;

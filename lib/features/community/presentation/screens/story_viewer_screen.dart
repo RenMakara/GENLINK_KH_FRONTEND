@@ -425,18 +425,18 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with SingleTicker
       );
     }
 
+    Widget mediaWidget;
+
     final url = story.mediaUrl!;
     if (url.startsWith('assets/')) {
-      return Image.asset(
+      mediaWidget = Image.asset(
         url,
         fit: BoxFit.cover,
         alignment: Alignment.center,
         errorBuilder: (context, error, stackTrace) => _buildErrorMediaPlaceholder(),
       );
-    }
-
-    if (_isVideoFile(url)) {
-      return Container(
+    } else if (_isVideoFile(url)) {
+      mediaWidget = Container(
         color: Colors.black,
         child: Center(
           child: Stack(
@@ -495,11 +495,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with SingleTicker
           ),
         ),
       );
-    }
-
-    // 1. Remote HTTP/HTTPS Network Image
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return Image.network(
+    } else if (url.startsWith('http://') || url.startsWith('https://')) {
+      mediaWidget = Image.network(
         url,
         fit: BoxFit.cover,
         alignment: Alignment.center,
@@ -521,210 +518,337 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with SingleTicker
         },
         errorBuilder: (context, error, stackTrace) => _buildErrorMediaPlaceholder(),
       );
+    } else {
+      final localFile = _resolveFile(url);
+      if (localFile.existsSync() || url.startsWith('/') || url.contains(':\\')) {
+        mediaWidget = Image.file(
+          localFile,
+          fit: BoxFit.cover,
+          alignment: Alignment.center,
+          errorBuilder: (context, error, stackTrace) => _buildErrorMediaPlaceholder(),
+        );
+      } else {
+        mediaWidget = Image.network(
+          url,
+          fit: BoxFit.cover,
+          alignment: Alignment.center,
+          errorBuilder: (context, error, stackTrace) => _buildErrorMediaPlaceholder(),
+        );
+      }
     }
 
-    // 2. Local Device File Image
-    final localFile = _resolveFile(url);
-    if (localFile.existsSync() || url.startsWith('/') || url.contains(':\\')) {
-      return Image.file(
-        localFile,
-        fit: BoxFit.cover,
-        alignment: Alignment.center,
-        errorBuilder: (context, error, stackTrace) => _buildErrorMediaPlaceholder(),
-      );
-    }
-
-    // 3. Network Fallback
-    return Image.network(
-      url,
-      fit: BoxFit.cover,
-      alignment: Alignment.center,
-      errorBuilder: (context, error, stackTrace) => _buildErrorMediaPlaceholder(),
+    return Transform.translate(
+      offset: story.bgOffset,
+      child: Transform.scale(
+        scale: story.bgScale,
+        child: RotatedBox(
+          quarterTurns: (story.bgRotation / 90).round() % 4,
+          child: SizedBox.expand(child: mediaWidget),
+        ),
+      ),
     );
   }
 
   TextStyle _getViewerLayerTextStyle(TextStyleType fontStyle, Color color, TextBgStyle bgStyle) {
-    FontWeight weight = FontWeight.normal;
+    FontWeight weight = FontWeight.w600;
     FontStyle style = FontStyle.normal;
+    double letterSpacing = 0.2;
+    double height = 1.25;
+    List<Shadow>? textShadows;
 
     switch (fontStyle) {
-      case TextStyleType.bold:
-        weight = FontWeight.w900;
-        break;
-      case TextStyleType.modern:
-        weight = FontWeight.bold;
-        break;
-      case TextStyleType.handwriting:
-        style = FontStyle.italic;
-        break;
-      case TextStyleType.serif:
-        weight = FontWeight.w600;
-        break;
-      case TextStyleType.monospace:
-        weight = FontWeight.w500;
-        break;
-      case TextStyleType.minimal:
-        weight = FontWeight.w300;
-        break;
-      case TextStyleType.elegant:
-        style = FontStyle.italic;
-        weight = FontWeight.w500;
-        break;
-      case TextStyleType.campus:
-        weight = FontWeight.w900;
-        break;
-      case TextStyleType.coding:
-        weight = FontWeight.w600;
-        break;
-      case TextStyleType.khmer:
-        weight = FontWeight.bold;
-        break;
       case TextStyleType.classic:
         weight = FontWeight.w600;
+        letterSpacing = 0.2;
         break;
+      case TextStyleType.elegant: // Deco
+        style = FontStyle.italic;
+        weight = FontWeight.w600;
+        letterSpacing = 0.8;
+        break;
+      case TextStyleType.bold: // Bubble
+        weight = FontWeight.w900;
+        letterSpacing = -0.3;
+        break;
+      case TextStyleType.modern: // Outline
+        weight = FontWeight.w800;
+        letterSpacing = 0.6;
+        break;
+      case TextStyleType.minimal: // Neon
+        weight = FontWeight.w700;
+        letterSpacing = 1.2;
+        textShadows = [
+          Shadow(blurRadius: 8.0, color: color.withValues(alpha: 0.90), offset: Offset.zero),
+          Shadow(blurRadius: 20.0, color: color.withValues(alpha: 0.80), offset: Offset.zero),
+          Shadow(blurRadius: 36.0, color: color, offset: Offset.zero),
+        ];
+        break;
+      default:
+        weight = FontWeight.w700;
+        break;
+    }
+
+    if (textShadows == null && bgStyle == TextBgStyle.none) {
+      textShadows = [
+        Shadow(blurRadius: 6.0, color: Colors.black.withValues(alpha: 0.75), offset: const Offset(0, 1)),
+        Shadow(blurRadius: 14.0, color: Colors.black.withValues(alpha: 0.40), offset: const Offset(0, 2)),
+      ];
     }
 
     return TextStyle(
       color: color,
-      fontSize: 22,
+      fontSize: 24,
       fontWeight: weight,
       fontStyle: style,
-      shadows: bgStyle == TextBgStyle.none
-          ? const [Shadow(blurRadius: 4.0, color: Colors.black54, offset: Offset(1, 1))]
-          : null,
+      letterSpacing: letterSpacing,
+      height: height,
+      shadows: textShadows,
     );
   }
 
   Widget _buildViewerLayerWidget(MovableStoryLayer layer) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final maxCanvasWidth = screenWidth * 0.75;
+    final maxCanvasWidth = screenWidth * 0.85;
 
     Widget content;
 
     switch (layer.type) {
       case LayerType.text:
-        content = ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-          child: IntrinsicWidth(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: layer.bgStyle == TextBgStyle.none
-                    ? Colors.transparent
-                    : (layer.bgColor ?? Colors.black.withValues(alpha: 0.6)),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
+        final hasBackground = layer.bgStyle != TextBgStyle.none;
+        final baseStyle = _getViewerLayerTextStyle(layer.fontStyle, layer.color, layer.bgStyle);
+
+        final textLuminance = layer.color.computeLuminance();
+        final filledBgColor = textLuminance > 0.45
+            ? Colors.black.withValues(alpha: 0.82)
+            : Colors.white.withValues(alpha: 0.92);
+
+        Widget textWidget;
+
+        if (layer.fontStyle == TextStyleType.modern && !hasBackground) {
+          final strokeColor = textLuminance > 0.5 ? Colors.black : Colors.white;
+          textWidget = Stack(
+            children: [
+              Text(
                 layer.text,
                 softWrap: true,
                 textAlign: layer.alignment,
-                style: _getViewerLayerTextStyle(layer.fontStyle, layer.color, layer.bgStyle),
+                style: baseStyle.copyWith(
+                  foreground: Paint()
+                    ..style = PaintingStyle.stroke
+                    ..strokeWidth = 3.5
+                    ..color = strokeColor,
+                  shadows: null,
+                ),
               ),
-            ),
+              Text(
+                layer.text,
+                softWrap: true,
+                textAlign: layer.alignment,
+                style: baseStyle.copyWith(shadows: null),
+              ),
+            ],
+          );
+        } else {
+          textWidget = Text(
+            layer.text,
+            softWrap: true,
+            textAlign: layer.alignment,
+            style: baseStyle,
+          );
+        }
+
+        content = ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxCanvasWidth * 0.9),
+          child: IntrinsicWidth(
+            child: hasBackground
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: layer.bgStyle == TextBgStyle.filled
+                          ? filledBgColor
+                          : (layer.bgStyle == TextBgStyle.rounded
+                              ? (textLuminance > 0.45
+                                  ? Colors.black.withValues(alpha: 0.60)
+                                  : Colors.white.withValues(alpha: 0.80))
+                              : Colors.transparent),
+                      borderRadius: BorderRadius.circular(10),
+                      border: layer.bgStyle == TextBgStyle.outline
+                          ? Border.all(color: layer.color.withValues(alpha: 0.85), width: 1.8)
+                          : null,
+                    ),
+                    child: textWidget,
+                  )
+                : textWidget,
           ),
         );
         break;
 
       case LayerType.sticker:
-        final isCatSticker = layer.text.contains('Cat') || layer.text.contains('Kittens') || layer.text.contains('Hugging') || layer.text.startsWith('assets/');
-        if (isCatSticker) {
-          content = Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+        final isAssetSticker = layer.text.startsWith('assets/');
+        if (isAssetSticker) {
+          content = ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxCanvasWidth),
+            child: Container(
+              padding: const EdgeInsets.all(4),
               child: Image.asset(
-                'assets/images/cat_stickers.png',
-                width: 150,
+                layer.text,
+                width: 120,
                 fit: BoxFit.contain,
-                errorBuilder: (ctx, err, stack) => Text(
+                errorBuilder: (ctx, err, st) => Text(
                   layer.text,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(fontSize: 48),
                 ),
               ),
             ),
           );
         } else {
-          content = Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.darkSurfacePrimary.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white24),
-            ),
-            child: Text(
-              layer.text,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-            ),
+          content = Text(
+            layer.text,
+            style: const TextStyle(fontSize: 54),
           );
         }
         break;
 
       case LayerType.hashtag:
-        content = Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.communityAccent.withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Text(
-            layer.text,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+        content = ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxCanvasWidth),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.communityAccent.withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              layer.text,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+            ),
           ),
         );
         break;
 
       case LayerType.mention:
-        content = Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Text(
-            layer.text,
-            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
+        final cleanMention = layer.text.startsWith('@') ? layer.text : '@${layer.text}';
+        final hasBg = layer.bgStyle != TextBgStyle.none;
+        final textColor = layer.bgStyle == TextBgStyle.filled ? Colors.black : Colors.white;
+
+        content = ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxCanvasWidth),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: layer.bgStyle == TextBgStyle.filled
+                  ? Colors.white
+                  : (layer.bgStyle == TextBgStyle.rounded
+                      ? Colors.black.withValues(alpha: 0.65)
+                      : Colors.transparent),
+              borderRadius: BorderRadius.circular(12),
+              border: layer.bgStyle == TextBgStyle.outline
+                  ? Border.all(color: Colors.white, width: 2.0)
+                  : null,
+              boxShadow: hasBg
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Text(
+              cleanMention,
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
+                letterSpacing: 0.5,
+              ),
+            ),
           ),
         );
         break;
 
       case LayerType.location:
-        content = Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.black87,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.danger, width: 1.5),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.location_on_rounded, color: AppColors.danger, size: 16),
-              const SizedBox(width: 4),
-              Text(layer.text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-            ],
+        final cleanLocation = layer.text.replaceAll('📍', '').trim();
+        final hasBg = layer.bgStyle != TextBgStyle.none;
+        final textColor = layer.bgStyle == TextBgStyle.filled ? Colors.black : Colors.white;
+
+        content = ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxCanvasWidth),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              color: layer.bgStyle == TextBgStyle.filled
+                  ? AppColors.communityAccent
+                  : (layer.bgStyle == TextBgStyle.rounded
+                      ? Colors.black.withValues(alpha: 0.65)
+                      : Colors.transparent),
+              borderRadius: BorderRadius.circular(20),
+              border: layer.bgStyle == TextBgStyle.outline
+                  ? Border.all(color: AppColors.communityAccent, width: 2.0)
+                  : null,
+              boxShadow: hasBg
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.location_on_rounded,
+                  color: textColor,
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    cleanLocation,
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         );
         break;
 
       case LayerType.music:
-        content = Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.black87,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.communityAccent, width: 1.5),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.music_note_rounded, color: AppColors.communityAccent, size: 16),
-              const SizedBox(width: 4),
-              Text(layer.text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-            ],
+        content = ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxCanvasWidth),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black87,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.communityAccent, width: 1.5),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.music_note_rounded, color: AppColors.communityAccent, size: 16),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    layer.text,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         );
         break;
@@ -733,23 +857,30 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with SingleTicker
         final localFile = _resolveFile(layer.text);
         Widget imgWidget;
         if (localFile.existsSync()) {
-          imgWidget = Image.file(localFile, fit: BoxFit.cover);
+          imgWidget = Image.file(localFile, width: 180, fit: BoxFit.cover);
         } else if (layer.text.startsWith('assets/')) {
-          imgWidget = Image.asset(layer.text, fit: BoxFit.cover);
+          imgWidget = Image.asset(layer.text, width: 180, fit: BoxFit.cover);
         } else {
-          imgWidget = Image.network(layer.text, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image, color: Colors.white54));
+          imgWidget = Image.network(layer.text, width: 180, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image, color: Colors.white54));
         }
 
-        content = Container(
-          width: 140,
-          height: 140,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 8, offset: Offset(0, 3))],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: imgWidget,
+        content = ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxCanvasWidth),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: imgWidget,
+            ),
           ),
         );
         break;
@@ -839,7 +970,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with SingleTicker
             ...story.layers.map((layer) => _buildViewerLayerWidget(layer)),
 
             // Fallback Story Text Overlay (if no canvas layers exist)
-            if (story.layers.isEmpty && story.textContent != null)
+            if (story.layers.isEmpty && story.textContent != null && story.textContent!.trim().isNotEmpty)
               Positioned(
                 left: 28,
                 right: 28,

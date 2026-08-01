@@ -31,14 +31,22 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final surfacePrimary = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.darkSurfacePrimary,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: surfacePrimary,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
@@ -48,7 +56,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white24,
+              color: isDark ? Colors.white24 : AppColors.lightBorderStrong,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -57,22 +65,22 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   "Comments",
                   style: TextStyle(
-                    color: AppColors.darkTextPrimary,
+                    color: textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white70),
+                  icon: Icon(Icons.close, color: textSecondary),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: Colors.white10),
+          Divider(height: 1, color: borderSubtle),
 
           // Comments List
           Expanded(
@@ -83,10 +91,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 );
               }
               if (controller.activeComments.isEmpty) {
-                return const Center(
+                return Center(
                   child: Text(
                     "No comments yet. Be the first to start the discussion!",
-                    style: TextStyle(color: AppColors.darkTextMuted, fontSize: 13),
+                    style: TextStyle(color: textMuted, fontSize: 13),
                   ),
                 );
               }
@@ -104,7 +112,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         CircleAvatar(
                           radius: 18,
                           backgroundImage: NetworkImage(comment.userAvatar),
-                          backgroundColor: AppColors.darkSurfaceSecondary,
+                          backgroundColor: surfaceSecondary,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -114,7 +122,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: AppColors.darkSurfaceSecondary,
+                                  color: surfaceSecondary,
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Column(
@@ -124,8 +132,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                       children: [
                                         Text(
                                           comment.userName,
-                                          style: const TextStyle(
-                                            color: AppColors.darkTextPrimary,
+                                          style: TextStyle(
+                                            color: textPrimary,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 13,
                                           ),
@@ -133,8 +141,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                         const SizedBox(width: 8),
                                         Text(
                                           comment.timeAgo,
-                                          style: const TextStyle(
-                                            color: AppColors.darkTextMuted,
+                                          style: TextStyle(
+                                            color: textMuted,
                                             fontSize: 11,
                                           ),
                                         ),
@@ -143,8 +151,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                     const SizedBox(height: 4),
                                     Text(
                                       comment.text,
-                                      style: const TextStyle(
-                                        color: Colors.white70,
+                                      style: TextStyle(
+                                        color: textPrimary,
                                         fontSize: 13,
                                         height: 1.4,
                                       ),
@@ -158,10 +166,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                   children: [
                                     GestureDetector(
                                       onTap: () {},
-                                      child: const Text(
+                                      child: Text(
                                         "Like",
                                         style: TextStyle(
-                                          color: AppColors.darkTextMuted,
+                                          color: textMuted,
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -170,10 +178,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                     const SizedBox(width: 16),
                                     GestureDetector(
                                       onTap: () {},
-                                      child: const Text(
+                                      child: Text(
                                         "Reply",
                                         style: TextStyle(
-                                          color: AppColors.darkTextMuted,
+                                          color: textMuted,
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -197,18 +205,18 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: AppColors.darkSurfaceSecondary,
-              border: Border(top: BorderSide(color: AppColors.darkBorderSubtle)),
+              color: surfaceSecondary,
+              border: Border(top: BorderSide(color: borderSubtle)),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _commentController,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: textPrimary, fontSize: 14),
+                    decoration: InputDecoration(
                       hintText: "Add a comment...",
-                      hintStyle: TextStyle(color: AppColors.darkTextMuted, fontSize: 13),
+                      hintStyle: TextStyle(color: textMuted, fontSize: 13),
                       border: InputBorder.none,
                     ),
                   ),

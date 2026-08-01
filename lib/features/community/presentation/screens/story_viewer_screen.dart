@@ -208,7 +208,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
   bool _isPaused = false;
   bool _showHeartAnimation = false;
   bool _isClosing = false;
-  bool _isGoingNext = true;
 
   final TextEditingController _replyController = TextEditingController();
 
@@ -392,7 +391,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
 
   void _nextStory() {
     _progressAnimController.stop();
-    _isGoingNext = true;
     final group = _currentGroup;
     if (group == null) {
       _closeViewer();
@@ -420,7 +418,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
 
   void _previousStory() {
     _progressAnimController.stop();
-    _isGoingNext = false;
     final group = _currentGroup;
     if (group == null) {
       _closeViewer();
@@ -2346,26 +2343,16 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
         },
         child: Stack(
           children: [
-            // Full Screen Story Content with Ultra-Comfortable 100ms Anchored Crossfade (WhatsApp / Instagram Comfort Standard)
+            // Full Screen Story Content with Ultra-Comfortable 90ms Anchored Pure Crossfade (Instagram / WhatsApp Comfort Standard)
             Positioned.fill(
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 100),
+                duration: const Duration(milliseconds: 90),
                 switchInCurve: Curves.easeOut,
                 switchOutCurve: Curves.easeOut,
                 transitionBuilder: (Widget child, Animation<double> animation) {
-                  final isNewChild = (child.key as ValueKey<String>).value == "story_${story.id}";
-                  // Micro-shift of ~8px (0.02 screen width) for direction hint while keeping content visually anchored
-                  final double microShift = _isGoingNext ? 0.02 : -0.02;
-
                   return FadeTransition(
                     opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: isNewChild ? Offset(microShift, 0.0) : Offset.zero,
-                        end: isNewChild ? Offset.zero : Offset(-microShift, 0.0),
-                      ).animate(animation),
-                      child: child,
-                    ),
+                    child: child,
                   );
                 },
                 child: KeyedSubtree(

@@ -15,6 +15,12 @@ class StoryTrayWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(StoryController());
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final bgPrimary = Theme.of(context).scaffoldBackgroundColor;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final skeletonColor = isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06);
 
     return Obx(() {
       if (controller.isLoading.value) {
@@ -30,14 +36,14 @@ class StoryTrayWidget extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 32,
-                    backgroundColor: Colors.white.withValues(alpha: 0.08),
+                    backgroundColor: skeletonColor,
                   ),
                   const SizedBox(height: 6),
                   Container(
                     width: 48,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: skeletonColor,
                       borderRadius: BorderRadius.circular(5),
                     ),
                   ),
@@ -108,7 +114,7 @@ class StoryTrayWidget extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: AppColors.communityAccent,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: AppColors.darkBgPrimary, width: 1.5),
+                                  border: Border.all(color: bgPrimary, width: 1.5),
                                 ),
                                 child: const Icon(Icons.add, color: Colors.black, size: 12),
                               ),
@@ -117,10 +123,10 @@ class StoryTrayWidget extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      const Text(
+                      Text(
                         "Your Story",
                         style: TextStyle(
-                          color: AppColors.darkTextPrimary,
+                          color: textPrimary,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
@@ -158,13 +164,13 @@ class StoryTrayWidget extends StatelessWidget {
                               )
                             : null,
                         border: !group.hasUnseen
-                            ? Border.all(color: AppColors.darkBorderSubtle, width: 1.5)
+                            ? Border.all(color: borderSubtle, width: 1.5)
                             : null,
                       ),
                       child: Container(
                         padding: const EdgeInsets.all(2),
-                        decoration: const BoxDecoration(
-                          color: AppColors.darkBgPrimary,
+                        decoration: BoxDecoration(
+                          color: bgPrimary,
                           shape: BoxShape.circle,
                         ),
                         child: CircleAvatar(
@@ -181,7 +187,7 @@ class StoryTrayWidget extends StatelessWidget {
                       child: Text(
                         group.userName,
                         style: TextStyle(
-                          color: group.hasUnseen ? AppColors.darkTextPrimary : AppColors.darkTextMuted,
+                          color: group.hasUnseen ? textPrimary : textMuted,
                           fontSize: 11,
                           fontWeight: group.hasUnseen ? FontWeight.bold : FontWeight.normal,
                         ),

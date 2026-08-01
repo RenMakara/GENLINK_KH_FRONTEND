@@ -11,8 +11,17 @@ class EventSuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final textMuted = isDark ? Colors.white54 : AppColors.lightTextMuted;
+    final textMutedSubtle = isDark ? Colors.white38 : AppColors.lightTextMuted;
+    final bgPrimary = Theme.of(context).scaffoldBackgroundColor;
+    final cardBg = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? Colors.white10 : AppColors.lightBorderSubtle;
+
     return Scaffold(
-      backgroundColor: AppColors.darkBgPrimary,
+      backgroundColor: bgPrimary,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -37,18 +46,18 @@ class EventSuccessScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              const Text(
+              Text(
                 "Registration Successful!",
                 style: TextStyle(
-                  color: Colors.white,
+                  color: textPrimary,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 "You have successfully registered for",
-                style: TextStyle(color: Colors.white54, fontSize: 13),
+                style: TextStyle(color: textMuted, fontSize: 13),
               ),
 
               const SizedBox(height: 24),
@@ -57,9 +66,9 @@ class EventSuccessScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.04),
+                  color: cardBg,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white10),
+                  border: Border.all(color: borderSubtle),
                 ),
                 child: Row(
                   children: [
@@ -80,20 +89,20 @@ class EventSuccessScreen extends StatelessWidget {
                         children: [
                           Text(
                             eventData['title'] as String? ?? 'Flutter Workshop 2026',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: textPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
+                          Text(
                             "📅 25 July 2026 • 9:00 AM - 4:00 PM",
-                            style: TextStyle(color: Colors.white70, fontSize: 11),
+                            style: TextStyle(color: textSecondary, fontSize: 11),
                           ),
-                          const Text(
+                          Text(
                             "📍 ACLEDA University",
-                            style: TextStyle(color: Colors.white38, fontSize: 11),
+                            style: TextStyle(color: textMutedSubtle, fontSize: 11),
                           ),
                         ],
                       ),
@@ -106,18 +115,21 @@ class EventSuccessScreen extends StatelessWidget {
 
               // Action Options Card Buttons
               _buildActionTile(
+                context: context,
                 icon: Icons.confirmation_number_outlined,
                 title: "View Ticket",
                 onTap: () {},
               ),
               const SizedBox(height: 10),
               _buildActionTile(
+                context: context,
                 icon: Icons.calendar_today_outlined,
                 title: "Add to Calendar",
                 onTap: () {},
               ),
               const SizedBox(height: 10),
               _buildActionTile(
+                context: context,
                 icon: Icons.chat_bubble_outline,
                 title: "Open Event Chat",
                 onTap: () {},
@@ -154,25 +166,32 @@ class EventSuccessScreen extends StatelessWidget {
   }
 
   Widget _buildActionTile({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final cardBg = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? Colors.white10 : AppColors.lightBorderSubtle;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: cardBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: borderSubtle),
       ),
       child: Material(
         color: Colors.transparent,
         child: ListTile(
-          leading: Icon(icon, color: Colors.white70, size: 20),
+          leading: Icon(icon, color: textSecondary, size: 20),
           title: Text(
             title,
-            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+            style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
           ),
-          trailing: const Icon(Icons.chevron_right, color: Colors.white38),
+          trailing: Icon(Icons.chevron_right, color: isDark ? Colors.white38 : AppColors.lightTextMuted),
           onTap: onTap,
         ),
       ),

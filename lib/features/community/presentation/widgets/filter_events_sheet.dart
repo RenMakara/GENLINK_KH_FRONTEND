@@ -26,11 +26,18 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfacePrimary = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final unselectedBg = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightBgSecondary;
+    final unselectedBorder = isDark ? Colors.white10 : AppColors.lightBorderSubtle;
+
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: AppColors.darkSurfacePrimary,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: surfacePrimary,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -41,10 +48,10 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   "Filter Events",
                   style: TextStyle(
-                    color: AppColors.darkTextPrimary,
+                    color: textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
                   ),
@@ -69,11 +76,11 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
             const SizedBox(height: 16),
 
             // 1. Date Section
-            const Row(
+            Row(
               children: [
-                Icon(Icons.calendar_today_outlined, color: Colors.white70, size: 18),
-                SizedBox(width: 8),
-                Text("Date", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                Icon(Icons.calendar_today_outlined, color: textSecondary, size: 18),
+                const SizedBox(width: 8),
+                Text("Date", style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 10),
@@ -88,24 +95,24 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                     decoration: BoxDecoration(
                       color: isSelected
                           ? const Color(0xFF8B5CF6).withValues(alpha: 0.15)
-                          : Colors.white.withValues(alpha: 0.04),
+                          : unselectedBg,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? const Color(0xFF8B5CF6) : Colors.white10,
+                        color: isSelected ? const Color(0xFF8B5CF6) : unselectedBorder,
                       ),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           isSelected ? Icons.check_circle : Icons.circle_outlined,
-                          color: isSelected ? const Color(0xFF8B5CF6) : Colors.white38,
+                          color: isSelected ? const Color(0xFF8B5CF6) : textSecondary,
                           size: 20,
                         ),
                         const SizedBox(width: 10),
                         Text(
                           opt,
                           style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.white70,
+                            color: isSelected ? (isDark ? Colors.white : AppColors.lightTextPrimary) : textSecondary,
                             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
@@ -119,11 +126,11 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
             const SizedBox(height: 16),
 
             // 2. Category Section
-            const Row(
+            Row(
               children: [
-                Icon(Icons.grid_view, color: Colors.white70, size: 18),
-                SizedBox(width: 8),
-                Text("Category", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                Icon(Icons.grid_view, color: textSecondary, size: 18),
+                const SizedBox(width: 8),
+                Text("Category", style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 10),
@@ -157,24 +164,24 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                     decoration: BoxDecoration(
                       color: isSelected
                           ? const Color(0xFF8B5CF6).withValues(alpha: 0.2)
-                          : Colors.white.withValues(alpha: 0.04),
+                          : unselectedBg,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? const Color(0xFF8B5CF6) : Colors.white10,
+                        color: isSelected ? const Color(0xFF8B5CF6) : unselectedBorder,
                       ),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           isSelected ? Icons.check_circle : item['icon'] as IconData,
-                          color: isSelected ? const Color(0xFF8B5CF6) : Colors.white54,
+                          color: isSelected ? const Color(0xFF8B5CF6) : textSecondary,
                           size: 18,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           catName,
                           style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.white70,
+                            color: isSelected ? (isDark ? Colors.white : AppColors.lightTextPrimary) : textSecondary,
                             fontSize: 13,
                             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           ),
@@ -189,11 +196,11 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
             const SizedBox(height: 16),
 
             // 3. Mode Section
-            const Row(
+            Row(
               children: [
-                Icon(Icons.tune, color: Colors.white70, size: 18),
-                SizedBox(width: 8),
-                Text("Mode", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                Icon(Icons.tune, color: textSecondary, size: 18),
+                const SizedBox(width: 8),
+                Text("Mode", style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 10),
@@ -209,17 +216,17 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? const Color(0xFF8B5CF6).withValues(alpha: 0.2)
-                            : Colors.white.withValues(alpha: 0.04),
+                            : unselectedBg,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected ? const Color(0xFF8B5CF6) : Colors.white10,
+                          color: isSelected ? const Color(0xFF8B5CF6) : unselectedBorder,
                         ),
                       ),
                       child: Center(
                         child: Text(
                           m,
                           style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.white70,
+                            color: isSelected ? (isDark ? Colors.white : AppColors.lightTextPrimary) : textSecondary,
                             fontSize: 13,
                             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           ),
@@ -234,11 +241,11 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
             const SizedBox(height: 16),
 
             // 4. Price Section
-            const Row(
+            Row(
               children: [
-                Icon(Icons.sell_outlined, color: Colors.white70, size: 18),
-                SizedBox(width: 8),
-                Text("Price", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                Icon(Icons.sell_outlined, color: textSecondary, size: 18),
+                const SizedBox(width: 8),
+                Text("Price", style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 10),
@@ -254,17 +261,17 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? const Color(0xFF8B5CF6).withValues(alpha: 0.2)
-                            : Colors.white.withValues(alpha: 0.04),
+                            : unselectedBg,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected ? const Color(0xFF8B5CF6) : Colors.white10,
+                          color: isSelected ? const Color(0xFF8B5CF6) : unselectedBorder,
                         ),
                       ),
                       child: Center(
                         child: Text(
                           p,
                           style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.white70,
+                            color: isSelected ? (isDark ? Colors.white : AppColors.lightTextPrimary) : textSecondary,
                             fontSize: 13,
                             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           ),

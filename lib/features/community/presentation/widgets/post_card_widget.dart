@@ -51,20 +51,34 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
   }
 
   void _confirmDeletePost(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.darkSurfaceSecondary,
+        backgroundColor: isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("Delete Post?", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: const Text(
+        title: Text(
+          "Delete Post?",
+          style: TextStyle(
+            color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
           "Are you sure you want to delete this post? This action can be undone briefly.",
-          style: TextStyle(color: AppColors.darkTextSecondary),
+          style: TextStyle(
+            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text("Cancel", style: TextStyle(color: Colors.white54)),
+            child: Text(
+              "Cancel",
+              style: TextStyle(
+                color: isDark ? Colors.white54 : AppColors.lightTextSecondary,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -92,14 +106,17 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
   }
 
   void _showMoreMenu(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textThemeColor = isDark ? Colors.white : AppColors.lightTextPrimary;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: AppColors.darkSurfacePrimary,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -107,10 +124,10 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
             Material(
               color: Colors.transparent,
               child: ListTile(
-                leading: const Icon(Icons.bookmark_border, color: Colors.white),
+                leading: Icon(Icons.bookmark_border, color: textThemeColor),
                 title: Text(
                   widget.post.isBookmarked ? "Remove Bookmark" : "Save Bookmark",
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: textThemeColor),
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -129,8 +146,8 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
             Material(
               color: Colors.transparent,
               child: ListTile(
-                leading: const Icon(Icons.repeat_rounded, color: Colors.white),
-                title: const Text("Repost", style: TextStyle(color: Colors.white)),
+                leading: Icon(Icons.repeat_rounded, color: textThemeColor),
+                title: Text("Repost", style: TextStyle(color: textThemeColor)),
                 onTap: () {
                   Navigator.pop(ctx);
                   _showRepostDialog(context);
@@ -177,18 +194,22 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
   }
 
   void _showRepostDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final captionController = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.darkSurfacePrimary,
+        backgroundColor: isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.darkBorderSubtle),
+          side: BorderSide(color: isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle),
         ),
-        title: const Text(
+        title: Text(
           "Repost Content",
-          style: TextStyle(color: AppColors.darkTextPrimary, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -196,24 +217,33 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
           children: [
             Text(
               "Reposting content originally by ${widget.post.authorName}",
-              style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 13),
+              style: TextStyle(
+                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 14),
             Container(
               decoration: BoxDecoration(
-                color: AppColors.darkSurfaceSecondary,
+                color: isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.darkBorderSubtle),
+                border: Border.all(color: isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle),
               ),
               padding: const EdgeInsets.all(12),
               child: TextField(
                 controller: captionController,
                 minLines: 2,
                 maxLines: 4,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                decoration: const InputDecoration(
+                style: TextStyle(
+                  color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                  fontSize: 14,
+                ),
+                decoration: InputDecoration(
                   hintText: "Add an optional quote caption...",
-                  hintStyle: TextStyle(color: AppColors.darkTextMuted, fontSize: 14),
+                  hintStyle: TextStyle(
+                    color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                    fontSize: 14,
+                  ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -229,7 +259,13 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
             style: TextButton.styleFrom(
               minimumSize: const Size(48, 48),
             ),
-            child: const Text("Cancel", style: TextStyle(color: AppColors.darkTextSecondary, fontWeight: FontWeight.w600)),
+            child: Text(
+              "Cancel",
+              style: TextStyle(
+                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -243,12 +279,18 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
+              backgroundColor: isDark ? Colors.white : AppColors.lightPrimary,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
-            child: const Text("Repost Now", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            child: Text(
+              "Repost Now",
+              style: TextStyle(
+                color: isDark ? Colors.black : AppColors.lightTextInverse,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -257,12 +299,19 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final actionIconColor = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: AppColors.darkSurfaceSecondary,
+        color: isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.darkBorderSubtle),
+        border: Border.all(color: borderSubtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,7 +326,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                   const SizedBox(width: 6),
                   Text(
                     "${widget.post.repostedBy} reposted",
-                    style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -289,7 +338,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
               padding: const EdgeInsets.only(left: 16, top: 6, right: 16, bottom: 10),
               child: Text(
                 widget.post.repostCaption!,
-                style: const TextStyle(color: AppColors.darkTextPrimary, fontSize: 15, fontWeight: FontWeight.w600, height: 1.4),
+                style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w600, height: 1.4),
               ),
             ),
           // Author Header Tile
@@ -321,8 +370,8 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                         children: [
                           Text(
                             widget.post.authorName,
-                            style: const TextStyle(
-                              color: AppColors.darkTextPrimary,
+                            style: TextStyle(
+                              color: textPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),
@@ -338,21 +387,21 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                         children: [
                           Text(
                             widget.post.timeAgo,
-                            style: const TextStyle(color: AppColors.darkTextMuted, fontSize: 11),
+                            style: TextStyle(color: textMuted, fontSize: 11),
                           ),
                           const SizedBox(width: 8),
                           Flexible(
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.06),
+                                color: isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.lightBgSecondary,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 widget.post.community,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 10),
+                                style: TextStyle(color: textSecondary, fontSize: 10),
                               ),
                             ),
                           ),
@@ -362,7 +411,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.more_vert_rounded, color: Colors.white54, size: 20),
+                  icon: Icon(Icons.more_vert_rounded, color: actionIconColor, size: 20),
                   onPressed: () => _showMoreMenu(context),
                 ),
               ],
@@ -375,8 +424,8 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 widget.post.content,
-                style: const TextStyle(
-                  color: AppColors.darkTextPrimary,
+                style: TextStyle(
+                  color: textPrimary,
                   fontSize: 14,
                   height: 1.45,
                 ),
@@ -393,7 +442,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                   const SizedBox(width: 4),
                   Text(
                     widget.post.location!,
-                    style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 12),
+                    style: TextStyle(color: textSecondary, fontSize: 12),
                   ),
                 ],
               ),
@@ -438,7 +487,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                           scale: _likeScaleAnim,
                           child: Icon(
                             widget.post.isLiked ? Icons.favorite : Icons.favorite_border,
-                            color: widget.post.isLiked ? AppColors.danger : Colors.white70,
+                            color: widget.post.isLiked ? AppColors.danger : actionIconColor,
                             size: 22,
                           ),
                         ),
@@ -446,7 +495,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                         Text(
                           "${widget.post.likesCount}",
                           style: TextStyle(
-                            color: widget.post.isLiked ? AppColors.danger : Colors.white70,
+                            color: widget.post.isLiked ? AppColors.danger : actionIconColor,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -472,11 +521,11 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     child: Row(
                       children: [
-                        const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white70, size: 21),
+                        Icon(Icons.chat_bubble_outline_rounded, color: actionIconColor, size: 21),
                         const SizedBox(width: 6),
                         Text(
                           "${widget.post.commentsCount}",
-                          style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+                          style: TextStyle(color: actionIconColor, fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -492,11 +541,11 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     child: Row(
                       children: [
-                        const Icon(Icons.repeat_rounded, color: Colors.white70, size: 21),
+                        Icon(Icons.repeat_rounded, color: actionIconColor, size: 21),
                         const SizedBox(width: 6),
                         Text(
                           "${widget.post.repostsCount}",
-                          style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+                          style: TextStyle(color: actionIconColor, fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -510,7 +559,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                   onPressed: () => widget.controller.toggleBookmark(widget.post.id),
                   icon: Icon(
                     widget.post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                    color: widget.post.isBookmarked ? AppColors.communityAccent : Colors.white70,
+                    color: widget.post.isBookmarked ? AppColors.communityAccent : actionIconColor,
                     size: 22,
                   ),
                 ),
@@ -695,21 +744,21 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
     );
   }
 
-
-
   Widget _buildLinkPreviewCard({
     required String url,
     String? title,
     String? domain,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final displayDomain = domain ?? (url.contains('github.com') ? 'github.com' : 'campuslink.kh');
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.darkSurfacePrimary,
+        color: isDark ? AppColors.darkSurfacePrimary : AppColors.lightBgSecondary,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.darkBorderSubtle),
+        border: Border.all(color: isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle),
       ),
       child: Row(
         children: [
@@ -728,8 +777,8 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
               children: [
                 Text(
                   title ?? "CampusLink Resource Link",
-                  style: const TextStyle(
-                    color: AppColors.darkTextPrimary,
+                  style: TextStyle(
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -744,7 +793,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
               ],
             ),
           ),
-          const Icon(Icons.open_in_new_rounded, color: Colors.white38, size: 18),
+          Icon(Icons.open_in_new_rounded, color: isDark ? Colors.white38 : AppColors.lightTextMuted, size: 18),
         ],
       ),
     );
@@ -811,12 +860,17 @@ class _EditPostModalDialogState extends State<_EditPostModalDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
     return Dialog(
-      backgroundColor: AppColors.darkSurfacePrimary,
+      backgroundColor: isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: AppColors.darkBorderSubtle, width: 1),
+        side: BorderSide(color: borderSubtle, width: 1),
       ),
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -828,16 +882,16 @@ class _EditPostModalDialogState extends State<_EditPostModalDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   "Edit Post",
                   style: TextStyle(
-                    color: AppColors.darkTextPrimary,
+                    color: textPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: AppColors.darkTextSecondary, size: 20),
+                  icon: Icon(Icons.close_rounded, color: textSecondary, size: 20),
                   onPressed: () => Navigator.pop(context),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
@@ -849,23 +903,26 @@ class _EditPostModalDialogState extends State<_EditPostModalDialog> {
             // Minimal Text Editor Field (Auto-expanding, subtle border)
             Container(
               decoration: BoxDecoration(
-                color: AppColors.darkSurfaceSecondary,
+                color: isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.darkBorderSubtle, width: 1),
+                border: Border.all(color: borderSubtle, width: 1),
               ),
               padding: const EdgeInsets.all(14),
               child: TextField(
                 controller: _textController,
                 minLines: 3,
                 maxLines: 6,
-                style: const TextStyle(
-                  color: AppColors.darkTextPrimary,
+                style: TextStyle(
+                  color: textPrimary,
                   fontSize: 15,
                   height: 1.4,
                 ),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: "What would you like to edit?",
-                  hintStyle: TextStyle(color: AppColors.darkTextMuted, fontSize: 15),
+                  hintStyle: TextStyle(
+                    color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+                    fontSize: 15,
+                  ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -876,7 +933,7 @@ class _EditPostModalDialogState extends State<_EditPostModalDialog> {
             ),
             const SizedBox(height: 20),
 
-            // Actions Row: Cancel (Text only) + Save (Solid White Button)
+            // Actions Row: Cancel (Text only) + Save (Solid White/Primary Button)
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -888,10 +945,10 @@ class _EditPostModalDialogState extends State<_EditPostModalDialog> {
                     minimumSize: const Size(48, 48),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: const Text(
+                  child: Text(
                     "Cancel",
                     style: TextStyle(
-                      color: AppColors.darkTextSecondary,
+                      color: textSecondary,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
@@ -899,14 +956,14 @@ class _EditPostModalDialogState extends State<_EditPostModalDialog> {
                 ),
                 const SizedBox(width: 8),
 
-                // Save Action Button (Solid White #FFFFFF with Black text #000000)
+                // Save Action Button
                 ElevatedButton(
                   onPressed: _hasChanged && !_isSaving ? _saveChanges : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _hasChanged
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.08),
-                    disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
+                        ? (isDark ? Colors.white : AppColors.lightPrimary)
+                        : (isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBorderSubtle),
+                    disabledBackgroundColor: isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBorderSubtle,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                     minimumSize: const Size(80, 44),
@@ -915,18 +972,20 @@ class _EditPostModalDialogState extends State<_EditPostModalDialog> {
                     ),
                   ),
                   child: _isSaving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
-                            color: Colors.black,
+                            color: isDark ? Colors.black : AppColors.lightTextInverse,
                             strokeWidth: 2,
                           ),
                         )
                       : Text(
                           "Save",
                           style: TextStyle(
-                            color: _hasChanged ? Colors.black : Colors.white38,
+                            color: _hasChanged
+                                ? (isDark ? Colors.black : AppColors.lightTextInverse)
+                                : (isDark ? Colors.white38 : AppColors.lightTextMuted),
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1066,13 +1125,16 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: const BoxDecoration(
-          color: AppColors.darkSurfacePrimary,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1084,7 +1146,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white24,
+                  color: isDark ? Colors.white24 : AppColors.lightBorderStrong,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1094,10 +1156,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               children: [
                 Text(
                   "Comments (${_comments.length})",
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white54, size: 20),
+                  icon: Icon(Icons.close, color: isDark ? Colors.white54 : AppColors.lightTextSecondary, size: 20),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -1128,7 +1190,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.darkSurfaceSecondary,
+                            color: isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Column(
@@ -1139,18 +1201,18 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                 children: [
                                   Text(
                                     c['userName']!,
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                    style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
                                   ),
                                   Text(
                                     c['timeAgo']!,
-                                    style: const TextStyle(color: AppColors.darkTextMuted, fontSize: 11),
+                                    style: TextStyle(color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted, fontSize: 11),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 c['text']!,
-                                style: const TextStyle(color: AppColors.darkTextPrimary, fontSize: 14),
+                                style: TextStyle(color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary, fontSize: 14),
                               ),
                             ],
                           ),
@@ -1167,12 +1229,12 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 Expanded(
                   child: TextField(
                     controller: _commentController,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: TextStyle(color: isDark ? Colors.white : AppColors.lightTextPrimary, fontSize: 14),
                     decoration: InputDecoration(
                       hintText: "Write a comment...",
-                      hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                      hintStyle: TextStyle(color: isDark ? Colors.white38 : AppColors.lightTextMuted, fontSize: 13),
                       filled: true,
-                      fillColor: AppColors.darkSurfaceSecondary,
+                      fillColor: isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
                     ),

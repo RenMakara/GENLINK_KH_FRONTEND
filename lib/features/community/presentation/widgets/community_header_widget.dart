@@ -53,10 +53,15 @@ class _CommunityHeaderWidgetState extends State<CommunityHeaderWidget>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headerBg = Theme.of(context).scaffoldBackgroundColor;
+    final iconColor = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final badgeBorderColor = isDark ? Colors.black : Colors.white;
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
-        color: Colors.black,
+        color: headerBg,
         child: SafeArea(
           bottom: false,
           child: Container(
@@ -91,9 +96,9 @@ class _CommunityHeaderWidgetState extends State<CommunityHeaderWidget>
                       tag: 'community_search_bar',
                       child: _HeaderActionButton(
                         tooltip: "Search",
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.search_rounded,
-                          color: Colors.white,
+                          color: iconColor,
                           size: 22,
                         ),
                         onTap: () {
@@ -114,9 +119,9 @@ class _CommunityHeaderWidgetState extends State<CommunityHeaderWidget>
                     // 💬💬 Messages Action (Double Conversation Icon: Icons.forum_rounded, Blue Unread Badge)
                     _HeaderActionButton(
                       tooltip: "Messages",
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.forum_rounded,
-                        color: Colors.white,
+                        color: iconColor,
                         size: 22,
                       ),
                       badge: widget.hasUnreadMessages
@@ -126,7 +131,7 @@ class _CommunityHeaderWidgetState extends State<CommunityHeaderWidget>
                               decoration: BoxDecoration(
                                 color: AppColors.communityAccent,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.black, width: 1.5),
+                                border: Border.all(color: badgeBorderColor, width: 1.5),
                               ),
                             )
                           : null,
@@ -140,9 +145,9 @@ class _CommunityHeaderWidgetState extends State<CommunityHeaderWidget>
                     // 🔔 Notifications Action (Bell Icon: Icons.notifications_none_rounded, Blue Unread Badge)
                     _HeaderActionButton(
                       tooltip: "Notifications",
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.notifications_none_rounded,
-                        color: Colors.white,
+                        color: iconColor,
                         size: 22,
                       ),
                       badge: widget.hasUnreadNotifications
@@ -152,7 +157,7 @@ class _CommunityHeaderWidgetState extends State<CommunityHeaderWidget>
                               decoration: BoxDecoration(
                                 color: AppColors.communityAccent,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.black, width: 1.5),
+                                border: Border.all(color: badgeBorderColor, width: 1.5),
                               ),
                             )
                           : null,

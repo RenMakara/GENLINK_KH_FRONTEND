@@ -29,8 +29,14 @@ class CommunityScreen extends GetView<CommunityController> {
   Widget build(BuildContext context) {
     final commController = _effectiveController;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64.0),
         child: Obx(
@@ -68,13 +74,13 @@ class CommunityScreen extends GetView<CommunityController> {
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? AppColors.darkTextPrimary
-                                  : AppColors.darkSurfaceSecondary,
+                                  ? textPrimary
+                                  : surfaceSecondary,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: isSelected
-                                    ? AppColors.darkTextPrimary
-                                    : AppColors.darkBorderSubtle,
+                                    ? textPrimary
+                                    : borderSubtle,
                                 width: 1.0,
                               ),
                             ),
@@ -82,8 +88,8 @@ class CommunityScreen extends GetView<CommunityController> {
                               cat,
                               style: TextStyle(
                                 color: isSelected
-                                    ? Colors.black
-                                    : AppColors.darkTextSecondary,
+                                    ? (isDark ? Colors.black : Colors.white)
+                                    : textSecondary,
                                 fontWeight: isSelected
                                     ? FontWeight.bold
                                     : FontWeight.w500,
@@ -127,10 +133,16 @@ class CommunityScreen extends GetView<CommunityController> {
   // TAB 1: FEED TAB (Stories + Create Post + Community Feed + Polls)
   // ---------------------------------------------------------------------------
   Widget _buildFeedTab(BuildContext context, CommunityController controller) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
     return RefreshIndicator(
       onRefresh: () => controller.refreshFeed(),
       color: AppColors.communityAccent,
-      backgroundColor: AppColors.darkSurfaceSecondary,
+      backgroundColor: surfaceSecondary,
       child: SingleChildScrollView(
         controller: controller.scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
@@ -154,9 +166,9 @@ class CommunityScreen extends GetView<CommunityController> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.darkSurfaceSecondary,
+                    color: surfaceSecondary,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.darkBorderSubtle),
+                    border: Border.all(color: borderSubtle),
                   ),
                   child: Row(
                     children: [
@@ -166,11 +178,11 @@ class CommunityScreen extends GetView<CommunityController> {
                             AssetImage('assets/images/user_profile.png'),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           "What's happening in your community, Sokny?",
                           style: TextStyle(
-                            color: AppColors.darkTextMuted,
+                            color: textMuted,
                             fontSize: 14,
                             fontWeight: FontWeight.w400,
                           ),
@@ -179,7 +191,7 @@ class CommunityScreen extends GetView<CommunityController> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.05),
+                          color: isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.lightBgSecondary,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -214,9 +226,9 @@ class CommunityScreen extends GetView<CommunityController> {
                   padding: const EdgeInsets.all(24.0),
                   child: Column(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.wifi_off_rounded,
-                        color: AppColors.darkTextMuted,
+                        color: textMuted,
                         size: 48,
                       ),
                       const SizedBox(height: 12),
@@ -224,8 +236,8 @@ class CommunityScreen extends GetView<CommunityController> {
                         controller.errorMessage.value.isNotEmpty
                             ? controller.errorMessage.value
                             : 'Could not load feed',
-                        style: const TextStyle(
-                          color: AppColors.darkTextSecondary,
+                        style: TextStyle(
+                          color: textSecondary,
                           fontSize: 14,
                         ),
                         textAlign: TextAlign.center,
@@ -246,12 +258,12 @@ class CommunityScreen extends GetView<CommunityController> {
               }
 
               if (controller.posts.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.all(32.0),
+                return Padding(
+                  padding: const EdgeInsets.all(32.0),
                   child: Center(
                     child: Text(
                       'No community posts yet.',
-                      style: TextStyle(color: AppColors.darkTextMuted),
+                      style: TextStyle(color: textMuted),
                     ),
                   ),
                 );
@@ -299,6 +311,12 @@ class CommunityScreen extends GetView<CommunityController> {
   // TAB 2: FORUM TAB (Discussions, Trending Topics, Forum Categories, Pinned)
   // ---------------------------------------------------------------------------
   Widget _buildForumTab(BuildContext context, CommunityController controller) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -315,22 +333,22 @@ class CommunityScreen extends GetView<CommunityController> {
                 height: 46,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: AppColors.darkSurfaceSecondary,
+                  color: surfaceSecondary,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.darkBorderSubtle),
+                  border: Border.all(color: borderSubtle),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
                     Icon(
                       Icons.search,
-                      color: AppColors.darkTextMuted,
+                      color: textMuted,
                       size: 20,
                     ),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Text(
                       "Search Discussions & Topics...",
                       style: TextStyle(
-                        color: AppColors.darkTextMuted,
+                        color: textMuted,
                         fontSize: 14,
                       ),
                     ),
@@ -342,10 +360,10 @@ class CommunityScreen extends GetView<CommunityController> {
             const SizedBox(height: 20),
 
             // Trending Topics
-            const Text(
+            Text(
               "🔥 Trending Topics",
               style: TextStyle(
-                color: Colors.white,
+                color: textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -373,7 +391,7 @@ class CommunityScreen extends GetView<CommunityController> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.darkSurfaceSecondary,
+                        color: surfaceSecondary,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: AppColors.communityAccent.withValues(alpha: 0.3),
@@ -396,10 +414,10 @@ class CommunityScreen extends GetView<CommunityController> {
             const SizedBox(height: 24),
 
             // Forum Categories
-            const Text(
+            Text(
               "Forum Categories",
               style: TextStyle(
-                color: Colors.white,
+                color: textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -414,21 +432,25 @@ class CommunityScreen extends GetView<CommunityController> {
               crossAxisSpacing: 10,
               children: [
                 _buildForumCategoryCard(
+                  context,
                   "💻 Tech & Coding",
                   "342 Discussions",
                   AppColors.communityAccent,
                 ),
                 _buildForumCategoryCard(
+                  context,
                   "🎓 Campus Life",
                   "189 Discussions",
                   AppColors.success,
                 ),
                 _buildForumCategoryCard(
+                  context,
                   "📚 Academics",
                   "256 Discussions",
                   AppColors.warning,
                 ),
                 _buildForumCategoryCard(
+                  context,
                   "🚀 Projects",
                   "120 Discussions",
                   const Color(0xFF8B7CF6),
@@ -439,16 +461,17 @@ class CommunityScreen extends GetView<CommunityController> {
             const SizedBox(height: 24),
 
             // Pinned & Latest Discussions List
-            const Text(
+            Text(
               "📌 Pinned Discussions",
               style: TextStyle(
-                color: Colors.white,
+                color: textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 12),
             _buildForumThreadCard(
+              context: context,
               title: "Guidelines for GenLink KH Annual Student Project Showcase 2026",
               author: "Admin Team",
               timeAgo: "1d ago",
@@ -457,6 +480,7 @@ class CommunityScreen extends GetView<CommunityController> {
               isPinned: true,
             ),
             _buildForumThreadCard(
+              context: context,
               title: "Best resources to master Flutter state management with GetX?",
               author: "Sokchea Lim",
               timeAgo: "3h ago",
@@ -465,6 +489,7 @@ class CommunityScreen extends GetView<CommunityController> {
               isPinned: false,
             ),
             _buildForumThreadCard(
+              context: context,
               title: "How to prepare for junior software engineer interviews in Cambodia?",
               author: "Rathana P.",
               timeAgo: "6h ago",
@@ -480,16 +505,21 @@ class CommunityScreen extends GetView<CommunityController> {
     );
   }
 
-  Widget _buildForumCategoryCard(String title, String count, Color accent) {
+  Widget _buildForumCategoryCard(BuildContext context, String title, String count, Color accent) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
     return InkWell(
       onTap: () => Get.to(() => const CommunitySearchScreen(activeTab: 'Forum')),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.darkSurfaceSecondary,
+          color: surfaceSecondary,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.darkBorderSubtle),
+          border: Border.all(color: borderSubtle),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -497,8 +527,8 @@ class CommunityScreen extends GetView<CommunityController> {
           children: [
             Text(
               title,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: textPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
               ),
@@ -519,6 +549,7 @@ class CommunityScreen extends GetView<CommunityController> {
   }
 
   Widget _buildForumThreadCard({
+    required BuildContext context,
     required String title,
     required String author,
     required String timeAgo,
@@ -526,6 +557,13 @@ class CommunityScreen extends GetView<CommunityController> {
     required int upvotes,
     required bool isPinned,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
     return InkWell(
       onTap: () => Get.to(() => const CommunitySearchScreen(activeTab: 'Forum')),
       borderRadius: BorderRadius.circular(20),
@@ -533,12 +571,12 @@ class CommunityScreen extends GetView<CommunityController> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.darkSurfaceSecondary,
+          color: surfaceSecondary,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isPinned
                 ? AppColors.communityAccent.withValues(alpha: 0.4)
-                : AppColors.darkBorderSubtle,
+                : borderSubtle,
           ),
         ),
         child: Column(
@@ -556,8 +594,8 @@ class CommunityScreen extends GetView<CommunityController> {
                 ],
                 Text(
                   author,
-                  style: const TextStyle(
-                    color: AppColors.darkTextSecondary,
+                  style: TextStyle(
+                    color: textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -565,8 +603,8 @@ class CommunityScreen extends GetView<CommunityController> {
                 const SizedBox(width: 8),
                 Text(
                   "• $timeAgo",
-                  style: const TextStyle(
-                    color: AppColors.darkTextMuted,
+                  style: TextStyle(
+                    color: textMuted,
                     fontSize: 12,
                   ),
                 ),
@@ -575,8 +613,8 @@ class CommunityScreen extends GetView<CommunityController> {
             const SizedBox(height: 8),
             Text(
               title,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: textPrimary,
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
                 height: 1.3,
@@ -587,16 +625,16 @@ class CommunityScreen extends GetView<CommunityController> {
               children: [
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.thumb_up_alt_outlined,
-                      color: Colors.white54,
+                      color: textSecondary,
                       size: 16,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       "$upvotes",
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: textSecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -605,16 +643,16 @@ class CommunityScreen extends GetView<CommunityController> {
                 const SizedBox(width: 16),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.chat_bubble_outline_rounded,
-                      color: Colors.white54,
+                      color: textSecondary,
                       size: 16,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       "$replies replies",
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: textSecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -632,6 +670,12 @@ class CommunityScreen extends GetView<CommunityController> {
   // TAB 3: CAREER TAB (Search Jobs, Internships, Mentors, Recruiter Events)
   // ---------------------------------------------------------------------------
   Widget _buildCareerTab(BuildContext context, CommunityController controller) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -648,22 +692,22 @@ class CommunityScreen extends GetView<CommunityController> {
                 height: 46,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: AppColors.darkSurfaceSecondary,
+                  color: surfaceSecondary,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.darkBorderSubtle),
+                  border: Border.all(color: borderSubtle),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
                     Icon(
                       Icons.work_outline,
-                      color: AppColors.darkTextMuted,
+                      color: textMuted,
                       size: 20,
                     ),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Text(
                       "Search Jobs, Internships & Mentors...",
                       style: TextStyle(
-                        color: AppColors.darkTextMuted,
+                        color: textMuted,
                         fontSize: 14,
                       ),
                     ),
@@ -675,16 +719,17 @@ class CommunityScreen extends GetView<CommunityController> {
             const SizedBox(height: 20),
 
             // Recommended Opportunities Hero List
-            const Text(
+            Text(
               "🎯 Recommended Opportunities",
               style: TextStyle(
-                color: Colors.white,
+                color: textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 12),
             _buildJobCard(
+              context: context,
               title: "Junior Flutter Developer",
               company: "ABA Bank • Phnom Penh",
               type: "Full-Time",
@@ -692,6 +737,7 @@ class CommunityScreen extends GetView<CommunityController> {
               logoColor: const Color(0xFF00529B),
             ),
             _buildJobCard(
+              context: context,
               title: "UI/UX Design Intern",
               company: "Smart Axiata • Phnom Penh",
               type: "Internship",
@@ -702,10 +748,10 @@ class CommunityScreen extends GetView<CommunityController> {
             const SizedBox(height: 24),
 
             // Campus Alumni Mentors
-            const Text(
+            Text(
               "👨‍🏫 Campus Alumni Mentors",
               style: TextStyle(
-                color: Colors.white,
+                color: textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -716,16 +762,19 @@ class CommunityScreen extends GetView<CommunityController> {
               child: Row(
                 children: [
                   _buildMentorCard(
+                    context,
                     "Sokha Kim",
                     "Senior Tech Lead @ Wing",
                     "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
                   ),
                   _buildMentorCard(
+                    context,
                     "Bopha V.",
                     "Lead UX Designer @ ABA",
                     "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
                   ),
                   _buildMentorCard(
+                    context,
                     "Dara N.",
                     "Mobile Architect @ Chip Mong",
                     "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150",
@@ -742,12 +791,19 @@ class CommunityScreen extends GetView<CommunityController> {
   }
 
   Widget _buildJobCard({
+    required BuildContext context,
     required String title,
     required String company,
     required String type,
     required String salary,
     required Color logoColor,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
     return InkWell(
       onTap: () => Get.to(() => const CommunitySearchScreen(activeTab: 'Career')),
       borderRadius: BorderRadius.circular(20),
@@ -755,9 +811,9 @@ class CommunityScreen extends GetView<CommunityController> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.darkSurfaceSecondary,
+          color: surfaceSecondary,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.darkBorderSubtle),
+          border: Border.all(color: borderSubtle),
         ),
         child: Row(
           children: [
@@ -784,8 +840,8 @@ class CommunityScreen extends GetView<CommunityController> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: textPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
@@ -793,8 +849,8 @@ class CommunityScreen extends GetView<CommunityController> {
                   const SizedBox(height: 2),
                   Text(
                     company,
-                    style: const TextStyle(
-                      color: AppColors.darkTextSecondary,
+                    style: TextStyle(
+                      color: textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -839,15 +895,21 @@ class CommunityScreen extends GetView<CommunityController> {
     );
   }
 
-  Widget _buildMentorCard(String name, String role, String avatar) {
+  Widget _buildMentorCard(BuildContext context, String name, String role, String avatar) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
     return Container(
       width: 140,
       margin: const EdgeInsets.only(right: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.darkSurfaceSecondary,
+        color: surfaceSecondary,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.darkBorderSubtle),
+        border: Border.all(color: borderSubtle),
       ),
       child: Column(
         children: [
@@ -855,8 +917,8 @@ class CommunityScreen extends GetView<CommunityController> {
           const SizedBox(height: 8),
           Text(
             name,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: textPrimary,
               fontWeight: FontWeight.bold,
               fontSize: 13,
             ),
@@ -866,8 +928,8 @@ class CommunityScreen extends GetView<CommunityController> {
           const SizedBox(height: 2),
           Text(
             role,
-            style: const TextStyle(
-              color: AppColors.darkTextMuted,
+            style: TextStyle(
+              color: textMuted,
               fontSize: 10,
             ),
             textAlign: TextAlign.center,
@@ -884,8 +946,8 @@ class CommunityScreen extends GetView<CommunityController> {
                   "Mentor Booking",
                   "Booking 1-on-1 session with $name...",
                   snackPosition: SnackPosition.TOP,
-                  backgroundColor: AppColors.darkSurfaceSecondary,
-                  colorText: Colors.white,
+                  backgroundColor: surfaceSecondary,
+                  colorText: textPrimary,
                   margin: const EdgeInsets.all(16),
                 );
               },
@@ -915,6 +977,13 @@ class CommunityScreen extends GetView<CommunityController> {
   // TAB 4: EVENT TAB (Search, Filters, Featured Carousel, Categories, List)
   // ---------------------------------------------------------------------------
   Widget _buildEventTab(BuildContext context, CommunityController controller) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
     final List<Map<String, dynamic>> eventsList = [
       {
         'title': 'Flutter Mobile Dev Workshop 2026',
@@ -957,22 +1026,22 @@ class CommunityScreen extends GetView<CommunityController> {
                       height: 46,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
-                        color: AppColors.darkSurfaceSecondary,
+                        color: surfaceSecondary,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.darkBorderSubtle),
+                        border: Border.all(color: borderSubtle),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
                           Icon(
                             Icons.search,
-                            color: AppColors.darkTextMuted,
+                            color: textMuted,
                             size: 20,
                           ),
-                          SizedBox(width: 10),
+                          const SizedBox(width: 10),
                           Text(
                             "Search Events & Workshops...",
                             style: TextStyle(
-                              color: AppColors.darkTextMuted,
+                              color: textMuted,
                               fontSize: 14,
                             ),
                           ),
@@ -1012,10 +1081,10 @@ class CommunityScreen extends GetView<CommunityController> {
             const SizedBox(height: 20),
 
             // Featured Events Carousel
-            const Text(
+            Text(
               "🌟 Featured Events",
               style: TextStyle(
-                color: Colors.white,
+                color: textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -1087,10 +1156,10 @@ class CommunityScreen extends GetView<CommunityController> {
             const SizedBox(height: 24),
 
             // Event List
-            const Text(
+            Text(
               "📅 Upcoming Events",
               style: TextStyle(
-                color: Colors.white,
+                color: textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -1104,9 +1173,9 @@ class CommunityScreen extends GetView<CommunityController> {
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppColors.darkSurfaceSecondary,
+                    color: surfaceSecondary,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.darkBorderSubtle),
+                    border: Border.all(color: borderSubtle),
                   ),
                   child: Row(
                     children: [
@@ -1126,8 +1195,8 @@ class CommunityScreen extends GetView<CommunityController> {
                           children: [
                             Text(
                               ev['title'],
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: textPrimary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
@@ -1135,8 +1204,8 @@ class CommunityScreen extends GetView<CommunityController> {
                             const SizedBox(height: 4),
                             Text(
                               ev['location'],
-                              style: const TextStyle(
-                                color: AppColors.darkTextSecondary,
+                              style: TextStyle(
+                                color: textSecondary,
                                 fontSize: 12,
                               ),
                             ),

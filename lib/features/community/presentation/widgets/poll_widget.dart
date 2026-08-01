@@ -23,6 +23,10 @@ class PollWidget extends StatefulWidget {
 class _PollWidgetState extends State<PollWidget> {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
     final bool hasVoted = widget.options.any((o) => o.isVoted);
     final bool showResults = !widget.hideResultsUntilVote || hasVoted;
 
@@ -37,8 +41,8 @@ class _PollWidgetState extends State<PollWidget> {
           // 1. Question Title (18px SemiBold)
           Text(
             widget.question,
-            style: const TextStyle(
-              color: AppColors.darkTextPrimary,
+            style: TextStyle(
+              color: textPrimary,
               fontWeight: FontWeight.w600,
               fontSize: 18,
               height: 1.35,
@@ -73,8 +77,8 @@ class _PollWidgetState extends State<PollWidget> {
           // 3. Footer Subtitle (Remaining Time & Total Votes)
           Text(
             "${widget.options.fold(0, (sum, o) => sum + o.votes)} votes • Ends in ${widget.duration ?? '3 days'}",
-            style: const TextStyle(
-              color: AppColors.darkTextSecondary,
+            style: TextStyle(
+              color: textSecondary,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -129,6 +133,12 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
+
     final bool isVoted = widget.option.isVoted;
 
     return GestureDetector(
@@ -146,12 +156,12 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
           decoration: BoxDecoration(
             color: isVoted
                 ? AppColors.communityAccent.withValues(alpha: 0.30) // 30% Opacity fill
-                : AppColors.darkSurfaceSecondary,
+                : surfaceSecondary,
             borderRadius: BorderRadius.circular(16), // 16px Corner Radius
             border: Border.all(
               color: isVoted
                   ? AppColors.communityAccent
-                  : AppColors.darkBorderSubtle,
+                  : borderSubtle,
               width: isVoted ? 1.5 : 1.0,
             ),
           ),
@@ -167,7 +177,7 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
                     decoration: BoxDecoration(
                       color: isVoted
                           ? AppColors.communityAccent.withValues(alpha: 0.30)
-                          : Colors.white.withValues(alpha: 0.08),
+                          : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
                       borderRadius: BorderRadius.circular(15),
                     ),
                   ),
@@ -190,7 +200,7 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
                             height: 18,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.darkTextSecondary, width: 1.5),
+                              border: Border.all(color: textSecondary, width: 1.5),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -198,7 +208,7 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
                         Text(
                           widget.option.text,
                           style: TextStyle(
-                            color: isVoted ? AppColors.communityAccent : AppColors.darkTextPrimary,
+                            color: isVoted ? AppColors.communityAccent : textPrimary,
                             fontWeight: isVoted ? FontWeight.bold : FontWeight.w500,
                             fontSize: 14,
                           ),
@@ -209,7 +219,7 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
                       Text(
                         "${widget.pctValue}%",
                         style: TextStyle(
-                          color: isVoted ? AppColors.communityAccent : AppColors.darkTextSecondary,
+                          color: isVoted ? AppColors.communityAccent : textSecondary,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),

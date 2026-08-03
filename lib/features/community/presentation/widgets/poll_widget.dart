@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/radius/app_radius.dart';
+import 'package:genlink_frontend/design_system/spacing/app_spacing.dart';
 import '../../domain/models/community_post_model.dart';
 
 class PollWidget extends StatefulWidget {
@@ -23,7 +25,8 @@ class PollWidget extends StatefulWidget {
 class _PollWidgetState extends State<PollWidget> {
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
@@ -34,19 +37,24 @@ class _PollWidgetState extends State<PollWidget> {
     if (totalVotes == 0) totalVotes = 1;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Question Title (18px SemiBold)
+          // 1. Question Title
           Text(
             widget.question,
-            style: TextStyle(
-              color: textPrimary,
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-              height: 1.35,
-            ),
+            style: theme.textTheme.titleMedium?.copyWith(
+                  color: textPrimary,
+                  fontWeight: FontWeight.w600,
+                  height: 1.35,
+                ) ??
+                TextStyle(
+                  color: textPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  height: 1.35,
+                ),
           ),
           const SizedBox(height: 14),
 
@@ -74,14 +82,18 @@ class _PollWidgetState extends State<PollWidget> {
 
           const SizedBox(height: 6),
 
-          // 3. Footer Subtitle (Remaining Time & Total Votes)
+          // 3. Footer Subtitle
           Text(
             "${widget.options.fold(0, (sum, o) => sum + o.votes)} votes • Ends in ${widget.duration ?? '3 days'}",
-            style: TextStyle(
-              color: textSecondary,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
+            style: theme.textTheme.bodySmall?.copyWith(
+                  color: textSecondary,
+                  fontWeight: FontWeight.w500,
+                ) ??
+                TextStyle(
+                  color: textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
           ),
         ],
       ),
@@ -133,7 +145,8 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
@@ -152,12 +165,12 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
         scale: _scaleAnimation,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
-          height: 48, // Minimum 48dp touch target
+          height: 48,
           decoration: BoxDecoration(
             color: isVoted
-                ? AppColors.communityAccent.withValues(alpha: 0.30) // 30% Opacity fill
+                ? AppColors.communityAccent.withValues(alpha: 0.30)
                 : surfaceSecondary,
-            borderRadius: BorderRadius.circular(16), // 16px Corner Radius
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(
               color: isVoted
                   ? AppColors.communityAccent
@@ -177,15 +190,15 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
                     decoration: BoxDecoration(
                       color: isVoted
                           ? AppColors.communityAccent.withValues(alpha: 0.30)
-                          : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
-                      borderRadius: BorderRadius.circular(15),
+                          : (isDark ? AppColors.darkSurfacePrimary.withValues(alpha: 0.5) : AppColors.lightSurfaceSecondary),
+                      borderRadius: BorderRadius.circular(AppRadius.lg - 1),
                     ),
                   ),
                 ),
 
               // Option Title & Percentage Row
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -193,7 +206,7 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
                       children: [
                         if (isVoted) ...[
                           const Icon(Icons.check_circle_rounded, color: AppColors.communityAccent, size: 18),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.sm),
                         ] else if (!widget.showResults) ...[
                           Container(
                             width: 18,
@@ -203,26 +216,34 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
                               border: Border.all(color: textSecondary, width: 1.5),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.sm),
                         ],
                         Text(
                           widget.option.text,
-                          style: TextStyle(
-                            color: isVoted ? AppColors.communityAccent : textPrimary,
-                            fontWeight: isVoted ? FontWeight.bold : FontWeight.w500,
-                            fontSize: 14,
-                          ),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                                color: isVoted ? AppColors.communityAccent : textPrimary,
+                                fontWeight: isVoted ? FontWeight.bold : FontWeight.w500,
+                              ) ??
+                              TextStyle(
+                                color: isVoted ? AppColors.communityAccent : textPrimary,
+                                fontWeight: isVoted ? FontWeight.bold : FontWeight.w500,
+                                fontSize: 14,
+                              ),
                         ),
                       ],
                     ),
                     if (widget.showResults)
                       Text(
                         "${widget.pctValue}%",
-                        style: TextStyle(
-                          color: isVoted ? AppColors.communityAccent : textSecondary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                              color: isVoted ? AppColors.communityAccent : textSecondary,
+                              fontWeight: FontWeight.bold,
+                            ) ??
+                            TextStyle(
+                              color: isVoted ? AppColors.communityAccent : textSecondary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                       ),
                   ],
                 ),

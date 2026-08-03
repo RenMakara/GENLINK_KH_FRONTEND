@@ -109,7 +109,7 @@ class StoryCreationPickerSheet extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
-              "Create Story",
+              'community.createStory'.tr,
               style: TextStyle(
                 color: textPrimary,
                 fontSize: 19,

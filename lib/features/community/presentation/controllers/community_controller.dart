@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/errors/app_error.dart';
+import '../../../../design_system/colors/app_colors.dart';
 import '../../../../core/network/dio_provider.dart';
 import '../../data/datasources/community_remote_datasource.dart';
 import '../../data/repositories/community_repository_impl.dart';
@@ -41,6 +42,13 @@ class CommunityController extends GetxController {
       isUser: true,
       hasActiveStory: false,
     ),
+    StoryModel(
+      id: 'sambo',
+      name: 'Sum Sambo',
+      avatarText: 'S',
+      hasActiveStory: true,
+      storyImage: 'https://i.pinimg.com/736x/ec/31/fb/ec31fb6bb86683cf4d2d1680f79f14cb.jpg',
+    ),
     StoryModel(id: '2', name: 'Dary', avatarText: 'D', hasActiveStory: true),
     StoryModel(
       id: '3',
@@ -67,6 +75,12 @@ class CommunityController extends GetxController {
   ].obs;
 
   final suggestedUsers = <SuggestedUserModel>[
+    SuggestedUserModel(
+      id: 'u_sambo',
+      name: 'Sum Sambo',
+      role: 'Cybersecurity Student',
+      avatarUrl: 'https://i.pinimg.com/736x/ec/31/fb/ec31fb6bb86683cf4d2d1680f79f14cb.jpg',
+    ),
     SuggestedUserModel(
       id: 'u1',
       name: 'Rathana P.',
@@ -224,7 +238,7 @@ class CommunityController extends GetxController {
         "Upload Failed",
         errorText,
         snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.redAccent.withValues(alpha: 0.9),
+        backgroundColor: AppColors.danger.withValues(alpha: 0.9),
         colorText: Colors.white,
       );
       return false;
@@ -451,6 +465,17 @@ class CommunityController extends GetxController {
         posts[idx] = p.copyWith();
       }
     } catch (_) {}
+  }
+
+  void toggleCommentLike(String postId, String commentId) {
+    final idx = activeComments.indexWhere((c) => c.id == commentId);
+    if (idx != -1) {
+      final comment = activeComments[idx];
+      comment.isLiked = !comment.isLiked;
+      comment.likesCount += comment.isLiked ? 1 : -1;
+      activeComments[idx] = comment;
+      activeComments.refresh();
+    }
   }
 
   void toggleGroupJoin(String groupId) {

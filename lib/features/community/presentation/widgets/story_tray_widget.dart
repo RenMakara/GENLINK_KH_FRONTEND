@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/radius/app_radius.dart';
+import 'package:genlink_frontend/design_system/spacing/app_spacing.dart';
 import '../controllers/story_controller.dart';
 import '../screens/story_viewer_screen.dart';
 import 'story_creation_picker_sheet.dart';
@@ -15,12 +17,14 @@ class StoryTrayWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(StoryController());
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final bgPrimary = Theme.of(context).scaffoldBackgroundColor;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-    final skeletonColor = isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06);
+    final bgPrimary = theme.scaffoldBackgroundColor;
+    final border = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final skeletonColor = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
 
     return Obx(() {
       if (controller.isLoading.value) {
@@ -28,7 +32,7 @@ class StoryTrayWidget extends StatelessWidget {
           height: 100,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             itemCount: 5,
             itemBuilder: (context, index) => Padding(
               padding: const EdgeInsets.only(right: 14),
@@ -44,7 +48,7 @@ class StoryTrayWidget extends StatelessWidget {
                     height: 10,
                     decoration: BoxDecoration(
                       color: skeletonColor,
-                      borderRadius: BorderRadius.circular(5),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                   ),
                 ],
@@ -58,10 +62,10 @@ class StoryTrayWidget extends StatelessWidget {
 
       return Container(
         height: 105,
-        margin: const EdgeInsets.only(bottom: 8),
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           itemCount: groups.length,
           itemBuilder: (context, idx) {
             final group = groups[idx];
@@ -116,7 +120,11 @@ class StoryTrayWidget extends StatelessWidget {
                                   shape: BoxShape.circle,
                                   border: Border.all(color: bgPrimary, width: 1.5),
                                 ),
-                                child: const Icon(Icons.add, color: Colors.black, size: 12),
+                                child: Icon(
+                                  Icons.add,
+                                  color: isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse,
+                                  size: 12,
+                                ),
                               ),
                             ),
                           ),
@@ -124,12 +132,16 @@ class StoryTrayWidget extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        "Your Story",
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        'community.yourStory'.tr,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                              color: textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ) ??
+                            TextStyle(
+                              color: textPrimary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                     ],
                   ),
@@ -158,13 +170,13 @@ class StoryTrayWidget extends StatelessWidget {
                         shape: BoxShape.circle,
                         gradient: group.hasUnseen
                             ? const LinearGradient(
-                                colors: [AppColors.communityAccent, Color(0xFFC8BFAE)],
+                                colors: [AppColors.communityAccent, AppColors.accentPremium],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               )
                             : null,
                         border: !group.hasUnseen
-                            ? Border.all(color: borderSubtle, width: 1.5)
+                            ? Border.all(color: border, width: 1.5)
                             : null,
                       ),
                       child: Container(
@@ -186,11 +198,15 @@ class StoryTrayWidget extends StatelessWidget {
                       width: 68,
                       child: Text(
                         group.userName,
-                        style: TextStyle(
-                          color: group.hasUnseen ? textPrimary : textMuted,
-                          fontSize: 11,
-                          fontWeight: group.hasUnseen ? FontWeight.bold : FontWeight.normal,
-                        ),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                              color: group.hasUnseen ? textPrimary : textMuted,
+                              fontWeight: group.hasUnseen ? FontWeight.bold : FontWeight.normal,
+                            ) ??
+                            TextStyle(
+                              color: group.hasUnseen ? textPrimary : textMuted,
+                              fontSize: 11,
+                              fontWeight: group.hasUnseen ? FontWeight.bold : FontWeight.normal,
+                            ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,

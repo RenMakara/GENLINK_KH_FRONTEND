@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 
 /// Community Search Screen
@@ -107,7 +108,7 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
               onChanged: _onQueryChanged,
               onSubmitted: (val) => _addToRecentSearches(val),
               decoration: InputDecoration(
-                hintText: 'Search posts, people, jobs, events...',
+                hintText: 'community.searchHint'.tr,
                 hintStyle: TextStyle(color: textMuted, fontSize: 13),
                 prefixIcon: Icon(Icons.search_rounded, color: textMuted, size: 19),
                 suffixIcon: _query.isNotEmpty

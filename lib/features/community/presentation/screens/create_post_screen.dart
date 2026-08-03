@@ -1115,7 +1115,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             onPressed: _onBackPress,
           ),
           title: Text(
-            _isEditing ? "Edit Post" : "Create Post",
+            _isEditing ? 'community.editPost'.tr : 'community.createPost'.tr,
             style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
           ),
           centerTitle: true,
@@ -1138,7 +1138,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2, color: isDark ? Colors.black : Colors.white),
                       )
                     : Text(
-                        _isEditing ? "Save" : "Post",
+                        _isEditing ? 'common.save'.tr : 'community.post'.tr,
                         style: TextStyle(
                           color: _canPost ? (isDark ? Colors.black : Colors.white) : textMuted,
                           fontWeight: FontWeight.bold,
@@ -1188,7 +1188,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: ['Public', 'Friends', 'Only Me'].map((aud) {
                                         return ListTile(
-                                          title: Text(aud, style: TextStyle(color: textPrimary)),
+                                          title: Text(
+                                            aud == 'Public' ? 'privacy.PUBLIC'.tr : (aud == 'Friends' ? 'privacy.FRIENDS'.tr : 'privacy.PRIVATE'.tr),
+                                            style: TextStyle(color: textPrimary),
+                                          ),
                                           trailing: _selectedAudience == aud ? const Icon(Icons.check, color: AppColors.communityAccent) : null,
                                           onTap: () {
                                             setState(() {
@@ -1212,7 +1215,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                 child: Row(
                                   children: [
                                     Text(
-                                      _selectedAudience == 'Public' ? '🌍 Public' : (_selectedAudience == 'Friends' ? '👥 Friends' : '🔒 Only Me'),
+                                      _selectedAudience == 'Public' ? '🌍 ${'privacy.PUBLIC'.tr}' : (_selectedAudience == 'Friends' ? '👥 ${'privacy.FRIENDS'.tr}' : '🔒 ${'privacy.PRIVATE'.tr}'),
                                       style: TextStyle(color: textSecondary, fontSize: 11),
                                     ),
                                     Icon(Icons.arrow_drop_down, color: textSecondary, size: 14),
@@ -1235,7 +1238,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       maxLines: null,
                       style: TextStyle(color: textPrimary, fontSize: 18, height: 1.45),
                       decoration: InputDecoration(
-                        hintText: "What's happening, Sokny?",
+                        hintText: 'community.whatsHappening'.tr,
                         hintStyle: TextStyle(color: textMuted, fontSize: 18, fontWeight: FontWeight.w400),
                         border: InputBorder.none,
                       ),

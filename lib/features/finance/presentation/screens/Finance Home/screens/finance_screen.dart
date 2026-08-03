@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/Budget%20Feature/screens/budget_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/E%20Wallet%20Feature/screens/ewallet.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/Expense%20Feature/widget/expense_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Expense%20Feature/screens/expense_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/Learn%20Feature/screens/learn_finance.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/Saving%20Goal%20Feature/screens/saving_goals_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/Finance%20Home/widgets/finance_widget.dart';
@@ -636,6 +636,28 @@ class FinanceScreen extends StatelessWidget {
                       SizedBox(
                         width: 80,
                         child: QuickAction(
+                          icon: Icons.account_balance_wallet_rounded,
+                          title: 'E-Wallet',
+                          accent: const Color.fromARGB(255, 75, 148, 174),
+                          background: surface,
+                          border: border,
+                          textColor: textPrimary,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const EWalletScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      SizedBox(
+                        width: 80,
+                        child: QuickAction(
                           icon: Icons.menu_book_rounded,
                           title: 'Learn',
                           accent: AppColors.growthAccent,
@@ -648,28 +670,6 @@ class FinanceScreen extends StatelessWidget {
                               MaterialPageRoute(
                                 builder: (context) =>
                                     const LearnFinanceScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      SizedBox(
-                        width: 80,
-                        child: QuickAction(
-                          icon: Icons.account_balance_wallet_rounded,
-                          title: 'E-Wallet',
-                          accent: const Color.fromARGB(255, 75, 148, 174),
-                          background: surface,
-                          border: border,
-                          textColor: textPrimary,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const EWalletScreen(),
                               ),
                             );
                           },

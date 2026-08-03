@@ -11,109 +11,104 @@ class InvestingBasicsScreen extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
-
     final surfaceSecondary = isDark
         ? AppColors.darkSurfaceSecondary
         : AppColors.lightSurfaceSecondary;
-
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
-
     final textSecondary = isDark
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
-
     final textMuted = isDark
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
-
     final textInverse = isDark
         ? AppColors.darkTextInverse
         : AppColors.lightTextInverse;
-
     final border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
-
     final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
 
     return Scaffold(
       backgroundColor: bg,
-
-      appBar: AppBar(
-        backgroundColor: bg,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 17,
-            color: textPrimary,
-          ),
-        ),
-
-        title: Text(
-          'Investing Basics',
-          style: TextStyle(
-            color: textPrimary,
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 30),
-
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // =================================================
+              // HEADER
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: border),
+                      ),
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 18,
+                        color: textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Text(
+                    'Investing Basics',
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 22),
+
               // LESSON HERO
-              // =================================================
               Container(
                 width: double.infinity,
-                height: 145,
-
+                height: 160,
                 decoration: BoxDecoration(
                   color: surfaceSecondary,
-                  borderRadius: BorderRadius.circular(15),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: border),
                 ),
-
                 child: Stack(
                   children: [
-                    // Grid-like decoration
                     Positioned.fill(
                       child: CustomPaint(painter: _GridPainter(isDark: isDark)),
                     ),
-
                     Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
-
                         children: [
                           Icon(
                             Icons.auto_graph_rounded,
-                            color: textPrimary.withValues(alpha: .75),
-                            size: 30,
+                            color: textPrimary.withValues(alpha: 0.75),
+                            size: 36,
                           ),
-
-                          const SizedBox(height: 8),
-
+                          const SizedBox(height: 10),
                           Text(
                             '6 min read',
-                            style: TextStyle(color: textMuted, fontSize: 9),
+                            style: TextStyle(
+                              color: textMuted,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
@@ -122,11 +117,11 @@ class InvestingBasicsScreen extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
-              // =================================================
+              // ─────────────────────────────────────────
               // TAGS
-              // =================================================
+              // ─────────────────────────────────────────
               Row(
                 children: [
                   _Tag(
@@ -134,18 +129,14 @@ class InvestingBasicsScreen extends StatelessWidget {
                     background: primary,
                     foreground: textInverse,
                   ),
-
-                  const SizedBox(width: 6),
-
+                  const SizedBox(width: 8),
                   _Tag(
                     title: 'Beginner',
                     background: surface,
                     foreground: textMuted,
                     border: border,
                   ),
-
-                  const SizedBox(width: 6),
-
+                  const SizedBox(width: 8),
                   _Tag(
                     title: '+100 XP',
                     background: surface,
@@ -155,23 +146,23 @@ class InvestingBasicsScreen extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
-              // =================================================
-              // TITLE
-              // =================================================
+              // ─────────────────────────────────────────
+              // TITLE + DESCRIPTION
+              // ─────────────────────────────────────────
               Text(
                 'Investing Basics: Build Wealth Over Time',
                 style: TextStyle(
                   color: textPrimary,
-                  fontSize: 18,
-                  height: 1.15,
+                  fontSize: 20,
+                  height: 1.25,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.3,
                 ),
               ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
 
               Text(
                 'Learn how to make your money work for you. '
@@ -179,26 +170,26 @@ class InvestingBasicsScreen extends StatelessWidget {
                 'for beginners in Cambodia and Southeast Asia.',
                 style: TextStyle(
                   color: textSecondary,
-                  fontSize: 10,
+                  fontSize: 14,
                   height: 1.45,
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 22),
 
-              // =================================================
+              // ─────────────────────────────────────────
               // KEY POINTS
-              // =================================================
+              // ─────────────────────────────────────────
               Text(
                 'Key Points',
                 style: TextStyle(
                   color: textPrimary,
-                  fontSize: 13,
+                  fontSize: 17,
                   fontWeight: FontWeight.w700,
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
               _KeyPoint(
                 number: '1',
@@ -206,28 +197,24 @@ class InvestingBasicsScreen extends StatelessWidget {
                 background: surfaceSecondary,
                 textPrimary: textPrimary,
               ),
-
               _KeyPoint(
                 number: '2',
                 text: 'Start with index funds for diversification',
                 background: surfaceSecondary,
                 textPrimary: textPrimary,
               ),
-
               _KeyPoint(
                 number: '3',
                 text: 'The power of compound interest over time',
                 background: surfaceSecondary,
                 textPrimary: textPrimary,
               ),
-
               _KeyPoint(
                 number: '4',
                 text: 'Set realistic investment goals for your income',
                 background: surfaceSecondary,
                 textPrimary: textPrimary,
               ),
-
               _KeyPoint(
                 number: '5',
                 text: 'Avoid common investing mistakes as a beginner',
@@ -235,30 +222,39 @@ class InvestingBasicsScreen extends StatelessWidget {
                 textPrimary: textPrimary,
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
               Divider(color: border, height: 1),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
 
-              Text('Quiz', style: TextStyle(color: textMuted, fontSize: 9)),
+              // ─────────────────────────────────────────
+              // QUIZ SECTION
+              // ─────────────────────────────────────────
+              Text(
+                'Quiz',
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
 
-              const SizedBox(height: 3),
+              const SizedBox(height: 6),
 
               Text(
                 'Test your knowledge and track your progress.',
-                style: TextStyle(color: textMuted, fontSize: 9),
+                style: TextStyle(color: textMuted, fontSize: 13),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
-              // =================================================
-              // START QUIZ
-              // =================================================
+              // ─────────────────────────────────────────
+              // START QUIZ BUTTON
+              // ─────────────────────────────────────────
               SizedBox(
                 width: double.infinity,
-                height: 44,
-
+                height: 52,
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.push(
@@ -268,23 +264,22 @@ class InvestingBasicsScreen extends StatelessWidget {
                       ),
                     );
                   },
-
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primary,
                     foregroundColor: textInverse,
                     elevation: 0,
-
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-
                   child: const Text(
                     'Start Quiz →',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
+
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -293,9 +288,9 @@ class InvestingBasicsScreen extends StatelessWidget {
   }
 }
 
-// =============================================================
+// ─────────────────────────────────────────────────────────────
 // TAG
-// =============================================================
+// ─────────────────────────────────────────────────────────────
 
 class _Tag extends StatelessWidget {
   final String title;
@@ -313,19 +308,17 @@ class _Tag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(20),
         border: border != null ? Border.all(color: border!) : null,
       ),
-
       child: Text(
         title,
         style: TextStyle(
           color: foreground,
-          fontSize: 8,
+          fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -333,9 +326,9 @@ class _Tag extends StatelessWidget {
   }
 }
 
-// =============================================================
+// ─────────────────────────────────────────────────────────────
 // KEY POINT
-// =============================================================
+// ─────────────────────────────────────────────────────────────
 
 class _KeyPoint extends StatelessWidget {
   final String number;
@@ -353,40 +346,35 @@ class _KeyPoint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 9),
-
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
           Container(
-            width: 20,
-            height: 20,
-
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
               color: background,
               shape: BoxShape.circle,
             ),
-
             alignment: Alignment.center,
-
             child: Text(
               number,
               style: TextStyle(
                 color: textPrimary,
-                fontSize: 8,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
             ),
           ),
-
-          const SizedBox(width: 8),
-
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               text,
               style: TextStyle(
                 color: textPrimary,
-                fontSize: 9,
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
+                height: 1.3,
               ),
             ),
           ),
@@ -396,9 +384,9 @@ class _KeyPoint extends StatelessWidget {
   }
 }
 
-// =============================================================
+// ─────────────────────────────────────────────────────────────
 // BACKGROUND GRID
-// =============================================================
+// ─────────────────────────────────────────────────────────────
 
 class _GridPainter extends CustomPainter {
   final bool isDark;
@@ -409,11 +397,11 @@ class _GridPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = isDark
-          ? Colors.white.withValues(alpha: .025)
-          : Colors.black.withValues(alpha: .025)
-      ..strokeWidth = .5;
+          ? Colors.white.withValues(alpha: 0.025)
+          : Colors.black.withValues(alpha: 0.025)
+      ..strokeWidth = 0.5;
 
-    const spacing = 12.0;
+    const spacing = 14.0;
 
     for (double x = 0; x <= size.width; x += spacing) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
@@ -425,7 +413,5 @@ class _GridPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
-  }
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

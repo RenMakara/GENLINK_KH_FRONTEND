@@ -1,59 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/Budget%20Feature/screens/set_budget_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Budget%20Feature/screens/budget_detail_screen.dart';
 
 class BudgetScreen extends StatelessWidget {
   const BudgetScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
-
-    final surfaceSecondary = isDark
+    final secondarySurface = isDark
         ? AppColors.darkSurfaceSecondary
         : AppColors.lightSurfaceSecondary;
-
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
-
     final textSecondary = isDark
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
-
     final textMuted = isDark
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
-
     final border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
+    final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
+    final inverseText = isDark
+        ? AppColors.darkTextInverse
+        : AppColors.lightTextInverse;
 
     return Scaffold(
       backgroundColor: bg,
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ── Header ──
               Row(
                 children: [
-                  // =========================================================
-                  // BACK BUTTON
-                  // =========================================================
                   IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
+                    onPressed: () => Navigator.pop(context),
                     icon: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       color: textPrimary,
@@ -65,12 +59,7 @@ class BudgetScreen extends StatelessWidget {
                       minHeight: 40,
                     ),
                   ),
-
-                  const SizedBox(width: 8),
-
-                  // =========================================================
-                  // TITLE
-                  // =========================================================
+                  const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       'Budget',
@@ -82,39 +71,30 @@ class BudgetScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                  // =========================================================
-                  // SET BUDGET BUTTON
-                  // =========================================================
-                  SizedBox(
-                    height: 40,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SetBudgetScreen(),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark
-                            ? AppColors.darkPrimary
-                            : AppColors.lightPrimary,
-                        foregroundColor: isDark
-                            ? AppColors.darkTextInverse
-                            : AppColors.lightTextInverse,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SetBudgetScreen(),
                         ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
                       ),
-                      child: const Text(
+                      decoration: BoxDecoration(
+                        color: primary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
                         'Set Budget',
                         style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                          color: inverseText,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -122,45 +102,238 @@ class BudgetScreen extends StatelessWidget {
                 ],
               ),
 
+              const SizedBox(height: 20),
+
+              // ── Total Overview Card ──
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: border),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 72,
+                      height: 72,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox(
+                            width: 72,
+                            height: 72,
+                            child: CircularProgressIndicator(
+                              value: 0.71,
+                              strokeWidth: 7,
+                              backgroundColor: secondarySurface,
+                              valueColor: const AlwaysStoppedAnimation(
+                                AppColors.growthAccent,
+                              ),
+                              strokeCap: StrokeCap.round,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 18),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'June 2026',
+                            style: TextStyle(
+                              color: textMuted,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: '\$642',
+                                  style: TextStyle(
+                                    color: textPrimary,
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: ' of \$900',
+                                  style: TextStyle(
+                                    color: textMuted,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'On track · \$258 remaining',
+                              style: TextStyle(
+                                color: AppColors.success,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              // ── Category Budgets ──
+              Text(
+                'Category Budgets',
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                decoration: BoxDecoration(
+                  color: surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: border),
+                ),
+                child: Column(
+                  children: [
+                    _CategoryBudgetRow(
+                      title: 'Food & Drink',
+                      amount: '\$255 / \$300',
+                      percent: '85%',
+                      progress: 0.85,
+                      color: AppColors.growthAccent,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                      secondarySurface: secondarySurface,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const BudgetDetailScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    Divider(height: 1, color: border),
+                    _CategoryBudgetRow(
+                      title: 'Transport',
+                      amount: '\$138 / \$150',
+                      percent: '92%',
+                      progress: 0.92,
+                      color: AppColors.brandPrimary,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                      secondarySurface: secondarySurface,
+                      onTap: () {},
+                    ),
+                    Divider(height: 1, color: border),
+                    _CategoryBudgetRow(
+                      title: 'Study',
+                      amount: '\$51 / \$150',
+                      percent: '34%',
+                      progress: 0.34,
+                      color: AppColors.productivityAccent,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                      secondarySurface: secondarySurface,
+                      onTap: () {},
+                    ),
+                    Divider(height: 1, color: border),
+                    _CategoryBudgetRow(
+                      title: 'Bills',
+                      amount: '\$36 / \$300',
+                      percent: '12%',
+                      progress: 0.12,
+                      color: AppColors.financeAccent,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                      secondarySurface: secondarySurface,
+                      onTap: () {},
+                      showDivider: false,
+                    ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 16),
 
-              // =========================================================
-              // BUDGET SUMMARY
-              // =========================================================
-              _BudgetSummaryCard(
-                surface: surface,
-                surfaceSecondary: surfaceSecondary,
-                textPrimary: textPrimary,
-                textSecondary: textSecondary,
-                textMuted: textMuted,
-                border: border,
-                isDark: isDark,
+              // ── Near Limit Notice ──
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF8E7),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: const Color(0xFFE8D5A3).withValues(alpha: 0.6),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      size: 20,
+                      color: Color(0xFFC9A227),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Near limit on 2 categories',
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Food & Transport budgets are nearly exhausted. Consider adjusting spending for the rest of the month.',
+                            style: TextStyle(
+                              color: textSecondary,
+                              fontSize: 12,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
-              const SizedBox(height: 14),
-
-              // =========================================================
-              // CATEGORY BUDGETS
-              // =========================================================
-              _CategoryBudgetsCard(
-                surface: surface,
-                textPrimary: textPrimary,
-                textSecondary: textSecondary,
-                textMuted: textMuted,
-                border: border,
-                isDark: isDark,
-              ),
-
-              const SizedBox(height: 14),
-
-              // =========================================================
-              // WARNING
-              // =========================================================
-              _BudgetWarningCard(
-                textPrimary: textPrimary,
-                textSecondary: textSecondary,
-                isDark: isDark,
-              ),
+              const SizedBox(height: 90),
             ],
           ),
         ),
@@ -169,486 +342,91 @@ class BudgetScreen extends StatelessWidget {
   }
 }
 
-// ============================================================================
-// BUDGET SUMMARY CARD
-// ============================================================================
-
-class _BudgetSummaryCard extends StatelessWidget {
-  final Color surface;
-  final Color surfaceSecondary;
+class _CategoryBudgetRow extends StatelessWidget {
+  final String title;
+  final String amount;
+  final String percent;
+  final double progress;
+  final Color color;
   final Color textPrimary;
-  final Color textSecondary;
   final Color textMuted;
-  final Color border;
-  final bool isDark;
+  final Color secondarySurface;
+  final VoidCallback onTap;
+  final bool showDivider;
 
-  const _BudgetSummaryCard({
-    required this.surface,
-    required this.surfaceSecondary,
+  const _CategoryBudgetRow({
+    required this.title,
+    required this.amount,
+    required this.percent,
+    required this.progress,
+    required this.color,
     required this.textPrimary,
-    required this.textSecondary,
     required this.textMuted,
-    required this.border,
-    required this.isDark,
+    required this.secondarySurface,
+    required this.onTap,
+    this.showDivider = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    const spent = 642.0;
-    const total = 900.0;
-
-    final progress = spent / total;
-    final remaining = total - spent;
-
-    return Container(
-      width: double.infinity,
-      height: 124,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: border, width: 0.8),
-      ),
-      child: Row(
-        children: [
-          // ===========================================================
-          // PROGRESS CIRCLE
-          // ===========================================================
-          SizedBox(
-            width: 76,
-            height: 76,
-            child: Stack(
-              alignment: Alignment.center,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(
+          children: [
+            Row(
               children: [
-                SizedBox(
-                  width: 72,
-                  height: 72,
-                  child: CircularProgressIndicator(
-                    value: 1,
-                    strokeWidth: 5,
-                    color: AppColors.financeAccent.withValues(alpha: 0.10),
-                  ),
-                ),
-
-                SizedBox(
-                  width: 72,
-                  height: 72,
-                  child: CircularProgressIndicator(
-                    value: progress,
-                    strokeWidth: 5,
-                    strokeCap: StrokeCap.round,
-                    color: AppColors.financeAccent,
-                  ),
-                ),
-
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '${(progress * 100).toStringAsFixed(0)}%',
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    Text(
-                      'used',
-                      style: TextStyle(
-                        color: textMuted,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 16),
-
-          // ===========================================================
-          // DETAILS
-          // ===========================================================
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'June 2026',
-                  style: TextStyle(
-                    color: textMuted,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '\$642',
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      TextSpan(
-                        text: ' of \$900',
-                        style: TextStyle(
-                          color: textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 7),
-
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 5,
-                  ),
+                  width: 8,
+                  height: 8,
                   decoration: BoxDecoration(
-                    color: AppColors.financeAccent.withValues(
-                      alpha: isDark ? 0.15 : 0.10,
-                    ),
-                    borderRadius: BorderRadius.circular(7),
+                    color: color,
+                    shape: BoxShape.circle,
                   ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
                   child: Text(
-                    'On track · \$${remaining.toStringAsFixed(0)} remaining',
+                    title,
                     style: TextStyle(
-                      color: AppColors.financeAccent,
-                      fontSize: 9,
+                      color: textPrimary,
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
+                Text(
+                  amount,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  percent,
+                  style: TextStyle(
+                    color: textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// CATEGORY BUDGETS CARD
-// ============================================================================
-
-class _CategoryBudgetsCard extends StatelessWidget {
-  final Color surface;
-  final Color textPrimary;
-  final Color textSecondary;
-  final Color textMuted;
-  final Color border;
-  final bool isDark;
-
-  const _CategoryBudgetsCard({
-    required this.surface,
-    required this.textPrimary,
-    required this.textSecondary,
-    required this.textMuted,
-    required this.border,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 15, 14, 14),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: border, width: 0.8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Category Budgets',
-            style: TextStyle(
-              color: textPrimary,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-
-          const SizedBox(height: 13),
-
-          _CategoryBudgetRow(
-            title: 'Food & Drink',
-            spent: 255,
-            budget: 300,
-            percentage: 85,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-            textMuted: textMuted,
-            border: border,
-            isDark: isDark,
-          ),
-
-          const SizedBox(height: 14),
-
-          _CategoryBudgetRow(
-            title: 'Transport',
-            spent: 138,
-            budget: 150,
-            percentage: 92,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-            textMuted: textMuted,
-            border: border,
-            isDark: isDark,
-          ),
-
-          const SizedBox(height: 14),
-
-          _CategoryBudgetRow(
-            title: 'Study',
-            spent: 81,
-            budget: 150,
-            percentage: 54,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-            textMuted: textMuted,
-            border: border,
-            isDark: isDark,
-          ),
-
-          const SizedBox(height: 14),
-
-          _CategoryBudgetRow(
-            title: 'Bills',
-            spent: 96,
-            budget: 300,
-            percentage: 32,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-            textMuted: textMuted,
-            border: border,
-            isDark: isDark,
-            last: true,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// CATEGORY ROW
-// ============================================================================
-
-class _CategoryBudgetRow extends StatelessWidget {
-  final String title;
-  final double spent;
-  final double budget;
-  final int percentage;
-
-  final Color textPrimary;
-  final Color textSecondary;
-  final Color textMuted;
-  final Color border;
-
-  final bool isDark;
-  final bool last;
-
-  const _CategoryBudgetRow({
-    required this.title,
-    required this.spent,
-    required this.budget,
-    required this.percentage,
-    required this.textPrimary,
-    required this.textSecondary,
-    required this.textMuted,
-    required this.border,
-    required this.isDark,
-    this.last = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = (spent / budget).clamp(0.0, 1.0);
-
-    final Color progressColor = percentage >= 90
-        ? AppColors.warning
-        : AppColors.financeAccent;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ===============================================================
-        // TOP ROW
-        // ===============================================================
-        Row(
-          children: [
-            Container(
-              width: 7,
-              height: 7,
-              decoration: BoxDecoration(
-                color: progressColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-
-            const SizedBox(width: 7),
-
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-
-            Text(
-              '\$${spent.toStringAsFixed(0)} / \$${budget.toStringAsFixed(0)}',
-              style: TextStyle(
-                color: textSecondary,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-
-            const SizedBox(width: 10),
-
-            SizedBox(
-              width: 34,
-              child: Text(
-                '$percentage%',
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  color: percentage >= 90 ? AppColors.warning : textMuted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 5,
+                backgroundColor: secondarySurface,
+                valueColor: AlwaysStoppedAnimation(color),
               ),
             ),
           ],
         ),
-
-        const SizedBox(height: 7),
-
-        // ===============================================================
-        // PROGRESS BAR
-        // ===============================================================
-        ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 5,
-            backgroundColor: isDark
-                ? AppColors.darkSurfaceSecondary
-                : AppColors.lightSurfaceSecondary,
-            valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-          ),
-        ),
-
-        if (!last) const SizedBox(height: 1),
-      ],
-    );
-  }
-}
-
-// ============================================================================
-// WARNING CARD
-// ============================================================================
-
-class _BudgetWarningCard extends StatelessWidget {
-  final Color textPrimary;
-  final Color textSecondary;
-  final bool isDark;
-
-  const _BudgetWarningCard({
-    required this.textPrimary,
-    required this.textSecondary,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
-      decoration: BoxDecoration(
-        color: AppColors.warning.withValues(alpha: isDark ? 0.10 : 0.08),
-        borderRadius: BorderRadius.circular(11),
-        border: Border.all(
-          color: AppColors.warning.withValues(alpha: 0.20),
-          width: 0.8,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: AppColors.warning.withValues(alpha: 0.10),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.warning_amber_rounded,
-              size: 17,
-              color: AppColors.warning,
-            ),
-          ),
-
-          const SizedBox(width: 10),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Near limit on 2 categories',
-                  style: TextStyle(
-                    color: AppColors.warning,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  'Food & Transport budgets are nearly exhausted.',
-                  style: TextStyle(
-                    color: textSecondary,
-                    fontSize: 9,
-                    height: 1.35,
-                  ),
-                ),
-
-                const SizedBox(height: 2),
-
-                Text(
-                  'Consider adjusting spending for the rest of the month.',
-                  style: TextStyle(
-                    color: textSecondary,
-                    fontSize: 9,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

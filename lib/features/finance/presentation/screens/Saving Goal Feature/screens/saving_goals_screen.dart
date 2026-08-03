@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/Saving%20Goal%20Feature/screens/create_goal_screen.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/Saving%20Goal%20Feature/screens/goal_detail_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Saving%20Goal%20Feature/screens/saving_goals_create.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Saving%20Goal%20Feature/screens/saving_goals_detail.dart';
 
 class SavingGoalsScreen extends StatelessWidget {
   const SavingGoalsScreen({super.key});

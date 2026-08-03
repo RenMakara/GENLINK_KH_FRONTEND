@@ -20,9 +20,6 @@ class LearnFinanceScreen extends StatelessWidget {
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
     final textMuted = isDark
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;

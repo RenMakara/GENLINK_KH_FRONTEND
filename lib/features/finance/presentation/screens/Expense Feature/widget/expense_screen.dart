@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/widgets/expense_widget.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Expense%20Feature/screens/expense_widget.dart';
 
 class ExpenseScreen extends StatefulWidget {
   const ExpenseScreen({super.key});

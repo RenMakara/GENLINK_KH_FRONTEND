@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/widgets/ewallet_widget.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/E%20Wallet%20Feature/widget/ewallet_widget.dart';
 
 class EWalletScreen extends StatelessWidget {
   const EWalletScreen({super.key});

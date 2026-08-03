@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/set_budget_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Budget%20Feature/screens/set_budget_screen.dart';
 
 class BudgetScreen extends StatelessWidget {
   const BudgetScreen({super.key});

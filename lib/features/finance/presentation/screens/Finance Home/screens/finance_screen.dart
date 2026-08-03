@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/budget_screen.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/ewallet.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/expense_screen.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/learn_finance.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/saving_goals_screen.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/widgets/finance_widget.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Budget%20Feature/screens/budget_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/E%20Wallet%20Feature/screens/ewallet.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Expense%20Feature/widget/expense_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Learn%20Feature/screens/learn_finance.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Saving%20Goal%20Feature/screens/saving_goals_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Finance%20Home/widgets/finance_widget.dart';
 
 class FinanceScreen extends StatelessWidget {
   const FinanceScreen({super.key});

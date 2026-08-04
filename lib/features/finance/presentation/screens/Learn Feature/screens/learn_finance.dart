@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/investing_basics.dart';
-
+import 'package:genlink_frontend/features/finance/presentation/screens/Learn Feature/screens/investing_basics.dart';
 class LearnFinanceScreen extends StatelessWidget {
   const LearnFinanceScreen({super.key});
 

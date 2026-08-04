@@ -1,5 +1,6 @@
 // ignore_for_file: unused_element
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:get/get.dart';
@@ -22,6 +23,7 @@ class StoryTemplateModel {
   final bool showQuotes;
   final bool showNotebookLines;
   final bool showDotGrid;
+  final String? bgImageAssetPath;
 
   const StoryTemplateModel({
     required this.id,
@@ -37,6 +39,7 @@ class StoryTemplateModel {
     this.showQuotes = false,
     this.showNotebookLines = false,
     this.showDotGrid = false,
+    this.bgImageAssetPath,
   });
 }
 
@@ -188,7 +191,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       backgroundColors: [Color(0xFF090D16), Color(0xFF1E293B)],
       textColor: Colors.white,
       defaultFontStyle: TextStyleType.minimal,
-      showQuotes: true,
     ),
     StoryTemplateModel(
       id: 'campus',
@@ -197,8 +199,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       backgroundColors: [Color(0xFF064E3B), Color(0xFF022C22)],
       textColor: Colors.white,
       defaultFontStyle: TextStyleType.bold,
-      badgeLabel: 'ACLEDA Campus KH',
-      badgeIcon: Icons.school_rounded,
       cardBorderColor: Color(0xFF10B981),
     ),
     StoryTemplateModel(
@@ -208,8 +208,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       backgroundColors: [Color(0xFF0F172A), Color(0xFF0284C7)],
       textColor: Colors.white,
       defaultFontStyle: TextStyleType.modern,
-      badgeLabel: 'Career & Tech',
-      badgeIcon: Icons.work_rounded,
       cardBorderColor: Color(0xFF38BDF8),
     ),
     StoryTemplateModel(
@@ -247,8 +245,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       backgroundColors: [Color(0xFF065F46), Color(0xFF064E3B)],
       textColor: Color(0xFFECFDF5),
       defaultFontStyle: TextStyleType.classic,
-      badgeLabel: 'Eco Vibe',
-      badgeIcon: Icons.eco_rounded,
       cardBorderColor: Color(0xFF34D399),
     ),
     StoryTemplateModel(
@@ -258,8 +254,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       backgroundColors: [Color(0xFF831843), Color(0xFF500724)],
       textColor: Color(0xFFF472B6),
       defaultFontStyle: TextStyleType.classic,
-      badgeLabel: 'Cute Vibe',
-      badgeIcon: Icons.favorite_rounded,
       cardBorderColor: Color(0xFFF472B6),
     ),
     StoryTemplateModel(
@@ -269,8 +263,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       backgroundColors: [Color(0xFF78350F), Color(0xFF451A03)],
       textColor: Color(0xFFFDE047),
       defaultFontStyle: TextStyleType.bold,
-      badgeLabel: 'Sunshine',
-      badgeIcon: Icons.wb_sunny_rounded,
       cardBorderColor: Color(0xFFFACC15),
     ),
     StoryTemplateModel(
@@ -280,8 +272,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       backgroundColors: [Color(0xFF1E293B), Color(0xFF0F172A)],
       textColor: Color(0xFF94A3B8),
       defaultFontStyle: TextStyleType.classic,
-      badgeLabel: 'Rainy Vibe',
-      badgeIcon: Icons.water_drop_rounded,
       cardBorderColor: Color(0xFF64748B),
     ),
     StoryTemplateModel(
@@ -291,8 +281,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       backgroundColors: [Color(0xFF450A0A), Color(0xFF180202)],
       textColor: Color(0xFFF87171),
       defaultFontStyle: TextStyleType.bold,
-      badgeLabel: 'Intensity',
-      badgeIcon: Icons.local_fire_department_rounded,
       cardBorderColor: Color(0xFFEF4444),
     ),
     StoryTemplateModel(
@@ -302,8 +290,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       backgroundColors: [Color(0xFF1E1B4B), Color(0xFF0F0E26)],
       textColor: Color(0xFFA5B4FC),
       defaultFontStyle: TextStyleType.minimal,
-      badgeLabel: 'Late Night',
-      badgeIcon: Icons.bedtime_rounded,
       cardBorderColor: Color(0xFF818CF8),
     ),
     StoryTemplateModel(
@@ -313,9 +299,35 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       backgroundColors: [Color(0xFF581C87), Color(0xFF2E1065)],
       textColor: Color(0xFFE879F9),
       defaultFontStyle: TextStyleType.bold,
-      badgeLabel: 'Party & Doodles',
-      badgeIcon: Icons.celebration_rounded,
       cardBorderColor: Color(0xFFC084FC),
+    ),
+    StoryTemplateModel(
+      id: 'coffee',
+      name: 'Coffee',
+      icon: '☕',
+      backgroundColors: [Color(0xFF3F2E21), Color(0xFF1E140C)],
+      textColor: Color(0xFFFDE68A),
+      defaultFontStyle: TextStyleType.classic,
+      cardBorderColor: Color(0xFFD97706),
+      bgImageAssetPath: 'assets/images/templates/coffee_vibe_bg.jpg',
+    ),
+    StoryTemplateModel(
+      id: 'ocean',
+      name: 'Ocean',
+      icon: '🌊',
+      backgroundColors: [Color(0xFF0F172A), Color(0xFF0284C7)],
+      textColor: Color(0xFFE0F2FE),
+      defaultFontStyle: TextStyleType.bold,
+      cardBorderColor: Color(0xFF38BDF8),
+    ),
+    StoryTemplateModel(
+      id: 'motivation',
+      name: 'Motivation',
+      icon: '🚀',
+      backgroundColors: [Color(0xFF7C2D12), Color(0xFF451A03)],
+      textColor: Color(0xFFFDE047),
+      defaultFontStyle: TextStyleType.bold,
+      cardBorderColor: Color(0xFFF59E0B),
     ),
     StoryTemplateModel(
       id: 'love',
@@ -324,8 +336,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       backgroundColors: [Color(0xFF701A75), Color(0xFF4A044E)],
       textColor: Color(0xFFF472B6),
       defaultFontStyle: TextStyleType.classic,
-      badgeLabel: 'Romance',
-      badgeIcon: Icons.favorite_rounded,
       cardBorderColor: Color(0xFFF472B6),
     ),
   ];
@@ -1276,6 +1286,16 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         ),
         child: Stack(
           children: [
+            // Background Image Asset (if available)
+            if (tpl.bgImageAssetPath != null)
+              Positioned.fill(
+                child: Image.asset(
+                  tpl.bgImageAssetPath!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (ctx, err, stack) => const SizedBox.shrink(),
+                ),
+              ),
+
             // Notebook Lines Pattern
             if (tpl.showNotebookLines)
               Positioned.fill(
@@ -1316,108 +1336,376 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   ),
                 ),
               ),
-
-            // Quotes Decorative Marks
-            if (tpl.showQuotes) ...[
-              Positioned(
-                top: 100,
-                left: 28,
-                child: Text(
-                  "“",
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    fontSize: 120,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'serif',
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 140,
-                right: 28,
-                child: Text(
-                  "”",
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    fontSize: 120,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'serif',
-                  ),
-                ),
-              ),
-            ],
-
-            // Badge Header (Campus / Career / Nature)
-            if (tpl.badgeLabel != null)
-              Positioned(
-                top: 110,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white24, width: 1),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (tpl.badgeIcon != null) ...[
-                          Icon(tpl.badgeIcon, size: 14, color: Colors.white),
-                          const SizedBox(width: 6),
-                        ],
-                        Text(
-                          tpl.badgeLabel!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStoryTemplateSelectorStrip() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 16, bottom: 8),
-          child: Row(
+  Widget _buildUniqueTemplateThumbnail(StoryTemplateModel tpl) {
+    switch (tpl.id) {
+      case 'minimal':
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned.fill(child: CustomPaint(painter: _DotGridPainter())),
+            Center(
+              child: Container(
+                width: 26,
+                height: 1.5,
+                color: Colors.white70,
+              ),
+            ),
+          ],
+        );
+
+      case 'notebook':
+        return Stack(
+          children: [
+            Positioned.fill(child: CustomPaint(painter: _NotebookLinesPainter())),
+            Positioned(
+              left: 10,
+              top: 0,
+              bottom: 0,
+              child: Container(width: 1.2, color: const Color(0xFFEF4444).withValues(alpha: 0.60)),
+            ),
+          ],
+        );
+
+      case 'sticky_note':
+        return Center(
+          child: Stack(
             children: [
-              Icon(Icons.style_rounded, size: 14, color: Colors.white70),
-              SizedBox(width: 6),
-              Text(
-                "TEMPLATES",
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.8,
+              Container(
+                width: 44,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF08A),
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 4, offset: const Offset(0, 2)),
+                  ],
                 ),
+              ),
+              Positioned(
+                top: 0,
+                left: 12,
+                right: 12,
+                child: Container(height: 4, color: Colors.amber.shade300),
               ),
             ],
           ),
+        );
+
+      case 'quote':
+        return Stack(
+          children: [
+            const Positioned(
+              top: 4,
+              left: 6,
+              child: Text(
+                "“",
+                style: TextStyle(
+                  color: Color(0xFFFDE047),
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'serif',
+                  height: 1.0,
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 14,
+              left: 12,
+              right: 12,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(height: 2, color: Colors.white70, width: 26),
+                  const SizedBox(height: 3),
+                  Container(height: 2, color: Colors.white38, width: 16),
+                ],
+              ),
+            ),
+          ],
+        );
+
+      case 'campus':
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF064E3B), Color(0xFF022C22)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white24, width: 1),
+              ),
+              child: const Icon(Icons.school_rounded, color: Colors.white, size: 16),
+            ),
+          ),
+        );
+
+      case 'career':
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.business_center_rounded, color: Color(0xFF93C5FD), size: 16),
+                const SizedBox(height: 4),
+                Container(width: 24, height: 2, color: const Color(0xFF60A5FA)),
+              ],
+            ),
+          ),
+        );
+
+      case 'pastel':
+        return Stack(
+          children: [
+            Positioned(
+              top: -6,
+              right: -6,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF472B6).withValues(alpha: 0.40),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -8,
+              left: -8,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFA78BFA).withValues(alpha: 0.40),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
+        );
+
+      case 'coffee':
+        return Stack(
+          children: [
+            if (tpl.bgImageAssetPath != null)
+              Positioned.fill(
+                child: Image.asset(
+                  tpl.bgImageAssetPath!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (ctx, err, stack) => const SizedBox.shrink(),
+                ),
+              ),
+            Positioned(
+              bottom: 6,
+              right: 6,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.coffee_rounded, color: Color(0xFFFDE68A), size: 12),
+              ),
+            ),
+          ],
+        );
+
+      case 'ocean':
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF0284C7), Color(0xFF0C4A6E)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: const Center(
+            child: Icon(Icons.waves_rounded, color: Colors.white70, size: 20),
+          ),
+        );
+
+      case 'dark':
+        return Container(
+          color: const Color(0xFF030712),
+          child: Center(
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFF38BDF8).withValues(alpha: 0.75),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+      case 'motivation':
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF7C3AED), Color(0xFFEA580C)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Center(
+            child: Transform.rotate(
+              angle: -0.2,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  "GO",
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildMiniTemplatePreview(StoryTemplateModel tpl, bool isSel) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedScale(
+          scale: isSel ? 1.05 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 200),
+            opacity: isSel ? 1.0 : 0.65,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 64,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: tpl.backgroundColors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.12),
+                      width: isSel ? 2.0 : 1.0,
+                    ),
+                    boxShadow: isSel
+                        ? [
+                            BoxShadow(
+                              color: tpl.backgroundColors.first.withValues(alpha: 0.35),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ]
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(17),
+                    child: _buildUniqueTemplateThumbnail(tpl),
+                  ),
+                ),
+
+                // Small Top-Right Checkmark Badge for Selected Card
+                if (isSel)
+                  Positioned(
+                    top: -3,
+                    right: -3,
+                    child: Container(
+                      width: 15,
+                      height: 15,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 3,
+                            offset: Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.check_rounded,
+                        size: 9,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
-        SizedBox(
-          height: 68,
-          child: ListView.separated(
+
+        const SizedBox(height: 6),
+
+        // Smaller & Lighter Template Label
+        Text(
+          tpl.name,
+          style: TextStyle(
+            color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.50),
+            fontSize: 10.5,
+            fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStoryTemplateSelectorStrip() {
+    return SizedBox(
+      height: 124,
+      child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             itemCount: _storyTemplates.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 10),
+            separatorBuilder: (context, index) => const SizedBox(width: 14),
             itemBuilder: (ctx, idx) {
               final tpl = _storyTemplates[idx];
               final isSel = _selectedTemplateIdx == idx;
@@ -1432,47 +1720,11 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                     }
                   });
                 },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  width: 58,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: tpl.backgroundColors,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isSel ? Colors.white : Colors.white24,
-                      width: isSel ? 2.5 : 1.0,
-                    ),
-                    boxShadow: isSel
-                        ? [BoxShadow(color: Colors.white.withValues(alpha: 0.3), blurRadius: 8)]
-                        : null,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(tpl.icon, style: const TextStyle(fontSize: 18)),
-                      const SizedBox(height: 2),
-                      Text(
-                        tpl.name,
-                        style: TextStyle(
-                          color: isSel ? Colors.white : Colors.white70,
-                          fontSize: 10,
-                          fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                child: _buildMiniTemplatePreview(tpl, isSel),
               );
             },
           ),
-        ),
-        const SizedBox(height: 10),
-      ],
-    );
+        );
   }
 
   Widget _buildMediaCanvas() {
@@ -1838,6 +2090,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     }
 
     final isDeleting = _deletingLayerIds.contains(layer.id);
+    final isEditingThisLayer = _isFullScreenTextEditing && layer == _editingTextLayer;
 
     return Positioned(
       left: layer.offset.dx,
@@ -1845,7 +2098,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        opacity: isDeleting ? 0.0 : 1.0,
+        opacity: (isDeleting || isEditingThisLayer) ? 0.0 : 1.0,
         child: AnimatedScale(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
@@ -3071,9 +3324,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     final mq = MediaQuery.of(context);
     final keyboardHeight = mq.viewInsets.bottom;
     final screenWidth = mq.size.width;
-    final textLength = _fullScreenTextController.text.length;
 
-    // Resolve text preview style (live update)
+    // Live text style preview
     final liveTextStyle = _getLayerTextStyle(
       _activeFontStyle,
       _activeTextColor,
@@ -3093,254 +3345,350 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         opacity: _isFullScreenTextEditing ? 1.0 : 0.0,
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
-        child: Material(
-          color: Colors.black.withValues(alpha: 0.35),
-          child: SafeArea(
-            child: Column(
-              children: [
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
+          child: Material(
+            color: Colors.black.withValues(alpha: 0.12),
+            child: SafeArea(
+              child: Column(
+                children: [
 
-                // ── 1. Top Bar: Cancel (Left), Conditional Counter, Done (Right) ──
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton(
-                        onPressed: () => _closeFullScreenTextEditor(save: false),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          backgroundColor: Colors.black45,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        ),
-                        child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                      ),
+                  // ── Direct Canvas Typing Area (Tap Outside to Finish Editing Instantly) ──
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _closeFullScreenTextEditor(save: true),
+                      behavior: HitTestBehavior.opaque,
+                      child: Center(
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
+                          child: Builder(
+                            builder: (context) {
+                              Widget inputWidget = TextField(
+                                controller: _fullScreenTextController,
+                                focusNode: _fullScreenTextFocusNode,
+                                autofocus: true,
+                                maxLines: null,
+                                maxLength: 300,
+                                keyboardType: TextInputType.multiline,
+                                textInputAction: TextInputAction.done,
+                                onSubmitted: (_) => _closeFullScreenTextEditor(save: true),
+                                textAlign: _activeTextAlign,
+                                textCapitalization: TextCapitalization.sentences,
+                                style: liveTextStyle,
+                                cursorColor: _activeTextColor,
+                                cursorWidth: 2.5,
+                                cursorRadius: const Radius.circular(2),
+                                decoration: const InputDecoration(
+                                  hintText: "Start typing...",
+                                  hintStyle: TextStyle(color: Colors.white54, fontWeight: FontWeight.w500),
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  counterText: '',
+                                ),
+                              );
 
-                      // Counter Badge (ONLY visible when approaching maximum 300 character limit)
-                      if (textLength >= 260)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: textLength >= 300
-                                ? AppColors.danger
-                                : Colors.amber.shade800,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            "$textLength / 300",
-                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                        ),
+                              // Background container is ONLY rendered when user explicitly selects a background style!
+                              if (_activeTextBgStyle != TextBgStyle.none) {
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: _activeTextBgStyle == TextBgStyle.filled
+                                        ? Colors.white
+                                        : (_activeTextBgStyle == TextBgStyle.rounded
+                                            ? Colors.black.withValues(alpha: 0.70)
+                                            : Colors.transparent),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: _activeTextBgStyle == TextBgStyle.outline
+                                        ? Border.all(color: Colors.white, width: 2.0)
+                                        : null,
+                                  ),
+                                  child: inputWidget,
+                                );
+                              }
 
-                      ElevatedButton(
-                        onPressed: () => _closeFullScreenTextEditor(save: true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          elevation: 2,
-                        ),
-                        child: const Text("Done", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // ── 2. Pure Canvas Direct Typing Area (ZERO Box, ZERO Frame) ──
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      if (_fullScreenTextController.text.trim().isNotEmpty) {
-                        _closeFullScreenTextEditor(save: true);
-                      } else {
-                        _closeFullScreenTextEditor(save: false);
-                      }
-                    },
-                    behavior: HitTestBehavior.opaque,
-                    child: Center(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
-                        child: TextField(
-                          controller: _fullScreenTextController,
-                          focusNode: _fullScreenTextFocusNode,
-                          autofocus: true,
-                          maxLines: null,
-                          maxLength: 300,
-                          keyboardType: TextInputType.multiline,
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _closeFullScreenTextEditor(save: true),
-                          textAlign: _activeTextAlign,
-                          textCapitalization: TextCapitalization.sentences,
-                          style: liveTextStyle,
-                          cursorColor: _activeTextColor,
-                          cursorWidth: 2.5,
-                          cursorRadius: const Radius.circular(2),
-                          decoration: const InputDecoration(
-                            hintText: "Start typing...",
-                            hintStyle: TextStyle(color: Colors.white54, fontWeight: FontWeight.w500),
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                            counterText: '',
+                              return inputWidget;
+                            },
                           ),
                         ),
                       ),
                     ),
                   ),
+
+                // ══════ BOTTOM CONTROL CARD ══════
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                  margin: EdgeInsets.only(
+                    left: 14,
+                    right: 14,
+                    bottom: keyboardHeight > 0 ? keyboardHeight + 10 : 20,
+                  ),
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xF2111111),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        blurRadius: 28,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // ── Icon tool row: Align, Bold, BG, Font styles ──
+                      _buildIconToolRow(),
+
+                      // Gradient divider
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Container(
+                          height: 1,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.transparent,
+                                Colors.white.withValues(alpha: 0.12),
+                                Colors.white.withValues(alpha: 0.12),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // ── Color picker row ──
+                      _buildColorPickerRow(),
+                    ],
+                  ),
                 ),
-
-                // ── 3. Ultra-Clean Instagram Control Deck (Above Keyboard) ──
-                _buildInstagramTextEditorControlBar(),
-
-                SizedBox(height: keyboardHeight > 0 ? keyboardHeight + 8 : 16),
               ],
             ),
           ),
         ),
       ),
+    ),
+  );
+}
+
+  /// Icon-only tool row: Alignment, Bold, Background toggle, and 4 font style icons
+  Widget _buildIconToolRow() {
+    final isBoldActive = _activeFontStyle == TextStyleType.bold ||
+        _activeFontStyle == TextStyleType.campus;
+    final hasBg = _activeTextBgStyle != TextBgStyle.none;
+
+    // Font style icon mappings (icon-only, no labels)
+    final fontStyles = [
+      (TextStyleType.classic, Icons.text_fields_rounded, 'Aa'),
+      (TextStyleType.modern, Icons.auto_awesome_rounded, null),
+      (TextStyleType.minimal, Icons.light_mode_outlined, null),
+      (TextStyleType.handwriting, Icons.edit_rounded, null),
+    ];
+
+    return Row(
+      children: [
+        // Alignment
+        _buildToolIcon(
+          icon: _activeTextAlign == TextAlign.center
+              ? Icons.format_align_center_rounded
+              : _activeTextAlign == TextAlign.left
+                  ? Icons.format_align_left_rounded
+                  : Icons.format_align_right_rounded,
+          active: false,
+          onTap: () => setState(() {
+            if (_activeTextAlign == TextAlign.center) {
+              _activeTextAlign = TextAlign.left;
+            } else if (_activeTextAlign == TextAlign.left) {
+              _activeTextAlign = TextAlign.right;
+            } else {
+              _activeTextAlign = TextAlign.center;
+            }
+          }),
+        ),
+
+        const SizedBox(width: 6),
+
+        // Bold
+        _buildToolIcon(
+          icon: Icons.format_bold_rounded,
+          active: isBoldActive,
+          onTap: () => setState(() {
+            _activeFontStyle = isBoldActive ? TextStyleType.classic : TextStyleType.bold;
+            if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+              _selectedLayer!.fontStyle = _activeFontStyle;
+            }
+          }),
+        ),
+
+        const SizedBox(width: 6),
+
+        // Background style toggle (Transparent / Rounded / Filled / Outline)
+        _buildToolIcon(
+          icon: hasBg ? Icons.rectangle_rounded : Icons.title_rounded,
+          active: hasBg,
+          onTap: () => setState(() {
+            if (_activeTextBgStyle == TextBgStyle.none) {
+              _activeTextBgStyle = TextBgStyle.rounded;
+            } else if (_activeTextBgStyle == TextBgStyle.rounded) {
+              _activeTextBgStyle = TextBgStyle.filled;
+            } else if (_activeTextBgStyle == TextBgStyle.filled) {
+              _activeTextBgStyle = TextBgStyle.outline;
+            } else {
+              _activeTextBgStyle = TextBgStyle.none;
+            }
+          }),
+        ),
+
+        // Vertical separator
+        Container(
+          width: 1,
+          height: 24,
+          margin: const EdgeInsets.symmetric(horizontal: 10),
+          color: Colors.white.withValues(alpha: 0.12),
+        ),
+
+        // Font style icons
+        ...fontStyles.map((item) {
+          final (fStyle, iconData, textLabel) = item;
+          final isSel = _activeFontStyle == fStyle;
+          return Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: GestureDetector(
+              onTap: () => setState(() {
+                _activeFontStyle = fStyle;
+                if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+                  _selectedLayer!.fontStyle = fStyle;
+                }
+              }),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.07),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.15),
+                  ),
+                ),
+                child: Center(
+                  child: textLabel != null
+                      ? Text(
+                          textLabel,
+                          style: TextStyle(
+                            color: isSel ? Colors.black : Colors.white.withValues(alpha: 0.70),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : Icon(
+                          iconData,
+                          size: 17,
+                          color: isSel ? Colors.black : Colors.white.withValues(alpha: 0.70),
+                        ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 
-  Widget _buildInstagramTextEditorControlBar() {
-    const textStylePills = [
-      (TextStyleType.classic, 'Classic'),
-      (TextStyleType.bold, 'Bubble'),
-      (TextStyleType.modern, 'Outline'),
-      (TextStyleType.minimal, 'Neon'),
-    ];
-
-    const primaryColors = [
+  /// Color picker row with glow on selected color
+  Widget _buildColorPickerRow() {
+    const colors = [
       Colors.white,
       Colors.black,
-      Color(0xFFFACC15), // Amber
-      Color(0xFFF43F5E), // Rose
-      Color(0xFF38BDF8), // Sky
-      Color(0xFFA855F7), // Violet
-      Color(0xFF34D399), // Emerald
-      Color(0xFFFB923C), // Orange
+      Color(0xFFFACC15),
+      Color(0xFFF43F5E),
+      Color(0xFF38BDF8),
+      Color(0xFFA855F7),
+      Color(0xFF34D399),
+      Color(0xFFFB923C),
+      Color(0xFFE879F9),
+      Color(0xFF4ADE80),
     ];
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ── Text Style Selector Pills (Classic / Bubble / Outline / Neon) ──
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: textStylePills.map((item) {
-              final (fStyle, label) = item;
-              final isSel = _activeFontStyle == fStyle;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _activeFontStyle = fStyle;
-                    if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
-                      _selectedLayer!.fontStyle = fStyle;
-                    }
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isSel ? Colors.white : Colors.black.withValues(alpha: 0.45),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: isSel ? Colors.white : Colors.white24,
-                      width: 1.0,
-                    ),
-                  ),
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: isSel ? Colors.black : Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12.5,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: colors.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
+        itemBuilder: (_, i) {
+          final c = colors[i];
+          final isSel = _activeTextColor == c;
+          final lum = c.computeLuminance();
+          final checkColor = lum > 0.5 ? Colors.black : Colors.white;
 
-          const SizedBox(height: 10),
-
-          // ── Font Selector & Color Dots Row ──
-          Row(
-            children: [
-              // Alignment Toggle Button
-              IconButton(
-                icon: Icon(
-                  _activeTextAlign == TextAlign.center
-                      ? Icons.format_align_center_rounded
-                      : (_activeTextAlign == TextAlign.left
-                          ? Icons.format_align_left_rounded
-                          : Icons.format_align_right_rounded),
-                  color: Colors.white,
-                  size: 22,
+          return GestureDetector(
+            onTap: () => setState(() {
+              _activeTextColor = c;
+              if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+                _selectedLayer!.color = c;
+              }
+            }),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              width: isSel ? 36 : 30,
+              height: isSel ? 36 : 30,
+              decoration: BoxDecoration(
+                color: c,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.25),
+                  width: isSel ? 2.5 : 1.0,
                 ),
-                onPressed: () {
-                  setState(() {
-                    if (_activeTextAlign == TextAlign.center) {
-                      _activeTextAlign = TextAlign.left;
-                    } else if (_activeTextAlign == TextAlign.left) {
-                      _activeTextAlign = TextAlign.right;
-                    } else {
-                      _activeTextAlign = TextAlign.center;
-                    }
-                  });
-                },
+                boxShadow: isSel
+                    ? [
+                        BoxShadow(
+                          color: c.withValues(alpha: 0.60),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        )
+                      ]
+                    : null,
               ),
+              child: isSel
+                  ? Icon(Icons.check_rounded, size: 15, color: checkColor)
+                  : null,
+            ),
+          );
+        },
+      ),
+    );
+  }
 
-              const SizedBox(width: 4),
-
-              // Color Swatches Horizontal Scroll
-              Expanded(
-                child: SizedBox(
-                  height: 32,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: primaryColors.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 8),
-                    itemBuilder: (_, i) {
-                      final c = primaryColors[i];
-                      final isSel = _activeTextColor == c;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _activeTextColor = c;
-                            if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
-                              _selectedLayer!.color = c;
-                            }
-                          });
-                        },
-                        child: Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: c,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSel ? Colors.white : Colors.white30,
-                              width: isSel ? 2.5 : 1.0,
-                            ),
-                          ),
-                          child: isSel
-                              ? Icon(Icons.check_rounded, size: 14, color: c == Colors.white ? Colors.black : Colors.white)
-                              : null,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ],
+  /// Small circular icon button for the editor tool row
+  Widget _buildToolIcon({
+    required IconData icon,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: active ? Colors.white : Colors.white.withValues(alpha: 0.08),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: active ? Colors.white : Colors.white.withValues(alpha: 0.18),
           ),
-        ],
+        ),
+        child: Icon(icon, size: 18, color: active ? Colors.black : Colors.white),
       ),
     );
   }
@@ -3935,13 +4283,27 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                           if (widget.type == StoryType.text)
                             _buildStoryTemplateSelectorStrip(),
 
-                          // Horizontally Scrollable Tool Strip (Icon-Only Buttons)
-                          SizedBox(
-                            height: 52,
+                          // Unified Glassmorphic Toolbar Capsule (Icon Buttons with 44px Touch Targets)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xF2161618),
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                width: 1.0,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.4),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
                             child: SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               physics: const BouncingScrollPhysics(),
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
                               child: Row(
                                 children: [
                                   // 1. Add Photo (Only for Image / Video Stories)
@@ -4016,32 +4378,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                             ),
                           ),
 
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
 
-                          // 3. Single Primary White "Post Story" Call-To-Action Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 48,
-                            child: ElevatedButton(
-                              onPressed: _isPublishing ? null : _publishStory,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                disabledBackgroundColor: Colors.white24,
-                                foregroundColor: Colors.black,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                                elevation: 2,
-                              ),
-                              child: _isPublishing
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5),
-                                    )
-                                  : const Text(
-                                      "Post Story",
-                                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
-                                    ),
-                            ),
+                          // 3. Interactive Apple-Grade "Post Story" Call-To-Action Pill Button
+                          _AnimatedPostStoryButton(
+                            isPublishing: _isPublishing,
+                            onPost: _publishStory,
                           ),
                         ],
                       ),
@@ -4051,6 +4393,84 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedPostStoryButton extends StatefulWidget {
+  final bool isPublishing;
+  final VoidCallback onPost;
+
+  const _AnimatedPostStoryButton({
+    required this.isPublishing,
+    required this.onPost,
+  });
+
+  @override
+  State<_AnimatedPostStoryButton> createState() => _AnimatedPostStoryButtonState();
+}
+
+class _AnimatedPostStoryButtonState extends State<_AnimatedPostStoryButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTap: widget.isPublishing ? null : widget.onPost,
+      child: AnimatedScale(
+        scale: _isPressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: Container(
+          width: double.infinity,
+          height: 56,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.white.withValues(alpha: 0.25),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Center(
+            child: widget.isPublishing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.black,
+                      strokeWidth: 2.5,
+                    ),
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "Post Story",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Colors.black,
+                        size: 18,
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ),
     );

@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:genlink_frontend/features/community/presentation/bindings/community_binding.dart';
-import 'package:genlink_frontend/features/community/presentation/screens/community_screen.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/finance_screen.dart';
-import 'package:genlink_frontend/features/home/presentation/bindings/home_binding.dart';
-import 'package:genlink_frontend/features/home/presentation/screens/home_screen.dart';
-import 'package:genlink_frontend/features/profile/presentation/bindings/profile_binding.dart';
-import 'package:genlink_frontend/features/profile/presentation/screens/profile_screen.dart';
-import 'package:genlink_frontend/shared/widgets/bottom_nav_bar.dart';
+import 'package:get/get.dart';
+
+import 'features/community/presentation/bindings/community_binding.dart';
+import 'features/community/presentation/screens/community_screen.dart';
+import 'features/community/presentation/screens/create_post_screen.dart';
+import 'features/finance/presentation/screens/finance_screen.dart';
+import 'features/home/presentation/bindings/home_binding.dart';
+import 'features/home/presentation/screens/home_screen.dart';
+import 'features/profile/presentation/bindings/profile_binding.dart';
+import 'features/profile/presentation/screens/profile_screen.dart';
+import 'main_controller.dart';
+import 'shared/widgets/bottom_nav_bar.dart';
 
 /// Signed-in shell. The tab order here must match [BottomNavBar]:
-/// Home, Community, Finance, Profile.
+/// Home (0), Community (1), Financial (2), Profile (3).
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -18,13 +22,10 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int currentIndex = 1;
+  late final MainController controller;
 
-  /// Exactly one entry per nav item — [IndexedStack] asserts the index is
-  /// in range, so a short list crashes the moment a later tab is tapped.
   late final List<Widget> pages = [
-    // Home's quick actions switch tabs, which only this shell can do.
-    HomeScreen(onNavigateTab: _onItemTapped),
+    HomeScreen(onNavigateTab: (index) => controller.changeIndex(index)),
     const CommunityScreen(),
     const FinanceScreen(),
     const ProfileScreen(),
@@ -33,35 +34,32 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    // Inline tabs are not pushed as routes, so their bindings register
-    // here — GetView resolves each controller on first build.
+    controller = Get.isRegistered<MainController>()
+        ? Get.find<MainController>()
+        : Get.put(MainController(), permanent: true);
+
     HomeBinding().dependencies();
     ProfileBinding().dependencies();
     CommunityBinding().dependencies();
   }
 
-  void _onItemTapped(int index) {
-    setState(() {
-      currentIndex = index;
-    });
-  }
-
   void _onCenterTap() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const CommunityScreen()),
-    );
+    Get.to(() => const CreatePostScreen());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(index: currentIndex, children: pages),
-
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: currentIndex,
-        onTap: _onItemTapped,
-        onCenterTap: _onCenterTap,
+    return Obx(
+      () => Scaffold(
+        body: IndexedStack(
+          index: controller.currentIndex.value,
+          children: pages,
+        ),
+        bottomNavigationBar: BottomNavBar(
+          currentIndex: controller.currentIndex.value,
+          onTap: controller.changeIndex,
+          onCenterTap: _onCenterTap,
+        ),
       ),
     );
   }

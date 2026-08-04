@@ -58,13 +58,13 @@ class CommunityRemoteDataSource {
       userId: 'user_sambo',
       authorName: 'Sum Sambo',
       authorTag: '@sumsambo',
-      authorAvatar: 'assets/images/sum_sambo_profile.png',
+      authorAvatar: 'https://i.pinimg.com/736x/ec/31/fb/ec31fb6bb86683cf4d2d1680f79f14cb.jpg',
       isVerified: false,
       timeAgo: '3h ago',
       content:
           '🔐 Cybersecurity is not just about protecting systems—it\'s about protecting people. Today I spent time learning about web application security and common vulnerabilities. Every day is a chance to become a better security professional. 💻🛡️',
       imageUrls: [
-        'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800',
+        'https://i.pinimg.com/736x/ec/31/fb/ec31fb6bb86683cf4d2d1680f79f14cb.jpg',
       ],
       location: 'ACLEDA University of Business',
       likesCount: 61,
@@ -277,7 +277,7 @@ class CommunityRemoteDataSource {
         userId: 'u_10',
         userName: 'Rathana P.',
         userAvatar:
-            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+            'assets/images/user_profile.png',
         text: 'Awesome post! Looking forward to seeing more updates 🔥',
         timeAgo: '1h ago',
         likesCount: 3,
@@ -288,7 +288,7 @@ class CommunityRemoteDataSource {
         userId: 'u_11',
         userName: 'Sothea N.',
         userAvatar:
-            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
+            'assets/images/user_profile.png',
         text: 'Great work team! Keep it up 👏',
         timeAgo: '30m ago',
         likesCount: 1,

@@ -12,8 +12,15 @@ class EventDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final surfacePrimary = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final bgPrimary = Theme.of(context).scaffoldBackgroundColor;
+
     return Scaffold(
-      backgroundColor: AppColors.darkBgPrimary,
+      backgroundColor: bgPrimary,
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -39,7 +46,7 @@ class EventDetailsScreen extends StatelessWidget {
                           colors: [
                             Colors.black.withValues(alpha: 0.6),
                             Colors.transparent,
-                            AppColors.darkBgPrimary,
+                            bgPrimary,
                           ],
                         ),
                       ),
@@ -108,8 +115,8 @@ class EventDetailsScreen extends StatelessWidget {
                     children: [
                       Text(
                         eventData['title'] as String? ?? 'Flutter Workshop 2026',
-                        style: const TextStyle(
-                          color: AppColors.darkTextPrimary,
+                        style: TextStyle(
+                          color: textPrimary,
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
@@ -117,7 +124,7 @@ class EventDetailsScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         eventData['subtitle'] as String? ?? 'Build Cross-platform Apps with Flutter',
-                        style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 14),
+                        style: TextStyle(color: textSecondary, fontSize: 14),
                       ),
                       const SizedBox(height: 20),
 
@@ -131,21 +138,25 @@ class EventDetailsScreen extends StatelessWidget {
                         childAspectRatio: 2.2,
                         children: [
                           _buildInfoTile(
+                            context: context,
                             icon: Icons.calendar_today_outlined,
                             title: '25 July 2026',
                             subtitle: '9:00 AM – 4:00 PM',
                           ),
                           _buildInfoTile(
+                            context: context,
                             icon: Icons.location_on_outlined,
                             title: 'ACLEDA University',
                             subtitle: 'Phnom Penh',
                           ),
                           _buildInfoTile(
+                            context: context,
                             icon: Icons.hub_outlined,
                             title: 'Organizer',
                             subtitle: 'GenLink Cambodia',
                           ),
                           _buildInfoTile(
+                            context: context,
                             icon: Icons.people_outline,
                             title: '120',
                             subtitle: 'Going',
@@ -156,18 +167,18 @@ class EventDetailsScreen extends StatelessWidget {
                       const SizedBox(height: 24),
 
                       // About This Event Section
-                      const Text(
+                      Text(
                         "About This Event",
                         style: TextStyle(
-                          color: AppColors.darkTextPrimary,
+                          color: textPrimary,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      const Text(
+                      Text(
                         "Join us for an intensive hands-on workshop where you'll learn how to build beautiful and high-performance cross-platform applications using Flutter.\n\nWhether you are a beginner or looking to enhance your skills, this workshop covers clean architecture, state management, and real-world backend API integration.",
-                        style: TextStyle(color: AppColors.darkTextSecondary, fontSize: 14, height: 1.5),
+                        style: TextStyle(color: textSecondary, fontSize: 14, height: 1.5),
                       ),
 
                       const SizedBox(height: 120),
@@ -186,8 +197,8 @@ class EventDetailsScreen extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.darkSurfacePrimary,
-                border: Border(top: BorderSide(color: AppColors.darkBorderSubtle)),
+                color: surfacePrimary,
+                border: Border(top: BorderSide(color: borderSubtle)),
               ),
               child: SizedBox(
                 height: 52,
@@ -224,16 +235,23 @@ class EventDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildInfoTile({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required String subtitle,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textMuted = isDark ? Colors.white54 : AppColors.lightTextSecondary;
+    final tileBg = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightBgSecondary;
+    final borderSubtle = isDark ? Colors.white10 : AppColors.lightBorderSubtle;
+
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: tileBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: borderSubtle),
       ),
       child: Row(
         children: [
@@ -248,8 +266,8 @@ class EventDetailsScreen extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -258,7 +276,7 @@ class EventDetailsScreen extends StatelessWidget {
                   subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white54, fontSize: 10),
+                  style: TextStyle(color: textMuted, fontSize: 10),
                 ),
               ],
             ),

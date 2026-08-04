@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
+import '../../../../design_system/colors/app_colors.dart';
 import '../../domain/models/story_model.dart';
 import '../screens/story_creator_screen.dart';
 import '../screens/in_app_camera_screen.dart';
@@ -75,11 +76,16 @@ class StoryCreationPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfacePrimary = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final iconBgColor = isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBgSecondary;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-      decoration: const BoxDecoration(
-        color: Color(0xFF141414),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: surfacePrimary,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -91,7 +97,7 @@ class StoryCreationPickerSheet extends StatelessWidget {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: isDark ? Colors.white24 : AppColors.lightBorderStrong,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -100,12 +106,12 @@ class StoryCreationPickerSheet extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Header Title
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
-              "Create Story",
+              'community.createStory'.tr,
               style: TextStyle(
-                color: Colors.white,
+                color: textPrimary,
                 fontSize: 19,
                 fontWeight: FontWeight.bold,
               ),
@@ -123,14 +129,14 @@ class StoryCreationPickerSheet extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: iconBgColor,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 22),
+                child: Icon(Icons.camera_alt_rounded, color: textPrimary, size: 22),
               ),
-              title: const Text(
+              title: Text(
                 "Camera",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
               onTap: () => _openCamera(context),
             ),
@@ -147,14 +153,14 @@ class StoryCreationPickerSheet extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: iconBgColor,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.photo_library_rounded, color: Colors.white, size: 22),
+                child: Icon(Icons.photo_library_rounded, color: textPrimary, size: 22),
               ),
-              title: const Text(
+              title: Text(
                 "Gallery",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
               onTap: () => _pickFromGallery(context),
             ),
@@ -171,14 +177,14 @@ class StoryCreationPickerSheet extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: iconBgColor,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.title_rounded, color: Colors.white, size: 22),
+                child: Icon(Icons.title_rounded, color: textPrimary, size: 22),
               ),
-              title: const Text(
+              title: Text(
                 "Text Story",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
               onTap: () => _openTextStory(context),
             ),

@@ -995,18 +995,23 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   void _onBackPress() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+
     if (_canPost && !_isSubmitting) {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.darkSurfaceSecondary,
+          backgroundColor: surfaceSecondary,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text("Discard Post Draft?", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          content: const Text("If you leave now, your draft will be discarded.", style: TextStyle(color: AppColors.darkTextSecondary)),
+          title: Text("Discard Post Draft?", style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
+          content: Text("If you leave now, your draft will be discarded.", style: TextStyle(color: textSecondary)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text("Keep Editing", style: TextStyle(color: Colors.white70)),
+              child: Text("Keep Editing", style: TextStyle(color: textSecondary)),
             ),
             TextButton(
               onPressed: () {
@@ -1083,6 +1088,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final surfacePrimary = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
     final currentLength = _textController.text.length;
 
     return PopScope(
@@ -1093,17 +1106,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.darkBgPrimary,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: AppColors.darkBgPrimary,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.close_rounded, color: Colors.white, size: 24),
+            icon: Icon(Icons.close_rounded, color: textPrimary, size: 24),
             onPressed: _onBackPress,
           ),
           title: Text(
-            _isEditing ? "Edit Post" : "Create Post",
-            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            _isEditing ? 'community.editPost'.tr : 'community.createPost'.tr,
+            style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
           ),
           centerTitle: true,
           actions: [
@@ -1112,22 +1125,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               child: ElevatedButton(
                 onPressed: _canPost && !_isSubmitting ? _submitPost : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.white24,
+                  backgroundColor: textPrimary,
+                  disabledBackgroundColor: isDark ? Colors.white24 : AppColors.lightBorderSubtle,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
                 child: _isSubmitting
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 14,
                         height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: isDark ? Colors.black : Colors.white),
                       )
                     : Text(
-                        _isEditing ? "Save" : "Post",
+                        _isEditing ? 'common.save'.tr : 'community.post'.tr,
                         style: TextStyle(
-                          color: _canPost ? Colors.black : Colors.white38,
+                          color: _canPost ? (isDark ? Colors.black : Colors.white) : textMuted,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -1155,9 +1168,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               "Sokny Enat",
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                              style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                             ),
                             const SizedBox(height: 2),
                             InkWell(
@@ -1167,15 +1180,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                   backgroundColor: Colors.transparent,
                                   builder: (ctx) => Container(
                                     padding: const EdgeInsets.all(20),
-                                    decoration: const BoxDecoration(
-                                      color: AppColors.darkSurfacePrimary,
-                                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                    decoration: BoxDecoration(
+                                      color: surfacePrimary,
+                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                                     ),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: ['Public', 'Friends', 'Only Me'].map((aud) {
                                         return ListTile(
-                                          title: Text(aud, style: const TextStyle(color: Colors.white)),
+                                          title: Text(
+                                            aud == 'Public' ? 'privacy.PUBLIC'.tr : (aud == 'Friends' ? 'privacy.FRIENDS'.tr : 'privacy.PRIVATE'.tr),
+                                            style: TextStyle(color: textPrimary),
+                                          ),
                                           trailing: _selectedAudience == aud ? const Icon(Icons.check, color: AppColors.communityAccent) : null,
                                           onTap: () {
                                             setState(() {
@@ -1193,16 +1209,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.08),
+                                  color: surfaceSecondary,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
                                   children: [
                                     Text(
-                                      _selectedAudience == 'Public' ? '🌍 Public' : (_selectedAudience == 'Friends' ? '👥 Friends' : '🔒 Only Me'),
-                                      style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                      _selectedAudience == 'Public' ? '🌍 ${'privacy.PUBLIC'.tr}' : (_selectedAudience == 'Friends' ? '👥 ${'privacy.FRIENDS'.tr}' : '🔒 ${'privacy.PRIVATE'.tr}'),
+                                      style: TextStyle(color: textSecondary, fontSize: 11),
                                     ),
-                                    const Icon(Icons.arrow_drop_down, color: Colors.white70, size: 14),
+                                    Icon(Icons.arrow_drop_down, color: textSecondary, size: 14),
                                   ],
                                 ),
                               ),
@@ -1220,10 +1236,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       focusNode: _editorFocusNode,
                       minLines: 3,
                       maxLines: null,
-                      style: const TextStyle(color: Colors.white, fontSize: 18, height: 1.45),
-                      decoration: const InputDecoration(
-                        hintText: "What's happening, Sokny?",
-                        hintStyle: TextStyle(color: Color(0xFF777777), fontSize: 18, fontWeight: FontWeight.w400),
+                      style: TextStyle(color: textPrimary, fontSize: 18, height: 1.45),
+                      decoration: InputDecoration(
+                        hintText: 'community.whatsHappening'.tr,
+                        hintStyle: TextStyle(color: textMuted, fontSize: 18, fontWeight: FontWeight.w400),
                         border: InputBorder.none,
                       ),
                     ),
@@ -1245,16 +1261,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                 child: Container(
                                   width: 130,
                                   decoration: BoxDecoration(
-                                    color: AppColors.darkSurfaceSecondary,
+                                    color: surfaceSecondary,
                                     borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: AppColors.darkBorderSubtle),
+                                    border: Border.all(color: borderSubtle),
                                   ),
-                                  child: const Column(
+                                  child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.add_photo_alternate_outlined, color: AppColors.communityAccent, size: 30),
-                                      SizedBox(height: 6),
-                                      Text("Add More", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                      const Icon(Icons.add_photo_alternate_outlined, color: AppColors.communityAccent, size: 30),
+                                      const SizedBox(height: 6),
+                                      Text("Add More", style: TextStyle(color: textSecondary, fontSize: 12)),
                                     ],
                                   ),
                                 ),
@@ -1353,33 +1369,33 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           if (_selectedLocation != null)
                             Chip(
                               avatar: const Icon(Icons.location_on, color: AppColors.danger, size: 14),
-                              label: Text(_selectedLocation!, style: const TextStyle(color: Colors.white, fontSize: 12)),
-                              deleteIcon: const Icon(Icons.close, size: 14, color: Colors.white),
+                              label: Text(_selectedLocation!, style: TextStyle(color: textPrimary, fontSize: 12)),
+                              deleteIcon: Icon(Icons.close, size: 14, color: textSecondary),
                               onDeleted: () => setState(() => _selectedLocation = null),
-                              backgroundColor: AppColors.darkSurfaceSecondary,
+                              backgroundColor: surfaceSecondary,
                             ),
                           if (_pollQuestion != null)
                             Chip(
                               avatar: const Icon(Icons.poll, color: AppColors.warning, size: 14),
-                              label: Text("Poll: $_pollQuestion", style: const TextStyle(color: Colors.white, fontSize: 12)),
-                              deleteIcon: const Icon(Icons.close, size: 14, color: Colors.white),
+                              label: Text("Poll: $_pollQuestion", style: TextStyle(color: textPrimary, fontSize: 12)),
+                              deleteIcon: Icon(Icons.close, size: 14, color: textSecondary),
                               onDeleted: () => setState(() {
                                 _pollQuestion = null;
                                 _pollOptionsList = [];
                               }),
-                              backgroundColor: AppColors.darkSurfaceSecondary,
+                              backgroundColor: surfaceSecondary,
                             ),
                           if (_attachedLink != null)
                             Chip(
                               avatar: const Icon(Icons.link, color: AppColors.communityAccent, size: 14),
-                              label: Text(_linkDomain ?? "Link", style: const TextStyle(color: Colors.white, fontSize: 12)),
-                              deleteIcon: const Icon(Icons.close, size: 14, color: Colors.white),
+                              label: Text(_linkDomain ?? "Link", style: TextStyle(color: textPrimary, fontSize: 12)),
+                              deleteIcon: Icon(Icons.close, size: 14, color: textSecondary),
                               onDeleted: () => setState(() {
                                 _attachedLink = null;
                                 _linkTitle = null;
                                 _linkDomain = null;
                               }),
-                              backgroundColor: AppColors.darkSurfaceSecondary,
+                              backgroundColor: surfaceSecondary,
                             ),
                         ],
                       ),
@@ -1409,12 +1425,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 ),
               ),
 
-            const Divider(color: AppColors.darkBorderSubtle, height: 1),
+            Divider(color: borderSubtle, height: 1),
 
             // Formatting Toolbar & Action Bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: AppColors.darkBgPrimary,
+              color: Theme.of(context).scaffoldBackgroundColor,
               child: SafeArea(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1435,13 +1451,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               duration: const Duration(milliseconds: 150),
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: _textController.isBoldActive ? Colors.white : Colors.transparent,
+                                color: _textController.isBoldActive ? textPrimary : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 "B",
                                 style: TextStyle(
-                                  color: _textController.isBoldActive ? Colors.black : Colors.white,
+                                  color: _textController.isBoldActive ? (isDark ? Colors.black : Colors.white) : textPrimary,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 16,
                                 ),
@@ -1461,13 +1477,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               duration: const Duration(milliseconds: 150),
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: _textController.isItalicActive ? Colors.white : Colors.transparent,
+                                color: _textController.isItalicActive ? textPrimary : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 "I",
                                 style: TextStyle(
-                                  color: _textController.isItalicActive ? Colors.black : Colors.white,
+                                  color: _textController.isItalicActive ? (isDark ? Colors.black : Colors.white) : textPrimary,
                                   fontStyle: FontStyle.italic,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
@@ -1488,15 +1504,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               duration: const Duration(milliseconds: 150),
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: _textController.isUnderlineActive ? Colors.white : Colors.transparent,
+                                color: _textController.isUnderlineActive ? textPrimary : Colors.transparent,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 "U",
                                 style: TextStyle(
-                                  color: _textController.isUnderlineActive ? Colors.black : Colors.white,
+                                  color: _textController.isUnderlineActive ? (isDark ? Colors.black : Colors.white) : textPrimary,
                                   decoration: TextDecoration.underline,
-                                  decorationColor: _textController.isUnderlineActive ? Colors.black : Colors.white,
+                                  decorationColor: _textController.isUnderlineActive ? (isDark ? Colors.black : Colors.white) : textPrimary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
                                 ),
@@ -1510,7 +1526,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             onPressed: _showTopicsSheet,
                           ),
                           IconButton(
-                            icon: const Icon(Icons.alternate_email_rounded, color: Colors.white, size: 20),
+                            icon: Icon(Icons.alternate_email_rounded, color: textPrimary, size: 20),
                             tooltip: "Mention User",
                             onPressed: () => _insertTextAtCursor('@SoknyEnat '),
                           ),

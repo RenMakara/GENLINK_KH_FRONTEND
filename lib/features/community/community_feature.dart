@@ -19,7 +19,7 @@ export 'presentation/controllers/story_controller.dart';
 // Widgets
 export 'presentation/widgets/comments_bottom_sheet.dart';
 export 'presentation/widgets/filter_events_sheet.dart';
-export 'presentation/widgets/post_card_widget.dart' hide CommentsBottomSheet;
+export 'presentation/widgets/post_card_widget.dart';
 export 'presentation/widgets/story_creation_picker_sheet.dart';
 export 'presentation/widgets/story_tray_widget.dart';
 

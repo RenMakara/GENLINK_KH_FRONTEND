@@ -156,10 +156,12 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final scheme = theme.colorScheme;
 
-    final activeColor = Colors.white;
-    final inactiveColor = scheme.onSurface.withValues(alpha: 0.5);
+    final activeColor = isDark ? Colors.white : scheme.onSurface;
+    final inactiveColor = scheme.onSurface.withValues(alpha: 0.45);
     final color = active ? activeColor : inactiveColor;
 
     return InkWell(
@@ -174,15 +176,21 @@ class _NavItem extends StatelessWidget {
             size: 28,
             semanticLabel: label,
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: color,
-              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-              fontSize: 13,
+          const SizedBox(height: 3),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 12,
+                ),
+              ),
             ),
           ),
         ],

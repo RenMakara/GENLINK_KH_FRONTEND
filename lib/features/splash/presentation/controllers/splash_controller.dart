@@ -2,7 +2,6 @@ import 'package:get/get.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/storage/local_storage.dart';
-import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 
 /// Decides the app's first real screen.
@@ -33,29 +32,28 @@ class SplashController extends GetxController {
     // window rather than after it.
     final minimumElapsed = Future<void>.delayed(_minimumDisplay);
 
-    _auth.isAuthenticated.value = true;
-    _auth.currentUser.value ??= const UserEntity(
-      id: 'user_me',
-      fullName: 'Sokny Enat',
-      username: 'sokny_enat',
-      email: 'sokny@genlink.kh',
-      avatarUrl: 'assets/images/user_profile.png',
-      universityName: 'ACLEDA University of Business',
-      active: true,
-      emailVerified: true,
-      accountStatus: 'ACTIVE',
-      preferredLanguage: 'en',
-      role: 'USER',
-      totalXp: 250,
-      level: 5,
-    );
+    var restored = false;
+    var onboardingSeen = false;
 
     try {
-      await _auth.restoreSession();
-      await _storage.readOnboardingSeen();
-    } catch (_) {}
+      restored = await _auth.restoreSession();
+      onboardingSeen = await _storage.readOnboardingSeen();
+    } catch (_) {
+      // Secure storage can fail outright (keystore reset, restored backup,
+      // rooted device). Falling through with both flags false sends the
+      // user to the first-run flow — never leaves them stuck on splash.
+    }
 
     await minimumElapsed;
-    Get.offAllNamed<void>(AppRoutes.home);
+
+    if (restored) {
+      Get.offAllNamed<void>(AppRoutes.home);
+    } else if (!onboardingSeen) {
+      // First run starts at language select (step 1), which then hands off
+      // to the onboarding slides.
+      Get.offAllNamed<void>(AppRoutes.languageSelect);
+    } else {
+      Get.offAllNamed<void>(AppRoutes.login);
+    }
   }
 }

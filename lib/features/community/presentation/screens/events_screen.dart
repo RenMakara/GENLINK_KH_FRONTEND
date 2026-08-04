@@ -55,10 +55,19 @@ class _EventsScreenState extends State<EventsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final textMuted = isDark ? Colors.white54 : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark ? Colors.white.withValues(alpha: 0.03) : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBorderSubtle;
+    final inputBg = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightBgSecondary;
+    final filterBg = isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBgSecondary;
+
     return Scaffold(
-      backgroundColor: AppColors.darkBgPrimary,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.darkBgPrimary,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         titleSpacing: 16,
         title: Row(
@@ -71,9 +80,9 @@ class _EventsScreenState extends State<EventsScreen> {
               child: const Icon(Icons.flash_on, color: Colors.white, size: 22),
             ),
             const SizedBox(width: 6),
-            const Text(
+            Text(
               "GENLINK",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+              style: TextStyle(color: textPrimary, fontWeight: FontWeight.w900, fontSize: 18),
             ),
             const SizedBox(width: 8),
             Container(
@@ -82,14 +91,14 @@ class _EventsScreenState extends State<EventsScreen> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.6), width: 1.5),
               ),
-              child: const Text("KH", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+              child: Text("KH", style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 11)),
             ),
           ],
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.search, color: Colors.white70), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.chat_bubble_outline, color: Colors.white70), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.notifications_none, color: Colors.white70), onPressed: () {}),
+          IconButton(icon: Icon(Icons.search, color: textSecondary), onPressed: () {}),
+          IconButton(icon: Icon(Icons.chat_bubble_outline, color: textSecondary), onPressed: () {}),
+          IconButton(icon: Icon(Icons.notifications_none, color: textSecondary), onPressed: () {}),
         ],
       ),
       body: Center(
@@ -110,13 +119,15 @@ class _EventsScreenState extends State<EventsScreen> {
                         margin: const EdgeInsets.only(right: 8),
                         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.08),
+                          color: isSelected
+                              ? textPrimary
+                              : inputBg,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           cat,
                           style: TextStyle(
-                            color: isSelected ? Colors.black : Colors.white70,
+                            color: isSelected ? (isDark ? Colors.black : Colors.white) : textSecondary,
                             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                           ),
                         ),
@@ -133,13 +144,13 @@ class _EventsScreenState extends State<EventsScreen> {
                     Expanded(
                       child: TextField(
                         controller: _searchController,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: textPrimary),
                         decoration: InputDecoration(
                           hintText: "Search events...",
-                          hintStyle: const TextStyle(color: Colors.white38),
-                          prefixIcon: const Icon(Icons.search, color: Colors.white38),
+                          hintStyle: TextStyle(color: textMuted),
+                          prefixIcon: Icon(Icons.search, color: textMuted),
                           filled: true,
-                          fillColor: Colors.white.withValues(alpha: 0.04),
+                          fillColor: inputBg,
                           contentPadding: EdgeInsets.zero,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -162,15 +173,15 @@ class _EventsScreenState extends State<EventsScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
+                          color: filterBg,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.white12),
+                          border: Border.all(color: borderSubtle),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
-                            Icon(Icons.tune, color: Colors.white, size: 18),
-                            SizedBox(width: 6),
-                            Text("Filter", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            Icon(Icons.tune, color: textPrimary, size: 18),
+                            const SizedBox(width: 6),
+                            Text("Filter", style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ),
@@ -195,8 +206,8 @@ class _EventsScreenState extends State<EventsScreen> {
                           padding: const EdgeInsets.only(bottom: 10, top: 10),
                           child: Text(
                             item['dateHeader'] as String,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: textPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                               letterSpacing: 0.5,
@@ -208,9 +219,9 @@ class _EventsScreenState extends State<EventsScreen> {
                         Container(
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.03),
+                            color: surfaceSecondary,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                            border: Border.all(color: borderSubtle),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,28 +273,28 @@ class _EventsScreenState extends State<EventsScreen> {
                                   children: [
                                     Text(
                                       item['title'] as String,
-                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
+                                      style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 17),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       item['subtitle'] as String,
-                                      style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                      style: TextStyle(color: textSecondary, fontSize: 13),
                                     ),
                                     const SizedBox(height: 12),
                                     Row(
                                       children: [
-                                        const Icon(Icons.access_time, color: Colors.white54, size: 15),
+                                        Icon(Icons.access_time, color: textMuted, size: 15),
                                         const SizedBox(width: 6),
-                                        Text(item['time'] as String, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                        Text(item['time'] as String, style: TextStyle(color: textSecondary, fontSize: 12)),
                                         const SizedBox(width: 16),
-                                        const Icon(Icons.location_on_outlined, color: Colors.white54, size: 15),
+                                        Icon(Icons.location_on_outlined, color: textMuted, size: 15),
                                         const SizedBox(width: 6),
                                         Expanded(
                                           child: Text(
                                             item['location'] as String,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                            style: TextStyle(color: textSecondary, fontSize: 12),
                                           ),
                                         ),
                                       ],
@@ -294,9 +305,9 @@ class _EventsScreenState extends State<EventsScreen> {
                                       children: [
                                         Row(
                                           children: [
-                                            const Icon(Icons.people_outline, color: Colors.white54, size: 16),
+                                            Icon(Icons.people_outline, color: textMuted, size: 16),
                                             const SizedBox(width: 6),
-                                            Text(item['going'] as String, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                                            Text(item['going'] as String, style: TextStyle(color: textMuted, fontSize: 12)),
                                           ],
                                         ),
                                         SizedBox(
@@ -318,7 +329,7 @@ class _EventsScreenState extends State<EventsScreen> {
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: item['actionType'] == 'Register'
                                                   ? const Color(0xFF6D28D9)
-                                                  : Colors.white.withValues(alpha: 0.08),
+                                                  : (isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBgSecondary),
                                               elevation: 0,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius: BorderRadius.circular(10),
@@ -327,7 +338,7 @@ class _EventsScreenState extends State<EventsScreen> {
                                             child: Text(
                                               item['actionType'] as String,
                                               style: TextStyle(
-                                                color: Colors.white,
+                                                color: item['actionType'] == 'Register' ? Colors.white : textPrimary,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 13,
                                               ),

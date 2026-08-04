@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "kh.edu.acleda.genlink.genlink_frontend"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -17,7 +17,7 @@ android {
     defaultConfig {
         applicationId = "kh.edu.acleda.genlink.genlink_frontend"
         minSdk = flutter.minSdkVersion
-        targetSdk = 35
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

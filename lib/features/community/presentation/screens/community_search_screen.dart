@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 
 /// Community Search Screen
@@ -78,14 +79,21 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
     return Scaffold(
-      backgroundColor: AppColors.darkBgPrimary,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.darkBgPrimary,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: textPrimary, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
         titleSpacing: 0,
@@ -96,16 +104,16 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
             child: TextField(
               controller: _searchController,
               focusNode: _focusNode,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(color: textPrimary, fontSize: 14),
               onChanged: _onQueryChanged,
               onSubmitted: (val) => _addToRecentSearches(val),
               decoration: InputDecoration(
-                hintText: 'Search posts, people, jobs, events...',
-                hintStyle: const TextStyle(color: AppColors.darkTextMuted, fontSize: 13),
-                prefixIcon: const Icon(Icons.search_rounded, color: AppColors.darkTextMuted, size: 19),
+                hintText: 'community.searchHint'.tr,
+                hintStyle: TextStyle(color: textMuted, fontSize: 13),
+                prefixIcon: Icon(Icons.search_rounded, color: textMuted, size: 19),
                 suffixIcon: _query.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 16),
+                        icon: Icon(Icons.close_rounded, color: textSecondary, size: 16),
                         onPressed: () {
                           _searchController.clear();
                           _onQueryChanged('');
@@ -113,20 +121,20 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                       )
                     : null,
                 filled: true,
-                fillColor: AppColors.darkSurfaceSecondary,
+                fillColor: surfaceSecondary,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
-                  borderSide: const BorderSide(color: AppColors.darkBorderSubtle, width: 1.0),
+                  borderSide: BorderSide(color: borderSubtle, width: 1.0),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
-                  borderSide: const BorderSide(color: AppColors.darkBorderSubtle, width: 1.0),
+                  borderSide: BorderSide(color: borderSubtle, width: 1.0),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
                   borderSide: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.35),
+                    color: isDark ? Colors.white.withValues(alpha: 0.35) : AppColors.lightBorderStrong,
                     width: 1.2,
                   ),
                 ),
@@ -157,6 +165,13 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
   // Idle State: Compact Recent Searches (Max 3), Modern Categories & Trending
   // ---------------------------------------------------------------------------
   Widget _buildIdleState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
     // Show only the latest 3 recent searches
     final displayRecent = _recentSearches.take(3).toList();
 
@@ -180,15 +195,15 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   "Recent Searches",
-                  style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: textPrimary, fontSize: 13.5, fontWeight: FontWeight.bold),
                 ),
                 GestureDetector(
                   onTap: _clearAllRecentSearches,
-                  child: const Text(
+                  child: Text(
                     "Clear",
-                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: textSecondary, fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -206,17 +221,17 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
                     children: [
-                      const Icon(Icons.history_rounded, color: AppColors.darkTextMuted, size: 16),
+                      Icon(Icons.history_rounded, color: textMuted, size: 16),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           item,
-                          style: const TextStyle(color: AppColors.darkTextPrimary, fontSize: 13),
+                          style: TextStyle(color: textPrimary, fontSize: 13),
                         ),
                       ),
                       GestureDetector(
                         onTap: () => setState(() => _recentSearches.remove(item)),
-                        child: const Icon(Icons.close_rounded, color: AppColors.darkTextMuted, size: 15),
+                        child: Icon(Icons.close_rounded, color: textMuted, size: 15),
                       ),
                     ],
                   ),
@@ -227,9 +242,9 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
           ],
 
           // ── 2. Trending Topics (Compact Chips) ──
-          const Text(
+          Text(
             "🔥 Trending",
-            style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
+            style: TextStyle(color: textPrimary, fontSize: 13.5, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -246,14 +261,14 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.darkSurfaceSecondary,
+                    color: surfaceSecondary,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.darkBorderSubtle),
+                    border: Border.all(color: borderSubtle),
                   ),
                   child: Text(
                     tag,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: textPrimary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -272,6 +287,11 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
   // Lightweight Loading State
   // ---------------------------------------------------------------------------
   Widget _buildLoadingState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final skeletonColor = isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05);
+
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: 4,
@@ -280,9 +300,9 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.darkSurfaceSecondary,
+            color: surfaceSecondary,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.darkBorderSubtle),
+            border: Border.all(color: borderSubtle),
           ),
           child: Row(
             children: [
@@ -290,7 +310,7 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.06),
+                  color: skeletonColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -303,7 +323,7 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                       width: double.infinity,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
+                        color: skeletonColor,
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
@@ -312,7 +332,7 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                       width: 120,
                       height: 10,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.04),
+                        color: skeletonColor,
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
@@ -330,6 +350,15 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
   // Live Search Results List
   // ---------------------------------------------------------------------------
   Widget _buildSearchResults() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final iconBgColor = isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBgSecondary;
+    final badgeBgColor = isDark ? Colors.white.withValues(alpha: 0.10) : AppColors.lightBgSecondary;
+
     final results = [
       {
         'title': 'Flutter Workshop 2026 @ CADT',
@@ -371,18 +400,18 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.search_off_rounded, color: AppColors.darkTextMuted, size: 48),
+              Icon(Icons.search_off_rounded, color: textMuted, size: 48),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 "No results found.",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.bold),
+                style: TextStyle(color: textPrimary, fontSize: 14.5, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 "Try searching for another keyword.",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.darkTextMuted, fontSize: 12.5),
+                style: TextStyle(color: textMuted, fontSize: 12.5),
               ),
             ],
           ),
@@ -423,9 +452,9 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.darkSurfaceSecondary,
+            color: surfaceSecondary,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.darkBorderSubtle),
+            border: Border.all(color: borderSubtle),
           ),
           child: Row(
             children: [
@@ -433,10 +462,10 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: iconBgColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(catIcon, color: Colors.white70, size: 18),
+                child: Icon(catIcon, color: textSecondary, size: 18),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -445,12 +474,12 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                   children: [
                     Text(
                       res['title']!,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5),
+                      style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 13.5),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       res['subtitle']!,
-                      style: const TextStyle(color: AppColors.darkTextSecondary, fontSize: 12),
+                      style: TextStyle(color: textSecondary, fontSize: 12),
                     ),
                   ],
                 ),
@@ -459,13 +488,13 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.10),
+                  color: badgeBgColor,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                  border: Border.all(color: borderSubtle),
                 ),
                 child: Text(
                   badgeText,
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: textPrimary, fontSize: 11, fontWeight: FontWeight.w600),
                 ),
               ),
             ],

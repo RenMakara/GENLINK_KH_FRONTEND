@@ -1,261 +1,168 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/widgets/avatar/app_avatar.dart';
 import 'package:genlink_frontend/features/chat/presentation/screens/chat_list_screen.dart';
 import 'package:genlink_frontend/features/notification/presentation/screens/notification_screen.dart';
-import '../screens/community_search_screen.dart';
 
-/// Redesigned production-grade header for GenLink KH Community module.
-/// Inspired by Threads, Discord, and Instagram design systems.
-class CommunityHeaderWidget extends StatefulWidget implements PreferredSizeWidget {
+/// Community Header implementation identical in style and design tokens
+/// to the Finance Header in [FinanceScreen].
+class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidget {
   final String activeCategory;
   final bool hasUnreadMessages;
   final bool hasUnreadNotifications;
+  final String? userAvatarUrl;
+  final String userName;
 
   const CommunityHeaderWidget({
     super.key,
     required this.activeCategory,
     this.hasUnreadMessages = true,
     this.hasUnreadNotifications = true,
+    this.userAvatarUrl = 'assets/images/user_profile.png',
+    this.userName = 'Sokny Enat',
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(62.0);
-
-  @override
-  State<CommunityHeaderWidget> createState() => _CommunityHeaderWidgetState();
-}
-
-class _CommunityHeaderWidgetState extends State<CommunityHeaderWidget>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 220),
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeIn,
-    );
-    _fadeController.forward();
-  }
-
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    super.dispose();
-  }
+  Size get preferredSize => const Size.fromHeight(64.0);
 
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: Container(
-        color: Colors.black,
-        child: SafeArea(
-          bottom: false,
-          child: Container(
-            height: widget.preferredSize.height,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // 1. Sleek, Proportionate GenLink Logo (Height: 26dp, Flexible to prevent overflow)
-                Flexible(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Image.asset(
-                      'assets/logos/genlink_logo.png',
-                      height: 26,
-                      fit: BoxFit.contain,
-                      semanticLabel: 'GenLink KH Brand',
-                    ),
-                  ),
-                ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-                const SizedBox(width: 8),
+    final bg = isDark
+        ? AppColors.darkBgPrimary
+        : AppColors.lightBgPrimary;
 
-                // 2. Action Icons Grouped Closely Together on the Right (10px spacing)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // 🔍 Search Action (42x42dp Touch Target, 22dp Icon)
-                    Hero(
-                      tag: 'community_search_bar',
-                      child: _HeaderActionButton(
-                        tooltip: "Search",
-                        icon: const Icon(
-                          Icons.search_rounded,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => CommunitySearchScreen(
-                                activeTab: widget.activeCategory,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
 
-                    const SizedBox(width: 6),
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
-                    // 💬💬 Messages Action (Double Conversation Icon: Icons.forum_rounded, Blue Unread Badge)
-                    _HeaderActionButton(
-                      tooltip: "Messages",
-                      icon: const Icon(
-                        Icons.forum_rounded,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                      badge: widget.hasUnreadMessages
-                          ? Container(
-                              width: 7,
-                              height: 7,
-                              decoration: BoxDecoration(
-                                color: AppColors.communityAccent,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.black, width: 1.5),
-                              ),
-                            )
-                          : null,
-                      onTap: () {
-                        Get.to(() => const ChatListScreen());
-                      },
-                    ),
+    final border = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
-                    const SizedBox(width: 6),
+    final titleText = 'community.title'.tr.isNotEmpty && 'community.title'.tr != 'community.title'
+        ? 'community.title'.tr
+        : 'Community';
 
-                    // 🔔 Notifications Action (Bell Icon: Icons.notifications_none_rounded, Blue Unread Badge)
-                    _HeaderActionButton(
-                      tooltip: "Notifications",
-                      icon: const Icon(
-                        Icons.notifications_none_rounded,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                      badge: widget.hasUnreadNotifications
-                          ? Container(
-                              width: 7,
-                              height: 7,
-                              decoration: BoxDecoration(
-                                color: AppColors.communityAccent,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.black, width: 1.5),
-                              ),
-                            )
-                          : null,
-                      onTap: () {
-                        Get.to(() => const NotificationScreen());
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-
-/// Reusable Material 3 Header Action Button with 48x48 touch target, 95% press scale & ink ripple.
-class _HeaderActionButton extends StatefulWidget {
-  final Widget icon;
-  final VoidCallback onTap;
-  final Widget? badge;
-  final String tooltip;
-
-  const _HeaderActionButton({
-    required this.icon,
-    required this.onTap,
-    this.badge,
-    required this.tooltip,
-  });
-
-  @override
-  State<_HeaderActionButton> createState() => _HeaderActionButtonState();
-}
-
-class _HeaderActionButtonState extends State<_HeaderActionButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animController;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 120),
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: widget.tooltip,
-      button: true,
-      child: GestureDetector(
-        onTapDown: (_) => _animController.forward(),
-        onTapUp: (_) {
-          _animController.reverse();
-          widget.onTap();
-        },
-        onTapCancel: () => _animController.reverse(),
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-              color: Colors.transparent,
-              shape: BoxShape.circle,
-            ),
-            child: Material(
-              color: Colors.transparent,
-              shape: const CircleBorder(),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: widget.onTap,
-                splashColor: Colors.white.withValues(alpha: 0.15),
-                highlightColor: Colors.white.withValues(alpha: 0.08),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    widget.icon,
-                    if (widget.badge != null)
-                      Positioned(
-                        top: 10,
-                        right: 10,
-                        child: widget.badge!,
-                      ),
-                  ],
+    return Container(
+      color: bg,
+      child: SafeArea(
+        bottom: false,
+        child: Container(
+          height: preferredSize.height,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 1. TITLE - Identical to Finance Header Title TextStyle
+              Text(
+                titleText,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
                 ),
               ),
-            ),
+
+              // 2. ACTION BUTTONS - Identical to Finance Action Button Containers
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Chat Button (Identical style to Finance Notification button)
+                  GestureDetector(
+                    onTap: () => Get.to(() => const ChatListScreen()),
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: border),
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            size: 22,
+                            color: textPrimary,
+                          ),
+                          if (hasUnreadMessages)
+                            Positioned(
+                              top: 9,
+                              right: 9,
+                              child: Container(
+                                width: 7,
+                                height: 7,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.communityAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  // Notification Button (Exact Finance Notification button)
+                  GestureDetector(
+                    onTap: () => Get.to(() => const NotificationScreen()),
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: border),
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            Icons.notifications_none_rounded,
+                            size: 22,
+                            color: textPrimary,
+                          ),
+                          if (hasUnreadNotifications)
+                            Positioned(
+                              top: 9,
+                              right: 9,
+                              child: Container(
+                                width: 7,
+                                height: 7,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.communityAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  // Profile Avatar Button (Exact 42x42 size target)
+                  AppAvatar(
+                    imageUrl: userAvatarUrl,
+                    name: userName,
+                    size: 42,
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

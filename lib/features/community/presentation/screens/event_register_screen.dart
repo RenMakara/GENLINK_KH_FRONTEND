@@ -43,18 +43,27 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final textMuted = isDark ? Colors.white54 : AppColors.lightTextMuted;
+    final textMutedSubtle = isDark ? Colors.white38 : AppColors.lightTextMuted;
+    final bgPrimary = Theme.of(context).scaffoldBackgroundColor;
+    final cardBg = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? Colors.white10 : AppColors.lightBorderSubtle;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF080808),
+      backgroundColor: bgPrimary,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF080808),
+        backgroundColor: bgPrimary,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           "Register for Event",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
         ),
       ),
       body: SingleChildScrollView(
@@ -66,9 +75,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.04),
+                color: cardBg,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white10),
+                border: Border.all(color: borderSubtle),
               ),
               child: Row(
                 children: [
@@ -89,20 +98,20 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                       children: [
                         Text(
                           widget.eventData['title'] as String? ?? 'Flutter Workshop 2026',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: textPrimary,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
+                        Text(
                           "📅 25 July 2026 • 9:00 AM - 4:00 PM",
-                          style: TextStyle(color: Colors.white54, fontSize: 11),
+                          style: TextStyle(color: textMuted, fontSize: 11),
                         ),
-                        const Text(
+                        Text(
                           "📍 ACLEDA University, Phnom Penh",
-                          style: TextStyle(color: Colors.white38, fontSize: 10),
+                          style: TextStyle(color: textMutedSubtle, fontSize: 10),
                         ),
                       ],
                     ),
@@ -114,10 +123,11 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             const SizedBox(height: 20),
 
             // Form Input Fields
-            _buildInputField("Full Name *", _fullNameController),
+            _buildInputField(context, "Full Name *", _fullNameController),
             const SizedBox(height: 14),
 
             _buildDropdownField(
+              context,
               "University *",
               selectedUniversity,
               universities,
@@ -126,6 +136,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             const SizedBox(height: 14),
 
             _buildDropdownField(
+              context,
               "Faculty *",
               selectedFaculty,
               faculties,
@@ -134,6 +145,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             const SizedBox(height: 14),
 
             _buildDropdownField(
+              context,
               "Year of Study *",
               selectedYear,
               studyYears,
@@ -141,10 +153,10 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             ),
             const SizedBox(height: 14),
 
-            _buildInputField("Email *", _emailController),
+            _buildInputField(context, "Email *", _emailController),
             const SizedBox(height: 14),
 
-            _buildInputField("Phone Number *", _phoneController),
+            _buildInputField(context, "Phone Number *", _phoneController),
             const SizedBox(height: 16),
 
             // Checkbox Terms
@@ -159,7 +171,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                   child: RichText(
                     text: TextSpan(
                       text: "I agree to the event ",
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      style: TextStyle(color: textSecondary, fontSize: 12),
                       children: const [
                         TextSpan(
                           text: "terms and conditions",
@@ -207,29 +219,35 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     );
   }
 
-  Widget _buildInputField(String label, TextEditingController controller) {
+  Widget _buildInputField(BuildContext context, String label, TextEditingController controller) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final inputBg = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightBgSecondary;
+    final borderSubtle = isDark ? Colors.white10 : AppColors.lightBorderSubtle;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+          style: TextStyle(color: textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: textPrimary),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.04),
+            fillColor: inputBg,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white10),
+              borderSide: BorderSide(color: borderSubtle),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.white10),
+              borderSide: BorderSide(color: borderSubtle),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -242,32 +260,40 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
   }
 
   Widget _buildDropdownField(
+    BuildContext context,
     String label,
     String currentValue,
     List<String> items,
     ValueChanged<String?> onChanged,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final inputBg = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightBgSecondary;
+    final dropdownBg = isDark ? const Color(0xFF18181B) : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? Colors.white10 : AppColors.lightBorderSubtle;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+          style: TextStyle(color: textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.04),
+            color: inputBg,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white10),
+            border: Border.all(color: borderSubtle),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: currentValue,
               isExpanded: true,
-              dropdownColor: const Color(0xFF18181B),
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              dropdownColor: dropdownBg,
+              style: TextStyle(color: textPrimary, fontSize: 14),
               items: items.map((item) {
                 return DropdownMenuItem<String>(
                   value: item,

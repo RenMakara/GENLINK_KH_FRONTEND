@@ -9,6 +9,7 @@ import '../../../../core/network/interceptors/language_interceptor.dart';
 import '../../../../core/storage/local_storage.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../../../core/theme/theme_controller.dart';
+import '../../../../main_controller.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../data/services/google_auth_service_impl.dart';
@@ -40,6 +41,7 @@ class AuthBinding extends Bindings {
       ThemeController(localStorage: localStorage),
       permanent: true,
     );
+    Get.put<MainController>(MainController(), permanent: true);
 
     // ── HTTP stack ──────────────────────────────────────────────────────
     final dio = DioProvider.create();

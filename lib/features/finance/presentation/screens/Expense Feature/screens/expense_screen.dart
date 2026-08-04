@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/widgets/expense_widget.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Expense%20Feature/widget/expense_widget.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Expense%20Feature/screens/expense_add_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Expense%20Feature/screens/expense_detail_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Expense%20Feature/screens/expense_history_screen.dart';
 
 class ExpenseScreen extends StatefulWidget {
   const ExpenseScreen({super.key});
@@ -80,13 +83,40 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
                   const SizedBox(width: 8),
 
-                  Text(
-                    'Expenses',
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.4,
+                  Expanded(
+                    child: Text(
+                      'Expenses',
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                  ),
+
+                  // Add Expense button
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AddExpenseScreen(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: primaryColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.add_rounded,
+                        color: inverseText,
+                        size: 22,
+                      ),
                     ),
                   ),
                 ],
@@ -321,60 +351,125 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Recent Expenses',
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Recent Expenses',
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ExpenseHistoryScreen(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            'See All →',
+                            style: TextStyle(
+                              color: textMuted,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
 
                     const SizedBox(height: 8),
 
-                    ExpenseItem(
-                      icon: Icons.receipt_long_outlined,
-                      title: 'Grab Food',
-                      subtitle: 'Today · 12:30 PM · Food',
-                      amount: '-\$8.50',
-                      iconColor: textMuted,
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ExpenseDetailScreen(),
+                          ),
+                        );
+                      },
+                      child: ExpenseItem(
+                        icon: Icons.receipt_long_outlined,
+                        title: 'Grab Food',
+                        subtitle: 'Today · 12:30 PM · Food',
+                        amount: '-\$8.50',
+                        iconColor: textMuted,
+                        textPrimary: textPrimary,
+                        textMuted: textMuted,
+                      ),
                     ),
 
-                    ExpenseItem(
-                      icon: Icons.directions_bus_outlined,
-                      title: 'Bus Pass',
-                      subtitle: 'Today · 8:00 AM · Transport',
-                      amount: '-\$1.25',
-                      iconColor: textMuted,
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ExpenseDetailScreen(),
+                          ),
+                        );
+                      },
+                      child: ExpenseItem(
+                        icon: Icons.directions_bus_outlined,
+                        title: 'Bus Pass',
+                        subtitle: 'Today · 8:00 AM · Transport',
+                        amount: '-\$1.25',
+                        iconColor: textMuted,
+                        textPrimary: textPrimary,
+                        textMuted: textMuted,
+                      ),
                     ),
 
-                    ExpenseItem(
-                      icon: Icons.menu_book_outlined,
-                      title: 'Textbooks',
-                      subtitle: 'Yesterday · Study',
-                      amount: '-\$45.00',
-                      iconColor: textMuted,
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ExpenseDetailScreen(),
+                          ),
+                        );
+                      },
+                      child: ExpenseItem(
+                        icon: Icons.menu_book_outlined,
+                        title: 'Textbooks',
+                        subtitle: 'Yesterday · Study',
+                        amount: '-\$45.00',
+                        iconColor: textMuted,
+                        textPrimary: textPrimary,
+                        textMuted: textMuted,
+                      ),
                     ),
 
-                    ExpenseItem(
-                      icon: Icons.bolt_outlined,
-                      title: 'Electricity',
-                      subtitle: 'Jun 1 · Bills',
-                      amount: '-\$36.00',
-                      iconColor: textMuted,
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
-                      showDivider: false,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ExpenseDetailScreen(),
+                          ),
+                        );
+                      },
+                      child: ExpenseItem(
+                        icon: Icons.bolt_outlined,
+                        title: 'Electricity',
+                        subtitle: 'Jun 1 · Bills',
+                        amount: '-\$36.00',
+                        iconColor: textMuted,
+                        textPrimary: textPrimary,
+                        textMuted: textMuted,
+                        showDivider: false,
+                      ),
                     ),
                   ],
                 ),
               ),
+
+              const SizedBox(height: 70),
             ],
           ),
         ),

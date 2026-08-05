@@ -1,7 +1,11 @@
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart' show ImageSource;
 
 import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/widgets/dialogs/app_dialog.dart';
+import '../../../media/domain/entities/media_entity.dart';
+import '../../../media/domain/media_upload_service.dart';
+import '../../../media/presentation/media_picker.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../../domain/repositories/profile_repository.dart';
 
@@ -100,6 +104,36 @@ class ProfileController extends GetxController {
       profile.value = await _repository.updateAvatar(avatarUrl);
     });
   }
+
+  /// Pick a photo, upload it, and set it as the avatar.
+  ///
+  /// One call for the whole flow so the screen only has to show
+  /// [avatarUploadProgress]. Returns false if the user cancelled or any step
+  /// failed — the error is surfaced by [_save] as a snackbar.
+  Future<bool> pickAndUploadAvatar({
+    ImageSource source = ImageSource.gallery,
+  }) async {
+    final picked = await Get.find<MediaPicker>().pickImage(source: source);
+    if (picked == null) return false; // cancelled — not an error
+
+    avatarUploadProgress.value = 0;
+    final ok = await _save(() async {
+      final media = await Get.find<MediaUploadService>().upload(
+        bytes: picked.bytes,
+        contentType: picked.contentType,
+        purpose: MediaPurpose.avatar,
+        width: picked.width,
+        height: picked.height,
+        onProgress: (fraction) => avatarUploadProgress.value = fraction,
+      );
+      profile.value = await _repository.updateAvatarFromMedia(media.mediaId);
+    });
+    avatarUploadProgress.value = null;
+    return ok;
+  }
+
+  /// 0.0 → 1.0 while an avatar upload is in flight, null when idle.
+  final avatarUploadProgress = RxnDouble();
 
   /// Earned badges first, then locked ones — the achievements row shows
   /// what the user has before what they can still get.

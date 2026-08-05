@@ -42,6 +42,15 @@ dependencies:
   google_sign_in: ^7.2.0
   image_picker: ^1.1.2
 
+  # ==============================
+  # Media upload
+  # ==============================
+  # SHA-256 of the file, sent at presign so the backend can record an integrity
+  # checksum. Already present transitively; declared here because we use it
+  # directly. Compression uses image_picker's built-in imageQuality/maxWidth,
+  # so no extra native dependency is needed.
+  crypto: ^3.0.0
+
 
 dev_dependencies:
   flutter_test:

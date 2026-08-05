@@ -31,6 +31,21 @@ class ProfileRemoteDatasource {
     );
   }
 
+  /// Set the avatar from a confirmed upload.
+  ///
+  /// Sends `avatarMediaId` rather than a URL: the server resolves it to the
+  /// object's CDN url, which proves the avatar points at a real upload the
+  /// caller owns. A client-supplied URL cannot make that guarantee.
+  Future<ProfileEntity> updateAvatarFromMedia(String mediaId) {
+    return _client.post(
+      ApiEndpoints.profileAvatar,
+      body: {'avatarMediaId': mediaId},
+      parse: (data) => ProfileMapper.profile(ApiClient.asMap(data)),
+    );
+  }
+
+  /// Set the avatar from a URL we did not upload — the picture returned by
+  /// Google sign-in, for example.
   Future<ProfileEntity> updateAvatar(String avatarUrl) {
     return _client.post(
       ApiEndpoints.profileAvatar,

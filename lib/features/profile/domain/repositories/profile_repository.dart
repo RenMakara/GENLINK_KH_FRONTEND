@@ -25,6 +25,9 @@ abstract class ProfileRepository {
 
   Future<ProfileEntity> updateAvatar(String avatarUrl);
 
+  /// Set the avatar from a confirmed media upload, resolved server-side.
+  Future<ProfileEntity> updateAvatarFromMedia(String mediaId);
+
   Future<PublicProfileEntity> getPublicProfile(String username);
 
   // ── Settings ──────────────────────────────────────────────────────────

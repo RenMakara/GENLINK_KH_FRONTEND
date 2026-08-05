@@ -70,6 +70,10 @@ class ProfileRepositoryImpl implements ProfileRepository {
       _remote.updateAvatar(avatarUrl);
 
   @override
+  Future<ProfileEntity> updateAvatarFromMedia(String mediaId) =>
+      _remote.updateAvatarFromMedia(mediaId);
+
+  @override
   Future<PublicProfileEntity> getPublicProfile(String username) =>
       _remote.getPublicProfile(username);
 

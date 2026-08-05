@@ -24,6 +24,16 @@ abstract final class ApiEndpoints {
   static const me = '$_base/auth/me';
   static const logout = '$_base/auth/logout';
 
+  // ── Media ─────────────────────────────────────────────────────────────
+  //
+  // Only presign/confirm/url/delete are ours. The upload itself PUTs to the
+  // absolute `uploadUrl` returned by presign, which points at the storage
+  // provider — never at this API.
+  static const mediaPresign = '$_base/media/presign';
+  static const mediaConfirm = '$_base/media/confirm';
+  static String mediaUrl(String mediaId) => '$_base/media/$mediaId/url';
+  static String mediaItem(String mediaId) => '$_base/media/$mediaId';
+
   // ── Profile ───────────────────────────────────────────────────────────
   static const profileMe = '$_base/profile/me';
   static const profileAvatar = '$_base/profile/avatar';

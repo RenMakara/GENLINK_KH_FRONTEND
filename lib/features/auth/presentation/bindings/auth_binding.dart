@@ -10,6 +10,10 @@ import '../../../../core/storage/local_storage.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../../main_controller.dart';
+import '../../../media/data/datasources/media_remote_datasource.dart';
+import '../../../media/data/repositories/media_repository_impl.dart';
+import '../../../media/domain/media_upload_service.dart';
+import '../../../media/presentation/media_picker.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../data/services/google_auth_service_impl.dart';
@@ -66,8 +70,18 @@ class AuthBinding extends Bindings {
       ErrorInterceptor(),
     ]);
 
-    Get.put<ApiClient>(ApiClient(dio), permanent: true);
+    final apiClient = ApiClient(dio);
+    Get.put<ApiClient>(apiClient, permanent: true);
     Get.put<AuthRepository>(authRepository, permanent: true);
+
+    // ── Media ───────────────────────────────────────────────────────────
+    // Registered here rather than in a feature binding because avatar,
+    // posts, stories and events all upload through the same service.
+    Get.put<MediaUploadService>(
+      MediaUploadService(MediaRepositoryImpl(MediaRemoteDatasource(apiClient))),
+      permanent: true,
+    );
+    Get.put<MediaPicker>(MediaPicker(), permanent: true);
 
     // ── Controller ──────────────────────────────────────────────────────
     Get.put<AuthController>(

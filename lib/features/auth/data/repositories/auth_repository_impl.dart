@@ -18,32 +18,8 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    try {
-      final model = await _remote.login(email: email, password: password);
-      return _mapToSession(model);
-    } catch (_) {
-      // Offline Demo Fallback when backend is not connected
-      return AuthSession(
-        accessToken: 'mock_access_token_123',
-        refreshToken: 'mock_refresh_token_123',
-        tokenType: 'Bearer',
-        user: UserEntity(
-          id: 'user_1',
-          fullName: 'Enat',
-          username: 'enat_kh',
-          email: email.isNotEmpty ? email : 'enat@genlink.kh',
-          avatarUrl: 'https://i.pravatar.cc/150?img=32',
-          universityName: 'RUPP University',
-          active: true,
-          emailVerified: true,
-          accountStatus: 'ACTIVE',
-          preferredLanguage: 'en',
-          role: 'USER',
-          totalXp: 150,
-          level: 3,
-        ),
-      );
-    }
+    final model = await _remote.login(email: email, password: password);
+    return _mapToSession(model);
   }
 
   @override

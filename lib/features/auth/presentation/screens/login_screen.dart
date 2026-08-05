@@ -7,7 +7,6 @@ import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/buttons/google_sign_in_button.dart';
 import '../../../../design_system/widgets/inputs/app_input.dart';
-import '../../domain/entities/user_entity.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/auth_scaffold.dart';
 
@@ -34,64 +33,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
-    final email = _email.text.trim().isNotEmpty ? _email.text.trim() : 'makara.it@gmail.com';
-    final password = _password.text.isNotEmpty ? _password.text : '12345678';
-    
-    _auth.isAuthenticated.value = true;
-    _auth.currentUser.value ??= const UserEntity(
-      id: 'user_me',
-      fullName: 'Sokny Enat',
-      username: 'sokny_enat',
-      email: 'sokny@genlink.kh',
-      avatarUrl: 'assets/images/user_profile.png',
-      universityName: 'ACLEDA University of Business',
-      active: true,
-      emailVerified: true,
-      accountStatus: 'ACTIVE',
-      preferredLanguage: 'en',
-      role: 'USER',
-      totalXp: 250,
-      level: 5,
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    // Navigate only when the backend actually authenticated us. The controller
+    // sets isAuthenticated and currentUser from the real session and surfaces
+    // any failure through errorMessage, so nothing is forced here.
+    final success = await _auth.login(
+      email: _email.text.trim(),
+      password: _password.text,
     );
-
-    try {
-      await _auth.login(
-        email: email,
-        password: password,
-      );
-    } catch (_) {}
-
-    _auth.isAuthenticated.value = true;
-    Get.offAllNamed<void>(AppRoutes.home);
+    if (success) Get.offAllNamed<void>(AppRoutes.home);
   }
 
   /// Google is both sign-in and sign-up: the backend creates the account
-  /// when the email is new, so this always lands on home.
+  /// when the email is new, so a success always lands on home.
   Future<void> _signInWithGoogle() async {
     FocusScope.of(context).unfocus();
-    _auth.isAuthenticated.value = true;
-    _auth.currentUser.value ??= const UserEntity(
-      id: 'user_me',
-      fullName: 'Sokny Enat',
-      username: 'sokny_enat',
-      email: 'sokny@genlink.kh',
-      avatarUrl: 'assets/images/user_profile.png',
-      universityName: 'ACLEDA University of Business',
-      active: true,
-      emailVerified: true,
-      accountStatus: 'ACTIVE',
-      preferredLanguage: 'en',
-      role: 'USER',
-      totalXp: 250,
-      level: 5,
-    );
-
-    try {
-      await _auth.signInWithGoogle();
-    } catch (_) {}
-
-    _auth.isAuthenticated.value = true;
-    Get.offAllNamed<void>(AppRoutes.home);
+    final success = await _auth.signInWithGoogle();
+    if (success) Get.offAllNamed<void>(AppRoutes.home);
   }
 
   @override

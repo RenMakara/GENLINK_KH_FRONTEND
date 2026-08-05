@@ -189,7 +189,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 AppInput(
                   label: 'auth.username'.tr,
                   controller: _username,
-                  prefixIcon: Icons.alternate_email,
                   validator: Validators.username,
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -225,7 +224,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 AppInput(
                   label: 'profile.universityWorkplace'.tr,
                   controller: _university,
-                  prefixIcon: Icons.apartment_outlined,
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 Center(
@@ -239,7 +237,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   label: 'profile.linkedIn'.tr,
                   controller: _linkedInUrl,
                   keyboardType: TextInputType.url,
-                  prefixIcon: Icons.link,
                   hint: 'https://linkedin.com/in/…',
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -247,7 +244,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   label: 'profile.website'.tr,
                   controller: _websiteUrl,
                   keyboardType: TextInputType.url,
-                  prefixIcon: Icons.public,
                   hint: 'https://…',
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -255,7 +251,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   label: 'GitHub',
                   controller: _githubUrl,
                   keyboardType: TextInputType.url,
-                  prefixIcon: Icons.code,
                   hint: 'https://github.com/…',
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -263,7 +258,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   label: 'Telegram',
                   controller: _telegramUrl,
                   keyboardType: TextInputType.url,
-                  prefixIcon: Icons.send_rounded,
                   hint: 'https://t.me/…',
                 ),
                 const SizedBox(height: AppSpacing.xl),

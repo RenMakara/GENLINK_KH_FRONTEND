@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart' show ImageSource;
 
 import '../../../../core/utils/validators.dart';
 import '../../../../design_system/radius/app_radius.dart';
@@ -283,94 +284,117 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
 /// Dashed drop-zone for the avatar.
 ///
-/// There is no upload endpoint yet — the backend takes an `avatarUrl` —
-/// so tapping opens a dialog to paste a URL rather than pretending to
-/// open a file picker.
+/// Tapping picks a photo from the gallery or camera, uploads it, and sets it
+/// as the avatar in one step — the picture is chosen from the device, never
+/// pasted as a URL. The upload progress replaces the icon while it runs.
 class _AvatarPicker extends StatelessWidget {
   const _AvatarPicker({required this.controller, required this.onChanged});
 
+  /// Mirrors the avatar url so the parent form can tell whether it changed.
   final TextEditingController controller;
   final VoidCallback onChanged;
+
+  ProfileController get _profile => Get.find<ProfileController>();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final url = controller.text.trim();
 
-    return InkWell(
-      onTap: () => _promptForUrl(context),
-      borderRadius: BorderRadius.circular(AppRadius.xl),
-      child: DashedBorder(
-        radius: AppRadius.xl,
-        color: scheme.outline.withValues(alpha: 0.5),
-        child: Container(
-        height: 148,
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(AppRadius.xl),
+    return Obx(() {
+      final url = _profile.profile.value?.avatarUrl ?? controller.text.trim();
+      final progress = _profile.avatarUploadProgress.value;
+      final uploading = progress != null;
+
+      return InkWell(
+        onTap: uploading ? null : () => _pickSource(context),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: DashedBorder(
+          radius: AppRadius.xl,
+          color: scheme.outline.withValues(alpha: 0.5),
+          child: Container(
+            height: 148,
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (uploading)
+                  SizedBox(
+                    height: 44,
+                    width: 44,
+                    child: CircularProgressIndicator(
+                      // Determinate: a large photo on a slow connection
+                      // deserves a real bar, not an endless spinner.
+                      value: progress > 0 ? progress : null,
+                      strokeWidth: 3,
+                    ),
+                  )
+                else if (url.isEmpty)
+                  Container(
+                    height: 44,
+                    width: 44,
+                    decoration: BoxDecoration(
+                      color: scheme.primary,
+                      borderRadius: BorderRadius.circular(AppRadius.md + 4),
+                    ),
+                    child: Icon(
+                      Icons.photo_camera_outlined,
+                      size: 20,
+                      color: scheme.onPrimary,
+                    ),
+                  )
+                else
+                  AppAvatar(imageUrl: url, size: 64),
+                const SizedBox(height: AppSpacing.sm + 2),
+                Text(
+                  uploading
+                      ? '${(progress * 100).round()}%'
+                      : 'profile.updatePicture'.tr,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
+      );
+    });
+  }
+
+  /// Gallery or camera, then upload. Cancelling at either step is silent —
+  /// backing out of a picker is not an error.
+  Future<void> _pickSource(BuildContext context) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (url.isEmpty)
-              Container(
-                height: 44,
-                width: 44,
-                decoration: BoxDecoration(
-                  color: scheme.primary,
-                  borderRadius: BorderRadius.circular(AppRadius.md + 4),
-                ),
-                child: Icon(
-                  Icons.photo_camera_outlined,
-                  size: 20,
-                  color: scheme.onPrimary,
-                ),
-              )
-            else
-              AppAvatar(imageUrl: url, size: 64),
-            const SizedBox(height: AppSpacing.sm + 2),
-            Text(
-              'profile.updatePicture'.tr,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurface.withValues(alpha: 0.6),
-              ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: Text('profile.chooseFromGallery'.tr),
+              onTap: () =>
+                  Navigator.of(sheetContext).pop(ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: Text('profile.takePhoto'.tr),
+              onTap: () => Navigator.of(sheetContext).pop(ImageSource.camera),
             ),
           ],
         ),
-        ),
       ),
     );
-  }
+    if (source == null) return;
 
-  Future<void> _promptForUrl(BuildContext context) async {
-    final draft = TextEditingController(text: controller.text);
-    final result = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('profile.avatarUrl'.tr),
-        content: TextField(
-          controller: draft,
-          autofocus: true,
-          keyboardType: TextInputType.url,
-          decoration: const InputDecoration(hintText: 'https://…'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text('common.cancel'.tr),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.of(dialogContext).pop(draft.text.trim()),
-            child: Text('common.done'.tr),
-          ),
-        ],
-      ),
-    );
-    draft.dispose();
-    if (result != null) {
-      controller.text = result;
+    final uploaded = await _profile.pickAndUploadAvatar(source: source);
+    if (uploaded) {
+      // Keep the form's copy in step so _submit does not re-send the avatar.
+      controller.text = _profile.profile.value?.avatarUrl ?? '';
       onChanged();
     }
   }

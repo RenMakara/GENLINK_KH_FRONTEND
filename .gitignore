@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Golden-test diff artifacts. Regenerated on every failed comparison and
+# meaningful only on the machine that produced them.
+test/golden/failures/

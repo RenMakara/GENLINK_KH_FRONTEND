@@ -528,6 +528,55 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                     ],
                   ),
                 ),
+                if (!widget.post.isOwner) ...[
+                  InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => widget.controller.toggleFollowUser(widget.post.userId),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: widget.post.isFollowing
+                            ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05))
+                            : AppColors.communityAccent.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: widget.post.isFollowing
+                              ? borderSubtle
+                              : AppColors.communityAccent.withValues(alpha: 0.50),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            widget.post.isFollowing
+                                ? Icons.check_rounded
+                                : Icons.add_rounded,
+                            size: 13,
+                            color: widget.post.isFollowing
+                                ? textSecondary
+                                : AppColors.communityAccent,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            widget.post.isFollowing ? 'community.following'.tr : 'community.follow'.tr,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: widget.post.isFollowing
+                                  ? textSecondary
+                                  : AppColors.communityAccent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                ],
                 IconButton(
                   icon: Icon(Icons.more_vert_rounded, color: actionIconColor, size: 20),
                   onPressed: () => _showMoreMenu(context),

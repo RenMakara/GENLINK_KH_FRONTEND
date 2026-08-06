@@ -26,6 +26,7 @@ class CommunityPostModel {
   int get repostsCount => sharesCount;
   bool isLiked;
   bool isBookmarked;
+  bool isFollowing;
   final bool isOwner;
   final String visibility;
   final String community;
@@ -57,6 +58,7 @@ class CommunityPostModel {
     this.sharesCount = 0,
     this.isLiked = false,
     this.isBookmarked = false,
+    this.isFollowing = false,
     this.isOwner = false,
     this.visibility = 'Public',
     this.community = 'All GenLink',
@@ -89,6 +91,7 @@ class CommunityPostModel {
     int? sharesCount,
     bool? isLiked,
     bool? isBookmarked,
+    bool? isFollowing,
     bool? isOwner,
     String? visibility,
     String? community,
@@ -119,6 +122,7 @@ class CommunityPostModel {
       sharesCount: sharesCount ?? this.sharesCount,
       isLiked: isLiked ?? this.isLiked,
       isBookmarked: isBookmarked ?? this.isBookmarked,
+      isFollowing: isFollowing ?? this.isFollowing,
       isOwner: isOwner ?? this.isOwner,
       visibility: visibility ?? this.visibility,
       community: community ?? this.community,

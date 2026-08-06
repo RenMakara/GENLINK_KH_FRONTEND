@@ -172,6 +172,8 @@ class AppTranslations extends Translations {
     'community.hourAgo': '@hourh ago',
     'community.yesterday': 'Yesterday',
     'community.today': 'Today',
+    'community.follow': 'Follow',
+    'community.following': 'Following',
 
     // ── Home ────────────────────────────────────────────────────────────
     'date.weekdays': 'Mon,Tue,Wed,Thu,Fri,Sat,Sun',
@@ -569,6 +571,8 @@ class AppTranslations extends Translations {
     'community.hourAgo': '@hour ម៉ោងមុន',
     'community.yesterday': 'ម្សិលមិញ',
     'community.today': 'ថ្ងៃនេះ',
+    'community.follow': 'តាមដាន',
+    'community.following': 'បានតាមដាន',
 
     // ── Home ────────────────────────────────────────────────────────────
     'date.weekdays': 'ចន្ទ,អង្គារ,ពុធ,ព្រហ,សុក្រ,សៅរ៍,អាទិត្យ',

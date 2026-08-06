@@ -23,7 +23,10 @@ abstract final class ProfileMapper {
       accountStatus: json['accountStatus'] as String? ?? 'PENDING',
       totalXp: (json['totalXp'] as num?)?.toInt() ?? 0,
       level: (json['level'] as num?)?.toInt() ?? 1,
-      preferredLanguage: json['preferredLanguage'] as String? ?? 'KHMER',
+      // English is the system default (backend APP_DEFAULT_LANGUAGE=ENGLISH,
+      // LocalizationService, UserSettingsEntity). Defaulting to KHMER here
+      // silently flipped the whole UI to Khmer whenever the field was absent.
+      preferredLanguage: json['preferredLanguage'] as String? ?? 'ENGLISH',
     );
   }
 

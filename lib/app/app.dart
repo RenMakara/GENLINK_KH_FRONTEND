@@ -49,7 +49,10 @@ class GenLinkKhApp extends StatelessWidget {
         fallbackLocale: LocalizationService.fallbackLocale,
 
         // Routing
-        initialRoute: AppRoutes.home,
+        // Splash, not home: it is what restores the session and decides where
+        // the user actually belongs (home / onboarding / login). Starting at
+        // home skips that decision and shows the app to a signed-out user.
+        initialRoute: AppRoutes.splash,
         getPages: AppPages.pages,
         unknownRoute: AppPages.unknownRoute,
       ),

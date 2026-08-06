@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'features/community/presentation/bindings/community_binding.dart';
 import 'features/community/presentation/screens/community_screen.dart';
 import 'features/community/presentation/screens/create_post_screen.dart';
-import 'features/finance/presentation/screens/finance_screen.dart';
+import 'features/finance/presentation/screens/Finance Home/screens/finance_screen.dart';
 import 'features/home/presentation/bindings/home_binding.dart';
 import 'features/home/presentation/screens/home_screen.dart';
 import 'features/profile/presentation/bindings/profile_binding.dart';

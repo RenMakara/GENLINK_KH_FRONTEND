@@ -39,20 +39,15 @@ class _LoginScreenState extends State<LoginScreen> {
       email: _email.text.trim(),
       password: _password.text,
     );
-
-    if (success) {
-      Get.offAllNamed<void>(AppRoutes.home);
-    }
+    if (success) Get.offAllNamed<void>(AppRoutes.home);
   }
 
   /// Google is both sign-in and sign-up: the backend creates the account
-  /// when the email is new, so this always lands on home.
+  /// when the email is new, so a success always lands on home.
   Future<void> _signInWithGoogle() async {
     FocusScope.of(context).unfocus();
     final success = await _auth.signInWithGoogle();
-    if (success) {
-      Get.offAllNamed<void>(AppRoutes.home);
-    }
+    if (success) Get.offAllNamed<void>(AppRoutes.home);
   }
 
   Future<void> _demoLogin() async {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import 'event_register_screen.dart';
 
@@ -168,7 +169,7 @@ class EventDetailsScreen extends StatelessWidget {
 
                       // About This Event Section
                       Text(
-                        "About This Event",
+                        'community.aboutThisEvent'.tr,
                         style: TextStyle(
                           color: textPrimary,
                           fontSize: 18,
@@ -217,9 +218,9 @@ class EventDetailsScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    "Register Now",
-                    style: TextStyle(
+                  child: Text(
+                    'community.registerNow'.tr,
+                    style: const TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,

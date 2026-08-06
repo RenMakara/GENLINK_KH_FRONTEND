@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import 'event_details_screen.dart';
 import 'event_register_screen.dart';
@@ -146,7 +147,7 @@ class _EventsScreenState extends State<EventsScreen> {
                         controller: _searchController,
                         style: TextStyle(color: textPrimary),
                         decoration: InputDecoration(
-                          hintText: "Search events...",
+                          hintText: 'community.searchEventsHint'.tr,
                           hintStyle: TextStyle(color: textMuted),
                           prefixIcon: Icon(Icons.search, color: textMuted),
                           filled: true,
@@ -181,7 +182,7 @@ class _EventsScreenState extends State<EventsScreen> {
                           children: [
                             Icon(Icons.tune, color: textPrimary, size: 18),
                             const SizedBox(width: 6),
-                            Text("Filter", style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
+                            Text('community.filterEvents'.tr, style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ),

@@ -200,7 +200,7 @@ class CommunityScreen extends GetView<CommunityController> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          "What's happening in your community, Sokny?",
+                          'community.whatsHappeningSokny'.tr,
                           style: theme.textTheme.bodyMedium?.copyWith(
                                 color: textMuted,
                               ) ??
@@ -258,7 +258,7 @@ class CommunityScreen extends GetView<CommunityController> {
                       Text(
                         controller.errorMessage.value.isNotEmpty
                             ? controller.errorMessage.value
-                            : 'Could not load feed',
+                            : 'community.couldNotLoadFeed'.tr,
                         style: theme.textTheme.bodyMedium?.copyWith(color: textSecondary) ??
                             TextStyle(color: textSecondary, fontSize: 14),
                         textAlign: TextAlign.center,
@@ -267,7 +267,7 @@ class CommunityScreen extends GetView<CommunityController> {
                       ElevatedButton.icon(
                         onPressed: () => controller.fetchPosts(),
                         icon: const Icon(Icons.refresh, size: 18),
-                        label: const Text('Retry'),
+                        label: Text('common.retry'.tr),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.communityAccent,
                           foregroundColor: textPrimary,
@@ -283,7 +283,7 @@ class CommunityScreen extends GetView<CommunityController> {
                   padding: const EdgeInsets.all(AppSpacing.xl),
                   child: Center(
                     child: Text(
-                      'No community posts yet.',
+                      'community.noPostsYet'.tr,
                       style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
                           TextStyle(color: textMuted),
                     ),
@@ -367,7 +367,7 @@ class CommunityScreen extends GetView<CommunityController> {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      "Search Discussions & Topics...",
+                      'community.searchDiscussions'.tr,
                       style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
                           TextStyle(color: textMuted, fontSize: 14),
                     ),
@@ -380,7 +380,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Trending Topics
             Text(
-              "🔥 Trending Topics",
+              'community.trendingTopics'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -442,7 +442,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Forum Categories
             Text(
-              "Forum Categories",
+              'community.forumCategories'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -489,7 +489,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Pinned & Latest Discussions List
             Text(
-              "📌 Pinned Discussions",
+              'community.pinnedDiscussions'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -571,7 +571,7 @@ class CommunityScreen extends GetView<CommunityController> {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      "Search Jobs, Internships & Mentors...",
+                      'community.searchJobs'.tr,
                       style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
                           TextStyle(color: textMuted, fontSize: 14),
                     ),
@@ -584,7 +584,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Recommended Opportunities Hero List
             Text(
-              "🎯 Recommended Opportunities",
+              'community.recommendedOpportunities'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -615,7 +615,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Campus Alumni Mentors
             Text(
-              "👨‍🏫 Campus Alumni Mentors",
+              'community.campusAlumniMentors'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -722,7 +722,7 @@ class CommunityScreen extends GetView<CommunityController> {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            "Search Events & Workshops...",
+                            'community.searchEventsHint'.tr,
                             style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
                                 TextStyle(color: textMuted, fontSize: 14),
                           ),
@@ -763,7 +763,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Featured Events Carousel
             Text(
-              "🌟 Featured Events",
+              'community.featuredEvents'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -850,7 +850,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Event List
             Text(
-              "📅 Upcoming Events",
+              'community.upcomingEvents'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,

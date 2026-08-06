@@ -88,7 +88,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
         backgroundColor: surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.squircle)),
         title: Text(
-          "Delete Post?",
+          'community.deletePost'.tr,
           style: theme.textTheme.titleMedium?.copyWith(
                 color: textPrimary,
                 fontWeight: FontWeight.bold,
@@ -99,7 +99,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
               ),
         ),
         content: Text(
-          "Are you sure you want to delete this post? This action can be undone briefly.",
+          'community.deletePostConfirm'.tr,
           style: theme.textTheme.bodyMedium?.copyWith(color: textSecondary) ??
               TextStyle(color: textSecondary),
         ),
@@ -107,7 +107,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(
-              "Cancel",
+              'common.cancel'.tr,
               style: theme.textTheme.labelMedium?.copyWith(color: textSecondary) ??
                   TextStyle(color: textSecondary),
             ),
@@ -131,7 +131,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
             ),
             child: Text(
-              "Delete",
+              'common.delete'.tr,
               style: theme.textTheme.labelMedium?.copyWith(
                     color: AppColors.darkTextPrimary,
                     fontWeight: FontWeight.bold,

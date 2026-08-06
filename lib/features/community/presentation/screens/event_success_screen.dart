@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 
 class EventSuccessScreen extends StatelessWidget {
@@ -47,7 +48,7 @@ class EventSuccessScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               Text(
-                "Registration Successful!",
+                'community.registrationSuccessful'.tr,
                 style: TextStyle(
                   color: textPrimary,
                   fontSize: 22,
@@ -56,7 +57,7 @@ class EventSuccessScreen extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                "You have successfully registered for",
+                'community.registeredSuccessfullySub'.tr,
                 style: TextStyle(color: textMuted, fontSize: 13),
               ),
 
@@ -117,21 +118,21 @@ class EventSuccessScreen extends StatelessWidget {
               _buildActionTile(
                 context: context,
                 icon: Icons.confirmation_number_outlined,
-                title: "View Ticket",
+                title: 'community.viewTicket'.tr,
                 onTap: () {},
               ),
               const SizedBox(height: 10),
               _buildActionTile(
                 context: context,
                 icon: Icons.calendar_today_outlined,
-                title: "Add to Calendar",
+                title: 'community.addToCalendar'.tr,
                 onTap: () {},
               ),
               const SizedBox(height: 10),
               _buildActionTile(
                 context: context,
                 icon: Icons.chat_bubble_outline,
-                title: "Open Event Chat",
+                title: 'community.openEventChat'.tr,
                 onTap: () {},
               ),
 
@@ -151,9 +152,9 @@ class EventSuccessScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    "Back to Events",
-                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
+                  child: Text(
+                    'community.backToEvents'.tr,
+                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
               ),

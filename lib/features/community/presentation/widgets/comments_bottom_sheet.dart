@@ -90,7 +90,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Comments",
+                  'community.comments'.tr,
                   style: theme.textTheme.titleMedium?.copyWith(
                         color: textPrimary,
                         fontWeight: FontWeight.bold,

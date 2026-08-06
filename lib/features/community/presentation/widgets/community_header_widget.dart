@@ -84,7 +84,7 @@ class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidg
                     backgroundColor: surface,
                     borderColor: border,
                     iconColor: textPrimary,
-                    tooltip: 'Search',
+                    tooltip: 'community.search'.tr,
                   ),
 
                   const SizedBox(width: AppSpacing.sm),
@@ -98,7 +98,7 @@ class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidg
                     backgroundColor: surface,
                     borderColor: border,
                     iconColor: textPrimary,
-                    tooltip: 'Chat',
+                    tooltip: 'community.chat'.tr,
                   ),
 
                   const SizedBox(width: AppSpacing.sm),
@@ -112,7 +112,7 @@ class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidg
                     backgroundColor: surface,
                     borderColor: border,
                     iconColor: textPrimary,
-                    tooltip: 'Notifications',
+                    tooltip: 'community.notifications'.tr,
                   ),
                 ],
               ),

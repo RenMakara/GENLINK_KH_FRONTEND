@@ -196,13 +196,13 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Recent Searches",
+                  'community.recentSearches'.tr,
                   style: TextStyle(color: textPrimary, fontSize: 13.5, fontWeight: FontWeight.bold),
                 ),
                 GestureDetector(
                   onTap: _clearAllRecentSearches,
                   child: Text(
-                    "Clear",
+                    'community.clear'.tr,
                     style: TextStyle(color: textSecondary, fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -243,7 +243,7 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
 
           // ── 2. Trending Topics (Compact Chips) ──
           Text(
-            "🔥 Trending",
+            'community.trending'.tr,
             style: TextStyle(color: textPrimary, fontSize: 13.5, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
@@ -403,13 +403,13 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
               Icon(Icons.search_off_rounded, color: textMuted, size: 48),
               const SizedBox(height: 12),
               Text(
-                "No results found.",
+                'community.noResultsFound'.tr,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: textPrimary, fontSize: 14.5, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               Text(
-                "Try searching for another keyword.",
+                'community.trySearchingAnother'.tr,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: textMuted, fontSize: 12.5),
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import 'event_success_screen.dart';
 
@@ -62,7 +63,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "Register for Event",
+          'community.registerForEvent'.tr,
           style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
         ),
       ),
@@ -123,12 +124,12 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             const SizedBox(height: 20),
 
             // Form Input Fields
-            _buildInputField(context, "Full Name *", _fullNameController),
+            _buildInputField(context, 'community.fullNameReq'.tr, _fullNameController),
             const SizedBox(height: 14),
 
             _buildDropdownField(
               context,
-              "University *",
+              'community.universityReq'.tr,
               selectedUniversity,
               universities,
               (val) => setState(() => selectedUniversity = val!),
@@ -137,7 +138,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
 
             _buildDropdownField(
               context,
-              "Faculty *",
+              'community.facultyReq'.tr,
               selectedFaculty,
               faculties,
               (val) => setState(() => selectedFaculty = val!),
@@ -146,17 +147,17 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
 
             _buildDropdownField(
               context,
-              "Year of Study *",
+              'community.yearOfStudyReq'.tr,
               selectedYear,
               studyYears,
               (val) => setState(() => selectedYear = val!),
             ),
             const SizedBox(height: 14),
 
-            _buildInputField(context, "Email *", _emailController),
+            _buildInputField(context, 'community.emailReq'.tr, _emailController),
             const SizedBox(height: 14),
 
-            _buildInputField(context, "Phone Number *", _phoneController),
+            _buildInputField(context, 'community.phoneNumberReq'.tr, _phoneController),
             const SizedBox(height: 16),
 
             // Checkbox Terms
@@ -170,12 +171,12 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                 Expanded(
                   child: RichText(
                     text: TextSpan(
-                      text: "I agree to the event ",
+                      text: 'community.iAgreeTerms'.tr,
                       style: TextStyle(color: textSecondary, fontSize: 12),
-                      children: const [
+                      children: [
                         TextSpan(
-                          text: "terms and conditions",
-                          style: TextStyle(color: Color(0xFF8B5CF6), fontWeight: FontWeight.bold),
+                          text: 'community.termsAndConditions'.tr,
+                          style: const TextStyle(color: Color(0xFF8B5CF6), fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -205,9 +206,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text(
-                  "Confirm Registration",
-                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
+                child: Text(
+                  'community.confirmRegistration'.tr,
+                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
             ),

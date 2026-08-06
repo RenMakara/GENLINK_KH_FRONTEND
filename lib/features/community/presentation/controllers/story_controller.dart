@@ -91,6 +91,21 @@ class StoryController extends GetxController {
     }
   }
 
+  void markStoryAsViewed(String storyId) {
+    bool modified = false;
+    for (final group in storyGroups) {
+      for (final story in group.stories) {
+        if (story.id == storyId && !story.isViewed) {
+          story.isViewed = true;
+          modified = true;
+        }
+      }
+    }
+    if (modified) {
+      storyGroups.refresh();
+    }
+  }
+
   void toggleLike(String storyId) {
     for (final group in storyGroups) {
       for (final story in group.stories) {

@@ -329,7 +329,7 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Text(
-                                "Photo",
+                                'community.photo'.tr,
                                 style: TextStyle(
                                   color: !_isVideoMode ? Colors.black : Colors.white70,
                                   fontWeight: FontWeight.bold,
@@ -349,7 +349,7 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Text(
-                                "Video",
+                                'community.video'.tr,
                                 style: TextStyle(
                                   color: _isVideoMode ? Colors.white : Colors.white70,
                                   fontWeight: FontWeight.bold,
@@ -372,7 +372,7 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                         TextButton.icon(
                           onPressed: _isCapturing ? null : () => _captureMedia(instantPost: true),
                           icon: const Icon(Icons.photo_library_rounded, color: Colors.white, size: 20),
-                          label: const Text("Gallery", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                          label: Text('community.gallery'.tr, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
                           style: TextButton.styleFrom(
                             backgroundColor: Colors.white.withValues(alpha: 0.12),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

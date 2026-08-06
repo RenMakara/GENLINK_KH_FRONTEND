@@ -214,8 +214,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
   late AnimationController _likeBtnAnimController;
   late Animation<double> _likeBtnScaleAnim;
   late Animation<double> _unlikeBtnScaleAnim;
-  late Animation<double> _likeBtnTranslateYAnim;
-  late Animation<double> _likeBtnRotationAnim;
 
   late AnimationController _floatingHeartAnimController;
   late Animation<double> _floatingHeartScaleAnim;
@@ -224,6 +222,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
 
   bool _isLikeAnimating = false;
   bool _isLikePressed = false;
+  bool _isMorePressed = false;
 
   StoryGroupModel? get _currentGroup {
     if (_currentGroupIdx < 0 || _currentGroupIdx >= widget.groups.length) return null;
@@ -251,32 +250,34 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     // Dedicated 335ms sequence animation for Like/Unlike icon button (Scale + Upward Translation + Rotation)
     _likeBtnAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 335),
+      duration: const Duration(milliseconds: 240),
     );
 
-    // Like sequence: 0.85 -> 1.20 -> 1.00
+    // Modern TikTok / IG Spring Scale Pop: 1.00 -> 0.80 -> 1.28 -> 1.00
     _likeBtnScaleAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 1.00, end: 0.85).chain(CurveTween(curve: Curves.easeOut)), weight: 25),
-      TweenSequenceItem(tween: Tween<double>(begin: 0.85, end: 1.20).chain(CurveTween(curve: Curves.easeOutBack)), weight: 45),
-      TweenSequenceItem(tween: Tween<double>(begin: 1.20, end: 1.00).chain(CurveTween(curve: Curves.fastOutSlowIn)), weight: 30),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.00, end: 0.80).chain(CurveTween(curve: Curves.easeOutQuad)),
+        weight: 30,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.80, end: 1.28).chain(CurveTween(curve: const Cubic(0.175, 0.885, 0.32, 1.275))),
+        weight: 45,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.28, end: 1.00).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 25,
+      ),
     ]).animate(_likeBtnAnimController);
 
-    // Unlike sequence: 1.00 -> 0.90 -> 1.00
     _unlikeBtnScaleAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 1.00, end: 0.90).chain(CurveTween(curve: Curves.easeOut)), weight: 50),
-      TweenSequenceItem(tween: Tween<double>(begin: 0.90, end: 1.00).chain(CurveTween(curve: Curves.easeInCubic)), weight: 50),
-    ]).animate(_likeBtnAnimController);
-
-    // Subtle 8px upward movement on Like pop
-    _likeBtnTranslateYAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 0.0, end: -8.0).chain(CurveTween(curve: Curves.easeOutBack)), weight: 60),
-      TweenSequenceItem(tween: Tween<double>(begin: -8.0, end: 0.0).chain(CurveTween(curve: Curves.fastOutSlowIn)), weight: 40),
-    ]).animate(_likeBtnAnimController);
-
-    // Subtle 2.5 degree (~0.045 rad) rotation on Like pop
-    _likeBtnRotationAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 0.0, end: -0.045).chain(CurveTween(curve: Curves.easeOut)), weight: 50),
-      TweenSequenceItem(tween: Tween<double>(begin: -0.045, end: 0.0).chain(CurveTween(curve: Curves.easeIn)), weight: 50),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.00, end: 0.90).chain(CurveTween(curve: Curves.easeOutQuad)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.90, end: 1.00).chain(CurveTween(curve: Curves.easeInCubic)),
+        weight: 50,
+      ),
     ]).animate(_likeBtnAnimController);
 
     // Floating Canvas Feedback Heart Animation (Instagram / Facebook Style: Rises & Fades Out over 730ms)
@@ -306,7 +307,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     if (_currentGroup == null || _currentGroup!.stories.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _closeViewer());
     } else {
-      _startStoryTimer();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_isClosing) {
+          _startStoryTimer();
+        }
+      });
     }
   }
 
@@ -319,9 +324,20 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     super.dispose();
   }
 
+  void _markCurrentStoryViewed() {
+    final story = _currentStory;
+    if (story != null) {
+      story.isViewed = true;
+      if (Get.isRegistered<StoryController>()) {
+        Get.find<StoryController>().markStoryAsViewed(story.id);
+      }
+    }
+  }
+
   void _closeViewer() {
     if (_isClosing) return;
     _isClosing = true;
+    _markCurrentStoryViewed();
     _progressAnimController.stop();
     Get.back();
   }
@@ -351,6 +367,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
   void _startStoryTimer() {
     _progressAnimController.stop();
     final story = _currentStory;
+    _markCurrentStoryViewed();
     final duration = _calculateStoryDuration(story);
     _progressAnimController.duration = duration;
     _progressAnimController.reset();
@@ -505,14 +522,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     final story = _currentStory;
     if (story == null) return;
     _toggleLike(story);
-  }
-
-  String _formatReplyHint(String userName) {
-    if (userName.length > 14) {
-      final truncated = '${userName.substring(0, 11)}...';
-      return 'Send message to $truncated';
-    }
-    return 'Send message to $userName...';
   }
 
   Widget _buildStoryReplyThumbnail(StoryItemModel story) {
@@ -1586,168 +1595,320 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     _pauseStory();
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        decoration: const BoxDecoration(
-          color: Color(0xFF141414),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            if (group.isOwner) ...[
-              // ── MY STORY OPTIONS ──
-              ListTile(
-                leading: const Icon(Icons.bar_chart_rounded, color: Colors.white),
-                title: const Text("View Insights", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("See story views and analytics", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _showViewersSheet();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.archive_outlined, color: Colors.white),
-                title: const Text("Archive Story", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Move story to your private archive", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  AppNotificationBanner.showSuccess(
-                    context: context,
-                    title: "Story Archived",
-                    message: "Story moved to your archive.",
-                    icon: Icons.archive_rounded,
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.download_rounded, color: Colors.white),
-                title: const Text("Save Story", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Save story photo/video to phone gallery", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  AppNotificationBanner.showSuccess(
-                    context: context,
-                    title: "Story Saved",
-                    message: "Story media saved to your device gallery!",
-                    icon: Icons.download_done_rounded,
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.link_rounded, color: Colors.white),
-                title: const Text("Copy Story Link", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Copy story URL to clipboard", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Clipboard.setData(ClipboardData(text: "https://genlink.app/story/${story.id}"));
-                  AppNotificationBanner.showSuccess(
-                    context: context,
-                    title: "Link Copied",
-                    message: "Story link copied to clipboard!",
-                    icon: Icons.copy_rounded,
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: AppColors.danger),
-                title: const Text("Delete Story", style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Permanently remove this story", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  final bool? confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (dialogCtx) => AlertDialog(
-                      backgroundColor: const Color(0xFF1E1E1E),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-                      title: const Text("Delete Story?", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17)),
-                      content: const Text("This story will be permanently deleted.", style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14)),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogCtx, false),
-                          child: const Text("Cancel", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.danger,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                          ),
-                          onPressed: () => Navigator.pop(dialogCtx, true),
-                          child: const Text("Delete", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (confirmed == true && mounted) {
-                    final controller = Get.find<StoryController>();
-                    controller.deleteStory(story.id);
-                    _closeViewer();
-                    AppNotificationBanner.showSuccess(
-                      context: context,
-                      title: "✓ Story Deleted",
-                      message: "Your story has been permanently deleted.",
-                      icon: Icons.check_circle_rounded,
-                    );
-                  }
-                },
-              ),
-            ] else ...[
-              // ── OTHER USER'S STORY OPTIONS ──
-              ListTile(
-                leading: const Icon(Icons.link_rounded, color: Colors.white),
-                title: const Text("Copy Story Link", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Copy direct link to share anywhere", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Clipboard.setData(ClipboardData(text: "https://genlink.app/story/${story.id}"));
-                  AppNotificationBanner.showSuccess(
-                    context: context,
-                    title: "Link Copied",
-                    message: "Story link copied to clipboard!",
-                    icon: Icons.copy_rounded,
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.flag_outlined, color: Colors.white),
-                title: const Text("Report Story", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Report inappropriate content or spam", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _openReportStorySheet(group, story);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.volume_off_outlined, color: Colors.white),
-                title: const Text("Mute Stories", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Stop seeing stories from this user", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _openMuteConfirmationDialog(group);
-                },
+      builder: (ctx) => SafeArea(
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.82,
+          ),
+          decoration: const BoxDecoration(
+            color: Color(0xFF141414),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black54,
+                blurRadius: 20,
+                spreadRadius: 2,
               ),
             ],
-          ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Sheet Header Title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Text(
+                      group.isOwner ? "Manage Your Story" : "Story Options",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Divider(color: Colors.white10, height: 1),
+              const SizedBox(height: 8),
+
+              // Scrollable Options List
+              Flexible(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                  child: Column(
+                    children: [
+                      if (group.isOwner) ...[
+                        // ── MY STORY OPTIONS ──
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.edit_outlined,
+                          title: "Edit Story",
+                          subtitle: "Modify story text, layers, or background",
+                          onTap: () {
+                            AppNotificationBanner.showInfo(
+                              context: context,
+                              title: "Edit Story",
+                              message: "Story editor ready for modifications.",
+                              icon: Icons.edit_rounded,
+                            );
+                          },
+                        ),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.lock_outline_rounded,
+                          title: "Story Privacy",
+                          subtitle: "Who can see your story (Public)",
+                          onTap: () {
+                            AppNotificationBanner.showInfo(
+                              context: context,
+                              title: "Story Privacy",
+                              message: "Story visibility set to Public.",
+                              icon: Icons.lock_outline_rounded,
+                            );
+                          },
+                        ),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.bar_chart_rounded,
+                          title: "Story Insights",
+                          subtitle: "See viewers, likes, and story analytics",
+                          onTap: () {
+                            _showViewersSheet();
+                          },
+                        ),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.download_rounded,
+                          title: "Save to Device",
+                          subtitle: "Save story photo/video to phone gallery",
+                          onTap: () {
+                            AppNotificationBanner.showSuccess(
+                              context: context,
+                              title: "Story Saved",
+                              message: "Story media saved to your device gallery!",
+                              icon: Icons.download_done_rounded,
+                            );
+                          },
+                        ),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.delete_outline,
+                          title: "Delete Story",
+                          subtitle: "Permanently remove this story",
+                          isDanger: true,
+                          onTap: () async {
+                            final bool? confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (dialogCtx) => AlertDialog(
+                                backgroundColor: const Color(0xFF1E1E1E),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                                title: const Text("Delete Story?", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17)),
+                                content: const Text("This story will be permanently deleted.", style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14)),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(dialogCtx, false),
+                                    child: const Text("Cancel", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.danger,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                                    ),
+                                    onPressed: () => Navigator.pop(dialogCtx, true),
+                                    child: const Text("Delete", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirmed == true && mounted) {
+                              final controller = Get.find<StoryController>();
+                              controller.deleteStory(story.id);
+                              _closeViewer();
+                              AppNotificationBanner.showSuccess(
+                                context: context,
+                                title: "✓ Story Deleted",
+                                message: "Your story has been permanently deleted.",
+                                icon: Icons.check_circle_rounded,
+                              );
+                            }
+                          },
+                        ),
+                      ] else ...[
+                        // ── OTHER USER'S STORY OPTIONS ──
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.near_me_outlined,
+                          title: "Share Story",
+                          subtitle: "Share to Campus Group or friends",
+                          onTap: () {
+                            _openStoryShareSheet(group, story);
+                          },
+                        ),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.link_rounded,
+                          title: "Copy Story Link",
+                          subtitle: "Copy direct link to share anywhere",
+                          onTap: () {
+                            Clipboard.setData(ClipboardData(text: "https://genlink.app/story/${story.id}"));
+                            AppNotificationBanner.showSuccess(
+                              context: context,
+                              title: "Link Copied",
+                              message: "Story link copied to clipboard!",
+                              icon: Icons.copy_rounded,
+                            );
+                          },
+                        ),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.flag_outlined,
+                          title: "Report Story",
+                          subtitle: "Report inappropriate content or spam",
+                          onTap: () {
+                            _openReportStorySheet(group, story);
+                          },
+                        ),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.volume_off_outlined,
+                          title: "Mute Stories",
+                          subtitle: "Stop seeing stories from this user",
+                          onTap: () {
+                            _openMuteConfirmationDialog(group);
+                          },
+                        ),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.block_rounded,
+                          title: "Block User",
+                          subtitle: "Block this user from contacting you",
+                          isDanger: true,
+                          onTap: () async {
+                            final bool? confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (dialogCtx) => AlertDialog(
+                                backgroundColor: const Color(0xFF1E1E1E),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                                title: Text("Block ${group.userName}?", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17)),
+                                content: const Text("They won't be able to see your stories or posts.", style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14)),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(dialogCtx, false),
+                                    child: const Text("Cancel", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.danger,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                                    ),
+                                    onPressed: () => Navigator.pop(dialogCtx, true),
+                                    child: const Text("Block", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirmed == true && mounted) {
+                              _closeViewer();
+                              AppNotificationBanner.showSuccess(
+                                context: context,
+                                title: "User Blocked",
+                                message: "You will no longer see stories from ${group.userName}.",
+                                icon: Icons.block_rounded,
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     ).then((_) => _resumeStory());
+  }
+
+  Widget _buildMenuOptionTile({
+    required BuildContext ctx,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool isDanger = false,
+  }) {
+    final titleColor = isDanger ? AppColors.danger : Colors.white;
+    final iconColor = isDanger ? AppColors.danger : Colors.white;
+    final iconBg = isDanger
+        ? AppColors.danger.withValues(alpha: 0.15)
+        : Colors.white.withValues(alpha: 0.08);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: iconBg,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: iconColor, size: 18),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: titleColor,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.45),
+            fontSize: 11.5,
+          ),
+        ),
+        onTap: () {
+          Navigator.pop(ctx);
+          onTap();
+        },
+      ),
+    );
   }
 
   Widget _buildErrorMediaPlaceholder() {
@@ -2514,48 +2675,64 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                       // Clean Header Row (Avatar, User Name, Timestamp, Location, Menu, Close)
                       Row(
                         children: [
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundImage: group.userAvatar.startsWith('assets/')
-                                ? AssetImage(group.userAvatar) as ImageProvider
-                                : NetworkImage(group.userAvatar),
+                          Hero(
+                            tag: 'story_avatar_${group.userId}',
+                            child: CircleAvatar(
+                              radius: 18,
+                              backgroundImage: group.userAvatar.startsWith('assets/')
+                                  ? AssetImage(group.userAvatar) as ImageProvider
+                                  : NetworkImage(group.userAvatar),
+                            ),
                           ),
                           const SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    group.userName,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        group.userName,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    story.timeAgo,
-                                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                              if (story.location != null)
-                                Text(
-                                  story.location!,
-                                  style: const TextStyle(color: AppColors.communityAccent, fontSize: 11, fontWeight: FontWeight.w600),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      story.timeAgo,
+                                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                    ),
+                                  ],
                                 ),
-                            ],
+                                if (story.location != null)
+                                  Text(
+                                    story.location!,
+                                    style: const TextStyle(
+                                      color: AppColors.communityAccent,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
+                            ),
                           ),
-                          const Spacer(),
+                          const SizedBox(width: 8),
                           if (group.isOwner) ...[
                             IconButton(
                               constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                               icon: const Icon(Icons.more_vert, color: Colors.white, size: 22),
                               onPressed: _showMoreMenu,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 4),
                           ],
                           IconButton(
                             constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
@@ -2578,60 +2755,79 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
               child: SafeArea(
                 top: false,
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 10),
+                  padding: const EdgeInsets.only(left: 14, right: 14, bottom: 12),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       if (group.isOwner) ...[
-                        // ── Owner Actions: Single Viewers Pill on Bottom-Left ──
+                        // ── Owner Actions: Viewers Pill Button ──
                         InkWell(
+                          borderRadius: BorderRadius.circular(22),
                           onTap: _showViewersSheet,
                           child: Container(
-                            height: 46,
+                            height: 44,
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.65),
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
                             ),
                             child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Icon(Icons.remove_red_eye_outlined, color: Colors.white, size: 18),
                                 const SizedBox(width: 8),
                                 Text(
                                   "${story.viewersCount} Viewers",
-                                  style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                         ),
                       ] else ...[
-                        // ── Viewer Actions: Interactive Reply Pill Button, Like, & Share Buttons ──
+                        // ── Viewer Actions: Ultra-Lightweight Comment Capsule ──
                         Expanded(
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.circular(19),
                             onTap: () => _openStoryReplySheet(group, story),
                             child: Container(
-                              height: 46,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              height: 38,
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.55),
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                                color: Colors.black.withValues(alpha: 0.35),
+                                borderRadius: BorderRadius.circular(19),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  width: 0.5,
+                                ),
                               ),
                               child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white70, size: 18),
+                                  Icon(
+                                    Icons.chat_bubble_outline_rounded,
+                                    color: Colors.white.withValues(alpha: 0.50),
+                                    size: 15,
+                                  ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      _formatReplyHint(group.userName),
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 13.5,
-                                        overflow: TextOverflow.ellipsis,
+                                      'community.writeCommentHint'.tr.length > 15
+                                          ? "Comment..."
+                                          : 'community.writeCommentHint'.tr,
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.45),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w400,
+                                        letterSpacing: 0.1,
                                       ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
@@ -2640,67 +2836,68 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                           ),
                         ),
 
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
 
-                        // Premium Multi-Effect Interactive Like Button (Press compression + Scale sequence + Upward float + Subtle tilt)
+                        // ── Modern 2026 Instagram-Style Frosted Glass Like Button ──
                         GestureDetector(
+                          behavior: HitTestBehavior.opaque,
                           onTapDown: (_) => setState(() => _isLikePressed = true),
                           onTapUp: (_) => setState(() => _isLikePressed = false),
                           onTapCancel: () => setState(() => _isLikePressed = false),
                           onTap: () => _toggleLike(story),
                           child: AnimatedScale(
-                            scale: _isLikePressed ? 0.93 : 1.0,
+                            scale: _isLikePressed ? 0.85 : 1.0,
                             duration: const Duration(milliseconds: 100),
-                            curve: Curves.easeOut,
+                            curve: Curves.easeOutCubic,
                             child: AnimatedBuilder(
                               animation: _likeBtnAnimController,
                               builder: (context, child) {
                                 final currentScale = story.isLiked
                                     ? _likeBtnScaleAnim.value
                                     : _unlikeBtnScaleAnim.value;
-                                final currentTranslateY = story.isLiked ? _likeBtnTranslateYAnim.value : 0.0;
-                                final currentRotation = story.isLiked ? _likeBtnRotationAnim.value : 0.0;
 
-                                return Transform.translate(
-                                  offset: Offset(0, currentTranslateY),
-                                  child: Transform.rotate(
-                                    angle: currentRotation,
-                                    child: Transform.scale(
-                                      scale: currentScale,
-                                      child: Container(
-                                        width: 44,
-                                        height: 44,
-                                        decoration: BoxDecoration(
-                                          color: story.isLiked
-                                              ? AppColors.danger.withValues(alpha: 0.20)
-                                              : Colors.black.withValues(alpha: 0.55),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: story.isLiked
-                                                ? AppColors.danger.withValues(alpha: 0.60)
-                                                : Colors.white.withValues(alpha: 0.20),
-                                            width: 1.2,
-                                          ),
+                                return Transform.scale(
+                                  scale: currentScale,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 180),
+                                    curve: Curves.easeOutCubic,
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: story.isLiked
+                                          ? const Color(0xFFFF2A55).withValues(alpha: 0.22)
+                                          : Colors.white.withValues(alpha: 0.12),
+                                      shape: BoxShape.circle,
+                                      border: story.isLiked
+                                          ? Border.all(color: const Color(0xFFFF2A55).withValues(alpha: 0.50), width: 1.0)
+                                          : null,
+                                      boxShadow: story.isLiked
+                                          ? [
+                                              BoxShadow(
+                                                color: const Color(0xFFFF2A55).withValues(alpha: 0.35),
+                                                blurRadius: 12,
+                                                spreadRadius: 1,
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                    child: Center(
+                                      child: AnimatedCrossFade(
+                                        duration: const Duration(milliseconds: 180),
+                                        crossFadeState: story.isLiked
+                                            ? CrossFadeState.showSecond
+                                            : CrossFadeState.showFirst,
+                                        firstChild: const Icon(
+                                          Icons.favorite_border_rounded,
+                                          key: ValueKey("unliked_heart_icon"),
+                                          color: Colors.white,
+                                          size: 20,
                                         ),
-                                        child: Center(
-                                          child: AnimatedCrossFade(
-                                            duration: const Duration(milliseconds: 265),
-                                            crossFadeState: story.isLiked
-                                                ? CrossFadeState.showSecond
-                                                : CrossFadeState.showFirst,
-                                            firstChild: const Icon(
-                                              Icons.favorite_border_rounded,
-                                              key: ValueKey("unliked_heart_icon"),
-                                              color: Colors.white,
-                                              size: 22,
-                                            ),
-                                            secondChild: const Icon(
-                                              Icons.favorite_rounded,
-                                              key: ValueKey("liked_heart_icon"),
-                                              color: AppColors.danger,
-                                              size: 22,
-                                            ),
-                                          ),
+                                        secondChild: const Icon(
+                                          Icons.favorite_rounded,
+                                          key: ValueKey("liked_heart_icon"),
+                                          color: Color(0xFFFF2A55),
+                                          size: 20,
                                         ),
                                       ),
                                     ),
@@ -2713,22 +2910,38 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
 
                         const SizedBox(width: 10),
 
-                        // Share Icon Button (✈️)
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.55),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
-                          ),
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            onPressed: () => _openStoryShareSheet(group, story),
-                            icon: const Icon(
-                              Icons.near_me_outlined,
-                              color: Colors.white,
-                              size: 22,
+                        // More Menu Button (38x38)
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTapDown: (_) => setState(() => _isMorePressed = true),
+                          onTapUp: (_) => setState(() => _isMorePressed = false),
+                          onTapCancel: () => setState(() => _isMorePressed = false),
+                          onTap: _showMoreMenu,
+                          child: AnimatedScale(
+                            scale: _isMorePressed ? 0.90 : 1.0,
+                            duration: const Duration(milliseconds: 120),
+                            curve: Curves.easeOutCubic,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 160),
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: _isMorePressed
+                                    ? Colors.white.withValues(alpha: 0.16)
+                                    : Colors.black.withValues(alpha: 0.35),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                  width: 0.6,
+                                ),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.more_horiz_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
                             ),
                           ),
                         ),

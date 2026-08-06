@@ -411,6 +411,9 @@ class AppTranslations extends Translations {
     'community.camera': 'Camera',
     'community.gallery': 'Gallery',
     'community.textStory': 'Text Story',
+    'community.replyingTo': 'Replying to @user',
+    'community.photo': 'Photo',
+    'community.video': 'Video',
   };
 
   static const _km = <String, String>{
@@ -805,5 +808,8 @@ class AppTranslations extends Translations {
     'community.camera': 'កាមេរ៉ា',
     'community.gallery': 'បណ្ណាល័យរូបភាព',
     'community.textStory': 'ស្តូរីអត្ថបទ',
+    'community.replyingTo': 'កំពុងឆ្លើយតបទៅ @user',
+    'community.photo': 'រូបថត',
+    'community.video': 'វីដេអូ',
   };
 }

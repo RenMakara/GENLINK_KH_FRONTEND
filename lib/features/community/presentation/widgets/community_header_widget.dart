@@ -55,69 +55,91 @@ class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidg
       color: bg,
       child: SafeArea(
         bottom: false,
-        child: Container(
-          height: preferredSize.height,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // 1. LEFT TITLE - Identical to Finance Header Title TextStyle
-              Text(
-                titleText,
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
-                ),
-              ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 360;
+            final isVeryNarrow = constraints.maxWidth < 335;
+            final buttonSize = isVeryNarrow ? 34.0 : (isNarrow ? 38.0 : 42.0);
+            final buttonGap = isVeryNarrow ? 3.0 : (isNarrow ? 5.0 : AppSpacing.sm);
+            final iconSize = isVeryNarrow ? 18.0 : (isNarrow ? 20.0 : 22.0);
+            final titleFontSize = isVeryNarrow ? 18.0 : (isNarrow ? 20.0 : 22.0);
+            final horizontalPadding = isNarrow ? 10.0 : AppSpacing.md;
 
-              // 2. RIGHT ACTION BUTTONS (Search, Chat, Notification)
-              Row(
-                mainAxisSize: MainAxisSize.min,
+            return Container(
+              height: preferredSize.height,
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Row(
                 children: [
-                  // Search Button
-                  _HeaderActionButton(
-                    icon: Icons.search_rounded,
-                    onTap: () => Get.to(() => CommunitySearchScreen(activeTab: activeCategory)),
-                    backgroundColor: surface,
-                    borderColor: border,
-                    iconColor: textPrimary,
-                    tooltip: 'community.search'.tr,
+                  // 1. LEFT TITLE - Flexible and non-overflowing
+                  Expanded(
+                    child: Text(
+                      titleText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: titleFontSize,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
                   ),
 
-                  const SizedBox(width: AppSpacing.sm),
+                  const SizedBox(width: 6),
 
-                  // Chat Button
-                  _HeaderActionButton(
-                    icon: Icons.chat_bubble_outline_rounded,
-                    onTap: () => Get.to(() => const ChatListScreen()),
-                    showBadge: hasUnreadMessages,
-                    badgeColor: AppColors.communityAccent,
-                    backgroundColor: surface,
-                    borderColor: border,
-                    iconColor: textPrimary,
-                    tooltip: 'community.chat'.tr,
-                  ),
+                  // 2. RIGHT ACTION BUTTONS (Search, Chat, Notification)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Search Button
+                      _HeaderActionButton(
+                        icon: Icons.search_rounded,
+                        onTap: () => Get.to(() => CommunitySearchScreen(activeTab: activeCategory)),
+                        backgroundColor: surface,
+                        borderColor: border,
+                        iconColor: textPrimary,
+                        buttonSize: buttonSize,
+                        iconSize: iconSize,
+                        tooltip: 'community.search'.tr,
+                      ),
 
-                  const SizedBox(width: AppSpacing.sm),
+                      SizedBox(width: buttonGap),
 
-                  // Notification Button
-                  _HeaderActionButton(
-                    icon: Icons.notifications_none_rounded,
-                    onTap: () => Get.to(() => const NotificationScreen()),
-                    showBadge: hasUnreadNotifications,
-                    badgeColor: AppColors.communityAccent,
-                    backgroundColor: surface,
-                    borderColor: border,
-                    iconColor: textPrimary,
-                    tooltip: 'community.notifications'.tr,
+                      // Chat Button
+                      _HeaderActionButton(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        onTap: () => Get.to(() => const ChatListScreen()),
+                        showBadge: hasUnreadMessages,
+                        badgeColor: AppColors.communityAccent,
+                        backgroundColor: surface,
+                        borderColor: border,
+                        iconColor: textPrimary,
+                        buttonSize: buttonSize,
+                        iconSize: iconSize,
+                        tooltip: 'community.chat'.tr,
+                      ),
+
+                      SizedBox(width: buttonGap),
+
+                      // Notification Button
+                      _HeaderActionButton(
+                        icon: Icons.notifications_none_rounded,
+                        onTap: () => Get.to(() => const NotificationScreen()),
+                        showBadge: hasUnreadNotifications,
+                        badgeColor: AppColors.communityAccent,
+                        backgroundColor: surface,
+                        borderColor: border,
+                        iconColor: textPrimary,
+                        buttonSize: buttonSize,
+                        iconSize: iconSize,
+                        tooltip: 'community.notifications'.tr,
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -134,6 +156,8 @@ class _HeaderActionButton extends StatelessWidget {
   final Color backgroundColor;
   final Color borderColor;
   final Color iconColor;
+  final double buttonSize;
+  final double iconSize;
   final String tooltip;
 
   const _HeaderActionButton({
@@ -144,6 +168,8 @@ class _HeaderActionButton extends StatelessWidget {
     required this.backgroundColor,
     required this.borderColor,
     required this.iconColor,
+    this.buttonSize = 44.0,
+    this.iconSize = 24.0,
     required this.tooltip,
   });
 
@@ -157,8 +183,8 @@ class _HeaderActionButton extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Ink(
-            width: 44,
-            height: 44,
+            width: buttonSize,
+            height: buttonSize,
             decoration: BoxDecoration(
               color: backgroundColor,
               borderRadius: BorderRadius.circular(12),
@@ -169,13 +195,13 @@ class _HeaderActionButton extends StatelessWidget {
               children: [
                 Icon(
                   icon,
-                  size: 24.0,
+                  size: iconSize,
                   color: iconColor,
                 ),
                 if (showBadge)
                   Positioned(
-                    top: 10,
-                    right: 10,
+                    top: buttonSize * 0.20,
+                    right: buttonSize * 0.20,
                     child: Container(
                       width: 7,
                       height: 7,

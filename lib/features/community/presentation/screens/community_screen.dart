@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
-import '../../../../design_system/shadows/app_shadows.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../controllers/community_controller.dart';
 import '../widgets/community_header_widget.dart';
@@ -156,7 +155,6 @@ class CommunityScreen extends GetView<CommunityController> {
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 
     return RefreshIndicator(
       onRefresh: () => controller.refreshFeed(),
@@ -173,55 +171,82 @@ class CommunityScreen extends GetView<CommunityController> {
 
             const SizedBox(height: AppSpacing.md),
 
-            // Create Post Quick Bar
+            // Create Post Quick Bar (Senior UI/UX Redesign - Finance Aligned)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               child: InkWell(
                 onTap: () => Get.to(() => const CreatePostScreen()),
-                borderRadius: BorderRadius.circular(AppRadius.squircle),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: 14,
+                    horizontal: 14,
+                    vertical: 10,
                   ),
                   decoration: BoxDecoration(
                     color: surfaceSecondary,
-                    borderRadius: BorderRadius.circular(AppRadius.squircle),
-                    border: Border.all(color: borderSubtle, width: 1.2),
-                    boxShadow: isDark ? [] : AppShadows.soft,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    boxShadow: isDark
+                        ? []
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const CircleAvatar(
-                        radius: 20,
-                        backgroundImage:
-                            AssetImage('assets/images/user_profile.png'),
+                        radius: 18,
+                        backgroundImage: AssetImage('assets/images/user_profile.png'),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
-                          'community.whatsHappeningSokny'.tr,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                                color: textMuted,
-                              ) ??
-                              TextStyle(
-                                color: textMuted,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                              ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'community.whatsHappeningSokny'.tr,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13.5,
+                                  ) ??
+                                  TextStyle(
+                                    color: textPrimary,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              'community.shareWithCommunity'.tr,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                    color: textMuted,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w400,
+                                  ) ??
+                                  TextStyle(
+                                    color: textMuted,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                            ),
+                          ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.sm),
-                        decoration: BoxDecoration(
-                          color: AppColors.communityAccent.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(AppRadius.md + 4),
-                        ),
-                        child: const Icon(
-                          Icons.photo_library_outlined,
-                          color: AppColors.communityAccent,
-                          size: 20,
-                        ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.edit_note_rounded,
+                        color: textMuted.withValues(alpha: 0.7),
+                        size: 20,
                       ),
                     ],
                   ),

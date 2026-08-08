@@ -28,63 +28,89 @@ class BottomNavBar extends StatelessWidget {
 
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
-        child: Container(
-          height: 84,
-          decoration: BoxDecoration(
-            color: theme.cardColor,
-            borderRadius: BorderRadius.circular(44),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final isNarrow = width < 360;
+          final isVeryNarrow = width < 335;
+          final barHeight = isVeryNarrow ? 74.0 : (isNarrow ? 78.0 : 84.0);
+          final horizontalPadding = isVeryNarrow ? 4.0 : (isNarrow ? 6.0 : 10.0);
+          final centerBtnSize = isVeryNarrow ? 52.0 : (isNarrow ? 56.0 : 62.0);
+          final centerIconSize = isVeryNarrow ? 24.0 : (isNarrow ? 26.0 : 28.0);
+          final navIconSize = isVeryNarrow ? 22.0 : (isNarrow ? 24.0 : 26.0);
+          final navFontSize = isVeryNarrow ? 10.0 : (isNarrow ? 11.0 : 11.5);
+
+          return Padding(
+            padding: EdgeInsets.fromLTRB(horizontalPadding, 0, horizontalPadding, 6),
+            child: Container(
+              height: barHeight,
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(44),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: _NavItem(
-                  icon: CupertinoIcons.house,
-                  activeIcon: CupertinoIcons.house_fill,
-                  label: 'nav.home'.tr,
-                  active: currentIndex == 0,
-                  onTap: () => onTap(0),
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _NavItem(
+                      icon: CupertinoIcons.house,
+                      activeIcon: CupertinoIcons.house_fill,
+                      label: 'nav.home'.tr,
+                      active: currentIndex == 0,
+                      iconSize: navIconSize,
+                      fontSize: navFontSize,
+                      onTap: () => onTap(0),
+                    ),
+                  ),
+                  Expanded(
+                    child: _NavItem(
+                      icon: CupertinoIcons.person_3,
+                      activeIcon: CupertinoIcons.person_3_fill,
+                      label: 'nav.community'.tr,
+                      active: currentIndex == 1,
+                      iconSize: navIconSize,
+                      fontSize: navFontSize,
+                      onTap: () => onTap(1),
+                    ),
+                  ),
+                  _CenterButton(
+                    onTap: onCenterTap,
+                    size: centerBtnSize,
+                    iconSize: centerIconSize,
+                  ),
+                  Expanded(
+                    child: _NavItem(
+                      icon: CupertinoIcons.chart_bar,
+                      activeIcon: CupertinoIcons.chart_bar_fill,
+                      label: 'nav.financial'.tr,
+                      active: currentIndex == 2,
+                      iconSize: navIconSize,
+                      fontSize: navFontSize,
+                      onTap: () => onTap(2),
+                    ),
+                  ),
+                  Expanded(
+                    child: _NavItem(
+                      icon: CupertinoIcons.person,
+                      activeIcon: CupertinoIcons.person_fill,
+                      label: 'nav.profile'.tr,
+                      active: currentIndex == 3,
+                      iconSize: navIconSize,
+                      fontSize: navFontSize,
+                      onTap: () => onTap(3),
+                    ),
+                  ),
+                ],
               ),
-              Expanded(
-                child: _NavItem(
-                  icon: CupertinoIcons.person_3,
-                  activeIcon: CupertinoIcons.person_3_fill,
-                  label: 'nav.community'.tr,
-                  active: currentIndex == 1,
-                  onTap: () => onTap(1),
-                ),
-              ),
-              _CenterButton(onTap: onCenterTap),
-              Expanded(
-                child: _NavItem(
-                  icon: CupertinoIcons.chart_bar,
-                  activeIcon: CupertinoIcons.chart_bar_fill,
-                  label: 'nav.financial'.tr,
-                  active: currentIndex == 2,
-                  onTap: () => onTap(2),
-                ),
-              ),
-              Expanded(
-                child: _NavItem(
-                  icon: CupertinoIcons.person,
-                  activeIcon: CupertinoIcons.person_fill,
-                  label: 'nav.profile'.tr,
-                  active: currentIndex == 3,
-                  onTap: () => onTap(3),
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -93,9 +119,15 @@ class BottomNavBar extends StatelessWidget {
 /// The raised white "+" circle: same surface as the bar, lifted by its own
 /// shadow rather than tinted grey.
 class _CenterButton extends StatelessWidget {
-  const _CenterButton({this.onTap});
-
   final VoidCallback? onTap;
+  final double size;
+  final double iconSize;
+
+  const _CenterButton({
+    this.onTap,
+    this.size = 62.0,
+    this.iconSize = 28.0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +136,7 @@ class _CenterButton extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Container(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
@@ -123,11 +155,11 @@ class _CenterButton extends StatelessWidget {
             customBorder: const CircleBorder(),
             onTap: onTap,
             child: SizedBox(
-              height: 62,
-              width: 62,
+              height: size,
+              width: size,
               child: Icon(
                 CupertinoIcons.plus,
-                size: 28,
+                size: iconSize,
                 color: scheme.onSurface,
                 semanticLabel: 'Create',
               ),
@@ -144,6 +176,8 @@ class _NavItem extends StatelessWidget {
   final IconData activeIcon;
   final String label;
   final bool active;
+  final double iconSize;
+  final double fontSize;
   final VoidCallback onTap;
 
   const _NavItem({
@@ -151,6 +185,8 @@ class _NavItem extends StatelessWidget {
     required this.activeIcon,
     required this.label,
     required this.active,
+    this.iconSize = 28.0,
+    this.fontSize = 12.0,
     required this.onTap,
   });
 
@@ -173,7 +209,7 @@ class _NavItem extends StatelessWidget {
           Icon(
             active ? activeIcon : icon,
             color: color,
-            size: 28,
+            size: iconSize,
             semanticLabel: label,
           ),
           const SizedBox(height: 3),
@@ -188,7 +224,7 @@ class _NavItem extends StatelessWidget {
                 style: TextStyle(
                   color: color,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: 12,
+                  fontSize: fontSize,
                 ),
               ),
             ),

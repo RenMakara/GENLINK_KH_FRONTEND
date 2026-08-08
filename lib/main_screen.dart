@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'features/community/presentation/bindings/community_binding.dart';
+import 'features/community/presentation/controllers/community_controller.dart';
 import 'features/community/presentation/screens/community_screen.dart';
+import 'features/community/presentation/screens/create_discussion_screen.dart';
+import 'features/community/presentation/screens/create_event_screen.dart';
+import 'features/community/presentation/screens/create_opportunity_screen.dart';
 import 'features/community/presentation/screens/create_post_screen.dart';
 import 'features/finance/presentation/screens/Finance Home/screens/finance_screen.dart';
 import 'features/home/presentation/bindings/home_binding.dart';
@@ -43,8 +47,39 @@ class _MainScreenState extends State<MainScreen> {
     CommunityBinding().dependencies();
   }
 
+  /// Context-aware "+" tap handler.
+  ///
+  /// When the user is on the Community tab (index 1), the action is determined
+  /// by which sub-tab is currently active in [CommunityController].
+  /// On any other tab, it defaults to Create Post.
   void _onCenterTap() {
-    Get.to(() => const CreatePostScreen());
+    if (controller.currentIndex.value == 1) {
+      // Currently on the Community tab — route by active community sub-tab
+      final CommunityController? commController =
+          Get.isRegistered<CommunityController>()
+              ? Get.find<CommunityController>()
+              : null;
+
+      final activeTab = commController?.selectedCategory.value ?? 'Feed';
+
+      switch (activeTab) {
+        case 'Forum':
+          Get.to(() => const CreateDiscussionScreen());
+          break;
+        case 'Career':
+          Get.to(() => const CreateOpportunityScreen());
+          break;
+        case 'Event':
+          Get.to(() => const CreateEventScreen());
+          break;
+        case 'Feed':
+        default:
+          Get.to(() => const CreatePostScreen());
+      }
+    } else {
+      // Not on Community tab — open Feed Create Post
+      Get.to(() => const CreatePostScreen());
+    }
   }
 
   @override

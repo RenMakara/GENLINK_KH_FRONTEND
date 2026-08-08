@@ -213,15 +213,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
 
   late AnimationController _likeBtnAnimController;
   late Animation<double> _likeBtnScaleAnim;
-  late Animation<double> _unlikeBtnScaleAnim;
 
   late AnimationController _floatingHeartAnimController;
   late Animation<double> _floatingHeartScaleAnim;
   late Animation<double> _floatingHeartOpacityAnim;
   late Animation<Offset> _floatingHeartTranslateAnim;
 
-  bool _isLikeAnimating = false;
-  bool _isLikePressed = false;
   bool _isMorePressed = false;
 
   StoryGroupModel? get _currentGroup {
@@ -266,17 +263,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
       TweenSequenceItem(
         tween: Tween<double>(begin: 1.28, end: 1.00).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 25,
-      ),
-    ]).animate(_likeBtnAnimController);
-
-    _unlikeBtnScaleAnim = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.00, end: 0.90).chain(CurveTween(curve: Curves.easeOutQuad)),
-        weight: 50,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.90, end: 1.00).chain(CurveTween(curve: Curves.easeInCubic)),
-        weight: 50,
       ),
     ]).animate(_likeBtnAnimController);
 
@@ -461,60 +447,21 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
   }
 
   void _toggleLike(StoryItemModel story) {
-    if (_isLikeAnimating) return; // Debounce taps during active animation
-    _isLikeAnimating = true;
-
-    final isCurrentlyLiked = story.isLiked;
-
-    // 1. Immediate Optimistic UI Update
     setState(() {
-      story.isLiked = !isCurrentlyLiked;
-      if (story.isLiked) {
-        story.viewersCount++;
-      } else if (story.viewersCount > 0) {
-        story.viewersCount--;
+      if (Get.isRegistered<StoryController>()) {
+        Get.find<StoryController>().toggleLike(story.id);
+      } else {
+        story.isLiked = !story.isLiked;
+        story.likesCount += story.isLiked ? 1 : -1;
       }
     });
 
-    // 2. Play Like Button Multi-Effect Animation (280ms: Scale + Upward Float + Rotation)
-    _likeBtnAnimController.forward(from: 0.0).then((_) {
-      if (mounted) {
-        _isLikeAnimating = false;
-      }
-    });
-
-    // 3. Elegant Floating Canvas Heart (Instagram / Facebook Style: Rises & Fades Out over 600ms)
-    if (!isCurrentlyLiked) {
+    _likeBtnAnimController.forward(from: 0.0);
+    if (story.isLiked) {
       setState(() => _showHeartAnimation = true);
       _floatingHeartAnimController.forward(from: 0.0).then((_) {
-        if (mounted) {
-          setState(() => _showHeartAnimation = false);
-        }
+        if (mounted) setState(() => _showHeartAnimation = false);
       });
-    }
-
-    // 4. Background Persistence & Error Recovery
-    try {
-      if (Get.isRegistered<StoryController>()) {
-        final controller = Get.find<StoryController>();
-        controller.toggleLike(story.id);
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          story.isLiked = isCurrentlyLiked;
-          if (isCurrentlyLiked) {
-            story.viewersCount++;
-          } else if (story.viewersCount > 0) {
-            story.viewersCount--;
-          }
-        });
-        AppNotificationBanner.showDanger(
-          context: context,
-          title: "Like Failed",
-          message: "Could not sync story reaction. Reverting...",
-        );
-      }
     }
   }
 
@@ -2838,72 +2785,46 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
 
                         const SizedBox(width: 10),
 
-                        // ── Modern 2026 Instagram-Style Frosted Glass Like Button ──
+                        // ── Modern 2026 Ultra-Smooth Frosted Glass Like Button ──
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
-                          onTapDown: (_) => setState(() => _isLikePressed = true),
-                          onTapUp: (_) => setState(() => _isLikePressed = false),
-                          onTapCancel: () => setState(() => _isLikePressed = false),
                           onTap: () => _toggleLike(story),
-                          child: AnimatedScale(
-                            scale: _isLikePressed ? 0.85 : 1.0,
-                            duration: const Duration(milliseconds: 100),
-                            curve: Curves.easeOutCubic,
-                            child: AnimatedBuilder(
-                              animation: _likeBtnAnimController,
-                              builder: (context, child) {
-                                final currentScale = story.isLiked
-                                    ? _likeBtnScaleAnim.value
-                                    : _unlikeBtnScaleAnim.value;
-
-                                return Transform.scale(
-                                  scale: currentScale,
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 180),
-                                    curve: Curves.easeOutCubic,
-                                    width: 38,
-                                    height: 38,
-                                    decoration: BoxDecoration(
-                                      color: story.isLiked
-                                          ? const Color(0xFFFF2A55).withValues(alpha: 0.22)
-                                          : Colors.white.withValues(alpha: 0.12),
-                                      shape: BoxShape.circle,
-                                      border: story.isLiked
-                                          ? Border.all(color: const Color(0xFFFF2A55).withValues(alpha: 0.50), width: 1.0)
-                                          : null,
-                                      boxShadow: story.isLiked
-                                          ? [
-                                              BoxShadow(
-                                                color: const Color(0xFFFF2A55).withValues(alpha: 0.35),
-                                                blurRadius: 12,
-                                                spreadRadius: 1,
-                                              ),
-                                            ]
-                                          : null,
-                                    ),
-                                    child: Center(
-                                      child: AnimatedCrossFade(
-                                        duration: const Duration(milliseconds: 180),
-                                        crossFadeState: story.isLiked
-                                            ? CrossFadeState.showSecond
-                                            : CrossFadeState.showFirst,
-                                        firstChild: const Icon(
-                                          Icons.favorite_border_rounded,
-                                          key: ValueKey("unliked_heart_icon"),
-                                          color: Colors.white,
-                                          size: 20,
+                          child: ScaleTransition(
+                            scale: _likeBtnScaleAnim,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              curve: Curves.easeOutCubic,
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: story.isLiked
+                                    ? const Color(0xFFFF2A55).withValues(alpha: 0.22)
+                                    : Colors.white.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                                border: story.isLiked
+                                    ? Border.all(color: const Color(0xFFFF2A55).withValues(alpha: 0.50), width: 1.0)
+                                    : null,
+                                boxShadow: story.isLiked
+                                    ? [
+                                        BoxShadow(
+                                          color: const Color(0xFFFF2A55).withValues(alpha: 0.35),
+                                          blurRadius: 12,
+                                          spreadRadius: 1,
                                         ),
-                                        secondChild: const Icon(
-                                          Icons.favorite_rounded,
-                                          key: ValueKey("liked_heart_icon"),
-                                          color: Color(0xFFFF2A55),
-                                          size: 20,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
+                                      ]
+                                    : null,
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  story.isLiked
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  color: story.isLiked
+                                      ? const Color(0xFFFF2A55)
+                                      : Colors.white,
+                                  size: 20,
+                                ),
+                              ),
                             ),
                           ),
                         ),

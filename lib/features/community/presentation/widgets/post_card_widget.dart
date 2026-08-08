@@ -390,7 +390,16 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
       decoration: BoxDecoration(
         color: surfaceSecondary,
         borderRadius: BorderRadius.circular(AppRadius.squircle),
-        border: Border.all(color: borderSubtle),
+        border: Border.all(color: borderSubtle, width: 1.0),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,167 +447,204 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                 style: theme.textTheme.titleSmall?.copyWith(
                       color: textPrimary,
                       fontWeight: FontWeight.w600,
-                      height: 1.4,
+                      height: 1.45,
                     ) ??
-                    TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w600, height: 1.4),
+                    TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w600, height: 1.45),
               ),
             ),
 
-          // Author Header Tile
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundImage: widget.post.authorAvatar.startsWith('assets/')
-                      ? AssetImage(widget.post.authorAvatar) as ImageProvider
-                      : (widget.post.authorAvatar.startsWith('http')
-                          ? NetworkImage(widget.post.authorAvatar)
-                          : null),
-                  backgroundColor: AppColors.communityAccent.withValues(alpha: 0.2),
-                  child: (!widget.post.authorAvatar.startsWith('http') && !widget.post.authorAvatar.startsWith('assets/'))
-                      ? Text(
-                          widget.post.authorAvatar.isNotEmpty ? widget.post.authorAvatar[0] : 'U',
-                          style: const TextStyle(color: AppColors.communityAccent, fontWeight: FontWeight.bold),
-                        )
-                      : null,
+          // Author Header Tile - Adaptive for 320px to 430px+
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 360;
+              final isVeryNarrow = constraints.maxWidth < 330;
+              final avatarRadius = isVeryNarrow ? 17.0 : (isNarrow ? 19.0 : 21.0);
+              final headerGap = isVeryNarrow ? 6.0 : (isNarrow ? 8.0 : 12.0);
+              final authorFontSize = isVeryNarrow ? 13.5 : (isNarrow ? 14.5 : 15.5);
+              final followPaddingH = isVeryNarrow ? 6.0 : (isNarrow ? 8.0 : 10.0);
+              final followPaddingV = isVeryNarrow ? 3.5 : (isNarrow ? 4.0 : 5.0);
+              final followFontSize = isVeryNarrow ? 10.0 : 11.0;
+
+              return Padding(
+                padding: EdgeInsets.fromLTRB(
+                  isNarrow ? 10.0 : AppSpacing.md,
+                  isNarrow ? 10.0 : AppSpacing.md,
+                  isNarrow ? 4.0 : AppSpacing.sm,
+                  8,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: avatarRadius,
+                      backgroundImage: widget.post.authorAvatar.startsWith('assets/')
+                          ? AssetImage(widget.post.authorAvatar) as ImageProvider
+                          : (widget.post.authorAvatar.startsWith('http')
+                              ? NetworkImage(widget.post.authorAvatar)
+                              : null),
+                      backgroundColor: AppColors.communityAccent.withValues(alpha: 0.18),
+                      child: (!widget.post.authorAvatar.startsWith('http') && !widget.post.authorAvatar.startsWith('assets/'))
+                          ? Text(
+                              widget.post.authorAvatar.isNotEmpty ? widget.post.authorAvatar[0] : 'U',
+                              style: const TextStyle(color: AppColors.communityAccent, fontWeight: FontWeight.bold),
+                            )
+                          : null,
+                    ),
+                    SizedBox(width: headerGap),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Flexible(
-                            child: Text(
-                              widget.post.authorName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                    color: textPrimary,
-                                    fontWeight: FontWeight.bold,
-                                  ) ??
-                                  TextStyle(
-                                    color: textPrimary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
-                            ),
-                          ),
-                          if (widget.post.isVerified) ...[
-                            const SizedBox(width: 4),
-                            const Icon(Icons.verified, color: AppColors.communityAccent, size: 14),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Text(
-                            _formatTimeAgo(widget.post.timeAgo),
-                            style: theme.textTheme.labelSmall?.copyWith(color: textMuted) ??
-                                TextStyle(color: textMuted, fontSize: 11),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Flexible(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? AppColors.darkSurfacePrimary
-                                    : AppColors.lightBgSecondary,
-                                borderRadius: BorderRadius.circular(AppRadius.sm + 2),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  widget.post.authorName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                        color: textPrimary,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: authorFontSize,
+                                        letterSpacing: -0.2,
+                                      ) ??
+                                      TextStyle(
+                                        color: textPrimary,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: authorFontSize,
+                                        letterSpacing: -0.2,
+                                      ),
+                                ),
                               ),
-                              child: Text(
-                                widget.post.community,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              if (widget.post.isVerified) ...[
+                                const SizedBox(width: 4),
+                                const Icon(Icons.verified, color: AppColors.communityAccent, size: 14),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Text(
+                                _formatTimeAgo(widget.post.timeAgo),
                                 style: theme.textTheme.labelSmall?.copyWith(
-                                      color: textSecondary,
-                                      fontSize: 10,
+                                      color: textMuted,
+                                      fontSize: isVeryNarrow ? 10.5 : 11.5,
                                     ) ??
-                                    TextStyle(color: textSecondary, fontSize: 10),
+                                    TextStyle(color: textMuted, fontSize: isVeryNarrow ? 10.5 : 11.5),
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                if (!widget.post.isOwner) ...[
-                  InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () => widget.controller.toggleFollowUser(widget.post.userId),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOutCubic,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: widget.post.isFollowing
-                            ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05))
-                            : AppColors.communityAccent.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: widget.post.isFollowing
-                              ? borderSubtle
-                              : AppColors.communityAccent.withValues(alpha: 0.50),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            widget.post.isFollowing
-                                ? Icons.check_rounded
-                                : Icons.add_rounded,
-                            size: 13,
-                            color: widget.post.isFollowing
-                                ? textSecondary
-                                : AppColors.communityAccent,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            widget.post.isFollowing ? 'community.following'.tr : 'community.follow'.tr,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: widget.post.isFollowing
-                                  ? textSecondary
-                                  : AppColors.communityAccent,
-                            ),
+                              const SizedBox(width: 4),
+                              Text('·', style: TextStyle(color: textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? AppColors.darkSurfacePrimary
+                                        : AppColors.lightBgSecondary,
+                                    borderRadius: BorderRadius.circular(AppRadius.sm + 2),
+                                  ),
+                                  child: Text(
+                                    widget.post.community,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                          color: textSecondary,
+                                          fontSize: isVeryNarrow ? 9.5 : 10.5,
+                                          fontWeight: FontWeight.w600,
+                                        ) ??
+                                        TextStyle(
+                                          color: textSecondary,
+                                          fontSize: isVeryNarrow ? 9.5 : 10.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                ],
-                IconButton(
-                  icon: Icon(Icons.more_vert_rounded, color: actionIconColor, size: 20),
-                  onPressed: () => _showMoreMenu(context),
+                    if (!widget.post.isOwner) ...[
+                      const SizedBox(width: 4),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () => widget.controller.toggleFollowUser(widget.post.userId),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOutCubic,
+                          padding: EdgeInsets.symmetric(horizontal: followPaddingH, vertical: followPaddingV),
+                          decoration: BoxDecoration(
+                            color: widget.post.isFollowing
+                                ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05))
+                                : AppColors.communityAccent.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: widget.post.isFollowing
+                                  ? borderSubtle
+                                  : AppColors.communityAccent.withValues(alpha: 0.50),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                widget.post.isFollowing
+                                    ? Icons.check_rounded
+                                    : Icons.add_rounded,
+                                size: isVeryNarrow ? 11 : 13,
+                                color: widget.post.isFollowing
+                                    ? textSecondary
+                                    : AppColors.communityAccent,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                widget.post.isFollowing ? 'community.following'.tr : 'community.follow'.tr,
+                                style: TextStyle(
+                                  fontSize: followFontSize,
+                                  fontWeight: FontWeight.w600,
+                                  color: widget.post.isFollowing
+                                      ? textSecondary
+                                      : AppColors.communityAccent,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                    IconButton(
+                      icon: Icon(Icons.more_horiz_rounded, color: actionIconColor, size: isVeryNarrow ? 18 : 20),
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(),
+                      onPressed: () => _showMoreMenu(context),
+                      tooltip: 'Options',
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
 
           // Post Content Text
           if (widget.post.content.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, 6),
               child: Text(
                 widget.post.content,
                 style: theme.textTheme.bodyMedium?.copyWith(
                       color: textPrimary,
-                      height: 1.45,
+                      fontSize: 14.5,
+                      height: 1.50,
+                      letterSpacing: 0.1,
                     ) ??
                     TextStyle(
                       color: textPrimary,
-                      fontSize: 14,
-                      height: 1.45,
+                      fontSize: 14.5,
+                      height: 1.50,
+                      letterSpacing: 0.1,
                     ),
               ),
             ),
@@ -609,14 +655,14 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
               child: Row(
                 children: [
-                  const Icon(Icons.location_on, color: AppColors.danger, size: 14),
+                  const Icon(Icons.location_on_rounded, color: AppColors.danger, size: 14),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       widget.post.location!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(color: textSecondary) ??
+                      style: theme.textTheme.bodySmall?.copyWith(color: textSecondary, fontSize: 12) ??
                           TextStyle(color: textSecondary, fontSize: 12),
                     ),
                   ),
@@ -624,7 +670,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
               ),
             ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // Responsive Multi-Image Grid Layout
           if (widget.post.imageUrls.isNotEmpty) _buildImageGrid(widget.post.imageUrls),
@@ -646,15 +692,27 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
               domain: widget.post.linkPreviewDomain,
             ),
 
-          // Post Action Buttons Bar (Like, Comment, Share, Bookmark)
+          const SizedBox(height: 6),
+
+          // Action Bar Divider Line
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Divider(
+              height: 1,
+              thickness: 0.6,
+              color: borderSubtle.withValues(alpha: 0.6),
+            ),
+          ),
+
+          // Post Action Buttons Bar (Like, Comment, Repost, Bookmark)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             child: Row(
               children: [
                 // Animated Like Button
                 InkWell(
                   onTap: _onLikeTap,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     child: Row(
@@ -662,9 +720,9 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                         ScaleTransition(
                           scale: _likeScaleAnim,
                           child: Icon(
-                            widget.post.isLiked ? Icons.favorite : Icons.favorite_border,
+                            widget.post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                             color: widget.post.isLiked ? AppColors.danger : actionIconColor,
-                            size: 22,
+                            size: 20,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -673,6 +731,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                           style: theme.textTheme.labelMedium?.copyWith(
                                 color: widget.post.isLiked ? AppColors.danger : actionIconColor,
                                 fontWeight: FontWeight.w600,
+                                fontSize: 13,
                               ) ??
                               TextStyle(
                                 color: widget.post.isLiked ? AppColors.danger : actionIconColor,
@@ -684,7 +743,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                     ),
                   ),
                 ),
-                const SizedBox(width: AppSpacing.sm),
+                const SizedBox(width: 4),
 
                 // Comment Button
                 InkWell(
@@ -696,18 +755,19 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                       builder: (_) => CommentsBottomSheet(postId: widget.post.id),
                     );
                   },
-                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     child: Row(
                       children: [
-                        Icon(Icons.chat_bubble_outline_rounded, color: actionIconColor, size: 21),
+                        Icon(Icons.chat_bubble_outline_rounded, color: actionIconColor, size: 19),
                         const SizedBox(width: 6),
                         Text(
                           "${widget.post.commentsCount}",
                           style: theme.textTheme.labelMedium?.copyWith(
                                 color: actionIconColor,
                                 fontWeight: FontWeight.w600,
+                                fontSize: 13,
                               ) ??
                               TextStyle(color: actionIconColor, fontSize: 13, fontWeight: FontWeight.w600),
                         ),
@@ -715,23 +775,24 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                     ),
                   ),
                 ),
-                const SizedBox(width: AppSpacing.sm),
+                const SizedBox(width: 4),
 
                 // Repost Button
                 InkWell(
                   onTap: () => _showRepostDialog(context),
-                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     child: Row(
                       children: [
-                        Icon(Icons.repeat_rounded, color: actionIconColor, size: 21),
+                        Icon(Icons.repeat_rounded, color: actionIconColor, size: 20),
                         const SizedBox(width: 6),
                         Text(
                           "${widget.post.repostsCount}",
                           style: theme.textTheme.labelMedium?.copyWith(
                                 color: actionIconColor,
                                 fontWeight: FontWeight.w600,
+                                fontSize: 13,
                               ) ??
                               TextStyle(color: actionIconColor, fontSize: 13, fontWeight: FontWeight.w600),
                         ),
@@ -746,10 +807,11 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                 IconButton(
                   onPressed: () => widget.controller.toggleBookmark(widget.post.id),
                   icon: Icon(
-                    widget.post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                    widget.post.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
                     color: widget.post.isBookmarked ? AppColors.communityAccent : actionIconColor,
-                    size: 22,
+                    size: 21,
                   ),
+                  tooltip: widget.post.isBookmarked ? 'community.removeBookmark'.tr : 'community.saveBookmark'.tr,
                 ),
               ],
             ),

@@ -204,11 +204,11 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
               Material(
                 color: Colors.transparent,
                 child: ListTile(
-                  leading: const Icon(Icons.edit_outlined, color: AppColors.communityAccent),
+                  leading: Icon(Icons.edit_outlined, color: textPrimary),
                   title: Text(
                     'community.editPost'.tr,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.communityAccent) ??
-                        const TextStyle(color: AppColors.communityAccent),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: textPrimary) ??
+                        TextStyle(color: textPrimary),
                   ),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -415,7 +415,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.repeat_rounded, color: AppColors.communityAccent, size: 16),
+                  const Icon(Icons.repeat_rounded, color: AppColors.darkTextSecondary, size: 16),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -481,11 +481,13 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                           : (widget.post.authorAvatar.startsWith('http')
                               ? NetworkImage(widget.post.authorAvatar)
                               : null),
-                      backgroundColor: AppColors.communityAccent.withValues(alpha: 0.18),
+                      backgroundColor: isDark
+                          ? const Color(0xFF242424)
+                          : AppColors.lightBgSecondary,
                       child: (!widget.post.authorAvatar.startsWith('http') && !widget.post.authorAvatar.startsWith('assets/'))
                           ? Text(
                               widget.post.authorAvatar.isNotEmpty ? widget.post.authorAvatar[0] : 'U',
-                              style: const TextStyle(color: AppColors.communityAccent, fontWeight: FontWeight.bold),
+                              style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold),
                             )
                           : null,
                     ),
@@ -517,7 +519,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                               ),
                               if (widget.post.isVerified) ...[
                                 const SizedBox(width: 4),
-                                const Icon(Icons.verified, color: AppColors.communityAccent, size: 14),
+                                const Icon(Icons.verified, color: AppColors.darkTextSecondary, size: 14),
                               ],
                             ],
                           ),
@@ -578,13 +580,13 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                           decoration: BoxDecoration(
                             color: widget.post.isFollowing
                                 ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05))
-                                : AppColors.communityAccent.withValues(alpha: 0.15),
+                                : Colors.transparent,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: widget.post.isFollowing
                                   ? borderSubtle
-                                  : AppColors.communityAccent.withValues(alpha: 0.50),
-                              width: 0.8,
+                                  : (isDark ? Colors.white.withValues(alpha: 0.55) : Colors.black.withValues(alpha: 0.35)),
+                              width: 0.9,
                             ),
                           ),
                           child: Row(
@@ -597,7 +599,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                                 size: isVeryNarrow ? 11 : 13,
                                 color: widget.post.isFollowing
                                     ? textSecondary
-                                    : AppColors.communityAccent,
+                                    : textPrimary,
                               ),
                               const SizedBox(width: 3),
                               Text(
@@ -607,7 +609,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                                   fontWeight: FontWeight.w600,
                                   color: widget.post.isFollowing
                                       ? textSecondary
-                                      : AppColors.communityAccent,
+                                      : textPrimary,
                                 ),
                               ),
                             ],
@@ -655,7 +657,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
               child: Row(
                 children: [
-                  const Icon(Icons.location_on_rounded, color: AppColors.danger, size: 14),
+                  Icon(Icons.location_on_rounded, color: textMuted, size: 13),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -808,7 +810,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                   onPressed: () => widget.controller.toggleBookmark(widget.post.id),
                   icon: Icon(
                     widget.post.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                    color: widget.post.isBookmarked ? AppColors.communityAccent : actionIconColor,
+                    color: widget.post.isBookmarked ? textPrimary : actionIconColor,
                     size: 21,
                   ),
                   tooltip: widget.post.isBookmarked ? 'community.removeBookmark'.tr : 'community.saveBookmark'.tr,
@@ -1020,10 +1022,10 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.communityAccent.withValues(alpha: 0.12),
+              color: isDark ? const Color(0xFF232323) : AppColors.lightBgSecondary,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: const Icon(Icons.link, color: AppColors.communityAccent, size: 20),
+            child: Icon(Icons.link, color: textSecondary, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(

@@ -120,6 +120,14 @@ class StoryController extends GetxController {
     }
   }
 
+  /// Sends the like/unlike API call without toggling local state.
+  /// Used by StoryViewerScreen which already toggles the local story
+  /// object directly (same reference as storyGroups entries).
+  void syncLikeToBackend(String storyId) {
+    _repository.toggleLikeStory(storyId);
+    storyGroups.refresh();
+  }
+
   void deleteStory(String storyId) {
     for (final group in storyGroups) {
       group.stories.removeWhere((s) => s.id == storyId);

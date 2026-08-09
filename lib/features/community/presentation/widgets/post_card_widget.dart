@@ -2,6 +2,7 @@ import 'dart:io';
 import 'poll_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
@@ -26,9 +27,12 @@ class PostCardWidget extends StatefulWidget {
   State<PostCardWidget> createState() => _PostCardWidgetState();
 }
 
-class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProviderStateMixin {
+class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStateMixin {
   late AnimationController _likeAnimController;
   late Animation<double> _likeScaleAnim;
+
+  late AnimationController _bookmarkAnimController;
+  late Animation<double> _bookmarkScaleAnim;
 
   @override
   void initState() {
@@ -41,11 +45,21 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
       TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
       TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
     ]).animate(_likeAnimController);
+
+    _bookmarkAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 180),
+    );
+    _bookmarkScaleAnim = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.12), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.12, end: 1.0), weight: 50),
+    ]).animate(_bookmarkAnimController);
   }
 
   @override
   void dispose() {
     _likeAnimController.dispose();
+    _bookmarkAnimController.dispose();
     super.dispose();
   }
 
@@ -474,22 +488,28 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                 ),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: avatarRadius,
-                      backgroundImage: widget.post.authorAvatar.startsWith('assets/')
-                          ? AssetImage(widget.post.authorAvatar) as ImageProvider
-                          : (widget.post.authorAvatar.startsWith('http')
-                              ? NetworkImage(widget.post.authorAvatar)
-                              : null),
-                      backgroundColor: isDark
-                          ? const Color(0xFF242424)
-                          : AppColors.lightBgSecondary,
-                      child: (!widget.post.authorAvatar.startsWith('http') && !widget.post.authorAvatar.startsWith('assets/'))
-                          ? Text(
-                              widget.post.authorAvatar.isNotEmpty ? widget.post.authorAvatar[0] : 'U',
-                              style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold),
-                            )
-                          : null,
+                    GestureDetector(
+                      onTap: () {
+                        final username = widget.post.authorTag.replaceAll('@', '');
+                        Get.toNamed(AppRoutes.profile, parameters: {'username': username});
+                      },
+                      child: CircleAvatar(
+                        radius: avatarRadius,
+                        backgroundImage: widget.post.authorAvatar.startsWith('assets/')
+                            ? AssetImage(widget.post.authorAvatar) as ImageProvider
+                            : (widget.post.authorAvatar.startsWith('http')
+                                ? NetworkImage(widget.post.authorAvatar)
+                                : null),
+                        backgroundColor: isDark
+                            ? const Color(0xFF242424)
+                            : AppColors.lightBgSecondary,
+                        child: (!widget.post.authorAvatar.startsWith('http') && !widget.post.authorAvatar.startsWith('assets/'))
+                            ? Text(
+                                widget.post.authorAvatar.isNotEmpty ? widget.post.authorAvatar[0] : 'U',
+                                style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold),
+                              )
+                            : null,
+                      ),
                     ),
                     SizedBox(width: headerGap),
                     Expanded(
@@ -499,22 +519,28 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
                           Row(
                             children: [
                               Flexible(
-                                child: Text(
-                                  widget.post.authorName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                        color: textPrimary,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: authorFontSize,
-                                        letterSpacing: -0.2,
-                                      ) ??
-                                      TextStyle(
-                                        color: textPrimary,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: authorFontSize,
-                                        letterSpacing: -0.2,
-                                      ),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    final username = widget.post.authorTag.replaceAll('@', '');
+                                    Get.toNamed(AppRoutes.profile, parameters: {'username': username});
+                                  },
+                                  child: Text(
+                                    widget.post.authorName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                          color: textPrimary,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: authorFontSize,
+                                          letterSpacing: -0.2,
+                                        ) ??
+                                        TextStyle(
+                                          color: textPrimary,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: authorFontSize,
+                                          letterSpacing: -0.2,
+                                        ),
+                                  ),
                                 ),
                               ),
                               if (widget.post.isVerified) ...[
@@ -807,11 +833,17 @@ class _PostCardWidgetState extends State<PostCardWidget> with SingleTickerProvid
 
                 // Bookmark Button
                 IconButton(
-                  onPressed: () => widget.controller.toggleBookmark(widget.post.id),
-                  icon: Icon(
-                    widget.post.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                    color: widget.post.isBookmarked ? textPrimary : actionIconColor,
-                    size: 21,
+                  onPressed: () {
+                    _bookmarkAnimController.forward(from: 0.0);
+                    widget.controller.toggleBookmark(widget.post.id);
+                  },
+                  icon: ScaleTransition(
+                    scale: _bookmarkScaleAnim,
+                    child: Icon(
+                      widget.post.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                      color: widget.post.isBookmarked ? textPrimary : actionIconColor,
+                      size: 21,
+                    ),
                   ),
                   tooltip: widget.post.isBookmarked ? 'community.removeBookmark'.tr : 'community.saveBookmark'.tr,
                 ),

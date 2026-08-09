@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../../../app/routes/app_routes.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../chat/presentation/bindings/chat_binding.dart';
@@ -598,7 +600,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
   }
 
   void _openStoryReplySheet(StoryGroupModel group, StoryItemModel story) {
-    _pauseStory();
     final replyTextController = TextEditingController();
 
     showModalBottomSheet(
@@ -641,62 +642,64 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                     child: child,
                   );
                 },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white12),
-                  ),
-                  child: Row(
-                    children: [
-                      // Real User Avatar / Fallback Placeholder
-                      CircleAvatar(
-                        radius: 17,
-                        backgroundColor: Colors.white.withValues(alpha: 0.15),
-                        backgroundImage: group.userAvatar.isNotEmpty
-                            ? (group.userAvatar.startsWith('assets/')
-                                ? AssetImage(group.userAvatar) as ImageProvider
-                                : NetworkImage(group.userAvatar))
-                            : null,
-                        child: group.userAvatar.isEmpty
-                            ? const Icon(Icons.person_rounded, color: Colors.white70, size: 18)
-                            : null,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Replying to ${group.userName}'s Story",
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                              ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: Colors.white.withValues(alpha: 0.15),
+                            backgroundImage: group.userAvatar.isNotEmpty
+                                ? (group.userAvatar.startsWith('assets/')
+                                    ? AssetImage(group.userAvatar) as ImageProvider
+                                    : NetworkImage(group.userAvatar))
+                                : null,
+                            child: group.userAvatar.isEmpty
+                                ? const Icon(Icons.person_rounded, color: Colors.white70, size: 20)
+                                : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Replying to ${group.userName}'s Story",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  story.textContent != null && story.textContent!.trim().isNotEmpty
+                                      ? story.textContent!.trim()
+                                      : (story.mediaUrl != null && _isVideoFile(story.mediaUrl!)
+                                          ? "Video Story"
+                                          : "Photo Story"),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 1),
-                            Text(
-                              story.textContent != null && story.textContent!.trim().isNotEmpty
-                                  ? story.textContent!.trim()
-                                  : (story.mediaUrl != null && _isVideoFile(story.mediaUrl!)
-                                      ? "Video Story"
-                                      : "Photo Story"),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: Colors.white60, fontSize: 11.5),
-                            ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 12),
+                          _buildStoryReplyThumbnail(story),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-
-                      // Informative Story Thumbnail Preview
-                      _buildStoryReplyThumbnail(story),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -735,6 +738,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                       return Focus(
                         onFocusChange: (focused) {
                           setInnerState(() => isFocused = focused);
+                          if (focused) {
+                            _pauseStory();
+                          } else {
+                            _resumeStory();
+                          }
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
@@ -2639,13 +2647,20 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                       // Clean Header Row (Avatar, User Name, Timestamp, Location, Menu, Close)
                       Row(
                         children: [
-                          Hero(
-                            tag: 'story_avatar_${group.userId}',
-                            child: CircleAvatar(
-                              radius: 18,
-                              backgroundImage: group.userAvatar.startsWith('assets/')
-                                  ? AssetImage(group.userAvatar) as ImageProvider
-                                  : NetworkImage(group.userAvatar),
+                          GestureDetector(
+                            onTap: () async {
+                              _pauseStory();
+                              await Get.toNamed(AppRoutes.profile, parameters: {'username': group.userName.replaceAll('@', '')});
+                              _resumeStory();
+                            },
+                            child: Hero(
+                              tag: 'story_avatar_${group.userId}',
+                              child: CircleAvatar(
+                                radius: 18,
+                                backgroundImage: group.userAvatar.startsWith('assets/')
+                                    ? AssetImage(group.userAvatar) as ImageProvider
+                                    : NetworkImage(group.userAvatar),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 10),

@@ -71,8 +71,8 @@ class StoryTrayWidget extends StatelessWidget {
       ];
 
       return Container(
-        height: 102,
-        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        height: 88,
+        margin: EdgeInsets.zero,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -218,7 +218,7 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                       child: Hero(
                         tag: 'story_avatar_${group.userId}',
                         child: CircleAvatar(
-                          radius: 28,
+                          radius: 26,
                           backgroundImage: group.userAvatar.startsWith('assets/')
                               ? AssetImage(group.userAvatar) as ImageProvider
                               : NetworkImage(group.userAvatar),
@@ -247,7 +247,7 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 3),
                 SizedBox(
                   width: 78,
                   child: Text(
@@ -316,7 +316,7 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                     child: Hero(
                       tag: 'story_avatar_${group.userId}',
                       child: CircleAvatar(
-                        radius: 28,
+                        radius: 26,
                         backgroundImage: group.userAvatar.startsWith('assets/')
                             ? AssetImage(group.userAvatar) as ImageProvider
                             : NetworkImage(group.userAvatar),
@@ -325,7 +325,7 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                   ),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 3),
               SizedBox(
                 width: 78,
                 child: Text(

@@ -475,9 +475,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               final avatarRadius = isVeryNarrow ? 17.0 : (isNarrow ? 19.0 : 21.0);
               final headerGap = isVeryNarrow ? 6.0 : (isNarrow ? 8.0 : 12.0);
               final authorFontSize = isVeryNarrow ? 13.5 : (isNarrow ? 14.5 : 15.5);
-              final followPaddingH = isVeryNarrow ? 6.0 : (isNarrow ? 8.0 : 10.0);
-              final followPaddingV = isVeryNarrow ? 3.5 : (isNarrow ? 4.0 : 5.0);
-              final followFontSize = isVeryNarrow ? 10.0 : 11.0;
 
               return Padding(
                 padding: EdgeInsets.fromLTRB(
@@ -602,7 +599,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
                           curve: Curves.easeOutCubic,
-                          padding: EdgeInsets.symmetric(horizontal: followPaddingH, vertical: followPaddingV),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
                             color: widget.post.isFollowing
                                 ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05))
@@ -618,24 +615,15 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                widget.post.isFollowing
-                                    ? Icons.check_rounded
-                                    : Icons.add_rounded,
-                                size: isVeryNarrow ? 11 : 13,
-                                color: widget.post.isFollowing
-                                    ? textSecondary
-                                    : textPrimary,
-                              ),
-                              const SizedBox(width: 3),
+                              if (!widget.post.isFollowing)
+                                Icon(Icons.add_rounded, size: 12, color: textPrimary),
+                              if (!widget.post.isFollowing) const SizedBox(width: 2),
                               Text(
                                 widget.post.isFollowing ? 'community.following'.tr : 'community.follow'.tr,
                                 style: TextStyle(
-                                  fontSize: followFontSize,
+                                  fontSize: 10.5,
                                   fontWeight: FontWeight.w600,
-                                  color: widget.post.isFollowing
-                                      ? textSecondary
-                                      : textPrimary,
+                                  color: widget.post.isFollowing ? textSecondary : textPrimary,
                                 ),
                               ),
                             ],
@@ -659,7 +647,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
           // Post Content Text
           if (widget.post.content.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, 6),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.md, 4, AppSpacing.md, 6),
               child: Text(
                 widget.post.content,
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -720,18 +708,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               domain: widget.post.linkPreviewDomain,
             ),
 
-          const SizedBox(height: 6),
-
-          // Action Bar Divider Line
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: Divider(
-              height: 1,
-              thickness: 0.6,
-              color: borderSubtle.withValues(alpha: 0.6),
-            ),
-          ),
-
+          const SizedBox(height: 2),
           // Post Action Buttons Bar (Like, Comment, Repost, Bookmark)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -749,7 +726,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                           scale: _likeScaleAnim,
                           child: Icon(
                             widget.post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            color: widget.post.isLiked ? AppColors.danger : actionIconColor,
+                            color: widget.post.isLiked ? textPrimary : actionIconColor,
                             size: 20,
                           ),
                         ),
@@ -757,12 +734,12 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                         Text(
                           "${widget.post.likesCount}",
                           style: theme.textTheme.labelMedium?.copyWith(
-                                color: widget.post.isLiked ? AppColors.danger : actionIconColor,
+                                color: widget.post.isLiked ? textPrimary : actionIconColor,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13,
                               ) ??
                               TextStyle(
-                                color: widget.post.isLiked ? AppColors.danger : actionIconColor,
+                                color: widget.post.isLiked ? textPrimary : actionIconColor,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),

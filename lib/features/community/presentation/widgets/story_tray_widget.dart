@@ -71,7 +71,7 @@ class StoryTrayWidget extends StatelessWidget {
       ];
 
       return Container(
-        height: 88,
+        height: 94,
         margin: EdgeInsets.zero,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,

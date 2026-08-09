@@ -1,14 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
-import 'widgets/author_row.dart';
 
-/// Create Event Screen — Event tab creation flow.
-///
-/// Fields: Title, Description, Category, Date & Time, Location.
-/// Black/white design — zero cyan/blue.
-/// Reuses the same event data shape as EventDetailsScreen.
 class CreateEventScreen extends StatefulWidget {
   const CreateEventScreen({super.key});
 
@@ -20,11 +16,17 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _linkController = TextEditingController();
+
   final FocusNode _titleFocus = FocusNode();
   final FocusNode _descFocus = FocusNode();
   final FocusNode _locationFocus = FocusNode();
+  final FocusNode _linkFocus = FocusNode();
 
   bool _isSubmitting = false;
+  String _eventType = 'Online'; // 'Online' or 'In person'
+  File? _coverImage;
+  
   String? _selectedCategory;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
@@ -37,7 +39,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   ];
 
   bool get _canCreate =>
-      _titleController.text.trim().isNotEmpty && _selectedDate != null;
+      _titleController.text.trim().isNotEmpty && 
+      _selectedDate != null &&
+      (_eventType == 'Online' ? _linkController.text.trim().isNotEmpty : _locationController.text.trim().isNotEmpty);
 
   String get _formattedDate {
     if (_selectedDate == null) return '';
@@ -46,11 +50,17 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
-    final dateStr = '${d.day} ${months[d.month - 1]} ${d.year}';
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    
+    final dayName = days[d.weekday - 1];
+    final monthName = months[d.month - 1];
+    final dateStr = '$dayName, $monthName ${d.day}';
+    
     if (_selectedTime != null) {
-      final h = _selectedTime!.hour.toString().padLeft(2, '0');
+      final h = _selectedTime!.hourOfPeriod == 0 ? 12 : _selectedTime!.hourOfPeriod;
       final m = _selectedTime!.minute.toString().padLeft(2, '0');
-      return '$dateStr, $h:$m';
+      final period = _selectedTime!.period == DayPeriod.am ? 'AM' : 'PM';
+      return '$dateStr, $h:$m $period';
     }
     return dateStr;
   }
@@ -59,6 +69,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   void initState() {
     super.initState();
     _titleController.addListener(() => setState(() {}));
+    _locationController.addListener(() => setState(() {}));
+    _linkController.addListener(() => setState(() {}));
   }
 
   @override
@@ -66,9 +78,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     _titleController.dispose();
     _descController.dispose();
     _locationController.dispose();
+    _linkController.dispose();
     _titleFocus.dispose();
     _descFocus.dispose();
     _locationFocus.dispose();
+    _linkFocus.dispose();
     super.dispose();
   }
 
@@ -76,8 +90,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     final hasContent = _titleController.text.trim().isNotEmpty ||
         _descController.text.trim().isNotEmpty ||
         _locationController.text.trim().isNotEmpty ||
+        _linkController.text.trim().isNotEmpty ||
         _selectedDate != null ||
-        _selectedCategory != null;
+        _selectedCategory != null ||
+        _coverImage != null;
 
     if (hasContent) {
       showDialog(
@@ -118,6 +134,16 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     }
   }
 
+  Future<void> _pickCoverImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _coverImage = File(pickedFile.path);
+      });
+    }
+  }
+
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -127,7 +153,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     );
     if (picked != null) {
       setState(() => _selectedDate = picked);
-      // Optionally pick time
       if (!mounted) return;
       final pickedTime = await showTimePicker(
         context: context,
@@ -143,7 +168,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     if (!_canCreate || _isSubmitting) return;
     setState(() => _isSubmitting = true);
 
-    // Simulate network delay (replace with actual repo call when backend is ready)
     await Future.delayed(const Duration(milliseconds: 600));
 
     if (!mounted) return;
@@ -162,9 +186,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF0F1115) : Colors.white;
     final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textMuted = isDark ? const Color(0xFF8E9297) : const Color(0xFF9E9E9E);
-    final cardBorder = isDark ? const Color(0xFF2B313A) : const Color(0xFFE2E4E8);
-    final inputBg = isDark ? const Color(0xFF1A1D22) : const Color(0xFFF7F8FA);
+    final textMuted = isDark ? const Color(0xFF8E9297) : const Color(0xFF666666);
+    final cardBorder = isDark ? const Color(0xFF333333) : const Color(0xFFDDDDDD);
+    final imagePlaceholderBg = isDark ? const Color(0xFF1E2228) : const Color(0xFFF0F2F5);
+    final imagePlaceholderBorder = isDark ? const Color(0xFF2B313A) : const Color(0xFFE5E7EB);
 
     return PopScope(
       canPop: false,
@@ -185,236 +210,265 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           ),
           titleSpacing: 8,
           title: Text(
-            'community.createEvent'.tr,
+            'Create event',
             style: TextStyle(
               color: textPrimary,
               fontSize: 17,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
             ),
           ),
+          centerTitle: true,
           actions: [
             Padding(
-              padding: const EdgeInsets.only(right: 12, top: 10, bottom: 10, left: 4),
-              child: ElevatedButton(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextButton(
                 onPressed: _canCreate && !_isSubmitting ? _submit : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _canCreate
-                      ? (isDark ? Colors.white : Colors.black87)
-                      : (isDark ? const Color(0xFF222222) : const Color(0xFFE0E0E0)),
-                  disabledBackgroundColor: isDark ? const Color(0xFF222222) : const Color(0xFFE0E0E0),
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
                 child: _isSubmitting
                     ? SizedBox(
-                        width: 14,
-                        height: 14,
+                        width: 16,
+                        height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: isDark ? Colors.black : Colors.white,
+                          color: textPrimary,
                         ),
                       )
                     : Text(
-                        'community.createEvent'.tr,
+                        'Done',
                         style: TextStyle(
                           color: _canCreate
-                              ? (isDark ? Colors.black : Colors.white)
+                              ? textPrimary
                               : (isDark ? Colors.white30 : Colors.black38),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
                         ),
                       ),
               ),
             ),
           ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1),
-            child: Container(height: 1, color: cardBorder),
-          ),
         ),
         body: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Author identity row ────────────────────────────────────
-              AuthorRow(isDark: isDark, textPrimary: textPrimary, textMuted: textMuted),
-              const SizedBox(height: 20),
-
-              // ── Event Title ────────────────────────────────────────────
-              _buildLabel('TITLE *', textMuted),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _titleController,
-                focusNode: _titleFocus,
-                maxLines: 2,
-                minLines: 1,
-                maxLength: 100,
-                buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  height: 1.3,
-                ),
-                decoration: _inputDeco(
-                  hint: 'community.eventTitle'.tr,
-                  isDark: isDark,
-                  textMuted: textMuted,
-                  inputBg: inputBg,
-                  cardBorder: cardBorder,
-                  textPrimary: textPrimary,
-                  fontSize: 18,
-                ),
-                textInputAction: TextInputAction.next,
-                onSubmitted: (_) => _descFocus.requestFocus(),
-              ),
-
-              const SizedBox(height: 16),
-
-              // ── Description ────────────────────────────────────────────
-              _buildLabel('DESCRIPTION', textMuted),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _descController,
-                focusNode: _descFocus,
-                minLines: 4,
-                maxLines: null,
-                maxLength: 2000,
-                buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
-                style: TextStyle(color: textPrimary, fontSize: 15, height: 1.5),
-                decoration: _inputDeco(
-                  hint: 'community.eventDesc'.tr,
-                  isDark: isDark,
-                  textMuted: textMuted,
-                  inputBg: inputBg,
-                  cardBorder: cardBorder,
-                  textPrimary: textPrimary,
-                ),
-                textInputAction: TextInputAction.next,
-                onSubmitted: (_) => _locationFocus.requestFocus(),
-              ),
-
-              const SizedBox(height: 16),
-
-              // ── Category ───────────────────────────────────────────────
-              _buildLabel('community.eventCategory'.tr.toUpperCase(), textMuted),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _categoryKeys.map((key) {
-                  final isSelected = _selectedCategory == key;
-                  return GestureDetector(
-                    onTap: () => setState(() {
-                      _selectedCategory = isSelected ? null : key;
-                    }),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? (isDark ? Colors.white : Colors.black87)
-                            : inputBg,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected ? Colors.transparent : cardBorder,
-                        ),
-                      ),
-                      child: Text(
-                        key.tr,
-                        style: TextStyle(
-                          color: isSelected
-                              ? (isDark ? Colors.black : Colors.white)
-                              : textMuted,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-
-              const SizedBox(height: 16),
-
-              // ── Date & Time ────────────────────────────────────────────
-              _buildLabel('community.eventDate'.tr.toUpperCase(), textMuted),
-              const SizedBox(height: 8),
-              InkWell(
-                onTap: _pickDate,
-                borderRadius: BorderRadius.circular(12),
+              // ── Banner Image Area ─────────────────────────────────────────
+              GestureDetector(
+                onTap: _pickCoverImage,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  width: double.infinity,
+                  height: MediaQuery.of(context).size.width * (9 / 16),
                   decoration: BoxDecoration(
-                    color: inputBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _selectedDate != null ? textPrimary.withValues(alpha: 0.4) : cardBorder,
-                      width: _selectedDate != null ? 1.5 : 1.0,
+                    color: imagePlaceholderBg,
+                    border: Border(
+                      bottom: BorderSide(color: imagePlaceholderBorder),
                     ),
                   ),
-                  child: Row(
+                  child: Stack(
                     children: [
-                      Icon(
-                        Icons.calendar_month_outlined,
-                        color: _selectedDate != null ? textPrimary : textMuted,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _selectedDate != null
-                              ? _formattedDate
-                              : 'community.selectDate'.tr,
-                          style: TextStyle(
-                            color: _selectedDate != null ? textPrimary : textMuted,
-                            fontSize: 15,
-                            fontWeight: _selectedDate != null
-                                ? FontWeight.w600
-                                : FontWeight.normal,
+                      if (_coverImage != null)
+                        Positioned.fill(
+                          child: Image.file(_coverImage!, fit: BoxFit.cover),
+                        )
+                      else
+                        Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add_photo_alternate_outlined, color: textMuted, size: 40),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Upload cover image',
+                                style: TextStyle(color: textMuted, fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ),
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.black54 : Colors.white70,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.edit,
+                            color: textPrimary,
+                            size: 18,
                           ),
                         ),
                       ),
-                      if (_selectedDate != null)
-                        GestureDetector(
-                          onTap: () => setState(() {
-                            _selectedDate = null;
-                            _selectedTime = null;
-                          }),
-                          child: Icon(Icons.close, color: textMuted, size: 18),
-                        ),
                     ],
                   ),
                 ),
               ),
 
-              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Event Type ──────────────────────────────────────────
+                    _buildLabel('Event type', textMuted),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildRadioButton('Online', textPrimary),
+                        const SizedBox(width: 24),
+                        _buildRadioButton('In person', textPrimary),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
 
-              // ── Location ───────────────────────────────────────────────
-              _buildLabel('community.eventLocation'.tr.toUpperCase(), textMuted),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _locationController,
-                focusNode: _locationFocus,
-                maxLines: 1,
-                maxLength: 150,
-                buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
-                style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w500),
-                decoration: _inputDeco(
-                  hint: 'e.g. ACLEDA Institute, Phnom Penh',
-                  isDark: isDark,
-                  textMuted: textMuted,
-                  inputBg: inputBg,
-                  cardBorder: cardBorder,
-                  textPrimary: textPrimary,
-                  prefixIcon: Icon(Icons.location_on_outlined, color: textMuted, size: 20),
+                    // ── Event Name ──────────────────────────────────────────
+                    _buildLabel('Event name*', textMuted),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _titleController,
+                      focusNode: _titleFocus,
+                      maxLines: 1,
+                      style: TextStyle(color: textPrimary, fontSize: 16),
+                      decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary),
+                      textInputAction: TextInputAction.next,
+                      onSubmitted: (_) => _eventType == 'Online' ? _linkFocus.requestFocus() : _locationFocus.requestFocus(),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // ── Date and Time ───────────────────────────────────────
+                    _buildLabel('Date and time*', textMuted),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: _pickDate,
+                      child: IgnorePointer(
+                        child: TextField(
+                          controller: TextEditingController(text: _formattedDate),
+                          style: TextStyle(color: textPrimary, fontSize: 16),
+                          decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary).copyWith(
+                            hintText: 'Select date and time',
+                            hintStyle: TextStyle(color: textMuted, fontSize: 16),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Your event timezone is set to Local Time',
+                      style: TextStyle(color: textMuted, fontSize: 13),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // ── Dynamic Field (Location / Link) ─────────────────────
+                    if (_eventType == 'Online') ...[
+                      _buildLabel('External event link*', textMuted),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _linkController,
+                        focusNode: _linkFocus,
+                        maxLines: 1,
+                        style: TextStyle(color: textPrimary, fontSize: 16),
+                        decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary).copyWith(
+                          hintText: 'e.g. https://meet.google.com/...',
+                          hintStyle: TextStyle(color: textMuted, fontSize: 16),
+                        ),
+                        textInputAction: TextInputAction.next,
+                        onSubmitted: (_) => _descFocus.requestFocus(),
+                      ),
+                    ] else ...[
+                      _buildLabel('Location*', textMuted),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _locationController,
+                        focusNode: _locationFocus,
+                        maxLines: 1,
+                        style: TextStyle(color: textPrimary, fontSize: 16),
+                        decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary).copyWith(
+                          hintText: 'e.g. ACLEDA Institute',
+                          hintStyle: TextStyle(color: textMuted, fontSize: 16),
+                        ),
+                        textInputAction: TextInputAction.next,
+                        onSubmitted: (_) => _descFocus.requestFocus(),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+
+                    // ── Description ─────────────────────────────────────────
+                    _buildLabel('Description', textMuted),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _descController,
+                      focusNode: _descFocus,
+                      minLines: 4,
+                      maxLines: 10,
+                      maxLength: 5000,
+                      style: TextStyle(color: textPrimary, fontSize: 16, height: 1.5),
+                      decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary).copyWith(
+                        hintText: 'Ex: topics, schedule, etc.',
+                        hintStyle: TextStyle(color: textMuted, fontSize: 16),
+                      ),
+                      textInputAction: TextInputAction.done,
+                    ),
+                    
+                    const SizedBox(height: 24),
+
+                    // ── Category (Preserved GenLink Feature) ────────────────
+                    _buildLabel('Category (Optional)', textMuted),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _categoryKeys.map((key) {
+                        final isSelected = _selectedCategory == key;
+                        return GestureDetector(
+                          onTap: () => setState(() {
+                            _selectedCategory = isSelected ? null : key;
+                          }),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected ? textPrimary : Colors.transparent,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isSelected ? Colors.transparent : cardBorder,
+                              ),
+                            ),
+                            child: Text(
+                              key.tr,
+                              style: TextStyle(
+                                color: isSelected ? bg : textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 40),
+
+                    // ── Footer Note ─────────────────────────────────────────
+                    RichText(
+                      text: TextSpan(
+                        style: TextStyle(color: textMuted, fontSize: 13, height: 1.5),
+                        children: [
+                          const TextSpan(text: "By continuing, you agree with GenLink's event policy.\n\n"),
+                          const TextSpan(text: "Make the most of GenLink Events. "),
+                          TextSpan(
+                            text: "Learn more",
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                  ],
                 ),
               ),
-
-              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -427,42 +481,63 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       text,
       style: TextStyle(
         color: color,
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.8,
+        fontSize: 15,
+        fontWeight: FontWeight.w500,
+      ),
+    );
+  }
+
+  Widget _buildRadioButton(String title, Color textPrimary) {
+    final isSelected = _eventType == title;
+    return GestureDetector(
+      onTap: () => setState(() => _eventType = title),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: textPrimary,
+                width: isSelected ? 5.5 : 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            title,
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 15,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   InputDecoration _inputDeco({
-    required String hint,
-    required bool isDark,
-    required Color textMuted,
-    required Color inputBg,
     required Color cardBorder,
     required Color textPrimary,
-    double fontSize = 15,
-    Widget? prefixIcon,
   }) {
     return InputDecoration(
-      hintText: hint,
-      hintStyle: TextStyle(color: textMuted, fontSize: fontSize, fontWeight: FontWeight.w400),
-      prefixIcon: prefixIcon,
-      filled: true,
-      fillColor: inputBg,
+      filled: false,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(6),
         borderSide: BorderSide(color: cardBorder),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(6),
         borderSide: BorderSide(color: cardBorder),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(6),
         borderSide: BorderSide(color: textPrimary, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      counterStyle: TextStyle(fontSize: 13), // for maxLength counter
     );
   }
 }

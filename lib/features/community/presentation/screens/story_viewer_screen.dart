@@ -457,23 +457,17 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
       _isLikeDebouncing = false;
     });
 
-    // Always toggle local state first (optimistic UI)
-    setState(() {
-      story.isLiked = !story.isLiked;
-      story.likesCount += story.isLiked ? 1 : -1;
-    });
-
-    // Sync with backend via controller (controller also toggles its internal
-    // copy — harmless since it may be the same object reference)
+    // Sync with backend via controller
     if (Get.isRegistered<StoryController>()) {
-      // The controller's toggleLike finds the story by ID and toggles it.
-      // If widget.groups shares object refs with controller.storyGroups,
-      // the story was already toggled above, so the controller finds the
-      // updated value and toggles it BACK — cancel that out by calling
-      // the repository directly instead.
       final ctrl = Get.find<StoryController>();
       ctrl.syncLikeToBackend(story.id);
+    } else {
+      story.isLiked = !story.isLiked;
+      story.likesCount += story.isLiked ? 1 : -1;
     }
+
+    // Rebuild UI with new state
+    setState(() {});
 
     _likeBtnAnimController.forward(from: 0.0);
     if (story.isLiked) {

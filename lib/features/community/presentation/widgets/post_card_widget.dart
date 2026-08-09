@@ -726,7 +726,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                           scale: _likeScaleAnim,
                           child: Icon(
                             widget.post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            color: widget.post.isLiked ? textPrimary : actionIconColor,
+                            color: widget.post.isLiked ? const Color(0xFFFF5C5C) : const Color(0xFFA6A6A6),
                             size: 20,
                           ),
                         ),
@@ -734,12 +734,12 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                         Text(
                           "${widget.post.likesCount}",
                           style: theme.textTheme.labelMedium?.copyWith(
-                                color: widget.post.isLiked ? textPrimary : actionIconColor,
+                                color: widget.post.isLiked ? const Color(0xFFFF5C5C) : const Color(0xFFA6A6A6),
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13,
                               ) ??
                               TextStyle(
-                                color: widget.post.isLiked ? textPrimary : actionIconColor,
+                                color: widget.post.isLiked ? const Color(0xFFFF5C5C) : const Color(0xFFA6A6A6),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),

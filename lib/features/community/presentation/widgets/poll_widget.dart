@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/design_system/radius/app_radius.dart';
 import 'package:genlink_frontend/design_system/spacing/app_spacing.dart';
 import '../../domain/models/community_post_model.dart';
 
@@ -27,14 +25,22 @@ class _PollWidgetState extends State<PollWidget> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark ? Colors.white : Colors.black87;
+    final textSecondary = isDark ? Colors.white60 : Colors.black54;
 
     final bool hasVoted = widget.options.any((o) => o.isVoted);
     final bool showResults = !widget.hideResultsUntilVote || hasVoted;
 
     int totalVotes = widget.options.fold(0, (sum, opt) => sum + opt.votes);
-    if (totalVotes == 0) totalVotes = 1;
+    
+    // Formatting plural for vote count dynamically as requested
+    final String voteText = totalVotes == 1 ? "1 vote" : "$totalVotes votes";
+    final String durationText = widget.duration != null ? "Ends ${widget.duration}" : "Ended";
+    
+    // Check expiration based on duration string (e.g. if we map it visually to Ended)
+    // We treat "Ended" as a state that blocks voting.
+    final bool isEnded = widget.duration?.toLowerCase() == 'ended';
+    final bool canVote = !hasVoted && !isEnded;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
@@ -47,6 +53,7 @@ class _PollWidgetState extends State<PollWidget> {
             style: theme.textTheme.titleMedium?.copyWith(
                   color: textPrimary,
                   fontWeight: FontWeight.w600,
+                  fontSize: 18,
                   height: 1.35,
                 ) ??
                 TextStyle(
@@ -56,35 +63,38 @@ class _PollWidgetState extends State<PollWidget> {
                   height: 1.35,
                 ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
           // 2. Poll Option Progress Cards
           ...widget.options.map((opt) {
-            final double pctRatio = (opt.votes / totalVotes).clamp(0.0, 1.0);
+            final double pctRatio = totalVotes > 0 ? (opt.votes / totalVotes).clamp(0.0, 1.0) : 0.0;
             final int pctValue = (pctRatio * 100).round();
 
             return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: 8),
               child: PollOptionWidget(
                 option: opt,
                 pctRatio: pctRatio,
                 pctValue: pctValue,
                 showResults: showResults,
-                onTap: () {
-                  setState(() {
-                    opt.isVoted = !opt.isVoted;
-                    opt.votes += opt.isVoted ? 1 : -1;
-                  });
-                },
+                isDark: isDark,
+                onTap: canVote
+                    ? () {
+                        setState(() {
+                          opt.isVoted = true;
+                          opt.votes += 1;
+                        });
+                      }
+                    : null,
               ),
             );
           }),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
 
           // 3. Footer Subtitle
           Text(
-            "${widget.options.fold(0, (sum, o) => sum + o.votes)} votes • Ends in ${widget.duration ?? '3 days'}",
+            "$voteText • $durationText",
             style: theme.textTheme.bodySmall?.copyWith(
                   color: textSecondary,
                   fontWeight: FontWeight.w500,
@@ -106,7 +116,8 @@ class PollOptionWidget extends StatefulWidget {
   final double pctRatio;
   final int pctValue;
   final bool showResults;
-  final VoidCallback onTap;
+  final bool isDark;
+  final VoidCallback? onTap;
 
   const PollOptionWidget({
     super.key,
@@ -114,6 +125,7 @@ class PollOptionWidget extends StatefulWidget {
     required this.pctRatio,
     required this.pctValue,
     required this.showResults,
+    required this.isDark,
     required this.onTap,
   });
 
@@ -130,11 +142,12 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
     super.initState();
     _scaleController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 100),
+      duration: const Duration(milliseconds: 150),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
-      CurvedAnimation(parent: _scaleController, curve: Curves.easeOut),
-    );
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 1.02).chain(CurveTween(curve: Curves.easeOut)), weight: 50),
+      TweenSequenceItem(tween: Tween<double>(begin: 1.02, end: 1.0).chain(CurveTween(curve: Curves.easeIn)), weight: 50),
+    ]).animate(_scaleController);
   }
 
   @override
@@ -143,112 +156,127 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
     super.dispose();
   }
 
+  void _handleTap() {
+    if (widget.onTap != null) {
+      _scaleController.forward(from: 0.0);
+      widget.onTap!();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
+    final isVoted = widget.option.isVoted;
+    
+    // Strict Monochrome Styling
+    final Color unselectedBg = widget.isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF3F4F6);
+    final Color selectedBg = widget.isDark ? Colors.white : const Color(0xFFF3F4F6);
+    
+    final Color unselectedBorder = widget.isDark ? Colors.white12 : Colors.black12;
+    final Color selectedBorder = widget.isDark ? Colors.transparent : Colors.black12;
 
-    final bool isVoted = widget.option.isVoted;
+    final Color unselectedText = widget.isDark ? Colors.white : Colors.black87;
+    final Color selectedText = Colors.black;
+
+    final Color unselectedFill = widget.isDark ? Colors.white12 : Colors.black12;
+    final Color selectedFill = Colors.black12;
 
     return GestureDetector(
-      onTapDown: (_) => _scaleController.forward(),
-      onTapUp: (_) {
-        _scaleController.reverse();
-        widget.onTap();
-      },
-      onTapCancel: () => _scaleController.reverse(),
+      onTap: _handleTap,
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          height: 48,
-          decoration: BoxDecoration(
-            color: isVoted
-                ? AppColors.communityAccent.withValues(alpha: 0.30)
-                : surfaceSecondary,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(
-              color: isVoted
-                  ? AppColors.communityAccent
-                  : borderSubtle,
-              width: isVoted ? 1.5 : 1.0,
+        child: Semantics(
+          label: isVoted 
+              ? "Selected poll option ${widget.option.text}, ${widget.pctValue} percent"
+              : "Poll option ${widget.option.text}, ${widget.pctValue} percent",
+          button: true,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            height: 48,
+            decoration: BoxDecoration(
+              color: isVoted ? selectedBg : unselectedBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isVoted ? selectedBorder : unselectedBorder,
+                width: 1.0,
+              ),
             ),
-          ),
-          child: Stack(
-            children: [
-              // Smooth Fill Animation Bar
-              if (widget.showResults)
-                AnimatedFractionallySizedBox(
-                  duration: const Duration(milliseconds: 400),
-                  curve: Curves.easeOutCubic,
-                  widthFactor: widget.pctRatio,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isVoted
-                          ? AppColors.communityAccent.withValues(alpha: 0.30)
-                          : (isDark ? AppColors.darkSurfacePrimary.withValues(alpha: 0.5) : AppColors.lightSurfaceSecondary),
-                      borderRadius: BorderRadius.circular(AppRadius.lg - 1),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Smooth Fill Animation Bar
+                if (widget.showResults)
+                  Positioned.fill(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: AnimatedFractionallySizedBox(
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeOutCubic,
+                        widthFactor: widget.pctRatio,
+                        heightFactor: 1.0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isVoted ? selectedFill : unselectedFill,
+                            borderRadius: BorderRadius.circular(13), // 1px less than 14 for border inset
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
 
-              // Option Title & Percentage Row
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        if (isVoted) ...[
-                          const Icon(Icons.check_circle_rounded, color: AppColors.communityAccent, size: 18),
-                          const SizedBox(width: AppSpacing.sm),
-                        ] else if (!widget.showResults) ...[
-                          Container(
-                            width: 18,
-                            height: 18,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: textSecondary, width: 1.5),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                        ],
-                        Text(
-                          widget.option.text,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                                color: isVoted ? AppColors.communityAccent : textPrimary,
-                                fontWeight: isVoted ? FontWeight.bold : FontWeight.w500,
-                              ) ??
-                              TextStyle(
-                                color: isVoted ? AppColors.communityAccent : textPrimary,
-                                fontWeight: isVoted ? FontWeight.bold : FontWeight.w500,
-                                fontSize: 14,
+                // Option Title & Percentage Row
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            if (isVoted) ...[
+                              const Icon(Icons.check, color: Colors.black, size: 18),
+                              const SizedBox(width: 8),
+                            ],
+                            Expanded(
+                              child: Text(
+                                widget.option.text,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: isVoted ? selectedText : unselectedText,
+                                      fontWeight: isVoted ? FontWeight.w600 : FontWeight.w500,
+                                    ) ??
+                                    TextStyle(
+                                      color: isVoted ? selectedText : unselectedText,
+                                      fontWeight: isVoted ? FontWeight.w600 : FontWeight.w500,
+                                      fontSize: 14,
+                                    ),
                               ),
-                        ),
-                      ],
-                    ),
-                    if (widget.showResults)
-                      Text(
-                        "${widget.pctValue}%",
-                        style: theme.textTheme.labelMedium?.copyWith(
-                              color: isVoted ? AppColors.communityAccent : textSecondary,
-                              fontWeight: FontWeight.bold,
-                            ) ??
-                            TextStyle(
-                              color: isVoted ? AppColors.communityAccent : textSecondary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
                             ),
+                          ],
+                        ),
                       ),
-                  ],
+                      if (widget.showResults)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: Text(
+                            "${widget.pctValue}%",
+                            style: theme.textTheme.labelMedium?.copyWith(
+                                  color: isVoted ? selectedText : unselectedText,
+                                  fontWeight: FontWeight.w600,
+                                ) ??
+                                TextStyle(
+                                  color: isVoted ? selectedText : unselectedText,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

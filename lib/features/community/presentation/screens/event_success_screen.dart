@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
+import '../../domain/models/community_models.dart';
 
 class EventSuccessScreen extends StatelessWidget {
-  final Map<String, dynamic> eventData;
+  final EventModel event;
 
   const EventSuccessScreen({
     super.key,
-    required this.eventData,
+    required this.event,
   });
 
   @override
@@ -75,13 +76,35 @@ class EventSuccessScreen extends StatelessWidget {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        eventData['image'] as String? ??
-                            'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=300',
-                        width: 70,
-                        height: 70,
-                        fit: BoxFit.cover,
-                      ),
+                      child: event.coverImageFile != null
+                          ? Image.file(
+                              event.coverImageFile!,
+                              width: 70,
+                              height: 70,
+                              fit: BoxFit.cover,
+                            )
+                          : event.imageUrl.isNotEmpty
+                              ? Image.network(
+                                  event.imageUrl,
+                                  width: 70,
+                                  height: 70,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, _) => Container(
+                                    width: 70,
+                                    height: 70,
+                                    color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0),
+                                    child: Icon(Icons.event_outlined, color: textMuted, size: 32),
+                                  ),
+                                )
+                              : Container(
+                                  width: 70,
+                                  height: 70,
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(Icons.event_outlined, color: textMuted, size: 32),
+                                ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -89,7 +112,7 @@ class EventSuccessScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            eventData['title'] as String? ?? 'Flutter Workshop 2026',
+                            event.title,
                             style: TextStyle(
                               color: textPrimary,
                               fontWeight: FontWeight.bold,
@@ -97,14 +120,21 @@ class EventSuccessScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            "📅 25 July 2026 • 9:00 AM - 4:00 PM",
-                            style: TextStyle(color: textSecondary, fontSize: 11),
-                          ),
-                          Text(
-                            "📍 ACLEDA University",
-                            style: TextStyle(color: textMutedSubtle, fontSize: 11),
-                          ),
+                          if (event.dateString.isNotEmpty)
+                            Text(
+                              '\u{1F4C5} ${event.dateString}${event.timeString.isNotEmpty ? ' \u2022 ${event.timeString}' : ''}',
+                              style: TextStyle(color: textSecondary, fontSize: 11),
+                            ),
+                          if (event.eventType == 'In person' && event.location.isNotEmpty)
+                            Text(
+                              '\u{1F4CD} ${event.location}',
+                              style: TextStyle(color: textMutedSubtle, fontSize: 11),
+                            )
+                          else if (event.eventType == 'Online')
+                            Text(
+                              '\u{1F4F9} Online Event',
+                              style: TextStyle(color: textMutedSubtle, fontSize: 11),
+                            ),
                         ],
                       ),
                     ),

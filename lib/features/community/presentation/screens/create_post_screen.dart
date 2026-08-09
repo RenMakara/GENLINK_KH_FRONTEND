@@ -184,19 +184,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
-  void _showEventDatePicker() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedEventDate = "Event on ${picked.day}/${picked.month}/${picked.year}";
-      });
-    }
-  }
 
   void _showAudiencePickerSheet() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -324,17 +311,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     _pickGalleryImages();
                   },
                 ),
-                _buildContentOption(
-                  icon: Icons.calendar_month_outlined,
-                  label: 'community.event'.tr,
-                  circleBg: circleBg,
-                  iconColor: iconColor,
-                  textColor: textPrimary,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _showEventDatePicker();
-                  },
-                ),
+
                 _buildContentOption(
                   icon: Icons.bar_chart_rounded,
                   label: 'community.poll'.tr,
@@ -552,8 +529,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     final text = _textController.text.trim();
     return text.isNotEmpty ||
         _attachedImages.isNotEmpty ||
-        _pollQuestion != null ||
-        _selectedEventDate != null;
+        _pollQuestion != null;
   }
 
   void _onBackPress() {
@@ -875,7 +851,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     ),
 
                     // Attached Content Previews (Shown ONLY when user explicitly attaches)
-                    if (_attachedImages.isNotEmpty || _selectedEventDate != null || _pollQuestion != null)
+                    if (_attachedImages.isNotEmpty || _pollQuestion != null)
                       Wrap(
                         spacing: 12,
                         runSpacing: 12,
@@ -929,49 +905,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             );
                           }),
 
-                          // 2. Attached Event Card
-                          if (_selectedEventDate != null)
-                            Container(
-                              width: 140,
-                              height: 105,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: cardBg,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: cardBorder),
-                              ),
-                              child: Stack(
-                                children: [
-                                  Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(Icons.calendar_month_outlined, color: Colors.white, size: 30),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          _selectedEventDate!,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w500),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 0,
-                                    right: 0,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _selectedEventDate = null;
-                                        });
-                                      },
-                                      child: const Icon(Icons.close, color: Colors.white60, size: 16),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
 
                           // 3. Attached Poll Card
                           if (_pollQuestion != null)
@@ -1041,12 +974,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       color: textPrimary.withValues(alpha: 0.65),
                       onPressed: _pickGalleryImages,
                     ),
-                    _ToolbarBtn(
-                      icon: Icons.calendar_month_outlined,
-                      tooltip: 'community.event'.tr,
-                      color: textPrimary.withValues(alpha: 0.65),
-                      onPressed: _showEventDatePicker,
-                    ),
+
                     _ToolbarBtn(
                       icon: Icons.bar_chart_rounded,
                       tooltip: 'community.poll'.tr,

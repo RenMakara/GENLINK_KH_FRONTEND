@@ -4,6 +4,9 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import '../../domain/models/community_models.dart';
+import '../controllers/community_controller.dart';
+import 'event_details_screen.dart';
 
 class CreateEventScreen extends StatefulWidget {
   const CreateEventScreen({super.key});
@@ -168,28 +171,58 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     if (!_canCreate || _isSubmitting) return;
     setState(() => _isSubmitting = true);
 
-    await Future.delayed(const Duration(milliseconds: 600));
-
+    // Short UI feedback delay (local-first, no network)
+    await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
+
+    // Build an EventModel from the form data
+    final newEvent = EventModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: _titleController.text.trim(),
+      subtitle: _descController.text.trim().isNotEmpty
+          ? _descController.text.trim().split('\n').first
+          : '',
+      organizerName: 'Me',
+      eventType: _eventType,
+      location: _eventType == 'In person' ? _locationController.text.trim() : '',
+      onlineLink: _eventType == 'Online' ? _linkController.text.trim() : '',
+      dateString: _formattedDate,
+      timeString: '',
+      description: _descController.text.trim(),
+      category: _selectedCategory?.tr ?? '',
+      imageUrl: '',
+      coverImageFile: _coverImage,
+      attendeesCount: 0,
+    );
+
+    // Register in controller so the Event list updates reactively
+    final controller = Get.find<CommunityController>();
+    controller.createEvent(newEvent);
+
     setState(() => _isSubmitting = false);
 
+    if (!mounted) return;
     AppNotificationBanner.showSuccess(
       context: context,
       title: 'community.eventCreated'.tr,
       message: 'community.eventCreatedMsg'.tr,
     );
-    Navigator.pop(context);
+
+    // Navigate to the freshly-created event's detail screen
+    Get.off(() => EventDetailsScreen(event: newEvent));
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF0F1115) : Colors.white;
+    
+    // Strict Dark Theme based on instructions
+    final bg = isDark ? Colors.black : Colors.white;
+    final inputBg = isDark ? const Color(0xFF181818) : Colors.white;
     final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textMuted = isDark ? const Color(0xFF8E9297) : const Color(0xFF666666);
-    final cardBorder = isDark ? const Color(0xFF333333) : const Color(0xFFDDDDDD);
-    final imagePlaceholderBg = isDark ? const Color(0xFF1E2228) : const Color(0xFFF0F2F5);
-    final imagePlaceholderBorder = isDark ? const Color(0xFF2B313A) : const Color(0xFFE5E7EB);
+    final textMuted = isDark ? const Color(0xFFA6A6A6) : const Color(0xFF666666);
+    final cardBorder = isDark ? const Color(0xFF303030) : const Color(0xFFDDDDDD);
+    final imagePlaceholderBg = isDark ? const Color(0xFF181818) : const Color(0xFFF0F2F5);
 
     return PopScope(
       canPop: false,
@@ -210,7 +243,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           ),
           titleSpacing: 8,
           title: Text(
-            'Create event',
+            'Create Event',
             style: TextStyle(
               color: textPrimary,
               fontSize: 17,
@@ -220,27 +253,32 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           centerTitle: true,
           actions: [
             Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: TextButton(
+              padding: const EdgeInsets.only(right: 12, top: 10, bottom: 10),
+              child: ElevatedButton(
                 onPressed: _canCreate && !_isSubmitting ? _submit : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isDark ? Colors.white : Colors.black,
+                  foregroundColor: isDark ? Colors.black : Colors.white,
+                  disabledBackgroundColor: isDark ? const Color(0xFF222222) : const Color(0xFFE0E0E0),
+                  disabledForegroundColor: isDark ? Colors.white30 : Colors.black38,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                ),
                 child: _isSubmitting
                     ? SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: textPrimary,
+                          color: isDark ? Colors.black : Colors.white,
                         ),
                       )
-                    : Text(
-                        'Done',
-                        style: TextStyle(
-                          color: _canCreate
-                              ? textPrimary
-                              : (isDark ? Colors.white30 : Colors.black38),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
+                    : const Text(
+                        'Create',
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                       ),
               ),
             ),
@@ -252,25 +290,25 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Banner Image Area ─────────────────────────────────────────
-              GestureDetector(
-                onTap: _pickCoverImage,
-                child: Container(
-                  width: double.infinity,
-                  height: MediaQuery.of(context).size.width * (9 / 16),
-                  decoration: BoxDecoration(
-                    color: imagePlaceholderBg,
-                    border: Border(
-                      bottom: BorderSide(color: imagePlaceholderBorder),
-                    ),
+              Container(
+                width: double.infinity,
+                height: MediaQuery.of(context).size.width * (9 / 16),
+                decoration: BoxDecoration(
+                  color: imagePlaceholderBg,
+                  border: Border(
+                    bottom: BorderSide(color: cardBorder),
                   ),
-                  child: Stack(
-                    children: [
-                      if (_coverImage != null)
-                        Positioned.fill(
-                          child: Image.file(_coverImage!, fit: BoxFit.cover),
-                        )
-                      else
-                        Center(
+                ),
+                child: Stack(
+                  children: [
+                    if (_coverImage != null)
+                      Positioned.fill(
+                        child: Image.file(_coverImage!, fit: BoxFit.cover),
+                      )
+                    else
+                      GestureDetector(
+                        onTap: _pickCoverImage,
+                        child: Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -283,24 +321,49 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                             ],
                           ),
                         ),
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.black54 : Colors.white70,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.edit,
-                            color: textPrimary,
-                            size: 18,
-                          ),
-                        ),
                       ),
-                    ],
-                  ),
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: _pickCoverImage,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.black54 : Colors.white70,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.edit,
+                                color: textPrimary,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                          if (_coverImage != null) ...[
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => setState(() => _coverImage = null),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: isDark ? Colors.black54 : Colors.white70,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.close,
+                                  color: textPrimary,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ]
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
@@ -329,14 +392,14 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       focusNode: _titleFocus,
                       maxLines: 1,
                       style: TextStyle(color: textPrimary, fontSize: 16),
-                      decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary),
+                      decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary, inputBg: inputBg),
                       textInputAction: TextInputAction.next,
                       onSubmitted: (_) => _eventType == 'Online' ? _linkFocus.requestFocus() : _locationFocus.requestFocus(),
                     ),
                     const SizedBox(height: 24),
 
                     // ── Date and Time ───────────────────────────────────────
-                    _buildLabel('Date and time*', textMuted),
+                    _buildLabel('Date & time*', textMuted),
                     const SizedBox(height: 8),
                     InkWell(
                       onTap: _pickDate,
@@ -344,7 +407,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         child: TextField(
                           controller: TextEditingController(text: _formattedDate),
                           style: TextStyle(color: textPrimary, fontSize: 16),
-                          decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary).copyWith(
+                          decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary, inputBg: inputBg).copyWith(
                             hintText: 'Select date and time',
                             hintStyle: TextStyle(color: textMuted, fontSize: 16),
                           ),
@@ -360,14 +423,14 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
                     // ── Dynamic Field (Location / Link) ─────────────────────
                     if (_eventType == 'Online') ...[
-                      _buildLabel('External event link*', textMuted),
+                      _buildLabel('Online event link*', textMuted),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _linkController,
                         focusNode: _linkFocus,
                         maxLines: 1,
                         style: TextStyle(color: textPrimary, fontSize: 16),
-                        decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary).copyWith(
+                        decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary, inputBg: inputBg).copyWith(
                           hintText: 'e.g. https://meet.google.com/...',
                           hintStyle: TextStyle(color: textMuted, fontSize: 16),
                         ),
@@ -382,8 +445,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         focusNode: _locationFocus,
                         maxLines: 1,
                         style: TextStyle(color: textPrimary, fontSize: 16),
-                        decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary).copyWith(
-                          hintText: 'e.g. ACLEDA Institute',
+                        decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary, inputBg: inputBg).copyWith(
+                          hintText: 'Add event location',
                           hintStyle: TextStyle(color: textMuted, fontSize: 16),
                         ),
                         textInputAction: TextInputAction.next,
@@ -402,8 +465,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       maxLines: 10,
                       maxLength: 5000,
                       style: TextStyle(color: textPrimary, fontSize: 16, height: 1.5),
-                      decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary).copyWith(
-                        hintText: 'Ex: topics, schedule, etc.',
+                      decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary, inputBg: inputBg).copyWith(
+                        hintText: 'Tell people about your event',
                         hintStyle: TextStyle(color: textMuted, fontSize: 16),
                       ),
                       textInputAction: TextInputAction.done,
@@ -427,7 +490,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                             duration: const Duration(milliseconds: 180),
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
-                              color: isSelected ? textPrimary : Colors.transparent,
+                              color: isSelected ? textPrimary : inputBg,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: isSelected ? Colors.transparent : cardBorder,
@@ -444,26 +507,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                           ),
                         );
                       }).toList(),
-                    ),
-                    const SizedBox(height: 40),
-
-                    // ── Footer Note ─────────────────────────────────────────
-                    RichText(
-                      text: TextSpan(
-                        style: TextStyle(color: textMuted, fontSize: 13, height: 1.5),
-                        children: [
-                          const TextSpan(text: "By continuing, you agree with GenLink's event policy.\n\n"),
-                          const TextSpan(text: "Make the most of GenLink Events. "),
-                          TextSpan(
-                            text: "Learn more",
-                            style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black,
-                              fontWeight: FontWeight.w600,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                     const SizedBox(height: 40),
                   ],
@@ -521,9 +564,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   InputDecoration _inputDeco({
     required Color cardBorder,
     required Color textPrimary,
+    required Color inputBg,
   }) {
     return InputDecoration(
-      filled: false,
+      filled: true,
+      fillColor: inputBg,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
         borderSide: BorderSide(color: cardBorder),

@@ -1751,7 +1751,9 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     setState(() => _isPublishing = true);
 
     try {
-      final controller = Get.find<StoryController>();
+      final controller = Get.isRegistered<StoryController>()
+          ? Get.find<StoryController>()
+          : Get.put(StoryController(), permanent: true);
       final caption = _captionController.text.trim();
       final String? textContent = caption.isNotEmpty ? caption : null;
 

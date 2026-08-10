@@ -365,7 +365,7 @@ class _NotificationCardState extends State<_NotificationCard> {
           onTapDown: (_) => setState(() => _pressed = true),
           onTapUp: (_) {
             setState(() => _pressed = false);
-            widget.controller.markAsRead(notif.id);
+            widget.controller.handleNotificationTap(notif, context);
           },
           onTapCancel: () => setState(() => _pressed = false),
           child: AnimatedScale(

@@ -11,6 +11,8 @@ import '../../../chat/presentation/bindings/chat_binding.dart';
 import '../../../chat/presentation/controllers/chat_controller.dart';
 import '../../domain/models/story_model.dart';
 import '../controllers/story_controller.dart';
+import '../../../notification/presentation/controllers/notification_controller.dart';
+import '../../../notification/domain/models/notification_model.dart';
 
 class _CampusGroupItem {
   final String id;
@@ -247,47 +249,62 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
       }
     });
 
-    // Dedicated 335ms sequence animation for Like/Unlike icon button (Scale + Upward Translation + Rotation)
+    // Dedicated sequence animation for Like/Unlike icon button (scale 1.0 -> 1.12 -> 1.0 over 200ms)
     _likeBtnAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 240),
+      duration: const Duration(milliseconds: 200),
     );
 
-    // Modern TikTok / IG Spring Scale Pop: 1.00 -> 0.80 -> 1.28 -> 1.00
     _likeBtnScaleAnim = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.00, end: 0.80).chain(CurveTween(curve: Curves.easeOutQuad)),
-        weight: 30,
+        tween: Tween<double>(begin: 1.0, end: 1.12).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 50,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.80, end: 1.28).chain(CurveTween(curve: const Cubic(0.175, 0.885, 0.32, 1.275))),
-        weight: 45,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.28, end: 1.00).chain(CurveTween(curve: Curves.easeOutCubic)),
-        weight: 25,
+        tween: Tween<double>(begin: 1.12, end: 1.0).chain(CurveTween(curve: Curves.easeInCubic)),
+        weight: 50,
       ),
     ]).animate(_likeBtnAnimController);
 
-    // Floating Canvas Feedback Heart Animation (Instagram / Facebook Style: Rises & Fades Out over 730ms)
+    // Floating Canvas Feedback Heart Animation for Double-Tap (0.5 -> 1.2 -> 1.0, 650ms)
     _floatingHeartAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 730),
+      duration: const Duration(milliseconds: 650),
     );
 
     _floatingHeartScaleAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 0.4, end: 1.15).chain(CurveTween(curve: Curves.fastOutSlowIn)), weight: 35),
-      TweenSequenceItem(tween: Tween<double>(begin: 1.15, end: 1.0).chain(CurveTween(curve: Curves.easeOut)), weight: 65),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.5, end: 1.2).chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 40,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.2, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 25,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.0).chain(CurveTween(curve: Curves.linear)),
+        weight: 35,
+      ),
     ]).animate(_floatingHeartAnimController);
 
     _floatingHeartOpacityAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeIn)), weight: 25),
-      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 0.0).chain(CurveTween(curve: Curves.easeOut)), weight: 75),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeIn)),
+        weight: 20,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.0).chain(CurveTween(curve: Curves.linear)),
+        weight: 45,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 0.0).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 35,
+      ),
     ]).animate(_floatingHeartAnimController);
 
     _floatingHeartTranslateAnim = Tween<Offset>(
       begin: Offset.zero,
-      end: const Offset(0, -36.0),
+      end: const Offset(0, -28.0),
     ).animate(CurvedAnimation(
       parent: _floatingHeartAnimController,
       curve: Curves.easeOutCubic,
@@ -466,22 +483,49 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
       story.likesCount += story.isLiked ? 1 : -1;
     }
 
-    // Rebuild UI with new state
+    // Rebuild UI with new state immediately
     setState(() {});
 
+    // Animate button heart icon (scale 1.0 -> 1.18 -> 1.0)
     _likeBtnAnimController.forward(from: 0.0);
-    if (story.isLiked) {
-      setState(() => _showHeartAnimation = true);
-      _floatingHeartAnimController.forward(from: 0.0).then((_) {
-        if (mounted) setState(() => _showHeartAnimation = false);
-      });
+
+    // Create activity notification if story is liked
+    if (story.isLiked && Get.isRegistered<NotificationController>()) {
+      final notifCtrl = Get.find<NotificationController>();
+      final group = _currentGroup;
+      notifCtrl.addActivityNotification(
+        NotificationModel(
+          id: 'notif_like_${story.id}_${DateTime.now().millisecondsSinceEpoch}',
+          type: NotificationType.like,
+          title: 'Story Like',
+          body: '${group?.userName ?? "Someone"} liked your story.',
+          senderName: group?.userName ?? 'Community User',
+          senderAvatar: group?.userAvatar,
+          timeAgo: 'Just now',
+          timestamp: DateTime.now(),
+          isRead: false,
+          targetId: story.id,
+          targetType: 'story',
+        ),
+      );
     }
   }
 
   void _triggerDoubleTapLike() {
     final story = _currentStory;
     if (story == null) return;
-    _toggleLike(story);
+
+    if (!story.isLiked) {
+      _toggleLike(story);
+    } else {
+      _likeBtnAnimController.forward(from: 0.0);
+    }
+
+    // Trigger center floating heart animation for double tap gesture
+    setState(() => _showHeartAnimation = true);
+    _floatingHeartAnimController.forward(from: 0.0).then((_) {
+      if (mounted) setState(() => _showHeartAnimation = false);
+    });
   }
 
   Widget _buildStoryReplyThumbnail(StoryItemModel story) {
@@ -924,6 +968,26 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
         mediaUrl: story.mediaUrl,
       );
 
+      // Create real activity notification for Story Owner
+      if (Get.isRegistered<NotificationController>()) {
+        final notifCtrl = Get.find<NotificationController>();
+        notifCtrl.addActivityNotification(
+          NotificationModel(
+            id: 'notif_reply_${story.id}_${DateTime.now().millisecondsSinceEpoch}',
+            type: NotificationType.comment,
+            title: 'Story Reply',
+            body: '${group.userName} replied to your story: "$message"',
+            senderName: group.userName,
+            senderAvatar: group.userAvatar,
+            timeAgo: 'Just now',
+            timestamp: DateTime.now(),
+            isRead: false,
+            targetId: story.id,
+            targetType: 'story',
+          ),
+        );
+      }
+
       // Show Compact Floating Toast Notification & Resume Story Playback
       if (mounted) {
         _showCompactReplyToast(context, group.userName, group.userAvatar);
@@ -943,6 +1007,26 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
 
   void _sendStoryReaction(StoryGroupModel group, StoryItemModel story, String emoji) {
     _triggerDoubleTapLike();
+
+    if (Get.isRegistered<NotificationController>()) {
+      final notifCtrl = Get.find<NotificationController>();
+      notifCtrl.addActivityNotification(
+        NotificationModel(
+          id: 'notif_react_${story.id}_${DateTime.now().millisecondsSinceEpoch}',
+          type: NotificationType.like,
+          title: 'Story Reaction',
+          body: '${group.userName} reacted $emoji to your story.',
+          senderName: group.userName,
+          senderAvatar: group.userAvatar,
+          timeAgo: 'Just now',
+          timestamp: DateTime.now(),
+          isRead: false,
+          targetId: story.id,
+          targetType: 'story',
+        ),
+      );
+    }
+
     AppNotificationBanner.showSuccess(
       context: context,
       title: "Reaction Sent",
@@ -2549,7 +2633,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
               ),
             ),
 
-            // Floating Heart Feedback (rises & fades)
+            // Floating Heart Feedback (rises & fades near center on double-tap)
             if (_showHeartAnimation)
               Center(
                 child: AnimatedBuilder(
@@ -2562,22 +2646,22 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                         child: Opacity(
                           opacity: _floatingHeartOpacityAnim.value.clamp(0.0, 1.0),
                           child: Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.45),
+                              color: Colors.black.withValues(alpha: 0.50),
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.white.withValues(alpha: 0.15),
-                                  blurRadius: 16,
-                                  spreadRadius: 1,
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  blurRadius: 20,
+                                  spreadRadius: 2,
                                 ),
                               ],
                             ),
                             child: const Icon(
                               Icons.favorite_rounded,
-                              color: Colors.white,
-                              size: 52,
+                              color: AppColors.likedAccent,
+                              size: 72,
                             ),
                           ),
                         ),
@@ -2823,27 +2907,32 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 180),
                                 curve: Curves.easeOutCubic,
-                                width: 38,
-                                height: 38,
+                                width: 48,
+                                height: 48,
                                 decoration: BoxDecoration(
-                                  color: story.isLiked
-                                      ? Colors.white.withValues(alpha: 0.18)
-                                      : Colors.black.withValues(alpha: 0.35),
+                                  color: Colors.black.withValues(alpha: 0.50),
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: story.isLiked
-                                        ? Colors.white.withValues(alpha: 0.30)
-                                        : Colors.white.withValues(alpha: 0.12),
-                                    width: 0.6,
+                                        ? Colors.white.withValues(alpha: 0.35)
+                                        : Colors.white.withValues(alpha: 0.20),
+                                    width: 1.0,
                                   ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.30),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
                                 child: Center(
                                   child: Icon(
                                     story.isLiked
                                         ? Icons.favorite_rounded
                                         : Icons.favorite_border_rounded,
-                                    color: Colors.white,
-                                    size: 20,
+                                    color: story.isLiked ? AppColors.likedAccent : Colors.white,
+                                    size: 24,
                                   ),
                                 ),
                               ),

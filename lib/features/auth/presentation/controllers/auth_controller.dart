@@ -38,7 +38,7 @@ class AuthController extends GetxController {
   // ── Observable State ──────────────────────────────────────────────────
 
   final isLoading = false.obs;
-  final isAuthenticated = true.obs;
+  final isAuthenticated = false.obs;
   final currentUser = Rxn<UserEntity>();
   final errorMessage = RxnString();
 

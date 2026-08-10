@@ -65,9 +65,12 @@ class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidg
             final titleFontSize = isVeryNarrow ? 18.0 : (isNarrow ? 20.0 : 22.0);
             final horizontalPadding = isNarrow ? 10.0 : AppSpacing.md;
 
-            return Container(
-              height: preferredSize.height,
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: Container(
+                  height: preferredSize.height,
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: Row(
                 children: [
                   // 1. LEFT TITLE - Flexible and non-overflowing
@@ -105,9 +108,9 @@ class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidg
 
                       SizedBox(width: buttonGap),
 
-                      // Chat Button
+                      // Chat Button - Two overlapping speech bubbles icon
                       _HeaderActionButton(
-                        icon: Icons.chat_bubble_outline_rounded,
+                        icon: Icons.forum_outlined,
                         onTap: () => Get.to(() => const ChatListScreen()),
                         showBadge: hasUnreadMessages,
                         badgeColor: AppColors.communityAccent,
@@ -138,7 +141,9 @@ class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidg
                   ),
                 ],
               ),
-            );
+            ),
+          ),
+        );
           },
         ),
       ),

@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../domain/models/story_model.dart';
 import '../../domain/repositories/story_repository.dart';
 import '../../data/repositories/story_repository_impl.dart';
@@ -85,6 +86,16 @@ class StoryController extends GetxController {
         );
       }
       storyGroups.refresh();
+
+      if (Get.context != null) {
+        AppNotificationBanner.showSuccess(
+          context: Get.context!,
+          title: "Story Live",
+          message: "Your story is now live.",
+          duration: const Duration(seconds: 3),
+        );
+      }
+
       return true;
     } finally {
       isUploading.value = false;

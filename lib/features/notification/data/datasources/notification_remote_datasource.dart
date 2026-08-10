@@ -128,4 +128,17 @@ class NotificationRemoteDataSource {
     _mockNotifications.removeWhere((n) => n.id == notificationId);
     return true;
   }
+
+  Future<void> addNotification(NotificationModel notification) async {
+    // Check duplicate notification by ID or identical target/actor combo within 1 minute
+    final exists = _mockNotifications.any((n) =>
+        n.id == notification.id ||
+        (n.targetId == notification.targetId &&
+            n.senderName == notification.senderName &&
+            n.type == notification.type &&
+            DateTime.now().difference(n.timestamp).inSeconds < 60));
+    if (!exists) {
+      _mockNotifications.insert(0, notification);
+    }
+  }
 }

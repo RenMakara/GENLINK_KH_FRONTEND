@@ -23,6 +23,8 @@ class ProfileController extends GetxController {
   final errorMessage = RxnString();
 
   final profile = Rxn<ProfileEntity>();
+  final publicProfile = Rxn<PublicProfileEntity>();
+  String? viewingUsername;
   final interests = <InterestEntity>[].obs;
   final portfolio = <PortfolioItemEntity>[].obs;
   final socialLinks = <SocialLinkEntity>[].obs;
@@ -35,6 +37,7 @@ class ProfileController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    viewingUsername = Get.parameters['username'];
     load();
   }
 
@@ -44,7 +47,11 @@ class ProfileController extends GetxController {
     isLoading.value = true;
     errorMessage.value = null;
     try {
-      profile.value = await _repository.getMyProfile();
+      if (viewingUsername != null) {
+        publicProfile.value = await _repository.getPublicProfile(viewingUsername!);
+      } else {
+        profile.value = await _repository.getMyProfile();
+      }
     } on AppError catch (e) {
       errorMessage.value = e.message;
     } catch (_) {

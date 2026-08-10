@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
-import '../../../../design_system/shadows/app_shadows.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../controllers/community_controller.dart';
 import '../widgets/community_header_widget.dart';
@@ -156,7 +155,6 @@ class CommunityScreen extends GetView<CommunityController> {
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 
     return RefreshIndicator(
       onRefresh: () => controller.refreshFeed(),
@@ -173,55 +171,82 @@ class CommunityScreen extends GetView<CommunityController> {
 
             const SizedBox(height: AppSpacing.md),
 
-            // Create Post Quick Bar
+            // Create Post Quick Bar (Senior UI/UX Redesign - Finance Aligned)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               child: InkWell(
                 onTap: () => Get.to(() => const CreatePostScreen()),
-                borderRadius: BorderRadius.circular(AppRadius.squircle),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: 14,
+                    horizontal: 14,
+                    vertical: 10,
                   ),
                   decoration: BoxDecoration(
                     color: surfaceSecondary,
-                    borderRadius: BorderRadius.circular(AppRadius.squircle),
-                    border: Border.all(color: borderSubtle, width: 1.2),
-                    boxShadow: isDark ? [] : AppShadows.soft,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    boxShadow: isDark
+                        ? []
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const CircleAvatar(
-                        radius: 20,
-                        backgroundImage:
-                            AssetImage('assets/images/user_profile.png'),
+                        radius: 18,
+                        backgroundImage: AssetImage('assets/images/user_profile.png'),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
-                          "What's happening in your community, Sokny?",
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                                color: textMuted,
-                              ) ??
-                              TextStyle(
-                                color: textMuted,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                              ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'community.whatsHappeningSokny'.tr,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13.5,
+                                  ) ??
+                                  TextStyle(
+                                    color: textPrimary,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              'community.shareWithCommunity'.tr,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                    color: textMuted,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w400,
+                                  ) ??
+                                  TextStyle(
+                                    color: textMuted,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                            ),
+                          ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.sm),
-                        decoration: BoxDecoration(
-                          color: AppColors.communityAccent.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(AppRadius.md + 4),
-                        ),
-                        child: const Icon(
-                          Icons.photo_library_outlined,
-                          color: AppColors.communityAccent,
-                          size: 20,
-                        ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.edit_note_rounded,
+                        color: textMuted.withValues(alpha: 0.7),
+                        size: 20,
                       ),
                     ],
                   ),
@@ -258,7 +283,7 @@ class CommunityScreen extends GetView<CommunityController> {
                       Text(
                         controller.errorMessage.value.isNotEmpty
                             ? controller.errorMessage.value
-                            : 'Could not load feed',
+                            : 'community.couldNotLoadFeed'.tr,
                         style: theme.textTheme.bodyMedium?.copyWith(color: textSecondary) ??
                             TextStyle(color: textSecondary, fontSize: 14),
                         textAlign: TextAlign.center,
@@ -267,7 +292,7 @@ class CommunityScreen extends GetView<CommunityController> {
                       ElevatedButton.icon(
                         onPressed: () => controller.fetchPosts(),
                         icon: const Icon(Icons.refresh, size: 18),
-                        label: const Text('Retry'),
+                        label: Text('common.retry'.tr),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.communityAccent,
                           foregroundColor: textPrimary,
@@ -283,7 +308,7 @@ class CommunityScreen extends GetView<CommunityController> {
                   padding: const EdgeInsets.all(AppSpacing.xl),
                   child: Center(
                     child: Text(
-                      'No community posts yet.',
+                      'community.noPostsYet'.tr,
                       style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
                           TextStyle(color: textMuted),
                     ),
@@ -367,7 +392,7 @@ class CommunityScreen extends GetView<CommunityController> {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      "Search Discussions & Topics...",
+                      'community.searchDiscussions'.tr,
                       style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
                           TextStyle(color: textMuted, fontSize: 14),
                     ),
@@ -380,7 +405,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Trending Topics
             Text(
-              "🔥 Trending Topics",
+              'community.trendingTopics'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -442,7 +467,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Forum Categories
             Text(
-              "Forum Categories",
+              'community.forumCategories'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -489,7 +514,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Pinned & Latest Discussions List
             Text(
-              "📌 Pinned Discussions",
+              'community.pinnedDiscussions'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -571,7 +596,7 @@ class CommunityScreen extends GetView<CommunityController> {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      "Search Jobs, Internships & Mentors...",
+                      'community.searchJobs'.tr,
                       style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
                           TextStyle(color: textMuted, fontSize: 14),
                     ),
@@ -584,7 +609,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Recommended Opportunities Hero List
             Text(
-              "🎯 Recommended Opportunities",
+              'community.recommendedOpportunities'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -615,7 +640,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Campus Alumni Mentors
             Text(
-              "👨‍🏫 Campus Alumni Mentors",
+              'community.campusAlumniMentors'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -667,28 +692,7 @@ class CommunityScreen extends GetView<CommunityController> {
     final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
     final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 
-    final List<Map<String, dynamic>> eventsList = [
-      {
-        'title': 'Flutter Mobile Dev Workshop 2026',
-        'subtitle': 'Build Cross-platform Apps with Flutter & Dart',
-        'category': 'Workshop',
-        'time': '9:00 AM – 4:00 PM',
-        'location': 'ACLEDA Institute',
-        'going': '120 Going',
-        'image':
-            'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800',
-      },
-      {
-        'title': 'GenLink KH Hackathon 2026',
-        'subtitle': 'Code. Solve. Impact.',
-        'category': 'Hackathon',
-        'time': '8:00 AM – 8:00 PM',
-        'location': 'Diamond Island Convention',
-        'going': '230 Going',
-        'image':
-            'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800',
-      },
-    ];
+    final eventsList = controller.events;
 
     return SingleChildScrollView(
       child: Padding(
@@ -722,7 +726,7 @@ class CommunityScreen extends GetView<CommunityController> {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            "Search Events & Workshops...",
+                            'community.searchEventsHint'.tr,
                             style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
                                 TextStyle(color: textMuted, fontSize: 14),
                           ),
@@ -763,7 +767,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Featured Events Carousel
             Text(
-              "🌟 Featured Events",
+              'community.featuredEvents'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -783,17 +787,20 @@ class CommunityScreen extends GetView<CommunityController> {
                 itemBuilder: (context, idx) {
                   final ev = eventsList[idx];
                   return InkWell(
-                    onTap: () => Get.to(() => EventDetailsScreen(eventData: ev)),
+                    onTap: () => Get.to(() => EventDetailsScreen(event: ev)),
                     borderRadius: BorderRadius.circular(AppRadius.squircle),
                     child: Container(
                       width: 280,
                       margin: const EdgeInsets.only(right: 14),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(AppRadius.squircle),
-                        image: DecorationImage(
-                          image: NetworkImage(ev['image']),
-                          fit: BoxFit.cover,
-                        ),
+                        image: ev.imageUrl.isNotEmpty
+                            ? DecorationImage(
+                                image: NetworkImage(ev.imageUrl),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                        color: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
                       ),
                       child: Container(
                         decoration: BoxDecoration(
@@ -813,7 +820,7 @@ class CommunityScreen extends GetView<CommunityController> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              ev['title'],
+                              ev.title,
                               style: theme.textTheme.titleMedium?.copyWith(
                                     color: AppColors.darkTextPrimary,
                                     fontWeight: FontWeight.bold,
@@ -826,7 +833,7 @@ class CommunityScreen extends GetView<CommunityController> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              ev['location'],
+                              ev.eventType == 'In person' ? ev.location : 'Online Event',
                               style: theme.textTheme.bodySmall?.copyWith(
                                     color: AppColors.communityAccent,
                                     fontWeight: FontWeight.w600,
@@ -850,7 +857,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Event List
             Text(
-              "📅 Upcoming Events",
+              'community.upcomingEvents'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -864,7 +871,7 @@ class CommunityScreen extends GetView<CommunityController> {
             const SizedBox(height: 12),
             ...eventsList.map((ev) {
               return InkWell(
-                onTap: () => Get.to(() => EventDetailsScreen(eventData: ev)),
+                onTap: () => Get.to(() => EventDetailsScreen(event: ev)),
                 borderRadius: BorderRadius.circular(AppRadius.squircle),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -879,11 +886,17 @@ class CommunityScreen extends GetView<CommunityController> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(AppRadius.lg - 2),
                         child: Image.network(
-                          ev['image'],
-                          width: 75,
-                          height: 75,
-                          fit: BoxFit.cover,
-                        ),
+                              ev.imageUrl.isNotEmpty ? ev.imageUrl : 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=300',
+                              width: 75,
+                              height: 75,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, _) => Container(
+                                width: 75,
+                                height: 75,
+                                color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0),
+                                child: const Icon(Icons.event_outlined, size: 32),
+                              ),
+                            ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -891,7 +904,7 @@ class CommunityScreen extends GetView<CommunityController> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              ev['title'],
+                              ev.title,
                               style: theme.textTheme.titleSmall?.copyWith(
                                     color: textPrimary,
                                     fontWeight: FontWeight.bold,
@@ -904,7 +917,7 @@ class CommunityScreen extends GetView<CommunityController> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              ev['location'],
+                              ev.eventType == 'In person' ? ev.location : 'Online Event',
                               style: theme.textTheme.bodySmall?.copyWith(color: textSecondary) ??
                                   TextStyle(
                                     color: textSecondary,
@@ -913,13 +926,13 @@ class CommunityScreen extends GetView<CommunityController> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              ev['time'],
+                              ev.timeString,
                               style: theme.textTheme.labelSmall?.copyWith(
-                                    color: AppColors.communityAccent,
+                                    color: textSecondary,
                                     fontWeight: FontWeight.bold,
                                   ) ??
-                                  const TextStyle(
-                                    color: AppColors.communityAccent,
+                                  TextStyle(
+                                    color: textSecondary,
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
                                   ),

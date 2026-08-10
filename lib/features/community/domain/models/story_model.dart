@@ -80,6 +80,7 @@ class StoryItemModel {
   final List<MovableStoryLayer> layers;
   int likesCount;
   bool isLiked;
+  bool isViewed;
   int viewersCount;
   final List<StoryViewerModel> viewers;
   final double bgScale;
@@ -100,6 +101,7 @@ class StoryItemModel {
     this.layers = const [],
     this.likesCount = 0,
     this.isLiked = false,
+    this.isViewed = false,
     this.viewersCount = 0,
     this.viewers = const [],
     this.bgScale = 1.0,
@@ -115,7 +117,6 @@ class StoryGroupModel {
   final String userName;
   final String userAvatar;
   final bool isOwner;
-  final bool hasUnseen;
   final List<StoryItemModel> stories;
 
   StoryGroupModel({
@@ -123,7 +124,9 @@ class StoryGroupModel {
     required this.userName,
     required this.userAvatar,
     this.isOwner = false,
-    this.hasUnseen = true,
+    bool hasUnseen = true,
     required this.stories,
   });
+
+  bool get hasUnseen => stories.any((s) => !s.isViewed);
 }

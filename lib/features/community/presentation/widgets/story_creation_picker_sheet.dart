@@ -135,7 +135,7 @@ class StoryCreationPickerSheet extends StatelessWidget {
                 child: Icon(Icons.camera_alt_rounded, color: textPrimary, size: 22),
               ),
               title: Text(
-                "Camera",
+                'community.camera'.tr,
                 style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
               onTap: () => _openCamera(context),
@@ -159,7 +159,7 @@ class StoryCreationPickerSheet extends StatelessWidget {
                 child: Icon(Icons.photo_library_rounded, color: textPrimary, size: 22),
               ),
               title: Text(
-                "Gallery",
+                'community.gallery'.tr,
                 style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
               onTap: () => _pickFromGallery(context),
@@ -183,7 +183,7 @@ class StoryCreationPickerSheet extends StatelessWidget {
                 child: Icon(Icons.title_rounded, color: textPrimary, size: 22),
               ),
               title: Text(
-                "Text Story",
+                'community.textStory'.tr,
                 style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
               onTap: () => _openTextStory(context),

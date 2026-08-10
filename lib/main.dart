@@ -2,4 +2,4 @@ import 'app/bootstrap.dart';
 
 /// Entry point. All setup lives in `bootstrap()` so this file stays a
 /// one-liner and the startup order is documented in one place.
-Future<void> main() => bootstrap();
+void main() => bootstrap();

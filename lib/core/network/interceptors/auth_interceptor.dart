@@ -69,6 +69,17 @@ class AuthInterceptor extends Interceptor {
     final statusCode = err.response?.statusCode;
     final options = err.requestOptions;
 
+    final token = await _storage.readAccessToken();
+    final isDemoToken = token == 'demo_access_token' ||
+        token == 'mock_access_token_123' ||
+        token == 'mock_google_token';
+
+    if (isDemoToken) {
+      // Demo session: backend API failures must not wipe demo state or bounce to login.
+      handler.next(err);
+      return;
+    }
+
     final shouldRefresh = (statusCode == 401 || statusCode == 403) &&
         !_isAuthEndpoint(options.path) &&
         options.extra[_retriedFlag] != true;
@@ -88,9 +99,9 @@ class AuthInterceptor extends Interceptor {
       return;
     }
 
-    final token = await _storage.readAccessToken();
-    if (token != null && token.isNotEmpty) {
-      options.headers['Authorization'] = 'Bearer $token';
+    final refreshedToken = await _storage.readAccessToken();
+    if (refreshedToken != null && refreshedToken.isNotEmpty) {
+      options.headers['Authorization'] = 'Bearer $refreshedToken';
     }
     options.extra[_retriedFlag] = true;
 

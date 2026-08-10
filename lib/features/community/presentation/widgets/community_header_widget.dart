@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/design_system/widgets/avatar/app_avatar.dart';
-import 'package:genlink_frontend/features/chat/presentation/screens/chat_list_screen.dart';
-import 'package:genlink_frontend/features/notification/presentation/screens/notification_screen.dart';
 
-/// Community Header implementation identical in style and design tokens
-/// to the Finance Header in [FinanceScreen].
+import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../chat/presentation/screens/chat_list_screen.dart';
+import '../../../notification/presentation/screens/notification_screen.dart';
+import '../screens/community_search_screen.dart';
+
+/// GenLink KH Community Header Widget
+///
+/// Refactored to strictly match the design system tokens, layout, typography,
+/// and component architecture of the Finance header.
 class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidget {
   final String activeCategory;
   final bool hasUnreadMessages;
   final bool hasUnreadNotifications;
-  final String? userAvatarUrl;
-  final String userName;
 
   const CommunityHeaderWidget({
     super.key,
     required this.activeCategory,
     this.hasUnreadMessages = true,
     this.hasUnreadNotifications = true,
-    this.userAvatarUrl = 'assets/images/user_profile.png',
-    this.userName = 'Sokny Enat',
   });
 
   @override
@@ -28,7 +28,8 @@ class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidg
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     final bg = isDark
         ? AppColors.darkBgPrimary
@@ -54,115 +55,164 @@ class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidg
       color: bg,
       child: SafeArea(
         bottom: false,
-        child: Container(
-          height: preferredSize.height,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // 1. TITLE - Identical to Finance Header Title TextStyle
-              Text(
-                titleText,
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
-                ),
-              ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 360;
+            final isVeryNarrow = constraints.maxWidth < 335;
+            final buttonSize = isVeryNarrow ? 34.0 : (isNarrow ? 38.0 : 42.0);
+            final buttonGap = isVeryNarrow ? 3.0 : (isNarrow ? 5.0 : AppSpacing.sm);
+            final iconSize = isVeryNarrow ? 18.0 : (isNarrow ? 20.0 : 22.0);
+            final titleFontSize = isVeryNarrow ? 18.0 : (isNarrow ? 20.0 : 22.0);
+            final horizontalPadding = isNarrow ? 10.0 : AppSpacing.md;
 
-              // 2. ACTION BUTTONS - Identical to Finance Action Button Containers
-              Row(
-                mainAxisSize: MainAxisSize.min,
+            return Container(
+              height: preferredSize.height,
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Row(
                 children: [
-                  // Chat Button (Identical style to Finance Notification button)
-                  GestureDetector(
-                    onTap: () => Get.to(() => const ChatListScreen()),
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: border),
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Icon(
-                            Icons.chat_bubble_outline_rounded,
-                            size: 22,
-                            color: textPrimary,
-                          ),
-                          if (hasUnreadMessages)
-                            Positioned(
-                              top: 9,
-                              right: 9,
-                              child: Container(
-                                width: 7,
-                                height: 7,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.communityAccent,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                        ],
+                  // 1. LEFT TITLE - Flexible and non-overflowing
+                  Expanded(
+                    child: Text(
+                      titleText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: titleFontSize,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
                       ),
                     ),
                   ),
 
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 6),
 
-                  // Notification Button (Exact Finance Notification button)
-                  GestureDetector(
-                    onTap: () => Get.to(() => const NotificationScreen()),
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: border),
+                  // 2. RIGHT ACTION BUTTONS (Search, Chat, Notification)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Search Button
+                      _HeaderActionButton(
+                        icon: Icons.search_rounded,
+                        onTap: () => Get.to(() => CommunitySearchScreen(activeTab: activeCategory)),
+                        backgroundColor: surface,
+                        borderColor: border,
+                        iconColor: textPrimary,
+                        buttonSize: buttonSize,
+                        iconSize: iconSize,
+                        tooltip: 'community.search'.tr,
                       ),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Icon(
-                            Icons.notifications_none_rounded,
-                            size: 22,
-                            color: textPrimary,
-                          ),
-                          if (hasUnreadNotifications)
-                            Positioned(
-                              top: 9,
-                              right: 9,
-                              child: Container(
-                                width: 7,
-                                height: 7,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.communityAccent,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                        ],
+
+                      SizedBox(width: buttonGap),
+
+                      // Chat Button
+                      _HeaderActionButton(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        onTap: () => Get.to(() => const ChatListScreen()),
+                        showBadge: hasUnreadMessages,
+                        badgeColor: AppColors.communityAccent,
+                        backgroundColor: surface,
+                        borderColor: border,
+                        iconColor: textPrimary,
+                        buttonSize: buttonSize,
+                        iconSize: iconSize,
+                        tooltip: 'community.chat'.tr,
                       ),
-                    ),
-                  ),
 
-                  const SizedBox(width: 10),
+                      SizedBox(width: buttonGap),
 
-                  // Profile Avatar Button (Exact 42x42 size target)
-                  AppAvatar(
-                    imageUrl: userAvatarUrl,
-                    name: userName,
-                    size: 42,
+                      // Notification Button
+                      _HeaderActionButton(
+                        icon: Icons.notifications_none_rounded,
+                        onTap: () => Get.to(() => const NotificationScreen()),
+                        showBadge: hasUnreadNotifications,
+                        badgeColor: AppColors.communityAccent,
+                        backgroundColor: surface,
+                        borderColor: border,
+                        iconColor: textPrimary,
+                        buttonSize: buttonSize,
+                        iconSize: iconSize,
+                        tooltip: 'community.notifications'.tr,
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// Reusable Header Action Button component with standardized 44x44 touch target,
+/// 24px icon size, border radius, and optional badge indicator.
+class _HeaderActionButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool showBadge;
+  final Color badgeColor;
+  final Color backgroundColor;
+  final Color borderColor;
+  final Color iconColor;
+  final double buttonSize;
+  final double iconSize;
+  final String tooltip;
+
+  const _HeaderActionButton({
+    required this.icon,
+    required this.onTap,
+    this.showBadge = false,
+    this.badgeColor = AppColors.communityAccent,
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.iconColor,
+    this.buttonSize = 44.0,
+    this.iconSize = 24.0,
+    required this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Ink(
+            width: buttonSize,
+            height: buttonSize,
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor, width: 1.0),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: iconSize,
+                  color: iconColor,
+                ),
+                if (showBadge)
+                  Positioned(
+                    top: buttonSize * 0.20,
+                    right: buttonSize * 0.20,
+                    child: Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: badgeColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

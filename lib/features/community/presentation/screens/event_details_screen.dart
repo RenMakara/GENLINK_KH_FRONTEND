@@ -1,23 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
 import '../../../../design_system/colors/app_colors.dart';
+import '../../domain/models/community_models.dart';
+import '../controllers/community_controller.dart';
 import 'event_register_screen.dart';
 
 class EventDetailsScreen extends StatelessWidget {
-  final Map<String, dynamic> eventData;
+  final EventModel event;
 
   const EventDetailsScreen({
     super.key,
-    required this.eventData,
+    required this.event,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final surfacePrimary = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final surfacePrimary = isDark ? const Color(0xFF181818) : Colors.white;
+    final tileBg = isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF5F5F5);
+    final borderSubtle = isDark ? const Color(0xFF303030) : const Color(0xFFE0E0E0);
     final bgPrimary = Theme.of(context).scaffoldBackgroundColor;
+
+    final bool hasNetworkImage = event.imageUrl.isNotEmpty;
+    final bool hasLocalImage = event.coverImageFile != null;
+
+    final controller = Get.isRegistered<CommunityController>()
+        ? Get.find<CommunityController>()
+        : null;
 
     return Scaffold(
       backgroundColor: bgPrimary,
@@ -27,148 +39,196 @@ class EventDetailsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Cover Image Hero with Back, Bookmark & Share Buttons
+                // ── Cover Image with Back / Share ─────────────────────────
                 Stack(
                   children: [
-                    Image.network(
-                      eventData['image'] as String? ??
-                          'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800',
-                      height: 320,
+                    // Image area
+                    SizedBox(
+                      height: 280,
                       width: double.infinity,
-                      fit: BoxFit.cover,
+                      child: hasLocalImage
+                          ? Image.file(event.coverImageFile!, fit: BoxFit.cover)
+                          : hasNetworkImage
+                              ? Image.network(
+                                  event.imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, _) => _placeholderCover(isDark),
+                                )
+                              : _placeholderCover(isDark),
                     ),
+                    // Gradient overlay
                     Container(
-                      height: 320,
+                      height: 280,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.black.withValues(alpha: 0.6),
+                            Colors.black.withValues(alpha: 0.55),
                             Colors.transparent,
                             bgPrimary,
                           ],
                         ),
                       ),
                     ),
+                    // Back button
                     Positioned(
                       top: 48,
                       left: 16,
                       child: CircleAvatar(
-                        backgroundColor: Colors.black.withValues(alpha: 0.5),
+                        backgroundColor: Colors.black.withValues(alpha: 0.55),
                         child: IconButton(
                           icon: const Icon(Icons.arrow_back, color: Colors.white),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ),
                     ),
+                    // Share button
                     Positioned(
                       top: 48,
                       right: 16,
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: Colors.black.withValues(alpha: 0.5),
-                            child: IconButton(
-                              icon: const Icon(Icons.bookmark_border, color: Colors.white),
-                              onPressed: () {},
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          CircleAvatar(
-                            backgroundColor: Colors.black.withValues(alpha: 0.5),
-                            child: IconButton(
-                              icon: const Icon(Icons.share, color: Colors.white),
-                              onPressed: () {},
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 20,
-                      left: 16,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.communityAccent,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          eventData['category'] as String? ?? 'Workshop',
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      child: CircleAvatar(
+                        backgroundColor: Colors.black.withValues(alpha: 0.55),
+                        child: IconButton(
+                          icon: const Icon(Icons.share, color: Colors.white),
+                          onPressed: () {},
                         ),
                       ),
                     ),
+                    // Category badge (only if category exists)
+                    if (event.category.isNotEmpty)
+                      Positioned(
+                        bottom: 16,
+                        left: 16,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white : Colors.black,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            event.category,
+                            style: TextStyle(
+                              color: isDark ? Colors.black : Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
 
-                // Event Title & Subtitle
+                // ── Event Title & Subtitle ────────────────────────────────
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        eventData['title'] as String? ?? 'Flutter Workshop 2026',
+                        event.title,
                         style: TextStyle(
                           color: textPrimary,
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
+                          height: 1.2,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        eventData['subtitle'] as String? ?? 'Build Cross-platform Apps with Flutter',
-                        style: TextStyle(color: textSecondary, fontSize: 14),
-                      ),
+                      if (event.subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          event.subtitle,
+                          style: TextStyle(color: textSecondary, fontSize: 14),
+                        ),
+                      ],
                       const SizedBox(height: 20),
 
-                      // Quick Info Grid (4 Cards)
-                      GridView.count(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: 2.2,
-                        children: [
-                          _buildInfoTile(
-                            context: context,
-                            icon: Icons.calendar_today_outlined,
-                            title: '25 July 2026',
-                            subtitle: '9:00 AM – 4:00 PM',
-                          ),
-                          _buildInfoTile(
-                            context: context,
-                            icon: Icons.location_on_outlined,
-                            title: 'ACLEDA University',
-                            subtitle: 'Phnom Penh',
-                          ),
-                          _buildInfoTile(
-                            context: context,
-                            icon: Icons.hub_outlined,
-                            title: 'Organizer',
-                            subtitle: 'GenLink Cambodia',
-                          ),
-                          _buildInfoTile(
-                            context: context,
-                            icon: Icons.people_outline,
-                            title: '120',
-                            subtitle: 'Going',
-                          ),
-                        ],
+                      // ── Quick Info Cards ──────────────────────────────
+                      // Date & Time
+                      _buildInfoRow(
+                        icon: Icons.calendar_today_outlined,
+                        line1: event.dateString.isNotEmpty ? event.dateString : 'Date TBC',
+                        line2: event.timeString.isNotEmpty ? event.timeString : null,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        tileBg: tileBg,
+                        borderSubtle: borderSubtle,
                       ),
+                      const SizedBox(height: 10),
+
+                      // Location OR Online Link
+                      if (event.eventType == 'In person' && event.location.isNotEmpty)
+                        _buildInfoRow(
+                          icon: Icons.location_on_outlined,
+                          line1: event.location,
+                          textPrimary: textPrimary,
+                          textSecondary: textSecondary,
+                          tileBg: tileBg,
+                          borderSubtle: borderSubtle,
+                        )
+                      else if (event.eventType == 'Online' && event.onlineLink.isNotEmpty)
+                        _buildInfoRow(
+                          icon: Icons.videocam_outlined,
+                          line1: 'Online Event',
+                          line2: event.onlineLink,
+                          textPrimary: textPrimary,
+                          textSecondary: textSecondary,
+                          tileBg: tileBg,
+                          borderSubtle: borderSubtle,
+                        )
+                      else
+                        _buildInfoRow(
+                          icon: Icons.place_outlined,
+                          line1: 'Location TBC',
+                          textPrimary: textPrimary,
+                          textSecondary: textSecondary,
+                          tileBg: tileBg,
+                          borderSubtle: borderSubtle,
+                        ),
+                      const SizedBox(height: 10),
+
+                      // Organizer
+                      _buildInfoRow(
+                        icon: Icons.hub_outlined,
+                        line1: event.organizerName.isNotEmpty ? event.organizerName : 'Unknown',
+                        line2: 'Organizer',
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        tileBg: tileBg,
+                        borderSubtle: borderSubtle,
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Attendees (reactive)
+                      controller != null
+                          ? Obx(() {
+                              final ev = controller.events.firstWhereOrNull(
+                                (e) => e.id == event.id,
+                              );
+                              final count = ev?.attendeesCount ?? event.attendeesCount;
+                              return _buildInfoRow(
+                                icon: Icons.people_outline,
+                                line1: '$count Going',
+                                textPrimary: textPrimary,
+                                textSecondary: textSecondary,
+                                tileBg: tileBg,
+                                borderSubtle: borderSubtle,
+                              );
+                            })
+                          : _buildInfoRow(
+                              icon: Icons.people_outline,
+                              line1: '${event.attendeesCount} Going',
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                              tileBg: tileBg,
+                              borderSubtle: borderSubtle,
+                            ),
 
                       const SizedBox(height: 24),
 
-                      // About This Event Section
+                      // ── About This Event ──────────────────────────────
                       Text(
-                        "About This Event",
+                        'community.aboutThisEvent'.tr,
                         style: TextStyle(
                           color: textPrimary,
                           fontSize: 18,
@@ -177,8 +237,10 @@ class EventDetailsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        "Join us for an intensive hands-on workshop where you'll learn how to build beautiful and high-performance cross-platform applications using Flutter.\n\nWhether you are a beginner or looking to enhance your skills, this workshop covers clean architecture, state management, and real-world backend API integration.",
-                        style: TextStyle(color: textSecondary, fontSize: 14, height: 1.5),
+                        event.description.isNotEmpty
+                            ? event.description
+                            : 'No description provided.',
+                        style: TextStyle(color: textSecondary, fontSize: 14, height: 1.6),
                       ),
 
                       const SizedBox(height: 120),
@@ -189,44 +251,53 @@ class EventDetailsScreen extends StatelessWidget {
             ),
           ),
 
-          // Bottom Register Now Fixed Bar
+          // ── Fixed Bottom RSVP Bar ─────────────────────────────────────
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
               decoration: BoxDecoration(
                 color: surfacePrimary,
                 border: Border(top: BorderSide(color: borderSubtle)),
               ),
-              child: SizedBox(
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => EventRegisterScreen(eventData: eventData),
+              child: controller != null
+                  ? Obx(() {
+                      final ev = controller.events.firstWhereOrNull(
+                        (e) => e.id == event.id,
+                      );
+                      final isRsvped = ev?.isRsvped ?? event.isRsvped;
+                      return _buildRsvpButton(
+                        context: context,
+                        isRsvped: isRsvped,
+                        isDark: isDark,
+                        onTap: () {
+                          if (isRsvped) {
+                            controller.toggleRsvp(event.id);
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    EventRegisterScreen(event: event),
+                              ),
+                            );
+                          }
+                        },
+                      );
+                    })
+                  : _buildRsvpButton(
+                      context: context,
+                      isRsvped: event.isRsvped,
+                      isDark: isDark,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EventRegisterScreen(event: event),
+                        ),
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.communityAccent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
                     ),
-                  ),
-                  child: const Text(
-                    "Register Now",
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
             ),
           ),
         ],
@@ -234,54 +305,108 @@ class EventDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoTile({
+  Widget _buildRsvpButton({
     required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
+    required bool isRsvped,
+    required bool isDark,
+    required VoidCallback onTap,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textMuted = isDark ? Colors.white54 : AppColors.lightTextSecondary;
-    final tileBg = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightBgSecondary;
-    final borderSubtle = isDark ? Colors.white10 : AppColors.lightBorderSubtle;
+    return SizedBox(
+      height: 52,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isRsvped
+              ? (isDark ? const Color(0xFF303030) : const Color(0xFFF0F0F0))
+              : (isDark ? Colors.white : Colors.black),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isRsvped) ...[
+              Icon(Icons.check, color: isDark ? Colors.white : Colors.black87, size: 18),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              isRsvped ? 'Going' : 'community.registerNow'.tr,
+              style: TextStyle(
+                color: isRsvped
+                    ? (isDark ? Colors.white : Colors.black87)
+                    : (isDark ? Colors.black : Colors.white),
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String line1,
+    String? line2,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color tileBg,
+    required Color borderSubtle,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: tileBg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: borderSubtle),
       ),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFF8B5CF6), size: 22),
-          const SizedBox(width: 8),
+          Icon(icon, color: textSecondary, size: 20),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  maxLines: 1,
+                  line1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
                   ),
                 ),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: textMuted, fontSize: 10),
-                ),
+                if (line2 != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    line2,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: textSecondary, fontSize: 12),
+                  ),
+                ],
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _placeholderCover(bool isDark) {
+    return Container(
+      color: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
+      child: Center(
+        child: Icon(
+          Icons.event_outlined,
+          size: 64,
+          color: isDark ? Colors.white24 : Colors.black12,
+        ),
       ),
     );
   }

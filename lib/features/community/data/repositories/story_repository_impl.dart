@@ -31,6 +31,42 @@ class StoryRepositoryImpl implements StoryRepository {
       ],
     ),
     StoryGroupModel(
+      userId: 'user_amnot',
+      userName: 'អំណត់',
+      userAvatar: 'assets/images/amnot_profile.jpg',
+      hasUnseen: true,
+      stories: [
+        StoryItemModel(
+          id: 'story_chansela_km_1',
+          type: StoryType.photo,
+          mediaUrl: 'assets/images/heng_chansela_km_post.jpg',
+          textContent: '⚡ Flutter Community Cambodia',
+          location: 'ACLEDA University of Business',
+          timeAgo: '1h ago',
+          createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+          likesCount: 88,
+        ),
+      ],
+    ),
+    StoryGroupModel(
+      userId: 'user_meimei',
+      userName: 'មហាពង្សសួស្តី សិរីឥន្រ្ទះទេវីនារីស្មោះស្នេហ៌ហៅកាត់មុីមុី',
+      userAvatar: 'assets/images/meimei_profile.png',
+      hasUnseen: true,
+      stories: [
+        StoryItemModel(
+          id: 'story_meimei_1',
+          type: StoryType.photo,
+          mediaUrl: 'assets/images/meimei_profile.png',
+          textContent: '🌸 Hello GenLink KH Community!',
+          location: 'Phnom Penh, Cambodia',
+          timeAgo: '30m ago',
+          createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
+          likesCount: 99,
+        ),
+      ],
+    ),
+    StoryGroupModel(
       userId: 'user_makara',
       userName: 'Ren Makara',
       userAvatar: 'assets/images/ren_makara_profile.png',
@@ -166,8 +202,9 @@ class StoryRepositoryImpl implements StoryRepository {
   Future<List<StoryViewerModel>> getStoryViewers(String storyId) async {
     return [
       StoryViewerModel(id: 'v1', userName: 'Chhaeng Sokuntheara', userAvatar: 'assets/images/sokuntheara_profile.png', viewedTimeAgo: '10m ago'),
-      StoryViewerModel(id: 'v2', userName: 'Heng Chansela', userAvatar: 'assets/images/heng_chansela_profile.png', viewedTimeAgo: '25m ago'),
-      StoryViewerModel(id: 'v3', userName: 'Sum Sambo', userAvatar: 'assets/images/sum_sambo_profile.png', viewedTimeAgo: '40m ago'),
+      StoryViewerModel(id: 'v2', userName: 'Heng Chansela', userAvatar: 'assets/images/heng_chansela_profile.png', viewedTimeAgo: '20m ago'),
+      StoryViewerModel(id: 'v3', userName: 'អំណត់', userAvatar: 'assets/images/amnot_profile.jpg', viewedTimeAgo: '25m ago'),
+      StoryViewerModel(id: 'v4', userName: 'Sum Sambo', userAvatar: 'assets/images/sum_sambo_profile.png', viewedTimeAgo: '40m ago'),
     ];
   }
 }

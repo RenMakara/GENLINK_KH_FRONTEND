@@ -14,10 +14,7 @@ import 'package:get/get.dart';
 /// screen already reads from the table rather than hardcoding English.
 class AppTranslations extends Translations {
   @override
-  Map<String, Map<String, String>> get keys => {
-        'en_US': _en,
-        'km_KH': _km,
-      };
+  Map<String, Map<String, String>> get keys => {'en_US': _en, 'km_KH': _km};
 
   static const _en = <String, String>{
     // ── Common ──────────────────────────────────────────────────────────
@@ -85,7 +82,8 @@ class AppTranslations extends Translations {
     'auth.forgotTitle': 'Reset your password',
     'auth.forgotSubtitle': "Enter your email and we'll send you a code.",
     'auth.newPasswordSubtitle': 'Choose a password you have not used before.',
-    'auth.passwordResetDone': 'Password updated. Log in with your new password.',
+    'auth.passwordResetDone':
+        'Password updated. Log in with your new password.',
     'auth.resetTitle': 'Choose a new password',
     'auth.resetSubtitle': 'Enter the code we emailed you and a new password.',
     'auth.newPassword': 'New password',
@@ -235,8 +233,7 @@ class AppTranslations extends Translations {
     'profile.emptySocialLinks': 'No social links yet',
     'profile.completion': 'Profile completion',
     'profile.percentComplete': '@percent% Complete',
-    'profile.nextLevelHint':
-        'Complete your profile to reach Level @level.',
+    'profile.nextLevelHint': 'Complete your profile to reach Level @level.',
     'profile.achievements': 'Achievements',
     'profile.coreExpertise': 'Core Expertise',
     'profile.savedContent': 'Saved Content',
@@ -354,7 +351,8 @@ class AppTranslations extends Translations {
     'notification.tabActivity': 'Activity',
     'notification.tabSystem': 'System',
     'notification.empty': 'No notifications',
-    'notification.emptyDesc': 'You\'re all caught up. Reactions, comments and updates will appear here.',
+    'notification.emptyDesc':
+        'You\'re all caught up. Reactions, comments and updates will appear here.',
     'notification.errorRetry': 'Something went wrong. Pull to retry.',
     'notification.typeLike': 'Post Reaction',
     'notification.typeComment': 'Comment',
@@ -381,7 +379,8 @@ class AppTranslations extends Translations {
     'community.title': 'Community',
     'community.chat': 'Chat',
     'community.notifications': 'Notifications',
-    'community.whatsHappeningSokny': "What's happening in your community, Sokny?",
+    'community.whatsHappeningSokny':
+        "What's happening in your community, Sokny?",
     'community.couldNotLoadFeed': 'Could not load feed',
     'community.noPostsYet': 'No community posts yet.',
     'community.searchDiscussions': 'Search Discussions & Topics...',
@@ -425,7 +424,8 @@ class AppTranslations extends Translations {
     'community.termsAndConditions': 'terms and conditions',
     'community.confirmRegistration': 'Confirm Registration',
     'community.registrationSuccessful': 'Registration Successful!',
-    'community.registeredSuccessfullySub': 'You have successfully registered for',
+    'community.registeredSuccessfullySub':
+        'You have successfully registered for',
     'community.viewTicket': 'View Ticket',
     'community.addToCalendar': 'Add to Calendar',
     'community.openEventChat': 'Open Event Chat',
@@ -479,7 +479,8 @@ class AppTranslations extends Translations {
     'community.categoryProjects': 'Projects',
     'community.categoryOther': 'Other',
     'community.discussionPublished': 'Discussion Published',
-    'community.discussionPublishedMsg': 'Your discussion is now live in the Forum.',
+    'community.discussionPublishedMsg':
+        'Your discussion is now live in the Forum.',
     // ── Create Opportunity (Career) ──────────────────────────────────────
     'community.createOpportunity': 'Post an Opportunity',
     'community.opportunityTitle': 'Job or internship title...',
@@ -488,9 +489,11 @@ class AppTranslations extends Translations {
     'community.opportunityFullTime': 'Full-Time',
     'community.opportunityPartTime': 'Part-Time',
     'community.opportunityInternship': 'Internship',
-    'community.opportunityDesc': 'Describe the role, requirements and how to apply...',
+    'community.opportunityDesc':
+        'Describe the role, requirements and how to apply...',
     'community.opportunityPosted': 'Opportunity Posted',
-    'community.opportunityPostedMsg': 'Your opportunity is now visible in Career.',
+    'community.opportunityPostedMsg':
+        'Your opportunity is now visible in Career.',
     // ── Create Event ────────────────────────────────────────────────────
     'community.createEvent': 'Create Event',
     'community.eventTitle': 'Event name...',
@@ -500,6 +503,172 @@ class AppTranslations extends Translations {
     'community.eventCreated': 'Event Created',
     'community.eventCreatedMsg': 'Your event is now live.',
     'community.selectDate': 'Select date',
+
+    // ── Finance ───────────────────────────────────────────────────────────
+    'finance.title': 'Finance',
+    'finance.balance': 'Total Balance',
+    'finance.availableBalance': 'Available Balance',
+    'finance.income': 'Income',
+    'finance.expense': 'Expenses',
+    'finance.savings': 'Savings',
+
+    'finance.monthlySpending': 'Monthly Spending',
+    'finance.month': 'June 2026',
+    'finance.food': 'Food',
+    'finance.transport': 'Transport',
+    'finance.bills': 'Bills',
+    'finance.shopping': 'Shopping',
+    'finance.entertainment': 'Entertainment',
+    'finance.other': 'Other',
+
+    'finance.spendingOf': '@spent of @limit',
+    'finance.percentUsed': '@percent%',
+    'finance.remaining': 'Remaining',
+    'finance.spendingLimit': 'Spending Limit',
+
+    'finance.emergencyFund': 'Emergency Fund',
+    'finance.fundProgress': '@saved of @target',
+    'finance.target': 'Target',
+    'finance.complete': '@percent% complete',
+    'finance.targetDate': 'Target: @date',
+
+    'finance.smartInsight': 'Smart Insight',
+    'finance.foodSpendingInsight':
+        "You're spending @percent% more on food this month. "
+        'Set a @amount limit to stay on track.',
+
+    'finance.quickActions': 'Quick Actions',
+    'finance.addExpense': 'Add Expense',
+    'finance.setBudget': 'Set Budget',
+    'finance.saveGoal': 'Save Goal',
+    'finance.ewallet': 'E-Wallet',
+    'finance.learn': 'Learn',
+
+    'finance.recentTransactions': 'Recent Transactions',
+    'finance.seeAll': 'See All',
+
+    'finance.learnFinance': 'Learn Finance',
+    'finance.topicsCompleted': '@done of @total topics completed.',
+    'finance.keepGoing': 'Keep going!',
+
+    // ── Finance Transactions ──────────────────────────────────────────────
+    'finance.transaction.grabFood': 'Grab Food',
+    'finance.transaction.salaryDeposit': 'Salary Deposit',
+    'finance.transaction.netflix': 'Netflix',
+    'finance.transaction.coffeeShop': 'Coffee Shop',
+    'finance.transaction.grabRide': 'Grab Ride',
+    'finance.transaction.freelancePayment': 'Freelance Payment',
+    'finance.transaction.electricityBill': 'Electricity Bill',
+    'finance.transaction.shopping': 'Shopping',
+    'finance.transaction.cashDeposit': 'Cash Deposit',
+    'finance.transaction.internetBill': 'Internet Bill',
+    'finance.transaction.lunch': 'Lunch',
+    'finance.transaction.phoneBill': 'Phone Bill',
+
+    'finance.transaction.today': 'Today',
+    'finance.transaction.yesterday': 'Yesterday',
+    'finance.transaction.food': 'Food',
+    'finance.transaction.transport': 'Transport',
+    'finance.transaction.bills': 'Bills',
+    'finance.transaction.utilities': 'Utilities',
+    'finance.transaction.mobile': 'Mobile',
+    'finance.transaction.mall': 'Mall',
+
+    // ── Expense ───────────────────────────────────────────────────────────
+    'finance.expense.title': 'Expenses',
+    'finance.expense.add': 'Add Expense',
+    'finance.expense.edit': 'Edit Expense',
+    'finance.expense.delete': 'Delete Expense',
+    'finance.expense.details': 'Expense Details',
+    'finance.expense.amount': 'Amount',
+    'finance.expense.category': 'Category',
+    'finance.expense.description': 'Description',
+    'finance.expense.date': 'Date',
+    'finance.expense.time': 'Time',
+    'finance.expense.paymentMethod': 'Payment Method',
+    'finance.expense.note': 'Note',
+    'finance.expense.noteHint': 'Add a note...',
+    'finance.expense.save': 'Save Expense',
+    'finance.expense.update': 'Update Expense',
+    'finance.expense.noExpenses': 'No expenses yet',
+    'finance.expense.noExpensesHint':
+        'Your expenses will appear here once you add them.',
+
+    // ── Budget ─────────────────────────────────────────────────────────────
+    'finance.budget.title': 'Budget',
+    'finance.budget.setBudget': 'Set Budget',
+    'finance.budget.editBudget': 'Edit Budget',
+    'finance.budget.monthlyBudget': 'Monthly Budget',
+    'finance.budget.totalBudget': 'Total Budget',
+    'finance.budget.spent': 'Spent',
+    'finance.budget.remaining': 'Remaining',
+    'finance.budget.limit': 'Limit',
+    'finance.budget.category': 'Category',
+    'finance.budget.amount': 'Budget Amount',
+    'finance.budget.period': 'Budget Period',
+    'finance.budget.noBudget': 'No budget set yet',
+    'finance.budget.noBudgetHint':
+        'Create a budget to start tracking your spending.',
+    'finance.budget.overBudget': 'Over Budget',
+    'finance.budget.onTrack': 'On Track',
+    'finance.budget.nearLimit': 'Near Limit',
+
+    // ── Saving Goals ───────────────────────────────────────────────────────
+    'finance.goal.title': 'Saving Goals',
+    'finance.goal.add': 'Add Saving Goal',
+    'finance.goal.create': 'Create Saving Goal',
+    'finance.goal.edit': 'Edit Saving Goal',
+    'finance.goal.delete': 'Delete Goal',
+    'finance.goal.name': 'Goal Name',
+    'finance.goal.nameHint': 'e.g. New Laptop',
+    'finance.goal.targetAmount': 'Target Amount',
+    'finance.goal.currentAmount': 'Current Amount',
+    'finance.goal.deadline': 'Deadline',
+    'finance.goal.progress': 'Progress',
+    'finance.goal.remaining': 'Amount Remaining',
+    'finance.goal.save': 'Save Goal',
+    'finance.goal.noGoals': 'No saving goals yet',
+    'finance.goal.noGoalsHint':
+        'Create a saving goal and start building your future.',
+
+    // ── E-Wallet ──────────────────────────────────────────────────────────
+    'finance.ewallet.title': 'E-Wallet',
+    'finance.ewallet.balance': 'Wallet Balance',
+    'finance.ewallet.addWallet': 'Add E-Wallet',
+    'finance.ewallet.linkWallet': 'Link E-Wallet',
+    'finance.ewallet.walletName': 'Wallet Name',
+    'finance.ewallet.walletType': 'Wallet Type',
+    'finance.ewallet.accountNumber': 'Account Number',
+    'finance.ewallet.addMoney': 'Add Money',
+    'finance.ewallet.withdraw': 'Withdraw',
+    'finance.ewallet.transfer': 'Transfer',
+    'finance.ewallet.history': 'Transaction History',
+    'finance.ewallet.noWallet': 'No e-wallet connected',
+    'finance.ewallet.noWalletHint':
+        'Connect your e-wallet to manage your money in one place.',
+
+    // ── Finance Categories ─────────────────────────────────────────────────
+    'finance.category.food': 'Food',
+    'finance.category.transport': 'Transport',
+    'finance.category.shopping': 'Shopping',
+    'finance.category.bills': 'Bills',
+    'finance.category.entertainment': 'Entertainment',
+    'finance.category.health': 'Health',
+    'finance.category.education': 'Education',
+    'finance.category.utilities': 'Utilities',
+    'finance.category.mobile': 'Mobile',
+    'finance.category.travel': 'Travel',
+    'finance.category.personal': 'Personal',
+    'finance.category.other': 'Other',
+
+    // ── Finance Payment Methods ───────────────────────────────────────────
+    'finance.payment.cash': 'Cash',
+    'finance.payment.card': 'Card',
+    'finance.payment.bank': 'Bank Account',
+    'finance.payment.aba': 'ABA Bank',
+    'finance.payment.acleda': 'ACLEDA',
+    'finance.payment.ewallet': 'E-Wallet',
+    'finance.payment.other': 'Other',
   };
 
   static const _km = <String, String>{
@@ -661,7 +830,8 @@ class AppTranslations extends Translations {
 
     // ── Home ────────────────────────────────────────────────────────────
     'date.weekdays': 'ចន្ទ,អង្គារ,ពុធ,ព្រហ,សុក្រ,សៅរ៍,អាទិត្យ',
-    'date.months': 'មករា,កុម្ភៈ,មីនា,មេសា,ឧសភា,មិថុនា,កក្កដា,សីហា,កញ្ញា,តុលា,វិច្ឆិកា,ធ្នូ',
+    'date.months':
+        'មករា,កុម្ភៈ,មីនា,មេសា,ឧសភា,មិថុនា,កក្កដា,សីហា,កញ្ញា,តុលា,វិច្ឆិកា,ធ្នូ',
     'home.goodMorning': 'អរុណសួស្តី',
     'home.goodAfternoon': 'ទិវាសួស្តី',
     'home.goodEvening': 'សាយ័ណ្ហសួស្តី',
@@ -750,7 +920,8 @@ class AppTranslations extends Translations {
     'profileSetup.uploadPhoto': 'បញ្ចូលរូបភាព',
     'profileSetup.photoHint': 'JPG, PNG ឬ GIF',
     'profileSetup.iAmA': 'ខ្ញុំគឺជា',
-    'profileSetup.universityOptional': 'សាកលវិទ្យាល័យ ឬកន្លែងធ្វើការ (ស្រេចចិត្ត)',
+    'profileSetup.universityOptional':
+        'សាកលវិទ្យាល័យ ឬកន្លែងធ្វើការ (ស្រេចចិត្ត)',
     'profileSetup.universityHint': 'ឧ. សាកលវិទ្យាល័យភូមិន្ទភ្នំពេញ',
     'profileSetup.locationOptional': 'ទីតាំង (ស្រេចចិត្ត)',
     'profileSetup.locationHint': 'ឧ. ភ្នំពេញ កម្ពុជា',
@@ -758,7 +929,8 @@ class AppTranslations extends Translations {
     'profileSetup.step2Subtitle':
         'ជួយឲ្យអ្នកដទៃយល់ថាអ្នកជានរណា និងធ្វើអ្វីខ្លះ។',
     'profileSetup.shortBio': 'ប្រវត្តិសង្ខេប',
-    'profileSetup.bioHint': 'ឧ. និស្សិតឆ្នាំចុងក្រោយ ចូលចិត្តការរចនា និងបច្ចេកវិទ្យា…',
+    'profileSetup.bioHint':
+        'ឧ. និស្សិតឆ្នាំចុងក្រោយ ចូលចិត្តការរចនា និងបច្ចេកវិទ្យា…',
     'profileSetup.linksOptional': 'តំណ (ស្រេចចិត្ត)',
     'profileSetup.step3Title': 'អ្នកចង់រីកចម្រើនផ្នែកណា?',
     'profileSetup.step3Subtitle':
@@ -803,10 +975,8 @@ class AppTranslations extends Translations {
     'settings.support': 'ជំនួយ',
     'settings.about': 'អំពី GenLink KH',
     'settings.aboutLegalese': 'ភ្ជាប់។ រីកចម្រើន។ រុងរឿង។',
-    'settings.languageHint':
-        'ជ្រើសរើសភាសាកម្មវិធី។ អ្នកអាចប្តូរនៅពេលណាក៏បាន។',
-    'settings.appearanceHint':
-        'ជ្រើសរើសរូបរាង GenLink KH នៅលើឧបករណ៍នេះ។',
+    'settings.languageHint': 'ជ្រើសរើសភាសាកម្មវិធី។ អ្នកអាចប្តូរនៅពេលណាក៏បាន។',
+    'settings.appearanceHint': 'ជ្រើសរើសរូបរាង GenLink KH នៅលើឧបករណ៍នេះ។',
     'settings.editProfileHint': 'ឈ្មោះ ប្រវត្តិ តួនាទី តំណ',
     'settings.allowMessagesHint': 'អ្នកដទៃអាចផ្ញើសារមកអ្នកដោយផ្ទាល់',
     'settings.allowFollowRequestHint': 'អ្នកដទៃអាចស្នើសុំតាមដានអ្នក',
@@ -837,8 +1007,10 @@ class AppTranslations extends Translations {
     'notification.tabActivity': 'សកម្មភាព',
     'notification.tabSystem': 'ប្រព័ន្ធ',
     'notification.empty': 'មិនមានការជូនដំណឹង',
-    'notification.emptyDesc': 'អ្នកបានឡើងទៅពេញ។ ប្រតិកម្ម មតិ និងការអាប់ដេតនឹងបង្ហាញនៅទីនេះ។',
-    'notification.errorRetry': 'មានបញ្ហាកើតឡើង។ ទាញចុះក្រោមដើម្បីព្យាយាមម្តងទៀត។',
+    'notification.emptyDesc':
+        'អ្នកបានឡើងទៅពេញ។ ប្រតិកម្ម មតិ និងការអាប់ដេតនឹងបង្ហាញនៅទីនេះ។',
+    'notification.errorRetry':
+        'មានបញ្ហាកើតឡើង។ ទាញចុះក្រោមដើម្បីព្យាយាមម្តងទៀត។',
     'notification.typeLike': 'ប្រតិកម្មការបង្ហោះ',
     'notification.typeComment': 'មតិ',
     'notification.typeMention': 'បានលើកឡើងអ្នក',
@@ -864,7 +1036,8 @@ class AppTranslations extends Translations {
     'community.title': 'សហគមន៍',
     'community.chat': 'សារ',
     'community.notifications': 'ការជូនដំណឹង',
-    'community.whatsHappeningSokny': 'តើមានអ្វីកំពុងកើតឡើងក្នុងសហគមន៍របស់អ្នក, សុខនី?',
+    'community.whatsHappeningSokny':
+        'តើមានអ្វីកំពុងកើតឡើងក្នុងសហគមន៍របស់អ្នក, សុខនី?',
     'community.couldNotLoadFeed': 'មិនអាចផ្ទុកព័ត៌មានបានទេ',
     'community.noPostsYet': 'មិនទាន់មានប្រកាសក្នុងសហគមន៍ទេ។',
     'community.searchDiscussions': 'ស្វែងរកការពិភាក្សា និងប្រធានបទ...',
@@ -962,7 +1135,8 @@ class AppTranslations extends Translations {
     'community.categoryProjects': 'គម្រោង',
     'community.categoryOther': 'ផ្សេងៗ',
     'community.discussionPublished': 'ការពិភាក្សាត្រូវបានបោះពុម្ព',
-    'community.discussionPublishedMsg': 'ការពិភាក្សារបស់អ្នកឥឡូវបង្ហាញក្នុង Forum។',
+    'community.discussionPublishedMsg':
+        'ការពិភាក្សារបស់អ្នកឥឡូវបង្ហាញក្នុង Forum។',
     // ── Create Opportunity (Career) ──────────────────────────────────────
     'community.createOpportunity': 'ប្រកាសសម្រាប់ឱកាស',
     'community.opportunityTitle': 'ឈ្មោះការងារ ឬការហ្វឹកហ្វឺន...',
@@ -983,5 +1157,171 @@ class AppTranslations extends Translations {
     'community.eventCreated': 'ព្រឹត្តិការណ៍ត្រូវបានបង្កើត',
     'community.eventCreatedMsg': 'ព្រឹត្តិការណ៍របស់អ្នកឥឡូវបង្ហាញ។',
     'community.selectDate': 'ជ្រើសរើសកាលបរិច្ឆេទ',
+
+    // ── Finance ───────────────────────────────────────────────────────────
+    'finance.title': 'ហិរញ្ញវត្ថុ',
+    'finance.balance': 'សមតុល្យសរុប',
+    'finance.availableBalance': 'សមតុល្យដែលអាចប្រើបាន',
+    'finance.income': 'ចំណូល',
+    'finance.expense': 'ចំណាយ',
+    'finance.savings': 'ប្រាក់សន្សំ',
+
+    'finance.monthlySpending': 'ការចំណាយប្រចាំខែ',
+    'finance.month': 'មិថុនា ២០២៦',
+    'finance.food': 'អាហារ',
+    'finance.transport': 'ការធ្វើដំណើរ',
+    'finance.bills': 'វិក្កយបត្រ',
+    'finance.shopping': 'ការទិញទំនិញ',
+    'finance.entertainment': 'កម្សាន្ត',
+    'finance.other': 'ផ្សេងៗ',
+
+    'finance.spendingOf': '@spent ក្នុងចំណោម @limit',
+    'finance.percentUsed': '@percent%',
+    'finance.remaining': 'នៅសល់',
+    'finance.spendingLimit': 'កម្រិតចំណាយ',
+
+    'finance.emergencyFund': 'មូលនិធិបន្ទាន់',
+    'finance.fundProgress': '@saved ក្នុងចំណោម @target',
+    'finance.target': 'គោលដៅ',
+    'finance.complete': 'បានសម្រេច @percent%',
+    'finance.targetDate': 'គោលដៅ៖ @date',
+
+    'finance.smartInsight': 'ការយល់ដឹងឆ្លាតវៃ',
+    'finance.foodSpendingInsight':
+        'អ្នកបានចំណាយលើអាហារច្រើនជាងមុន @percent% ក្នុងខែនេះ។ '
+        'កំណត់កម្រិត @amount ដើម្បីគ្រប់គ្រងការចំណាយ។',
+
+    'finance.quickActions': 'សកម្មភាពរហ័ស',
+    'finance.addExpense': 'បន្ថែមចំណាយ',
+    'finance.setBudget': 'កំណត់ថវិកា',
+    'finance.saveGoal': 'គោលដៅសន្សំ',
+    'finance.ewallet': 'កាបូបអេឡិចត្រូនិក',
+    'finance.learn': 'រៀន',
+
+    'finance.recentTransactions': 'ប្រតិបត្តិការថ្មីៗ',
+    'finance.seeAll': 'មើលទាំងអស់',
+
+    'finance.learnFinance': 'រៀនអំពីហិរញ្ញវត្ថុ',
+    'finance.topicsCompleted': 'បានបញ្ចប់ @done ក្នុងចំណោម @total ប្រធានបទ។',
+    'finance.keepGoing': 'បន្តទៅមុខ!',
+
+    // ── Finance Transactions ──────────────────────────────────────────────
+    'finance.transaction.grabFood': 'Grab Food',
+    'finance.transaction.salaryDeposit': 'ប្រាក់ខែបានបញ្ចូល',
+    'finance.transaction.netflix': 'Netflix',
+    'finance.transaction.coffeeShop': 'ហាងកាហ្វេ',
+    'finance.transaction.grabRide': 'Grab Ride',
+    'finance.transaction.freelancePayment': 'ប្រាក់ពីការងារឯករាជ្យ',
+    'finance.transaction.electricityBill': 'វិក្កយបត្រអគ្គិសនី',
+    'finance.transaction.shopping': 'ការទិញទំនិញ',
+    'finance.transaction.cashDeposit': 'ដាក់ប្រាក់សាច់ប្រាក់',
+    'finance.transaction.internetBill': 'វិក្កយបត្រអ៊ីនធឺណិត',
+    'finance.transaction.lunch': 'អាហារថ្ងៃត្រង់',
+    'finance.transaction.phoneBill': 'វិក្កយបត្រទូរស័ព្ទ',
+
+    'finance.transaction.today': 'ថ្ងៃនេះ',
+    'finance.transaction.yesterday': 'ម្សិលមិញ',
+    'finance.transaction.food': 'អាហារ',
+    'finance.transaction.transport': 'ការធ្វើដំណើរ',
+    'finance.transaction.bills': 'វិក្កយបត្រ',
+    'finance.transaction.utilities': 'សេវាប្រើប្រាស់',
+    'finance.transaction.mobile': 'ទូរស័ព្ទ',
+    'finance.transaction.mall': 'ផ្សារទំនើប',
+
+    // ── Expense ───────────────────────────────────────────────────────────
+    'finance.expense.title': 'ចំណាយ',
+    'finance.expense.add': 'បន្ថែមចំណាយ',
+    'finance.expense.edit': 'កែសម្រួលចំណាយ',
+    'finance.expense.delete': 'លុបចំណាយ',
+    'finance.expense.details': 'ព័ត៌មានលម្អិតចំណាយ',
+    'finance.expense.amount': 'ចំនួនទឹកប្រាក់',
+    'finance.expense.category': 'ប្រភេទ',
+    'finance.expense.description': 'ការពិពណ៌នា',
+    'finance.expense.date': 'កាលបរិច្ឆេទ',
+    'finance.expense.time': 'ម៉ោង',
+    'finance.expense.paymentMethod': 'វិធីបង់ប្រាក់',
+    'finance.expense.note': 'កំណត់ចំណាំ',
+    'finance.expense.noteHint': 'បន្ថែមកំណត់ចំណាំ...',
+    'finance.expense.save': 'រក្សាទុកចំណាយ',
+    'finance.expense.update': 'ធ្វើបច្ចុប្បន្នភាពចំណាយ',
+    'finance.expense.noExpenses': 'មិនទាន់មានចំណាយ',
+    'finance.expense.noExpensesHint':
+        'ចំណាយរបស់អ្នកនឹងបង្ហាញនៅទីនេះ បន្ទាប់ពីអ្នកបន្ថែម។',
+
+    // ── Budget ─────────────────────────────────────────────────────────────
+    'finance.budget.title': 'ថវិកា',
+    'finance.budget.setBudget': 'កំណត់ថវិកា',
+    'finance.budget.editBudget': 'កែសម្រួលថវិកា',
+    'finance.budget.monthlyBudget': 'ថវិកាប្រចាំខែ',
+    'finance.budget.totalBudget': 'ថវិកាសរុប',
+    'finance.budget.spent': 'បានចំណាយ',
+    'finance.budget.remaining': 'នៅសល់',
+    'finance.budget.limit': 'កម្រិត',
+    'finance.budget.category': 'ប្រភេទ',
+    'finance.budget.amount': 'ចំនួនថវិកា',
+    'finance.budget.period': 'រយៈពេលថវិកា',
+    'finance.budget.noBudget': 'មិនទាន់កំណត់ថវិកា',
+    'finance.budget.noBudgetHint':
+        'បង្កើតថវិកា ដើម្បីចាប់ផ្តើមតាមដានការចំណាយរបស់អ្នក។',
+    'finance.budget.overBudget': 'លើសថវិកា',
+    'finance.budget.onTrack': 'ស្ថិតក្នុងផែនការ',
+    'finance.budget.nearLimit': 'ជិតដល់កម្រិត',
+
+    // ── Saving Goals ───────────────────────────────────────────────────────
+    'finance.goal.title': 'គោលដៅសន្សំ',
+    'finance.goal.add': 'បន្ថែមគោលដៅសន្សំ',
+    'finance.goal.create': 'បង្កើតគោលដៅសន្សំ',
+    'finance.goal.edit': 'កែសម្រួលគោលដៅ',
+    'finance.goal.delete': 'លុបគោលដៅ',
+    'finance.goal.name': 'ឈ្មោះគោលដៅ',
+    'finance.goal.nameHint': 'ឧ. ទិញ Laptop ថ្មី',
+    'finance.goal.targetAmount': 'ចំនួនទឹកប្រាក់គោលដៅ',
+    'finance.goal.currentAmount': 'ចំនួនទឹកប្រាក់បច្ចុប្បន្ន',
+    'finance.goal.deadline': 'កាលកំណត់',
+    'finance.goal.progress': 'វឌ្ឍនភាព',
+    'finance.goal.remaining': 'ចំនួនទឹកប្រាក់នៅសល់',
+    'finance.goal.save': 'រក្សាទុកគោលដៅ',
+    'finance.goal.noGoals': 'មិនទាន់មានគោលដៅសន្សំ',
+    'finance.goal.noGoalsHint':
+        'បង្កើតគោលដៅសន្សំ ហើយចាប់ផ្តើមកសាងអនាគតរបស់អ្នក។',
+
+    // ── E-Wallet ──────────────────────────────────────────────────────────
+    'finance.ewallet.title': 'កាបូបអេឡិចត្រូនិក',
+    'finance.ewallet.balance': 'សមតុល្យកាបូប',
+    'finance.ewallet.addWallet': 'បន្ថែមកាបូប',
+    'finance.ewallet.linkWallet': 'ភ្ជាប់កាបូប',
+    'finance.ewallet.walletName': 'ឈ្មោះកាបូប',
+    'finance.ewallet.walletType': 'ប្រភេទកាបូប',
+    'finance.ewallet.accountNumber': 'លេខគណនី',
+    'finance.ewallet.addMoney': 'បញ្ចូលប្រាក់',
+    'finance.ewallet.withdraw': 'ដកប្រាក់',
+    'finance.ewallet.transfer': 'ផ្ទេរប្រាក់',
+    'finance.ewallet.history': 'ប្រវត្តិប្រតិបត្តិការ',
+    'finance.ewallet.noWallet': 'មិនទាន់មានកាបូបអេឡិចត្រូនិក',
+    'finance.ewallet.noWalletHint':
+        'ភ្ជាប់កាបូបអេឡិចត្រូនិក ដើម្បីគ្រប់គ្រងប្រាក់របស់អ្នកនៅកន្លែងតែមួយ។',
+
+    // ── Finance Categories ─────────────────────────────────────────────────
+    'finance.category.food': 'អាហារ',
+    'finance.category.transport': 'ការធ្វើដំណើរ',
+    'finance.category.shopping': 'ការទិញទំនិញ',
+    'finance.category.bills': 'វិក្កយបត្រ',
+    'finance.category.entertainment': 'កម្សាន្ត',
+    'finance.category.health': 'សុខភាព',
+    'finance.category.education': 'ការអប់រំ',
+    'finance.category.utilities': 'សេវាប្រើប្រាស់',
+    'finance.category.mobile': 'ទូរស័ព្ទ',
+    'finance.category.travel': 'ការធ្វើដំណើរកម្សាន្ត',
+    'finance.category.personal': 'ផ្ទាល់ខ្លួន',
+    'finance.category.other': 'ផ្សេងៗ',
+
+    // ── Finance Payment Methods ───────────────────────────────────────────
+    'finance.payment.cash': 'សាច់ប្រាក់',
+    'finance.payment.card': 'កាត',
+    'finance.payment.bank': 'គណនីធនាគារ',
+    'finance.payment.aba': 'ធនាគារ ABA',
+    'finance.payment.acleda': 'ធនាគារ ACLEDA',
+    'finance.payment.ewallet': 'កាបូបអេឡិចត្រូនិក',
+    'finance.payment.other': 'ផ្សេងៗ',
   };
 }

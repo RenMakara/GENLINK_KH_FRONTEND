@@ -8,6 +8,7 @@ import 'features/community/presentation/screens/create_discussion_screen.dart';
 import 'features/community/presentation/screens/create_event_screen.dart';
 import 'features/community/presentation/screens/create_opportunity_screen.dart';
 import 'features/community/presentation/screens/create_post_screen.dart';
+import 'features/community/presentation/widgets/story_creation_picker_sheet.dart';
 import 'features/finance/presentation/screens/Finance Home/screens/finance_screen.dart';
 import 'features/home/presentation/bindings/home_binding.dart';
 import 'features/home/presentation/screens/home_screen.dart';
@@ -74,12 +75,69 @@ class _MainScreenState extends State<MainScreen> {
           break;
         case 'Feed':
         default:
-          Get.to(() => const CreatePostScreen());
+          _showFeedCreateMenu(context);
       }
     } else {
       // Not on Community tab — open Feed Create Post
       Get.to(() => const CreatePostScreen());
     }
+  }
+
+  void _showFeedCreateMenu(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? const Color(0xFF161616) : Colors.white;
+    final textPrimary = isDark ? Colors.white : Colors.black87;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36, height: 4, margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.post_add, color: textPrimary),
+              title: Text('community.createPost'.tr, style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
+              onTap: () {
+                Navigator.pop(ctx);
+                Get.to(() => const CreatePostScreen());
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.amp_stories_outlined, color: textPrimary),
+              title: Text('community.createStory'.tr, style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
+              onTap: () {
+                Navigator.pop(ctx);
+                StoryCreationPickerSheet.show(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.event_available_outlined, color: textPrimary),
+              title: Text('community.createEvent'.tr, style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
+              onTap: () {
+                Navigator.pop(ctx);
+                Get.to(() => const CreateEventScreen());
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override

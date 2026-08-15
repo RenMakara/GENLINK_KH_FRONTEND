@@ -10,12 +10,14 @@ class ForumCategoryCard extends StatelessWidget {
   final String title;
   final String count;
   final Color accent;
+  final VoidCallback? onTap;
 
   const ForumCategoryCard({
     super.key,
     required this.title,
     required this.count,
     required this.accent,
+    this.onTap,
   });
 
   @override
@@ -27,7 +29,7 @@ class ForumCategoryCard extends StatelessWidget {
     final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 
     return InkWell(
-      onTap: () => Get.to(() => const CommunitySearchScreen(activeTab: 'Forum')),
+      onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Container(
         padding: const EdgeInsets.symmetric(
@@ -83,6 +85,7 @@ class ForumThreadCard extends StatelessWidget {
   final int replies;
   final int upvotes;
   final bool isPinned;
+  final VoidCallback? onTap;
 
   const ForumThreadCard({
     super.key,
@@ -92,6 +95,7 @@ class ForumThreadCard extends StatelessWidget {
     required this.replies,
     required this.upvotes,
     required this.isPinned,
+    this.onTap,
   });
 
   @override
@@ -105,7 +109,7 @@ class ForumThreadCard extends StatelessWidget {
     final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 
     return InkWell(
-      onTap: () => Get.to(() => const CommunitySearchScreen(activeTab: 'Forum')),
+      onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.squircle),
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.sm + 4),

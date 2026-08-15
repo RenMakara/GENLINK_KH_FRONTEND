@@ -12,6 +12,9 @@ import '../widgets/story_tray_widget.dart';
 import 'community_search_screen.dart';
 import 'create_post_screen.dart';
 import 'event_details_screen.dart';
+import 'forum_category_screen.dart';
+import 'forum_discussion_screen.dart';
+import '../../domain/models/community_models.dart';
 import 'widgets/community_widgets.dart';
 
 /// GenLink KH Community Screen
@@ -429,7 +432,7 @@ class CommunityScreen extends GetView<CommunityController> {
                 ].map((topic) {
                   return InkWell(
                     onTap: () => Get.to(
-                      () => const CommunitySearchScreen(activeTab: 'Forum'),
+                      () => ForumCategoryScreen(categoryTitle: topic),
                     ),
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                     child: Container(
@@ -486,26 +489,30 @@ class CommunityScreen extends GetView<CommunityController> {
               childAspectRatio: 2.5,
               mainAxisSpacing: 10,
               crossAxisSpacing: 10,
-              children: const [
+              children: [
                 ForumCategoryCard(
                   title: "💻 Tech & Coding",
                   count: "342 Discussions",
                   accent: AppColors.communityAccent,
+                  onTap: () => Get.to(() => const ForumCategoryScreen(categoryTitle: "Tech & Coding")),
                 ),
                 ForumCategoryCard(
                   title: "🎓 Campus Life",
                   count: "189 Discussions",
                   accent: AppColors.success,
+                  onTap: () => Get.to(() => const ForumCategoryScreen(categoryTitle: "Campus Life")),
                 ),
                 ForumCategoryCard(
                   title: "📚 Academics",
                   count: "256 Discussions",
                   accent: AppColors.warning,
+                  onTap: () => Get.to(() => const ForumCategoryScreen(categoryTitle: "Academics")),
                 ),
                 ForumCategoryCard(
                   title: "🚀 Projects",
                   count: "120 Discussions",
                   accent: AppColors.productivityAccent,
+                  onTap: () => Get.to(() => const ForumCategoryScreen(categoryTitle: "Projects")),
                 ),
               ],
             ),
@@ -526,29 +533,32 @@ class CommunityScreen extends GetView<CommunityController> {
                   ),
             ),
             const SizedBox(height: 12),
-            const ForumThreadCard(
+            ForumThreadCard(
               title: "Guidelines for GenLink KH Annual Student Project Showcase 2026",
               author: "Admin Team",
               timeAgo: "1d ago",
               replies: 48,
               upvotes: 142,
               isPinned: true,
+              onTap: () => Get.to(() => ForumDiscussionScreen(discussion: ForumTopicModel(id: '1', title: "Guidelines for GenLink KH Annual Student Project Showcase 2026", authorName: "Admin Team", timeAgo: "1d ago", repliesCount: 48, upvotes: 142, category: "Announcements", content: "Here are the guidelines for the upcoming 2026 student showcase."))),
             ),
-            const ForumThreadCard(
+            ForumThreadCard(
               title: "Best resources to master Flutter state management with GetX?",
               author: "Sokchea Lim",
               timeAgo: "3h ago",
               replies: 16,
               upvotes: 34,
               isPinned: false,
+              onTap: () => Get.to(() => ForumDiscussionScreen(discussion: ForumTopicModel(id: '2', title: "Best resources to master Flutter state management with GetX?", authorName: "Sokchea Lim", timeAgo: "3h ago", repliesCount: 16, upvotes: 34, category: "Tech & Coding", content: "I've been struggling with state management. What are the best resources for GetX?"))),
             ),
-            const ForumThreadCard(
+            ForumThreadCard(
               title: "How to prepare for junior software engineer interviews in Cambodia?",
               author: "Rathana P.",
               timeAgo: "6h ago",
               replies: 29,
               upvotes: 65,
               isPinned: false,
+              onTap: () => Get.to(() => ForumDiscussionScreen(discussion: ForumTopicModel(id: '3', title: "How to prepare for junior software engineer interviews in Cambodia?", authorName: "Rathana P.", timeAgo: "6h ago", repliesCount: 29, upvotes: 65, category: "Career", content: "Looking for tips on how to pass entry-level tech interviews here."))),
             ),
 
             const SizedBox(height: AppSpacing.xl),

@@ -62,7 +62,7 @@ class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidg
             final buttonSize = isVeryNarrow ? 34.0 : (isNarrow ? 38.0 : 42.0);
             final buttonGap = isVeryNarrow ? 3.0 : (isNarrow ? 5.0 : AppSpacing.sm);
             final iconSize = isVeryNarrow ? 18.0 : (isNarrow ? 20.0 : 22.0);
-            final titleFontSize = isVeryNarrow ? 18.0 : (isNarrow ? 20.0 : 22.0);
+            final titleFontSize = isVeryNarrow ? 22.0 : (isNarrow ? 24.0 : 26.0);
             final horizontalPadding = isNarrow ? 10.0 : AppSpacing.md;
 
             return Container(

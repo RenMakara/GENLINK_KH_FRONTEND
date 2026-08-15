@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/localization/localization_service.dart';
@@ -77,6 +78,7 @@ class AuthBinding extends Bindings {
     ]);
 
     final apiClient = ApiClient(dio);
+    Get.put<Dio>(dio, permanent: true);
     Get.put<ApiClient>(apiClient, permanent: true);
     Get.put<AuthRepository>(authRepository, permanent: true);
 

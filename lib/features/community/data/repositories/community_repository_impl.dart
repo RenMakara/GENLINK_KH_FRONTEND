@@ -49,8 +49,8 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
-  Future<bool> toggleLike(String postId) {
-    return remoteDataSource.toggleLike(postId);
+  Future<bool> toggleLike(String postId, {required bool isCurrentlyLiked}) {
+    return remoteDataSource.toggleLike(postId, isCurrentlyLiked: isCurrentlyLiked);
   }
 
   @override

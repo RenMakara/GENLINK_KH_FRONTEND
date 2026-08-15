@@ -474,7 +474,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               final isVeryNarrow = constraints.maxWidth < 330;
               final avatarRadius = isVeryNarrow ? 17.0 : (isNarrow ? 19.0 : 21.0);
               final headerGap = isVeryNarrow ? 6.0 : (isNarrow ? 8.0 : 12.0);
-              final authorFontSize = isVeryNarrow ? 13.5 : (isNarrow ? 14.5 : 15.5);
+              final authorFontSize = isVeryNarrow ? 15.0 : (isNarrow ? 16.0 : 17.0);
 
               return Padding(
                 padding: EdgeInsets.fromLTRB(
@@ -527,13 +527,13 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                                     overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.titleSmall?.copyWith(
                                           color: textPrimary,
-                                          fontWeight: FontWeight.w700,
+                                          fontWeight: FontWeight.w600,
                                           fontSize: authorFontSize,
                                           letterSpacing: -0.2,
                                         ) ??
                                         TextStyle(
                                           color: textPrimary,
-                                          fontWeight: FontWeight.w700,
+                                          fontWeight: FontWeight.w600,
                                           fontSize: authorFontSize,
                                           letterSpacing: -0.2,
                                         ),
@@ -553,9 +553,9 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                                 _formatTimeAgo(widget.post.timeAgo),
                                 style: theme.textTheme.labelSmall?.copyWith(
                                       color: textMuted,
-                                      fontSize: isVeryNarrow ? 10.5 : 11.5,
+                                      fontSize: isVeryNarrow ? 11.5 : 12.5,
                                     ) ??
-                                    TextStyle(color: textMuted, fontSize: isVeryNarrow ? 10.5 : 11.5),
+                                    TextStyle(color: textMuted, fontSize: isVeryNarrow ? 11.5 : 12.5),
                               ),
                               const SizedBox(width: 4),
                               Text('·', style: TextStyle(color: textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
@@ -575,12 +575,12 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                                     overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.labelSmall?.copyWith(
                                           color: textSecondary,
-                                          fontSize: isVeryNarrow ? 9.5 : 10.5,
+                                          fontSize: isVeryNarrow ? 11.5 : 12.5,
                                           fontWeight: FontWeight.w600,
                                         ) ??
                                         TextStyle(
                                           color: textSecondary,
-                                          fontSize: isVeryNarrow ? 9.5 : 10.5,
+                                          fontSize: isVeryNarrow ? 11.5 : 12.5,
                                           fontWeight: FontWeight.w600,
                                         ),
                                   ),
@@ -652,14 +652,16 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                 widget.post.content,
                 style: theme.textTheme.bodyMedium?.copyWith(
                       color: textPrimary,
-                      fontSize: 14.5,
-                      height: 1.50,
+                      fontSize: 17.5,
+                      fontWeight: FontWeight.w400,
+                      height: 1.40,
                       letterSpacing: 0.1,
                     ) ??
                     TextStyle(
                       color: textPrimary,
-                      fontSize: 14.5,
-                      height: 1.50,
+                      fontSize: 17.5,
+                      fontWeight: FontWeight.w400,
+                      height: 1.40,
                       letterSpacing: 0.1,
                     ),
               ),

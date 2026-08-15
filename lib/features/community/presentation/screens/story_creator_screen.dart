@@ -44,20 +44,25 @@ class StoryTemplateModel {
 }
 
 class _NotebookLinesPainter extends CustomPainter {
+  final bool isPreview;
+  _NotebookLinesPainter({this.isPreview = false});
+
   @override
   void paint(Canvas canvas, Size size) {
     final linePaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.08)
-      ..strokeWidth = 1.0;
+      ..strokeWidth = isPreview ? 0.5 : 1.0;
 
     final marginPaint = Paint()
       ..color = const Color(0xFFEF4444).withValues(alpha: 0.3)
-      ..strokeWidth = 1.5;
+      ..strokeWidth = isPreview ? 0.5 : 1.5;
 
-    canvas.drawLine(const Offset(48, 0), Offset(48, size.height), marginPaint);
+    final marginX = isPreview ? 14.0 : 48.0;
+    canvas.drawLine(Offset(marginX, 0), Offset(marginX, size.height), marginPaint);
 
-    const double lineSpacing = 32.0;
-    for (double y = 80; y < size.height - 100; y += lineSpacing) {
+    final double lineSpacing = isPreview ? 12.0 : 32.0;
+    final double startY = isPreview ? 24.0 : 80.0;
+    for (double y = startY; y < size.height - (isPreview ? 24.0 : 100.0); y += lineSpacing) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
     }
   }
@@ -67,16 +72,20 @@ class _NotebookLinesPainter extends CustomPainter {
 }
 
 class _DotGridPainter extends CustomPainter {
+  final bool isPreview;
+  _DotGridPainter({this.isPreview = false});
+
   @override
   void paint(Canvas canvas, Size size) {
     final dotPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.15)
       ..style = PaintingStyle.fill;
 
-    const double spacing = 28.0;
-    for (double x = 20; x < size.width; x += spacing) {
-      for (double y = 100; y < size.height - 120; y += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.2, dotPaint);
+    final double spacing = isPreview ? 10.0 : 28.0;
+    final double radius = isPreview ? 0.5 : 1.2;
+    for (double x = isPreview ? 6.0 : 20.0; x < size.width; x += spacing) {
+      for (double y = isPreview ? 12.0 : 100.0; y < size.height - (isPreview ? 12.0 : 120.0); y += spacing) {
+        canvas.drawCircle(Offset(x, y), radius, dotPaint);
       }
     }
   }
@@ -390,19 +399,16 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     '@ChhaengSok',
     '@AUBClass2026',
   ];
+  int _activeBgPatternIndex = 0;
+  bool _isTemplateSelectionMode = false;
+  bool _isPreviewMode = false;
 
   @override
   void initState() {
     super.initState();
+    _isTemplateSelectionMode = widget.type == StoryType.text;
     _activeMediaPath = widget.mediaPaths?.isNotEmpty == true ? widget.mediaPaths!.first : null;
     _fullScreenTextController.addListener(_onTextChanged);
-    if (widget.type == StoryType.text) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _openFloatingTextEditor();
-        }
-      });
-    }
   }
 
   void _onTextChanged() {
@@ -1302,7 +1308,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             if (tpl.showNotebookLines)
               Positioned.fill(
                 child: CustomPaint(
-                  painter: _NotebookLinesPainter(),
+                  painter: _NotebookLinesPainter(isPreview: false),
                 ),
               ),
 
@@ -1310,7 +1316,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             if (tpl.showDotGrid)
               Positioned.fill(
                 child: CustomPaint(
-                  painter: _DotGridPainter(),
+                  painter: _DotGridPainter(isPreview: false),
                 ),
               ),
 
@@ -1350,10 +1356,10 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         return Stack(
           alignment: Alignment.center,
           children: [
-            Positioned.fill(child: CustomPaint(painter: _DotGridPainter())),
+            Positioned.fill(child: CustomPaint(painter: _DotGridPainter(isPreview: true))),
             Center(
               child: Container(
-                width: 26,
+                width: 16,
                 height: 1.5,
                 color: Colors.white70,
               ),
@@ -1364,13 +1370,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       case 'notebook':
         return Stack(
           children: [
-            Positioned.fill(child: CustomPaint(painter: _NotebookLinesPainter())),
-            Positioned(
-              left: 10,
-              top: 0,
-              bottom: 0,
-              child: Container(width: 1.2, color: const Color(0xFFEF4444).withValues(alpha: 0.60)),
-            ),
+            Positioned.fill(child: CustomPaint(painter: _NotebookLinesPainter(isPreview: true))),
           ],
         );
 
@@ -1379,21 +1379,21 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           child: Stack(
             children: [
               Container(
-                width: 44,
-                height: 50,
+                width: 32,
+                height: 38,
                 decoration: BoxDecoration(
                   color: const Color(0xFFFEF08A),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(4),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 4, offset: const Offset(0, 2)),
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 3, offset: const Offset(0, 2)),
                   ],
                 ),
               ),
               Positioned(
                 top: 0,
-                left: 12,
-                right: 12,
-                child: Container(height: 4, color: Colors.amber.shade300),
+                left: 8,
+                right: 8,
+                child: Container(height: 3, color: Colors.amber.shade300),
               ),
             ],
           ),
@@ -1602,78 +1602,72 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   }
 
   Widget _buildMiniTemplatePreview(StoryTemplateModel tpl, bool isSel) {
+    final double cardHeight = isSel ? 140.0 : 120.0;
+    final double cardWidth = cardHeight * (9 / 16);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        AnimatedScale(
-          scale: isSel ? 1.05 : 1.0,
+        AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            opacity: isSel ? 1.0 : 0.65,
+          width: cardWidth,
+          height: cardHeight,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSel ? Colors.white : Colors.transparent,
+              width: isSel ? 2.5 : 0,
+            ),
+            boxShadow: isSel
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  ]
+                : null,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(9.5), // Inner radius to match outer border
             child: Stack(
-              clipBehavior: Clip.none,
               children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 64,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: tpl.backgroundColors,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                // Background Gradient
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: tpl.backgroundColors,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.12),
-                      width: isSel ? 2.0 : 1.0,
-                    ),
-                    boxShadow: isSel
-                        ? [
-                            BoxShadow(
-                              color: tpl.backgroundColors.first.withValues(alpha: 0.35),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ]
-                        : [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(17),
-                    child: _buildUniqueTemplateThumbnail(tpl),
                   ),
                 ),
+                
+                // Specific template elements
+                Positioned.fill(
+                  child: _buildUniqueTemplateThumbnail(tpl),
+                ),
 
-                // Small Top-Right Checkmark Badge for Selected Card
+                // Selected Checkmark Badge
                 if (isSel)
                   Positioned(
-                    top: -3,
-                    right: -3,
+                    top: 6,
+                    right: 6,
                     child: Container(
-                      width: 15,
-                      height: 15,
+                      padding: const EdgeInsets.all(3),
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
                         boxShadow: [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 3,
-                            offset: Offset(0, 1),
-                          ),
+                          BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
                         ],
                       ),
                       child: const Icon(
                         Icons.check_rounded,
-                        size: 9,
+                        size: 12,
                         color: Colors.black,
                       ),
                     ),
@@ -1682,16 +1676,13 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             ),
           ),
         ),
-
-        const SizedBox(height: 6),
-
-        // Smaller & Lighter Template Label
+        const SizedBox(height: 10),
         Text(
           tpl.name,
           style: TextStyle(
-            color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.50),
-            fontSize: 10.5,
-            fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
+            color: isSel ? Colors.white : Colors.white60,
+            fontSize: isSel ? 13 : 12,
+            fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
             letterSpacing: 0.2,
           ),
         ),
@@ -1701,7 +1692,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   Widget _buildStoryTemplateSelectorStrip() {
     return SizedBox(
-      height: 124,
+      height: 180,
       child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -4023,6 +4014,15 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (!didPop) {
+          if (_isFullScreenTextEditing) {
+            _closeFullScreenTextEditor(save: true);
+            return;
+          }
+          if (_isPreviewMode) {
+            setState(() => _isPreviewMode = false);
+            return;
+          }
+
           final shouldPop = await _confirmDiscardDraft();
           if (shouldPop) {
             Get.back();
@@ -4087,11 +4087,15 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         Row(
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
+                              icon: Icon(_isPreviewMode ? Icons.arrow_back_rounded : Icons.close_rounded, color: Colors.white, size: 28),
                               onPressed: () async {
-                                final shouldPop = await _confirmDiscardDraft();
-                                if (shouldPop) {
-                                  Get.back();
+                                if (_isPreviewMode) {
+                                  setState(() => _isPreviewMode = false);
+                                } else {
+                                  final shouldPop = await _confirmDiscardDraft();
+                                  if (shouldPop) {
+                                    Get.back();
+                                  }
                                 }
                               },
                             ),
@@ -4099,7 +4103,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                             Expanded(
                               child: Center(
                                 child: Text(
-                                  widget.type == StoryType.text ? "Create Story" : "Preview Story",
+                                  _isPreviewMode ? "Preview" : (widget.type == StoryType.text ? "Create Story" : "Edit Story"),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -4204,30 +4208,64 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           // Horizontally Scrollable Story Templates Strip (Text Story Mode ONLY)
-                          if (widget.type == StoryType.text)
+                          if (_isTemplateSelectionMode && widget.type == StoryType.text) ...[
                             _buildStoryTemplateSelectorStrip(),
-
-                          // Unified Glassmorphic Toolbar Capsule (Icon Buttons with 44px Touch Targets)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xF2161618),
-                              borderRadius: BorderRadius.circular(30),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.12),
-                                width: 1.0,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.4),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _isTemplateSelectionMode = false;
+                                  });
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Colors.black,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+                                  elevation: 4,
                                 ),
-                              ],
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text("Continue", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                    SizedBox(width: 8),
+                                    Icon(Icons.arrow_forward_rounded, size: 20),
+                                  ],
+                                ),
+                              ),
                             ),
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
+                          ] else if (_isPreviewMode) ...[
+                            const SizedBox(height: 16),
+                            _AnimatedPostStoryButton(
+                              isPublishing: _isPublishing,
+                              label: "Publish Story",
+                              icon: Icons.send_rounded,
+                              onPost: _publishStory,
+                            ),
+                          ] else ...[
+                            // Unified Glassmorphic Toolbar Capsule (Icon Buttons with 44px Touch Targets)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xF2161618),
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                  width: 1.0,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.4),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
                               child: Row(
                                 children: [
                                   // 1. Add Photo (Only for Image / Video Stories)
@@ -4302,13 +4340,16 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                             ),
                           ),
 
-                          const SizedBox(height: 16),
+                            const SizedBox(height: 16),
 
-                          // 3. Interactive Apple-Grade "Post Story" Call-To-Action Pill Button
-                          _AnimatedPostStoryButton(
-                            isPublishing: _isPublishing,
-                            onPost: _publishStory,
-                          ),
+                            // 3. Interactive Apple-Grade "Post Story" Call-To-Action Pill Button
+                            _AnimatedPostStoryButton(
+                              isPublishing: false,
+                              label: "Preview",
+                              icon: Icons.visibility_rounded,
+                              onPost: () => setState(() => _isPreviewMode = true),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -4326,10 +4367,14 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 class _AnimatedPostStoryButton extends StatefulWidget {
   final bool isPublishing;
   final VoidCallback onPost;
+  final String label;
+  final IconData icon;
 
   const _AnimatedPostStoryButton({
     required this.isPublishing,
     required this.onPost,
+    this.label = "Post Story",
+    this.icon = Icons.arrow_forward_rounded,
   });
 
   @override
@@ -4374,21 +4419,21 @@ class _AnimatedPostStoryButtonState extends State<_AnimatedPostStoryButton> {
                       strokeWidth: 2.5,
                     ),
                   )
-                : const Row(
+                : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Post Story",
-                        style: TextStyle(
+                        widget.label,
+                        style: const TextStyle(
                           color: Colors.black,
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
                           letterSpacing: 0.2,
                         ),
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Icon(
-                        Icons.arrow_forward_rounded,
+                        widget.icon,
                         color: Colors.black,
                         size: 18,
                       ),

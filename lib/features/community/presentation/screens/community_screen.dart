@@ -103,7 +103,7 @@ class CommunityScreen extends GetView<CommunityController> {
                                         : textSecondary,
                                     fontWeight: isSelected
                                         ? FontWeight.bold
-                                        : FontWeight.w500,
+                                        : FontWeight.w600,
                                   ) ??
                                   TextStyle(
                                     color: isSelected
@@ -113,8 +113,8 @@ class CommunityScreen extends GetView<CommunityController> {
                                         : textSecondary,
                                     fontWeight: isSelected
                                         ? FontWeight.bold
-                                        : FontWeight.w500,
-                                    fontSize: 14,
+                                        : FontWeight.w600,
+                                    fontSize: 15,
                                   ),
                             ),
                           ),
@@ -218,11 +218,11 @@ class CommunityScreen extends GetView<CommunityController> {
                               style: theme.textTheme.bodyMedium?.copyWith(
                                     color: textPrimary,
                                     fontWeight: FontWeight.w600,
-                                    fontSize: 13.5,
+                                    fontSize: 15.5,
                                   ) ??
                                   TextStyle(
                                     color: textPrimary,
-                                    fontSize: 13.5,
+                                    fontSize: 15.5,
                                     fontWeight: FontWeight.w600,
                                   ),
                             ),
@@ -233,12 +233,12 @@ class CommunityScreen extends GetView<CommunityController> {
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.bodySmall?.copyWith(
                                     color: textMuted,
-                                    fontSize: 11.5,
+                                    fontSize: 12.5,
                                     fontWeight: FontWeight.w400,
                                   ) ??
                                   TextStyle(
                                     color: textMuted,
-                                    fontSize: 11.5,
+                                    fontSize: 12.5,
                                     fontWeight: FontWeight.w400,
                                   ),
                             ),

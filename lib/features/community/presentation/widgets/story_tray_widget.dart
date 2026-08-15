@@ -35,12 +35,12 @@ class StoryTrayWidget extends StatelessWidget {
               child: Column(
                 children: [
                   CircleAvatar(
-                    radius: 32,
+                    radius: 28,
                     backgroundColor: skeletonColor,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Container(
-                    width: 48,
+                    width: 60,
                     height: 10,
                     decoration: BoxDecoration(
                       color: skeletonColor,
@@ -71,7 +71,7 @@ class StoryTrayWidget extends StatelessWidget {
       ];
 
       return Container(
-        height: 94,
+        height: 110,
         margin: EdgeInsets.zero,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
@@ -212,13 +212,13 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: group.stories.isNotEmpty ? AppColors.communityAccent : Colors.transparent,
-                          width: 1.5,
+                          width: 2.0,
                         ),
                       ),
                       child: Hero(
                         tag: 'story_avatar_${group.userId}',
                         child: CircleAvatar(
-                          radius: 26,
+                          radius: 28,
                           backgroundImage: group.userAvatar.startsWith('assets/')
                               ? AssetImage(group.userAvatar) as ImageProvider
                               : NetworkImage(group.userAvatar),
@@ -226,42 +226,38 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                       ),
                     ),
                     Positioned(
-                      right: 2,
-                      bottom: 2,
+                      right: 0,
+                      bottom: 0,
                       child: GestureDetector(
                         onTap: () => StoryCreationPickerSheet.show(context),
                         child: Container(
-                          padding: const EdgeInsets.all(2.5),
+                          padding: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
                             color: AppColors.communityAccent,
                             shape: BoxShape.circle,
-                            border: Border.all(color: bgPrimary, width: 1.5),
+                            border: Border.all(color: bgPrimary, width: 2.0),
                           ),
                           child: Icon(
                             Icons.add,
                             color: isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse,
-                            size: 12,
+                            size: 14,
                           ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 SizedBox(
-                  width: 78,
+                  width: 74,
                   child: Text(
                     'community.yourStory'.tr,
                     style: theme.textTheme.labelSmall?.copyWith(
-                          fontSize: 10.5,
                           color: textPrimary,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
                         ) ??
-                        TextStyle(
-                          color: textPrimary,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        TextStyle(color: textPrimary, fontSize: 13, fontWeight: FontWeight.w500),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
@@ -301,7 +297,7 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                         )
                       : null,
                   border: !group.hasUnseen
-                      ? Border.all(color: border, width: 1.5)
+                      ? Border.all(color: border, width: 2.0)
                       : null,
                 ),
                 child: Container(
@@ -316,7 +312,7 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                     child: Hero(
                       tag: 'story_avatar_${group.userId}',
                       child: CircleAvatar(
-                        radius: 26,
+                        radius: 28,
                         backgroundImage: group.userAvatar.startsWith('assets/')
                             ? AssetImage(group.userAvatar) as ImageProvider
                             : NetworkImage(group.userAvatar),
@@ -325,25 +321,26 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                   ),
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 4),
               SizedBox(
-                width: 78,
+                width: 74,
                 child: Text(
                   group.userName,
                   style: theme.textTheme.labelSmall?.copyWith(
                         color: group.hasUnseen ? textPrimary : textMuted,
-                        fontWeight: group.hasUnseen ? FontWeight.bold : FontWeight.normal,
+                        fontSize: 13.5,
+                        fontWeight: group.hasUnseen ? FontWeight.bold : FontWeight.w500,
                         fontFamily: _containsKhmer(group.userName) ? 'KantumruyPro' : null,
                         fontFamilyFallback: const ['KantumruyPro', 'Sora'],
                       ) ??
                       TextStyle(
                         color: group.hasUnseen ? textPrimary : textMuted,
-                        fontSize: 11,
-                        fontWeight: group.hasUnseen ? FontWeight.bold : FontWeight.normal,
+                        fontSize: 13.5,
+                        fontWeight: group.hasUnseen ? FontWeight.bold : FontWeight.w500,
                         fontFamily: _containsKhmer(group.userName) ? 'KantumruyPro' : null,
                         fontFamilyFallback: const ['KantumruyPro', 'Sora'],
                       ),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                 ),

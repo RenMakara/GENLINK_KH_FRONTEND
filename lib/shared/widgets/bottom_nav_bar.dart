@@ -38,7 +38,7 @@ class BottomNavBar extends StatelessWidget {
           final centerBtnSize = isVeryNarrow ? 52.0 : (isNarrow ? 56.0 : 62.0);
           final centerIconSize = isVeryNarrow ? 24.0 : (isNarrow ? 26.0 : 28.0);
           final navIconSize = isVeryNarrow ? 22.0 : (isNarrow ? 24.0 : 26.0);
-          final navFontSize = isVeryNarrow ? 10.0 : (isNarrow ? 11.0 : 11.5);
+          final navFontSize = isVeryNarrow ? 11.0 : (isNarrow ? 12.0 : 12.5);
 
           return Padding(
             padding: EdgeInsets.fromLTRB(horizontalPadding, 0, horizontalPadding, 6),

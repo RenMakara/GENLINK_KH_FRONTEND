@@ -16,7 +16,7 @@ abstract class CommunityRepository {
 
   Future<bool> deletePost(String postId);
 
-  Future<bool> toggleLike(String postId);
+  Future<bool> toggleLike(String postId, {required bool isCurrentlyLiked});
 
   Future<bool> toggleBookmark(String postId);
 

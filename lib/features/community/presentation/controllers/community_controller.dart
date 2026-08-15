@@ -326,7 +326,7 @@ class CommunityController extends GetxController {
       p.likesCount += p.isLiked ? 1 : -1;
       posts[idx] = p.copyWith();
 
-      repository.toggleLike(postId).catchError((_) {
+      repository.toggleLike(postId, isCurrentlyLiked: previousState).catchError((_) {
         // Revert on error
         final currentIdx = posts.indexWhere((item) => item.id == postId);
         if (currentIdx != -1) {

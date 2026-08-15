@@ -140,6 +140,22 @@ class CommunityPostModel {
     );
   }
 
+  static String _formatTimeAgo(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return 'Just now';
+    try {
+      final date = DateTime.parse(dateStr);
+      final diff = DateTime.now().difference(date);
+      if (diff.inDays > 365) return '${(diff.inDays / 365).floor()}y ago';
+      if (diff.inDays > 30) return '${(diff.inDays / 30).floor()}mo ago';
+      if (diff.inDays > 0) return '${diff.inDays}d ago';
+      if (diff.inHours > 0) return '${diff.inHours}h ago';
+      if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+      return 'Just now';
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
   factory CommunityPostModel.fromJson(Map<String, dynamic> json) {
     // Parse Spring Boot AuthorSummary object or fallback flat properties
     final authorObj = json['author'] is Map<String, dynamic> ? json['author'] as Map<String, dynamic> : null;
@@ -165,7 +181,7 @@ class CommunityPostModel {
       authorTag: authorTag,
       authorAvatar: authorAvatar,
       isVerified: json['isVerified'] as bool? ?? json['verified'] as bool? ?? false,
-      timeAgo: json['timeAgo'] as String? ?? json['createdAt'] as String? ?? 'Just now',
+      timeAgo: _formatTimeAgo(json['createdAt'] as String? ?? json['timeAgo'] as String?),
       content: json['contentText'] as String? ?? json['content'] as String? ?? json['text'] as String? ?? '',
       imageUrls: imagesList,
       likesCount: json['likeCount'] as int? ?? json['likesCount'] as int? ?? json['likes'] as int? ?? 0,

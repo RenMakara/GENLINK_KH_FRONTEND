@@ -36,12 +36,15 @@ class SplashController extends GetxController {
     var onboardingSeen = false;
 
     try {
-      restored = await _auth.restoreSession();
-      onboardingSeen = await _storage.readOnboardingSeen();
+      // Add a 5-second timeout so a dead backend or hanging keystore 
+      // never leaves the user stuck on the splash screen forever.
+      restored = await _auth.restoreSession().timeout(const Duration(seconds: 5));
+      onboardingSeen = await _storage.readOnboardingSeen().timeout(const Duration(seconds: 5));
     } catch (_) {
       // Secure storage can fail outright (keystore reset, restored backup,
-      // rooted device). Falling through with both flags false sends the
-      // user to the first-run flow — never leaves them stuck on splash.
+      // rooted device), or the network call can timeout. Falling through with 
+      // both flags false sends the user to the first-run flow — never leaves 
+      // them stuck on splash.
     }
 
     await minimumElapsed;

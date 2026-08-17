@@ -147,7 +147,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   int _gradientIdx = 0;
   StoryBgMode _storyBgMode = StoryBgMode.gradient;
   Color? _selectedSolidBgColor;
-  TextAlign _textAlign = TextAlign.center;
   TextStyleType _fontStyle = TextStyleType.classic;
 
   static const List<Color> _curatedColors = [
@@ -2654,28 +2653,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   ),
                   onPressed: () => setState(() => _activeTextToolbarTab = 2),
                 ),
-
-                // 4. Alignment Toggle (☰)
-                IconButton(
-                  icon: Icon(
-                    layer.alignment == TextAlign.left
-                        ? Icons.format_align_left_rounded
-                        : (layer.alignment == TextAlign.right ? Icons.format_align_right_rounded : Icons.format_align_center_rounded),
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      if (layer.alignment == TextAlign.center) {
-                        layer.alignment = TextAlign.left;
-                      } else if (layer.alignment == TextAlign.left) {
-                        layer.alignment = TextAlign.right;
-                      } else {
-                        layer.alignment = TextAlign.center;
-                      }
-                    });
-                  },
-                ),
               ],
             ),
 
@@ -3170,43 +3147,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                           },
                           icon: const Icon(Icons.font_download_outlined, size: 18),
                           label: Text(_fontStyle.name.toUpperCase(), style: const TextStyle(fontSize: 12)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.darkSurfaceSecondary,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(double.infinity, 42),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text("Alignment", style: TextStyle(color: Colors.white70, fontSize: 13)),
-                        const SizedBox(height: 8),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              if (_textAlign == TextAlign.center) {
-                                _textAlign = TextAlign.left;
-                              } else if (_textAlign == TextAlign.left) {
-                                _textAlign = TextAlign.right;
-                              } else {
-                                _textAlign = TextAlign.center;
-                              }
-                            });
-                            setSheetState(() {});
-                          },
-                          icon: Icon(
-                            _textAlign == TextAlign.center
-                                ? Icons.format_align_center_rounded
-                                : (_textAlign == TextAlign.left ? Icons.format_align_left_rounded : Icons.format_align_right_rounded),
-                            size: 18,
-                          ),
-                          label: Text(_textAlign.name.toUpperCase(), style: const TextStyle(fontSize: 12)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.darkSurfaceSecondary,
                             foregroundColor: Colors.white,
@@ -3803,32 +3743,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                               }),
                             ),
 
-                            // 2. Alignment Toggle (☰)
-                            _buildPrimaryEditorToolBtn(
-                              active: false,
-                              tooltip: 'Alignment',
-                              child: Icon(
-                                _activeTextAlign == TextAlign.center
-                                    ? Icons.format_align_center_rounded
-                                    : _activeTextAlign == TextAlign.left
-                                        ? Icons.format_align_left_rounded
-                                        : Icons.format_align_right_rounded,
-                                color: Colors.white,
-                                size: 22,
-                              ),
-                              onTap: () => setState(() {
-                                if (_activeTextAlign == TextAlign.center) {
-                                  _activeTextAlign = TextAlign.left;
-                                } else if (_activeTextAlign == TextAlign.left) {
-                                  _activeTextAlign = TextAlign.right;
-                                } else {
-                                  _activeTextAlign = TextAlign.center;
-                                }
-                                if (_editingTextLayer != null) _editingTextLayer!.alignment = _activeTextAlign;
-                              }),
-                            ),
-
-                            // 3. Font Family (Aa)
+                            // 2. Font Family (Aa)
                             _buildPrimaryEditorToolBtn(
                               active: _activeContextTool == ActiveContextTool.font,
                               tooltip: 'Font',

@@ -8,6 +8,8 @@ abstract class StoryRepository {
     String? textContent,
     String? location,
     String visibility = 'Public',
+    String replyPrivacy = 'Everyone',
+    bool allowReactions = true,
     String? bgGradientStart,
     String? bgGradientEnd,
     List<MovableStoryLayer>? layers,

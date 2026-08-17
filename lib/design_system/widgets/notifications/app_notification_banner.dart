@@ -84,7 +84,16 @@ class AppNotificationBanner {
   }) {
     dismiss();
 
-    final overlayState = Overlay.of(context, rootOverlay: true);
+    OverlayState? overlayState;
+    try {
+      overlayState = Overlay.maybeOf(context, rootOverlay: true) ??
+          Overlay.maybeOf(context);
+    } catch (_) {}
+
+    if (overlayState == null) {
+      debugPrint('[AppNotificationBanner] No Overlay found for banner: $title - $message');
+      return;
+    }
 
     _currentEntry = OverlayEntry(
       builder: (ctx) => _NotificationBannerWidget(

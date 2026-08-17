@@ -356,19 +356,18 @@ class CommunityScreen extends GetView<CommunityController> {
 
     final categoriesList = [
       {'title': 'Technology', 'count': '342 Discussions', 'icon': Icons.laptop_chromebook_rounded},
-      {'title': 'Campus', 'count': '189 Discussions', 'icon': Icons.school_outlined},
+      {'title': 'Campus Life', 'count': '189 Discussions', 'icon': Icons.school_outlined},
       {'title': 'Projects', 'count': '120 Discussions', 'icon': Icons.rocket_launch_outlined},
       {'title': 'Study & Education', 'count': '256 Discussions', 'icon': Icons.menu_book_rounded},
       {'title': 'Career', 'count': '145 Discussions', 'icon': Icons.work_outline_rounded},
       {'title': 'Events', 'count': '98 Discussions', 'icon': Icons.event_outlined},
-      {'title': 'General', 'count': '210 Discussions', 'icon': Icons.forum_outlined},
     ];
 
     final trendingTopics = [
-      '#FlutterTech',
+      '#Technology',
       '#CampusLife',
       '#Projects',
-      '#StudyTips',
+      '#Study & Education',
       '#Career',
     ];
 
@@ -378,7 +377,7 @@ class CommunityScreen extends GetView<CommunityController> {
         author: "Admin Team",
         avatarUrl: "assets/images/user_profile.png",
         timeAgo: "1d ago",
-        category: "General",
+        category: "Technology",
         replies: 48,
         likes: 142,
         isPinned: true,
@@ -450,38 +449,33 @@ class CommunityScreen extends GetView<CommunityController> {
               onTap: () => Get.to(
                 () => const CommunitySearchScreen(activeTab: 'Forum'),
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               child: Container(
-                height: 52,
+                height: 46,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 decoration: BoxDecoration(
                   color: surfaceSecondary,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   border: Border.all(color: borderSubtle),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      Icons.search_rounded,
+                      Icons.search,
                       color: textMuted,
                       size: 20,
                     ),
                     const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        "Search discussions & topics",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
-                            TextStyle(color: textMuted, fontSize: 14),
-                      ),
+                    Text(
+                      'community.searchDiscussions'.tr,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
+                          TextStyle(color: textMuted, fontSize: 14),
                     ),
                   ],
                 ),
               ),
             ),
-
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
 
             // 2. Trending Topics (Horizontally scrollable chip list)
             Text(
@@ -506,7 +500,7 @@ class CommunityScreen extends GetView<CommunityController> {
                 children: trendingTopics.map((topic) {
                   return InkWell(
                     onTap: () {
-                      final cleanCat = topic.replaceAll('#', '').replaceAll('Tech', 'nology');
+                      final cleanCat = topic.replaceAll('#', '').replaceAll('CampusLife', 'Campus Life');
                       if (controller.selectedForumCategory.value == cleanCat) {
                         controller.selectedForumCategory.value = 'All';
                       } else {

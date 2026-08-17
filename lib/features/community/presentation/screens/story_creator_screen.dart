@@ -1,6 +1,5 @@
 // ignore_for_file: unused_element
 import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:get/get.dart';
@@ -99,12 +98,18 @@ class StoryCreatorScreen extends StatefulWidget {
   State<StoryCreatorScreen> createState() => _StoryCreatorScreenState();
 }
 
+enum ActiveContextTool { none, font, effect, color, background }
+enum StoryBgMode { none, solid, gradient }
+
 class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   final List<MovableStoryLayer> _layers = [];
 
   MovableStoryLayer? _selectedLayer;
+  ActiveContextTool _activeContextTool = ActiveContextTool.none;
   bool _isPublishing = false;
-  String _selectedVisibility = 'Public';
+  String _selectedVisibility = 'Friends';
+  String _replyPrivacy = 'Everyone';
+  bool _allowReactions = true;
 
   String? _activeMediaPath;
   final TextEditingController _captionController = TextEditingController();
@@ -129,30 +134,106 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   final TextEditingController _fullScreenTextController = TextEditingController();
   final FocusNode _fullScreenTextFocusNode = FocusNode();
   Color _activeTextColor = Colors.white;
-  TextStyleType _activeFontStyle = TextStyleType.bold;
+  Color? _activeTextBgColor;
+  TextStyleType _activeFontStyle = TextStyleType.classic;
   TextBgStyle _activeTextBgStyle = TextBgStyle.none;
+  TextEffectType _activeTextEffect = TextEffectType.none;
   TextAlign _activeTextAlign = TextAlign.center;
 
-  /// Responsive font size: scales with the narrowest screen dimension.
-  double get _activeFontSize {
-    final shortSide = MediaQuery.of(context).size.shortestSide;
-    if (shortSide < 360) return 20.0;
-    if (shortSide < 400) return 22.0;
-    return 24.0;
-  }
+  // Font size controlled by vertical slider (14–72pt)
+  double _activeFontSize = 28.0;
 
   int _selectedTemplateIdx = 0;
   int _gradientIdx = 0;
+  StoryBgMode _storyBgMode = StoryBgMode.gradient;
+  Color? _selectedSolidBgColor;
   TextAlign _textAlign = TextAlign.center;
-  TextStyleType _fontStyle = TextStyleType.bold;
-  final List<List<Color>> _gradients = [
-    [const Color(0xFF000000), const Color(0xFF111827)],
-    [const Color(0xFF0F172A), const Color(0xFF1E293B)],
-    [const Color(0xFF312E81), const Color(0xFF1E1B4B)],
-    [const Color(0xFF065F46), const Color(0xFF022C22)],
-    [const Color(0xFF831843), const Color(0xFF500724)],
-    [const Color(0xFF4C1D95), const Color(0xFF1E1B4B)],
+  TextStyleType _fontStyle = TextStyleType.classic;
+
+  static const List<Color> _curatedColors = [
+    Colors.white,
+    Colors.black,
+    Color(0xFFFACC15), // Amber
+    Color(0xFFF43F5E), // Rose
+    Color(0xFF38BDF8), // Sky Blue
+    Color(0xFFA855F7), // Violet
+    Color(0xFF34D399), // Emerald Green
+    Color(0xFFFB923C), // Vibrant Orange
+    Color(0xFFE879F9), // Fuchsia Pink
+    Color(0xFF4ADE80), // Mint Lime
+    Color(0xFF64748B), // Soft Slate
   ];
+
+  static const List<Color> _solidBgColors = [
+    Colors.white,
+    Colors.black,
+    Color(0xFFA855F7), // Purple / Violet
+    Color(0xFF34D399), // Emerald Green
+    Color(0xFF38BDF8), // Sky Blue
+    Color(0xFFF43F5E), // Pink / Rose
+    Color(0xFFFACC15), // Yellow / Amber
+    Color(0xFFFB923C), // Vibrant Orange
+    Color(0xFFE879F9), // Fuchsia Pink
+    Color(0xFF4ADE80), // Mint Lime
+    Color(0xFF1E293B), // Slate Blue
+    Color(0xFF4C1D95), // Deep Violet
+    Color(0xFF064E3B), // Forest Green
+    Color(0xFF312E81), // Midnight Indigo
+  ];
+
+  static const List<(TextStyleType, String)> _fontPresets = [
+    (TextStyleType.classic,     'Classic'),
+    (TextStyleType.elegant,     'Deco'),
+    (TextStyleType.bold,        'Bubble'),
+    (TextStyleType.modern,      'Modern'),
+    (TextStyleType.minimal,     'Neon'),
+    (TextStyleType.handwriting, 'Script'),
+    (TextStyleType.coding,      'Code'),
+  ];
+
+  // Selected background category for filter tabs
+  String _selectedBgCategory = 'Solid';
+
+  // Curated cute, aesthetic, and trending TikTok / Instagram backgrounds for text stories
+  final List<({String name, String category, String emoji, List<Color> colors, AlignmentGeometry begin, AlignmentGeometry end})> _bgPresets = [
+    // 🌸 PASTEL & CUTE
+    (name: 'Barbie Dream', category: 'Pastel', emoji: '💖', colors: [Color(0xFFFF758C), Color(0xFFFF7EB3), Color(0xFFFFB199)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+    (name: 'Sweet Peach',  category: 'Pastel', emoji: '🍑', colors: [Color(0xFFFF9A9E), Color(0xFFFAD0C4), Color(0xFFFBC2EB)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+    (name: 'Cotton Candy', category: 'Pastel', emoji: '🍬', colors: [Color(0xFFA1C4FD), Color(0xFFC2E9FB), Color(0xFFE2D1F9)], begin: Alignment.topRight, end: Alignment.bottomLeft),
+    (name: 'Baby Cloud',   category: 'Pastel', emoji: '☁️', colors: [Color(0xFF89F7FE), Color(0xFF66A6FF), Color(0xFFE0C3FC)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+    (name: 'Butter Cream', category: 'Pastel', emoji: '🧈', colors: [Color(0xFFFFF1EB), Color(0xFFACE0F9), Color(0xFFFBE7C6)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+
+    // 🔥 TIKTOK TRENDING
+    (name: 'Golden Hour',  category: 'Trending', emoji: '🌅', colors: [Color(0xFFFF512F), Color(0xFFF09819), Color(0xFFFF8E53)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+    (name: 'Cyber Lilac',  category: 'Trending', emoji: '💜', colors: [Color(0xFF8A2387), Color(0xFFE94057), Color(0xFFF27121)], begin: Alignment.topRight, end: Alignment.bottomLeft),
+    (name: 'Matcha Sage',  category: 'Trending', emoji: '🍵', colors: [Color(0xFF134E5E), Color(0xFF71B280), Color(0xFFC8E6C9)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+    (name: 'Sunset Glow',  category: 'Trending', emoji: '🌇', colors: [Color(0xFFFF416C), Color(0xFFFF4B2B), Color(0xFFFF9A3E)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+    (name: 'Neon Mango',   category: 'Trending', emoji: '🥭', colors: [Color(0xFFFF9966), Color(0xFFFF5E62), Color(0xFFFFD194)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+    (name: 'Sky Azure',    category: 'Trending', emoji: '🌊', colors: [Color(0xFF4FACFE), Color(0xFF00F2FE), Color(0xFF43E97B)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+
+    // ✨ HOLOGRAPHIC & FAIRY
+    (name: 'Aurora Fairy', category: 'Fairy', emoji: '✨', colors: [Color(0xFFFBC2EB), Color(0xFFA6C1EE), Color(0xFFC2E9FB)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+    (name: 'Y2K Dream',    category: 'Fairy', emoji: '🦄', colors: [Color(0xFFDA8FFF), Color(0xFF8E54E9), Color(0xFF4776E6)], begin: Alignment.topRight, end: Alignment.bottomLeft),
+    (name: 'Mermaid Teal', category: 'Fairy', emoji: '🧜‍♀️', colors: [Color(0xFF43E97B), Color(0xFF38F9D7), Color(0xFF667EEA)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+    (name: 'Pearl Mist',   category: 'Fairy', emoji: '🪩', colors: [Color(0xFFE0C3FC), Color(0xFF8EC5FC), Color(0xFFD9AFD9)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+
+    // ☕ AESTHETIC & MOOD
+    (name: 'Warm Mocha',   category: 'Aesthetic', emoji: '☕', colors: [Color(0xFF2C1810), Color(0xFF4A2E2B), Color(0xFF8D6E63)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+    (name: 'Velvet Cherry',category: 'Aesthetic', emoji: '🍒', colors: [Color(0xFF3A1C71), Color(0xFFD76D77), Color(0xFFFFAF7B)], begin: Alignment.topRight, end: Alignment.bottomLeft),
+    (name: 'Deep Galaxy',  category: 'Aesthetic', emoji: '🌌', colors: [Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+    (name: 'Dark Emerald', category: 'Aesthetic', emoji: '🌲', colors: [Color(0xFF0B3024), Color(0xFF134E5E), Color(0xFF2A5298)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+    (name: 'Cyber Noir',   category: 'Aesthetic', emoji: '⚡', colors: [Color(0xFF1F1C2C), Color(0xFF928DAB), Color(0xFF24243E)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+
+    // 🖤 CLEAN & MINIMAL
+    (name: 'Pure OLED',    category: 'Minimal', emoji: '🖤', colors: [Color(0xFF000000), Color(0xFF121212), Color(0xFF1C1C1E)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+    (name: 'Studio Slate', category: 'Minimal', emoji: '🩶', colors: [Color(0xFF2C3E50), Color(0xFF4CA1AF), Color(0xFF1E293B)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+    (name: 'Oat Vanilla',  category: 'Minimal', emoji: '🥛', colors: [Color(0xFFFDFBFB), Color(0xFFEBEDEE), Color(0xFFE2D4C9)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+    (name: 'Paper Beige',  category: 'Minimal', emoji: '📜', colors: [Color(0xFFF7F4EB), Color(0xFFE8E0D2), Color(0xFFD7CCC8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+  ];
+
+  // Keep _gradients for backward compat with other screens
+  List<List<Color>> get _gradients => _bgPresets.map((p) => p.colors).toList();
+
 
   static const List<StoryTemplateModel> _storyTemplates = [
     StoryTemplateModel(
@@ -422,28 +503,36 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   void _cycleGradient() {
     setState(() {
-      _gradientIdx = (_gradientIdx + 1) % _gradients.length;
+      _storyBgMode = StoryBgMode.gradient;
+      _gradientIdx = (_gradientIdx + 1) % _bgPresets.length;
     });
   }
 
-  // Immersive Full-Screen Text Editor — replaces old popup dialog
+  // Immersive Full-Screen Text Editor — clean canvas and natural typing
   void _openFloatingTextEditor([MovableStoryLayer? existingLayer]) {
     setState(() {
       _editingTextLayer = existingLayer;
       _isFullScreenTextEditing = true;
+      _activeContextTool = ActiveContextTool.none; // Clean canvas by default
       if (existingLayer != null) {
         _fullScreenTextController.text = existingLayer.text;
         _activeTextColor = existingLayer.color;
+        _activeTextBgColor = existingLayer.bgColor;
         _activeFontStyle = existingLayer.fontStyle;
         _activeTextBgStyle = existingLayer.bgStyle;
+        _activeTextEffect = existingLayer.effect;
         _activeTextAlign = existingLayer.alignment;
+        _activeFontSize = existingLayer.fontSize;
         _activeTextScale = existingLayer.scale;
       } else {
         _fullScreenTextController.clear();
         _activeTextColor = Colors.white;
-        _activeFontStyle = TextStyleType.bold;
+        _activeTextBgColor = null;
+        _activeFontStyle = TextStyleType.classic; // Normal/Classic by default
         _activeTextBgStyle = TextBgStyle.none; // transparent by default
+        _activeTextEffect = TextEffectType.none; // No shadow / flat by default
         _activeTextAlign = TextAlign.center;
+        _activeFontSize = 28.0;
         _activeTextScale = 1.0;
       }
     });
@@ -1271,74 +1360,35 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   }
 
   Widget _buildTextStoryTemplateCanvas() {
-    final tpl = _storyTemplates[_selectedTemplateIdx.clamp(0, _storyTemplates.length - 1)];
+    Widget canvasBg;
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      child: Container(
-        key: ValueKey(tpl.id),
+    if (_storyBgMode == StoryBgMode.none) {
+      canvasBg = Container(
+        key: const ValueKey('canvas_bg_none'),
+        color: const Color(0xFF0B0B0E),
+      );
+    } else if (_storyBgMode == StoryBgMode.solid && _selectedSolidBgColor != null) {
+      canvasBg = Container(
+        key: ValueKey('canvas_bg_solid_${_selectedSolidBgColor!.toARGB32()}'),
+        color: _selectedSolidBgColor,
+      );
+    } else {
+      final preset = _bgPresets[_gradientIdx.clamp(0, _bgPresets.length - 1)];
+      canvasBg = Container(
+        key: ValueKey('canvas_bg_gradient_$_gradientIdx'),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: tpl.backgroundColors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            colors: preset.colors,
+            begin: preset.begin,
+            end: preset.end,
           ),
         ),
-        child: Stack(
-          children: [
-            // Background Image Asset (if available)
-            if (tpl.bgImageAssetPath != null)
-              Positioned.fill(
-                child: Image.asset(
-                  tpl.bgImageAssetPath!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (ctx, err, stack) => const SizedBox.shrink(),
-                ),
-              ),
+      );
+    }
 
-            // Notebook Lines Pattern
-            if (tpl.showNotebookLines)
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _NotebookLinesPainter(),
-                ),
-              ),
-
-            // Dot Grid Pattern
-            if (tpl.showDotGrid)
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _DotGridPainter(),
-                ),
-              ),
-
-            // Card Frame or Card Surface
-            if (tpl.cardBackgroundColor != Colors.transparent || tpl.cardBorderColor != Colors.transparent)
-              Center(
-                child: Container(
-                  width: MediaQuery.of(context).size.width * 0.85,
-                  height: MediaQuery.of(context).size.height * 0.52,
-                  decoration: BoxDecoration(
-                    color: tpl.cardBackgroundColor,
-                    borderRadius: BorderRadius.circular(24),
-                    border: tpl.cardBorderColor != Colors.transparent
-                        ? Border.all(color: tpl.cardBorderColor, width: 1.5)
-                        : null,
-                    boxShadow: tpl.cardBackgroundColor != Colors.transparent
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.4),
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
-                            ),
-                          ]
-                        : null,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      child: canvasBg,
     );
   }
 
@@ -1748,20 +1798,70 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   Future<void> _publishStory() async {
     if (_isPublishing) return;
+
+    // 1. If user is currently typing in the full-screen text editor, commit the text into layers first
+    if (_isFullScreenTextEditing) {
+      _closeFullScreenTextEditor(save: true);
+    }
+
+    final String textFromInput = _fullScreenTextController.text.trim();
+    final String caption = _captionController.text.trim();
+    final hasTextLayer = _layers.any((l) => l.type == LayerType.text && l.text.trim().isNotEmpty);
+    final hasOtherLayer = _layers.any((l) => l.type != LayerType.text);
+
+    // 2. Validate non-empty story for text mode
+    if (widget.type == StoryType.text && !hasTextLayer && !hasOtherLayer && textFromInput.isEmpty && caption.isEmpty) {
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: "Empty Story",
+        message: "Please type some text or add stickers before publishing your story.",
+        icon: Icons.edit_note_rounded,
+      );
+      return;
+    }
+
     setState(() => _isPublishing = true);
 
     try {
       final controller = Get.isRegistered<StoryController>()
           ? Get.find<StoryController>()
           : Get.put(StoryController(), permanent: true);
-      final caption = _captionController.text.trim();
-      final String? textContent = caption.isNotEmpty ? caption : null;
+
+      // Extract primary text content
+      String? textContent;
+      if (caption.isNotEmpty) {
+        textContent = caption;
+      } else if (hasTextLayer) {
+        textContent = _layers.firstWhere((l) => l.type == LayerType.text).text;
+      } else if (textFromInput.isNotEmpty) {
+        textContent = textFromInput;
+      }
+
+      // Extract active canvas background colors for Text Story mode
+      String startHex;
+      String endHex;
+      if (_storyBgMode == StoryBgMode.solid && _selectedSolidBgColor != null) {
+        final hex = '0x${_selectedSolidBgColor!.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
+        startHex = hex;
+        endHex = hex;
+      } else if (_storyBgMode == StoryBgMode.none) {
+        startHex = '0xFF0B0B0E';
+        endHex = '0xFF0B0B0E';
+      } else {
+        final preset = _bgPresets[_gradientIdx.clamp(0, _bgPresets.length - 1)];
+        startHex = '0x${preset.colors.first.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
+        endHex = '0x${preset.colors.last.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
+      }
 
       final success = await controller.publishStory(
         type: widget.type,
         mediaUrl: _activeMediaPath,
         textContent: textContent,
         visibility: _selectedVisibility,
+        replyPrivacy: _replyPrivacy,
+        allowReactions: _allowReactions,
+        bgGradientStart: startHex,
+        bgGradientEnd: endHex,
         layers: List.from(_layers),
         bgScale: _bgImageScale,
         bgOffset: _bgImageOffset,
@@ -1771,33 +1871,38 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       if (mounted) {
         setState(() => _isPublishing = false);
         if (success) {
-          Get.until((route) => route.isFirst);
-          AppNotificationBanner.showSuccess(
-            context: context,
-            title: "✓ Story Live",
-            message: "Your story has been shared with $_selectedVisibility on CampusLink KH!",
-            icon: Icons.auto_awesome_rounded,
-          );
+          Get.back();
         }
       }
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('[StoryCreator] Publish story error: $e\n$stack');
       if (mounted) {
         setState(() => _isPublishing = false);
         AppNotificationBanner.showDanger(
           context: context,
           title: "Upload Failed",
-          message: "Could not publish story. Please try again.",
+          message: "Could not publish story: $e",
         );
+      }
+    } finally {
+      if (mounted && _isPublishing) {
+        setState(() => _isPublishing = false);
       }
     }
   }
 
-  TextStyle _getLayerTextStyle(TextStyleType fontStyle, Color color, TextBgStyle bgStyle) {
+  TextStyle _getLayerTextStyle(
+    TextStyleType fontStyle,
+    Color color,
+    TextBgStyle bgStyle, {
+    TextEffectType effect = TextEffectType.none,
+  }) {
     FontWeight weight = FontWeight.w600;
     FontStyle style = FontStyle.normal;
     double letterSpacing = 0.2;
     double height = 1.25;
     List<Shadow>? textShadows;
+    String? fontFamily;
 
     switch (fontStyle) {
       case TextStyleType.classic:
@@ -1813,36 +1918,56 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         weight = FontWeight.w900;
         letterSpacing = -0.3;
         break;
-      case TextStyleType.modern: // Outline
+      case TextStyleType.modern: // Modern
         weight = FontWeight.w800;
-        letterSpacing = 0.6;
+        letterSpacing = 0.8;
         break;
-      case TextStyleType.minimal: // Neon
+      case TextStyleType.minimal: // Minimal Clean
         weight = FontWeight.w700;
         letterSpacing = 1.2;
-        textShadows = [
-          Shadow(blurRadius: 8.0, color: color.withValues(alpha: 0.90), offset: Offset.zero),
-          Shadow(blurRadius: 20.0, color: color.withValues(alpha: 0.80), offset: Offset.zero),
-          Shadow(blurRadius: 36.0, color: color, offset: Offset.zero),
-        ];
+        break;
+      case TextStyleType.handwriting: // Script
+        weight = FontWeight.w500;
+        style = FontStyle.italic;
+        letterSpacing = 0.5;
+        break;
+      case TextStyleType.coding: // Code
+        weight = FontWeight.w600;
+        fontFamily = 'monospace';
+        letterSpacing = -0.2;
         break;
       default:
         weight = FontWeight.w700;
         break;
     }
 
-    if (textShadows == null && bgStyle == TextBgStyle.none) {
-      textShadows = [
-        Shadow(blurRadius: 6.0, color: Colors.black.withValues(alpha: 0.75), offset: const Offset(0, 1)),
-        Shadow(blurRadius: 14.0, color: Colors.black.withValues(alpha: 0.40), offset: const Offset(0, 2)),
-      ];
+    // Explicit Text Effects system (Independent from Font Styles)
+    switch (effect) {
+      case TextEffectType.shadow:
+        textShadows = [
+          Shadow(blurRadius: 8.0, color: Colors.black.withValues(alpha: 0.85), offset: const Offset(0, 2)),
+          Shadow(blurRadius: 16.0, color: Colors.black.withValues(alpha: 0.50), offset: const Offset(0, 4)),
+        ];
+        break;
+      case TextEffectType.glow:
+        textShadows = [
+          Shadow(blurRadius: 8.0, color: color.withValues(alpha: 0.95), offset: Offset.zero),
+          Shadow(blurRadius: 20.0, color: color.withValues(alpha: 0.85), offset: Offset.zero),
+          Shadow(blurRadius: 36.0, color: color, offset: Offset.zero),
+        ];
+        break;
+      case TextEffectType.outline:
+      case TextEffectType.none:
+        textShadows = null; // Clean, flat, NO shadow by default
+        break;
     }
 
     return TextStyle(
       color: color,
-      fontSize: 24,
+      fontSize: 28,
       fontWeight: weight,
       fontStyle: style,
+      fontFamily: fontFamily,
       letterSpacing: letterSpacing,
       height: height,
       shadows: textShadows,
@@ -1904,15 +2029,97 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         break;
 
       case LayerType.text:
-        final baseStyle = _getLayerTextStyle(layer.fontStyle, layer.color, layer.bgStyle);
+        final hasBg = layer.bgStyle != TextBgStyle.none;
+        final baseStyle = _getLayerTextStyle(
+          layer.fontStyle,
+          layer.color,
+          layer.bgStyle,
+          effect: layer.effect,
+        ).copyWith(
+          fontSize: layer.fontSize,
+        );
 
-        content = ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxCanvasWidth * 0.92),
-          child: Text(
+        Color? boxColor;
+        BoxBorder? boxBorder;
+        List<BoxShadow>? boxShadow;
+
+        if (layer.bgStyle == TextBgStyle.filled) {
+          boxColor = layer.bgColor ?? Colors.white;
+          boxShadow = [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ];
+        } else if (layer.bgStyle == TextBgStyle.rounded) {
+          boxColor = (layer.bgColor ?? Colors.black).withValues(alpha: 0.65);
+          boxShadow = [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ];
+        } else if (layer.bgStyle == TextBgStyle.outline) {
+          boxColor = Colors.transparent;
+          boxBorder = Border.all(color: layer.bgColor ?? layer.color, width: 2.0);
+        }
+
+        final isSelected = _selectedLayer?.id == layer.id;
+        final textLuminance = layer.color.computeLuminance();
+        final textDisplayColor = (layer.bgStyle == TextBgStyle.filled && layer.bgColor == null && layer.color == Colors.white)
+            ? Colors.black
+            : layer.color;
+
+        Widget textWidget;
+        if (layer.effect == TextEffectType.outline) {
+          final strokeColor = textLuminance > 0.5 ? Colors.black : Colors.white;
+          textWidget = Stack(
+            children: [
+              Text(
+                layer.text,
+                softWrap: true,
+                textAlign: layer.alignment,
+                style: baseStyle.copyWith(
+                  foreground: Paint()
+                    ..style = PaintingStyle.stroke
+                    ..strokeWidth = 3.5
+                    ..color = strokeColor,
+                  shadows: null,
+                ),
+              ),
+              Text(
+                layer.text,
+                softWrap: true,
+                textAlign: layer.alignment,
+                style: baseStyle.copyWith(color: textDisplayColor, shadows: null),
+              ),
+            ],
+          );
+        } else {
+          textWidget = Text(
             layer.text,
             softWrap: true,
             textAlign: layer.alignment,
-            style: baseStyle,
+            style: baseStyle.copyWith(color: textDisplayColor),
+          );
+        }
+
+        content = ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxCanvasWidth * 0.92),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: hasBg ? const EdgeInsets.symmetric(horizontal: 14, vertical: 8) : const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: BoxDecoration(
+              color: boxColor,
+              borderRadius: BorderRadius.circular(14),
+              border: isSelected && !hasBg
+                  ? Border.all(color: Colors.white30, width: 1.0)
+                  : boxBorder,
+              boxShadow: boxShadow,
+            ),
+            child: textWidget,
           ),
         );
         break;
@@ -2594,22 +2801,34 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 1. Object Action (Style for text, Replace for image/sticker)
               if (layer.type == LayerType.text) ...[
                 TextButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _activeTextToolbarTab = (_activeTextToolbarTab + 1) % 3;
-                    });
-                  },
+                  onPressed: () => _openFloatingTextEditor(layer),
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   ),
-                  icon: const Icon(Icons.palette_outlined, color: Colors.white, size: 18),
-                  label: const Text("Style", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                  icon: const Icon(Icons.edit_rounded, color: Colors.white, size: 16),
+                  label: const Text("Edit", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                 ),
                 Container(height: 16, width: 1, color: Colors.white12),
+                IconButton(
+                  icon: const Icon(Icons.copy_rounded, color: Colors.white70, size: 16),
+                  tooltip: "Duplicate",
+                  onPressed: () {
+                    final clone = layer.clone();
+                    setState(() {
+                      _layers.add(clone);
+                      _selectedLayer = clone;
+                    });
+                  },
+                ),
+                Container(height: 16, width: 1, color: Colors.white12),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 16),
+                  tooltip: "Delete",
+                  onPressed: () => _deleteLayerInstantly(layer),
+                ),
               ] else if (layer.type == LayerType.image || layer.type == LayerType.sticker) ...[
                 TextButton.icon(
                   onPressed: () async {
@@ -2633,14 +2852,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   label: const Text("Replace", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                 ),
                 Container(height: 16, width: 1, color: Colors.white12),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 18),
+                  tooltip: "Delete",
+                  onPressed: () => _deleteLayerInstantly(layer),
+                ),
               ],
-
-              // 2. Immediate Delete Action
-              IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 18),
-                tooltip: "Delete",
-                onPressed: () => _deleteLayerInstantly(layer),
-              ),
             ],
           ),
         ),
@@ -3282,9 +3499,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           if (_editingTextLayer != null) {
             _editingTextLayer!.text = text;
             _editingTextLayer!.color = _activeTextColor;
+            _editingTextLayer!.bgColor = _activeTextBgColor;
             _editingTextLayer!.fontStyle = _activeFontStyle;
             _editingTextLayer!.bgStyle = _activeTextBgStyle;
+            _editingTextLayer!.effect = _activeTextEffect;
             _editingTextLayer!.alignment = _activeTextAlign;
+            _editingTextLayer!.fontSize = _activeFontSize;
             _editingTextLayer!.scale = _activeTextScale;
             _selectedLayer = _editingTextLayer;
           } else {
@@ -3298,9 +3518,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               type: LayerType.text,
               text: text,
               color: _activeTextColor,
+              bgColor: _activeTextBgColor,
               fontStyle: _activeFontStyle,
               bgStyle: _activeTextBgStyle,
+              effect: _activeTextEffect,
               alignment: _activeTextAlign,
+              fontSize: _activeFontSize,
               offset: Offset(
                 size.width * 0.15,
                 clampedY,
@@ -3317,6 +3540,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     setState(() {
       _isFullScreenTextEditing = false;
       _editingTextLayer = null;
+      _activeContextTool = ActiveContextTool.none;
     });
   }
 
@@ -3327,147 +3551,395 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     final keyboardHeight = mq.viewInsets.bottom;
     final screenWidth = mq.size.width;
 
-    // Live text style preview
-    final liveTextStyle = _getLayerTextStyle(
+    // Live text style
+    final baseTextStyle = _getLayerTextStyle(
       _activeFontStyle,
       _activeTextColor,
       _activeTextBgStyle,
+      effect: _activeTextEffect,
     ).copyWith(
       fontSize: _activeFontSize,
-      shadows: _activeTextBgStyle == TextBgStyle.none
-          ? [
-              Shadow(blurRadius: 10, color: Colors.black.withValues(alpha: 0.85), offset: const Offset(0, 2)),
-              Shadow(blurRadius: 20, color: Colors.black.withValues(alpha: 0.50), offset: const Offset(0, 4)),
-            ]
-          : null,
     );
+
+    Color? boxColor;
+    BoxBorder? boxBorder;
+    List<BoxShadow>? boxShadow;
+
+    if (_activeTextBgStyle == TextBgStyle.filled) {
+      boxColor = _activeTextBgColor ?? Colors.white;
+      boxShadow = [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.3),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ];
+    } else if (_activeTextBgStyle == TextBgStyle.rounded) {
+      boxColor = (_activeTextBgColor ?? Colors.black).withValues(alpha: 0.65);
+      boxShadow = [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.3),
+          blurRadius: 10,
+          offset: const Offset(0, 2),
+        ),
+      ];
+    } else if (_activeTextBgStyle == TextBgStyle.outline) {
+      boxColor = Colors.transparent;
+      boxBorder = Border.all(color: _activeTextBgColor ?? _activeTextColor, width: 2.0);
+    }
+
+    final liveTextColor = (_activeTextBgStyle == TextBgStyle.filled && _activeTextBgColor == null && _activeTextColor == Colors.white)
+        ? Colors.black
+        : _activeTextColor;
+
+    final cursorColor = liveTextColor.computeLuminance() > 0.5 ? Colors.black : Colors.white;
 
     return Positioned.fill(
       child: AnimatedOpacity(
         opacity: _isFullScreenTextEditing ? 1.0 : 0.0,
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
-          child: Material(
-            color: Colors.black.withValues(alpha: 0.12),
-            child: SafeArea(
-              child: Column(
-                children: [
-
-                  // ── Direct Canvas Typing Area (Tap Outside to Finish Editing Instantly) ──
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => _closeFullScreenTextEditor(save: true),
-                      behavior: HitTestBehavior.opaque,
-                      child: Center(
-                        child: SingleChildScrollView(
-                          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
-                          child: Builder(
-                            builder: (context) {
-                              Widget inputWidget = TextField(
-                                controller: _fullScreenTextController,
-                                focusNode: _fullScreenTextFocusNode,
-                                autofocus: true,
-                                maxLines: null,
-                                maxLength: 300,
-                                keyboardType: TextInputType.multiline,
-                                textInputAction: TextInputAction.done,
-                                onSubmitted: (_) => _closeFullScreenTextEditor(save: true),
-                                textAlign: _activeTextAlign,
-                                textCapitalization: TextCapitalization.sentences,
-                                style: liveTextStyle,
-                                cursorColor: _activeTextColor,
-                                cursorWidth: 2.5,
-                                cursorRadius: const Radius.circular(2),
-                                decoration: const InputDecoration(
-                                  hintText: "Start typing...",
-                                  hintStyle: TextStyle(color: Colors.white54, fontWeight: FontWeight.w500),
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.zero,
-                                  counterText: '',
-                                ),
-                              );
-
-                              // Background container is ONLY rendered when user explicitly selects a background style!
-                              if (_activeTextBgStyle != TextBgStyle.none) {
-                                return AnimatedContainer(
-                                  duration: const Duration(milliseconds: 180),
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Material(
+          color: Colors.transparent,
+          child: SafeArea(
+            child: Stack(
+              children: [
+                // ── Column layout: top bar → canvas input → bottom controls
+                Column(
+                  children: [
+                    // ── TOP BAR ──
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Center icons: @, stickers, and audio
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                onTap: _showMentionSheet,
+                                child: Container(
+                                  width: 38,
+                                  height: 38,
                                   decoration: BoxDecoration(
-                                    color: _activeTextBgStyle == TextBgStyle.filled
-                                        ? Colors.white
-                                        : (_activeTextBgStyle == TextBgStyle.rounded
-                                            ? Colors.black.withValues(alpha: 0.70)
-                                            : Colors.transparent),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: _activeTextBgStyle == TextBgStyle.outline
-                                        ? Border.all(color: Colors.white, width: 2.0)
-                                        : null,
+                                    color: Colors.black.withValues(alpha: 0.45),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white24, width: 1),
                                   ),
-                                  child: inputWidget,
-                                );
-                              }
-
-                              return inputWidget;
-                            },
+                                  child: const Icon(Icons.alternate_email_rounded, color: Colors.white, size: 20),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              GestureDetector(
+                                onTap: _openEmojiPicker,
+                                child: Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.45),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white24, width: 1),
+                                  ),
+                                  child: const Icon(Icons.sticky_note_2_outlined, color: Colors.white, size: 20),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              GestureDetector(
+                                onTap: _showMusicSheet,
+                                child: Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.45),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white24, width: 1),
+                                  ),
+                                  child: const Icon(Icons.graphic_eq_rounded, color: Colors.white, size: 20),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
+                          // Right: Editor Confirmation Action (Done)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: GestureDetector(
+                              onTap: () => _closeFullScreenTextEditor(save: true),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7.5),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Text(
+                                  'Done',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
 
-                // ══════ BOTTOM CONTROL CARD ══════
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOutCubic,
-                  margin: EdgeInsets.only(
-                    left: 14,
-                    right: 14,
-                    bottom: keyboardHeight > 0 ? keyboardHeight + 10 : 20,
-                  ),
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xF2111111),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.55),
-                        blurRadius: 28,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // ── Icon tool row: Align, Bold, BG, Font styles ──
-                      _buildIconToolRow(),
-
-                      // Gradient divider
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: Container(
-                          height: 1,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.transparent,
-                                Colors.white.withValues(alpha: 0.12),
-                                Colors.white.withValues(alpha: 0.12),
-                                Colors.transparent,
-                              ],
+                    // ── CANVAS AREA (Natural Text Editing) ──
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          // Tapping empty area closes secondary panel if open, otherwise closes editor
+                          if (_activeContextTool != ActiveContextTool.none) {
+                            setState(() => _activeContextTool = ActiveContextTool.none);
+                          } else {
+                            _closeFullScreenTextEditor(save: true);
+                          }
+                        },
+                        behavior: HitTestBehavior.opaque,
+                        child: Center(
+                          child: SingleChildScrollView(
+                            padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: _activeTextBgStyle != TextBgStyle.none
+                                  ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
+                                  : EdgeInsets.zero,
+                              decoration: BoxDecoration(
+                                color: boxColor,
+                                borderRadius: BorderRadius.circular(16),
+                                border: boxBorder,
+                                boxShadow: boxShadow,
+                              ),
+                              child: IntrinsicWidth(
+                                child: TextField(
+                                  controller: _fullScreenTextController,
+                                  focusNode: _fullScreenTextFocusNode,
+                                  autofocus: true,
+                                  maxLines: null,
+                                  maxLength: 300,
+                                  keyboardType: TextInputType.multiline,
+                                  textInputAction: TextInputAction.newline,
+                                  textAlign: _activeTextAlign,
+                                  textCapitalization: TextCapitalization.sentences,
+                                  style: baseTextStyle.copyWith(color: liveTextColor),
+                                  cursorColor: cursorColor,
+                                  cursorWidth: 2.5,
+                                  cursorRadius: const Radius.circular(2),
+                                  decoration: const InputDecoration(
+                                    hintText: 'Start typing...',
+                                    hintStyle: TextStyle(
+                                      color: Colors.white38,
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 26,
+                                    ),
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    filled: false,
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                    counterText: '',
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
+                    ),
 
-                      // ── Color picker row ──
-                      _buildColorPickerRow(),
-                    ],
+                    // ── CONTEXTUAL SECONDARY CONTROL BAR (Shown ONLY when an option is selected) ──
+                    if (_activeContextTool != ActiveContextTool.none)
+                      _buildContextualControlBar(),
+
+                    // ── PRIMARY TOOLBAR CAPSULE (Compact, simplified icons) ──
+                    Padding(
+                      padding: EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        bottom: keyboardHeight > 0 ? keyboardHeight + 8 : 20,
+                        top: 8,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xF2161618),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.4),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // 1. Color / Background Control
+                            _buildPrimaryEditorToolBtn(
+                              active: _activeContextTool == ActiveContextTool.color,
+                              tooltip: 'Color',
+                              child: ShaderMask(
+                                shaderCallback: (bounds) => const SweepGradient(
+                                  colors: [Colors.red, Colors.orange, Colors.yellow, Colors.green, Colors.blue, Colors.purple, Colors.red],
+                                ).createShader(bounds),
+                                child: const Icon(Icons.circle, color: Colors.white, size: 24),
+                              ),
+                              onTap: () => setState(() {
+                                _activeContextTool = _activeContextTool == ActiveContextTool.color
+                                    ? ActiveContextTool.none
+                                    : ActiveContextTool.color;
+                              }),
+                            ),
+
+                            // 2. Alignment Toggle (☰)
+                            _buildPrimaryEditorToolBtn(
+                              active: false,
+                              tooltip: 'Alignment',
+                              child: Icon(
+                                _activeTextAlign == TextAlign.center
+                                    ? Icons.format_align_center_rounded
+                                    : _activeTextAlign == TextAlign.left
+                                        ? Icons.format_align_left_rounded
+                                        : Icons.format_align_right_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                              onTap: () => setState(() {
+                                if (_activeTextAlign == TextAlign.center) {
+                                  _activeTextAlign = TextAlign.left;
+                                } else if (_activeTextAlign == TextAlign.left) {
+                                  _activeTextAlign = TextAlign.right;
+                                } else {
+                                  _activeTextAlign = TextAlign.center;
+                                }
+                                if (_editingTextLayer != null) _editingTextLayer!.alignment = _activeTextAlign;
+                              }),
+                            ),
+
+                            // 3. Font Family (Aa)
+                            _buildPrimaryEditorToolBtn(
+                              active: _activeContextTool == ActiveContextTool.font,
+                              tooltip: 'Font',
+                              child: const Text(
+                                'Aa',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              onTap: () => setState(() {
+                                _activeContextTool = _activeContextTool == ActiveContextTool.font
+                                    ? ActiveContextTool.none
+                                    : ActiveContextTool.font;
+                              }),
+                            ),
+
+                            // 4. Text Effects (✨)
+                            _buildPrimaryEditorToolBtn(
+                              active: _activeContextTool == ActiveContextTool.effect,
+                              tooltip: 'Effects',
+                              child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 22),
+                              onTap: () => setState(() {
+                                _activeContextTool = _activeContextTool == ActiveContextTool.effect
+                                    ? ActiveContextTool.none
+                                    : ActiveContextTool.effect;
+                              }),
+                            ),
+
+                            // 5. Dedicated Canvas Background Control (if in Text story mode)
+                            if (widget.type == StoryType.text)
+                              _buildPrimaryEditorToolBtn(
+                                active: _activeContextTool == ActiveContextTool.background,
+                                tooltip: 'Change background',
+                                child: _buildCurrentBgIndicatorWidget(),
+                                onTap: () => setState(() {
+                                  _activeContextTool = _activeContextTool == ActiveContextTool.background
+                                      ? ActiveContextTool.none
+                                      : ActiveContextTool.background;
+                                }),
+                              ),
+
+                            // 6. Text Box Background style toggle [Aa]
+                            _buildPrimaryEditorToolBtn(
+                              active: _activeTextBgStyle != TextBgStyle.none,
+                              tooltip: 'Text Background',
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _activeTextBgStyle != TextBgStyle.none ? Colors.white : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Colors.white70, width: 1.5),
+                                ),
+                                child: Text(
+                                  'A',
+                                  style: TextStyle(
+                                    color: _activeTextBgStyle != TextBgStyle.none ? Colors.black : Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              onTap: () => setState(() {
+                                if (_activeTextBgStyle == TextBgStyle.none) {
+                                  _activeTextBgStyle = TextBgStyle.rounded;
+                                } else if (_activeTextBgStyle == TextBgStyle.rounded) {
+                                  _activeTextBgStyle = TextBgStyle.filled;
+                                } else if (_activeTextBgStyle == TextBgStyle.filled) {
+                                  _activeTextBgStyle = TextBgStyle.outline;
+                                } else {
+                                  _activeTextBgStyle = TextBgStyle.none;
+                                }
+                                if (_editingTextLayer != null) _editingTextLayer!.bgStyle = _activeTextBgStyle;
+                              }),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // ── LEFT SIDE: Vertical Font Size Slider ──
+                Positioned(
+                  left: 0,
+                  top: 70,
+                  bottom: keyboardHeight > 0 ? keyboardHeight + 120 : 180,
+                  child: RotatedBox(
+                    quarterTurns: 3,
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
+                        trackHeight: 3,
+                        activeTrackColor: Colors.white,
+                        inactiveTrackColor: Colors.white30,
+                        thumbColor: Colors.white,
+                        overlayColor: Colors.white24,
+                      ),
+                      child: Slider(
+                        value: _activeFontSize.clamp(14.0, 72.0),
+                        min: 14,
+                        max: 72,
+                        onChanged: (v) => setState(() {
+                          _activeFontSize = v;
+                          if (_editingTextLayer != null) _editingTextLayer!.fontSize = v;
+                        }),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -3475,158 +3947,88 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           ),
         ),
       ),
-    ),
-  );
-}
-
-  /// Icon-only tool row: Alignment, Bold, Background toggle, and 4 font style icons
-  Widget _buildIconToolRow() {
-    final isBoldActive = _activeFontStyle == TextStyleType.bold ||
-        _activeFontStyle == TextStyleType.campus;
-    final hasBg = _activeTextBgStyle != TextBgStyle.none;
-
-    // Font style icon mappings (icon-only, no labels)
-    final fontStyles = [
-      (TextStyleType.classic, Icons.text_fields_rounded, 'Aa'),
-      (TextStyleType.modern, Icons.auto_awesome_rounded, null),
-      (TextStyleType.minimal, Icons.light_mode_outlined, null),
-      (TextStyleType.handwriting, Icons.edit_rounded, null),
-    ];
-
-    return Row(
-      children: [
-        // Alignment
-        _buildToolIcon(
-          icon: _activeTextAlign == TextAlign.center
-              ? Icons.format_align_center_rounded
-              : _activeTextAlign == TextAlign.left
-                  ? Icons.format_align_left_rounded
-                  : Icons.format_align_right_rounded,
-          active: false,
-          onTap: () => setState(() {
-            if (_activeTextAlign == TextAlign.center) {
-              _activeTextAlign = TextAlign.left;
-            } else if (_activeTextAlign == TextAlign.left) {
-              _activeTextAlign = TextAlign.right;
-            } else {
-              _activeTextAlign = TextAlign.center;
-            }
-          }),
-        ),
-
-        const SizedBox(width: 6),
-
-        // Bold
-        _buildToolIcon(
-          icon: Icons.format_bold_rounded,
-          active: isBoldActive,
-          onTap: () => setState(() {
-            _activeFontStyle = isBoldActive ? TextStyleType.classic : TextStyleType.bold;
-            if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
-              _selectedLayer!.fontStyle = _activeFontStyle;
-            }
-          }),
-        ),
-
-        const SizedBox(width: 6),
-
-        // Background style toggle (Transparent / Rounded / Filled / Outline)
-        _buildToolIcon(
-          icon: hasBg ? Icons.rectangle_rounded : Icons.title_rounded,
-          active: hasBg,
-          onTap: () => setState(() {
-            if (_activeTextBgStyle == TextBgStyle.none) {
-              _activeTextBgStyle = TextBgStyle.rounded;
-            } else if (_activeTextBgStyle == TextBgStyle.rounded) {
-              _activeTextBgStyle = TextBgStyle.filled;
-            } else if (_activeTextBgStyle == TextBgStyle.filled) {
-              _activeTextBgStyle = TextBgStyle.outline;
-            } else {
-              _activeTextBgStyle = TextBgStyle.none;
-            }
-          }),
-        ),
-
-        // Vertical separator
-        Container(
-          width: 1,
-          height: 24,
-          margin: const EdgeInsets.symmetric(horizontal: 10),
-          color: Colors.white.withValues(alpha: 0.12),
-        ),
-
-        // Font style icons
-        ...fontStyles.map((item) {
-          final (fStyle, iconData, textLabel) = item;
-          final isSel = _activeFontStyle == fStyle;
-          return Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: GestureDetector(
-              onTap: () => setState(() {
-                _activeFontStyle = fStyle;
-                if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
-                  _selectedLayer!.fontStyle = fStyle;
-                }
-              }),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.07),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.15),
-                  ),
-                ),
-                child: Center(
-                  child: textLabel != null
-                      ? Text(
-                          textLabel,
-                          style: TextStyle(
-                            color: isSel ? Colors.black : Colors.white.withValues(alpha: 0.70),
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        )
-                      : Icon(
-                          iconData,
-                          size: 17,
-                          color: isSel ? Colors.black : Colors.white.withValues(alpha: 0.70),
-                        ),
-                ),
-              ),
-            ),
-          );
-        }),
-      ],
     );
   }
 
-  /// Color picker row with glow on selected color
-  Widget _buildColorPickerRow() {
-    const colors = [
-      Colors.white,
-      Colors.black,
-      Color(0xFFFACC15),
-      Color(0xFFF43F5E),
-      Color(0xFF38BDF8),
-      Color(0xFFA855F7),
-      Color(0xFF34D399),
-      Color(0xFFFB923C),
-      Color(0xFFE879F9),
-      Color(0xFF4ADE80),
-    ];
+  Widget _buildContextualControlBar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xF518181A),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row with Title + Close button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _activeContextTool == ActiveContextTool.color
+                    ? "Choose Color"
+                    : _activeContextTool == ActiveContextTool.font
+                        ? "Font Family"
+                        : _activeContextTool == ActiveContextTool.effect
+                            ? "Text Effects"
+                            : "Background",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => setState(() => _activeContextTool = ActiveContextTool.none),
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close_rounded, color: Colors.white70, size: 16),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
 
+          // Contextual Body
+          if (_activeContextTool == ActiveContextTool.color)
+            _buildContextualColorPicker()
+          else if (_activeContextTool == ActiveContextTool.font)
+            _buildContextualFontPicker()
+          else if (_activeContextTool == ActiveContextTool.effect)
+            _buildContextualEffectsPicker()
+          else if (_activeContextTool == ActiveContextTool.background)
+            _buildContextualBackgroundSelector(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContextualColorPicker() {
     return SizedBox(
       height: 38,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        itemCount: colors.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 10),
+        itemCount: _curatedColors.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (_, i) {
-          final c = colors[i];
+          final c = _curatedColors[i];
           final isSel = _activeTextColor == c;
           final lum = c.computeLuminance();
           final checkColor = lum > 0.5 ? Colors.black : Colors.white;
@@ -3634,38 +4036,969 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           return GestureDetector(
             onTap: () => setState(() {
               _activeTextColor = c;
+              if (_editingTextLayer != null) _editingTextLayer!.color = c;
               if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
                 _selectedLayer!.color = c;
               }
             }),
-            child: AnimatedContainer(
+            child: AnimatedScale(
+              scale: isSel ? 1.12 : 1.0,
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
-              width: isSel ? 36 : 30,
-              height: isSel ? 36 : 30,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: c,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSel
+                        ? (lum > 0.5 ? Colors.black : Colors.white)
+                        : Colors.white.withValues(alpha: 0.25),
+                    width: isSel ? 2.5 : 1.0,
+                  ),
+                  boxShadow: isSel
+                      ? [
+                          BoxShadow(
+                            color: c.withValues(alpha: 0.60),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: isSel
+                    ? Icon(Icons.check_rounded, size: 16, color: checkColor)
+                    : null,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildContextualFontPicker() {
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: _fontPresets.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final (fStyle, label) = _fontPresets[i];
+          final isSel = _activeFontStyle == fStyle;
+          final previewStyle = _getLayerTextStyle(fStyle, isSel ? Colors.black : Colors.white, TextBgStyle.none, effect: TextEffectType.none);
+
+          return GestureDetector(
+            onTap: () => setState(() {
+              _activeFontStyle = fStyle;
+              if (_editingTextLayer != null) _editingTextLayer!.fontStyle = fStyle;
+              if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+                _selectedLayer!.fontStyle = fStyle;
+              }
+            }),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
               decoration: BoxDecoration(
-                color: c,
-                shape: BoxShape.circle,
+                color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.25),
-                  width: isSel ? 2.5 : 1.0,
+                  color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.15),
+                  width: 1.0,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  label,
+                  style: previewStyle.copyWith(
+                    fontSize: 13,
+                    color: isSel ? Colors.black : Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildContextualEffectsPicker() {
+    final effectPresets = [
+      (TextEffectType.none,    'None',    'Flat & Clean'),
+      (TextEffectType.shadow,  'Shadow',  'Soft Shadow'),
+      (TextEffectType.outline, 'Outline', 'Crisp Stroke'),
+      (TextEffectType.glow,    'Glow',    'Vibrant Neon'),
+    ];
+
+    return SizedBox(
+      height: 72,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: effectPresets.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
+        itemBuilder: (_, i) {
+          final (eff, name, subtitle) = effectPresets[i];
+          final isSel = _activeTextEffect == eff;
+          final sampleStyle = _getLayerTextStyle(_activeFontStyle, isSel ? Colors.black : Colors.white, TextBgStyle.none, effect: eff);
+
+          return GestureDetector(
+            onTap: () => setState(() {
+              _activeTextEffect = eff;
+              if (_editingTextLayer != null) _editingTextLayer!.effect = eff;
+              if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
+                _selectedLayer!.effect = eff;
+              }
+              // IMPORTANT: Does NOT modify font style, background color, or text color!
+            }),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 92,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.15),
+                  width: isSel ? 2.0 : 1.0,
                 ),
                 boxShadow: isSel
                     ? [
                         BoxShadow(
-                          color: c.withValues(alpha: 0.60),
-                          blurRadius: 10,
-                          spreadRadius: 1,
-                        )
+                          color: Colors.white.withValues(alpha: 0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
                       ]
                     : null,
               ),
-              child: isSel
-                  ? Icon(Icons.check_rounded, size: 15, color: checkColor)
-                  : null,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Aa',
+                    style: sampleStyle.copyWith(
+                      fontSize: 18,
+                      color: isSel ? Colors.black : Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        name,
+                        style: TextStyle(
+                          color: isSel ? Colors.black : Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                      if (isSel) ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.check_circle_rounded, size: 12, color: Colors.black),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCurrentBgIndicatorWidget() {
+    if (_storyBgMode == StoryBgMode.solid && _selectedSolidBgColor != null) {
+      final lum = _selectedSolidBgColor!.computeLuminance();
+      return Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          color: _selectedSolidBgColor,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: lum > 0.5 ? Colors.black54 : Colors.white,
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: _selectedSolidBgColor!.withValues(alpha: 0.5),
+              blurRadius: 6,
+            ),
+          ],
+        ),
+      );
+    }
+
+    final preset = _bgPresets[_gradientIdx.clamp(0, _bgPresets.length - 1)];
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: preset.colors,
+          begin: preset.begin,
+          end: preset.end,
+        ),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: preset.colors.first.withValues(alpha: 0.5),
+            blurRadius: 6,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContextualBackgroundSelector() {
+    final categories = ['Solid', 'Pastel', 'Trending', 'Fairy', 'Aesthetic', 'Minimal', 'Gradients'];
+    final categoryLabels = {
+      'Solid': '🎨 Solid',
+      'Pastel': '💖 Pastel',
+      'Trending': '🔥 Trending',
+      'Fairy': '✨ Fairy',
+      'Aesthetic': '☕ Aesthetic',
+      'Minimal': '🖤 Minimal',
+      'Gradients': '🌈 All Gradients',
+    };
+
+    Widget contentWidget;
+
+    if (_selectedBgCategory == 'Solid') {
+      contentWidget = SizedBox(
+        height: 74,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          itemCount: _solidBgColors.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 10),
+          itemBuilder: (_, i) {
+            final color = _solidBgColors[i];
+            final isSel = _storyBgMode == StoryBgMode.solid && _selectedSolidBgColor == color;
+            final lum = color.computeLuminance();
+            final checkColor = lum > 0.5 ? Colors.black : Colors.white;
+
+            return GestureDetector(
+              onTap: () => setState(() {
+                _storyBgMode = StoryBgMode.solid;
+                _selectedSolidBgColor = color;
+              }),
+              child: AnimatedScale(
+                scale: isSel ? 1.10 : 1.0,
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSel
+                          ? (lum > 0.5 ? Colors.black : Colors.white)
+                          : Colors.white.withValues(alpha: 0.25),
+                      width: isSel ? 3.0 : 1.2,
+                    ),
+                    boxShadow: isSel
+                        ? [
+                            BoxShadow(
+                              color: color.withValues(alpha: 0.65),
+                              blurRadius: 12,
+                              spreadRadius: 1.5,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: isSel
+                      ? Icon(Icons.check_rounded, size: 22, color: checkColor)
+                      : null,
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    } else {
+      final filteredPresets = (_selectedBgCategory == 'Gradients' || _selectedBgCategory == 'All')
+          ? _bgPresets
+          : _bgPresets.where((p) => p.category == _selectedBgCategory).toList();
+
+      contentWidget = SizedBox(
+        height: 74,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          itemCount: filteredPresets.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          itemBuilder: (_, i) {
+            final preset = filteredPresets[i];
+            final actualIndex = _bgPresets.indexOf(preset);
+            final isSel = _storyBgMode == StoryBgMode.gradient && _gradientIdx == actualIndex;
+            final isDark = preset.colors.first.computeLuminance() < 0.45;
+
+            return GestureDetector(
+              onTap: () => setState(() {
+                _storyBgMode = StoryBgMode.gradient;
+                _gradientIdx = actualIndex;
+              }),
+              child: AnimatedScale(
+                scale: isSel ? 1.05 : 1.0,
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 74,
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: preset.colors,
+                      begin: preset.begin,
+                      end: preset.end,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.2),
+                      width: isSel ? 2.5 : 1.0,
+                    ),
+                    boxShadow: isSel
+                        ? [
+                            BoxShadow(
+                              color: preset.colors.first.withValues(alpha: 0.65),
+                              blurRadius: 12,
+                              spreadRadius: 1.5,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              preset.emoji,
+                              style: const TextStyle(fontSize: 18),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              preset.name,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black87,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 9.5,
+                                shadows: isDark
+                                    ? const [Shadow(blurRadius: 4, color: Colors.black54)]
+                                    : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (isSel)
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: Container(
+                            width: 15,
+                            height: 15,
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white : Colors.black,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.check_rounded,
+                              size: 11,
+                              color: isDark ? Colors.black : Colors.white,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Category Filter Pills (with smooth horizontal scroll & guaranteed 0 overflow)
+        SizedBox(
+          height: 34,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: categories.map((cat) {
+                final isCatSel = _selectedBgCategory == cat;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedBgCategory = cat),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isCatSel ? Colors.white : Colors.white.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Center(
+                        child: Text(
+                          categoryLabels[cat] ?? cat,
+                          style: TextStyle(
+                            color: isCatSel ? Colors.black : Colors.white70,
+                            fontWeight: isCatSel ? FontWeight.bold : FontWeight.w600,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Content (Solid / Gradients)
+        contentWidget,
+      ],
+    );
+  }
+
+  Widget _buildStoryPrivacyBar() {
+    IconData icon;
+    String title;
+    String subtitle;
+    Color iconColor;
+
+    if (_selectedVisibility == 'Public') {
+      icon = Icons.public_rounded;
+      title = 'Public';
+      subtitle = 'Anyone in GenLink';
+      iconColor = const Color(0xFF38BDF8);
+    } else if (_selectedVisibility == 'Only Me') {
+      icon = Icons.lock_rounded;
+      title = 'Only Me';
+      subtitle = 'Only you can see this story';
+      iconColor = const Color(0xFFF43F5E);
+    } else if (_selectedVisibility == 'Custom') {
+      icon = Icons.settings_suggest_rounded;
+      title = 'Custom';
+      subtitle = 'Choose who can see your story';
+      iconColor = const Color(0xFFA855F7);
+    } else {
+      icon = Icons.people_alt_rounded;
+      title = 'Friends';
+      subtitle = 'Only your friends';
+      iconColor = const Color(0xFF34D399);
+    }
+
+    return GestureDetector(
+      onTap: _openStoryPrivacySettings,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1.0),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.16),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 17, color: iconColor),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.keyboard_arrow_right_rounded, color: Colors.white54, size: 16),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openStoryPrivacySettings() {
+    String tempVisibility = _selectedVisibility;
+    String tempReplyPrivacy = _replyPrivacy;
+    bool tempAllowReactions = _allowReactions;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bCtx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final mq = MediaQuery.of(ctx);
+          final maxHeight = mq.size.height * 0.85;
+
+          return Container(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            decoration: const BoxDecoration(
+              color: Color(0xFF161618),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border(
+                top: BorderSide(color: Colors.white12, width: 1.0),
+              ),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 1. Drag Handle
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+
+                  // 2. Header: [ ← ]  Story Settings  [ Done ]
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Back / Close Icon Button
+                      IconButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 22),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                      ),
+
+                      // Centered Title
+                      const Text(
+                        "Story Settings",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+
+                      // Done Button (Confirm & Save Settings)
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedVisibility = tempVisibility;
+                            _replyPrivacy = tempReplyPrivacy;
+                            _allowReactions = tempAllowReactions;
+                          });
+                          Navigator.pop(ctx);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Text(
+                            "Done",
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 3. Scrollable Body
+                  Flexible(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── Privacy Section ──
+                          const Text(
+                            "Who can see your story?",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          const Text(
+                            "Your story will be visible for 24 hours.",
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Option 1: Public
+                          _buildPrivacyOptionTile(
+                            icon: Icons.public_rounded,
+                            iconColor: const Color(0xFF38BDF8),
+                            title: "Public",
+                            subtitle: "Anyone in GenLink",
+                            isSelected: tempVisibility == 'Public',
+                            onTap: () => setSheetState(() => tempVisibility = 'Public'),
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Option 2: Friends
+                          _buildPrivacyOptionTile(
+                            icon: Icons.people_alt_rounded,
+                            iconColor: const Color(0xFF34D399),
+                            title: "Friends",
+                            subtitle: "Only your friends",
+                            isSelected: tempVisibility == 'Friends',
+                            onTap: () => setSheetState(() => tempVisibility = 'Friends'),
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Option 3: Only Me
+                          _buildPrivacyOptionTile(
+                            icon: Icons.lock_rounded,
+                            iconColor: const Color(0xFFF43F5E),
+                            title: "Only Me",
+                            subtitle: "Only you can see your story",
+                            isSelected: tempVisibility == 'Only Me',
+                            onTap: () => setSheetState(() => tempVisibility = 'Only Me'),
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Option 4: Custom (Coming Soon)
+                          _buildPrivacyOptionTile(
+                            icon: Icons.settings_suggest_rounded,
+                            iconColor: const Color(0xFFA855F7),
+                            title: "Custom",
+                            subtitle: "Choose who can see your story",
+                            badge: "Coming Soon",
+                            isSelected: tempVisibility == 'Custom',
+                            onTap: () {
+                              AppNotificationBanner.showInfo(
+                                context: context,
+                                title: "Custom Audience",
+                                message: "Custom friend list filtering is currently in development.",
+                              );
+                            },
+                          ),
+
+                          const SizedBox(height: 18),
+                          const Divider(color: Colors.white12, height: 1),
+                          const SizedBox(height: 16),
+
+                          // ── Story Interactions Section ──
+                          const Text(
+                            "Story Interactions",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            "Who can reply to your story?",
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+
+                          // Segmented Control: [ Everyone ] [ Friends ] [ Off ]
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: Colors.white10, width: 1.0),
+                            ),
+                            child: Row(
+                              children: ['Everyone', 'Friends', 'Off'].map((opt) {
+                                final isSel = tempReplyPrivacy == opt;
+                                return Expanded(
+                                  child: GestureDetector(
+                                    onTap: () => setSheetState(() => tempReplyPrivacy = opt),
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 180),
+                                      curve: Curves.easeOutCubic,
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: isSel ? Colors.white : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(10),
+                                        boxShadow: isSel
+                                            ? [
+                                                BoxShadow(
+                                                  color: Colors.black.withValues(alpha: 0.25),
+                                                  blurRadius: 6,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ]
+                                            : null,
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          opt,
+                                          style: TextStyle(
+                                            color: isSel ? Colors.black : Colors.white70,
+                                            fontWeight: isSel ? FontWeight.w800 : FontWeight.w500,
+                                            fontSize: 12.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // ── Allow Reactions Toggle Row ──
+                          InkWell(
+                            onTap: () => setSheetState(() => tempAllowReactions = !tempAllowReactions),
+                            borderRadius: BorderRadius.circular(14),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Allow Reactions",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        SizedBox(height: 2),
+                                        Text(
+                                          "Let viewers like and react to this story",
+                                          style: TextStyle(
+                                            color: Colors.white54,
+                                            fontSize: 11.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Switch.adaptive(
+                                    value: tempAllowReactions,
+                                    activeThumbColor: Colors.white,
+                                    activeTrackColor: AppColors.communityAccent,
+                                    onChanged: (val) => setSheetState(() => tempAllowReactions = val),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPrivacyOptionTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+    required VoidCallback onTap,
+    String? badge,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white.withValues(alpha: 0.12) : Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? Colors.white : Colors.white10,
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      if (badge != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            badge,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: Colors.white54, fontSize: 11.5),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? Colors.white : Colors.transparent,
+                border: Border.all(
+                  color: isSelected ? Colors.white : Colors.white38,
+                  width: 2.0,
+                ),
+              ),
+              child: isSelected
+                  ? const Center(
+                      child: Icon(Icons.check, size: 14, color: Colors.black),
+                    )
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrimaryEditorToolBtn({
+    required Widget child,
+    required VoidCallback onTap,
+    required String tooltip,
+    bool active = false,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      preferBelow: false,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: active ? Colors.white.withValues(alpha: 0.22) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(child: child),
+        ),
       ),
     );
   }
@@ -3745,35 +5078,42 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    Widget? customIconWidget,
     bool isPlaceholder = false,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: isPlaceholder
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : AppColors.darkSurfaceSecondary.withValues(alpha: 0.90),
-                shape: BoxShape.circle,
-                border: isPlaceholder
-                    ? Border.all(color: Colors.white12, width: 1.0)
-                    : null,
+    return Tooltip(
+      message: label,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isPlaceholder
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : AppColors.darkSurfaceSecondary.withValues(alpha: 0.90),
+                  shape: BoxShape.circle,
+                  border: isPlaceholder
+                      ? Border.all(color: Colors.white12, width: 1.0)
+                      : null,
+                ),
+                child: Center(
+                  child: customIconWidget ??
+                      Icon(
+                        icon,
+                        color: isPlaceholder ? Colors.white38 : Colors.white,
+                        size: 20,
+                      ),
+                ),
               ),
-              child: Icon(
-                icon,
-                color: isPlaceholder ? Colors.white38 : Colors.white,
-                size: 20,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -4047,10 +5387,15 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       behavior: HitTestBehavior.translucent,
                       onTap: () {
                         if (!_isInteractingLayer) {
-                          setState(() => _selectedLayer = null);
-                          if (widget.type == StoryType.text) {
-                            _cycleGradient();
-                          }
+                          setState(() {
+                            _selectedLayer = null;
+                            _activeContextTool = ActiveContextTool.none;
+                          });
+                        }
+                      },
+                      onDoubleTap: () {
+                        if (widget.type == StoryType.text) {
+                          _cycleGradient();
                         }
                       },
                       child: _buildMediaCanvas(),
@@ -4059,6 +5404,10 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
                   // Movable Overlays (Text / Stickers)
                   ..._layers.map((layer) => _buildLayerWidget(layer)),
+
+                  // Object action toolbar (Delete / Replace) — shows when any layer is selected
+                  if (_selectedLayer != null && !_isFullScreenTextEditing)
+                    _buildObjectToolbar(_selectedLayer!),
 
                   // Full-Screen Immersive Text Editor Overlay
                   _buildFullScreenTextEditorOverlay(),
@@ -4281,9 +5630,11 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Horizontally Scrollable Story Templates Strip (Text Story Mode ONLY)
-                          if (widget.type == StoryType.text)
-                            _buildStoryTemplateSelectorStrip(),
+                          // Contextual Control Panel (if active)
+                          if (_activeContextTool != ActiveContextTool.none) ...[
+                            _buildContextualControlBar(),
+                            const SizedBox(height: 8),
+                          ],
 
                           // Unified Glassmorphic Toolbar Capsule (Icon Buttons with 44px Touch Targets)
                           Container(
@@ -4323,10 +5674,10 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                     onTap: () => _openFloatingTextEditor(),
                                   ),
 
-                                  // 3. Emoji Sticker
+                                  // 3. Stickers & Emojis
                                   _buildHorizontalToolItem(
-                                    icon: Icons.emoji_emotions_outlined,
-                                    label: "Emoji",
+                                    icon: Icons.sticky_note_2_outlined,
+                                    label: "Stickers",
                                     onTap: _openEmojiPicker,
                                   ),
 
@@ -4360,27 +5711,27 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                       onTap: _showMusicSheet,
                                     ),
 
-                                  // 8. Background Gradient Style (Text Story Mode only)
+                                  // 8. Dedicated Canvas Background Control (Text Story Mode)
                                   if (widget.type == StoryType.text)
                                     _buildHorizontalToolItem(
                                       icon: Icons.palette_outlined,
-                                      label: "Style",
-                                      onTap: () {
-                                        if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
-                                          _openFloatingTextEditor(_selectedLayer);
-                                        } else if (_layers.any((l) => l.type == LayerType.text)) {
-                                          _openFloatingTextEditor(_layers.firstWhere((l) => l.type == LayerType.text));
-                                        } else {
-                                          _cycleGradient();
-                                        }
-                                      },
+                                      label: "Background",
+                                      customIconWidget: _buildCurrentBgIndicatorWidget(),
+                                      onTap: () => setState(() {
+                                        _activeContextTool = _activeContextTool == ActiveContextTool.background
+                                            ? ActiveContextTool.none
+                                            : ActiveContextTool.background;
+                                      }),
                                     ),
                                 ],
                               ),
                             ),
                           ),
 
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
+
+                          // 2. Story Privacy Indicator & Settings Entry Bar
+                          _buildStoryPrivacyBar(),
 
                           // 3. Interactive Apple-Grade "Post Story" Call-To-Action Pill Button
                           _AnimatedPostStoryButton(

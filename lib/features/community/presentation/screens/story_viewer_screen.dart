@@ -29,7 +29,8 @@ class _CampusGroupItem {
 }
 
 void _showCompactReplyToast(BuildContext context, String recipientName, String recipientAvatar) {
-  final overlay = Overlay.of(context);
+  final overlay = Overlay.maybeOf(context);
+  if (overlay == null) return;
   late OverlayEntry entry;
 
   entry = OverlayEntry(
@@ -2182,12 +2183,18 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     );
   }
 
-  TextStyle _getViewerLayerTextStyle(TextStyleType fontStyle, Color color, TextBgStyle bgStyle) {
+  TextStyle _getViewerLayerTextStyle(
+    TextStyleType fontStyle,
+    Color color,
+    TextBgStyle bgStyle, {
+    TextEffectType effect = TextEffectType.none,
+  }) {
     FontWeight weight = FontWeight.w600;
     FontStyle style = FontStyle.normal;
     double letterSpacing = 0.2;
     double height = 1.25;
     List<Shadow>? textShadows;
+    String? fontFamily;
 
     switch (fontStyle) {
       case TextStyleType.classic:
@@ -2203,36 +2210,56 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
         weight = FontWeight.w900;
         letterSpacing = -0.3;
         break;
-      case TextStyleType.modern: // Outline
+      case TextStyleType.modern: // Modern
         weight = FontWeight.w800;
-        letterSpacing = 0.6;
+        letterSpacing = 0.8;
         break;
-      case TextStyleType.minimal: // Neon
+      case TextStyleType.minimal: // Minimal Clean
         weight = FontWeight.w700;
         letterSpacing = 1.2;
-        textShadows = [
-          Shadow(blurRadius: 8.0, color: color.withValues(alpha: 0.90), offset: Offset.zero),
-          Shadow(blurRadius: 20.0, color: color.withValues(alpha: 0.80), offset: Offset.zero),
-          Shadow(blurRadius: 36.0, color: color, offset: Offset.zero),
-        ];
+        break;
+      case TextStyleType.handwriting: // Script
+        weight = FontWeight.w500;
+        style = FontStyle.italic;
+        letterSpacing = 0.5;
+        break;
+      case TextStyleType.coding: // Code
+        weight = FontWeight.w600;
+        fontFamily = 'monospace';
+        letterSpacing = -0.2;
         break;
       default:
         weight = FontWeight.w700;
         break;
     }
 
-    if (textShadows == null && bgStyle == TextBgStyle.none) {
-      textShadows = [
-        Shadow(blurRadius: 6.0, color: Colors.black.withValues(alpha: 0.75), offset: const Offset(0, 1)),
-        Shadow(blurRadius: 14.0, color: Colors.black.withValues(alpha: 0.40), offset: const Offset(0, 2)),
-      ];
+    // Explicit Text Effects system (Independent from Font Styles)
+    switch (effect) {
+      case TextEffectType.shadow:
+        textShadows = [
+          Shadow(blurRadius: 8.0, color: Colors.black.withValues(alpha: 0.85), offset: const Offset(0, 2)),
+          Shadow(blurRadius: 16.0, color: Colors.black.withValues(alpha: 0.50), offset: const Offset(0, 4)),
+        ];
+        break;
+      case TextEffectType.glow:
+        textShadows = [
+          Shadow(blurRadius: 8.0, color: color.withValues(alpha: 0.95), offset: Offset.zero),
+          Shadow(blurRadius: 20.0, color: color.withValues(alpha: 0.85), offset: Offset.zero),
+          Shadow(blurRadius: 36.0, color: color, offset: Offset.zero),
+        ];
+        break;
+      case TextEffectType.outline:
+      case TextEffectType.none:
+        textShadows = null; // Clean, flat, NO shadow
+        break;
     }
 
     return TextStyle(
       color: color,
-      fontSize: 24,
+      fontSize: 28,
       fontWeight: weight,
       fontStyle: style,
+      fontFamily: fontFamily,
       letterSpacing: letterSpacing,
       height: height,
       shadows: textShadows,
@@ -2248,16 +2275,27 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     switch (layer.type) {
       case LayerType.text:
         final hasBackground = layer.bgStyle != TextBgStyle.none;
-        final baseStyle = _getViewerLayerTextStyle(layer.fontStyle, layer.color, layer.bgStyle);
+        final baseStyle = _getViewerLayerTextStyle(
+          layer.fontStyle,
+          layer.color,
+          layer.bgStyle,
+          effect: layer.effect,
+        ).copyWith(
+          fontSize: layer.fontSize,
+        );
 
         final textLuminance = layer.color.computeLuminance();
-        final filledBgColor = textLuminance > 0.45
+        final filledBgColor = layer.bgColor ?? (textLuminance > 0.45
             ? Colors.black.withValues(alpha: 0.82)
-            : Colors.white.withValues(alpha: 0.92);
+            : Colors.white.withValues(alpha: 0.92));
+
+        final textDisplayColor = (layer.bgStyle == TextBgStyle.filled && layer.bgColor == null && layer.color == Colors.white)
+            ? Colors.black
+            : layer.color;
 
         Widget textWidget;
 
-        if (layer.fontStyle == TextStyleType.modern && !hasBackground) {
+        if (layer.effect == TextEffectType.outline) {
           final strokeColor = textLuminance > 0.5 ? Colors.black : Colors.white;
           textWidget = Stack(
             children: [
@@ -2277,7 +2315,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                 layer.text,
                 softWrap: true,
                 textAlign: layer.alignment,
-                style: baseStyle.copyWith(shadows: null),
+                style: baseStyle.copyWith(color: textDisplayColor, shadows: null),
               ),
             ],
           );
@@ -2286,7 +2324,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
             layer.text,
             softWrap: true,
             textAlign: layer.alignment,
-            style: baseStyle,
+            style: baseStyle.copyWith(color: textDisplayColor),
           );
         }
 
@@ -2300,13 +2338,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                       color: layer.bgStyle == TextBgStyle.filled
                           ? filledBgColor
                           : (layer.bgStyle == TextBgStyle.rounded
-                              ? (textLuminance > 0.45
-                                  ? Colors.black.withValues(alpha: 0.60)
-                                  : Colors.white.withValues(alpha: 0.80))
+                              ? (layer.bgColor?.withValues(alpha: 0.65) ??
+                                  (textLuminance > 0.45
+                                      ? Colors.black.withValues(alpha: 0.60)
+                                      : Colors.white.withValues(alpha: 0.80)))
                               : Colors.transparent),
                       borderRadius: BorderRadius.circular(10),
                       border: layer.bgStyle == TextBgStyle.outline
-                          ? Border.all(color: layer.color.withValues(alpha: 0.85), width: 1.8)
+                          ? Border.all(color: layer.bgColor ?? layer.color.withValues(alpha: 0.85), width: 1.8)
                           : null,
                     ),
                     child: textWidget,
@@ -2765,6 +2804,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                                     Text(
                                       story.timeAgo,
                                       style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Icon(
+                                      story.visibility == 'Only Me'
+                                          ? Icons.lock_rounded
+                                          : (story.visibility == 'Friends' ? Icons.people_alt_rounded : Icons.public_rounded),
+                                      size: 12,
+                                      color: Colors.white60,
                                     ),
                                   ],
                                 ),

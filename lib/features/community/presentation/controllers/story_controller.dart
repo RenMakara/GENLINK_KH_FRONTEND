@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../domain/models/story_model.dart';
@@ -32,7 +33,9 @@ class StoryController extends GetxController {
     String? mediaUrl,
     String? textContent,
     String? location,
-    String visibility = 'Public',
+    String visibility = 'Friends',
+    String replyPrivacy = 'Everyone',
+    bool allowReactions = true,
     String? bgGradientStart,
     String? bgGradientEnd,
     List<MovableStoryLayer>? layers,
@@ -49,6 +52,8 @@ class StoryController extends GetxController {
         textContent: textContent,
         location: location,
         visibility: visibility,
+        replyPrivacy: replyPrivacy,
+        allowReactions: allowReactions,
         bgGradientStart: bgGradientStart,
         bgGradientEnd: bgGradientEnd,
         layers: layers,
@@ -87,13 +92,19 @@ class StoryController extends GetxController {
       }
       storyGroups.refresh();
 
-      if (Get.context != null) {
-        AppNotificationBanner.showSuccess(
-          context: Get.context!,
-          title: "Story Live",
-          message: "Your story is now live.",
-          duration: const Duration(seconds: 3),
-        );
+      try {
+        final bannerContext = Get.context ?? Get.overlayContext;
+        if (bannerContext != null) {
+          AppNotificationBanner.showSuccess(
+            context: bannerContext,
+            title: "✓ Story Live",
+            message: "Your story has been shared with $visibility on CampusLink KH!",
+            icon: Icons.auto_awesome_rounded,
+            duration: const Duration(seconds: 3),
+          );
+        }
+      } catch (bannerErr) {
+        debugPrint('[StoryController] Banner notification skipped: $bannerErr');
       }
 
       return true;

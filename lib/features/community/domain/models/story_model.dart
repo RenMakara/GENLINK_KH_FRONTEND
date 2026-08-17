@@ -8,6 +8,8 @@ enum TextStyleType { classic, bold, modern, campus, coding, khmer, handwriting, 
 
 enum TextBgStyle { none, rounded, filled, outline, highlight }
 
+enum TextEffectType { none, shadow, outline, glow }
+
 class MovableStoryLayer {
   final String id;
   final LayerType type;
@@ -19,7 +21,9 @@ class MovableStoryLayer {
   Color? bgColor;
   TextStyleType fontStyle;
   TextBgStyle bgStyle;
+  TextEffectType effect;
   TextAlign alignment;
+  double fontSize;
 
   MovableStoryLayer({
     required this.id,
@@ -30,9 +34,11 @@ class MovableStoryLayer {
     this.rotation = 0.0,
     this.color = Colors.white,
     this.bgColor,
-    this.fontStyle = TextStyleType.bold,
+    this.fontStyle = TextStyleType.classic,
     this.bgStyle = TextBgStyle.none,
+    this.effect = TextEffectType.none,
     this.alignment = TextAlign.center,
+    this.fontSize = 28.0,
   });
 
   MovableStoryLayer clone() {
@@ -47,7 +53,9 @@ class MovableStoryLayer {
       bgColor: bgColor,
       fontStyle: fontStyle,
       bgStyle: bgStyle,
+      effect: effect,
       alignment: alignment,
+      fontSize: fontSize,
     );
   }
 }
@@ -77,6 +85,8 @@ class StoryItemModel {
   final String timeAgo;
   final DateTime createdAt;
   final String visibility;
+  final String replyPrivacy;
+  final bool allowReactions;
   final List<MovableStoryLayer> layers;
   int likesCount;
   bool isLiked;
@@ -98,6 +108,8 @@ class StoryItemModel {
     required this.timeAgo,
     required this.createdAt,
     this.visibility = 'Public',
+    this.replyPrivacy = 'Everyone',
+    this.allowReactions = true,
     this.layers = const [],
     this.likesCount = 0,
     this.isLiked = false,

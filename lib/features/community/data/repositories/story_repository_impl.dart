@@ -125,7 +125,20 @@ class StoryRepositoryImpl implements StoryRepository {
   @override
   Future<List<StoryGroupModel>> getStories() async {
     await Future.delayed(const Duration(milliseconds: 300));
-    return _mockStoryGroups;
+    // Filter stories based on privacy rules:
+    // If a story is 'Only Me', only the owner group (isOwner == true) contains it
+    return _mockStoryGroups.map((group) {
+      if (group.isOwner) return group;
+      final visibleStories = group.stories.where((s) => s.visibility != 'Only Me').toList();
+      return StoryGroupModel(
+        userId: group.userId,
+        userName: group.userName,
+        userAvatar: group.userAvatar,
+        isOwner: group.isOwner,
+        hasUnseen: group.hasUnseen,
+        stories: visibleStories,
+      );
+    }).where((group) => group.isOwner || group.stories.isNotEmpty).toList();
   }
 
   @override
@@ -135,6 +148,8 @@ class StoryRepositoryImpl implements StoryRepository {
     String? textContent,
     String? location,
     String visibility = 'Public',
+    String replyPrivacy = 'Everyone',
+    bool allowReactions = true,
     String? bgGradientStart,
     String? bgGradientEnd,
     List<MovableStoryLayer>? layers,
@@ -150,6 +165,8 @@ class StoryRepositoryImpl implements StoryRepository {
       textContent: textContent,
       location: location,
       visibility: visibility,
+      replyPrivacy: replyPrivacy,
+      allowReactions: allowReactions,
       bgGradientStart: bgGradientStart ?? '0xFF0F172A',
       bgGradientEnd: bgGradientEnd ?? '0xFF1E293B',
       layers: layers ?? const [],
@@ -165,7 +182,7 @@ class StoryRepositoryImpl implements StoryRepository {
       (g) => g.isOwner,
       orElse: () => StoryGroupModel(
         userId: 'user_me',
-        userName: 'Your Story',
+        userName: 'Sokny Enat',
         userAvatar: 'assets/images/user_profile.png',
         isOwner: true,
         stories: [],

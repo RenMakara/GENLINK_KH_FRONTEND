@@ -92,9 +92,10 @@ class ForumCategoryScreen extends StatelessWidget {
                       title: topic.title,
                       author: topic.authorName,
                       timeAgo: topic.timeAgo,
+                      category: categoryTitle,
                       replies: topic.repliesCount,
-                      upvotes: topic.upvotes,
-                      isPinned: false, // Override onTap internally where needed or pass tap action
+                      likes: topic.upvotes,
+                      isPinned: false,
                     ),
                   ),
                 );

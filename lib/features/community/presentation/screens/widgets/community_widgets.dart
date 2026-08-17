@@ -10,7 +10,8 @@ import '../create_discussion_screen.dart';
 class ForumCategoryCard extends StatelessWidget {
   final String title;
   final String count;
-  final IconData icon;
+  final IconData? icon;
+  final Color? accent;
   final bool isSelected;
   final VoidCallback? onTap;
 
@@ -18,7 +19,8 @@ class ForumCategoryCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.count,
-    required this.icon,
+    this.icon,
+    this.accent,
     this.isSelected = false,
     this.onTap,
   });

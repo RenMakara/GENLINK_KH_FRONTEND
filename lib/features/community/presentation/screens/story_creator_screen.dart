@@ -86,12 +86,12 @@ class _DotGridPainter extends CustomPainter {
 
 class StoryCreatorScreen extends StatefulWidget {
   final StoryType type;
-  final String? mediaPath;
+  final List<String>? mediaPaths;
 
   const StoryCreatorScreen({
     super.key,
     required this.type,
-    this.mediaPath,
+    this.mediaPaths,
   });
 
   @override
@@ -139,6 +139,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   TextBgStyle _activeTextBgStyle = TextBgStyle.none;
   TextEffectType _activeTextEffect = TextEffectType.none;
   TextAlign _activeTextAlign = TextAlign.center;
+  String _activeToolbarMenu = 'main';
 
   // Font size controlled by vertical slider (14–72pt)
   double _activeFontSize = 28.0;
@@ -474,7 +475,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   @override
   void initState() {
     super.initState();
-    _activeMediaPath = widget.mediaPath;
+    _activeMediaPath = widget.mediaPaths?.isNotEmpty == true ? widget.mediaPaths!.first : null;
     _fullScreenTextController.addListener(_onTextChanged);
     if (widget.type == StoryType.text) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2367,8 +2368,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 final maxX = screenWidth - 20.0;
                 final maxY = screenHeight - 60.0;
 
-                final nextX = (layer.offset.dx + details.focalPointDelta.dx).clamp(-120.0, maxX);
-                final nextY = (layer.offset.dy + details.focalPointDelta.dy).clamp(10.0, maxY);
+                final nextX = (layer.offset.dx + details.focalPointDelta.dx).clamp(-80.0, maxX);
+                final nextY = (layer.offset.dy + details.focalPointDelta.dy).clamp(30.0, maxY);
 
                 layer.offset = Offset(nextX, nextY);
                 _isHoveringDeleteZone = layer.offset.dy > (screenHeight - 160.0);
@@ -3692,8 +3693,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                           ),
                         ],
                       ),
-                    ),
-
                     // ── CANVAS AREA (Natural Text Editing) ──
                     Expanded(
                       child: GestureDetector(
@@ -4207,9 +4206,199 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   ),
                 ],
               ),
+=======
+    ),
+  );
+}
+
+  Widget _buildMainToolbar() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _buildToolbarButton(Icons.text_format_rounded, 'Style', () => setState(() => _activeToolbarMenu = 'style')),
+          const SizedBox(width: 24),
+          _buildToolbarButton(Icons.color_lens_outlined, 'Color', () => setState(() => _activeToolbarMenu = 'color')),
+          const SizedBox(width: 24),
+          _buildToolbarButton(Icons.format_align_center_rounded, 'Align', _cycleAlignment),
+          const SizedBox(width: 24),
+          _buildToolbarButton(Icons.rectangle_outlined, 'BG', () => setState(() => _activeToolbarMenu = 'bg')),
+          const SizedBox(width: 24),
+          _buildToolbarButton(Icons.alternate_email_rounded, 'Mention', () {
+            // Very simple stub: insert @ into text field
+            final text = _fullScreenTextController.text;
+            _fullScreenTextController.value = TextEditingValue(
+              text: '$text@',
+              selection: TextSelection.collapsed(offset: text.length + 1),
+            );
+          }),
+          const SizedBox(width: 24),
+          _buildToolbarButton(Icons.emoji_emotions_outlined, 'Emoji', () {
+            // Stub for emoji insertion
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContextualMenu() {
+    return Row(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+          onPressed: () => setState(() => _activeToolbarMenu = 'main'),
+        ),
+        Container(
+          width: 1,
+          height: 20,
+          color: Colors.white.withValues(alpha: 0.2),
+          margin: const EdgeInsets.only(right: 12),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_activeToolbarMenu == 'style') ..._buildStyleOptions(),
+                if (_activeToolbarMenu == 'color') ..._buildColorOptions(),
+                if (_activeToolbarMenu == 'bg') ..._buildBgOptions(),
+              ],
             ),
-          );
-        },
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildStyleOptions() {
+    final styles = [
+      (TextStyleType.classic, 'Classic'),
+      (TextStyleType.bold, 'Bold'),
+      (TextStyleType.minimal, 'Clean'),
+      (TextStyleType.handwriting, 'Bubble'),
+    ];
+    return styles.map((s) {
+      final isSel = _activeFontStyle == s.$1;
+      return GestureDetector(
+        onTap: () => setState(() {
+          _activeFontStyle = s.$1;
+          _activeToolbarMenu = 'main';
+        }),
+        child: Container(
+          margin: const EdgeInsets.only(right: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            s.$2,
+            style: TextStyle(
+              color: isSel ? Colors.black : Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  List<Widget> _buildColorOptions() {
+    const colors = [
+      Colors.white,
+      Colors.black,
+      Color(0xFF9E9E9E), // Gray
+      Color(0xFFFF4F9A), // Pink
+      Color(0xFFFACC15), // Yellow
+      Color(0xFF38BDF8), // Blue
+    ];
+    return colors.map((c) {
+      final isSel = _activeTextColor == c;
+      return GestureDetector(
+        onTap: () => setState(() {
+          _activeTextColor = c;
+          _activeToolbarMenu = 'main';
+        }),
+        child: Container(
+          margin: const EdgeInsets.only(right: 12),
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: c,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.3),
+              width: isSel ? 2 : 1,
+>>>>>>> origin/enat
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  List<Widget> _buildBgOptions() {
+    final bgs = [
+      (TextBgStyle.none, 'None'),
+      (TextBgStyle.rounded, 'Dark'),
+      (TextBgStyle.filled, 'Solid'),
+      (TextBgStyle.outline, 'Outline'),
+    ];
+    return bgs.map((b) {
+      final isSel = _activeTextBgStyle == b.$1;
+      return GestureDetector(
+        onTap: () => setState(() {
+          _activeTextBgStyle = b.$1;
+          _activeToolbarMenu = 'main';
+        }),
+        child: Container(
+          margin: const EdgeInsets.only(right: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            b.$2,
+            style: TextStyle(
+              color: isSel ? Colors.black : Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  void _cycleAlignment() {
+    setState(() {
+      if (_activeTextAlign == TextAlign.center) {
+        _activeTextAlign = TextAlign.left;
+      } else if (_activeTextAlign == TextAlign.left) {
+        _activeTextAlign = TextAlign.right;
+      } else {
+        _activeTextAlign = TextAlign.center;
+      }
+    });
+  }
+
+  Widget _buildToolbarButton(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: Colors.white, size: 20),
+        ],
       ),
     );
   }
@@ -5469,80 +5658,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                           ],
                         ),
 
-                        // Row 2: Text Editing Controls ([Align] [Bold] [Background])
-                        // Displayed ONLY when editing text OR when a text layer is selected!
-                        if (_isFullScreenTextEditing || (_selectedLayer != null && _selectedLayer!.type == LayerType.text))
-                          Padding(
-                            padding: const EdgeInsets.only(top: 14, bottom: 4),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                // 1. Align
-                                _buildEditorIconBtn(
-                                  icon: _activeTextAlign == TextAlign.left
-                                      ? Icons.format_align_left_rounded
-                                      : _activeTextAlign == TextAlign.right
-                                          ? Icons.format_align_right_rounded
-                                          : Icons.format_align_center_rounded,
-                                  active: false,
-                                  tooltip: 'Alignment',
-                                  onTap: () => setState(() {
-                                    if (_activeTextAlign == TextAlign.center) {
-                                      _activeTextAlign = TextAlign.left;
-                                    } else if (_activeTextAlign == TextAlign.left) {
-                                      _activeTextAlign = TextAlign.right;
-                                    } else {
-                                      _activeTextAlign = TextAlign.center;
-                                    }
-                                    if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
-                                      _selectedLayer!.alignment = _activeTextAlign;
-                                    }
-                                  }),
-                                ),
-
-                                const SizedBox(width: 18),
-
-                                // 2. Bold
-                                _buildEditorIconBtn(
-                                  icon: Icons.format_bold_rounded,
-                                  active: _activeFontStyle == TextStyleType.bold || _activeFontStyle == TextStyleType.campus,
-                                  tooltip: 'Bold',
-                                  onTap: () => setState(() {
-                                    final isBold = _activeFontStyle == TextStyleType.bold || _activeFontStyle == TextStyleType.campus;
-                                    _activeFontStyle = isBold ? TextStyleType.classic : TextStyleType.bold;
-                                    if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
-                                      _selectedLayer!.fontStyle = _activeFontStyle;
-                                    }
-                                  }),
-                                ),
-
-                                const SizedBox(width: 18),
-
-                                // 3. Background Style
-                                _buildEditorIconBtn(
-                                  icon: _activeTextBgStyle != TextBgStyle.none
-                                      ? Icons.rectangle_rounded
-                                      : Icons.crop_free_rounded,
-                                  active: _activeTextBgStyle != TextBgStyle.none,
-                                  tooltip: 'Background',
-                                  onTap: () => setState(() {
-                                    if (_activeTextBgStyle == TextBgStyle.none) {
-                                      _activeTextBgStyle = TextBgStyle.rounded;
-                                    } else if (_activeTextBgStyle == TextBgStyle.rounded) {
-                                      _activeTextBgStyle = TextBgStyle.filled;
-                                    } else if (_activeTextBgStyle == TextBgStyle.filled) {
-                                      _activeTextBgStyle = TextBgStyle.outline;
-                                    } else {
-                                      _activeTextBgStyle = TextBgStyle.none;
-                                    }
-                                    if (_selectedLayer != null && _selectedLayer!.type == LayerType.text) {
-                                      _selectedLayer!.bgStyle = _activeTextBgStyle;
-                                    }
-                                  }),
-                                ),
-                              ],
-                            ),
-                          ),
+                        // Text editing controls removed from header; they are now exclusively in the bottom contextual toolbar.
                       ],
                     ),
                   ),

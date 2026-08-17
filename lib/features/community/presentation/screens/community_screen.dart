@@ -13,6 +13,9 @@ import 'community_search_screen.dart';
 import 'create_post_screen.dart';
 import 'create_discussion_screen.dart';
 import 'event_details_screen.dart';
+import 'forum_category_screen.dart';
+import 'forum_discussion_screen.dart';
+import '../../domain/models/community_models.dart';
 import 'widgets/community_widgets.dart';
 
 /// GenLink KH Community Screen

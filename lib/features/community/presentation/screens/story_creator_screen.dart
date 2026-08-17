@@ -139,7 +139,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   TextBgStyle _activeTextBgStyle = TextBgStyle.none;
   TextEffectType _activeTextEffect = TextEffectType.none;
   TextAlign _activeTextAlign = TextAlign.center;
-  String _activeToolbarMenu = 'main';
 
   // Font size controlled by vertical slider (14–72pt)
   double _activeFontSize = 28.0;
@@ -3693,6 +3692,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                           ),
                         ],
                       ),
+                    ),
                     // ── CANVAS AREA (Natural Text Editing) ──
                     Expanded(
                       child: GestureDetector(

@@ -4557,7 +4557,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                     ),
                                   ),
                                   child: const Icon(
-                                    Icons.sticky_note_2_outlined,
+                                    Icons.sentiment_satisfied_alt_outlined,
                                     color: Colors.white,
                                     size: 20,
                                   ),
@@ -6833,7 +6833,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
                                     // 3. Stickers & Emojis
                                     _buildHorizontalToolItem(
-                                      icon: Icons.sticky_note_2_outlined,
+                                      icon: Icons
+                                          .sentiment_satisfied_alt_outlined,
                                       label: "Stickers",
                                       onTap: _openEmojiPicker,
                                     ),

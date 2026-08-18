@@ -4,7 +4,19 @@ enum StoryType { photo, video, text, event, announcement, achievement }
 
 enum LayerType { text, sticker, location, hashtag, mention, music, image }
 
-enum TextStyleType { classic, bold, modern, campus, coding, khmer, handwriting, serif, monospace, minimal, elegant }
+enum TextStyleType {
+  classic,
+  bold,
+  modern,
+  campus,
+  coding,
+  khmer,
+  handwriting,
+  serif,
+  monospace,
+  minimal,
+  elegant,
+}
 
 enum TextBgStyle { none, rounded, filled, outline, highlight }
 
@@ -74,6 +86,87 @@ class StoryViewerModel {
   });
 }
 
+enum StoryPrivacy {
+  public,
+  friends,
+  onlyMe,
+  custom;
+
+  String get label {
+    switch (this) {
+      case StoryPrivacy.public:
+        return 'Public';
+      case StoryPrivacy.friends:
+        return 'Friends';
+      case StoryPrivacy.onlyMe:
+        return 'Only Me';
+      case StoryPrivacy.custom:
+        return 'Custom';
+    }
+  }
+
+  static StoryPrivacy fromString(String? val) {
+    if (val == null) return StoryPrivacy.friends;
+    final lower = val.toLowerCase().replaceAll(' ', '_');
+    if (lower == 'public') return StoryPrivacy.public;
+    if (lower == 'only_me' || lower == 'onlyme') return StoryPrivacy.onlyMe;
+    if (lower == 'custom') return StoryPrivacy.custom;
+    return StoryPrivacy.friends;
+  }
+}
+
+enum StoryReplyPermission {
+  everyone,
+  friends,
+  off;
+
+  String get label {
+    switch (this) {
+      case StoryReplyPermission.everyone:
+        return 'Everyone';
+      case StoryReplyPermission.friends:
+        return 'Friends';
+      case StoryReplyPermission.off:
+        return 'Off';
+    }
+  }
+
+  static StoryReplyPermission fromString(String? val) {
+    if (val == null) return StoryReplyPermission.everyone;
+    final lower = val.toLowerCase();
+    if (lower == 'friends') return StoryReplyPermission.friends;
+    if (lower == 'off') return StoryReplyPermission.off;
+    return StoryReplyPermission.everyone;
+  }
+}
+
+class StorySettings {
+  final StoryPrivacy visibility;
+  final StoryReplyPermission replyPermission;
+  final bool allowReactions;
+
+  const StorySettings({
+    this.visibility = StoryPrivacy.friends,
+    this.replyPermission = StoryReplyPermission.everyone,
+    this.allowReactions = true,
+  });
+
+  StorySettings copyWith({
+    StoryPrivacy? visibility,
+    StoryReplyPermission? replyPermission,
+    bool? allowReactions,
+  }) {
+    return StorySettings(
+      visibility: visibility ?? this.visibility,
+      replyPermission: replyPermission ?? this.replyPermission,
+      allowReactions: allowReactions ?? this.allowReactions,
+    );
+  }
+
+  String get visibilityLabel => visibility.label;
+  String get replyPermissionLabel => replyPermission.label;
+}
+
 class StoryItemModel {
   final String id;
   final StoryType type;
@@ -84,9 +177,7 @@ class StoryItemModel {
   final String? location;
   final String timeAgo;
   final DateTime createdAt;
-  final String visibility;
-  final String replyPrivacy;
-  final bool allowReactions;
+  final StorySettings settings;
   final List<MovableStoryLayer> layers;
   int likesCount;
   bool isLiked;
@@ -107,9 +198,10 @@ class StoryItemModel {
     this.location,
     required this.timeAgo,
     required this.createdAt,
-    this.visibility = 'Public',
-    this.replyPrivacy = 'Everyone',
-    this.allowReactions = true,
+    StorySettings? settings,
+    String? visibility,
+    String? replyPrivacy,
+    bool? allowReactions,
     this.layers = const [],
     this.likesCount = 0,
     this.isLiked = false,
@@ -119,7 +211,21 @@ class StoryItemModel {
     this.bgScale = 1.0,
     this.bgOffset = Offset.zero,
     this.bgRotation = 0.0,
-  });
+  }) : settings =
+           settings ??
+           StorySettings(
+             visibility: StoryPrivacy.fromString(visibility ?? 'Friends'),
+             replyPermission: StoryReplyPermission.fromString(
+               replyPrivacy ?? 'Everyone',
+             ),
+             allowReactions: allowReactions ?? true,
+           );
+
+  StoryPrivacy get storyPrivacy => settings.visibility;
+  StoryReplyPermission get storyReplyPermission => settings.replyPermission;
+  String get visibility => settings.visibilityLabel;
+  String get replyPrivacy => settings.replyPermissionLabel;
+  bool get allowReactions => settings.allowReactions;
 
   bool get isExpired => DateTime.now().difference(createdAt).inHours >= 24;
 }

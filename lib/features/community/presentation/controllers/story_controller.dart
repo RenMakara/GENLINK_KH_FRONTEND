@@ -33,6 +33,7 @@ class StoryController extends GetxController {
     String? mediaUrl,
     String? textContent,
     String? location,
+    StorySettings? storySettings,
     String visibility = 'Friends',
     String replyPrivacy = 'Everyone',
     bool allowReactions = true,
@@ -46,14 +47,23 @@ class StoryController extends GetxController {
     if (isUploading.value) return false;
     isUploading.value = true;
     try {
+      final effectiveSettings =
+          storySettings ??
+          StorySettings(
+            visibility: StoryPrivacy.fromString(visibility),
+            replyPermission: StoryReplyPermission.fromString(replyPrivacy),
+            allowReactions: allowReactions,
+          );
+
       final newStory = await _repository.createStory(
         type: type,
         mediaUrl: mediaUrl,
         textContent: textContent,
         location: location,
-        visibility: visibility,
-        replyPrivacy: replyPrivacy,
-        allowReactions: allowReactions,
+        settings: effectiveSettings,
+        visibility: effectiveSettings.visibilityLabel,
+        replyPrivacy: effectiveSettings.replyPermissionLabel,
+        allowReactions: effectiveSettings.allowReactions,
         bgGradientStart: bgGradientStart,
         bgGradientEnd: bgGradientEnd,
         layers: layers,
@@ -94,11 +104,12 @@ class StoryController extends GetxController {
 
       try {
         final bannerContext = Get.context ?? Get.overlayContext;
-        if (bannerContext != null) {
+        if (bannerContext != null && bannerContext.mounted) {
           AppNotificationBanner.showSuccess(
             context: bannerContext,
             title: "✓ Story Live",
-            message: "Your story has been shared with $visibility on CampusLink KH!",
+            message:
+                "Your story has been shared with $visibility on CampusLink KH!",
             icon: Icons.auto_awesome_rounded,
             duration: const Duration(seconds: 3),
           );

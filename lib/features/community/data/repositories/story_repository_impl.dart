@@ -111,7 +111,8 @@ class StoryRepositoryImpl implements StoryRepository {
         StoryItemModel(
           id: 'story_sambo_1',
           type: StoryType.photo,
-          mediaUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800',
+          mediaUrl:
+              'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800',
           textContent: '🛡️ Learning something new about cybersecurity today.',
           location: 'ACLEDA University of Business',
           timeAgo: '3h ago',
@@ -127,18 +128,23 @@ class StoryRepositoryImpl implements StoryRepository {
     await Future.delayed(const Duration(milliseconds: 300));
     // Filter stories based on privacy rules:
     // If a story is 'Only Me', only the owner group (isOwner == true) contains it
-    return _mockStoryGroups.map((group) {
-      if (group.isOwner) return group;
-      final visibleStories = group.stories.where((s) => s.visibility != 'Only Me').toList();
-      return StoryGroupModel(
-        userId: group.userId,
-        userName: group.userName,
-        userAvatar: group.userAvatar,
-        isOwner: group.isOwner,
-        hasUnseen: group.hasUnseen,
-        stories: visibleStories,
-      );
-    }).where((group) => group.isOwner || group.stories.isNotEmpty).toList();
+    return _mockStoryGroups
+        .map((group) {
+          if (group.isOwner) return group;
+          final visibleStories = group.stories
+              .where((s) => s.storyPrivacy != StoryPrivacy.onlyMe)
+              .toList();
+          return StoryGroupModel(
+            userId: group.userId,
+            userName: group.userName,
+            userAvatar: group.userAvatar,
+            isOwner: group.isOwner,
+            hasUnseen: group.hasUnseen,
+            stories: visibleStories,
+          );
+        })
+        .where((group) => group.isOwner || group.stories.isNotEmpty)
+        .toList();
   }
 
   @override
@@ -147,7 +153,8 @@ class StoryRepositoryImpl implements StoryRepository {
     String? mediaUrl,
     String? textContent,
     String? location,
-    String visibility = 'Public',
+    StorySettings? settings,
+    String visibility = 'Friends',
     String replyPrivacy = 'Everyone',
     bool allowReactions = true,
     String? bgGradientStart,
@@ -158,15 +165,21 @@ class StoryRepositoryImpl implements StoryRepository {
     double bgRotation = 0.0,
   }) async {
     await Future.delayed(const Duration(milliseconds: 400));
+    final resolvedSettings =
+        settings ??
+        StorySettings(
+          visibility: StoryPrivacy.fromString(visibility),
+          replyPermission: StoryReplyPermission.fromString(replyPrivacy),
+          allowReactions: allowReactions,
+        );
+
     final newStory = StoryItemModel(
       id: 'story_${DateTime.now().millisecondsSinceEpoch}',
       type: type,
       mediaUrl: mediaUrl,
       textContent: textContent,
       location: location,
-      visibility: visibility,
-      replyPrivacy: replyPrivacy,
-      allowReactions: allowReactions,
+      settings: resolvedSettings,
       bgGradientStart: bgGradientStart ?? '0xFF0F172A',
       bgGradientEnd: bgGradientEnd ?? '0xFF1E293B',
       layers: layers ?? const [],
@@ -204,6 +217,8 @@ class StoryRepositoryImpl implements StoryRepository {
     for (final group in _mockStoryGroups) {
       for (final story in group.stories) {
         if (story.id == storyId) {
+          // Backend security: reject reaction if allowReactions is disabled
+          if (!story.allowReactions) return;
           story.isLiked = !story.isLiked;
           story.likesCount += story.isLiked ? 1 : -1;
           return;
@@ -213,15 +228,47 @@ class StoryRepositoryImpl implements StoryRepository {
   }
 
   @override
-  Future<void> replyToStory(String storyId, String message) async {}
+  Future<void> replyToStory(String storyId, String message) async {
+    for (final group in _mockStoryGroups) {
+      for (final story in group.stories) {
+        if (story.id == storyId) {
+          // Backend security: reject reply if replies are off
+          if (story.storyReplyPermission == StoryReplyPermission.off) {
+            throw Exception('Replies are disabled for this story.');
+          }
+          return;
+        }
+      }
+    }
+  }
 
   @override
   Future<List<StoryViewerModel>> getStoryViewers(String storyId) async {
     return [
-      StoryViewerModel(id: 'v1', userName: 'Chhaeng Sokuntheara', userAvatar: 'assets/images/sokuntheara_profile.png', viewedTimeAgo: '10m ago'),
-      StoryViewerModel(id: 'v2', userName: 'Heng Chansela', userAvatar: 'assets/images/heng_chansela_profile.png', viewedTimeAgo: '20m ago'),
-      StoryViewerModel(id: 'v3', userName: 'អំណត់', userAvatar: 'assets/images/amnot_profile.jpg', viewedTimeAgo: '25m ago'),
-      StoryViewerModel(id: 'v4', userName: 'Sum Sambo', userAvatar: 'assets/images/sum_sambo_profile.png', viewedTimeAgo: '40m ago'),
+      StoryViewerModel(
+        id: 'v1',
+        userName: 'Chhaeng Sokuntheara',
+        userAvatar: 'assets/images/sokuntheara_profile.png',
+        viewedTimeAgo: '10m ago',
+      ),
+      StoryViewerModel(
+        id: 'v2',
+        userName: 'Heng Chansela',
+        userAvatar: 'assets/images/heng_chansela_profile.png',
+        viewedTimeAgo: '20m ago',
+      ),
+      StoryViewerModel(
+        id: 'v3',
+        userName: 'អំណត់',
+        userAvatar: 'assets/images/amnot_profile.jpg',
+        viewedTimeAgo: '25m ago',
+      ),
+      StoryViewerModel(
+        id: 'v4',
+        userName: 'Sum Sambo',
+        userAvatar: 'assets/images/sum_sambo_profile.png',
+        viewedTimeAgo: '40m ago',
+      ),
     ];
   }
 }

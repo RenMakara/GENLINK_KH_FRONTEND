@@ -95,18 +95,18 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF8B5CF6).withValues(alpha: 0.15)
+                          ? (isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.08))
                           : unselectedBg,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? const Color(0xFF8B5CF6) : unselectedBorder,
+                        color: isSelected ? (isDark ? Colors.white : Colors.black) : unselectedBorder,
                       ),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           isSelected ? Icons.check_circle : Icons.circle_outlined,
-                          color: isSelected ? const Color(0xFF8B5CF6) : textSecondary,
+                          color: isSelected ? (isDark ? Colors.white : Colors.black) : textSecondary,
                           size: 20,
                         ),
                         const SizedBox(width: 10),
@@ -164,18 +164,18 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF8B5CF6).withValues(alpha: 0.2)
+                          ? (isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.08))
                           : unselectedBg,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? const Color(0xFF8B5CF6) : unselectedBorder,
+                        color: isSelected ? (isDark ? Colors.white : Colors.black) : unselectedBorder,
                       ),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           isSelected ? Icons.check_circle : item['icon'] as IconData,
-                          color: isSelected ? const Color(0xFF8B5CF6) : textSecondary,
+                          color: isSelected ? (isDark ? Colors.white : Colors.black) : textSecondary,
                           size: 18,
                         ),
                         const SizedBox(width: 8),

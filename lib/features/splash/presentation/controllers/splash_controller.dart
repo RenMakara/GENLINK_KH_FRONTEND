@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../../../../app/routes/app_routes.dart';
@@ -28,31 +29,36 @@ class SplashController extends GetxController {
   }
 
   Future<void> _resolveDestination() async {
-    // Started first so the restore call runs inside the minimum display
-    // window rather than after it.
+    debugPrint('[SPLASH] Starting initialization');
     final minimumElapsed = Future<void>.delayed(_minimumDisplay);
 
     var restored = false;
     var onboardingSeen = false;
 
     try {
-      restored = await _auth.restoreSession();
-      onboardingSeen = await _storage.readOnboardingSeen();
-    } catch (_) {
-      // Secure storage can fail outright (keystore reset, restored backup,
-      // rooted device). Falling through with both flags false sends the
-      // user to the first-run flow — never leaves them stuck on splash.
+      debugPrint('[SPLASH] Restoring token...');
+      restored = await _auth.restoreSession().timeout(const Duration(seconds: 5));
+      debugPrint('[SPLASH] Token restore completed: restored=$restored');
+
+      debugPrint('[SPLASH] Checking onboarding status...');
+      onboardingSeen = await _storage.readOnboardingSeen().timeout(const Duration(seconds: 5));
+      debugPrint('[SPLASH] Onboarding check completed: seen=$onboardingSeen');
+    } catch (e) {
+      debugPrint('[SPLASH] Session restore/onboarding check failed: $e');
     }
 
+    debugPrint('[SPLASH] Waiting for minimum display time...');
     await minimumElapsed;
+    debugPrint('[SPLASH] Minimum display time elapsed');
 
     if (restored) {
+      debugPrint('[SPLASH] Navigating to Home');
       Get.offAllNamed<void>(AppRoutes.home);
     } else if (!onboardingSeen) {
-      // First run starts at language select (step 1), which then hands off
-      // to the onboarding slides.
+      debugPrint('[SPLASH] Navigating to Language Select');
       Get.offAllNamed<void>(AppRoutes.languageSelect);
     } else {
+      debugPrint('[SPLASH] Navigating to Login');
       Get.offAllNamed<void>(AppRoutes.login);
     }
   }

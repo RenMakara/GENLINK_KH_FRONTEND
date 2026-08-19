@@ -185,145 +185,137 @@ class _EventCard extends StatelessWidget {
     final bool hasLocalImage = event.coverImageFile != null;
     final bool hasNetworkImage = event.imageUrl.isNotEmpty;
 
-    return GestureDetector(
-      onTap: () => Get.to(() => EventDetailsScreen(event: event)),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderSubtle),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Cover image
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: SizedBox(
-                height: 160,
-                width: double.infinity,
-                child: hasLocalImage
-                    ? Image.file(event.coverImageFile!, fit: BoxFit.cover)
-                    : hasNetworkImage
-                        ? Image.network(
-                            event.imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, _) => _imagePlaceholder(),
-                          )
-                        : _imagePlaceholder(),
-              ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderSubtle, width: 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1. Cover Image (approx 16:9)
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: hasLocalImage
+                  ? Image.file(event.coverImageFile!, fit: BoxFit.cover)
+                  : hasNetworkImage
+                      ? Image.network(
+                          event.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, _) => _imagePlaceholder(),
+                        )
+                      : _imagePlaceholder(),
             ),
+          ),
 
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Category badge
-                  if (event.category.isNotEmpty)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFEEEEEE),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        event.category,
-                        style: TextStyle(
-                          color: textSecondary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+          // 2. Event Information
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Date, Time, Location
+                Text(
+                  event.timeString.isNotEmpty
+                      ? '${event.dateString} · ${event.timeString} · ${event.location.isNotEmpty ? event.location : "Online"}'
+                      : '${event.dateString} · ${event.location.isNotEmpty ? event.location : "Online"}',
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
 
-                  Text(
-                    event.title,
+                // Title
+                Text(
+                  event.title,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+
+                // Organizer and attendees
+                Obx(() {
+                  final updated = Get.find<CommunityController>()
+                      .events
+                      .firstWhereOrNull((e) => e.id == event.id);
+                  final count = updated?.attendeesCount ?? event.attendeesCount;
+                  
+                  return Text(
+                    '${event.organizerName.isNotEmpty ? event.organizerName : "GenLink Community"} · $count attendees',
                     style: TextStyle(
-                      color: textPrimary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      color: textMuted,
+                      fontSize: 12,
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                  ),
-                  if (event.subtitle.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      event.subtitle,
-                      style: TextStyle(color: textSecondary, fontSize: 13),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  const SizedBox(height: 10),
+                  );
+                }),
 
-                  // Date
-                  if (event.dateString.isNotEmpty)
-                    _InfoRow(
-                      icon: Icons.calendar_today_outlined,
-                      text: event.timeString.isNotEmpty
-                          ? '${event.dateString} · ${event.timeString}'
-                          : event.dateString,
-                      color: textSecondary,
-                    ),
+                const SizedBox(height: 20),
 
-                  // Location or Online
-                  if (event.eventType == 'In person' && event.location.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    _InfoRow(
-                      icon: Icons.location_on_outlined,
-                      text: event.location,
-                      color: textSecondary,
-                    ),
-                  ] else if (event.eventType == 'Online') ...[
-                    const SizedBox(height: 4),
-                    _InfoRow(
-                      icon: Icons.videocam_outlined,
-                      text: 'Online Event',
-                      color: textSecondary,
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-
-                  // Bottom row: attendees + View Event
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Obx(() {
-                        final updated = Get.find<CommunityController>()
-                            .events
-                            .firstWhereOrNull((e) => e.id == event.id);
-                        final count = updated?.attendeesCount ?? event.attendeesCount;
-                        return Row(
-                          children: [
-                            Icon(Icons.people_outline, color: textMuted, size: 16),
-                            const SizedBox(width: 6),
-                            Text(
-                              '$count Going',
-                              style: TextStyle(color: textMuted, fontSize: 12),
+                // 3. Action Area
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => Get.to(() => EventDetailsScreen(event: event)),
+                        borderRadius: BorderRadius.circular(100),
+                        child: Container(
+                          height: 44,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white : Colors.black,
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                          child: Text(
+                            'View Event',
+                            style: TextStyle(
+                              color: isDark ? Colors.black : Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
                             ),
-                          ],
-                        );
-                      }),
-                      Text(
-                        'View Event →',
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                    const SizedBox(width: 12),
+                    InkWell(
+                      onTap: () {}, // Share logic
+                      borderRadius: BorderRadius.circular(100),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: borderSubtle),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Icon(
+                          Icons.ios_share,
+                          color: textPrimary,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -338,32 +330,6 @@ class _EventCard extends StatelessWidget {
           color: isDark ? Colors.white12 : Colors.black12,
         ),
       ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Color color;
-
-  const _InfoRow({required this.icon, required this.text, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(color: color, fontSize: 13),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
     );
   }
 }

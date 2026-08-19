@@ -9,7 +9,9 @@ import '../controllers/community_controller.dart';
 import 'event_details_screen.dart';
 
 class CreateEventScreen extends StatefulWidget {
-  const CreateEventScreen({super.key});
+  final bool returnCreatedEvent;
+
+  const CreateEventScreen({super.key, this.returnCreatedEvent = false});
 
   @override
   State<CreateEventScreen> createState() => _CreateEventScreenState();
@@ -63,7 +65,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       final h = _selectedTime!.hourOfPeriod == 0 ? 12 : _selectedTime!.hourOfPeriod;
       final m = _selectedTime!.minute.toString().padLeft(2, '0');
       final period = _selectedTime!.period == DayPeriod.am ? 'AM' : 'PM';
-      return '$dateStr, $h:$m $period';
+      return '$dateStr · $h:$m $period';
     }
     return dateStr;
   }
@@ -148,18 +150,47 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   Future<void> _pickDate() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final initialDate = _selectedDate ?? DateTime.now().add(const Duration(days: 1));
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
+      initialDate: initialDate,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: isDark
+              ? ThemeData.dark().copyWith(
+                  colorScheme: const ColorScheme.dark(
+                    primary: Colors.white,
+                    onPrimary: Colors.black,
+                    surface: Color(0xFF161616),
+                    onSurface: Colors.white,
+                  ),
+                  dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF161616)),
+                )
+              : ThemeData.light().copyWith(
+                  colorScheme: const ColorScheme.light(
+                    primary: Colors.black,
+                    onPrimary: Colors.white,
+                    surface: Colors.white,
+                    onSurface: Colors.black,
+                  ),
+                ),
+          child: child!,
+        );
+      },
     );
+
     if (picked != null) {
       setState(() => _selectedDate = picked);
       if (!mounted) return;
-      final pickedTime = await showTimePicker(
-        context: context,
-        initialTime: const TimeOfDay(hour: 9, minute: 0),
+
+      final initialTime = _selectedTime ?? const TimeOfDay(hour: 9, minute: 0);
+      final pickedTime = await _showCustomTimePicker(
+        context,
+        initialTime: initialTime,
       );
       if (pickedTime != null) {
         setState(() => _selectedTime = pickedTime);
@@ -208,8 +239,12 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       message: 'community.eventCreatedMsg'.tr,
     );
 
-    // Navigate to the freshly-created event's detail screen
-    Get.off(() => EventDetailsScreen(event: newEvent));
+    if (widget.returnCreatedEvent) {
+      Get.back(result: newEvent);
+    } else {
+      // Navigate to the freshly-created event's detail screen
+      Get.off(() => EventDetailsScreen(event: newEvent));
+    }
   }
 
   @override
@@ -583,6 +618,350 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       counterStyle: TextStyle(fontSize: 13), // for maxLength counter
+    );
+  }
+}
+
+/// Opens the modern custom GenLink time picker modal bottom sheet
+Future<TimeOfDay?> _showCustomTimePicker(
+  BuildContext context, {
+  required TimeOfDay initialTime,
+}) {
+  return showModalBottomSheet<TimeOfDay>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (ctx) => _GenLinkTimePickerSheet(initialTime: initialTime),
+  );
+}
+
+/// Custom GenLink Time Picker Modal Sheet with strict black/white/gray theme
+class _GenLinkTimePickerSheet extends StatefulWidget {
+  final TimeOfDay initialTime;
+
+  const _GenLinkTimePickerSheet({required this.initialTime});
+
+  @override
+  State<_GenLinkTimePickerSheet> createState() => _GenLinkTimePickerSheetState();
+}
+
+class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
+  late int _selectedHour12; // 1 to 12
+  late int _selectedMinute; // 0 to 59
+  late DayPeriod _selectedPeriod; // AM or PM
+
+  @override
+  void initState() {
+    super.initState();
+    final h = widget.initialTime.hourOfPeriod;
+    _selectedHour12 = h == 0 ? 12 : h;
+    _selectedMinute = widget.initialTime.minute;
+    _selectedPeriod = widget.initialTime.period;
+  }
+
+  String get _formattedSelectedTime {
+    final mStr = _selectedMinute.toString().padLeft(2, '0');
+    final periodStr = _selectedPeriod == DayPeriod.am ? 'AM' : 'PM';
+    return '$_selectedHour12:$mStr $periodStr';
+  }
+
+  TimeOfDay get _resultingTimeOfDay {
+    int hour24;
+    if (_selectedPeriod == DayPeriod.am) {
+      hour24 = _selectedHour12 == 12 ? 0 : _selectedHour12;
+    } else {
+      hour24 = _selectedHour12 == 12 ? 12 : _selectedHour12 + 12;
+    }
+    return TimeOfDay(hour: hour24, minute: _selectedMinute);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const bg = Color(0xFF111111);
+    const border = Color(0xFF303030);
+    const textPrimary = Color(0xFFFFFFFF);
+    const textSecondary = Color(0xFFA0A0A0);
+    const surfaceUnselected = Color(0xFF202020);
+
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(color: border, width: 1.0),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag Handle Bar
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header Title
+            const Text(
+              'Select time',
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Prominent Selected Time Display
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: border, width: 0.8),
+              ),
+              child: Center(
+                child: Text(
+                  _formattedSelectedTime,
+                  style: const TextStyle(
+                    color: textPrimary,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // AM / PM Segmented Control Toggle
+            Container(
+              height: 42,
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: surfaceUnselected,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: border, width: 0.8),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedPeriod = DayPeriod.am),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        decoration: BoxDecoration(
+                          color: _selectedPeriod == DayPeriod.am ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'AM',
+                          style: TextStyle(
+                            color: _selectedPeriod == DayPeriod.am ? Colors.black : textSecondary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedPeriod = DayPeriod.pm),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        decoration: BoxDecoration(
+                          color: _selectedPeriod == DayPeriod.pm ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'PM',
+                          style: TextStyle(
+                            color: _selectedPeriod == DayPeriod.pm ? Colors.black : textSecondary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Hours Selection (1 to 12)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Hour',
+                style: TextStyle(color: textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: List.generate(12, (index) {
+                  final hour = index + 1;
+                  final isSelected = _selectedHour12 == hour;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedHour12 = hour),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: isSelected ? Colors.white : surfaceUnselected,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected ? Colors.white : border,
+                            width: 1.0,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$hour',
+                          style: TextStyle(
+                            color: isSelected ? Colors.black : textPrimary,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Minutes Selection (00 to 55 in 5 min increments)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Minute',
+                style: TextStyle(color: textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: () {
+                  final minuteList = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+                  if (!minuteList.contains(_selectedMinute)) {
+                    minuteList.add(_selectedMinute);
+                    minuteList.sort();
+                  }
+                  return minuteList.map((m) {
+                    final isSelected = _selectedMinute == m;
+                    final mStr = m.toString().padLeft(2, '0');
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedMinute = m),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: 46,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: isSelected ? Colors.white : surfaceUnselected,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected ? Colors.white : border,
+                              width: 1.0,
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            mStr,
+                            style: TextStyle(
+                              color: isSelected ? Colors.black : textPrimary,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList();
+                }(),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Bottom Actions: Cancel and OK
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 46,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context, null),
+                      style: TextButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: border),
+                        ),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: textSecondary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 46,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, _resultingTimeOfDay),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'OK',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

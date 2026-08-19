@@ -42,11 +42,23 @@ class LocalStorage {
   Future<void> markOnboardingSeen() =>
       _storage.write(key: _kOnboardingSeen, value: 'true');
 
+  // ── Story Draft ────────────────────────────────────────────────────────
+
+  static const _kStoryDraft = 'genlink_story_draft';
+
+  Future<String?> readStoryDraft() => _storage.read(key: _kStoryDraft);
+
+  Future<void> saveStoryDraft(String draftData) =>
+      _storage.write(key: _kStoryDraft, value: draftData);
+
+  Future<void> deleteStoryDraft() => _storage.delete(key: _kStoryDraft);
+
   /// Clear preferences. Not called on logout — theme and language are
   /// device preferences that outlive the session.
   Future<void> clearAll() async {
     await _storage.delete(key: _kThemeMode);
     await _storage.delete(key: _kLanguage);
     await _storage.delete(key: _kOnboardingSeen);
+    await _storage.delete(key: _kStoryDraft);
   }
 }

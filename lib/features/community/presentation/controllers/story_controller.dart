@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../domain/models/story_model.dart';
 import '../../domain/repositories/story_repository.dart';
 import '../../data/repositories/story_repository_impl.dart';
@@ -31,7 +33,10 @@ class StoryController extends GetxController {
     String? mediaUrl,
     String? textContent,
     String? location,
-    String visibility = 'Public',
+    StorySettings? storySettings,
+    String visibility = 'Friends',
+    String replyPrivacy = 'Everyone',
+    bool allowReactions = true,
     String? bgGradientStart,
     String? bgGradientEnd,
     List<MovableStoryLayer>? layers,
@@ -42,12 +47,23 @@ class StoryController extends GetxController {
     if (isUploading.value) return false;
     isUploading.value = true;
     try {
+      final effectiveSettings =
+          storySettings ??
+          StorySettings(
+            visibility: StoryPrivacy.fromString(visibility),
+            replyPermission: StoryReplyPermission.fromString(replyPrivacy),
+            allowReactions: allowReactions,
+          );
+
       final newStory = await _repository.createStory(
         type: type,
         mediaUrl: mediaUrl,
         textContent: textContent,
         location: location,
-        visibility: visibility,
+        settings: effectiveSettings,
+        visibility: effectiveSettings.visibilityLabel,
+        replyPrivacy: effectiveSettings.replyPermissionLabel,
+        allowReactions: effectiveSettings.allowReactions,
         bgGradientStart: bgGradientStart,
         bgGradientEnd: bgGradientEnd,
         layers: layers,
@@ -85,6 +101,23 @@ class StoryController extends GetxController {
         );
       }
       storyGroups.refresh();
+
+      try {
+        final bannerContext = Get.context ?? Get.overlayContext;
+        if (bannerContext != null && bannerContext.mounted) {
+          AppNotificationBanner.showSuccess(
+            context: bannerContext,
+            title: "✓ Story Live",
+            message:
+                "Your story has been shared with $visibility on CampusLink KH!",
+            icon: Icons.auto_awesome_rounded,
+            duration: const Duration(seconds: 3),
+          );
+        }
+      } catch (bannerErr) {
+        debugPrint('[StoryController] Banner notification skipped: $bannerErr');
+      }
+
       return true;
     } finally {
       isUploading.value = false;

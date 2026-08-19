@@ -448,8 +448,10 @@ class _QuickActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Tab indices match MainScreen: 0 home, 1 community, 2 finance, 3 profile.
+    // -1 tab means navigate via named route instead.
     final actions = [
       (Icons.add, 'home.actionCreate'.tr, 1),
+      (Icons.sports_esports, 'Quiz', -1),
       (Icons.attach_money, 'home.actionExpense'.tr, 2),
       (Icons.star_outline, 'home.actionGoal'.tr, 2),
       (Icons.calendar_today_outlined, 'home.actionEvent'.tr, 1),
@@ -458,13 +460,19 @@ class _QuickActions extends StatelessWidget {
     return Row(
       children: [
         for (final (icon, label, tab) in actions) ...[
-          Expanded(
-            child: _QuickAction(
-              icon: icon,
-              label: label,
-              onTap: () => onNavigateTab?.call(tab),
+            Expanded(
+              child: _QuickAction(
+                icon: icon,
+                label: label,
+                onTap: () {
+                  if (tab == -1) {
+                    Get.toNamed('/quiz/dashboard');
+                  } else {
+                    onNavigateTab?.call(tab);
+                  }
+                },
+              ),
             ),
-          ),
           if (actions.last.$2 != label) const SizedBox(width: AppSpacing.md),
         ],
       ],

@@ -105,5 +105,12 @@ abstract final class ApiEndpoints {
 
   // ── Chats ─────────────────────────────────────────────────────────────
   static const chats = '$_base/community/chats';
+
+  // ── Entertainment / Gamification ──────────────────────────────────────
+  static const quizzes = '$_base/entertainment/quizzes';
+  static String quizDetail(String quizId) => '$_base/entertainment/quizzes/$quizId';
+  static String quizAttempt(String quizId) => '$_base/entertainment/quizzes/$quizId/attempts';
+  static const quizHistory = '$_base/entertainment/quizzes/history';
+  static const leaderboards = '$_base/entertainment/leaderboards';
 }
 

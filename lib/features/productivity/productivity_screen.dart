@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:genlink_frontend/features/productivity/widget/productivity_screen_widget.dart';
+import 'package:genlink_frontend/features/productivity/presentation/focus_feature/focus_home_screen.dart';
+import 'package:genlink_frontend/features/productivity/presentation/habit_feature/habit_home_screen.dart';
+import 'package:genlink_frontend/features/productivity/presentation/task_feature/task_home_screen.dart';
+import 'package:genlink_frontend/features/productivity/presentation/widget/productivity_widget.dart';
 
 class ProductivityPage extends StatelessWidget {
   const ProductivityPage({super.key});
@@ -14,11 +17,26 @@ class ProductivityPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ProductivityHeader(title: 'Productivity', profileText: 'R'),
+              // ==================================================
+              // HEADER
+              // ==================================================
+              ProductivityHeader(
+                title: 'Productivity',
+                profileText: 'R',
+                onNotificationTap: () {
+                  debugPrint('Notification tapped');
+                },
+                onProfileTap: () {
+                  debugPrint('Profile tapped');
+                },
+              ),
 
               const SizedBox(height: 18),
 
-              ProductivitySummary(
+              // ==================================================
+              // DAILY SUMMARY
+              // ==================================================
+              const ProductivitySummary(
                 date: 'Wednesday, July 2',
                 greeting: 'Good morning, Ratha 👋',
                 tasks: '3/5',
@@ -28,10 +46,21 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
+              // ==================================================
+              // TODAY PLAN
+              // ==================================================
               ProductivityCard(
                 title: 'Today Plan',
                 actionText: 'See All',
-                child: ProductivityTaskList(
+
+                onAction: () async {
+                  debugPrint('See All Tasks');
+
+                  // Navigate to task page here.
+                  await Future.delayed(const Duration(milliseconds: 500));
+                },
+
+                child: const ProductivityTaskList(
                   tasks: [
                     ProductivityTaskData(
                       title: 'Review weekly goals',
@@ -55,6 +84,9 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
+              // ==================================================
+              // QUICK ACTIONS
+              // ==================================================
               const ProductivitySectionTitle(title: 'Quick Actions'),
 
               const SizedBox(height: 12),
@@ -64,28 +96,66 @@ class ProductivityPage extends StatelessWidget {
                   ProductivityActionData(
                     icon: Icons.add_task_rounded,
                     title: 'Add Task',
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const TasksPage()),
+                      );
+                    },
                   ),
+
                   ProductivityActionData(
                     icon: Icons.local_fire_department_outlined,
                     title: 'Add Habit',
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const HabitHomeScreen(),
+                        ),
+                      );
+                    },
                   ),
+
                   ProductivityActionData(
                     icon: Icons.timer_outlined,
                     title: 'Focus',
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const FocusPage()),
+                      );
+                    },
                   ),
+
                   ProductivityActionData(
                     icon: Icons.flag_outlined,
                     title: 'New Goal',
+                    onTap: () async {
+                      debugPrint('New Goal');
+
+                      await Future.delayed(const Duration(milliseconds: 500));
+                    },
                   ),
                 ],
               ),
 
               const SizedBox(height: 20),
 
+              // ==================================================
+              // WEEKLY FOCUS
+              // ==================================================
               ProductivityCard(
                 title: 'Weekly Focus',
                 actionText: 'This week',
-                child: ProductivityProgress(
+
+                onAction: () async {
+                  debugPrint('Weekly Focus');
+
+                  await Future.delayed(const Duration(milliseconds: 400));
+                },
+
+                child: const ProductivityProgress(
                   valueText: '8h 40m',
                   goalText: '/ 12h goal',
                   percentage: .72,
@@ -96,10 +166,20 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
+              // ==================================================
+              // GOAL PROGRESS
+              // ==================================================
               ProductivityCard(
                 title: 'Goal Progress',
                 actionText: 'See All',
-                child: ProductivityGoals(
+
+                onAction: () async {
+                  debugPrint('See All Goals');
+
+                  await Future.delayed(const Duration(milliseconds: 400));
+                },
+
+                child: const ProductivityGoals(
                   goals: [
                     ProductivityGoalData(
                       category: 'Skill',
@@ -125,7 +205,10 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              ProductivityInsight(
+              // ==================================================
+              // SMART INSIGHT
+              // ==================================================
+              const ProductivityInsight(
                 title: 'Smart Insight',
                 message:
                     'You are most productive between 9 AM and 11 AM. '
@@ -134,7 +217,10 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              ProductivityCard(
+              // ==================================================
+              // RECENT ACTIVITY
+              // ==================================================
+              const ProductivityCard(
                 title: 'Recent Activity',
                 child: ProductivityActivities(
                   activities: [

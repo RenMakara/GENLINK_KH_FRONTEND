@@ -40,6 +40,10 @@ class ChatController extends GetxController {
     try {
       final list = await repository.getConversations();
       conversations.assignAll(list);
+    } catch (e) {
+      conversations.clear();
+      Get.snackbar('Chats unavailable', 'Could not load your chats. Pull to retry.',
+          snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoadingConversations.value = false;
     }
@@ -56,6 +60,10 @@ class ChatController extends GetxController {
       final msgs = await repository.getMessages(conv.id);
       activeMessages.assignAll(msgs);
       _scrollToBottom();
+    } catch (e) {
+      activeMessages.clear();
+      Get.snackbar('Messages unavailable', 'Could not load messages for this chat.',
+          snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoadingMessages.value = false;
     }
@@ -71,20 +79,25 @@ class ChatController extends GetxController {
     textController.clear();
     isSendingMessage.value = true;
 
-    final newMsg = await repository.sendMessage(
-      conv.id,
-      text.isEmpty ? (type == 'image' ? '📷 Photo' : 'Shared attachment') : text,
-      messageType: type,
-      mediaUrl: mediaUrl,
-    );
+    try {
+      final newMsg = await repository.sendMessage(
+        conv.id,
+        text.isEmpty ? (type == 'image' ? '📷 Photo' : 'Shared attachment') : text,
+        messageType: type,
+        mediaUrl: mediaUrl,
+      );
 
-    activeMessages.add(newMsg);
-    conv.lastMessage = newMsg.content;
-    conv.lastMessageTime = 'Just now';
-    conversations.refresh();
-    isSendingMessage.value = false;
-
-    _scrollToBottom();
+      activeMessages.add(newMsg);
+      conv.lastMessage = newMsg.content;
+      conv.lastMessageTime = 'Just now';
+      conversations.refresh();
+      _scrollToBottom();
+    } catch (e) {
+      Get.snackbar('Send failed', 'Your message was not sent. Try again.',
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      isSendingMessage.value = false;
+    }
   }
 
   Future<ChatMessageModel> sendStoryReply({
@@ -113,12 +126,19 @@ class ChatController extends GetxController {
     }
 
     // 2. Call Repository send message API
-    final newMsg = await repository.sendMessage(
-      conv.id,
-      message,
-      messageType: 'story_reply',
-      mediaUrl: mediaUrl,
-    );
+    ChatMessageModel newMsg;
+    try {
+      newMsg = await repository.sendMessage(
+        conv.id,
+        message,
+        messageType: 'story_reply',
+        mediaUrl: mediaUrl,
+      );
+    } catch (e) {
+      Get.snackbar('Reply failed', 'Could not send your story reply.',
+          snackPosition: SnackPosition.BOTTOM);
+      rethrow;
+    }
 
     // Update conversation metadata
     conv.lastMessage = message;

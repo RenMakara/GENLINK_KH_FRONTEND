@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:get/get.dart';
 
 import '../../domain/models/quiz_models.dart';
@@ -58,6 +59,7 @@ class QuizController extends GetxController {
   Timer? _questionTimer;
   Timer? _matchmakingTimer;
   bool _matchmakingCancelled = false;
+  DateTime? _quizStartTime;
 
   final quizResult = Rxn<QuizResult>();
   final isQuizSubmitted = false.obs;
@@ -82,7 +84,7 @@ class QuizController extends GetxController {
 
   Future<void> _loadLeaderboard() async {
     try {
-      final entries = await _quizRepository.getLeaderboard('global', 'weekly');
+      final entries = await _quizRepository.getLeaderboard('OVERALL_XP', 'ALL_TIME');
       leaderboard.value = entries;
     } catch (e) {
       // Fallback or ignore
@@ -129,15 +131,36 @@ class QuizController extends GetxController {
       final categoryName = selectedCategory.value?.name;
       final quizzesList = await _quizRepository.getQuizzes(category: categoryName);
       if (quizzesList.isNotEmpty) {
-        final qId = quizzesList.first['quizId'] as String;
+        final pick = quizzesList[Random().nextInt(quizzesList.length)];
+        final qId = pick['quizId'] as String;
         currentQuizId.value = qId;
-        
+
         // Then fetch details
         final quizDetails = await _quizRepository.getQuizDetails(qId);
         questions.value = quizDetails;
       }
     } catch (e) {
       print('Error fetching quiz: $e');
+    }
+  }
+
+  /// Loads every quiz in a category so the caller can let the user pick one.
+  Future<List<Map<String, dynamic>>> loadQuizOptions(String category) async {
+    return _quizRepository.getQuizzes(category: category);
+  }
+
+  /// Starts a specific quiz by id (single-player pick).
+  Future<void> startSelectedQuiz(String quizId) async {
+    try {
+      currentQuizId.value = quizId;
+      final quizDetails = await _quizRepository.getQuizDetails(quizId);
+      questions.value = quizDetails;
+      selectedAnswers.clear();
+      currentQuestionIndex.value = 0;
+      isQuizSubmitted.value = false;
+      _startQuestionTimer();
+    } catch (e) {
+      print('Error starting quiz: $e');
     }
   }
 
@@ -152,6 +175,7 @@ class QuizController extends GetxController {
     currentQuestionIndex.value = 0;
     selectedAnswers.clear();
     isQuizSubmitted.value = false;
+    _quizStartTime = DateTime.now();
     await _fetchRandomQuiz();
     _startQuestionTimer();
   }
@@ -210,7 +234,13 @@ class QuizController extends GetxController {
 
     try {
       final result = await _quizRepository.submitQuizAttempt(currentQuizId.value!, answersPayload);
-      quizResult.value = result;
+      final elapsedSeconds = _quizStartTime == null
+          ? 0
+          : DateTime.now().difference(_quizStartTime!).inSeconds;
+      quizResult.value = result.copyWith(
+        timeTakenSeconds: elapsedSeconds,
+        coinsEarned: result.correct * 10,
+      );
       isQuizSubmitted.value = true;
     } catch (e) {
       print('Failed to submit quiz: $e');

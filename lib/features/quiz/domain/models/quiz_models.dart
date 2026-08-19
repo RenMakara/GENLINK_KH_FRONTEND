@@ -91,6 +91,28 @@ class QuizResult {
     required this.accuracyPercent,
     this.results = const [],
   });
+
+  QuizResult copyWith({
+    int? correct,
+    int? wrong,
+    int? total,
+    int? timeTakenSeconds,
+    int? xpEarned,
+    int? coinsEarned,
+    int? accuracyPercent,
+    List<QuizQuestionResult>? results,
+  }) {
+    return QuizResult(
+      correct: correct ?? this.correct,
+      wrong: wrong ?? this.wrong,
+      total: total ?? this.total,
+      timeTakenSeconds: timeTakenSeconds ?? this.timeTakenSeconds,
+      xpEarned: xpEarned ?? this.xpEarned,
+      coinsEarned: coinsEarned ?? this.coinsEarned,
+      accuracyPercent: accuracyPercent ?? this.accuracyPercent,
+      results: results ?? this.results,
+    );
+  }
 }
 
 class LeaderboardEntry {

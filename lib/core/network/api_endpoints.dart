@@ -100,6 +100,18 @@ abstract final class ApiEndpoints {
   static String communityPostComments(String postId) =>
       '$_base/community/posts/$postId/comments';
 
+  // ── Stories ────────────────────────────────────────────────────────────
+  static const stories = '$_base/community/stories';
+
+  static String storyItem(String storyId) =>
+      '$_base/community/stories/$storyId';
+
+  static String storyView(String storyId) =>
+      '$_base/community/stories/$storyId/view';
+
+  static String storyViewers(String storyId) =>
+      '$_base/community/stories/$storyId/viewers';
+
   // ── Notifications ─────────────────────────────────────────────────────
   static const notifications = '$_base/notifications';
 

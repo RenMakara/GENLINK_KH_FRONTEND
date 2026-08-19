@@ -113,4 +113,10 @@ class StoryController extends GetxController {
     storyGroups.refresh();
     _repository.deleteStory(storyId);
   }
+
+  Future<void> markStoryViewed(String storyId) async {
+    try {
+      await _repository.markViewed(storyId);
+    } catch (_) {}
+  }
 }

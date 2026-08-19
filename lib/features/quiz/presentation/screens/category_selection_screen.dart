@@ -11,12 +11,101 @@ class CategorySelectionScreen extends GetView<QuizController> {
 
   void _navigateAfterCategory() {
     if (controller.quizType.value == QuizType.single) {
-      controller.startQuiz();
-      Get.toNamed('/quiz/in-progress');
+      _chooseQuizAndStart();
     } else {
       controller.startMatchmaking();
       Get.toNamed('/quiz/matchmaking');
     }
+  }
+
+  Future<void> _chooseQuizAndStart() async {
+    final categoryName = controller.selectedCategory.value?.name ?? '';
+    List<Map<String, dynamic>> options;
+    try {
+      options = await controller.loadQuizOptions(categoryName);
+    } catch (_) {
+      options = const [];
+    }
+
+    if (options.isEmpty) {
+      Get.snackbar('No quizzes', 'No quizzes found for $categoryName yet.',
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    if (options.length == 1) {
+      controller.startSelectedQuiz(options.first['quizId'] as String);
+      Get.toNamed('/quiz/in-progress');
+      return;
+    }
+
+    final selected = await showModalBottomSheet<Map<String, dynamic>>(
+      context: Get.context!,
+      backgroundColor: QuizColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: QuizColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: Text(
+                  'Choose a Quiz',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: QuizColors.heading,
+                  ),
+                ),
+              ),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: options.length,
+                  itemBuilder: (context, index) {
+                    final quiz = options[index];
+                    return ListTile(
+                      leading: const Icon(Icons.quiz_outlined,
+                          color: QuizColors.primary),
+                      title: Text(
+                        (quiz['title'] as String?) ?? 'Quiz ${index + 1}',
+                        style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: QuizColors.heading),
+                      ),
+                      subtitle: Text(
+                        (quiz['difficulty'] as String?) ?? '',
+                        style:
+                            const TextStyle(fontSize: 12, color: QuizColors.body),
+                      ),
+                      onTap: () => Navigator.pop(context, quiz),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected == null) return;
+    controller.startSelectedQuiz(selected['quizId'] as String);
+    Get.toNamed('/quiz/in-progress');
   }
 
   @override

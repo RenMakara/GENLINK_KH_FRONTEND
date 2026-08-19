@@ -25,11 +25,12 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
   String? _selectedCategory;
 
   static const List<String> _categoryKeys = [
-    'community.categoryTech',
-    'community.categoryCampus',
-    'community.categoryAcademics',
-    'community.categoryProjects',
-    'community.categoryOther',
+    'Technology',
+    'Campus Life',
+    'Projects',
+    'Study & Education',
+    'Career',
+    'Events',
   ];
 
   bool get _canPublish =>

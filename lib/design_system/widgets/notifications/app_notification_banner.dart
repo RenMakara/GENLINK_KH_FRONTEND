@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../colors/app_colors.dart';
 
-enum NotificationType { success, error, warning, info }
+enum NotificationBannerType { success, error, warning, info }
 
 class AppNotificationBanner {
   static OverlayEntry? _currentEntry;
@@ -22,7 +22,7 @@ class AppNotificationBanner {
       context: context,
       title: title,
       message: message,
-      type: NotificationType.success,
+      type: NotificationBannerType.success,
       icon: icon,
       duration: duration,
       actionLabel: actionLabel,
@@ -43,7 +43,7 @@ class AppNotificationBanner {
       context: context,
       title: title,
       message: message,
-      type: NotificationType.error,
+      type: NotificationBannerType.error,
       icon: icon,
       duration: duration,
       actionLabel: actionLabel,
@@ -64,7 +64,7 @@ class AppNotificationBanner {
       context: context,
       title: title,
       message: message,
-      type: NotificationType.info,
+      type: NotificationBannerType.info,
       icon: icon,
       duration: duration,
       actionLabel: actionLabel,
@@ -76,7 +76,7 @@ class AppNotificationBanner {
     required BuildContext context,
     required String title,
     required String message,
-    NotificationType type = NotificationType.info,
+    NotificationBannerType type = NotificationBannerType.info,
     IconData? icon,
     Duration duration = const Duration(milliseconds: 3000),
     String? actionLabel,
@@ -84,7 +84,16 @@ class AppNotificationBanner {
   }) {
     dismiss();
 
-    final overlayState = Overlay.of(context, rootOverlay: true);
+    OverlayState? overlayState;
+    try {
+      overlayState = Overlay.maybeOf(context, rootOverlay: true) ??
+          Overlay.maybeOf(context);
+    } catch (_) {}
+
+    if (overlayState == null) {
+      debugPrint('[AppNotificationBanner] No Overlay found for banner: $title - $message');
+      return;
+    }
 
     _currentEntry = OverlayEntry(
       builder: (ctx) => _NotificationBannerWidget(
@@ -115,7 +124,7 @@ class AppNotificationBanner {
 class _NotificationBannerWidget extends StatefulWidget {
   final String title;
   final String message;
-  final NotificationType type;
+  final NotificationBannerType type;
   final IconData? icon;
   final Duration duration;
   final String? actionLabel;
@@ -186,26 +195,26 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
 
   Color get _accentColor {
     switch (widget.type) {
-      case NotificationType.success:
+      case NotificationBannerType.success:
         return AppColors.success; // #4ADE80
-      case NotificationType.error:
+      case NotificationBannerType.error:
         return AppColors.danger; // #EF6A6A
-      case NotificationType.warning:
+      case NotificationBannerType.warning:
         return AppColors.warning; // #F5B84B
-      case NotificationType.info:
+      case NotificationBannerType.info:
         return AppColors.communityAccent; // #5DADEC
     }
   }
 
   IconData get _defaultIcon {
     switch (widget.type) {
-      case NotificationType.success:
+      case NotificationBannerType.success:
         return Icons.check_circle_rounded;
-      case NotificationType.error:
+      case NotificationBannerType.error:
         return Icons.delete_outline_rounded;
-      case NotificationType.warning:
+      case NotificationBannerType.warning:
         return Icons.warning_amber_rounded;
-      case NotificationType.info:
+      case NotificationBannerType.info:
         return Icons.info_outline_rounded;
     }
   }
@@ -233,27 +242,28 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.darkSurfaceSecondary.withValues(alpha: 0.85),
+                      color: AppColors.darkSurfacePrimary.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: _accentColor.withValues(alpha: 0.3),
+                        color: _accentColor.withValues(alpha: 0.35),
                         width: 1.0,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.4),
+                          color: Colors.black.withValues(alpha: 0.5),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
                       ],
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         // Icon Container
                         Container(
-                          padding: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(9),
                           decoration: BoxDecoration(
                             color: _accentColor.withValues(alpha: 0.15),
                             shape: BoxShape.circle,
@@ -261,12 +271,12 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
                           child: Icon(
                             widget.icon ?? _defaultIcon,
                             color: _accentColor,
-                            size: 22,
+                            size: 20,
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: 12),
 
-                        // Title & Message Text Column
+                        // Title & Message Text Column (Expanded to prevent overflow)
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,23 +287,30 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
                                 style: const TextStyle(
                                   color: AppColors.darkTextPrimary,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                  fontSize: 13.5,
+                                  letterSpacing: -0.2,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                widget.message,
-                                style: const TextStyle(
-                                  color: AppColors.darkTextSecondary,
-                                  fontSize: 12,
-                                  height: 1.3,
+                              if (widget.message.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  widget.message,
+                                  style: const TextStyle(
+                                    color: AppColors.darkTextSecondary,
+                                    fontSize: 12,
+                                    height: 1.35,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                         ),
 
-                        // Optional Action Button (e.g. "Undo")
+                        // Optional Action Button or Close Button
                         if (widget.actionLabel != null) ...[
                           const SizedBox(width: 8),
                           InkWell(
@@ -303,7 +320,7 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
                             },
                             borderRadius: BorderRadius.circular(12),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: _accentColor,
                                 borderRadius: BorderRadius.circular(12),
@@ -317,6 +334,15 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
                                 ),
                               ),
                             ),
+                          ),
+                        ] else ...[
+                          const SizedBox(width: 4),
+                          IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                            icon: const Icon(Icons.close_rounded, color: AppColors.darkTextMuted, size: 18),
+                            onPressed: _hide,
+                            tooltip: 'Close',
                           ),
                         ],
                       ],

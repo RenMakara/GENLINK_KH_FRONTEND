@@ -1,3 +1,5 @@
+import 'community_models.dart';
+
 class PollOptionModel {
   final String text;
   int votes;
@@ -42,6 +44,7 @@ class CommunityPostModel {
   final bool allowMultipleAnswers;
   final bool hideResultsUntilVote;
   final List<CommentModel> comments;
+  final EventModel? attachedEvent;
 
   CommunityPostModel({
     required this.id,
@@ -74,6 +77,7 @@ class CommunityPostModel {
     this.allowMultipleAnswers = false,
     this.hideResultsUntilVote = true,
     this.comments = const [],
+    this.attachedEvent,
   });
 
   CommunityPostModel copyWith({
@@ -106,6 +110,7 @@ class CommunityPostModel {
     String? pollDuration,
     bool? allowMultipleAnswers,
     List<CommentModel>? comments,
+    EventModel? attachedEvent,
   }) {
     return CommunityPostModel(
       id: id ?? this.id,
@@ -137,6 +142,7 @@ class CommunityPostModel {
       pollDuration: pollDuration ?? this.pollDuration,
       allowMultipleAnswers: allowMultipleAnswers ?? this.allowMultipleAnswers,
       comments: comments ?? this.comments,
+      attachedEvent: attachedEvent ?? this.attachedEvent,
     );
   }
 

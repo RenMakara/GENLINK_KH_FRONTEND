@@ -21,4 +21,8 @@ class NotificationRepositoryImpl {
   Future<bool> deleteNotification(String id) {
     return remoteDataSource.deleteNotification(id);
   }
+
+  Future<void> addNotification(NotificationModel notification) {
+    return remoteDataSource.addNotification(notification);
+  }
 }

@@ -17,6 +17,7 @@ class CommunityController extends GetxController {
   final ScrollController scrollController = ScrollController();
 
   final selectedCategory = 'Feed'.obs;
+  final selectedForumCategory = 'All'.obs;
   final categories = ['Feed', 'Forum', 'Career', 'Event'];
 
   // Feed State & Pagination
@@ -270,6 +271,7 @@ class CommunityController extends GetxController {
     List<PollOptionModel>? pollOptions,
     String? pollDuration,
     bool allowMultipleAnswers = false,
+    EventModel? attachedEvent,
   }) async {
     isUploadingPost.value = true;
     uploadProgress.value = 0.3;
@@ -294,6 +296,7 @@ class CommunityController extends GetxController {
         pollOptions: pollOptions,
         pollDuration: pollDuration,
         allowMultipleAnswers: allowMultipleAnswers,
+        attachedEvent: attachedEvent,
       );
 
       posts.insert(0, richPost);
@@ -402,6 +405,7 @@ class CommunityController extends GetxController {
     List<PollOptionModel>? pollOptions,
     String? pollDuration,
     bool? allowMultipleAnswers,
+    EventModel? attachedEvent,
   }) async {
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
@@ -417,6 +421,7 @@ class CommunityController extends GetxController {
         pollOptions: pollOptions,
         pollDuration: pollDuration,
         allowMultipleAnswers: allowMultipleAnswers,
+        attachedEvent: attachedEvent,
       );
       await repository.updatePost(postId, content: content);
     }
@@ -435,6 +440,7 @@ class CommunityController extends GetxController {
     List<PollOptionModel>? pollOptions,
     String? pollDuration,
     bool allowMultipleAnswers = false,
+    EventModel? attachedEvent,
   }) =>
       addNewPost(
         content: content,
@@ -449,6 +455,7 @@ class CommunityController extends GetxController {
         pollOptions: pollOptions,
         pollDuration: pollDuration,
         allowMultipleAnswers: allowMultipleAnswers,
+        attachedEvent: attachedEvent,
       );
 
   Future<void> updatePost({
@@ -464,6 +471,7 @@ class CommunityController extends GetxController {
     List<PollOptionModel>? pollOptions,
     String? pollDuration,
     bool? allowMultipleAnswers,
+    EventModel? attachedEvent,
   }) =>
       editPostFull(
         postId: postId,
@@ -478,6 +486,7 @@ class CommunityController extends GetxController {
         pollOptions: pollOptions,
         pollDuration: pollDuration,
         allowMultipleAnswers: allowMultipleAnswers,
+        attachedEvent: attachedEvent,
       );
 
   void repostPost(String postId, {String? caption}) {

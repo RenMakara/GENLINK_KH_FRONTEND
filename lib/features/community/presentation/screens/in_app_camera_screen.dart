@@ -141,7 +141,7 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
           Get.to(
             () => StoryCreatorScreen(
               type: _isVideoMode ? StoryType.video : StoryType.photo,
-              mediaPath: media!.path,
+              mediaPaths: [media!.path],
             ),
           );
         }
@@ -162,7 +162,7 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
           Get.to(
             () => StoryCreatorScreen(
               type: _isVideoMode ? StoryType.video : StoryType.photo,
-              mediaPath: media!.path,
+              mediaPaths: [media!.path],
             ),
           );
         } else {

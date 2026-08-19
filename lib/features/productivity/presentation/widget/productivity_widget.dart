@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
+// ============================================================
 // DATA MODELS
+// ============================================================
+
 class ProductivityTaskData {
   final String title;
   final String subtitle;
@@ -17,8 +20,13 @@ class ProductivityTaskData {
 class ProductivityActionData {
   final IconData icon;
   final String title;
+  final Future<void> Function()? onTap;
 
-  const ProductivityActionData({required this.icon, required this.title});
+  const ProductivityActionData({
+    required this.icon,
+    required this.title,
+    this.onTap,
+  });
 }
 
 class ProductivityGoalData {
@@ -47,7 +55,9 @@ class ProductivityActivityData {
   });
 }
 
+// ============================================================
 // THEME COLORS
+// ============================================================
 
 class _ProductivityColors {
   final bool isDark;
@@ -75,15 +85,22 @@ class _ProductivityColors {
       isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 }
 
+// ============================================================
 // HEADER
+// ============================================================
+
 class ProductivityHeader extends StatelessWidget {
   final String title;
   final String profileText;
+  final VoidCallback? onNotificationTap;
+  final VoidCallback? onProfileTap;
 
   const ProductivityHeader({
     super.key,
     required this.title,
     required this.profileText,
+    this.onNotificationTap,
+    this.onProfileTap,
   });
 
   @override
@@ -107,24 +124,30 @@ class ProductivityHeader extends StatelessWidget {
 
         Row(
           children: [
-            _HeaderButton(icon: Icons.notifications_none_rounded),
+            _HeaderButton(
+              icon: Icons.notifications_none_rounded,
+              onTap: onNotificationTap,
+            ),
 
             const SizedBox(width: 10),
 
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: colors.surfaceSecondary,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  profileText,
-                  style: TextStyle(
-                    color: colors.textPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+            GestureDetector(
+              onTap: onProfileTap,
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: colors.surfaceSecondary,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    profileText,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
@@ -138,8 +161,9 @@ class ProductivityHeader extends StatelessWidget {
 
 class _HeaderButton extends StatelessWidget {
   final IconData icon;
+  final VoidCallback? onTap;
 
-  const _HeaderButton({required this.icon});
+  const _HeaderButton({required this.icon, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -147,20 +171,30 @@ class _HeaderButton extends StatelessWidget {
       Theme.of(context).brightness == Brightness.dark,
     );
 
-    return Container(
-      width: 42,
-      height: 42,
-      decoration: BoxDecoration(
-        color: colors.surface,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.border),
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.border),
+          ),
+          child: Icon(icon, size: 22, color: colors.textPrimary),
+        ),
       ),
-      child: Icon(icon, size: 22, color: colors.textPrimary),
     );
   }
 }
 
+// ============================================================
 // DAILY SUMMARY
+// ============================================================
+
 class ProductivitySummary extends StatelessWidget {
   final String date;
   final String greeting;
@@ -297,10 +331,14 @@ class _SummaryStat extends StatelessWidget {
   }
 }
 
+// ============================================================
 // CARD
-class ProductivityCard extends StatelessWidget {
+// ============================================================
+
+class ProductivityCard extends StatefulWidget {
   final String title;
   final String? actionText;
+  final Future<void> Function()? onAction;
   final Widget child;
 
   const ProductivityCard({
@@ -308,7 +346,34 @@ class ProductivityCard extends StatelessWidget {
     required this.title,
     required this.child,
     this.actionText,
+    this.onAction,
   });
+
+  @override
+  State<ProductivityCard> createState() => _ProductivityCardState();
+}
+
+class _ProductivityCardState extends State<ProductivityCard> {
+  bool _loading = false;
+  bool _pressed = false;
+
+  Future<void> _handleAction() async {
+    if (_loading || widget.onAction == null) return;
+
+    setState(() {
+      _loading = true;
+    });
+
+    try {
+      await widget.onAction!();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -331,7 +396,7 @@ class ProductivityCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  title,
+                  widget.title,
                   style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: 16,
@@ -340,24 +405,67 @@ class ProductivityCard extends StatelessWidget {
                 ),
               ),
 
-              if (actionText != null)
-                Text(
-                  actionText!,
-                  style: TextStyle(color: colors.textMuted, fontSize: 11),
+              if (widget.actionText != null)
+                GestureDetector(
+                  onTapDown: (_) {
+                    if (!_loading) {
+                      setState(() => _pressed = true);
+                    }
+                  },
+                  onTapUp: (_) {
+                    if (!_loading) {
+                      setState(() => _pressed = false);
+                      _handleAction();
+                    }
+                  },
+                  onTapCancel: () {
+                    if (!_loading) {
+                      setState(() => _pressed = false);
+                    }
+                  },
+                  child: AnimatedScale(
+                    scale: _pressed ? .92 : 1,
+                    duration: const Duration(milliseconds: 100),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      child: _loading
+                          ? SizedBox(
+                              key: const ValueKey('loading'),
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: colors.textMuted,
+                              ),
+                            )
+                          : Text(
+                              widget.actionText!,
+                              key: const ValueKey('text'),
+                              style: TextStyle(
+                                color: colors.textMuted,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
                 ),
             ],
           ),
 
           const SizedBox(height: 15),
 
-          child,
+          widget.child,
         ],
       ),
     );
   }
 }
 
+// ============================================================
 // SECTION TITLE
+// ============================================================
+
 class ProductivitySectionTitle extends StatelessWidget {
   final String title;
 
@@ -380,7 +488,10 @@ class ProductivitySectionTitle extends StatelessWidget {
   }
 }
 
+// ============================================================
 // TASK LIST
+// ============================================================
+
 class ProductivityTaskList extends StatelessWidget {
   final List<ProductivityTaskData> tasks;
   final double progress;
@@ -520,7 +631,10 @@ class _TaskItem extends StatelessWidget {
   }
 }
 
+// ============================================================
 // QUICK ACTIONS
+// ============================================================
+
 class ProductivityQuickActions extends StatelessWidget {
   final List<ProductivityActionData> actions;
 
@@ -547,14 +661,22 @@ class ProductivityQuickActions extends StatelessWidget {
   }
 }
 
-class _QuickAction extends StatelessWidget {
+class _QuickAction extends StatefulWidget {
   final ProductivityActionData action;
   final int index;
 
   const _QuickAction({required this.action, required this.index});
 
+  @override
+  State<_QuickAction> createState() => _QuickActionState();
+}
+
+class _QuickActionState extends State<_QuickAction> {
+  bool _loading = false;
+  bool _pressed = false;
+
   Color get accent {
-    switch (index) {
+    switch (widget.index) {
       case 0:
         return AppColors.brandPrimary;
       case 1:
@@ -566,52 +688,137 @@ class _QuickAction extends StatelessWidget {
     }
   }
 
+  Future<void> _handleTap() async {
+    if (_loading || widget.action.onTap == null) return;
+
+    setState(() {
+      _loading = true;
+    });
+
+    try {
+      await widget.action.onTap!();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = _ProductivityColors(
       Theme.of(context).brightness == Brightness.dark,
     );
 
-    return Container(
-      width: 92,
-      height: 88,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.border),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: .10),
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Icon(action.icon, size: 20, color: accent),
-          ),
+    return GestureDetector(
+      onTapDown: (_) {
+        if (!_loading) {
+          setState(() {
+            _pressed = true;
+          });
+        }
+      },
 
-          const SizedBox(height: 7),
+      onTapUp: (_) {
+        if (!_loading) {
+          setState(() {
+            _pressed = false;
+          });
 
-          Text(
-            action.title,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
+          _handleTap();
+        }
+      },
+
+      onTapCancel: () {
+        if (!_loading) {
+          setState(() {
+            _pressed = false;
+          });
+        }
+      },
+
+      child: AnimatedScale(
+        scale: _pressed ? .93 : 1,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 92,
+          height: 88,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: _pressed ? accent : colors.border,
+              width: _pressed ? 1.3 : 1,
             ),
+            boxShadow: _pressed
+                ? [
+                    BoxShadow(
+                      color: accent.withValues(alpha: .15),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : null,
           ),
-        ],
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: _loading
+                    ? SizedBox(
+                        key: const ValueKey('loading'),
+                        width: 38,
+                        height: 38,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: accent,
+                        ),
+                      )
+                    : Container(
+                        key: const ValueKey('icon'),
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: .10),
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        child: Icon(
+                          widget.action.icon,
+                          size: 20,
+                          color: accent,
+                        ),
+                      ),
+              ),
+
+              const SizedBox(height: 7),
+
+              Text(
+                widget.action.title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
+// ============================================================
 // WEEKLY PROGRESS
+// ============================================================
+
 class ProductivityProgress extends StatelessWidget {
   final String valueText;
   final String goalText;
@@ -693,7 +900,10 @@ class ProductivityProgress extends StatelessWidget {
   }
 }
 
+// ============================================================
 // GOALS
+// ============================================================
+
 class ProductivityGoals extends StatelessWidget {
   final List<ProductivityGoalData> goals;
 
@@ -791,7 +1001,10 @@ class _GoalItem extends StatelessWidget {
   }
 }
 
+// ============================================================
 // SMART INSIGHT
+// ============================================================
+
 class ProductivityInsight extends StatelessWidget {
   final String title;
   final String message;
@@ -808,13 +1021,11 @@ class ProductivityInsight extends StatelessWidget {
       Theme.of(context).brightness == Brightness.dark,
     );
 
-    final isDark = colors.isDark;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark
+        color: colors.isDark
             ? AppColors.productivityAccent.withValues(alpha: .08)
             : colors.surface,
         borderRadius: BorderRadius.circular(16),
@@ -873,7 +1084,10 @@ class ProductivityInsight extends StatelessWidget {
   }
 }
 
+// ============================================================
 // RECENT ACTIVITIES
+// ============================================================
+
 class ProductivityActivities extends StatelessWidget {
   final List<ProductivityActivityData> activities;
 

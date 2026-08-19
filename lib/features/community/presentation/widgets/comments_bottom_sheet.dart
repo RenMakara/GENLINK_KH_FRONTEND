@@ -232,17 +232,17 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                           Icon(
                                             comment.isLiked ? Icons.favorite_rounded : Icons.favorite_outline_rounded,
                                             size: 14,
-                                            color: comment.isLiked ? AppColors.danger : textMuted,
+                                            color: comment.isLiked ? AppColors.likedAccent : textMuted,
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
                                             comment.likesCount > 0 ? "${comment.likesCount}" : 'community.like'.tr,
                                             style: theme.textTheme.labelSmall?.copyWith(
-                                                  color: comment.isLiked ? AppColors.danger : textMuted,
+                                                  color: comment.isLiked ? AppColors.likedAccent : textMuted,
                                                   fontWeight: FontWeight.bold,
                                                 ) ??
                                                 TextStyle(
-                                                  color: comment.isLiked ? AppColors.danger : textMuted,
+                                                  color: comment.isLiked ? AppColors.likedAccent : textMuted,
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
                                                 ),

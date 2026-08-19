@@ -11,7 +11,11 @@ import '../widgets/post_card_widget.dart';
 import '../widgets/story_tray_widget.dart';
 import 'community_search_screen.dart';
 import 'create_post_screen.dart';
+import 'create_discussion_screen.dart';
 import 'event_details_screen.dart';
+import 'forum_category_screen.dart';
+import 'forum_discussion_screen.dart';
+import '../../domain/models/community_models.dart';
 import 'widgets/community_widgets.dart';
 
 /// GenLink KH Community Screen
@@ -53,10 +57,10 @@ class CommunityScreen extends GetView<CommunityController> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680),
+          constraints: const BoxConstraints(maxWidth: 600),
           child: Column(
             children: [
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: 6),
 
               // STICKY NAVIGATION TABS (Feed, Forum, Career, Event)
               Obx(
@@ -92,27 +96,17 @@ class CommunityScreen extends GetView<CommunityController> {
                             ),
                             child: Text(
                               'community.${cat.toLowerCase()}'.tr,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                    color: isSelected
-                                        ? (isDark
-                                            ? AppColors.darkTextInverse
-                                            : AppColors.lightTextInverse)
-                                        : textSecondary,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.w500,
-                                  ) ??
-                                  TextStyle(
-                                    color: isSelected
-                                        ? (isDark
-                                            ? AppColors.darkTextInverse
-                                            : AppColors.lightTextInverse)
-                                        : textSecondary,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.w500,
-                                    fontSize: 14,
-                                  ),
+                              style: TextStyle(
+                                color: isSelected
+                                    ? (isDark
+                                        ? AppColors.darkTextInverse
+                                        : AppColors.lightTextInverse)
+                                    : textSecondary,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                fontSize: 13.5,
+                              ),
                             ),
                           ),
                         ),
@@ -122,7 +116,7 @@ class CommunityScreen extends GetView<CommunityController> {
                 ),
               ),
 
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: 10),
 
               // DYNAMIC TAB CONTENT BODY
               Expanded(
@@ -360,16 +354,100 @@ class CommunityScreen extends GetView<CommunityController> {
     final isDark = theme.brightness == Brightness.dark;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final surfaceSecondary = isDark ? const Color(0xFF171717) : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? const Color(0xFF303030) : AppColors.lightBorderSubtle;
+
+    final categoriesList = [
+      {'title': 'Technology', 'count': '342 Discussions', 'icon': Icons.laptop_chromebook_rounded},
+      {'title': 'Campus Life', 'count': '189 Discussions', 'icon': Icons.school_outlined},
+      {'title': 'Projects', 'count': '120 Discussions', 'icon': Icons.rocket_launch_outlined},
+      {'title': 'Study & Education', 'count': '256 Discussions', 'icon': Icons.menu_book_rounded},
+      {'title': 'Career', 'count': '145 Discussions', 'icon': Icons.work_outline_rounded},
+      {'title': 'Events', 'count': '98 Discussions', 'icon': Icons.event_outlined},
+    ];
+
+    final trendingTopics = [
+      '#Technology',
+      '#CampusLife',
+      '#Projects',
+      '#Study & Education',
+      '#Career',
+    ];
+
+    final allPinnedThreads = [
+      const ForumThreadCard(
+        title: "Guidelines for GenLink KH Annual Student Project Showcase 2026",
+        author: "Admin Team",
+        avatarUrl: "assets/images/user_profile.png",
+        timeAgo: "1d ago",
+        category: "Technology",
+        replies: 48,
+        likes: 142,
+        isPinned: true,
+      ),
+      const ForumThreadCard(
+        title: "Best practices for GetX state management in Flutter Community App",
+        author: "Sokny Enat",
+        avatarUrl: "assets/images/user_profile.png",
+        timeAgo: "2h ago",
+        category: "Technology",
+        replies: 24,
+        likes: 89,
+        isPinned: true,
+      ),
+    ];
+
+    final allLatestThreads = [
+      const ForumThreadCard(
+        title: "How to prepare for junior software engineer interviews in Phnom Penh?",
+        author: "Rathana P.",
+        avatarUrl: "assets/images/heng_chansela_profile.png",
+        timeAgo: "3h ago",
+        category: "Career",
+        replies: 19,
+        likes: 45,
+        isPinned: false,
+      ),
+      const ForumThreadCard(
+        title: "Study group for CADT Data Structures and Algorithms exam next week",
+        author: "Heng Chansela",
+        avatarUrl: "assets/images/heng_chansela_profile.png",
+        timeAgo: "5h ago",
+        category: "Study & Education",
+        replies: 31,
+        likes: 67,
+        isPinned: false,
+      ),
+      const ForumThreadCard(
+        title: "Sharing my AI project built with Python and Flutter Web",
+        author: "Ren Makara",
+        avatarUrl: "assets/images/ren_makara_profile.png",
+        timeAgo: "7h ago",
+        category: "Projects",
+        replies: 14,
+        likes: 53,
+        isPinned: false,
+      ),
+      const ForumThreadCard(
+        title: "Campus Hackathon 2026 registration is officially open!",
+        author: "Chhaeng Sokuntheara",
+        avatarUrl: "assets/images/sokuntheara_profile.png",
+        timeAgo: "12h ago",
+        category: "Events",
+        replies: 42,
+        likes: 110,
+        isPinned: false,
+      ),
+    ];
 
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Context-Aware Forum Search Bar
+            // 1. Full-width Search Field (Triggers Search ONLY when tapped)
             InkWell(
               onTap: () => Get.to(
                 () => const CommunitySearchScreen(activeTab: 'Forum'),
@@ -400,12 +478,13 @@ class CommunityScreen extends GetView<CommunityController> {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
 
-            // Trending Topics
+            // 2. Trending Topics (Horizontally scrollable chip list)
             Text(
-              'community.trendingTopics'.tr,
+              'community.trendingTopics'.tr.isNotEmpty && 'community.trendingTopics'.tr != 'community.trendingTopics'
+                  ? 'community.trendingTopics'.tr
+                  : 'Trending Topics',
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -416,21 +495,21 @@ class CommunityScreen extends GetView<CommunityController> {
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
               child: Row(
-                children: [
-                  '#FlutterTech',
-                  '#CampusHackathon',
-                  '#CADTDesign',
-                  '#RUPPExams',
-                  '#AIWorkshop',
-                ].map((topic) {
+                children: trendingTopics.map((topic) {
                   return InkWell(
-                    onTap: () => Get.to(
-                      () => const CommunitySearchScreen(activeTab: 'Forum'),
-                    ),
+                    onTap: () {
+                      final cleanCat = topic.replaceAll('#', '').replaceAll('CampusLife', 'Campus Life');
+                      if (controller.selectedForumCategory.value == cleanCat) {
+                        controller.selectedForumCategory.value = 'All';
+                      } else {
+                        controller.selectedForumCategory.value = cleanCat;
+                      }
+                    },
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                     child: Container(
                       margin: const EdgeInsets.only(right: AppSpacing.sm),
@@ -442,17 +521,17 @@ class CommunityScreen extends GetView<CommunityController> {
                         color: surfaceSecondary,
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                         border: Border.all(
-                          color: AppColors.communityAccent.withValues(alpha: 0.3),
+                          color: borderSubtle,
                         ),
                       ),
                       child: Text(
                         topic,
                         style: theme.textTheme.labelMedium?.copyWith(
-                              color: AppColors.communityAccent,
+                              color: textPrimary,
                               fontWeight: FontWeight.bold,
                             ) ??
-                            const TextStyle(
-                              color: AppColors.communityAccent,
+                            TextStyle(
+                              color: textPrimary,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),
@@ -463,11 +542,13 @@ class CommunityScreen extends GetView<CommunityController> {
               ),
             ),
 
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: 20),
 
-            // Forum Categories
+            // 3. Forum Categories (2-Column Responsive Grid with In-Place Category Filtering)
             Text(
-              'community.forumCategories'.tr,
+              'community.forumCategories'.tr.isNotEmpty && 'community.forumCategories'.tr != 'community.forumCategories'
+                  ? 'community.forumCategories'.tr
+                  : 'Forum Categories',
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -478,78 +559,139 @@ class CommunityScreen extends GetView<CommunityController> {
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 12),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 2.5,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              children: const [
-                ForumCategoryCard(
-                  title: "💻 Tech & Coding",
-                  count: "342 Discussions",
-                  accent: AppColors.communityAccent,
-                ),
-                ForumCategoryCard(
-                  title: "🎓 Campus Life",
-                  count: "189 Discussions",
-                  accent: AppColors.success,
-                ),
-                ForumCategoryCard(
-                  title: "📚 Academics",
-                  count: "256 Discussions",
-                  accent: AppColors.warning,
-                ),
-                ForumCategoryCard(
-                  title: "🚀 Projects",
-                  count: "120 Discussions",
-                  accent: AppColors.productivityAccent,
-                ),
-              ],
-            ),
+            const SizedBox(height: 10),
 
-            const SizedBox(height: AppSpacing.lg),
+            Obx(() {
+              final activeCat = controller.selectedForumCategory.value;
 
-            // Pinned & Latest Discussions List
-            Text(
-              'community.pinnedDiscussions'.tr,
-              style: theme.textTheme.titleMedium?.copyWith(
-                    color: textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ) ??
-                  TextStyle(
-                    color: textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 2.1,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                ),
+                itemCount: categoriesList.length,
+                itemBuilder: (context, idx) {
+                  final cat = categoriesList[idx];
+                  final title = cat['title'] as String;
+                  final isSel = activeCat == title;
+
+                  return ForumCategoryCard(
+                    title: title,
+                    count: cat['count'] as String,
+                    icon: cat['icon'] as IconData,
+                    isSelected: isSel,
+                    onTap: () {
+                      if (activeCat == title) {
+                        controller.selectedForumCategory.value = 'All';
+                      } else {
+                        controller.selectedForumCategory.value = title;
+                      }
+                    },
+                  );
+                },
+              );
+            }),
+
+            const SizedBox(height: 22),
+
+            // 4. Pinned & Latest Discussions filtered reactively
+            Obx(() {
+              final activeCat = controller.selectedForumCategory.value;
+
+              final pinnedFiltered = activeCat == 'All'
+                  ? allPinnedThreads
+                  : allPinnedThreads.where((t) => t.category.toLowerCase() == activeCat.toLowerCase()).toList();
+
+              final latestFiltered = activeCat == 'All'
+                  ? allLatestThreads
+                  : allLatestThreads.where((t) => t.category.toLowerCase() == activeCat.toLowerCase()).toList();
+
+              final totalCount = pinnedFiltered.length + latestFiltered.length;
+
+              if (totalCount == 0) {
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: surfaceSecondary,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderSubtle),
                   ),
-            ),
-            const SizedBox(height: 12),
-            const ForumThreadCard(
-              title: "Guidelines for GenLink KH Annual Student Project Showcase 2026",
-              author: "Admin Team",
-              timeAgo: "1d ago",
-              replies: 48,
-              upvotes: 142,
-              isPinned: true,
-            ),
-            const ForumThreadCard(
-              title: "Best resources to master Flutter state management with GetX?",
-              author: "Sokchea Lim",
-              timeAgo: "3h ago",
-              replies: 16,
-              upvotes: 34,
-              isPinned: false,
-            ),
-            const ForumThreadCard(
-              title: "How to prepare for junior software engineer interviews in Cambodia?",
-              author: "Rathana P.",
-              timeAgo: "6h ago",
-              replies: 29,
-              upvotes: 65,
-              isPinned: false,
-            ),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.forum_outlined, color: Colors.white54, size: 40),
+                      const SizedBox(height: 12),
+                      Text(
+                        "No discussions in $activeCat yet",
+                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        "Be the first to start a discussion in this topic!",
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () => Get.to(() => const CreateDiscussionScreen()),
+                        icon: const Icon(Icons.add, size: 18, color: Colors.black),
+                        label: const Text("Start a Discussion", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (pinnedFiltered.isNotEmpty) ...[
+                    Text(
+                      'community.pinnedDiscussions'.tr.isNotEmpty && 'community.pinnedDiscussions'.tr != 'community.pinnedDiscussions'
+                          ? 'community.pinnedDiscussions'.tr
+                          : 'Pinned Discussions',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                            color: textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ) ??
+                          TextStyle(
+                            color: textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 10),
+                    ...pinnedFiltered,
+                    const SizedBox(height: 20),
+                  ],
+
+                  if (latestFiltered.isNotEmpty) ...[
+                    Text(
+                      "Latest Discussions",
+                      style: theme.textTheme.titleMedium?.copyWith(
+                            color: textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ) ??
+                          TextStyle(
+                            color: textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 10),
+                    ...latestFiltered,
+                  ],
+                ],
+              );
+            }),
 
             const SizedBox(height: AppSpacing.xl),
           ],

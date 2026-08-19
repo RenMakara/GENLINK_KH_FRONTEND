@@ -111,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 () => AppButton(
                   label: 'auth.login'.tr,
                   loading: _auth.isLoading.value,
-                  onPressed: _submit,
+                  onPressed: _auth.isLoading.value ? null : _submit,
                 ),
               ),
               const SizedBox(height: AppSpacing.md),

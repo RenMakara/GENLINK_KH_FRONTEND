@@ -17,9 +17,7 @@ class ProductivityPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ==================================================
               // HEADER
-              // ==================================================
               ProductivityHeader(
                 title: 'Productivity',
                 profileText: 'R',
@@ -33,9 +31,7 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 18),
 
-              // ==================================================
               // DAILY SUMMARY
-              // ==================================================
               const ProductivitySummary(
                 date: 'Wednesday, July 2',
                 greeting: 'Good morning, Ratha 👋',
@@ -46,9 +42,7 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // ==================================================
               // TODAY PLAN
-              // ==================================================
               ProductivityCard(
                 title: 'Today Plan',
                 actionText: 'See All',
@@ -84,9 +78,7 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // ==================================================
               // QUICK ACTIONS
-              // ==================================================
               const ProductivitySectionTitle(title: 'Quick Actions'),
 
               const SizedBox(height: 12),
@@ -142,9 +134,7 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // ==================================================
               // WEEKLY FOCUS
-              // ==================================================
               ProductivityCard(
                 title: 'Weekly Focus',
                 actionText: 'This week',
@@ -166,9 +156,7 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // ==================================================
               // GOAL PROGRESS
-              // ==================================================
               ProductivityCard(
                 title: 'Goal Progress',
                 actionText: 'See All',
@@ -205,9 +193,7 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // ==================================================
               // SMART INSIGHT
-              // ==================================================
               const ProductivityInsight(
                 title: 'Smart Insight',
                 message:
@@ -217,9 +203,7 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // ==================================================
               // RECENT ACTIVITY
-              // ==================================================
               const ProductivityCard(
                 title: 'Recent Activity',
                 child: ProductivityActivities(

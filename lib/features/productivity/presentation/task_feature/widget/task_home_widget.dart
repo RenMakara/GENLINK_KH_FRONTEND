@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
-// ============================================================
 // TASK DATA
-// ============================================================
-
 enum TaskPriority { high, medium, low }
 
 class TaskData {
@@ -21,10 +18,7 @@ class TaskData {
   });
 }
 
-// ============================================================
 // TASK THEME COLORS
-// ============================================================
-
 class TaskThemeColors {
   final bool isDark;
 
@@ -52,10 +46,7 @@ class TaskThemeColors {
       isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 }
 
-// ============================================================
 // TOP BAR
-// ============================================================
-
 class TasksTopBar extends StatelessWidget {
   final String title;
   final VoidCallback? onBack;
@@ -118,8 +109,8 @@ class TasksTopBar extends StatelessWidget {
         _TaskIconButton(
           icon: Icons.add_rounded,
           onTap: onAdd,
-          backgroundColor: AppColors.brandPrimary,
-          iconColor: Colors.white,
+          backgroundColor: colors.textPrimary,
+          iconColor: colors.isDark ? Colors.black : Colors.white,
           size: 42,
           iconSize: 23,
         ),
@@ -128,10 +119,7 @@ class TasksTopBar extends StatelessWidget {
   }
 }
 
-// ============================================================
 // ICON BUTTON
-// ============================================================
-
 class _TaskIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
@@ -175,10 +163,7 @@ class _TaskIconButton extends StatelessWidget {
   }
 }
 
-// ============================================================
 // SEARCH FIELD
-// ============================================================
-
 class TasksSearchField extends StatefulWidget {
   final String hintText;
   final TextEditingController? controller;
@@ -285,9 +270,7 @@ class _TasksSearchFieldState extends State<TasksSearchField> {
       ),
       child: Row(
         children: [
-          // ======================================================
           // SEARCH ICON
-          // ======================================================
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             width: 42,
@@ -307,9 +290,7 @@ class _TasksSearchFieldState extends State<TasksSearchField> {
 
           const SizedBox(width: 10),
 
-          // ======================================================
           // TEXT INPUT
-          // ======================================================
           Expanded(
             child: TextField(
               controller: _controller,
@@ -351,9 +332,7 @@ class _TasksSearchFieldState extends State<TasksSearchField> {
             ),
           ),
 
-          // ======================================================
           // CLEAR
-          // ======================================================
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 150),
             child: _hasText
@@ -377,9 +356,7 @@ class _TasksSearchFieldState extends State<TasksSearchField> {
                 : const SizedBox(key: ValueKey('empty'), width: 6),
           ),
 
-          // ======================================================
           // FILTER
-          // ======================================================
           if (widget.onFilter != null) ...[
             Container(width: 1, height: 28, color: colors.border),
 
@@ -443,10 +420,7 @@ class _TasksSearchFieldState extends State<TasksSearchField> {
   }
 }
 
-// ============================================================
 // TASK HEADER
-// ============================================================
-
 class TasksHeader extends StatelessWidget {
   final int count;
   final int activeFilterCount;
@@ -536,9 +510,7 @@ class TasksHeader extends StatelessWidget {
   }
 }
 
-// ============================================================
 // TASK LIST
-// ============================================================
 
 class TasksList extends StatelessWidget {
   final List<TaskData> tasks;
@@ -578,10 +550,7 @@ class TasksList extends StatelessWidget {
   }
 }
 
-// ============================================================
 // EMPTY STATE
-// ============================================================
-
 class _EmptyTasksState extends StatelessWidget {
   final TaskThemeColors colors;
 
@@ -641,10 +610,7 @@ class _EmptyTasksState extends StatelessWidget {
   }
 }
 
-// ============================================================
 // TASK TILE
-// ============================================================
-
 class _TaskTile extends StatefulWidget {
   final TaskData task;
 
@@ -679,16 +645,12 @@ class _TaskTileState extends State<_TaskTile> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
           child: Row(
             children: [
-              // ==================================================
               // CHECKBOX
-              // ==================================================
               _TaskCheckbox(completed: completed, onTap: _toggleCompleted),
 
               const SizedBox(width: 12),
 
-              // ==================================================
               // CONTENT
-              // ==================================================
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -761,9 +723,7 @@ class _TaskTileState extends State<_TaskTile> {
 
               const SizedBox(width: 10),
 
-              // ==================================================
               // PRIORITY
-              // ==================================================
               _PriorityLabel(priority: widget.task.priority),
             ],
           ),
@@ -792,10 +752,7 @@ class _TaskTileState extends State<_TaskTile> {
   }
 }
 
-// ============================================================
 // PRIORITY LABEL
-// ============================================================
-
 class _PriorityLabel extends StatelessWidget {
   final TaskPriority priority;
 
@@ -842,10 +799,7 @@ class _PriorityLabel extends StatelessWidget {
   }
 }
 
-// ============================================================
 // CHECKBOX
-// ============================================================
-
 class _TaskCheckbox extends StatelessWidget {
   final bool completed;
   final VoidCallback onTap;
@@ -885,10 +839,7 @@ class _TaskCheckbox extends StatelessWidget {
   }
 }
 
-// ============================================================
 // FILTER SHEET
-// ============================================================
-
 class TasksFilterSheet extends StatelessWidget {
   final int selectedStatus;
   final int selectedPriority;
@@ -946,13 +897,13 @@ class TasksFilterSheet extends StatelessWidget {
                   width: 43,
                   height: 43,
                   decoration: BoxDecoration(
-                    color: AppColors.brandPrimary.withValues(alpha: .10),
+                    color: colors.textPrimary.withValues(alpha: .08),
                     borderRadius: BorderRadius.circular(13),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.tune_rounded,
                     size: 21,
-                    color: AppColors.brandPrimary,
+                    color: colors.textPrimary,
                   ),
                 ),
 
@@ -991,10 +942,10 @@ class TasksFilterSheet extends StatelessWidget {
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Reset',
                       style: TextStyle(
-                        color: AppColors.brandPrimary,
+                        color: colors.textPrimary,
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1037,8 +988,8 @@ class TasksFilterSheet extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: onApply,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.brandPrimary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: colors.textPrimary,
+                  foregroundColor: colors.isDark ? Colors.black : Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
@@ -1057,10 +1008,7 @@ class TasksFilterSheet extends StatelessWidget {
   }
 }
 
-// ============================================================
 // FILTER TITLE
-// ============================================================
-
 class _FilterTitle extends StatelessWidget {
   final String title;
   final TaskThemeColors colors;
@@ -1081,10 +1029,7 @@ class _FilterTitle extends StatelessWidget {
   }
 }
 
-// ============================================================
 // FILTER GROUP
-// ============================================================
-
 class _FilterOptionGroup extends StatelessWidget {
   final List<String> options;
   final int selectedIndex;
@@ -1116,10 +1061,7 @@ class _FilterOptionGroup extends StatelessWidget {
   }
 }
 
-// ============================================================
 // FILTER OPTION
-// ============================================================
-
 class _FilterOption extends StatelessWidget {
   final String label;
   final bool selected;

@@ -243,9 +243,7 @@ class _TasksPageState extends State<TasksPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ==================================================
               // TOP BAR
-              // ==================================================
               TasksTopBar(
                 title: 'Tasks',
 
@@ -258,9 +256,7 @@ class _TasksPageState extends State<TasksPage> {
 
               const SizedBox(height: 20),
 
-              // ==================================================
               // SEARCH
-              // ==================================================
               TasksSearchField(
                 controller: _searchController,
 
@@ -279,9 +275,7 @@ class _TasksPageState extends State<TasksPage> {
 
               const SizedBox(height: 22),
 
-              // ==================================================
               // TASK HEADER
-              // ==================================================
               TasksHeader(
                 count: _filteredTasks.length,
 
@@ -292,16 +286,12 @@ class _TasksPageState extends State<TasksPage> {
 
               const SizedBox(height: 10),
 
-              // ==================================================
               // TASK LIST
-              // ==================================================
               TasksList(tasks: _filteredTasks),
 
               const SizedBox(height: 20),
 
-              // ==================================================
               // BOTTOM TIP
-              // ==================================================
               Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,

@@ -100,10 +100,29 @@ abstract final class ApiEndpoints {
   static String communityPostComments(String postId) =>
       '$_base/community/posts/$postId/comments';
 
+  // ── Stories ────────────────────────────────────────────────────────────
+  static const stories = '$_base/community/stories';
+
+  static String storyItem(String storyId) =>
+      '$_base/community/stories/$storyId';
+
+  static String storyView(String storyId) =>
+      '$_base/community/stories/$storyId/view';
+
+  static String storyViewers(String storyId) =>
+      '$_base/community/stories/$storyId/viewers';
+
   // ── Notifications ─────────────────────────────────────────────────────
   static const notifications = '$_base/notifications';
 
   // ── Chats ─────────────────────────────────────────────────────────────
   static const chats = '$_base/community/chats';
+
+  // ── Entertainment / Gamification ──────────────────────────────────────
+  static const quizzes = '$_base/entertainment/quizzes';
+  static String quizDetail(String quizId) => '$_base/entertainment/quizzes/$quizId';
+  static String quizAttempt(String quizId) => '$_base/entertainment/quizzes/$quizId/attempts';
+  static const quizHistory = '$_base/entertainment/quizzes/history';
+  static const leaderboards = '$_base/entertainment/leaderboards';
 }
 

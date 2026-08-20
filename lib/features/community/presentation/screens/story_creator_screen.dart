@@ -87,8 +87,9 @@ class _DotGridPainter extends CustomPainter {
 class StoryCreatorScreen extends StatefulWidget {
   final StoryType type;
   final List<String>? mediaPaths;
+  final StoryItemModel? existingStory;
 
-  const StoryCreatorScreen({super.key, required this.type, this.mediaPaths});
+  const StoryCreatorScreen({super.key, required this.type, this.mediaPaths, this.existingStory});
 
   @override
   State<StoryCreatorScreen> createState() => _StoryCreatorScreenState();
@@ -195,7 +196,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   ];
 
   // Selected background category for filter tabs
-  String _selectedBgCategory = 'Solid';
+  String _selectedBgCategory = 'Gradients';
 
   // Curated cute, aesthetic, and trending TikTok / Instagram backgrounds for text stories
   final List<
@@ -657,9 +658,29 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   @override
   void initState() {
     super.initState();
-    _activeMediaPath = widget.mediaPaths?.isNotEmpty == true
-        ? widget.mediaPaths!.first
-        : null;
+    if (widget.existingStory != null) {
+      final s = widget.existingStory!;
+      _layers.addAll(s.layers.map((l) => l.clone()));
+      _storySettings = s.settings;
+      _activeMediaPath = s.mediaUrl;
+      _bgImageScale = s.bgScale;
+      _bgImageOffset = s.bgOffset;
+      _imageRotation = s.bgRotation;
+
+      if (s.bgGradientStart != null && s.bgGradientStart == s.bgGradientEnd) {
+        _storyBgMode = StoryBgMode.solid;
+        _selectedSolidBgColor = Color(int.parse(s.bgGradientStart!.replaceAll('0x', ''), radix: 16));
+      } else if (s.bgGradientStart != null) {
+        _storyBgMode = StoryBgMode.gradient;
+        final startColor = Color(int.parse(s.bgGradientStart!.replaceAll('0x', ''), radix: 16));
+        final presetIdx = _bgPresets.indexWhere((p) => p.colors.first.toARGB32() == startColor.toARGB32());
+        if (presetIdx != -1) _gradientIdx = presetIdx;
+      }
+    } else {
+      _activeMediaPath = widget.mediaPaths?.isNotEmpty == true
+          ? widget.mediaPaths!.first
+          : null;
+    }
     _fullScreenTextController.addListener(_onTextChanged);
     if (widget.type == StoryType.text) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -790,10 +811,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                         .toString(),
                                     type: LayerType.sticker,
                                     text: st,
-                                    offset: Offset(
-                                      100,
-                                      200 + (_layers.length * 15),
-                                    ),
+                                    offset: const Offset(0.5, 0.5),
                                   ),
                                 );
                               });
@@ -1231,7 +1249,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           id: DateTime.now().microsecondsSinceEpoch.toString(),
           type: LayerType.hashtag,
           text: tag,
-          offset: Offset(100, 220 + (_layers.length * 15)),
+          offset: const Offset(0.5, 0.5),
         ),
       );
     });
@@ -1350,10 +1368,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         id: "mention_${DateTime.now().microsecondsSinceEpoch}",
         type: LayerType.mention,
         text: formatted,
-        offset: Offset(
-          size.width * 0.22,
-          size.height * 0.28 + (_layers.length * 20),
-        ),
+        offset: const Offset(0.5, 0.5),
         scale: 1.0,
       );
       _layers.add(newLayer);
@@ -2349,26 +2364,71 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             '0x${preset.colors.last.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
       }
 
-      final success = await controller.publishStory(
-        type: widget.type,
-        mediaUrl: _activeMediaPath,
-        textContent: textContent,
-        storySettings: _storySettings,
-        visibility: _selectedVisibility,
-        replyPrivacy: _replyPrivacy,
-        allowReactions: _allowReactions,
-        bgGradientStart: startHex,
-        bgGradientEnd: endHex,
-        layers: List.from(_layers),
-        bgScale: _bgImageScale,
-        bgOffset: _bgImageOffset,
-        bgRotation: _imageRotation,
-      );
+      bool success = false;
+
+      if (widget.existingStory != null) {
+        final newSettings = StorySettings(
+          visibility: _selectedVisibility == 'Public' ? StoryPrivacy.public : (_selectedVisibility == 'Only Me' ? StoryPrivacy.onlyMe : StoryPrivacy.friends),
+          replyPermission: widget.existingStory!.settings.replyPermission,
+          allowReactions: widget.existingStory!.settings.allowReactions,
+        );
+        final updatedStory = StoryItemModel(
+          id: widget.existingStory!.id,
+          type: widget.type,
+          mediaUrl: _activeMediaPath,
+          textContent: textContent,
+          bgGradientStart: startHex,
+          bgGradientEnd: endHex,
+          location: widget.existingStory!.location,
+          timeAgo: widget.existingStory!.timeAgo,
+          createdAt: widget.existingStory!.createdAt,
+          settings: newSettings,
+          layers: List.from(_layers),
+          bgScale: _bgImageScale,
+          bgOffset: _bgImageOffset,
+          bgRotation: _imageRotation,
+        );
+        updatedStory.likesCount = widget.existingStory!.likesCount;
+        updatedStory.isLiked = widget.existingStory!.isLiked;
+        updatedStory.isViewed = widget.existingStory!.isViewed;
+        updatedStory.viewersCount = widget.existingStory!.viewersCount;
+        updatedStory.viewers.addAll(widget.existingStory!.viewers);
+
+        success = await controller.updateStory(widget.existingStory!.id, updatedStory);
+      } else {
+        success = await controller.publishStory(
+          type: widget.type,
+          mediaUrl: _activeMediaPath,
+          textContent: textContent,
+          storySettings: _storySettings,
+          visibility: _selectedVisibility,
+          replyPrivacy: _replyPrivacy,
+          allowReactions: _allowReactions,
+          bgGradientStart: startHex,
+          bgGradientEnd: endHex,
+          layers: List.from(_layers),
+          bgScale: _bgImageScale,
+          bgOffset: _bgImageOffset,
+          bgRotation: _imageRotation,
+        );
+      }
 
       if (mounted) {
         setState(() => _isPublishing = false);
         if (success) {
+          AppNotificationBanner.showSuccess(
+            context: context,
+            title: "Success",
+            message: "Story posted successfully",
+            icon: Icons.check_circle_rounded,
+          );
           Get.back();
+        } else {
+          AppNotificationBanner.showDanger(
+            context: context,
+            title: "Upload Failed",
+            message: "Couldn't post story. Please try again.",
+          );
         }
       }
     } catch (e, stack) {
@@ -2378,7 +2438,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         AppNotificationBanner.showDanger(
           context: context,
           title: "Upload Failed",
-          message: "Could not publish story: $e",
+          message: "Couldn't post story. Please try again.",
         );
       }
     } finally {
@@ -2851,10 +2911,14 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       );
     }
 
+    final currentPos = layer.getCanvasOffset(Size(screenWidth, screenHeight));
+
     return Positioned(
-      left: layer.offset.dx,
-      top: layer.offset.dy,
-      child: AnimatedOpacity(
+      left: currentPos.dx,
+      top: currentPos.dy,
+      child: FractionalTranslation(
+        translation: const Offset(-0.5, -0.5),
+        child: AnimatedOpacity(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
         opacity: (isDeleting || isEditingThisLayer) ? 0.0 : 1.0,
@@ -2918,21 +2982,24 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   layer.rotation = _gestureBaseRotation + details.rotation;
                 }
 
-                final maxX = screenWidth - 20.0;
-                final maxY = screenHeight - 60.0;
+                final currentOffset =
+                    layer.getCanvasOffset(Size(screenWidth, screenHeight));
+                final nextX = currentOffset.dx + details.focalPointDelta.dx;
+                final nextY = currentOffset.dy + details.focalPointDelta.dy;
 
-                final nextX = (layer.offset.dx + details.focalPointDelta.dx)
-                    .clamp(-80.0, maxX);
-                final nextY = (layer.offset.dy + details.focalPointDelta.dy)
-                    .clamp(30.0, maxY);
-
-                layer.offset = Offset(nextX, nextY);
-                _isHoveringDeleteZone =
-                    layer.offset.dy > (screenHeight - 160.0);
+                layer.setFromCanvasOffset(
+                  Offset(nextX, nextY),
+                  Size(screenWidth, screenHeight),
+                );
+                final currentY =
+                    layer.getCanvasOffset(Size(screenWidth, screenHeight)).dy;
+                _isHoveringDeleteZone = currentY > (screenHeight - 160.0);
               });
             },
             onScaleEnd: (details) {
-              final isOverDeleteArea = layer.offset.dy > (screenHeight - 160.0);
+              final currentY =
+                  layer.getCanvasOffset(Size(screenWidth, screenHeight)).dy;
+              final isOverDeleteArea = currentY > (screenHeight - 160.0);
               if (isOverDeleteArea) {
                 _deleteLayerInstantly(layer);
               }
@@ -2948,7 +3015,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   void _showLocationSheet() {
@@ -3114,11 +3182,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                         id: "location_${DateTime.now().microsecondsSinceEpoch}",
                                         type: LayerType.location,
                                         text: loc,
-                                        offset: Offset(
-                                          size.width * 0.20,
-                                          size.height * 0.32 +
-                                              (_layers.length * 15),
-                                        ),
+                                        offset: const Offset(0.5, 0.5),
                                       );
                                       _layers.add(newLayer);
                                       _selectedLayer = newLayer;
@@ -3184,7 +3248,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         id: DateTime.now().microsecondsSinceEpoch.toString(),
                         type: LayerType.music,
                         text: track,
-                        offset: Offset(80, 220 + (_layers.length * 15)),
+                        offset: const Offset(0.5, 0.5),
                       ),
                     );
                   });
@@ -3474,14 +3538,17 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       return const SizedBox.shrink();
     }
 
+    final size = MediaQuery.of(context).size;
+    final currentPos = layer.getCanvasOffset(size);
+
     return Positioned(
-      top: (layer.offset.dy - 55).clamp(
+      top: (currentPos.dy - 55).clamp(
         60.0,
-        MediaQuery.of(context).size.height - 220,
+        size.height - 220,
       ),
-      left: (layer.offset.dx - 10).clamp(
+      left: (currentPos.dx - 10).clamp(
         16.0,
-        MediaQuery.of(context).size.width - 220,
+        size.width - 220,
       ),
       child: Material(
         color: Colors.transparent,
@@ -3681,7 +3748,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               id: "${DateTime.now().microsecondsSinceEpoch}_$count",
               type: LayerType.image,
               text: img.path,
-              offset: Offset(clampedX, clampedY),
+              offset: const Offset(0.5, 0.5),
               scale: 1.0,
             );
 
@@ -4444,10 +4511,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       id: "sticker_${DateTime.now().microsecondsSinceEpoch}",
       type: LayerType.sticker,
       text: stickerText,
-      offset: Offset(
-        size.width * 0.35,
-        size.height * 0.35 + (_layers.length * 15),
-      ),
+      offset: const Offset(0.5, 0.5),
       scale: 1.5,
     );
     setState(() {
@@ -4499,7 +4563,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               effect: _activeTextEffect,
               alignment: _activeTextAlign,
               fontSize: _activeFontSize,
-              offset: Offset(defaultLeft, clampedY),
+              offset: const Offset(0.5, 0.5),
               scale: _activeTextScale,
             );
             _layers.add(newLayer);
@@ -4521,7 +4585,10 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
     final mq = MediaQuery.of(context);
     final keyboardHeight = mq.viewInsets.bottom;
+    final topPadding = mq.padding.top;
+    final bottomPadding = mq.padding.bottom;
     final screenWidth = mq.size.width;
+    final screenHeight = mq.size.height;
 
     // Live text style
     final baseTextStyle = _getLayerTextStyle(
@@ -4628,124 +4695,180 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         curve: Curves.easeOut,
         child: Material(
           color: Colors.transparent,
-          child: SafeArea(
-            child: Stack(
-              children: [
-                // ── Column layout: top bar → canvas input → bottom controls
-                Column(
+          child: Stack(
+            children: [
+              // ── Column layout: top bar → canvas input → contextual bar → bottom controls ──
+              SafeArea(
+                top: true,
+                bottom: false,
+                child: Column(
                   children: [
-                    // ── TOP BAR ──
+                    // ── TOP BAR (Clean Responsive Header) ──
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
+                        horizontal: 14,
+                        vertical: 8,
                       ),
-                      child: Stack(
-                        alignment: Alignment.center,
+                      child: Row(
                         children: [
-                          // Center icons: @, stickers, and audio
+                          // LEFT: Close / Back Button
+                          Tooltip(
+                            message: 'Close',
+                            child: GestureDetector(
+                              onTap: () =>
+                                  _closeFullScreenTextEditor(save: true),
+                              behavior: HitTestBehavior.opaque,
+                              child: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white24,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.close_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          const Spacer(),
+
+                          // RIGHT: [ @ ] [ Emoji ] [ Audio ] [ Done ]
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              GestureDetector(
-                                onTap: _showMentionSheet,
-                                child: Container(
-                                  width: 38,
-                                  height: 38,
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.45),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white24,
-                                      width: 1,
+                              // 1. @ Mention Button
+                              Tooltip(
+                                message: 'Mention',
+                                child: GestureDetector(
+                                  onTap: _showMentionSheet,
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.45,
+                                      ),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white24,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.alternate_email_rounded,
+                                      color: Colors.white,
+                                      size: 18,
                                     ),
                                   ),
-                                  child: const Icon(
-                                    Icons.alternate_email_rounded,
-                                    color: Colors.white,
-                                    size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+
+                              // 2. Emoji / Sticker Button
+                              Tooltip(
+                                message: 'Stickers',
+                                child: GestureDetector(
+                                  onTap: _openEmojiPicker,
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.45,
+                                      ),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white24,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.sentiment_satisfied_alt_outlined,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+
+                              // 3. Audio / Music Button
+                              Tooltip(
+                                message: 'Music',
+                                child: GestureDetector(
+                                  onTap: _showMusicSheet,
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.45,
+                                      ),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white24,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.graphic_eq_rounded,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              GestureDetector(
-                                onTap: _openEmojiPicker,
-                                child: Container(
-                                  width: 38,
-                                  height: 38,
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.45),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white24,
-                                      width: 1,
+
+                              // 4. Done Button
+                              Tooltip(
+                                message: 'Done',
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      _closeFullScreenTextEditor(save: true),
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 7,
                                     ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.sentiment_satisfied_alt_outlined,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              GestureDetector(
-                                onTap: _showMusicSheet,
-                                child: Container(
-                                  width: 38,
-                                  height: 38,
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.45),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white24,
-                                      width: 1,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.graphic_eq_rounded,
-                                    color: Colors.white,
-                                    size: 20,
+                                    child: const Text(
+                                      'Done',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13.5,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ],
-                          ),
-                          // Right: Editor Confirmation Action (Done)
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: GestureDetector(
-                              onTap: () =>
-                                  _closeFullScreenTextEditor(save: true),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 7.5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: const Text(
-                                  'Done',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 14,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ),
-                            ),
                           ),
                         ],
                       ),
@@ -4768,6 +4891,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                             ? const SizedBox.expand()
                             : Center(
                                 child: SingleChildScrollView(
+                                  physics: const BouncingScrollPhysics(),
                                   padding: EdgeInsets.symmetric(
                                     horizontal: screenWidth * 0.08,
                                   ),
@@ -4784,15 +4908,20 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
                     // ── CONTEXTUAL SECONDARY CONTROL BAR (Shown ONLY when an option is selected) ──
                     if (_activeContextTool != ActiveContextTool.none)
-                      _buildContextualControlBar(),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildContextualControlBar(),
+                      ),
 
                     // ── PRIMARY TOOLBAR CAPSULE (Compact, simplified icons) ──
                     Padding(
                       padding: EdgeInsets.only(
                         left: 16,
                         right: 16,
-                        bottom: keyboardHeight > 0 ? keyboardHeight + 8 : 20,
                         top: 8,
+                        bottom: keyboardHeight > 0
+                            ? (keyboardHeight + 8)
+                            : (bottomPadding > 0 ? bottomPadding + 8 : 20),
                       ),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -4814,207 +4943,225 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                             ),
                           ],
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            // 1. Color / Background Control
-                            _buildPrimaryEditorToolBtn(
-                              active:
-                                  _activeContextTool == ActiveContextTool.color,
-                              tooltip: 'Color',
-                              child: ShaderMask(
-                                shaderCallback: (bounds) => const SweepGradient(
-                                  colors: [
-                                    Colors.red,
-                                    Colors.orange,
-                                    Colors.yellow,
-                                    Colors.green,
-                                    Colors.blue,
-                                    Colors.purple,
-                                    Colors.red,
-                                  ],
-                                ).createShader(bounds),
-                                child: const Icon(
-                                  Icons.circle,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                              onTap: () => setState(() {
-                                _activeContextTool =
-                                    _activeContextTool ==
-                                        ActiveContextTool.color
-                                    ? ActiveContextTool.none
-                                    : ActiveContextTool.color;
-                              }),
-                            ),
-
-                            // 2. Alignment Toggle (☰)
-                            _buildPrimaryEditorToolBtn(
-                              active: false,
-                              tooltip: 'Alignment',
-                              child: Icon(
-                                _activeTextAlign == TextAlign.center
-                                    ? Icons.format_align_center_rounded
-                                    : _activeTextAlign == TextAlign.left
-                                    ? Icons.format_align_left_rounded
-                                    : Icons.format_align_right_rounded,
-                                color: Colors.white,
-                                size: 22,
-                              ),
-                              onTap: () => setState(() {
-                                if (_activeTextAlign == TextAlign.center) {
-                                  _activeTextAlign = TextAlign.left;
-                                } else if (_activeTextAlign == TextAlign.left) {
-                                  _activeTextAlign = TextAlign.right;
-                                } else {
-                                  _activeTextAlign = TextAlign.center;
-                                }
-                                if (_editingTextLayer != null) {
-                                  _editingTextLayer!.alignment =
-                                      _activeTextAlign;
-                                }
-                              }),
-                            ),
-
-                            // 3. Font Family (Aa)
-                            _buildPrimaryEditorToolBtn(
-                              active:
-                                  _activeContextTool == ActiveContextTool.font,
-                              tooltip: 'Font',
-                              child: const Text(
-                                'Aa',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              onTap: () => setState(() {
-                                _activeContextTool =
-                                    _activeContextTool == ActiveContextTool.font
-                                    ? ActiveContextTool.none
-                                    : ActiveContextTool.font;
-                              }),
-                            ),
-
-                            // 4. Text Effects (✨)
-                            _buildPrimaryEditorToolBtn(
-                              active:
-                                  _activeContextTool ==
-                                  ActiveContextTool.effect,
-                              tooltip: 'Effects',
-                              child: const Icon(
-                                Icons.auto_awesome_rounded,
-                                color: Colors.white,
-                                size: 22,
-                              ),
-                              onTap: () => setState(() {
-                                _activeContextTool =
-                                    _activeContextTool ==
-                                        ActiveContextTool.effect
-                                    ? ActiveContextTool.none
-                                    : ActiveContextTool.effect;
-                              }),
-                            ),
-
-                            // 5. Dedicated Canvas Background Control (if in Text story mode)
-                            if (widget.type == StoryType.text)
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              // 1. Color / Background Control
                               _buildPrimaryEditorToolBtn(
                                 active:
-                                    _activeContextTool ==
-                                    ActiveContextTool.background,
-                                tooltip: 'Change background',
-                                child: _buildCurrentBgIndicatorWidget(),
+                                    _activeContextTool == ActiveContextTool.color,
+                                tooltip: 'Color',
+                                child: ShaderMask(
+                                  shaderCallback: (bounds) => const SweepGradient(
+                                    colors: [
+                                      Colors.red,
+                                      Colors.orange,
+                                      Colors.yellow,
+                                      Colors.green,
+                                      Colors.blue,
+                                      Colors.purple,
+                                      Colors.red,
+                                    ],
+                                  ).createShader(bounds),
+                                  child: const Icon(
+                                    Icons.circle,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ),
                                 onTap: () => setState(() {
                                   _activeContextTool =
                                       _activeContextTool ==
-                                          ActiveContextTool.background
+                                          ActiveContextTool.color
                                       ? ActiveContextTool.none
-                                      : ActiveContextTool.background;
+                                      : ActiveContextTool.color;
                                 }),
                               ),
 
-                            // 6. Text Box Background style toggle [Aa]
-                            _buildPrimaryEditorToolBtn(
-                              active: _activeTextBgStyle != TextBgStyle.none,
-                              tooltip: 'Text Background',
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                  vertical: 2,
+                              // 2. Alignment Toggle (☰)
+                              _buildPrimaryEditorToolBtn(
+                                active: false,
+                                tooltip: 'Alignment',
+                                child: Icon(
+                                  _activeTextAlign == TextAlign.center
+                                      ? Icons.format_align_center_rounded
+                                      : _activeTextAlign == TextAlign.left
+                                      ? Icons.format_align_left_rounded
+                                      : Icons.format_align_right_rounded,
+                                  color: Colors.white,
+                                  size: 22,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: _activeTextBgStyle != TextBgStyle.none
-                                      ? Colors.white
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: Colors.white70,
-                                    width: 1.5,
+                                onTap: () => setState(() {
+                                  if (_activeTextAlign == TextAlign.center) {
+                                    _activeTextAlign = TextAlign.left;
+                                  } else if (_activeTextAlign ==
+                                      TextAlign.left) {
+                                    _activeTextAlign = TextAlign.right;
+                                  } else {
+                                    _activeTextAlign = TextAlign.center;
+                                  }
+                                  if (_editingTextLayer != null) {
+                                    _editingTextLayer!.alignment =
+                                        _activeTextAlign;
+                                  }
+                                }),
+                              ),
+
+                              // 3. Font Family (Aa)
+                              _buildPrimaryEditorToolBtn(
+                                active:
+                                    _activeContextTool == ActiveContextTool.font,
+                                tooltip: 'Font',
+                                child: const Text(
+                                  'Aa',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
                                   ),
                                 ),
-                                child: Text(
-                                  'A',
-                                  style: TextStyle(
+                                onTap: () => setState(() {
+                                  _activeContextTool =
+                                      _activeContextTool ==
+                                          ActiveContextTool.font
+                                      ? ActiveContextTool.none
+                                      : ActiveContextTool.font;
+                                }),
+                              ),
+
+                              // 4. Text Effects (✨)
+                              _buildPrimaryEditorToolBtn(
+                                active:
+                                    _activeContextTool ==
+                                    ActiveContextTool.effect,
+                                tooltip: 'Effects',
+                                child: const Icon(
+                                  Icons.auto_awesome_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                                onTap: () => setState(() {
+                                  _activeContextTool =
+                                      _activeContextTool ==
+                                          ActiveContextTool.effect
+                                      ? ActiveContextTool.none
+                                      : ActiveContextTool.effect;
+                                }),
+                              ),
+
+                              // 5. Dedicated Canvas Background Control (if in Text story mode)
+                              if (widget.type == StoryType.text)
+                                _buildPrimaryEditorToolBtn(
+                                  active:
+                                      _activeContextTool ==
+                                      ActiveContextTool.background,
+                                  tooltip: 'Change background',
+                                  child: _buildCurrentBgIndicatorWidget(),
+                                  onTap: () => setState(() {
+                                    _activeContextTool =
+                                        _activeContextTool ==
+                                            ActiveContextTool.background
+                                        ? ActiveContextTool.none
+                                        : ActiveContextTool.background;
+                                  }),
+                                ),
+
+                              // 6. Text Box Background style toggle [Aa]
+                              _buildPrimaryEditorToolBtn(
+                                active: _activeTextBgStyle != TextBgStyle.none,
+                                tooltip: 'Text Background',
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 5,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
                                     color:
                                         _activeTextBgStyle != TextBgStyle.none
-                                        ? Colors.black
-                                        : Colors.white,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 12,
+                                        ? Colors.white
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: Colors.white70,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'A',
+                                    style: TextStyle(
+                                      color:
+                                          _activeTextBgStyle != TextBgStyle.none
+                                          ? Colors.black
+                                          : Colors.white,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
+                                onTap: () => setState(() {
+                                  if (_activeTextBgStyle == TextBgStyle.none) {
+                                    _activeTextBgStyle = TextBgStyle.rounded;
+                                  } else if (_activeTextBgStyle ==
+                                      TextBgStyle.rounded) {
+                                    _activeTextBgStyle = TextBgStyle.filled;
+                                  } else if (_activeTextBgStyle ==
+                                      TextBgStyle.filled) {
+                                    _activeTextBgStyle = TextBgStyle.outline;
+                                  } else {
+                                    _activeTextBgStyle = TextBgStyle.none;
+                                  }
+                                  if (_editingTextLayer != null) {
+                                    _editingTextLayer!.bgStyle =
+                                        _activeTextBgStyle;
+                                  }
+                                }),
                               ),
-                              onTap: () => setState(() {
-                                if (_activeTextBgStyle == TextBgStyle.none) {
-                                  _activeTextBgStyle = TextBgStyle.rounded;
-                                } else if (_activeTextBgStyle ==
-                                    TextBgStyle.rounded) {
-                                  _activeTextBgStyle = TextBgStyle.filled;
-                                } else if (_activeTextBgStyle ==
-                                    TextBgStyle.filled) {
-                                  _activeTextBgStyle = TextBgStyle.outline;
-                                } else {
-                                  _activeTextBgStyle = TextBgStyle.none;
-                                }
-                                if (_editingTextLayer != null) {
-                                  _editingTextLayer!.bgStyle =
-                                      _activeTextBgStyle;
-                                }
-                              }),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
+              ),
 
-                // ── IN-PLACE TEXT EDITING (For existing text layers on image stories) ──
-                if (isEditingExistingImageText)
-                  Positioned(
-                    left: _editingTextLayer!.offset.dx,
-                    top: _editingTextLayer!.offset.dy,
-                    child: Transform.scale(
-                      scale: _editingTextLayer!.scale,
-                      child: Transform.rotate(
-                        angle: _editingTextLayer!.rotation,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: screenWidth * 0.85 * 0.92,
-                          ),
-                          child: textInputField,
+              // ── IN-PLACE TEXT EDITING (For existing text layers on image stories) ──
+              if (isEditingExistingImageText)
+                Positioned(
+                  left: _editingTextLayer!
+                      .getCanvasOffset(Size(screenWidth, screenHeight))
+                      .dx,
+                  top: _editingTextLayer!
+                      .getCanvasOffset(Size(screenWidth, screenHeight))
+                      .dy,
+                  child: Transform.scale(
+                    scale: _editingTextLayer!.scale,
+                    child: Transform.rotate(
+                      angle: _editingTextLayer!.rotation,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: screenWidth * 0.85 * 0.92,
                         ),
+                        child: textInputField,
                       ),
                     ),
                   ),
+                ),
 
-                // ── LEFT SIDE: Vertical Font Size Slider ──
-                Positioned(
-                  left: 0,
-                  top: 70,
-                  bottom: keyboardHeight > 0 ? keyboardHeight + 120 : 180,
+              // ── LEFT SIDE: Vertical Font Size Slider ──
+              Positioned(
+                left: 0,
+                top: topPadding + 60,
+                height: (screenHeight -
+                        (topPadding + 60) -
+                        (keyboardHeight > 0
+                            ? keyboardHeight + 80
+                            : (bottomPadding > 0 ? bottomPadding + 90 : 100)))
+                    .clamp(60.0, 320.0),
+                child: Center(
                   child: RotatedBox(
                     quarterTurns: 3,
                     child: SliderTheme(
@@ -5045,8 +5192,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -5055,10 +5202,10 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   Widget _buildContextualControlBar() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: const Color(0xF518181A),
+        color: const Color(0xF2161618),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.12),
@@ -5066,7 +5213,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
+            color: Colors.black.withValues(alpha: 0.45),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -5090,31 +5237,32 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                     : "Background",
                 style: const TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  letterSpacing: 0.3,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  letterSpacing: 0.2,
                 ),
               ),
               GestureDetector(
                 onTap: () =>
                     setState(() => _activeContextTool = ActiveContextTool.none),
+                behavior: HitTestBehavior.opaque,
                 child: Container(
-                  width: 24,
-                  height: 24,
+                  width: 26,
+                  height: 26,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.white.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.close_rounded,
                     color: Colors.white70,
-                    size: 16,
+                    size: 15,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
           // Contextual Body
           if (_activeContextTool == ActiveContextTool.color)
@@ -5288,8 +5436,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             }),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              width: 92,
-              padding: const EdgeInsets.all(8),
+              width: 96,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
               decoration: BoxDecoration(
                 color: isSel
                     ? Colors.white
@@ -5324,13 +5472,18 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        name,
-                        style: TextStyle(
-                          color: isSel ? Colors.black : Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11.5,
+                      Flexible(
+                        child: Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isSel ? Colors.black : Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11.5,
+                          ),
                         ),
                       ),
                       if (isSel) ...[
@@ -5399,32 +5552,34 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   Widget _buildContextualBackgroundSelector() {
     final categories = [
+      'Gradients',
       'Solid',
       'Pastel',
       'Trending',
       'Fairy',
       'Aesthetic',
       'Minimal',
-      'Gradients',
     ];
     final categoryLabels = {
+      'Gradients': '🌈 Gradients',
       'Solid': '🎨 Solid',
       'Pastel': '💖 Pastel',
       'Trending': '🔥 Trending',
       'Fairy': '✨ Fairy',
       'Aesthetic': '☕ Aesthetic',
       'Minimal': '🖤 Minimal',
-      'Gradients': '🌈 All Gradients',
     };
 
     Widget contentWidget;
 
     if (_selectedBgCategory == 'Solid') {
       contentWidget = SizedBox(
-        height: 74,
+        height: 52,
         child: ListView.separated(
+          key: const ValueKey('solid_bg_list'),
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
           itemCount: _solidBgColors.length,
           separatorBuilder: (_, _) => const SizedBox(width: 10),
           itemBuilder: (_, i) {
@@ -5436,41 +5591,38 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             final checkColor = lum > 0.5 ? Colors.black : Colors.white;
 
             return GestureDetector(
+              key: ValueKey('solid_item_${color.toARGB32()}'),
               onTap: () => setState(() {
                 _storyBgMode = StoryBgMode.solid;
                 _selectedSolidBgColor = color;
               }),
-              child: AnimatedScale(
-                scale: isSel ? 1.10 : 1.0,
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSel
-                          ? (lum > 0.5 ? Colors.black : Colors.white)
-                          : Colors.white.withValues(alpha: 0.25),
-                      width: isSel ? 3.0 : 1.2,
-                    ),
-                    boxShadow: isSel
-                        ? [
-                            BoxShadow(
-                              color: color.withValues(alpha: 0.65),
-                              blurRadius: 12,
-                              spreadRadius: 1.5,
-                            ),
-                          ]
-                        : null,
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSel
+                        ? (lum > 0.5 ? Colors.black : Colors.white)
+                        : Colors.white.withValues(alpha: 0.22),
+                    width: isSel ? 2.5 : 1.0,
                   ),
-                  child: isSel
-                      ? Icon(Icons.check_rounded, size: 22, color: checkColor)
+                  boxShadow: isSel
+                      ? [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.45),
+                            blurRadius: 8,
+                            spreadRadius: 0,
+                          ),
+                        ]
                       : null,
                 ),
+                child: isSel
+                    ? Icon(Icons.check_rounded, size: 20, color: checkColor)
+                    : null,
               ),
             );
           },
@@ -5483,12 +5635,14 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           : _bgPresets.where((p) => p.category == _selectedBgCategory).toList();
 
       contentWidget = SizedBox(
-        height: 74,
+        height: 76,
         child: ListView.separated(
+          key: ValueKey('gradient_bg_list_$_selectedBgCategory'),
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
           itemCount: filteredPresets.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          separatorBuilder: (_, _) => const SizedBox(width: 10),
           itemBuilder: (_, i) {
             final preset = filteredPresets[i];
             final actualIndex = _bgPresets.indexOf(preset);
@@ -5498,99 +5652,97 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             final isDark = preset.colors.first.computeLuminance() < 0.45;
 
             return GestureDetector(
+              key: ValueKey('gradient_item_${preset.name}'),
               onTap: () => setState(() {
                 _storyBgMode = StoryBgMode.gradient;
                 _gradientIdx = actualIndex;
               }),
-              child: AnimatedScale(
-                scale: isSel ? 1.05 : 1.0,
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  width: 74,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 6,
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                width: 84,
+                height: 76,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: preset.colors,
+                    begin: preset.begin,
+                    end: preset.end,
                   ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: preset.colors,
-                      begin: preset.begin,
-                      end: preset.end,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isSel
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.2),
-                      width: isSel ? 2.5 : 1.0,
-                    ),
-                    boxShadow: isSel
-                        ? [
-                            BoxShadow(
-                              color: preset.colors.first.withValues(
-                                alpha: 0.65,
-                              ),
-                              blurRadius: 12,
-                              spreadRadius: 1.5,
-                            ),
-                          ]
-                        : null,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSel
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.18),
+                    width: isSel ? 2.5 : 1.0,
                   ),
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              preset.emoji,
-                              style: const TextStyle(fontSize: 18),
+                  boxShadow: isSel
+                      ? [
+                          BoxShadow(
+                            color: preset.colors.first.withValues(
+                              alpha: 0.45,
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              preset.name,
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: isDark ? Colors.white : Colors.black87,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 9.5,
-                                shadows: isDark
-                                    ? const [
-                                        Shadow(
-                                          blurRadius: 4,
-                                          color: Colors.black54,
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (isSel)
-                        Positioned(
-                          top: 2,
-                          right: 2,
-                          child: Container(
-                            width: 15,
-                            height: 15,
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.white : Colors.black,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.check_rounded,
-                              size: 11,
-                              color: isDark ? Colors.black : Colors.white,
+                            blurRadius: 8,
+                            spreadRadius: 0,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            preset.emoji,
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            preset.name,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black87,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 10,
+                              shadows: isDark
+                                  ? const [
+                                      Shadow(
+                                        blurRadius: 4,
+                                        color: Colors.black54,
+                                      ),
+                                    ]
+                                  : null,
                             ),
                           ),
+                        ],
+                      ),
+                    ),
+                    if (isSel)
+                      Positioned(
+                        top: 2,
+                        right: 2,
+                        child: Container(
+                          width: 18,
+                          height: 18,
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white : Colors.black,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.check_rounded,
+                            size: 12,
+                            color: isDark ? Colors.black : Colors.white,
+                          ),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
               ),
             );
@@ -5603,53 +5755,58 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Category Filter Pills (with smooth horizontal scroll & guaranteed 0 overflow)
+        // Category Filter Tabs (Single horizontal scrollable row with guaranteed 0 overflow)
         SizedBox(
-          height: 34,
-          child: SingleChildScrollView(
+          height: 36,
+          child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: categories.map((cat) {
-                final isCatSel = _selectedBgCategory == cat;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: GestureDetector(
-                    onTap: () => setState(() => _selectedBgCategory = cat),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 160),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isCatSel
-                            ? Colors.white
-                            : Colors.white.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Center(
-                        child: Text(
-                          categoryLabels[cat] ?? cat,
-                          style: TextStyle(
-                            color: isCatSel ? Colors.black : Colors.white70,
-                            fontWeight: isCatSel
-                                ? FontWeight.bold
-                                : FontWeight.w600,
-                            fontSize: 11.5,
-                          ),
-                        ),
+            itemCount: categories.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (context, i) {
+              final cat = categories[i];
+              final isCatSel = _selectedBgCategory == cat;
+              return GestureDetector(
+                onTap: () => setState(() => _selectedBgCategory = cat),
+                behavior: HitTestBehavior.opaque,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isCatSel
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: isCatSel
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.12),
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      categoryLabels[cat] ?? cat,
+                      style: TextStyle(
+                        color: isCatSel ? Colors.black : Colors.white70,
+                        fontWeight: isCatSel
+                            ? FontWeight.bold
+                            : FontWeight.w600,
+                        fontSize: 12,
                       ),
                     ),
                   ),
-                );
-              }).toList(),
-            ),
+                ),
+              );
+            },
           ),
         ),
         const SizedBox(height: 8),
 
-        // Content (Solid / Gradients)
+        // Content Swatches (Solid / Gradients)
         contentWidget,
       ],
     );
@@ -6686,6 +6843,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.black,
+        resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
             // 1. Primary Full-Screen Immersive Canvas (Media / Text)
@@ -6756,8 +6914,9 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Row 1: Header (Close X button + Centered Title)
+                          // Row 1: Header (Close X button)
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               IconButton(
                                 icon: const Icon(
@@ -6773,30 +6932,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                   }
                                 },
                               ),
-
-                              Expanded(
-                                child: Center(
-                                  child: Text(
-                                    widget.type == StoryType.text
-                                        ? "Create Story"
-                                        : "Preview Story",
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black54,
-                                          blurRadius: 8,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                              // Placeholder to balance close button
-                              const SizedBox(width: 48, height: 48),
+                              const Spacer(),
                             ],
                           ),
 
@@ -6898,7 +7034,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                     child: SafeArea(
                       top: false,
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -6906,7 +7042,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                             if (_activeContextTool !=
                                 ActiveContextTool.none) ...[
                               _buildContextualControlBar(),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 6),
                             ],
 
                             // Unified Glassmorphic Toolbar Capsule (Icon Buttons with 44px Touch Targets)
@@ -7008,7 +7144,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                               ),
                             ),
 
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
 
                             // 2. Story Privacy Indicator & Settings Entry Bar
                             _buildStoryPrivacyBar(),

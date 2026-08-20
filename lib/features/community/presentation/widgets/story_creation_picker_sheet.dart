@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../domain/models/story_model.dart';

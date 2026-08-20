@@ -372,7 +372,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                             );
                           },
                           child: Text(
-                            'See All →',
+                            'See All',
                             style: TextStyle(
                               color: textMuted,
                               fontSize: 12,

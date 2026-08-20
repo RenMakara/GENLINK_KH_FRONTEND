@@ -1,3 +1,5 @@
+import 'community_models.dart';
+
 class PollOptionModel {
   final String text;
   int votes;
@@ -26,6 +28,7 @@ class CommunityPostModel {
   int get repostsCount => sharesCount;
   bool isLiked;
   bool isBookmarked;
+  bool isFollowing;
   final bool isOwner;
   final String visibility;
   final String community;
@@ -41,6 +44,7 @@ class CommunityPostModel {
   final bool allowMultipleAnswers;
   final bool hideResultsUntilVote;
   final List<CommentModel> comments;
+  final EventModel? attachedEvent;
 
   CommunityPostModel({
     required this.id,
@@ -57,6 +61,7 @@ class CommunityPostModel {
     this.sharesCount = 0,
     this.isLiked = false,
     this.isBookmarked = false,
+    this.isFollowing = false,
     this.isOwner = false,
     this.visibility = 'Public',
     this.community = 'All GenLink',
@@ -72,6 +77,7 @@ class CommunityPostModel {
     this.allowMultipleAnswers = false,
     this.hideResultsUntilVote = true,
     this.comments = const [],
+    this.attachedEvent,
   });
 
   CommunityPostModel copyWith({
@@ -89,6 +95,7 @@ class CommunityPostModel {
     int? sharesCount,
     bool? isLiked,
     bool? isBookmarked,
+    bool? isFollowing,
     bool? isOwner,
     String? visibility,
     String? community,
@@ -103,6 +110,7 @@ class CommunityPostModel {
     String? pollDuration,
     bool? allowMultipleAnswers,
     List<CommentModel>? comments,
+    EventModel? attachedEvent,
   }) {
     return CommunityPostModel(
       id: id ?? this.id,
@@ -119,6 +127,7 @@ class CommunityPostModel {
       sharesCount: sharesCount ?? this.sharesCount,
       isLiked: isLiked ?? this.isLiked,
       isBookmarked: isBookmarked ?? this.isBookmarked,
+      isFollowing: isFollowing ?? this.isFollowing,
       isOwner: isOwner ?? this.isOwner,
       visibility: visibility ?? this.visibility,
       community: community ?? this.community,
@@ -133,6 +142,7 @@ class CommunityPostModel {
       pollDuration: pollDuration ?? this.pollDuration,
       allowMultipleAnswers: allowMultipleAnswers ?? this.allowMultipleAnswers,
       comments: comments ?? this.comments,
+      attachedEvent: attachedEvent ?? this.attachedEvent,
     );
   }
 

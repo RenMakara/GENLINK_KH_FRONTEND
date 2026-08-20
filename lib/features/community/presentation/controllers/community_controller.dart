@@ -8,6 +8,7 @@ import '../../../../core/network/dio_provider.dart';
 import '../../data/datasources/community_remote_datasource.dart';
 import '../../data/repositories/community_repository_impl.dart';
 import '../../domain/models/community_post_model.dart';
+import '../../domain/models/community_models.dart';
 import '../../domain/repositories/community_repository.dart';
 
 class CommunityController extends GetxController {
@@ -16,6 +17,7 @@ class CommunityController extends GetxController {
   final ScrollController scrollController = ScrollController();
 
   final selectedCategory = 'Feed'.obs;
+  final selectedForumCategory = 'All'.obs;
   final categories = ['Feed', 'Forum', 'Career', 'Event'];
 
   // Feed State & Pagination
@@ -96,6 +98,74 @@ class CommunityController extends GetxController {
           'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
     ),
   ].obs;
+
+  // ── Event State ───────────────────────────────────────────────────────────
+  /// Local-first reactive event list. Prepend newly created events at index 0.
+  final events = <EventModel>[
+    EventModel(
+      id: 'ev1',
+      title: 'Flutter Workshop 2026',
+      subtitle: 'Build Cross-platform Apps with Flutter',
+      organizerName: 'GenLink Cambodia',
+      eventType: 'In person',
+      location: 'ACLEDA University, Phnom Penh',
+      dateString: '25 Jul 2026',
+      timeString: '9:00 AM – 4:00 PM',
+      description:
+          'Join us for an intensive hands-on workshop where you will learn how to build beautiful and high-performance cross-platform applications using Flutter.\n\nWhether you are a beginner or looking to enhance your skills, this workshop covers clean architecture, state management, and real-world backend API integration.',
+      category: 'Workshop',
+      imageUrl:
+          'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800',
+      attendeesCount: 120,
+    ),
+    EventModel(
+      id: 'ev2',
+      title: 'AI in Everyday Life',
+      subtitle: 'Explore how AI is changing the world',
+      organizerName: 'Institute of Technology',
+      eventType: 'Online',
+      onlineLink: 'https://meet.google.com/abc-defg-hij',
+      dateString: '26 Jul 2026',
+      timeString: '2:00 PM – 5:00 PM',
+      description:
+          'Discover how artificial intelligence is transforming daily life. From smart assistants to recommendation systems, explore the technology behind the future.',
+      category: 'Seminar',
+      imageUrl:
+          'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800',
+      attendeesCount: 85,
+    ),
+    EventModel(
+      id: 'ev3',
+      title: 'GenLink Hackathon 2026',
+      subtitle: 'Code. Solve. Impact.',
+      organizerName: 'GenLink Cambodia',
+      eventType: 'In person',
+      location: 'Diamond Island Convention Center',
+      dateString: '30 Jul 2026',
+      timeString: '8:00 AM – 8:00 PM',
+      description:
+          '12 hours. Real problems. Real prizes. Join hundreds of Cambodia\'s brightest minds and build solutions that matter.',
+      category: 'Hackathon',
+      imageUrl:
+          'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800',
+      attendeesCount: 230,
+    ),
+  ].obs;
+
+  /// Prepends a newly created event to the top of [events].
+  void createEvent(EventModel event) {
+    events.insert(0, event);
+  }
+
+  /// Toggles RSVP state for the event with [eventId].
+  void toggleRsvp(String eventId) {
+    final idx = events.indexWhere((e) => e.id == eventId);
+    if (idx == -1) return;
+    final ev = events[idx];
+    ev.isRsvped = !ev.isRsvped;
+    ev.attendeesCount += ev.isRsvped ? 1 : -1;
+    events.refresh();
+  }
 
   @override
   void onInit() {
@@ -201,6 +271,7 @@ class CommunityController extends GetxController {
     List<PollOptionModel>? pollOptions,
     String? pollDuration,
     bool allowMultipleAnswers = false,
+    EventModel? attachedEvent,
   }) async {
     isUploadingPost.value = true;
     uploadProgress.value = 0.3;
@@ -225,6 +296,7 @@ class CommunityController extends GetxController {
         pollOptions: pollOptions,
         pollDuration: pollDuration,
         allowMultipleAnswers: allowMultipleAnswers,
+        attachedEvent: attachedEvent,
       );
 
       posts.insert(0, richPost);
@@ -333,6 +405,7 @@ class CommunityController extends GetxController {
     List<PollOptionModel>? pollOptions,
     String? pollDuration,
     bool? allowMultipleAnswers,
+    EventModel? attachedEvent,
   }) async {
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
@@ -348,6 +421,7 @@ class CommunityController extends GetxController {
         pollOptions: pollOptions,
         pollDuration: pollDuration,
         allowMultipleAnswers: allowMultipleAnswers,
+        attachedEvent: attachedEvent,
       );
       await repository.updatePost(postId, content: content);
     }
@@ -366,6 +440,7 @@ class CommunityController extends GetxController {
     List<PollOptionModel>? pollOptions,
     String? pollDuration,
     bool allowMultipleAnswers = false,
+    EventModel? attachedEvent,
   }) =>
       addNewPost(
         content: content,
@@ -380,6 +455,7 @@ class CommunityController extends GetxController {
         pollOptions: pollOptions,
         pollDuration: pollDuration,
         allowMultipleAnswers: allowMultipleAnswers,
+        attachedEvent: attachedEvent,
       );
 
   Future<void> updatePost({
@@ -395,6 +471,7 @@ class CommunityController extends GetxController {
     List<PollOptionModel>? pollOptions,
     String? pollDuration,
     bool? allowMultipleAnswers,
+    EventModel? attachedEvent,
   }) =>
       editPostFull(
         postId: postId,
@@ -409,6 +486,7 @@ class CommunityController extends GetxController {
         pollOptions: pollOptions,
         pollDuration: pollDuration,
         allowMultipleAnswers: allowMultipleAnswers,
+        attachedEvent: attachedEvent,
       );
 
   void repostPost(String postId, {String? caption}) {

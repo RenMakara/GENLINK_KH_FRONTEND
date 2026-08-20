@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
-        android:label="genlink_frontend"
+        android:label="GenLink KH"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

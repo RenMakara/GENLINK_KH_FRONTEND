@@ -356,7 +356,7 @@ class EWalletScreen extends StatelessWidget {
                       );
                     },
                     child: Text(
-                      'See All →',
+                      'See All',
                       style: TextStyle(
                         color: textMuted,
                         fontSize: 12,

@@ -38,7 +38,7 @@ class AuthController extends GetxController {
   // ── Observable State ──────────────────────────────────────────────────
 
   final isLoading = false.obs;
-  final isAuthenticated = true.obs;
+  final isAuthenticated = false.obs;
   final currentUser = Rxn<UserEntity>();
   final errorMessage = RxnString();
 
@@ -107,6 +107,31 @@ class AuthController extends GetxController {
       await _persistSession(session);
       return true;
     });
+  }
+
+  /// Instant demo login for testing without a backend account.
+  Future<void> demoLogin() async {
+    const demoSession = AuthSession(
+      accessToken: 'demo_access_token',
+      refreshToken: 'demo_refresh_token',
+      tokenType: 'Bearer',
+      user: UserEntity(
+        id: 'demo_user_1',
+        fullName: 'Sokny Enat',
+        username: 'sokny_enat',
+        email: 'sokny@genlink.kh',
+        avatarUrl: 'https://i.pravatar.cc/150?img=32',
+        universityName: 'ACLEDA University of Business',
+        active: true,
+        emailVerified: true,
+        accountStatus: 'ACTIVE',
+        preferredLanguage: 'en',
+        role: 'USER',
+        totalXp: 250,
+        level: 5,
+      ),
+    );
+    await _persistSession(demoSession);
   }
 
   // ── Register ──────────────────────────────────────────────────────────
@@ -254,10 +279,10 @@ class AuthController extends GetxController {
 
   /// Called by the network layer when a token refresh fails and the
   /// session is unrecoverable.
-  void onSessionExpired() {
-    if (!isAuthenticated.value) return;
+  Future<void> onSessionExpired() async {
     isAuthenticated.value = false;
     currentUser.value = null;
+    await _clearSession();
     Get.offAllNamed<void>(AppRoutes.login);
   }
 

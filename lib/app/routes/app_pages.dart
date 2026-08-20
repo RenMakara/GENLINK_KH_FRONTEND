@@ -79,12 +79,10 @@ abstract final class AppPages {
     GetPage<dynamic>(
       name: AppRoutes.login,
       page: () => const LoginScreen(),
-      middlewares: [AuthMiddleware()],
     ),
     GetPage<dynamic>(
       name: AppRoutes.register,
       page: () => const RegisterScreen(),
-      middlewares: [AuthMiddleware()],
     ),
     GetPage<dynamic>(
       name: AppRoutes.verifyEmail,

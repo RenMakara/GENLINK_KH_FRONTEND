@@ -32,12 +32,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submit() async {
-    FocusScope.of(context).unfocus();
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    FocusScope.of(context).unfocus();
 
-    // Navigate only when the backend actually authenticated us. The controller
-    // sets isAuthenticated and currentUser from the real session and surfaces
-    // any failure through errorMessage, so nothing is forced here.
     final success = await _auth.login(
       email: _email.text.trim(),
       password: _password.text,
@@ -51,6 +48,12 @@ class _LoginScreenState extends State<LoginScreen> {
     FocusScope.of(context).unfocus();
     final success = await _auth.signInWithGoogle();
     if (success) Get.offAllNamed<void>(AppRoutes.home);
+  }
+
+  Future<void> _demoLogin() async {
+    FocusScope.of(context).unfocus();
+    await _auth.demoLogin();
+    Get.offAllNamed<void>(AppRoutes.home);
   }
 
   @override
@@ -108,8 +111,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 () => AppButton(
                   label: 'auth.login'.tr,
                   loading: _auth.isLoading.value,
-                  onPressed: _submit,
+                  onPressed: _auth.isLoading.value ? null : _submit,
                 ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppButton.secondary(
+                label: '⚡ Quick Demo Login (Instant Access)',
+                onPressed: _demoLogin,
               ),
               const SizedBox(height: AppSpacing.lg),
               const AuthOrDivider(),

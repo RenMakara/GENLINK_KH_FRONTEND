@@ -6,6 +6,7 @@ import '../../../../design_system/colors/app_colors.dart';
 import '../../domain/models/story_model.dart';
 import '../screens/story_creator_screen.dart';
 import '../screens/in_app_camera_screen.dart';
+import '../screens/story_gallery_screen.dart';
 
 class StoryCreationPickerSheet extends StatelessWidget {
   const StoryCreationPickerSheet({super.key});
@@ -21,37 +22,9 @@ class StoryCreationPickerSheet extends StatelessWidget {
     );
   }
 
-  Future<void> _pickFromGallery(BuildContext context) async {
-    try {
-      final picker = ImagePicker();
-      final XFile? media = await picker.pickMedia(imageQuality: 95);
-
-      Get.back();
-
-      if (media != null) {
-        final pathLower = media.path.toLowerCase();
-        final isVideo = pathLower.endsWith('.mp4') ||
-            pathLower.endsWith('.mov') ||
-            pathLower.endsWith('.avi') ||
-            pathLower.endsWith('.mkv') ||
-            pathLower.endsWith('.webm');
-
-        Get.to(
-          () => StoryCreatorScreen(
-            type: isVideo ? StoryType.video : StoryType.photo,
-            mediaPath: media.path,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        AppNotificationBanner.showDanger(
-          context: context,
-          title: "Media Selection Error",
-          message: "Could not open media file picker: $e",
-        );
-      }
-    }
+  void _pickFromGallery(BuildContext context) {
+    Get.back();
+    Get.to(() => const StoryGalleryScreen());
   }
 
   void _openCamera(BuildContext context) {
@@ -135,7 +108,7 @@ class StoryCreationPickerSheet extends StatelessWidget {
                 child: Icon(Icons.camera_alt_rounded, color: textPrimary, size: 22),
               ),
               title: Text(
-                "Camera",
+                'community.camera'.tr,
                 style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
               onTap: () => _openCamera(context),
@@ -159,7 +132,7 @@ class StoryCreationPickerSheet extends StatelessWidget {
                 child: Icon(Icons.photo_library_rounded, color: textPrimary, size: 22),
               ),
               title: Text(
-                "Gallery",
+                'community.gallery'.tr,
                 style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
               onTap: () => _pickFromGallery(context),
@@ -183,7 +156,7 @@ class StoryCreationPickerSheet extends StatelessWidget {
                 child: Icon(Icons.title_rounded, color: textPrimary, size: 22),
               ),
               title: Text(
-                "Text Story",
+                'community.textStory'.tr,
                 style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
               onTap: () => _openTextStory(context),

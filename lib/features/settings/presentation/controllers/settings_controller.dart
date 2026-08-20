@@ -63,11 +63,7 @@ class SettingsController extends GetxController {
     settings.value = settings.value.copyWith(theme: theme);
     await _theme.applyBackendTheme(theme);
 
-    final saved = await _patch(theme: theme);
-    if (!saved) {
-      settings.value = settings.value.copyWith(theme: previous);
-      await _theme.applyBackendTheme(previous);
-    }
+    await _patch(theme: theme);
   }
 
   Future<void> setLanguage(String language) async {
@@ -77,11 +73,7 @@ class SettingsController extends GetxController {
     settings.value = settings.value.copyWith(language: language);
     await _localization.setLanguage(language);
 
-    final saved = await _patch(language: language);
-    if (!saved) {
-      settings.value = settings.value.copyWith(language: previous);
-      await _localization.setLanguage(previous);
-    }
+    await _patch(language: language);
   }
 
   // ── Toggles ───────────────────────────────────────────────────────────

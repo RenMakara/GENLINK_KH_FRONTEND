@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
-import '../../../../design_system/shadows/app_shadows.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../controllers/community_controller.dart';
 import '../widgets/community_header_widget.dart';
@@ -12,7 +11,11 @@ import '../widgets/post_card_widget.dart';
 import '../widgets/story_tray_widget.dart';
 import 'community_search_screen.dart';
 import 'create_post_screen.dart';
+import 'create_discussion_screen.dart';
 import 'event_details_screen.dart';
+import 'forum_category_screen.dart';
+import 'forum_discussion_screen.dart';
+import '../../domain/models/community_models.dart';
 import 'widgets/community_widgets.dart';
 
 /// GenLink KH Community Screen
@@ -54,10 +57,10 @@ class CommunityScreen extends GetView<CommunityController> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680),
+          constraints: const BoxConstraints(maxWidth: 600),
           child: Column(
             children: [
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: 6),
 
               // STICKY NAVIGATION TABS (Feed, Forum, Career, Event)
               Obx(
@@ -93,27 +96,17 @@ class CommunityScreen extends GetView<CommunityController> {
                             ),
                             child: Text(
                               'community.${cat.toLowerCase()}'.tr,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                    color: isSelected
-                                        ? (isDark
-                                            ? AppColors.darkTextInverse
-                                            : AppColors.lightTextInverse)
-                                        : textSecondary,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.w500,
-                                  ) ??
-                                  TextStyle(
-                                    color: isSelected
-                                        ? (isDark
-                                            ? AppColors.darkTextInverse
-                                            : AppColors.lightTextInverse)
-                                        : textSecondary,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.w500,
-                                    fontSize: 14,
-                                  ),
+                              style: TextStyle(
+                                color: isSelected
+                                    ? (isDark
+                                        ? AppColors.darkTextInverse
+                                        : AppColors.lightTextInverse)
+                                    : textSecondary,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                fontSize: 13.5,
+                              ),
                             ),
                           ),
                         ),
@@ -123,7 +116,7 @@ class CommunityScreen extends GetView<CommunityController> {
                 ),
               ),
 
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: 10),
 
               // DYNAMIC TAB CONTENT BODY
               Expanded(
@@ -156,7 +149,6 @@ class CommunityScreen extends GetView<CommunityController> {
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 
     return RefreshIndicator(
       onRefresh: () => controller.refreshFeed(),
@@ -173,55 +165,82 @@ class CommunityScreen extends GetView<CommunityController> {
 
             const SizedBox(height: AppSpacing.md),
 
-            // Create Post Quick Bar
+            // Create Post Quick Bar (Senior UI/UX Redesign - Finance Aligned)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               child: InkWell(
                 onTap: () => Get.to(() => const CreatePostScreen()),
-                borderRadius: BorderRadius.circular(AppRadius.squircle),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: 14,
+                    horizontal: 14,
+                    vertical: 10,
                   ),
                   decoration: BoxDecoration(
                     color: surfaceSecondary,
-                    borderRadius: BorderRadius.circular(AppRadius.squircle),
-                    border: Border.all(color: borderSubtle, width: 1.2),
-                    boxShadow: isDark ? [] : AppShadows.soft,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    boxShadow: isDark
+                        ? []
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const CircleAvatar(
-                        radius: 20,
-                        backgroundImage:
-                            AssetImage('assets/images/user_profile.png'),
+                        radius: 18,
+                        backgroundImage: AssetImage('assets/images/user_profile.png'),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
-                          "What's happening in your community, Sokny?",
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                                color: textMuted,
-                              ) ??
-                              TextStyle(
-                                color: textMuted,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                              ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'community.whatsHappeningSokny'.tr,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13.5,
+                                  ) ??
+                                  TextStyle(
+                                    color: textPrimary,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              'community.shareWithCommunity'.tr,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                    color: textMuted,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w400,
+                                  ) ??
+                                  TextStyle(
+                                    color: textMuted,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                            ),
+                          ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.sm),
-                        decoration: BoxDecoration(
-                          color: AppColors.communityAccent.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(AppRadius.md + 4),
-                        ),
-                        child: const Icon(
-                          Icons.photo_library_outlined,
-                          color: AppColors.communityAccent,
-                          size: 20,
-                        ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.edit_note_rounded,
+                        color: textMuted.withValues(alpha: 0.7),
+                        size: 20,
                       ),
                     ],
                   ),
@@ -258,7 +277,7 @@ class CommunityScreen extends GetView<CommunityController> {
                       Text(
                         controller.errorMessage.value.isNotEmpty
                             ? controller.errorMessage.value
-                            : 'Could not load feed',
+                            : 'community.couldNotLoadFeed'.tr,
                         style: theme.textTheme.bodyMedium?.copyWith(color: textSecondary) ??
                             TextStyle(color: textSecondary, fontSize: 14),
                         textAlign: TextAlign.center,
@@ -267,7 +286,7 @@ class CommunityScreen extends GetView<CommunityController> {
                       ElevatedButton.icon(
                         onPressed: () => controller.fetchPosts(),
                         icon: const Icon(Icons.refresh, size: 18),
-                        label: const Text('Retry'),
+                        label: Text('common.retry'.tr),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.communityAccent,
                           foregroundColor: textPrimary,
@@ -283,7 +302,7 @@ class CommunityScreen extends GetView<CommunityController> {
                   padding: const EdgeInsets.all(AppSpacing.xl),
                   child: Center(
                     child: Text(
-                      'No community posts yet.',
+                      'community.noPostsYet'.tr,
                       style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
                           TextStyle(color: textMuted),
                     ),
@@ -335,16 +354,100 @@ class CommunityScreen extends GetView<CommunityController> {
     final isDark = theme.brightness == Brightness.dark;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final surfaceSecondary = isDark ? const Color(0xFF171717) : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? const Color(0xFF303030) : AppColors.lightBorderSubtle;
+
+    final categoriesList = [
+      {'title': 'Technology', 'count': '342 Discussions', 'icon': Icons.laptop_chromebook_rounded},
+      {'title': 'Campus Life', 'count': '189 Discussions', 'icon': Icons.school_outlined},
+      {'title': 'Projects', 'count': '120 Discussions', 'icon': Icons.rocket_launch_outlined},
+      {'title': 'Study & Education', 'count': '256 Discussions', 'icon': Icons.menu_book_rounded},
+      {'title': 'Career', 'count': '145 Discussions', 'icon': Icons.work_outline_rounded},
+      {'title': 'Events', 'count': '98 Discussions', 'icon': Icons.event_outlined},
+    ];
+
+    final trendingTopics = [
+      '#Technology',
+      '#CampusLife',
+      '#Projects',
+      '#Study & Education',
+      '#Career',
+    ];
+
+    final allPinnedThreads = [
+      const ForumThreadCard(
+        title: "Guidelines for GenLink KH Annual Student Project Showcase 2026",
+        author: "Admin Team",
+        avatarUrl: "assets/images/user_profile.png",
+        timeAgo: "1d ago",
+        category: "Technology",
+        replies: 48,
+        likes: 142,
+        isPinned: true,
+      ),
+      const ForumThreadCard(
+        title: "Best practices for GetX state management in Flutter Community App",
+        author: "Sokny Enat",
+        avatarUrl: "assets/images/user_profile.png",
+        timeAgo: "2h ago",
+        category: "Technology",
+        replies: 24,
+        likes: 89,
+        isPinned: true,
+      ),
+    ];
+
+    final allLatestThreads = [
+      const ForumThreadCard(
+        title: "How to prepare for junior software engineer interviews in Phnom Penh?",
+        author: "Rathana P.",
+        avatarUrl: "assets/images/heng_chansela_profile.png",
+        timeAgo: "3h ago",
+        category: "Career",
+        replies: 19,
+        likes: 45,
+        isPinned: false,
+      ),
+      const ForumThreadCard(
+        title: "Study group for CADT Data Structures and Algorithms exam next week",
+        author: "Heng Chansela",
+        avatarUrl: "assets/images/heng_chansela_profile.png",
+        timeAgo: "5h ago",
+        category: "Study & Education",
+        replies: 31,
+        likes: 67,
+        isPinned: false,
+      ),
+      const ForumThreadCard(
+        title: "Sharing my AI project built with Python and Flutter Web",
+        author: "Ren Makara",
+        avatarUrl: "assets/images/ren_makara_profile.png",
+        timeAgo: "7h ago",
+        category: "Projects",
+        replies: 14,
+        likes: 53,
+        isPinned: false,
+      ),
+      const ForumThreadCard(
+        title: "Campus Hackathon 2026 registration is officially open!",
+        author: "Chhaeng Sokuntheara",
+        avatarUrl: "assets/images/sokuntheara_profile.png",
+        timeAgo: "12h ago",
+        category: "Events",
+        replies: 42,
+        likes: 110,
+        isPinned: false,
+      ),
+    ];
 
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Context-Aware Forum Search Bar
+            // 1. Full-width Search Field (Triggers Search ONLY when tapped)
             InkWell(
               onTap: () => Get.to(
                 () => const CommunitySearchScreen(activeTab: 'Forum'),
@@ -367,7 +470,7 @@ class CommunityScreen extends GetView<CommunityController> {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      "Search Discussions & Topics...",
+                      'community.searchDiscussions'.tr,
                       style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
                           TextStyle(color: textMuted, fontSize: 14),
                     ),
@@ -375,12 +478,13 @@ class CommunityScreen extends GetView<CommunityController> {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
 
-            // Trending Topics
+            // 2. Trending Topics (Horizontally scrollable chip list)
             Text(
-              "🔥 Trending Topics",
+              'community.trendingTopics'.tr.isNotEmpty && 'community.trendingTopics'.tr != 'community.trendingTopics'
+                  ? 'community.trendingTopics'.tr
+                  : 'Trending Topics',
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -391,21 +495,21 @@ class CommunityScreen extends GetView<CommunityController> {
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
               child: Row(
-                children: [
-                  '#FlutterTech',
-                  '#CampusHackathon',
-                  '#CADTDesign',
-                  '#RUPPExams',
-                  '#AIWorkshop',
-                ].map((topic) {
+                children: trendingTopics.map((topic) {
                   return InkWell(
-                    onTap: () => Get.to(
-                      () => const CommunitySearchScreen(activeTab: 'Forum'),
-                    ),
+                    onTap: () {
+                      final cleanCat = topic.replaceAll('#', '').replaceAll('CampusLife', 'Campus Life');
+                      if (controller.selectedForumCategory.value == cleanCat) {
+                        controller.selectedForumCategory.value = 'All';
+                      } else {
+                        controller.selectedForumCategory.value = cleanCat;
+                      }
+                    },
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                     child: Container(
                       margin: const EdgeInsets.only(right: AppSpacing.sm),
@@ -417,17 +521,17 @@ class CommunityScreen extends GetView<CommunityController> {
                         color: surfaceSecondary,
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                         border: Border.all(
-                          color: AppColors.communityAccent.withValues(alpha: 0.3),
+                          color: borderSubtle,
                         ),
                       ),
                       child: Text(
                         topic,
                         style: theme.textTheme.labelMedium?.copyWith(
-                              color: AppColors.communityAccent,
+                              color: textPrimary,
                               fontWeight: FontWeight.bold,
                             ) ??
-                            const TextStyle(
-                              color: AppColors.communityAccent,
+                            TextStyle(
+                              color: textPrimary,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),
@@ -438,11 +542,13 @@ class CommunityScreen extends GetView<CommunityController> {
               ),
             ),
 
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: 20),
 
-            // Forum Categories
+            // 3. Forum Categories (2-Column Responsive Grid with In-Place Category Filtering)
             Text(
-              "Forum Categories",
+              'community.forumCategories'.tr.isNotEmpty && 'community.forumCategories'.tr != 'community.forumCategories'
+                  ? 'community.forumCategories'.tr
+                  : 'Forum Categories',
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -453,78 +559,139 @@ class CommunityScreen extends GetView<CommunityController> {
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 12),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 2.5,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              children: const [
-                ForumCategoryCard(
-                  title: "💻 Tech & Coding",
-                  count: "342 Discussions",
-                  accent: AppColors.communityAccent,
-                ),
-                ForumCategoryCard(
-                  title: "🎓 Campus Life",
-                  count: "189 Discussions",
-                  accent: AppColors.success,
-                ),
-                ForumCategoryCard(
-                  title: "📚 Academics",
-                  count: "256 Discussions",
-                  accent: AppColors.warning,
-                ),
-                ForumCategoryCard(
-                  title: "🚀 Projects",
-                  count: "120 Discussions",
-                  accent: AppColors.productivityAccent,
-                ),
-              ],
-            ),
+            const SizedBox(height: 10),
 
-            const SizedBox(height: AppSpacing.lg),
+            Obx(() {
+              final activeCat = controller.selectedForumCategory.value;
 
-            // Pinned & Latest Discussions List
-            Text(
-              "📌 Pinned Discussions",
-              style: theme.textTheme.titleMedium?.copyWith(
-                    color: textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ) ??
-                  TextStyle(
-                    color: textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 2.1,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                ),
+                itemCount: categoriesList.length,
+                itemBuilder: (context, idx) {
+                  final cat = categoriesList[idx];
+                  final title = cat['title'] as String;
+                  final isSel = activeCat == title;
+
+                  return ForumCategoryCard(
+                    title: title,
+                    count: cat['count'] as String,
+                    icon: cat['icon'] as IconData,
+                    isSelected: isSel,
+                    onTap: () {
+                      if (activeCat == title) {
+                        controller.selectedForumCategory.value = 'All';
+                      } else {
+                        controller.selectedForumCategory.value = title;
+                      }
+                    },
+                  );
+                },
+              );
+            }),
+
+            const SizedBox(height: 22),
+
+            // 4. Pinned & Latest Discussions filtered reactively
+            Obx(() {
+              final activeCat = controller.selectedForumCategory.value;
+
+              final pinnedFiltered = activeCat == 'All'
+                  ? allPinnedThreads
+                  : allPinnedThreads.where((t) => t.category.toLowerCase() == activeCat.toLowerCase()).toList();
+
+              final latestFiltered = activeCat == 'All'
+                  ? allLatestThreads
+                  : allLatestThreads.where((t) => t.category.toLowerCase() == activeCat.toLowerCase()).toList();
+
+              final totalCount = pinnedFiltered.length + latestFiltered.length;
+
+              if (totalCount == 0) {
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: surfaceSecondary,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderSubtle),
                   ),
-            ),
-            const SizedBox(height: 12),
-            const ForumThreadCard(
-              title: "Guidelines for GenLink KH Annual Student Project Showcase 2026",
-              author: "Admin Team",
-              timeAgo: "1d ago",
-              replies: 48,
-              upvotes: 142,
-              isPinned: true,
-            ),
-            const ForumThreadCard(
-              title: "Best resources to master Flutter state management with GetX?",
-              author: "Sokchea Lim",
-              timeAgo: "3h ago",
-              replies: 16,
-              upvotes: 34,
-              isPinned: false,
-            ),
-            const ForumThreadCard(
-              title: "How to prepare for junior software engineer interviews in Cambodia?",
-              author: "Rathana P.",
-              timeAgo: "6h ago",
-              replies: 29,
-              upvotes: 65,
-              isPinned: false,
-            ),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.forum_outlined, color: Colors.white54, size: 40),
+                      const SizedBox(height: 12),
+                      Text(
+                        "No discussions in $activeCat yet",
+                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        "Be the first to start a discussion in this topic!",
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () => Get.to(() => const CreateDiscussionScreen()),
+                        icon: const Icon(Icons.add, size: 18, color: Colors.black),
+                        label: const Text("Start a Discussion", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (pinnedFiltered.isNotEmpty) ...[
+                    Text(
+                      'community.pinnedDiscussions'.tr.isNotEmpty && 'community.pinnedDiscussions'.tr != 'community.pinnedDiscussions'
+                          ? 'community.pinnedDiscussions'.tr
+                          : 'Pinned Discussions',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                            color: textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ) ??
+                          TextStyle(
+                            color: textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 10),
+                    ...pinnedFiltered,
+                    const SizedBox(height: 20),
+                  ],
+
+                  if (latestFiltered.isNotEmpty) ...[
+                    Text(
+                      "Latest Discussions",
+                      style: theme.textTheme.titleMedium?.copyWith(
+                            color: textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ) ??
+                          TextStyle(
+                            color: textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 10),
+                    ...latestFiltered,
+                  ],
+                ],
+              );
+            }),
 
             const SizedBox(height: AppSpacing.xl),
           ],
@@ -571,7 +738,7 @@ class CommunityScreen extends GetView<CommunityController> {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      "Search Jobs, Internships & Mentors...",
+                      'community.searchJobs'.tr,
                       style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
                           TextStyle(color: textMuted, fontSize: 14),
                     ),
@@ -584,7 +751,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Recommended Opportunities Hero List
             Text(
-              "🎯 Recommended Opportunities",
+              'community.recommendedOpportunities'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -615,7 +782,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Campus Alumni Mentors
             Text(
-              "👨‍🏫 Campus Alumni Mentors",
+              'community.campusAlumniMentors'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -667,28 +834,7 @@ class CommunityScreen extends GetView<CommunityController> {
     final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
     final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 
-    final List<Map<String, dynamic>> eventsList = [
-      {
-        'title': 'Flutter Mobile Dev Workshop 2026',
-        'subtitle': 'Build Cross-platform Apps with Flutter & Dart',
-        'category': 'Workshop',
-        'time': '9:00 AM – 4:00 PM',
-        'location': 'ACLEDA Institute',
-        'going': '120 Going',
-        'image':
-            'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800',
-      },
-      {
-        'title': 'GenLink KH Hackathon 2026',
-        'subtitle': 'Code. Solve. Impact.',
-        'category': 'Hackathon',
-        'time': '8:00 AM – 8:00 PM',
-        'location': 'Diamond Island Convention',
-        'going': '230 Going',
-        'image':
-            'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800',
-      },
-    ];
+    final eventsList = controller.events;
 
     return SingleChildScrollView(
       child: Padding(
@@ -722,7 +868,7 @@ class CommunityScreen extends GetView<CommunityController> {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            "Search Events & Workshops...",
+                            'community.searchEventsHint'.tr,
                             style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
                                 TextStyle(color: textMuted, fontSize: 14),
                           ),
@@ -763,7 +909,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Featured Events Carousel
             Text(
-              "🌟 Featured Events",
+              'community.featuredEvents'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -783,17 +929,20 @@ class CommunityScreen extends GetView<CommunityController> {
                 itemBuilder: (context, idx) {
                   final ev = eventsList[idx];
                   return InkWell(
-                    onTap: () => Get.to(() => EventDetailsScreen(eventData: ev)),
+                    onTap: () => Get.to(() => EventDetailsScreen(event: ev)),
                     borderRadius: BorderRadius.circular(AppRadius.squircle),
                     child: Container(
                       width: 280,
                       margin: const EdgeInsets.only(right: 14),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(AppRadius.squircle),
-                        image: DecorationImage(
-                          image: NetworkImage(ev['image']),
-                          fit: BoxFit.cover,
-                        ),
+                        image: ev.imageUrl.isNotEmpty
+                            ? DecorationImage(
+                                image: NetworkImage(ev.imageUrl),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                        color: isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF0F0F0),
                       ),
                       child: Container(
                         decoration: BoxDecoration(
@@ -813,7 +962,7 @@ class CommunityScreen extends GetView<CommunityController> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              ev['title'],
+                              ev.title,
                               style: theme.textTheme.titleMedium?.copyWith(
                                     color: AppColors.darkTextPrimary,
                                     fontWeight: FontWeight.bold,
@@ -826,7 +975,7 @@ class CommunityScreen extends GetView<CommunityController> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              ev['location'],
+                              ev.eventType == 'In person' ? ev.location : 'Online Event',
                               style: theme.textTheme.bodySmall?.copyWith(
                                     color: AppColors.communityAccent,
                                     fontWeight: FontWeight.w600,
@@ -850,7 +999,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
             // Event List
             Text(
-              "📅 Upcoming Events",
+              'community.upcomingEvents'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -864,7 +1013,7 @@ class CommunityScreen extends GetView<CommunityController> {
             const SizedBox(height: 12),
             ...eventsList.map((ev) {
               return InkWell(
-                onTap: () => Get.to(() => EventDetailsScreen(eventData: ev)),
+                onTap: () => Get.to(() => EventDetailsScreen(event: ev)),
                 borderRadius: BorderRadius.circular(AppRadius.squircle),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -879,11 +1028,17 @@ class CommunityScreen extends GetView<CommunityController> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(AppRadius.lg - 2),
                         child: Image.network(
-                          ev['image'],
-                          width: 75,
-                          height: 75,
-                          fit: BoxFit.cover,
-                        ),
+                              ev.imageUrl.isNotEmpty ? ev.imageUrl : 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=300',
+                              width: 75,
+                              height: 75,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, _) => Container(
+                                width: 75,
+                                height: 75,
+                                color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0),
+                                child: const Icon(Icons.event_outlined, size: 32),
+                              ),
+                            ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -891,7 +1046,7 @@ class CommunityScreen extends GetView<CommunityController> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              ev['title'],
+                              ev.title,
                               style: theme.textTheme.titleSmall?.copyWith(
                                     color: textPrimary,
                                     fontWeight: FontWeight.bold,
@@ -904,7 +1059,7 @@ class CommunityScreen extends GetView<CommunityController> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              ev['location'],
+                              ev.eventType == 'In person' ? ev.location : 'Online Event',
                               style: theme.textTheme.bodySmall?.copyWith(color: textSecondary) ??
                                   TextStyle(
                                     color: textSecondary,
@@ -913,13 +1068,13 @@ class CommunityScreen extends GetView<CommunityController> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              ev['time'],
+                              ev.timeString,
                               style: theme.textTheme.labelSmall?.copyWith(
-                                    color: AppColors.communityAccent,
+                                    color: textSecondary,
                                     fontWeight: FontWeight.bold,
                                   ) ??
-                                  const TextStyle(
-                                    color: AppColors.communityAccent,
+                                  TextStyle(
+                                    color: textSecondary,
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
                                   ),

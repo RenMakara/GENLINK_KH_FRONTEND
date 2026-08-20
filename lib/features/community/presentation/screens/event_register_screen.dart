@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
+import '../../domain/models/community_models.dart';
+import '../controllers/community_controller.dart';
 import 'event_success_screen.dart';
 
 class EventRegisterScreen extends StatefulWidget {
-  final Map<String, dynamic> eventData;
+  final EventModel event;
 
   const EventRegisterScreen({
     super.key,
-    required this.eventData,
+    required this.event,
   });
 
   @override
@@ -62,7 +65,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "Register for Event",
+          'community.registerForEvent'.tr,
           style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
         ),
       ),
@@ -83,13 +86,35 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.network(
-                      widget.eventData['image'] as String? ??
-                          'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=300',
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                    ),
+                    child: widget.event.coverImageFile != null
+                        ? Image.file(
+                            widget.event.coverImageFile!,
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                          )
+                        : widget.event.imageUrl.isNotEmpty
+                            ? Image.network(
+                                widget.event.imageUrl,
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, _) => Container(
+                                  width: 60,
+                                  height: 60,
+                                  color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0),
+                                  child: Icon(Icons.event_outlined, color: textMuted, size: 28),
+                                ),
+                              )
+                            : Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(Icons.event_outlined, color: textMuted, size: 28),
+                              ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -97,7 +122,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.eventData['title'] as String? ?? 'Flutter Workshop 2026',
+                          widget.event.title,
                           style: TextStyle(
                             color: textPrimary,
                             fontWeight: FontWeight.bold,
@@ -105,14 +130,21 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          "📅 25 July 2026 • 9:00 AM - 4:00 PM",
-                          style: TextStyle(color: textMuted, fontSize: 11),
-                        ),
-                        Text(
-                          "📍 ACLEDA University, Phnom Penh",
-                          style: TextStyle(color: textMutedSubtle, fontSize: 10),
-                        ),
+                        if (widget.event.dateString.isNotEmpty)
+                          Text(
+                            '\u{1F4C5} ${widget.event.dateString}${widget.event.timeString.isNotEmpty ? ' \u2022 ${widget.event.timeString}' : ''}',
+                            style: TextStyle(color: textMuted, fontSize: 11),
+                          ),
+                        if (widget.event.eventType == 'In person' && widget.event.location.isNotEmpty)
+                          Text(
+                            '\u{1F4CD} ${widget.event.location}',
+                            style: TextStyle(color: textMutedSubtle, fontSize: 10),
+                          )
+                        else if (widget.event.eventType == 'Online')
+                          Text(
+                            '\u{1F4F9} Online Event',
+                            style: TextStyle(color: textMutedSubtle, fontSize: 10),
+                          ),
                       ],
                     ),
                   ),
@@ -123,12 +155,12 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             const SizedBox(height: 20),
 
             // Form Input Fields
-            _buildInputField(context, "Full Name *", _fullNameController),
+            _buildInputField(context, 'community.fullNameReq'.tr, _fullNameController),
             const SizedBox(height: 14),
 
             _buildDropdownField(
               context,
-              "University *",
+              'community.universityReq'.tr,
               selectedUniversity,
               universities,
               (val) => setState(() => selectedUniversity = val!),
@@ -137,7 +169,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
 
             _buildDropdownField(
               context,
-              "Faculty *",
+              'community.facultyReq'.tr,
               selectedFaculty,
               faculties,
               (val) => setState(() => selectedFaculty = val!),
@@ -146,17 +178,17 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
 
             _buildDropdownField(
               context,
-              "Year of Study *",
+              'community.yearOfStudyReq'.tr,
               selectedYear,
               studyYears,
               (val) => setState(() => selectedYear = val!),
             ),
             const SizedBox(height: 14),
 
-            _buildInputField(context, "Email *", _emailController),
+            _buildInputField(context, 'community.emailReq'.tr, _emailController),
             const SizedBox(height: 14),
 
-            _buildInputField(context, "Phone Number *", _phoneController),
+            _buildInputField(context, 'community.phoneNumberReq'.tr, _phoneController),
             const SizedBox(height: 16),
 
             // Checkbox Terms
@@ -170,12 +202,15 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                 Expanded(
                   child: RichText(
                     text: TextSpan(
-                      text: "I agree to the event ",
+                      text: 'community.iAgreeTerms'.tr,
                       style: TextStyle(color: textSecondary, fontSize: 12),
-                      children: const [
+                      children: [
                         TextSpan(
-                          text: "terms and conditions",
-                          style: TextStyle(color: Color(0xFF8B5CF6), fontWeight: FontWeight.bold),
+                          text: 'community.termsAndConditions'.tr,
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -192,22 +227,32 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
               height: 52,
               child: ElevatedButton(
                 onPressed: () {
+                  // Mark RSVP in controller so state persists in Event list
+                  final ctrl = Get.isRegistered<CommunityController>()
+                      ? Get.find<CommunityController>()
+                      : null;
+                  ctrl?.toggleRsvp(widget.event.id);
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => EventSuccessScreen(eventData: widget.eventData),
+                      builder: (_) => EventSuccessScreen(event: widget.event),
                     ),
                   );
-                },
+                  },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.communityAccent,
+                  backgroundColor: isDark ? Colors.white : Colors.black,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text(
-                  "Confirm Registration",
-                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
+                child: Text(
+                  'community.confirmRegistration'.tr,
+                  style: TextStyle(
+                    color: isDark ? Colors.black : Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),
@@ -251,7 +296,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF8B5CF6)),
+              borderSide: BorderSide(color: textPrimary),
             ),
           ),
         ),

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+
 import 'package:genlink_frontend/features/finance/presentation/screens/Budget%20Feature/screens/budget_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/E%20Wallet%20Feature/screens/ewallet.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/Expense%20Feature/screens/expense_screen.dart';
@@ -54,7 +57,6 @@ class FinanceScreen extends StatelessWidget {
         textPrimary: textPrimary,
         textMuted: textMuted,
       ),
-
       Transaction(
         title: 'Salary Deposit',
         subtitle: 'Jun 1 · ABA Bank',
@@ -68,7 +70,6 @@ class FinanceScreen extends StatelessWidget {
         textPrimary: textPrimary,
         textMuted: textMuted,
       ),
-
       Transaction(
         title: 'Netflix',
         subtitle: 'Yesterday · Card',
@@ -81,7 +82,6 @@ class FinanceScreen extends StatelessWidget {
         textPrimary: textPrimary,
         textMuted: textMuted,
       ),
-
       Transaction(
         title: 'Coffee Shop',
         subtitle: 'Yesterday · 10:20 AM · Food',
@@ -94,7 +94,6 @@ class FinanceScreen extends StatelessWidget {
         textPrimary: textPrimary,
         textMuted: textMuted,
       ),
-
       Transaction(
         title: 'Grab Ride',
         subtitle: 'May 29 · Transport',
@@ -107,7 +106,6 @@ class FinanceScreen extends StatelessWidget {
         textPrimary: textPrimary,
         textMuted: textMuted,
       ),
-
       Transaction(
         title: 'Freelance Payment',
         subtitle: 'May 28 · ABA Bank',
@@ -121,7 +119,6 @@ class FinanceScreen extends StatelessWidget {
         textPrimary: textPrimary,
         textMuted: textMuted,
       ),
-
       Transaction(
         title: 'Electricity Bill',
         subtitle: 'May 27 · Utilities',
@@ -134,7 +131,6 @@ class FinanceScreen extends StatelessWidget {
         textPrimary: textPrimary,
         textMuted: textMuted,
       ),
-
       Transaction(
         title: 'Shopping',
         subtitle: 'May 26 · Mall',
@@ -147,7 +143,6 @@ class FinanceScreen extends StatelessWidget {
         textPrimary: textPrimary,
         textMuted: textMuted,
       ),
-
       Transaction(
         title: 'Cash Deposit',
         subtitle: 'May 25 · ABA Bank',
@@ -161,7 +156,6 @@ class FinanceScreen extends StatelessWidget {
         textPrimary: textPrimary,
         textMuted: textMuted,
       ),
-
       Transaction(
         title: 'Internet Bill',
         subtitle: 'May 24 · Utilities',
@@ -174,7 +168,6 @@ class FinanceScreen extends StatelessWidget {
         textPrimary: textPrimary,
         textMuted: textMuted,
       ),
-
       Transaction(
         title: 'Lunch',
         subtitle: 'May 23 · Food',
@@ -187,7 +180,6 @@ class FinanceScreen extends StatelessWidget {
         textPrimary: textPrimary,
         textMuted: textMuted,
       ),
-
       Transaction(
         title: 'Phone Bill',
         subtitle: 'May 22 · Mobile',
@@ -202,10 +194,7 @@ class FinanceScreen extends StatelessWidget {
       ),
     ];
 
-    // Only allow maximum 20
-    final List<Widget> displayTransactions = recentTransactions
-        .take(20)
-        .toList();
+    final displayTransactions = recentTransactions.take(20).toList();
 
     return Scaffold(
       backgroundColor: bg,
@@ -216,12 +205,14 @@ class FinanceScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // =========================================================
               // HEADER
+              // =========================================================
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Finance',
+                    'finance.title'.tr,
                     style: TextStyle(
                       color: textPrimary,
                       fontSize: 22,
@@ -274,12 +265,16 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 18),
 
+              // =========================================================
               // BALANCE
+              // =========================================================
               BalanceCard(isDark: isDark, surfaceSecondary: surfaceSecondary),
 
               const SizedBox(height: 16),
 
+              // =========================================================
               // MONTHLY SPENDING
+              // =========================================================
               AppCard(
                 color: surface,
                 borderColor: border,
@@ -293,7 +288,7 @@ class FinanceScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Monthly Spending',
+                                'finance.monthlySpending'.tr,
                                 style: TextStyle(
                                   color: textPrimary,
                                   fontSize: 16,
@@ -304,7 +299,7 @@ class FinanceScreen extends StatelessWidget {
                               const SizedBox(height: 4),
 
                               Text(
-                                'June 2026',
+                                'finance.month'.tr,
                                 style: TextStyle(
                                   color: textMuted,
                                   fontSize: 12,
@@ -346,7 +341,7 @@ class FinanceScreen extends StatelessWidget {
                       children: [
                         Legend(
                           color: AppColors.growthAccent,
-                          title: 'Food',
+                          title: 'finance.food'.tr,
                           textColor: textMuted,
                         ),
 
@@ -354,7 +349,7 @@ class FinanceScreen extends StatelessWidget {
 
                         Legend(
                           color: AppColors.brandPrimary,
-                          title: 'Transport',
+                          title: 'finance.transport'.tr,
                           textColor: textMuted,
                         ),
 
@@ -362,7 +357,7 @@ class FinanceScreen extends StatelessWidget {
 
                         Legend(
                           color: AppColors.financeAccent,
-                          title: 'Bills',
+                          title: 'finance.bills'.tr,
                           textColor: textMuted,
                         ),
                       ],
@@ -388,7 +383,10 @@ class FinanceScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '\$642 of \$900',
+                          'finance.spendingOf'.trParams({
+                            'spent': '\$642',
+                            'limit': '\$900',
+                          }),
                           style: TextStyle(color: textMuted, fontSize: 12),
                         ),
 
@@ -408,7 +406,9 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
+              // =========================================================
               // EMERGENCY FUND
+              // =========================================================
               AppCard(
                 color: surface,
                 borderColor: border,
@@ -422,7 +422,7 @@ class FinanceScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Emergency Fund',
+                                'finance.emergencyFund'.tr,
                                 style: TextStyle(
                                   color: textPrimary,
                                   fontSize: 16,
@@ -433,7 +433,10 @@ class FinanceScreen extends StatelessWidget {
                               const SizedBox(height: 4),
 
                               Text(
-                                '\$1,240 of \$3,000',
+                                'finance.fundProgress'.trParams({
+                                  'saved': '\$1,240',
+                                  'target': '\$3,000',
+                                }),
                                 style: TextStyle(
                                   color: textMuted,
                                   fontSize: 12,
@@ -474,7 +477,7 @@ class FinanceScreen extends StatelessWidget {
                     const SizedBox(height: 8),
 
                     Text(
-                      'Target: Dec 2026 • 41% complete',
+                      'finance.targetDate'.trParams({'date': 'Dec 2026'}),
                       style: TextStyle(color: textMuted, fontSize: 12),
                     ),
                   ],
@@ -483,7 +486,9 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
+              // =========================================================
               // SMART INSIGHT
+              // =========================================================
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -520,7 +525,7 @@ class FinanceScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Smart Insight',
+                            'finance.smartInsight'.tr,
                             style: TextStyle(
                               color: textPrimary,
                               fontSize: 15,
@@ -531,8 +536,10 @@ class FinanceScreen extends StatelessWidget {
                           const SizedBox(height: 5),
 
                           Text(
-                            "You're spending 15% more on food this month. "
-                            "Set a \$300 limit to stay on track.",
+                            'finance.foodSpendingInsight'.trParams({
+                              'percent': '15',
+                              'amount': '\$300',
+                            }),
                             style: TextStyle(
                               color: textSecondary,
                               fontSize: 12,
@@ -548,9 +555,11 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 22),
 
+              // =========================================================
               // QUICK ACTIONS
+              // =========================================================
               Text(
-                'Quick Actions',
+                'finance.quickActions'.tr,
                 style: TextStyle(
                   color: textPrimary,
                   fontSize: 17,
@@ -567,11 +576,12 @@ class FinanceScreen extends StatelessWidget {
                   physics: const BouncingScrollPhysics(),
                   child: Row(
                     children: [
+                      // ADD EXPENSE
                       SizedBox(
-                        width: 80, // default box width
+                        width: 80,
                         child: QuickAction(
                           icon: Icons.add_rounded,
-                          title: 'Add Expense',
+                          title: 'finance.addExpense'.tr,
                           accent: AppColors.brandPrimary,
                           background: surface,
                           border: border,
@@ -580,7 +590,7 @@ class FinanceScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const ExpenseScreen(),
+                                builder: (_) => const ExpenseScreen(),
                               ),
                             );
                           },
@@ -589,11 +599,12 @@ class FinanceScreen extends StatelessWidget {
 
                       const SizedBox(width: 8),
 
+                      // BUDGET
                       SizedBox(
                         width: 80,
                         child: QuickAction(
                           icon: Icons.bar_chart_rounded,
-                          title: 'Set Budget',
+                          title: 'finance.setBudget'.tr,
                           accent: AppColors.productivityAccent,
                           background: surface,
                           border: border,
@@ -602,7 +613,7 @@ class FinanceScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const BudgetScreen(),
+                                builder: (_) => const BudgetScreen(),
                               ),
                             );
                           },
@@ -611,11 +622,12 @@ class FinanceScreen extends StatelessWidget {
 
                       const SizedBox(width: 8),
 
+                      // SAVING GOAL
                       SizedBox(
                         width: 80,
                         child: QuickAction(
                           icon: Icons.savings_outlined,
-                          title: 'Save Goal',
+                          title: 'finance.saveGoal'.tr,
                           accent: AppColors.financeAccent,
                           background: surface,
                           border: border,
@@ -624,7 +636,7 @@ class FinanceScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const SavingGoalsScreen(),
+                                builder: (_) => const SavingGoalsScreen(),
                               ),
                             );
                           },
@@ -633,11 +645,12 @@ class FinanceScreen extends StatelessWidget {
 
                       const SizedBox(width: 8),
 
+                      // E-WALLET
                       SizedBox(
                         width: 80,
                         child: QuickAction(
                           icon: Icons.account_balance_wallet_rounded,
-                          title: 'E-Wallet',
+                          title: 'finance.ewallet'.tr,
                           accent: const Color.fromARGB(255, 75, 148, 174),
                           background: surface,
                           border: border,
@@ -646,7 +659,7 @@ class FinanceScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const EWalletScreen(),
+                                builder: (_) => const EWalletScreen(),
                               ),
                             );
                           },
@@ -655,11 +668,12 @@ class FinanceScreen extends StatelessWidget {
 
                       const SizedBox(width: 8),
 
+                      // LEARN
                       SizedBox(
                         width: 80,
                         child: QuickAction(
                           icon: Icons.menu_book_rounded,
-                          title: 'Learn',
+                          title: 'finance.learn'.tr,
                           accent: AppColors.growthAccent,
                           background: surface,
                           border: border,
@@ -668,15 +682,12 @@ class FinanceScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    const LearnFinanceScreen(),
+                                builder: (_) => const LearnFinanceScreen(),
                               ),
                             );
                           },
                         ),
                       ),
-
-                      const SizedBox(width: 8),
                     ],
                   ),
                 ),
@@ -684,12 +695,14 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
+              // =========================================================
               // RECENT TRANSACTIONS
+              // =========================================================
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Recent Transactions',
+                    'finance.recentTransactions'.tr,
                     style: TextStyle(
                       color: textPrimary,
                       fontSize: 17,
@@ -702,12 +715,12 @@ class FinanceScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const ExpenseScreen(),
+                          builder: (_) => const ExpenseScreen(),
                         ),
                       );
                     },
                     child: Text(
-                      'See All →',
+                      'finance.seeAll'.tr,
                       style: TextStyle(
                         color: textMuted,
                         fontSize: 12,
@@ -723,22 +736,17 @@ class FinanceScreen extends StatelessWidget {
               // TRANSACTIONS BOX
               Container(
                 height: 300,
-
                 decoration: BoxDecoration(
                   color: surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: border),
                 ),
-
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
                   ),
-
-                  // Maximum 20
                   itemCount: displayTransactions.length,
-
                   itemBuilder: (context, index) {
                     return displayTransactions[index];
                   },
@@ -747,7 +755,9 @@ class FinanceScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
+              // =========================================================
               // LEARN FINANCE
+              // =========================================================
               AppCard(
                 color: surface,
                 borderColor: border,
@@ -758,7 +768,7 @@ class FinanceScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Learn Finance',
+                            'finance.learnFinance'.tr,
                             style: TextStyle(
                               color: textPrimary,
                               fontSize: 16,
@@ -769,7 +779,17 @@ class FinanceScreen extends StatelessWidget {
                           const SizedBox(height: 6),
 
                           Text(
-                            '3 of 5 topics completed. Keep going!',
+                            'finance.topicsCompleted'.trParams({
+                              'done': '3',
+                              'total': '5',
+                            }),
+                            style: TextStyle(color: textMuted, fontSize: 12),
+                          ),
+
+                          const SizedBox(height: 4),
+
+                          Text(
+                            'finance.keepGoing'.tr,
                             style: TextStyle(color: textMuted, fontSize: 12),
                           ),
 

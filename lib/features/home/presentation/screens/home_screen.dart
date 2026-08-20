@@ -183,8 +183,9 @@ class _LevelBar extends StatelessWidget {
           ),
           child: Text(
             '${user.level}',
-            style: theme.textTheme.labelMedium
-                ?.copyWith(color: scheme.onPrimary),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: scheme.onPrimary,
+            ),
           ),
         ),
         const SizedBox(width: AppSpacing.sm + 2),
@@ -258,8 +259,10 @@ class _TodayHub extends StatelessWidget {
                   const SizedBox(width: AppSpacing.sm),
                   Text(
                     'home.todayHub'.tr.toUpperCase(),
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: muted, letterSpacing: 0.8),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: muted,
+                      letterSpacing: 0.8,
+                    ),
                   ),
                 ],
               ),
@@ -322,50 +325,57 @@ class _TodayHub extends StatelessWidget {
     final rows = <Widget>[];
 
     if (progress.habitsTotal > 0) {
-      rows.add(_HubRow(
-        done: progress.habitsCompletedToday >= progress.habitsTotal,
-        title: 'home.rowHabits'.tr,
-        detail: 'home.rowHabitsDetail'.trParams({
-          'done': '${progress.habitsCompletedToday}',
-          'total': '${progress.habitsTotal}',
-        }),
-        accent: AppColors.productivityAccent,
-      ));
+      rows.add(
+        _HubRow(
+          done: progress.habitsCompletedToday >= progress.habitsTotal,
+          title: 'home.rowHabits'.tr,
+          detail: 'home.rowHabitsDetail'.trParams({
+            'done': '${progress.habitsCompletedToday}',
+            'total': '${progress.habitsTotal}',
+          }),
+          accent: AppColors.productivityAccent,
+        ),
+      );
     }
     if (progress.tasksTotal > 0) {
-      rows.add(_HubRow(
-        done: progress.tasksCompleted >= progress.tasksTotal,
-        title: 'home.rowTasks'.tr,
-        detail: 'home.rowTasksDetail'.trParams({
-          'done': '${progress.tasksCompleted}',
-          'total': '${progress.tasksTotal}',
-        }),
-        accent: AppColors.communityAccent,
-      ));
+      rows.add(
+        _HubRow(
+          done: progress.tasksCompleted >= progress.tasksTotal,
+          title: 'home.rowTasks'.tr,
+          detail: 'home.rowTasksDetail'.trParams({
+            'done': '${progress.tasksCompleted}',
+            'total': '${progress.tasksTotal}',
+          }),
+          accent: AppColors.communityAccent,
+        ),
+      );
     }
     final challenge = home.dailyChallenge;
     if (challenge != null) {
-      rows.add(_HubRow(
-        done: false,
-        title: challenge.title,
-        detail: challenge.xpReward == null
-            ? 'home.rowChallenge'.tr
-            : 'home.rowChallengeXp'
-                .trParams({'xp': '${challenge.xpReward}'}),
-        accent: AppColors.growthAccent,
-      ));
+      rows.add(
+        _HubRow(
+          done: false,
+          title: challenge.title,
+          detail: challenge.xpReward == null
+              ? 'home.rowChallenge'.tr
+              : 'home.rowChallengeXp'.trParams({'xp': '${challenge.xpReward}'}),
+          accent: AppColors.growthAccent,
+        ),
+      );
     }
     final event = home.upcomingEvent;
     if (event != null) {
-      rows.add(_HubRow(
-        done: false,
-        title: event.title,
-        detail: [
-          'home.rowEvent'.tr,
-          if (event.locationName != null) event.locationName!,
-        ].join(' · '),
-        accent: AppColors.financeAccent,
-      ));
+      rows.add(
+        _HubRow(
+          done: false,
+          title: event.title,
+          detail: [
+            'home.rowEvent'.tr,
+            if (event.locationName != null) event.locationName!,
+          ].join(' · '),
+          accent: AppColors.financeAccent,
+        ),
+      );
     }
     return rows;
   }
@@ -575,11 +585,11 @@ class _StatGrid extends StatelessWidget {
       _StatCard(
         icon: Icons.star_outline,
         iconColor: AppColors.growthAccent,
-        value: 'home.statGrowthValue'
-            .trParams({'level': '${user.level}'}),
+        value: 'home.statGrowthValue'.trParams({'level': '${user.level}'}),
         title: 'home.statGrowth'.tr,
-        caption: 'home.statGrowthCaption'
-            .trParams({'percent': '${user.percentToNext}'}),
+        caption: 'home.statGrowthCaption'.trParams({
+          'percent': '${user.percentToNext}',
+        }),
         onTap: () => onNavigateTab?.call(3),
       ),
     ];
@@ -587,15 +597,15 @@ class _StatGrid extends StatelessWidget {
     // IntrinsicHeight, not CrossAxisAlignment.stretch: inside a ListView the
     // cross axis is unbounded, so stretch resolves to an infinite height.
     Widget pair(Widget left, Widget right) => IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: left),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(child: right),
-            ],
-          ),
-        );
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: left),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(child: right),
+        ],
+      ),
+    );
 
     return Column(
       children: [
@@ -658,8 +668,9 @@ class _StatCard extends StatelessWidget {
                 value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w700),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               Text(
                 title,
@@ -705,8 +716,11 @@ class _MotivationTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.format_quote,
-              size: 18, color: AppColors.accentPremium),
+          const Icon(
+            Icons.format_quote,
+            size: 18,
+            color: AppColors.accentPremium,
+          ),
           const SizedBox(width: AppSpacing.sm + 2),
           Expanded(
             child: Column(
@@ -752,8 +766,7 @@ class _RecentActivity extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('home.recentActivity'.tr,
-                style: theme.textTheme.titleMedium),
+            Text('home.recentActivity'.tr, style: theme.textTheme.titleMedium),
             AppButton.text(
               label: 'home.seeAll'.tr,
               muted: true,
@@ -773,7 +786,10 @@ class _RecentActivity extends StatelessWidget {
               for (final item in items) ...[
                 _ActivityRow(item: item),
                 if (item != items.last)
-                  const Divider(indent: AppSpacing.md, endIndent: AppSpacing.md),
+                  const Divider(
+                    indent: AppSpacing.md,
+                    endIndent: AppSpacing.md,
+                  ),
               ],
             ],
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 
 class FilterEventsSheet extends StatefulWidget {
@@ -49,7 +50,7 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Filter Events",
+                  'community.filterEvents'.tr,
                   style: TextStyle(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -66,9 +67,9 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                       selectedPrice = 'All';
                     });
                   },
-                  child: const Text(
-                    "Reset",
-                    style: TextStyle(color: AppColors.communityAccent, fontSize: 14),
+                  child: Text(
+                    'community.reset'.tr,
+                    style: const TextStyle(color: AppColors.communityAccent, fontSize: 14),
                   ),
                 ),
               ],
@@ -80,7 +81,7 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
               children: [
                 Icon(Icons.calendar_today_outlined, color: textSecondary, size: 18),
                 const SizedBox(width: 8),
-                Text("Date", style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
+                Text('community.dateRange'.tr, style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 10),
@@ -94,18 +95,18 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF8B5CF6).withValues(alpha: 0.15)
+                          ? (isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.08))
                           : unselectedBg,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? const Color(0xFF8B5CF6) : unselectedBorder,
+                        color: isSelected ? (isDark ? Colors.white : Colors.black) : unselectedBorder,
                       ),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           isSelected ? Icons.check_circle : Icons.circle_outlined,
-                          color: isSelected ? const Color(0xFF8B5CF6) : textSecondary,
+                          color: isSelected ? (isDark ? Colors.white : Colors.black) : textSecondary,
                           size: 20,
                         ),
                         const SizedBox(width: 10),
@@ -130,7 +131,7 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
               children: [
                 Icon(Icons.grid_view, color: textSecondary, size: 18),
                 const SizedBox(width: 8),
-                Text("Category", style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
+                Text('community.category'.tr, style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 10),
@@ -163,18 +164,18 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF8B5CF6).withValues(alpha: 0.2)
+                          ? (isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.08))
                           : unselectedBg,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? const Color(0xFF8B5CF6) : unselectedBorder,
+                        color: isSelected ? (isDark ? Colors.white : Colors.black) : unselectedBorder,
                       ),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           isSelected ? Icons.check_circle : item['icon'] as IconData,
-                          color: isSelected ? const Color(0xFF8B5CF6) : textSecondary,
+                          color: isSelected ? (isDark ? Colors.white : Colors.black) : textSecondary,
                           size: 18,
                         ),
                         const SizedBox(width: 8),
@@ -195,96 +196,6 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
 
             const SizedBox(height: 16),
 
-            // 3. Mode Section
-            Row(
-              children: [
-                Icon(Icons.tune, color: textSecondary, size: 18),
-                const SizedBox(width: 8),
-                Text("Mode", style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: ['All', 'Online', 'Offline'].map((m) {
-                final isSelected = selectedMode == m;
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => selectedMode = m),
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF8B5CF6).withValues(alpha: 0.2)
-                            : unselectedBg,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected ? const Color(0xFF8B5CF6) : unselectedBorder,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          m,
-                          style: TextStyle(
-                            color: isSelected ? (isDark ? Colors.white : AppColors.lightTextPrimary) : textSecondary,
-                            fontSize: 13,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: 16),
-
-            // 4. Price Section
-            Row(
-              children: [
-                Icon(Icons.sell_outlined, color: textSecondary, size: 18),
-                const SizedBox(width: 8),
-                Text("Price", style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: ['All', 'Free', 'Paid'].map((p) {
-                final isSelected = selectedPrice == p;
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => selectedPrice = p),
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF8B5CF6).withValues(alpha: 0.2)
-                            : unselectedBg,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected ? const Color(0xFF8B5CF6) : unselectedBorder,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          p,
-                          style: TextStyle(
-                            color: isSelected ? (isDark ? Colors.white : AppColors.lightTextPrimary) : textSecondary,
-                            fontSize: 13,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: 24),
-
             // Apply Button
             SizedBox(
               width: double.infinity,
@@ -297,9 +208,9 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text(
-                  "Apply Filters",
-                  style: TextStyle(
+                child: Text(
+                  'community.applyFilters'.tr,
+                  style: const TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,

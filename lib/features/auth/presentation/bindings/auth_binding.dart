@@ -6,6 +6,7 @@ import '../../../../core/network/dio_provider.dart';
 import '../../../../core/network/interceptors/auth_interceptor.dart';
 import '../../../../core/network/interceptors/error_interceptor.dart';
 import '../../../../core/network/interceptors/language_interceptor.dart';
+import '../../../../core/network/interceptors/mock_interceptor.dart';
 import '../../../../core/storage/local_storage.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../../../core/theme/theme_controller.dart';
@@ -58,7 +59,11 @@ class AuthBinding extends Bindings {
     final authInterceptor = AuthInterceptor(
       secureStorage: storage,
       authRepository: authRepository,
-      onSessionExpired: null,
+      onSessionExpired: () {
+        if (Get.isRegistered<AuthController>()) {
+          Get.find<AuthController>().onSessionExpired();
+        }
+      },
     )..client = dio;
 
     // Order matters: AuthInterceptor must see the raw DioException so it
@@ -66,6 +71,7 @@ class AuthBinding extends Bindings {
     // into an AppError.
     dio.interceptors.addAll([
       LanguageInterceptor(localization),
+      MockInterceptor(storage),
       authInterceptor,
       ErrorInterceptor(),
     ]);

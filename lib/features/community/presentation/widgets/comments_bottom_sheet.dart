@@ -90,7 +90,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Comments",
+                  'community.comments'.tr,
                   style: theme.textTheme.titleMedium?.copyWith(
                         color: textPrimary,
                         fontWeight: FontWeight.bold,
@@ -232,17 +232,17 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                           Icon(
                                             comment.isLiked ? Icons.favorite_rounded : Icons.favorite_outline_rounded,
                                             size: 14,
-                                            color: comment.isLiked ? AppColors.danger : textMuted,
+                                            color: comment.isLiked ? AppColors.likedAccent : textMuted,
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
-                                            comment.likesCount > 0 ? "${comment.likesCount}" : "Like",
+                                            comment.likesCount > 0 ? "${comment.likesCount}" : 'community.like'.tr,
                                             style: theme.textTheme.labelSmall?.copyWith(
-                                                  color: comment.isLiked ? AppColors.danger : textMuted,
+                                                  color: comment.isLiked ? AppColors.likedAccent : textMuted,
                                                   fontWeight: FontWeight.bold,
                                                 ) ??
                                                 TextStyle(
-                                                  color: comment.isLiked ? AppColors.danger : textMuted,
+                                                  color: comment.isLiked ? AppColors.likedAccent : textMuted,
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
                                                 ),
@@ -254,7 +254,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                     GestureDetector(
                                       onTap: () => _onReplyTo(comment.userName),
                                       child: Text(
-                                        "Reply",
+                                        'community.reply'.tr,
                                         style: theme.textTheme.labelSmall?.copyWith(
                                               color: textMuted,
                                               fontWeight: FontWeight.bold,
@@ -288,12 +288,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               child: Row(
                 children: [
                   Text(
-                    "Replying to ",
-                    style: theme.textTheme.bodySmall?.copyWith(color: textMuted) ??
-                        TextStyle(color: textMuted, fontSize: 12),
-                  ),
-                  Text(
-                    "@$_replyingToUser",
+                    'community.replyingTo'.trParams({'user': _replyingToUser!}),
                     style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.communityAccent,
                           fontWeight: FontWeight.bold,
@@ -325,7 +320,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     style: theme.textTheme.bodyMedium?.copyWith(color: textPrimary) ??
                         TextStyle(color: textPrimary, fontSize: 14),
                     decoration: InputDecoration(
-                      hintText: _replyingToUser != null ? "Write a reply..." : "Add a comment...",
+                      hintText: 'community.writeCommentHint'.tr,
                       hintStyle: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
                           TextStyle(color: textMuted, fontSize: 13),
                       border: InputBorder.none,

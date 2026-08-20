@@ -1,4 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import '../../../community/presentation/controllers/story_controller.dart';
+import '../../../community/presentation/screens/story_viewer_screen.dart';
 import '../../data/repositories/notification_repository_impl.dart';
 import '../../domain/models/notification_model.dart';
 
@@ -57,9 +61,25 @@ class NotificationController extends GetxController {
     }
   }
 
+  Future<void> addActivityNotification(NotificationModel notif) async {
+    // Deduplication check: prevent creating duplicate entries within short window
+    final isDuplicate = notifications.any((n) =>
+        n.id == notif.id ||
+        (n.targetId == notif.targetId &&
+            n.senderName == notif.senderName &&
+            n.type == notif.type &&
+            DateTime.now().difference(n.timestamp).inSeconds < 60));
+
+    if (isDuplicate) return;
+
+    notifications.insert(0, notif);
+    notifications.refresh();
+    await repository.addNotification(notif);
+  }
+
   Future<void> markAsRead(String id) async {
     final idx = notifications.indexWhere((n) => n.id == id);
-    if (idx != -1) {
+    if (idx != -1 && !notifications[idx].isRead) {
       notifications[idx].isRead = true;
       notifications.refresh();
       await repository.markAsRead(id);
@@ -81,5 +101,68 @@ class NotificationController extends GetxController {
 
   void selectTab(String tab) {
     selectedTab.value = tab;
+  }
+
+  /// Safe Navigation when tapping a notification item
+  Future<void> handleNotificationTap(NotificationModel notif, BuildContext context) async {
+    // Mark ONLY this notification as read
+    await markAsRead(notif.id);
+
+    if (!context.mounted) return;
+
+    final targetType = notif.targetType?.toLowerCase();
+    final targetId = notif.targetId;
+
+    if (targetType == 'story' && targetId != null && targetId.isNotEmpty) {
+      if (!Get.isRegistered<StoryController>()) {
+        Get.put(StoryController());
+      }
+      final storyCtrl = Get.find<StoryController>();
+
+      // Locate the group containing the target story
+      int targetGroupIdx = -1;
+      for (int i = 0; i < storyCtrl.storyGroups.length; i++) {
+        final group = storyCtrl.storyGroups[i];
+        if (group.stories.any((s) => s.id == targetId)) {
+          targetGroupIdx = i;
+          break;
+        }
+      }
+
+      if (targetGroupIdx != -1 && storyCtrl.storyGroups.isNotEmpty) {
+        Get.to(
+          () => StoryViewerScreen(
+            initialGroupIndex: targetGroupIdx,
+            groups: storyCtrl.storyGroups,
+          ),
+        );
+      } else {
+        AppNotificationBanner.showInfo(
+          context: context,
+          title: 'Story unavailable',
+          message: 'This story has expired or was deleted.',
+        );
+      }
+      return;
+    }
+
+    if (targetType == 'post') {
+      // Safe fallback if target post exists
+      AppNotificationBanner.showInfo(
+        context: context,
+        title: notif.title,
+        message: notif.body,
+      );
+      return;
+    }
+
+    if (targetType == 'event') {
+      AppNotificationBanner.showInfo(
+        context: context,
+        title: notif.title,
+        message: notif.body,
+      );
+      return;
+    }
   }
 }

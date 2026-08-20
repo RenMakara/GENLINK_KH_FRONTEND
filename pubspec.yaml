@@ -6,10 +6,8 @@ publish_to: 'none'
 
 version: 1.0.0+1
 
-
 environment:
   sdk: ^3.12.2
-
 
 dependencies:
   flutter:
@@ -45,10 +43,6 @@ dependencies:
   # ==============================
   # Media upload
   # ==============================
-  # SHA-256 of the file, sent at presign so the backend can record an integrity
-  # checksum. Already present transitively; declared here because we use it
-  # directly. Compression uses image_picker's built-in imageQuality/maxWidth,
-  # so no extra native dependency is needed.
   crypto: ^3.0.0
 
 
@@ -62,10 +56,33 @@ dev_dependencies:
   # Unit testing mock library
   mocktail: ^1.0.3
 
+  # ==============================
+  # App Launcher Icon
+  # ==============================
+  flutter_launcher_icons: ^0.14.4
+
+# ==============================
+# Flutter Launcher Icon Configuration
+# ==============================
+flutter_launcher_icons:
+  android: true
+  ios: true
+
+  # Your application logo
+  image_path: "assets/logos/genlink_icon.png"
+
+  # Android adaptive icon
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/logos/genlink_icon.png"
+
+  # Remove alpha/transparency issues on Android
+  android_gravity: center
+
+  # iOS
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true
-
 
   # ==============================
   # Assets
@@ -75,6 +92,8 @@ flutter:
     # Icons
     - assets/icons/svg/
     - assets/icons/png/
+
+    # Stickers
     - assets/stickers/cats/
 
     # Logos / Branding
@@ -102,34 +121,31 @@ flutter:
     # Textures
     - assets/textures/
 
-  # font
+  # ==============================
+  # Fonts
+  # ==============================
   fonts:
 
+    # Sora
     - family: Sora
       fonts:
         - asset: assets/fonts/Sora-Regular.ttf
           weight: 400
-
         - asset: assets/fonts/Sora-Medium.ttf
           weight: 500
-
         - asset: assets/fonts/Sora-SemiBold.ttf
           weight: 600
-
         - asset: assets/fonts/Sora-Bold.ttf
           weight: 700
 
-
+    # Kantumruy Pro
     - family: KantumruyPro
       fonts:
         - asset: assets/fonts/KantumruyPro-Regular.ttf
           weight: 400
-
         - asset: assets/fonts/KantumruyPro-Medium.ttf
           weight: 500
-
         - asset: assets/fonts/KantumruyPro-SemiBold.ttf
           weight: 600
-
         - asset: assets/fonts/KantumruyPro-Bold.ttf
           weight: 700

@@ -1,14 +1,18 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../../../app/routes/app_routes.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../chat/presentation/bindings/chat_binding.dart';
 import '../../../chat/presentation/controllers/chat_controller.dart';
 import '../../domain/models/story_model.dart';
 import '../controllers/story_controller.dart';
+import '../../../notification/presentation/controllers/notification_controller.dart';
+import '../../../notification/domain/models/notification_model.dart';
 
 class _CampusGroupItem {
   final String id;
@@ -24,8 +28,13 @@ class _CampusGroupItem {
   });
 }
 
-void _showCompactReplyToast(BuildContext context, String recipientName, String recipientAvatar) {
-  final overlay = Overlay.of(context);
+void _showCompactReplyToast(
+  BuildContext context,
+  String recipientName,
+  String recipientAvatar,
+) {
+  final overlay = Overlay.maybeOf(context);
+  if (overlay == null) return;
   late OverlayEntry entry;
 
   entry = OverlayEntry(
@@ -65,7 +74,8 @@ class _CompactReplyToastWidget extends StatefulWidget {
   });
 
   @override
-  State<_CompactReplyToastWidget> createState() => _CompactReplyToastWidgetState();
+  State<_CompactReplyToastWidget> createState() =>
+      _CompactReplyToastWidgetState();
 }
 
 class _CompactReplyToastWidgetState extends State<_CompactReplyToastWidget>
@@ -84,10 +94,10 @@ class _CompactReplyToastWidgetState extends State<_CompactReplyToastWidget>
     );
 
     _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
-    _slideAnim = Tween<Offset>(
-      begin: const Offset(0, -0.40),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic));
+    _slideAnim = Tween<Offset>(begin: const Offset(0, -0.40), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+        );
 
     _animController.forward();
 
@@ -136,11 +146,15 @@ class _CompactReplyToastWidgetState extends State<_CompactReplyToastWidget>
                 backgroundColor: Colors.white.withValues(alpha: 0.15),
                 backgroundImage: widget.recipientAvatar.isNotEmpty
                     ? (widget.recipientAvatar.startsWith('assets/')
-                        ? AssetImage(widget.recipientAvatar) as ImageProvider
-                        : NetworkImage(widget.recipientAvatar))
+                          ? AssetImage(widget.recipientAvatar) as ImageProvider
+                          : NetworkImage(widget.recipientAvatar))
                     : null,
                 child: widget.recipientAvatar.isEmpty
-                    ? const Icon(Icons.person_rounded, color: Colors.white70, size: 12)
+                    ? const Icon(
+                        Icons.person_rounded,
+                        color: Colors.white70,
+                        size: 12,
+                      )
                     : null,
               ),
               const SizedBox(width: 8),
@@ -176,7 +190,11 @@ class _CompactReplyToastWidgetState extends State<_CompactReplyToastWidget>
                   color: Color(0xFF16A34A),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_rounded, color: Colors.white, size: 11),
+                child: const Icon(
+                  Icons.check_rounded,
+                  color: Colors.white,
+                  size: 11,
+                ),
               ),
             ],
           ),
@@ -200,7 +218,8 @@ class StoryViewerScreen extends StatefulWidget {
   State<StoryViewerScreen> createState() => _StoryViewerScreenState();
 }
 
-class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProviderStateMixin {
+class _StoryViewerScreenState extends State<StoryViewerScreen>
+    with TickerProviderStateMixin {
   late int _currentGroupIdx;
   int _currentStoryIdx = 0;
 
@@ -213,100 +232,143 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
 
   late AnimationController _likeBtnAnimController;
   late Animation<double> _likeBtnScaleAnim;
-  late Animation<double> _unlikeBtnScaleAnim;
-  late Animation<double> _likeBtnTranslateYAnim;
-  late Animation<double> _likeBtnRotationAnim;
 
   late AnimationController _floatingHeartAnimController;
   late Animation<double> _floatingHeartScaleAnim;
   late Animation<double> _floatingHeartOpacityAnim;
   late Animation<Offset> _floatingHeartTranslateAnim;
 
-  bool _isLikeAnimating = false;
-  bool _isLikePressed = false;
+  bool _isMorePressed = false;
+  bool _isLikeDebouncing = false;
 
   StoryGroupModel? get _currentGroup {
-    if (_currentGroupIdx < 0 || _currentGroupIdx >= widget.groups.length) return null;
+    if (_currentGroupIdx < 0 || _currentGroupIdx >= widget.groups.length) {
+      return null;
+    }
     return widget.groups[_currentGroupIdx];
   }
 
   StoryItemModel? get _currentStory {
     final group = _currentGroup;
-    if (group == null || _currentStoryIdx < 0 || _currentStoryIdx >= group.stories.length) return null;
+    if (group == null ||
+        _currentStoryIdx < 0 ||
+        _currentStoryIdx >= group.stories.length) {
+      return null;
+    }
     return group.stories[_currentStoryIdx];
   }
 
   @override
   void initState() {
     super.initState();
-    _currentGroupIdx = widget.initialGroupIndex.clamp(0, widget.groups.isEmpty ? 0 : widget.groups.length - 1);
+    _currentGroupIdx = widget.initialGroupIndex.clamp(
+      0,
+      widget.groups.isEmpty ? 0 : widget.groups.length - 1,
+    );
 
     _progressAnimController = AnimationController(vsync: this);
     _progressAnimController.addStatusListener((status) {
-      if (status == AnimationStatus.completed && mounted && !_isPaused && !_isClosing) {
+      if (status == AnimationStatus.completed &&
+          mounted &&
+          !_isPaused &&
+          !_isClosing) {
         _nextStory();
       }
     });
 
-    // Dedicated 335ms sequence animation for Like/Unlike icon button (Scale + Upward Translation + Rotation)
+    // Dedicated sequence animation for Like/Unlike icon button (scale 1.0 -> 1.12 -> 1.0 over 200ms)
     _likeBtnAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 335),
+      duration: const Duration(milliseconds: 200),
     );
 
-    // Like sequence: 0.85 -> 1.20 -> 1.00
     _likeBtnScaleAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 1.00, end: 0.85).chain(CurveTween(curve: Curves.easeOut)), weight: 25),
-      TweenSequenceItem(tween: Tween<double>(begin: 0.85, end: 1.20).chain(CurveTween(curve: Curves.easeOutBack)), weight: 45),
-      TweenSequenceItem(tween: Tween<double>(begin: 1.20, end: 1.00).chain(CurveTween(curve: Curves.fastOutSlowIn)), weight: 30),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.12,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.12,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInCubic)),
+        weight: 50,
+      ),
     ]).animate(_likeBtnAnimController);
 
-    // Unlike sequence: 1.00 -> 0.90 -> 1.00
-    _unlikeBtnScaleAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 1.00, end: 0.90).chain(CurveTween(curve: Curves.easeOut)), weight: 50),
-      TweenSequenceItem(tween: Tween<double>(begin: 0.90, end: 1.00).chain(CurveTween(curve: Curves.easeInCubic)), weight: 50),
-    ]).animate(_likeBtnAnimController);
-
-    // Subtle 8px upward movement on Like pop
-    _likeBtnTranslateYAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 0.0, end: -8.0).chain(CurveTween(curve: Curves.easeOutBack)), weight: 60),
-      TweenSequenceItem(tween: Tween<double>(begin: -8.0, end: 0.0).chain(CurveTween(curve: Curves.fastOutSlowIn)), weight: 40),
-    ]).animate(_likeBtnAnimController);
-
-    // Subtle 2.5 degree (~0.045 rad) rotation on Like pop
-    _likeBtnRotationAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 0.0, end: -0.045).chain(CurveTween(curve: Curves.easeOut)), weight: 50),
-      TweenSequenceItem(tween: Tween<double>(begin: -0.045, end: 0.0).chain(CurveTween(curve: Curves.easeIn)), weight: 50),
-    ]).animate(_likeBtnAnimController);
-
-    // Floating Canvas Feedback Heart Animation (Instagram / Facebook Style: Rises & Fades Out over 730ms)
+    // Floating Canvas Feedback Heart Animation for Double-Tap (0.5 -> 1.2 -> 1.0, 650ms)
     _floatingHeartAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 730),
+      duration: const Duration(milliseconds: 650),
     );
 
     _floatingHeartScaleAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 0.4, end: 1.15).chain(CurveTween(curve: Curves.fastOutSlowIn)), weight: 35),
-      TweenSequenceItem(tween: Tween<double>(begin: 1.15, end: 1.0).chain(CurveTween(curve: Curves.easeOut)), weight: 65),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 0.5,
+          end: 1.2,
+        ).chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 40,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.2,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 25,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.linear)),
+        weight: 35,
+      ),
     ]).animate(_floatingHeartAnimController);
 
     _floatingHeartOpacityAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeIn)), weight: 25),
-      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 0.0).chain(CurveTween(curve: Curves.easeOut)), weight: 75),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
+        weight: 20,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.linear)),
+        weight: 45,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 35,
+      ),
     ]).animate(_floatingHeartAnimController);
 
-    _floatingHeartTranslateAnim = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(0, -36.0),
-    ).animate(CurvedAnimation(
-      parent: _floatingHeartAnimController,
-      curve: Curves.easeOutCubic,
-    ));
+    _floatingHeartTranslateAnim =
+        Tween<Offset>(begin: Offset.zero, end: const Offset(0, -28.0)).animate(
+          CurvedAnimation(
+            parent: _floatingHeartAnimController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     if (_currentGroup == null || _currentGroup!.stories.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _closeViewer());
     } else {
-      _startStoryTimer();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_isClosing) {
+          _startStoryTimer();
+        }
+      });
     }
   }
 
@@ -319,9 +381,20 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     super.dispose();
   }
 
+  void _markCurrentStoryViewed() {
+    final story = _currentStory;
+    if (story != null) {
+      story.isViewed = true;
+      if (Get.isRegistered<StoryController>()) {
+        Get.find<StoryController>().markStoryAsViewed(story.id);
+      }
+    }
+  }
+
   void _closeViewer() {
     if (_isClosing) return;
     _isClosing = true;
+    _markCurrentStoryViewed();
     _progressAnimController.stop();
     Get.back();
   }
@@ -351,6 +424,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
   void _startStoryTimer() {
     _progressAnimController.stop();
     final story = _currentStory;
+    _markCurrentStoryViewed();
     final duration = _calculateStoryDuration(story);
     _progressAnimController.duration = duration;
     _progressAnimController.reset();
@@ -444,75 +518,74 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
   }
 
   void _toggleLike(StoryItemModel story) {
-    if (_isLikeAnimating) return; // Debounce taps during active animation
-    _isLikeAnimating = true;
-
-    final isCurrentlyLiked = story.isLiked;
-
-    // 1. Immediate Optimistic UI Update
-    setState(() {
-      story.isLiked = !isCurrentlyLiked;
-      if (story.isLiked) {
-        story.viewersCount++;
-      } else if (story.viewersCount > 0) {
-        story.viewersCount--;
-      }
-    });
-
-    // 2. Play Like Button Multi-Effect Animation (280ms: Scale + Upward Float + Rotation)
-    _likeBtnAnimController.forward(from: 0.0).then((_) {
-      if (mounted) {
-        _isLikeAnimating = false;
-      }
-    });
-
-    // 3. Elegant Floating Canvas Heart (Instagram / Facebook Style: Rises & Fades Out over 600ms)
-    if (!isCurrentlyLiked) {
-      setState(() => _showHeartAnimation = true);
-      _floatingHeartAnimController.forward(from: 0.0).then((_) {
-        if (mounted) {
-          setState(() => _showHeartAnimation = false);
-        }
-      });
+    if (!story.allowReactions) {
+      AppNotificationBanner.showInfo(
+        context: context,
+        title: "Reactions Disabled",
+        message: "The author has disabled reactions for this story.",
+      );
+      return;
     }
 
-    // 4. Background Persistence & Error Recovery
-    try {
-      if (Get.isRegistered<StoryController>()) {
-        final controller = Get.find<StoryController>();
-        controller.toggleLike(story.id);
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          story.isLiked = isCurrentlyLiked;
-          if (isCurrentlyLiked) {
-            story.viewersCount++;
-          } else if (story.viewersCount > 0) {
-            story.viewersCount--;
-          }
-        });
-        AppNotificationBanner.showDanger(
-          context: context,
-          title: "Like Failed",
-          message: "Could not sync story reaction. Reverting...",
-        );
-      }
+    // Debounce: prevent rapid duplicate like/unlike requests
+    if (_isLikeDebouncing) return;
+    _isLikeDebouncing = true;
+    Future.delayed(const Duration(milliseconds: 300), () {
+      _isLikeDebouncing = false;
+    });
+
+    // Sync with backend via controller
+    if (Get.isRegistered<StoryController>()) {
+      final ctrl = Get.find<StoryController>();
+      ctrl.syncLikeToBackend(story.id);
+    } else {
+      story.isLiked = !story.isLiked;
+      story.likesCount += story.isLiked ? 1 : -1;
+    }
+
+    // Rebuild UI with new state immediately
+    setState(() {});
+
+    // Animate button heart icon (scale 1.0 -> 1.18 -> 1.0)
+    _likeBtnAnimController.forward(from: 0.0);
+
+    // Create activity notification if story is liked
+    if (story.isLiked && Get.isRegistered<NotificationController>()) {
+      final notifCtrl = Get.find<NotificationController>();
+      final group = _currentGroup;
+      notifCtrl.addActivityNotification(
+        NotificationModel(
+          id: 'notif_like_${story.id}_${DateTime.now().millisecondsSinceEpoch}',
+          type: NotificationType.like,
+          title: 'Story Like',
+          body: '${group?.userName ?? "Someone"} liked your story.',
+          senderName: group?.userName ?? 'Community User',
+          senderAvatar: group?.userAvatar,
+          timeAgo: 'Just now',
+          timestamp: DateTime.now(),
+          isRead: false,
+          targetId: story.id,
+          targetType: 'story',
+        ),
+      );
     }
   }
 
   void _triggerDoubleTapLike() {
     final story = _currentStory;
-    if (story == null) return;
-    _toggleLike(story);
-  }
+    if (story == null || !story.allowReactions) return;
 
-  String _formatReplyHint(String userName) {
-    if (userName.length > 14) {
-      final truncated = '${userName.substring(0, 11)}...';
-      return 'Send message to $truncated';
+    if (!story.isLiked) {
+      _toggleLike(story);
+    } else {
+      _likeBtnAnimController.forward(from: 0.0);
     }
-    return 'Send message to $userName...';
+
+    // Trigger center floating heart animation for double tap gesture
+    setState(() => _showHeartAnimation = true);
+    _floatingHeartAnimController.forward(from: 0.0).then((_) {
+      if (mounted) setState(() => _showHeartAnimation = false);
+    });
   }
 
   Widget _buildStoryReplyThumbnail(StoryItemModel story) {
@@ -576,7 +649,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                 color: Colors.black.withValues(alpha: 0.65),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 13),
+              child: const Icon(
+                Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: 13,
+              ),
             ),
           ],
         ),
@@ -586,26 +663,45 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     // 3. Image Story Thumbnail
     Widget imageContent;
     if (mediaUrl.startsWith('assets/')) {
-      imageContent = Image.asset(mediaUrl, width: thumbSize, height: thumbSize, fit: BoxFit.cover);
-    } else if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
+      imageContent = Image.asset(
+        mediaUrl,
+        width: thumbSize,
+        height: thumbSize,
+        fit: BoxFit.cover,
+      );
+    } else if (mediaUrl.startsWith('http://') ||
+        mediaUrl.startsWith('https://')) {
       imageContent = Image.network(
         mediaUrl,
         width: thumbSize,
         height: thumbSize,
         fit: BoxFit.cover,
-        errorBuilder: (c, e, s) => const Icon(Icons.image_not_supported_rounded, color: Colors.white54, size: 16),
+        errorBuilder: (c, e, s) => const Icon(
+          Icons.image_not_supported_rounded,
+          color: Colors.white54,
+          size: 16,
+        ),
       );
     } else {
       final file = _resolveFile(mediaUrl);
       if (file.existsSync()) {
-        imageContent = Image.file(file, width: thumbSize, height: thumbSize, fit: BoxFit.cover);
+        imageContent = Image.file(
+          file,
+          width: thumbSize,
+          height: thumbSize,
+          fit: BoxFit.cover,
+        );
       } else {
         imageContent = Image.network(
           mediaUrl,
           width: thumbSize,
           height: thumbSize,
           fit: BoxFit.cover,
-          errorBuilder: (c, e, s) => const Icon(Icons.image_not_supported_rounded, color: Colors.white54, size: 16),
+          errorBuilder: (c, e, s) => const Icon(
+            Icons.image_not_supported_rounded,
+            color: Colors.white54,
+            size: 16,
+          ),
         );
       }
     }
@@ -625,7 +721,15 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
   }
 
   void _openStoryReplySheet(StoryGroupModel group, StoryItemModel story) {
-    _pauseStory();
+    if (story.storyReplyPermission == StoryReplyPermission.off) {
+      AppNotificationBanner.showInfo(
+        context: context,
+        title: "Replies Off",
+        message: "The author has disabled replies for this story.",
+      );
+      return;
+    }
+
     final replyTextController = TextEditingController();
 
     showModalBottomSheet(
@@ -663,86 +767,101 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeOut,
                 builder: (context, opacity, child) {
-                  return Opacity(
-                    opacity: opacity,
-                    child: child,
-                  );
+                  return Opacity(opacity: opacity, child: child);
                 },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white12),
-                  ),
-                  child: Row(
-                    children: [
-                      // Real User Avatar / Fallback Placeholder
-                      CircleAvatar(
-                        radius: 17,
-                        backgroundColor: Colors.white.withValues(alpha: 0.15),
-                        backgroundImage: group.userAvatar.isNotEmpty
-                            ? (group.userAvatar.startsWith('assets/')
-                                ? AssetImage(group.userAvatar) as ImageProvider
-                                : NetworkImage(group.userAvatar))
-                            : null,
-                        child: group.userAvatar.isEmpty
-                            ? const Icon(Icons.person_rounded, color: Colors.white70, size: 18)
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Replying to ${group.userName}'s Story",
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 1),
-                            Text(
-                              story.textContent != null && story.textContent!.trim().isNotEmpty
-                                  ? story.textContent!.trim()
-                                  : (story.mediaUrl != null && _isVideoFile(story.mediaUrl!)
-                                      ? "Video Story"
-                                      : "Photo Story"),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: Colors.white60, fontSize: 11.5),
-                            ),
-                          ],
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.15),
                         ),
                       ),
-                      const SizedBox(width: 8),
-
-                      // Informative Story Thumbnail Preview
-                      _buildStoryReplyThumbnail(story),
-                    ],
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: Colors.white.withValues(
+                              alpha: 0.15,
+                            ),
+                            backgroundImage: group.userAvatar.isNotEmpty
+                                ? (group.userAvatar.startsWith('assets/')
+                                      ? AssetImage(group.userAvatar)
+                                            as ImageProvider
+                                      : NetworkImage(group.userAvatar))
+                                : null,
+                            child: group.userAvatar.isEmpty
+                                ? const Icon(
+                                    Icons.person_rounded,
+                                    color: Colors.white70,
+                                    size: 20,
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Replying to ${group.userName}'s Story",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  story.textContent != null &&
+                                          story.textContent!.trim().isNotEmpty
+                                      ? story.textContent!.trim()
+                                      : (story.mediaUrl != null &&
+                                                _isVideoFile(story.mediaUrl!)
+                                            ? "Video Story"
+                                            : "Photo Story"),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          _buildStoryReplyThumbnail(story),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 12),
+              if (story.allowReactions) ...[
+                const SizedBox(height: 12),
 
-              // Quick Emoji Reaction Bar
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: ['❤️', '🔥', '😂', '😮', '😢', '👏'].map((emoji) {
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _sendStoryReaction(group, story, emoji);
-                    },
-                    child: Text(emoji, style: const TextStyle(fontSize: 26)),
-                  );
-                }).toList(),
-              ),
+                // Quick Emoji Reaction Bar
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: ['❤️', '🔥', '😂', '😮', '😢', '👏'].map((emoji) {
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _sendStoryReaction(group, story, emoji);
+                      },
+                      child: Text(emoji, style: const TextStyle(fontSize: 26)),
+                    );
+                  }).toList(),
+                ),
+              ],
 
               const SizedBox(height: 14),
 
@@ -757,11 +876,18 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
 
                   return StatefulBuilder(
                     builder: (context, setInnerState) {
-                      final hasText = replyTextController.text.trim().isNotEmpty;
+                      final hasText = replyTextController.text
+                          .trim()
+                          .isNotEmpty;
 
                       return Focus(
                         onFocusChange: (focused) {
                           setInnerState(() => isFocused = focused);
+                          if (focused) {
+                            _pauseStory();
+                          } else {
+                            _resumeStory();
+                          }
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
@@ -801,19 +927,29 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                                     setInnerState(() {});
                                   },
                                   onSubmitted: (text) async {
-                                    if (text.trim().isNotEmpty && !isSending && !isSuccess) {
+                                    if (text.trim().isNotEmpty &&
+                                        !isSending &&
+                                        !isSuccess) {
                                       setInnerState(() => isSending = true);
-                                      await Future.delayed(const Duration(milliseconds: 160));
+                                      await Future.delayed(
+                                        const Duration(milliseconds: 160),
+                                      );
                                       if (context.mounted) {
                                         setInnerState(() {
                                           isSending = false;
                                           isSuccess = true;
                                         });
                                       }
-                                      await Future.delayed(const Duration(milliseconds: 220));
+                                      await Future.delayed(
+                                        const Duration(milliseconds: 220),
+                                      );
                                       if (ctx.mounted) {
                                         Navigator.pop(ctx);
-                                        _sendStoryReplyMessage(group, story, text.trim());
+                                        _sendStoryReplyMessage(
+                                          group,
+                                          story,
+                                          text.trim(),
+                                        );
                                       }
                                     }
                                   },
@@ -850,20 +986,29 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                                 },
                                 onTap: (hasText && !isSending && !isSuccess)
                                     ? () async {
-                                        final text = replyTextController.text.trim();
+                                        final text = replyTextController.text
+                                            .trim();
                                         if (text.isNotEmpty) {
                                           setInnerState(() => isSending = true);
-                                          await Future.delayed(const Duration(milliseconds: 160));
+                                          await Future.delayed(
+                                            const Duration(milliseconds: 160),
+                                          );
                                           if (context.mounted) {
                                             setInnerState(() {
                                               isSending = false;
                                               isSuccess = true;
                                             });
                                           }
-                                          await Future.delayed(const Duration(milliseconds: 220));
+                                          await Future.delayed(
+                                            const Duration(milliseconds: 220),
+                                          );
                                           if (ctx.mounted) {
                                             Navigator.pop(ctx);
-                                            _sendStoryReplyMessage(group, story, text);
+                                            _sendStoryReplyMessage(
+                                              group,
+                                              story,
+                                              text,
+                                            );
                                           }
                                         }
                                       }
@@ -880,39 +1025,50 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                                     decoration: BoxDecoration(
                                       color: isSuccess
                                           ? const Color(0xFF16A34A)
-                                          : (hasText ? Colors.white : Colors.transparent),
+                                          : (hasText
+                                                ? Colors.white
+                                                : Colors.transparent),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Center(
                                       child: AnimatedSwitcher(
-                                        duration: const Duration(milliseconds: 180),
-                                        transitionBuilder: (child, anim) => ScaleTransition(
-                                          scale: anim,
-                                          child: FadeTransition(opacity: anim, child: child),
+                                        duration: const Duration(
+                                          milliseconds: 180,
                                         ),
+                                        transitionBuilder: (child, anim) =>
+                                            ScaleTransition(
+                                              scale: anim,
+                                              child: FadeTransition(
+                                                opacity: anim,
+                                                child: child,
+                                              ),
+                                            ),
                                         child: isSending
                                             ? const SizedBox(
                                                 key: ValueKey('loading'),
                                                 width: 14,
                                                 height: 14,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: Colors.black,
-                                                ),
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.black,
+                                                    ),
                                               )
                                             : isSuccess
-                                                ? const Icon(
-                                                    Icons.check_rounded,
-                                                    key: ValueKey('success'),
-                                                    color: Colors.white,
-                                                    size: 18,
-                                                  )
-                                                : Icon(
-                                                    Icons.send_rounded,
-                                                    key: ValueKey<bool>(hasText),
-                                                    color: hasText ? Colors.black : Colors.white30,
-                                                    size: 16,
-                                                  ),
+                                            ? const Icon(
+                                                Icons.check_rounded,
+                                                key: ValueKey('success'),
+                                                color: Colors.white,
+                                                size: 18,
+                                              )
+                                            : Icon(
+                                                Icons.send_rounded,
+                                                key: ValueKey<bool>(hasText),
+                                                color: hasText
+                                                    ? Colors.black
+                                                    : Colors.white30,
+                                                size: 16,
+                                              ),
                                       ),
                                     ),
                                   ),
@@ -933,7 +1089,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     ).then((_) => _resumeStory());
   }
 
-  void _sendStoryReplyMessage(StoryGroupModel group, StoryItemModel story, String message) async {
+  void _sendStoryReplyMessage(
+    StoryGroupModel group,
+    StoryItemModel story,
+    String message,
+  ) async {
     try {
       if (!Get.isRegistered<ChatController>()) {
         ChatBinding().dependencies();
@@ -949,6 +1109,26 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
         mediaUrl: story.mediaUrl,
       );
 
+      // Create real activity notification for Story Owner
+      if (Get.isRegistered<NotificationController>()) {
+        final notifCtrl = Get.find<NotificationController>();
+        notifCtrl.addActivityNotification(
+          NotificationModel(
+            id: 'notif_reply_${story.id}_${DateTime.now().millisecondsSinceEpoch}',
+            type: NotificationType.comment,
+            title: 'Story Reply',
+            body: '${group.userName} replied to your story: "$message"',
+            senderName: group.userName,
+            senderAvatar: group.userAvatar,
+            timeAgo: 'Just now',
+            timestamp: DateTime.now(),
+            isRead: false,
+            targetId: story.id,
+            targetType: 'story',
+          ),
+        );
+      }
+
       // Show Compact Floating Toast Notification & Resume Story Playback
       if (mounted) {
         _showCompactReplyToast(context, group.userName, group.userAvatar);
@@ -959,15 +1139,49 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
         AppNotificationBanner.showDanger(
           context: context,
           title: "Failed to Send Reply",
-          message: "Could not send message to ${group.userName}. Please try again.",
+          message:
+              "Could not send message to ${group.userName}. Please try again.",
           icon: Icons.error_outline_rounded,
         );
       }
     }
   }
 
-  void _sendStoryReaction(StoryGroupModel group, StoryItemModel story, String emoji) {
+  void _sendStoryReaction(
+    StoryGroupModel group,
+    StoryItemModel story,
+    String emoji,
+  ) {
+    if (!story.allowReactions) {
+      AppNotificationBanner.showInfo(
+        context: context,
+        title: "Reactions Disabled",
+        message: "The author has disabled reactions for this story.",
+      );
+      return;
+    }
+
     _triggerDoubleTapLike();
+
+    if (Get.isRegistered<NotificationController>()) {
+      final notifCtrl = Get.find<NotificationController>();
+      notifCtrl.addActivityNotification(
+        NotificationModel(
+          id: 'notif_react_${story.id}_${DateTime.now().millisecondsSinceEpoch}',
+          type: NotificationType.like,
+          title: 'Story Reaction',
+          body: '${group.userName} reacted $emoji to your story.',
+          senderName: group.userName,
+          senderAvatar: group.userAvatar,
+          timeAgo: 'Just now',
+          timestamp: DateTime.now(),
+          isRead: false,
+          targetId: story.id,
+          targetType: 'story',
+        ),
+      );
+    }
+
     AppNotificationBanner.showSuccess(
       context: context,
       title: "Reaction Sent",
@@ -976,7 +1190,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     );
   }
 
-  void _openCampusGroupSelectionSheet(StoryGroupModel group, StoryItemModel story) {
+  void _openCampusGroupSelectionSheet(
+    StoryGroupModel group,
+    StoryItemModel story,
+  ) {
     _pauseStory();
 
     // Mock joined campus groups list
@@ -1037,10 +1254,18 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                   children: [
                     const Text(
                       "Share to Campus Group",
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white54, size: 20),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white54,
+                        size: 20,
+                      ),
                       onPressed: () => Navigator.pop(ctx),
                     ),
                   ],
@@ -1058,33 +1283,50 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                             color: Colors.white.withValues(alpha: 0.08),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.groups_outlined, color: Colors.white54, size: 42),
+                          child: const Icon(
+                            Icons.groups_outlined,
+                            color: Colors.white54,
+                            size: 42,
+                          ),
                         ),
                         const SizedBox(height: 14),
                         const Text(
                           "You haven't joined any campus groups yet.",
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                         const SizedBox(height: 20),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 22,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                           ),
                           onPressed: () {
                             Navigator.pop(ctx);
                             AppNotificationBanner.showSuccess(
                               context: context,
                               title: "Browse Groups",
-                              message: "Explore campus groups in the Community tab!",
+                              message:
+                                  "Explore campus groups in the Community tab!",
                               icon: Icons.explore_rounded,
                             );
                           },
                           icon: const Icon(Icons.explore_rounded, size: 18),
-                          label: const Text("Browse Groups", style: TextStyle(fontWeight: FontWeight.bold)),
+                          label: const Text(
+                            "Browse Groups",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ],
                     ),
@@ -1099,7 +1341,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
 
                   // ── Scrollable List of Joined Campus Groups ──
                   ConstrainedBox(
-                    constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.40),
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.40,
+                    ),
                     child: SingleChildScrollView(
                       child: Column(
                         children: joinedGroups.map((g) {
@@ -1114,14 +1358,19 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 180),
                               margin: const EdgeInsets.symmetric(vertical: 4),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? Colors.white.withValues(alpha: 0.12)
                                     : Colors.white.withValues(alpha: 0.04),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: isSelected ? Colors.white38 : Colors.white12,
+                                  color: isSelected
+                                      ? Colors.white38
+                                      : Colors.white12,
                                   width: 1.2,
                                 ),
                               ),
@@ -1132,15 +1381,22 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                                     width: 42,
                                     height: 42,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.10),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.10,
+                                      ),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(Icons.groups_rounded, color: Colors.white, size: 22),
+                                    child: const Icon(
+                                      Icons.groups_rounded,
+                                      color: Colors.white,
+                                      size: 22,
+                                    ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           children: [
@@ -1159,14 +1415,24 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                                             if (g.isDefault) ...[
                                               const SizedBox(width: 6),
                                               Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2,
+                                                    ),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.white.withValues(alpha: 0.15),
-                                                  borderRadius: BorderRadius.circular(6),
+                                                  color: Colors.white
+                                                      .withValues(alpha: 0.15),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
                                                 ),
                                                 child: const Text(
                                                   "Default",
-                                                  style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
+                                                  style: TextStyle(
+                                                    color: Colors.white70,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
                                               ),
                                             ],
@@ -1175,7 +1441,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                                         const SizedBox(height: 2),
                                         Text(
                                           "${g.memberCount} members",
-                                          style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                          style: const TextStyle(
+                                            color: Colors.white54,
+                                            fontSize: 12,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -1183,8 +1452,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                                   const SizedBox(width: 10),
                                   // Selection Indicator
                                   Icon(
-                                    isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                                    color: isSelected ? Colors.white : Colors.white38,
+                                    isSelected
+                                        ? Icons.radio_button_checked
+                                        : Icons.radio_button_off,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.white38,
                                     size: 22,
                                   ),
                                 ],
@@ -1203,10 +1476,16 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: selectedGroup != null ? Colors.white : Colors.white24,
-                        foregroundColor: selectedGroup != null ? Colors.black : Colors.white38,
+                        backgroundColor: selectedGroup != null
+                            ? Colors.white
+                            : Colors.white24,
+                        foregroundColor: selectedGroup != null
+                            ? Colors.black
+                            : Colors.white38,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22),
+                        ),
                         elevation: selectedGroup != null ? 2 : 0,
                       ),
                       onPressed: selectedGroup == null
@@ -1220,40 +1499,75 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                                 context: context,
                                 builder: (dialogCtx) => AlertDialog(
                                   backgroundColor: const Color(0xFF1E1E1E),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(22),
+                                  ),
                                   title: const Text(
                                     "Share Story?",
-                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 17,
+                                    ),
                                   ),
                                   content: Column(
                                     mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         "Share this story to:",
-                                        style: TextStyle(color: Colors.white54, fontSize: 13),
+                                        style: TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 13,
+                                        ),
                                       ),
                                       const SizedBox(height: 6),
                                       Text(
                                         targetGroup.name,
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                        ),
                                       ),
                                     ],
                                   ),
                                   actions: [
                                     TextButton(
-                                      onPressed: () => Navigator.pop(dialogCtx, false),
-                                      child: const Text("Cancel", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
+                                      onPressed: () =>
+                                          Navigator.pop(dialogCtx, false),
+                                      child: const Text(
+                                        "Cancel",
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
                                     ),
                                     ElevatedButton(
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.white,
                                         foregroundColor: Colors.black,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 18,
+                                          vertical: 10,
+                                        ),
                                       ),
-                                      onPressed: () => Navigator.pop(dialogCtx, true),
-                                      child: const Text("Share", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                                      onPressed: () =>
+                                          Navigator.pop(dialogCtx, true),
+                                      child: const Text(
+                                        "Share",
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -1263,14 +1577,18 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                                 AppNotificationBanner.showSuccess(
                                   context: this.context,
                                   title: "✓ Story Shared",
-                                  message: "Story shared successfully to ${targetGroup.name}!",
+                                  message:
+                                      "Story shared successfully to ${targetGroup.name}!",
                                   icon: Icons.check_circle_rounded,
                                 );
                               }
                             },
                       child: const Text(
                         "Share Story",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   ),
@@ -1313,7 +1631,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
 
             const Text(
               "Share Story",
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -1325,13 +1647,28 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                   color: Colors.white.withValues(alpha: 0.10),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.link_rounded, color: Colors.white, size: 20),
+                child: const Icon(
+                  Icons.link_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
-              title: const Text("Copy Story Link", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              subtitle: const Text("Copy direct link to share anywhere", style: TextStyle(color: Colors.white54, fontSize: 12)),
+              title: const Text(
+                "Copy Story Link",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: const Text(
+                "Copy direct link to share anywhere",
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
-                Clipboard.setData(ClipboardData(text: "https://genlink.app/story/${story.id}"));
+                Clipboard.setData(
+                  ClipboardData(text: "https://genlink.app/story/${story.id}"),
+                );
                 AppNotificationBanner.showSuccess(
                   context: context,
                   title: "Link Copied",
@@ -1349,10 +1686,23 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                   color: Colors.white.withValues(alpha: 0.10),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.groups_rounded, color: Colors.white, size: 20),
+                child: const Icon(
+                  Icons.groups_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
-              title: const Text("Share to Campus Group", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              subtitle: const Text("Select a group to post story preview", style: TextStyle(color: Colors.white54, fontSize: 12)),
+              title: const Text(
+                "Share to Campus Group",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: const Text(
+                "Select a group to post story preview",
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 _openCampusGroupSelectionSheet(group, story);
@@ -1387,7 +1737,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
               children: [
                 Text(
                   "Story Viewers (${story.viewersCount})",
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, color: Colors.white54),
@@ -1400,15 +1754,29 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
               const Padding(
                 padding: EdgeInsets.all(20),
                 child: Center(
-                  child: Text("No viewers yet.", style: TextStyle(color: Colors.white38)),
+                  child: Text(
+                    "No viewers yet.",
+                    style: TextStyle(color: Colors.white38),
+                  ),
                 ),
               )
             else
               ...story.viewers.map(
                 (v) => ListTile(
-                  leading: CircleAvatar(backgroundImage: NetworkImage(v.userAvatar)),
-                  title: Text(v.userName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                  subtitle: Text(v.viewedTimeAgo, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                  leading: CircleAvatar(
+                    backgroundImage: NetworkImage(v.userAvatar),
+                  ),
+                  title: Text(
+                    v.userName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    v.viewedTimeAgo,
+                    style: const TextStyle(color: Colors.white38, fontSize: 12),
+                  ),
                 ),
               ),
           ],
@@ -1464,10 +1832,18 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                   children: [
                     const Text(
                       "Report Story",
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white54, size: 20),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white54,
+                        size: 20,
+                      ),
                       onPressed: () => Navigator.pop(ctx),
                     ),
                   ],
@@ -1489,7 +1865,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                       child: Row(
                         children: [
                           Icon(
-                            isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                            isSelected
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_off,
                             color: isSelected ? Colors.white : Colors.white38,
                             size: 20,
                           ),
@@ -1498,7 +1876,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                             r,
                             style: TextStyle(
                               color: isSelected ? Colors.white : Colors.white70,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                               fontSize: 14.5,
                             ),
                           ),
@@ -1517,18 +1897,27 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                       backgroundColor: Colors.white,
                       foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(22),
+                      ),
                     ),
                     onPressed: () {
                       Navigator.pop(ctx);
                       AppNotificationBanner.showSuccess(
                         context: context,
                         title: "Report Submitted",
-                        message: "Thank you for keeping GenLink safe. We will review this story.",
+                        message:
+                            "Thank you for keeping GenLink safe. We will review this story.",
                         icon: Icons.shield_rounded,
                       );
                     },
-                    child: const Text("Submit Report", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    child: const Text(
+                      "Submit Report",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1546,22 +1935,46 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: Text("Mute ${group.userName}?", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17)),
-        content: Text("You will no longer see stories from ${group.userName}. You can unmute them anytime in settings.", style: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 14)),
+        title: Text(
+          "Mute ${group.userName}?",
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+          ),
+        ),
+        content: Text(
+          "You will no longer see stories from ${group.userName}. You can unmute them anytime in settings.",
+          style: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx, false),
-            child: const Text("Cancel", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
+            child: const Text(
+              "Cancel",
+              style: TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             ),
             onPressed: () => Navigator.pop(dialogCtx, true),
-            child: const Text("Mute", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            child: const Text(
+              "Mute",
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -1586,168 +1999,388 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     _pauseStory();
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        decoration: const BoxDecoration(
-          color: Color(0xFF141414),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
+      builder: (ctx) => SafeArea(
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.82,
+          ),
+          decoration: const BoxDecoration(
+            color: Color(0xFF141414),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(color: Colors.black54, blurRadius: 20, spreadRadius: 2),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
+              // Sheet Header Title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Text(
+                      group.isOwner ? "Manage Your Story" : "Story Options",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Divider(color: Colors.white10, height: 1),
+              const SizedBox(height: 8),
 
-            if (group.isOwner) ...[
-              // ── MY STORY OPTIONS ──
-              ListTile(
-                leading: const Icon(Icons.bar_chart_rounded, color: Colors.white),
-                title: const Text("View Insights", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("See story views and analytics", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _showViewersSheet();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.archive_outlined, color: Colors.white),
-                title: const Text("Archive Story", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Move story to your private archive", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  AppNotificationBanner.showSuccess(
-                    context: context,
-                    title: "Story Archived",
-                    message: "Story moved to your archive.",
-                    icon: Icons.archive_rounded,
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.download_rounded, color: Colors.white),
-                title: const Text("Save Story", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Save story photo/video to phone gallery", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  AppNotificationBanner.showSuccess(
-                    context: context,
-                    title: "Story Saved",
-                    message: "Story media saved to your device gallery!",
-                    icon: Icons.download_done_rounded,
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.link_rounded, color: Colors.white),
-                title: const Text("Copy Story Link", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Copy story URL to clipboard", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Clipboard.setData(ClipboardData(text: "https://genlink.app/story/${story.id}"));
-                  AppNotificationBanner.showSuccess(
-                    context: context,
-                    title: "Link Copied",
-                    message: "Story link copied to clipboard!",
-                    icon: Icons.copy_rounded,
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: AppColors.danger),
-                title: const Text("Delete Story", style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Permanently remove this story", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  final bool? confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (dialogCtx) => AlertDialog(
-                      backgroundColor: const Color(0xFF1E1E1E),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-                      title: const Text("Delete Story?", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17)),
-                      content: const Text("This story will be permanently deleted.", style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14)),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogCtx, false),
-                          child: const Text("Cancel", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
+              // Scrollable Options List
+              Flexible(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                  child: Column(
+                    children: [
+                      if (group.isOwner) ...[
+                        // ── MY STORY OPTIONS ──
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.edit_outlined,
+                          title: "Edit Story",
+                          subtitle: "Modify story text, layers, or background",
+                          onTap: () {
+                            AppNotificationBanner.showInfo(
+                              context: context,
+                              title: "Edit Story",
+                              message: "Story editor ready for modifications.",
+                              icon: Icons.edit_rounded,
+                            );
+                          },
                         ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.danger,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                          ),
-                          onPressed: () => Navigator.pop(dialogCtx, true),
-                          child: const Text("Delete", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.lock_outline_rounded,
+                          title: "Story Privacy",
+                          subtitle: "Who can see your story (Public)",
+                          onTap: () {
+                            AppNotificationBanner.showInfo(
+                              context: context,
+                              title: "Story Privacy",
+                              message: "Story visibility set to Public.",
+                              icon: Icons.lock_outline_rounded,
+                            );
+                          },
+                        ),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.bar_chart_rounded,
+                          title: "Story Insights",
+                          subtitle: "See viewers, likes, and story analytics",
+                          onTap: () {
+                            _showViewersSheet();
+                          },
+                        ),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.download_rounded,
+                          title: "Save to Device",
+                          subtitle: "Save story photo/video to phone gallery",
+                          onTap: () {
+                            AppNotificationBanner.showSuccess(
+                              context: context,
+                              title: "Story Saved",
+                              message:
+                                  "Story media saved to your device gallery!",
+                              icon: Icons.download_done_rounded,
+                            );
+                          },
+                        ),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.delete_outline,
+                          title: "Delete Story",
+                          subtitle: "Permanently remove this story",
+                          isDanger: true,
+                          onTap: () async {
+                            final bool? confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (dialogCtx) => AlertDialog(
+                                backgroundColor: const Color(0xFF1E1E1E),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(22),
+                                ),
+                                title: const Text(
+                                  "Delete Story?",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 17,
+                                  ),
+                                ),
+                                content: const Text(
+                                  "This story will be permanently deleted.",
+                                  style: TextStyle(
+                                    color: Color(0xFFAAAAAA),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(dialogCtx, false),
+                                    child: const Text(
+                                      "Cancel",
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.danger,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(18),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 10,
+                                      ),
+                                    ),
+                                    onPressed: () =>
+                                        Navigator.pop(dialogCtx, true),
+                                    child: const Text(
+                                      "Delete",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirmed == true && mounted) {
+                              final controller = Get.find<StoryController>();
+                              controller.deleteStory(story.id);
+                              _closeViewer();
+                              AppNotificationBanner.showSuccess(
+                                context: context,
+                                title: "✓ Story Deleted",
+                                message:
+                                    "Your story has been permanently deleted.",
+                                icon: Icons.check_circle_rounded,
+                              );
+                            }
+                          },
+                        ),
+                      ] else ...[
+                        // ── OTHER USER'S STORY OPTIONS ──
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.near_me_outlined,
+                          title: "Share Story",
+                          subtitle: "Share to Campus Group or friends",
+                          onTap: () {
+                            _openStoryShareSheet(group, story);
+                          },
+                        ),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.link_rounded,
+                          title: "Copy Story Link",
+                          subtitle: "Copy direct link to share anywhere",
+                          onTap: () {
+                            Clipboard.setData(
+                              ClipboardData(
+                                text: "https://genlink.app/story/${story.id}",
+                              ),
+                            );
+                            AppNotificationBanner.showSuccess(
+                              context: context,
+                              title: "Link Copied",
+                              message: "Story link copied to clipboard!",
+                              icon: Icons.copy_rounded,
+                            );
+                          },
+                        ),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.flag_outlined,
+                          title: "Report Story",
+                          subtitle: "Report inappropriate content or spam",
+                          onTap: () {
+                            _openReportStorySheet(group, story);
+                          },
+                        ),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.volume_off_outlined,
+                          title: "Mute Stories",
+                          subtitle: "Stop seeing stories from this user",
+                          onTap: () {
+                            _openMuteConfirmationDialog(group);
+                          },
+                        ),
+                        _buildMenuOptionTile(
+                          ctx: ctx,
+                          icon: Icons.block_rounded,
+                          title: "Block User",
+                          subtitle: "Block this user from contacting you",
+                          isDanger: true,
+                          onTap: () async {
+                            final bool? confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (dialogCtx) => AlertDialog(
+                                backgroundColor: const Color(0xFF1E1E1E),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(22),
+                                ),
+                                title: Text(
+                                  "Block ${group.userName}?",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 17,
+                                  ),
+                                ),
+                                content: const Text(
+                                  "They won't be able to see your stories or posts.",
+                                  style: TextStyle(
+                                    color: Color(0xFFAAAAAA),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(dialogCtx, false),
+                                    child: const Text(
+                                      "Cancel",
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.danger,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(18),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 10,
+                                      ),
+                                    ),
+                                    onPressed: () =>
+                                        Navigator.pop(dialogCtx, true),
+                                    child: const Text(
+                                      "Block",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirmed == true && mounted) {
+                              _closeViewer();
+                              AppNotificationBanner.showSuccess(
+                                context: context,
+                                title: "User Blocked",
+                                message:
+                                    "You will no longer see stories from ${group.userName}.",
+                                icon: Icons.block_rounded,
+                              );
+                            }
+                          },
                         ),
                       ],
-                    ),
-                  );
-
-                  if (confirmed == true && mounted) {
-                    final controller = Get.find<StoryController>();
-                    controller.deleteStory(story.id);
-                    _closeViewer();
-                    AppNotificationBanner.showSuccess(
-                      context: context,
-                      title: "✓ Story Deleted",
-                      message: "Your story has been permanently deleted.",
-                      icon: Icons.check_circle_rounded,
-                    );
-                  }
-                },
-              ),
-            ] else ...[
-              // ── OTHER USER'S STORY OPTIONS ──
-              ListTile(
-                leading: const Icon(Icons.link_rounded, color: Colors.white),
-                title: const Text("Copy Story Link", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Copy direct link to share anywhere", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Clipboard.setData(ClipboardData(text: "https://genlink.app/story/${story.id}"));
-                  AppNotificationBanner.showSuccess(
-                    context: context,
-                    title: "Link Copied",
-                    message: "Story link copied to clipboard!",
-                    icon: Icons.copy_rounded,
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.flag_outlined, color: Colors.white),
-                title: const Text("Report Story", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Report inappropriate content or spam", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _openReportStorySheet(group, story);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.volume_off_outlined, color: Colors.white),
-                title: const Text("Mute Stories", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Stop seeing stories from this user", style: TextStyle(color: Colors.white54, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _openMuteConfirmationDialog(group);
-                },
+                    ],
+                  ),
+                ),
               ),
             ],
-          ],
+          ),
         ),
       ),
     ).then((_) => _resumeStory());
+  }
+
+  Widget _buildMenuOptionTile({
+    required BuildContext ctx,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool isDanger = false,
+  }) {
+    final titleColor = isDanger ? AppColors.danger : Colors.white;
+    final iconColor = isDanger ? AppColors.danger : Colors.white;
+    final iconBg = isDanger
+        ? AppColors.danger.withValues(alpha: 0.15)
+        : Colors.white.withValues(alpha: 0.08);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
+          child: Icon(icon, color: iconColor, size: 18),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: titleColor,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.45),
+            fontSize: 11.5,
+          ),
+        ),
+        onTap: () {
+          Navigator.pop(ctx);
+          onTap();
+        },
+      ),
+    );
   }
 
   Widget _buildErrorMediaPlaceholder() {
@@ -1757,7 +2390,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.broken_image_rounded, color: Colors.white38, size: 56),
+            const Icon(
+              Icons.broken_image_rounded,
+              color: Colors.white38,
+              size: 56,
+            ),
             const SizedBox(height: 12),
             const Text(
               "Unable to load story media",
@@ -1773,7 +2410,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.communityAccent,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
             ),
           ],
@@ -1798,12 +2437,17 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     return File(clean);
   }
 
-  Widget _buildUnifiedStoryPageContent(StoryItemModel story, StoryGroupModel group) {
+  Widget _buildUnifiedStoryPageContent(
+    StoryItemModel story,
+    StoryGroupModel group,
+  ) {
     return Stack(
       children: [
         Positioned.fill(child: _buildMediaWidget(story, group)),
         ...story.layers.map((layer) => _buildViewerLayerWidget(layer)),
-        if (story.layers.isEmpty && story.textContent != null && story.textContent!.trim().isNotEmpty)
+        if (story.layers.isEmpty &&
+            story.textContent != null &&
+            story.textContent!.trim().isNotEmpty)
           Positioned(
             left: 28,
             right: 28,
@@ -1855,7 +2499,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
         url,
         fit: BoxFit.cover,
         alignment: Alignment.center,
-        errorBuilder: (context, error, stackTrace) => _buildErrorMediaPlaceholder(),
+        errorBuilder: (context, error, stackTrace) =>
+            _buildErrorMediaPlaceholder(),
       );
     } else if (_isVideoFile(url)) {
       mediaWidget = Container(
@@ -1893,7 +2538,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                   ),
                   const SizedBox(height: 14),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black54,
                       borderRadius: BorderRadius.circular(16),
@@ -1902,11 +2550,19 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.movie_rounded, color: Colors.white70, size: 16),
+                        Icon(
+                          Icons.movie_rounded,
+                          color: Colors.white70,
+                          size: 16,
+                        ),
                         SizedBox(width: 6),
                         Text(
                           "Video Story",
-                          style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -1938,23 +2594,28 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
             ),
           );
         },
-        errorBuilder: (context, error, stackTrace) => _buildErrorMediaPlaceholder(),
+        errorBuilder: (context, error, stackTrace) =>
+            _buildErrorMediaPlaceholder(),
       );
     } else {
       final localFile = _resolveFile(url);
-      if (localFile.existsSync() || url.startsWith('/') || url.contains(':\\')) {
+      if (localFile.existsSync() ||
+          url.startsWith('/') ||
+          url.contains(':\\')) {
         mediaWidget = Image.file(
           localFile,
           fit: BoxFit.cover,
           alignment: Alignment.center,
-          errorBuilder: (context, error, stackTrace) => _buildErrorMediaPlaceholder(),
+          errorBuilder: (context, error, stackTrace) =>
+              _buildErrorMediaPlaceholder(),
         );
       } else {
         mediaWidget = Image.network(
           url,
           fit: BoxFit.cover,
           alignment: Alignment.center,
-          errorBuilder: (context, error, stackTrace) => _buildErrorMediaPlaceholder(),
+          errorBuilder: (context, error, stackTrace) =>
+              _buildErrorMediaPlaceholder(),
         );
       }
     }
@@ -1971,12 +2632,18 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     );
   }
 
-  TextStyle _getViewerLayerTextStyle(TextStyleType fontStyle, Color color, TextBgStyle bgStyle) {
+  TextStyle _getViewerLayerTextStyle(
+    TextStyleType fontStyle,
+    Color color,
+    TextBgStyle bgStyle, {
+    TextEffectType effect = TextEffectType.none,
+  }) {
     FontWeight weight = FontWeight.w600;
     FontStyle style = FontStyle.normal;
     double letterSpacing = 0.2;
     double height = 1.25;
     List<Shadow>? textShadows;
+    String? fontFamily;
 
     switch (fontStyle) {
       case TextStyleType.classic:
@@ -1992,36 +2659,72 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
         weight = FontWeight.w900;
         letterSpacing = -0.3;
         break;
-      case TextStyleType.modern: // Outline
+      case TextStyleType.modern: // Modern
         weight = FontWeight.w800;
-        letterSpacing = 0.6;
+        letterSpacing = 0.8;
         break;
-      case TextStyleType.minimal: // Neon
+      case TextStyleType.minimal: // Minimal Clean
         weight = FontWeight.w700;
         letterSpacing = 1.2;
-        textShadows = [
-          Shadow(blurRadius: 8.0, color: color.withValues(alpha: 0.90), offset: Offset.zero),
-          Shadow(blurRadius: 20.0, color: color.withValues(alpha: 0.80), offset: Offset.zero),
-          Shadow(blurRadius: 36.0, color: color, offset: Offset.zero),
-        ];
+        break;
+      case TextStyleType.handwriting: // Script
+        weight = FontWeight.w500;
+        style = FontStyle.italic;
+        letterSpacing = 0.5;
+        break;
+      case TextStyleType.coding: // Code
+        weight = FontWeight.w600;
+        fontFamily = 'monospace';
+        letterSpacing = -0.2;
         break;
       default:
         weight = FontWeight.w700;
         break;
     }
 
-    if (textShadows == null && bgStyle == TextBgStyle.none) {
-      textShadows = [
-        Shadow(blurRadius: 6.0, color: Colors.black.withValues(alpha: 0.75), offset: const Offset(0, 1)),
-        Shadow(blurRadius: 14.0, color: Colors.black.withValues(alpha: 0.40), offset: const Offset(0, 2)),
-      ];
+    // Explicit Text Effects system (Independent from Font Styles)
+    switch (effect) {
+      case TextEffectType.shadow:
+        textShadows = [
+          Shadow(
+            blurRadius: 8.0,
+            color: Colors.black.withValues(alpha: 0.85),
+            offset: const Offset(0, 2),
+          ),
+          Shadow(
+            blurRadius: 16.0,
+            color: Colors.black.withValues(alpha: 0.50),
+            offset: const Offset(0, 4),
+          ),
+        ];
+        break;
+      case TextEffectType.glow:
+        textShadows = [
+          Shadow(
+            blurRadius: 8.0,
+            color: color.withValues(alpha: 0.95),
+            offset: Offset.zero,
+          ),
+          Shadow(
+            blurRadius: 20.0,
+            color: color.withValues(alpha: 0.85),
+            offset: Offset.zero,
+          ),
+          Shadow(blurRadius: 36.0, color: color, offset: Offset.zero),
+        ];
+        break;
+      case TextEffectType.outline:
+      case TextEffectType.none:
+        textShadows = null; // Clean, flat, NO shadow
+        break;
     }
 
     return TextStyle(
       color: color,
-      fontSize: 24,
+      fontSize: 28,
       fontWeight: weight,
       fontStyle: style,
+      fontFamily: fontFamily,
       letterSpacing: letterSpacing,
       height: height,
       shadows: textShadows,
@@ -2037,16 +2740,30 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
     switch (layer.type) {
       case LayerType.text:
         final hasBackground = layer.bgStyle != TextBgStyle.none;
-        final baseStyle = _getViewerLayerTextStyle(layer.fontStyle, layer.color, layer.bgStyle);
+        final baseStyle = _getViewerLayerTextStyle(
+          layer.fontStyle,
+          layer.color,
+          layer.bgStyle,
+          effect: layer.effect,
+        ).copyWith(fontSize: layer.fontSize);
 
         final textLuminance = layer.color.computeLuminance();
-        final filledBgColor = textLuminance > 0.45
-            ? Colors.black.withValues(alpha: 0.82)
-            : Colors.white.withValues(alpha: 0.92);
+        final filledBgColor =
+            layer.bgColor ??
+            (textLuminance > 0.45
+                ? Colors.black.withValues(alpha: 0.82)
+                : Colors.white.withValues(alpha: 0.92));
+
+        final textDisplayColor =
+            (layer.bgStyle == TextBgStyle.filled &&
+                layer.bgColor == null &&
+                layer.color == Colors.white)
+            ? Colors.black
+            : layer.color;
 
         Widget textWidget;
 
-        if (layer.fontStyle == TextStyleType.modern && !hasBackground) {
+        if (layer.effect == TextEffectType.outline) {
           final strokeColor = textLuminance > 0.5 ? Colors.black : Colors.white;
           textWidget = Stack(
             children: [
@@ -2066,7 +2783,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                 layer.text,
                 softWrap: true,
                 textAlign: layer.alignment,
-                style: baseStyle.copyWith(shadows: null),
+                style: baseStyle.copyWith(
+                  color: textDisplayColor,
+                  shadows: null,
+                ),
               ),
             ],
           );
@@ -2075,7 +2795,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
             layer.text,
             softWrap: true,
             textAlign: layer.alignment,
-            style: baseStyle,
+            style: baseStyle.copyWith(color: textDisplayColor),
           );
         }
 
@@ -2084,18 +2804,29 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
           child: IntrinsicWidth(
             child: hasBackground
                 ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 7,
+                    ),
                     decoration: BoxDecoration(
                       color: layer.bgStyle == TextBgStyle.filled
                           ? filledBgColor
                           : (layer.bgStyle == TextBgStyle.rounded
-                              ? (textLuminance > 0.45
-                                  ? Colors.black.withValues(alpha: 0.60)
-                                  : Colors.white.withValues(alpha: 0.80))
-                              : Colors.transparent),
+                                ? (layer.bgColor?.withValues(alpha: 0.65) ??
+                                      (textLuminance > 0.45
+                                          ? Colors.black.withValues(alpha: 0.60)
+                                          : Colors.white.withValues(
+                                              alpha: 0.80,
+                                            )))
+                                : Colors.transparent),
                       borderRadius: BorderRadius.circular(10),
                       border: layer.bgStyle == TextBgStyle.outline
-                          ? Border.all(color: layer.color.withValues(alpha: 0.85), width: 1.8)
+                          ? Border.all(
+                              color:
+                                  layer.bgColor ??
+                                  layer.color.withValues(alpha: 0.85),
+                              width: 1.8,
+                            )
                           : null,
                     ),
                     child: textWidget,
@@ -2116,18 +2847,13 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                 layer.text,
                 width: 120,
                 fit: BoxFit.contain,
-                errorBuilder: (ctx, err, st) => Text(
-                  layer.text,
-                  style: const TextStyle(fontSize: 48),
-                ),
+                errorBuilder: (ctx, err, st) =>
+                    Text(layer.text, style: const TextStyle(fontSize: 48)),
               ),
             ),
           );
         } else {
-          content = Text(
-            layer.text,
-            style: const TextStyle(fontSize: 54),
-          );
+          content = Text(layer.text, style: const TextStyle(fontSize: 54));
         }
         break;
 
@@ -2142,16 +2868,24 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
             ),
             child: Text(
               layer.text,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
             ),
           ),
         );
         break;
 
       case LayerType.mention:
-        final cleanMention = layer.text.startsWith('@') ? layer.text : '@${layer.text}';
+        final cleanMention = layer.text.startsWith('@')
+            ? layer.text
+            : '@${layer.text}';
         final hasBg = layer.bgStyle != TextBgStyle.none;
-        final textColor = layer.bgStyle == TextBgStyle.filled ? Colors.black : Colors.white;
+        final textColor = layer.bgStyle == TextBgStyle.filled
+            ? Colors.black
+            : Colors.white;
 
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
@@ -2162,8 +2896,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
               color: layer.bgStyle == TextBgStyle.filled
                   ? Colors.white
                   : (layer.bgStyle == TextBgStyle.rounded
-                      ? Colors.black.withValues(alpha: 0.65)
-                      : Colors.transparent),
+                        ? Colors.black.withValues(alpha: 0.65)
+                        : Colors.transparent),
               borderRadius: BorderRadius.circular(12),
               border: layer.bgStyle == TextBgStyle.outline
                   ? Border.all(color: Colors.white, width: 2.0)
@@ -2194,7 +2928,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
       case LayerType.location:
         final cleanLocation = layer.text.replaceAll('📍', '').trim();
         final hasBg = layer.bgStyle != TextBgStyle.none;
-        final textColor = layer.bgStyle == TextBgStyle.filled ? Colors.black : Colors.white;
+        final textColor = layer.bgStyle == TextBgStyle.filled
+            ? Colors.black
+            : Colors.white;
 
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
@@ -2205,8 +2941,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
               color: layer.bgStyle == TextBgStyle.filled
                   ? AppColors.communityAccent
                   : (layer.bgStyle == TextBgStyle.rounded
-                      ? Colors.black.withValues(alpha: 0.65)
-                      : Colors.transparent),
+                        ? Colors.black.withValues(alpha: 0.65)
+                        : Colors.transparent),
               borderRadius: BorderRadius.circular(20),
               border: layer.bgStyle == TextBgStyle.outline
                   ? Border.all(color: AppColors.communityAccent, width: 2.0)
@@ -2224,11 +2960,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.location_on_rounded,
-                  color: textColor,
-                  size: 16,
-                ),
+                Icon(Icons.location_on_rounded, color: textColor, size: 16),
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
@@ -2260,12 +2992,20 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.music_note_rounded, color: AppColors.communityAccent, size: 16),
+                const Icon(
+                  Icons.music_note_rounded,
+                  color: AppColors.communityAccent,
+                  size: 16,
+                ),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     layer.text,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -2283,7 +3023,13 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
         } else if (layer.text.startsWith('assets/')) {
           imgWidget = Image.asset(layer.text, width: 180, fit: BoxFit.cover);
         } else {
-          imgWidget = Image.network(layer.text, width: 180, fit: BoxFit.cover, errorBuilder: (c, e, s) => const Icon(Icons.broken_image, color: Colors.white54));
+          imgWidget = Image.network(
+            layer.text,
+            width: 180,
+            fit: BoxFit.cover,
+            errorBuilder: (c, e, s) =>
+                const Icon(Icons.broken_image, color: Colors.white54),
+          );
         }
 
         content = ConstrainedBox(
@@ -2313,10 +3059,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
       top: layer.offset.dy,
       child: Transform.scale(
         scale: layer.scale,
-        child: Transform.rotate(
-          angle: layer.rotation,
-          child: content,
-        ),
+        child: Transform.rotate(angle: layer.rotation, child: content),
       ),
     );
   }
@@ -2337,7 +3080,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
         onLongPressEnd: (_) => _resumeStory(),
         onDoubleTap: _triggerDoubleTapLike,
         onVerticalDragEnd: (details) {
-          if (details.primaryVelocity != null && details.primaryVelocity! > 250) {
+          if (details.primaryVelocity != null &&
+              details.primaryVelocity! > 250) {
             _closeViewer();
           }
         },
@@ -2350,10 +3094,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                 switchInCurve: Curves.easeOut,
                 switchOutCurve: Curves.easeOut,
                 transitionBuilder: (Widget child, Animation<double> animation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  );
+                  return FadeTransition(opacity: animation, child: child);
                 },
                 child: KeyedSubtree(
                   key: ValueKey("story_${story.id}"),
@@ -2422,7 +3163,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
               ),
             ),
 
-            // Elegant Floating Canvas Heart Feedback (Instagram / Facebook Style: Rises -36px & Fades Out over 600ms)
+            // Floating Heart Feedback (rises & fades near center on double-tap)
             if (_showHeartAnimation)
               Center(
                 child: AnimatedBuilder(
@@ -2433,24 +3174,27 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                       child: Transform.scale(
                         scale: _floatingHeartScaleAnim.value,
                         child: Opacity(
-                          opacity: _floatingHeartOpacityAnim.value.clamp(0.0, 1.0),
+                          opacity: _floatingHeartOpacityAnim.value.clamp(
+                            0.0,
+                            1.0,
+                          ),
                           child: Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.35),
+                              color: Colors.black.withValues(alpha: 0.50),
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.danger.withValues(alpha: 0.45),
-                                  blurRadius: 18,
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  blurRadius: 20,
                                   spreadRadius: 2,
                                 ),
                               ],
                             ),
                             child: const Icon(
                               Icons.favorite_rounded,
-                              color: AppColors.danger,
-                              size: 52,
+                              color: AppColors.likedAccent,
+                              size: 72,
                             ),
                           ),
                         ),
@@ -2468,7 +3212,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
               child: SafeArea(
                 bottom: false,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -2477,7 +3224,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                         animation: _progressAnimController,
                         builder: (ctx, child) {
                           return Row(
-                            children: List.generate(group.stories.length, (idx) {
+                            children: List.generate(group.stories.length, (
+                              idx,
+                            ) {
                               double barProgress = 0.0;
                               if (idx < _currentStoryIdx) {
                                 barProgress = 1.0;
@@ -2487,7 +3236,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                               return Expanded(
                                 child: Container(
                                   height: 3,
-                                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.35),
                                     borderRadius: BorderRadius.circular(2),
@@ -2514,52 +3265,112 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
                       // Clean Header Row (Avatar, User Name, Timestamp, Location, Menu, Close)
                       Row(
                         children: [
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundImage: group.userAvatar.startsWith('assets/')
-                                ? AssetImage(group.userAvatar) as ImageProvider
-                                : NetworkImage(group.userAvatar),
+                          GestureDetector(
+                            onTap: () async {
+                              _pauseStory();
+                              await Get.toNamed(
+                                AppRoutes.profile,
+                                parameters: {
+                                  'username': group.userName.replaceAll(
+                                    '@',
+                                    '',
+                                  ),
+                                },
+                              );
+                              _resumeStory();
+                            },
+                            child: Hero(
+                              tag: 'story_avatar_${group.userId}',
+                              child: CircleAvatar(
+                                radius: 18,
+                                backgroundImage:
+                                    group.userAvatar.startsWith('assets/')
+                                    ? AssetImage(group.userAvatar)
+                                          as ImageProvider
+                                    : NetworkImage(group.userAvatar),
+                              ),
+                            ),
                           ),
                           const SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    group.userName,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        group.userName,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    story.timeAgo,
-                                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                              if (story.location != null)
-                                Text(
-                                  story.location!,
-                                  style: const TextStyle(color: AppColors.communityAccent, fontSize: 11, fontWeight: FontWeight.w600),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      story.timeAgo,
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Icon(
+                                      story.visibility == 'Only Me'
+                                          ? Icons.lock_rounded
+                                          : (story.visibility == 'Friends'
+                                                ? Icons.people_alt_rounded
+                                                : Icons.public_rounded),
+                                      size: 12,
+                                      color: Colors.white60,
+                                    ),
+                                  ],
                                 ),
-                            ],
+                                if (story.location != null)
+                                  Text(
+                                    story.location!,
+                                    style: const TextStyle(
+                                      color: AppColors.communityAccent,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
+                            ),
                           ),
-                          const Spacer(),
+                          const SizedBox(width: 8),
                           if (group.isOwner) ...[
                             IconButton(
-                              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                              icon: const Icon(Icons.more_vert, color: Colors.white, size: 22),
+                              constraints: const BoxConstraints(
+                                minWidth: 40,
+                                minHeight: 40,
+                              ),
+                              icon: const Icon(
+                                Icons.more_vert,
+                                color: Colors.white,
+                                size: 22,
+                              ),
                               onPressed: _showMoreMenu,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 4),
                           ],
                           IconButton(
-                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                            icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 24,
+                            ),
                             onPressed: _closeViewer,
                           ),
                         ],
@@ -2578,157 +3389,202 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> with TickerProvid
               child: SafeArea(
                 top: false,
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 10),
+                  padding: const EdgeInsets.only(
+                    left: 14,
+                    right: 14,
+                    bottom: 12,
+                  ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       if (group.isOwner) ...[
-                        // ── Owner Actions: Single Viewers Pill on Bottom-Left ──
+                        // ── Owner Actions: Viewers Pill Button ──
                         InkWell(
+                          borderRadius: BorderRadius.circular(22),
                           onTap: _showViewersSheet,
                           child: Container(
-                            height: 46,
+                            height: 44,
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.65),
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.18),
+                              ),
                             ),
                             child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.remove_red_eye_outlined, color: Colors.white, size: 18),
+                                const Icon(
+                                  Icons.remove_red_eye_outlined,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   "${story.viewersCount} Viewers",
-                                  style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                         ),
                       ] else ...[
-                        // ── Viewer Actions: Interactive Reply Pill Button, Like, & Share Buttons ──
-                        Expanded(
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(24),
-                            onTap: () => _openStoryReplySheet(group, story),
-                            child: Container(
-                              height: 46,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.55),
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white70, size: 18),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      _formatReplyHint(group.userName),
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 13.5,
+                        // ── Viewer Actions: Ultra-Lightweight Comment Capsule ──
+                        if (story.storyReplyPermission !=
+                            StoryReplyPermission.off)
+                          Expanded(
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(19),
+                              onTap: () => _openStoryReplySheet(group, story),
+                              child: Container(
+                                height: 38,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.35),
+                                  borderRadius: BorderRadius.circular(19),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.08),
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.chat_bubble_outline_rounded,
+                                      color: Colors.white.withValues(
+                                        alpha: 0.50,
+                                      ),
+                                      size: 15,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'community.writeCommentHint'.tr.length >
+                                                15
+                                            ? "Comment..."
+                                            : 'community.writeCommentHint'.tr,
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.45,
+                                          ),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w400,
+                                          letterSpacing: 0.1,
+                                        ),
+                                        maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                        else
+                          const Spacer(),
+
+                        if (story.allowReactions) ...[
+                          const SizedBox(width: 10),
+
+                          // ── Monochrome Like Button ──
+                          Semantics(
+                            label: story.isLiked
+                                ? 'Unlike story'
+                                : 'Like story',
+                            button: true,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _toggleLike(story),
+                              child: ScaleTransition(
+                                scale: _likeBtnScaleAnim,
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  curve: Curves.easeOutCubic,
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.50),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: story.isLiked
+                                          ? Colors.white.withValues(alpha: 0.35)
+                                          : Colors.white.withValues(
+                                              alpha: 0.20,
+                                            ),
+                                      width: 1.0,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.30,
+                                        ),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                  child: Center(
+                                    child: Icon(
+                                      story.isLiked
+                                          ? Icons.favorite_rounded
+                                          : Icons.favorite_border_rounded,
+                                      color: story.isLiked
+                                          ? AppColors.likedAccent
+                                          : Colors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-
-                        const SizedBox(width: 12),
-
-                        // Premium Multi-Effect Interactive Like Button (Press compression + Scale sequence + Upward float + Subtle tilt)
-                        GestureDetector(
-                          onTapDown: (_) => setState(() => _isLikePressed = true),
-                          onTapUp: (_) => setState(() => _isLikePressed = false),
-                          onTapCancel: () => setState(() => _isLikePressed = false),
-                          onTap: () => _toggleLike(story),
-                          child: AnimatedScale(
-                            scale: _isLikePressed ? 0.93 : 1.0,
-                            duration: const Duration(milliseconds: 100),
-                            curve: Curves.easeOut,
-                            child: AnimatedBuilder(
-                              animation: _likeBtnAnimController,
-                              builder: (context, child) {
-                                final currentScale = story.isLiked
-                                    ? _likeBtnScaleAnim.value
-                                    : _unlikeBtnScaleAnim.value;
-                                final currentTranslateY = story.isLiked ? _likeBtnTranslateYAnim.value : 0.0;
-                                final currentRotation = story.isLiked ? _likeBtnRotationAnim.value : 0.0;
-
-                                return Transform.translate(
-                                  offset: Offset(0, currentTranslateY),
-                                  child: Transform.rotate(
-                                    angle: currentRotation,
-                                    child: Transform.scale(
-                                      scale: currentScale,
-                                      child: Container(
-                                        width: 44,
-                                        height: 44,
-                                        decoration: BoxDecoration(
-                                          color: story.isLiked
-                                              ? AppColors.danger.withValues(alpha: 0.20)
-                                              : Colors.black.withValues(alpha: 0.55),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: story.isLiked
-                                                ? AppColors.danger.withValues(alpha: 0.60)
-                                                : Colors.white.withValues(alpha: 0.20),
-                                            width: 1.2,
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: AnimatedCrossFade(
-                                            duration: const Duration(milliseconds: 265),
-                                            crossFadeState: story.isLiked
-                                                ? CrossFadeState.showSecond
-                                                : CrossFadeState.showFirst,
-                                            firstChild: const Icon(
-                                              Icons.favorite_border_rounded,
-                                              key: ValueKey("unliked_heart_icon"),
-                                              color: Colors.white,
-                                              size: 22,
-                                            ),
-                                            secondChild: const Icon(
-                                              Icons.favorite_rounded,
-                                              key: ValueKey("liked_heart_icon"),
-                                              color: AppColors.danger,
-                                              size: 22,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
+                        ],
 
                         const SizedBox(width: 10),
 
-                        // Share Icon Button (✈️)
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.55),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
-                          ),
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            onPressed: () => _openStoryShareSheet(group, story),
-                            icon: const Icon(
-                              Icons.near_me_outlined,
-                              color: Colors.white,
-                              size: 22,
+                        // More Menu Button (38x38)
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTapDown: (_) =>
+                              setState(() => _isMorePressed = true),
+                          onTapUp: (_) =>
+                              setState(() => _isMorePressed = false),
+                          onTapCancel: () =>
+                              setState(() => _isMorePressed = false),
+                          onTap: _showMoreMenu,
+                          child: AnimatedScale(
+                            scale: _isMorePressed ? 0.90 : 1.0,
+                            duration: const Duration(milliseconds: 120),
+                            curve: Curves.easeOutCubic,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 160),
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: _isMorePressed
+                                    ? Colors.white.withValues(alpha: 0.16)
+                                    : Colors.black.withValues(alpha: 0.35),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                  width: 0.6,
+                                ),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.more_horiz_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
                             ),
                           ),
                         ),

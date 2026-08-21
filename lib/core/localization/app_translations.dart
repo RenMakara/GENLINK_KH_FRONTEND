@@ -684,6 +684,32 @@ class AppTranslations extends Translations {
     'productivity.addHabit': 'Add Habit',
     'productivity.focus': 'Focus',
     'productivity.newGoal': 'New Goal',
+
+    // ── Productivity - Task ──────────────────────────────────────────────────
+    'tasks.title': 'Tasks',
+    'tasks.subtitle': 'Stay focused. Get things done.',
+    'tasks.searchHint': 'Search your tasks...',
+    'tasks.myTasks': 'My Tasks',
+    'tasks.bottomTip': 'Tap a task to mark it complete',
+    'tasks.empty.title': 'No tasks found',
+    'tasks.empty.message': 'Try changing your search or filters.',
+    'tasks.filter.title': 'Filter Tasks',
+    'tasks.filter.subtitle': 'Customize your task list',
+    'tasks.filter.status': 'STATUS',
+    'tasks.filter.priority': 'PRIORITY',
+    'tasks.filter.reset': 'Reset',
+    'tasks.filter.apply': 'Apply Filters',
+    'tasks.filter.all': 'All',
+    'tasks.filter.today': 'Today',
+    'tasks.filter.upcoming': 'Upcoming',
+    'tasks.filter.completed': 'Completed',
+    'tasks.filter.high': 'High',
+    'tasks.filter.medium': 'Medium',
+    'tasks.filter.low': 'Low',
+    'tasks.active': 'active',
+    'tasks.priority.high': 'HIGH',
+    'tasks.priority.medium': 'MEDIUM',
+    'tasks.priority.low': 'LOW',
   };
 
   static const _km = <String, String>{
@@ -1353,5 +1379,39 @@ class AppTranslations extends Translations {
     'productivity.addHabit': 'បន្ថែមទម្លាប់',
     'productivity.focus': 'ផ្តោតអារម្មណ៍',
     'productivity.newGoal': 'គោលដៅថ្មី',
+
+    // ── Productivity - Task ──────────────────────────────────────────────────
+    'tasks.title': 'កិច្ចការ',
+    'tasks.subtitle': 'ផ្តោតអារម្មណ៍ និងបំពេញការងារ។',
+    'tasks.searchHint': 'ស្វែងរកកិច្ចការរបស់អ្នក...',
+    'tasks.myTasks': 'កិច្ចការរបស់ខ្ញុំ',
+    'tasks.bottomTip': 'ចុចលើកិច្ចការ ដើម្បីសម្គាល់ថាបានបញ្ចប់',
+
+    'tasks.empty.title': 'រកមិនឃើញកិច្ចការ',
+    'tasks.empty.message': 'សាកល្បងផ្លាស់ប្តូរការស្វែងរក ឬតម្រង។',
+
+    'tasks.filter.title': 'តម្រងកិច្ចការ',
+    'tasks.filter.subtitle': 'កំណត់បញ្ជីកិច្ចការរបស់អ្នក',
+    'tasks.filter.status': 'ស្ថានភាព',
+    'tasks.filter.priority': 'អាទិភាព',
+    'tasks.filter.reset': 'កំណត់ឡើងវិញ',
+    'tasks.filter.apply': 'អនុវត្តតម្រង',
+
+    'tasks.filter.all': 'ទាំងអស់',
+    'tasks.filter.today': 'ថ្ងៃនេះ',
+    'tasks.filter.upcoming': 'នាពេលខាងមុខ',
+    'tasks.filter.completed': 'បានបញ្ចប់',
+
+    'tasks.filter.high': 'ខ្ពស់',
+    'tasks.filter.medium': 'មធ្យម',
+    'tasks.filter.low': 'ទាប',
+    'tasks.search': 'ស្វែងរកកិច្ចការរបស់អ្នក...',
+    'tasks.emptyTitle': 'រកមិនឃើញកិច្ចការ',
+    'tasks.emptyMessage': 'សាកល្បងប្តូរការស្វែងរក ឬតម្រងរបស់អ្នក។',
+    'tasks.active': 'សកម្ម',
+
+    'tasks.priority.high': 'ខ្ពស់',
+    'tasks.priority.medium': 'មធ្យម',
+    'tasks.priority.low': 'ទាប',
   };
 }

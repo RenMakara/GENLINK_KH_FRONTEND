@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
 // TASK DATA
@@ -49,10 +50,17 @@ class TaskThemeColors {
 // TOP BAR
 class TasksTopBar extends StatelessWidget {
   final String title;
+  final String subtitle;
   final VoidCallback? onBack;
   final VoidCallback? onAdd;
 
-  const TasksTopBar({super.key, required this.title, this.onBack, this.onAdd});
+  const TasksTopBar({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    this.onBack,
+    this.onAdd,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +99,7 @@ class TasksTopBar extends StatelessWidget {
               const SizedBox(height: 2),
 
               Text(
-                'Stay focused. Get things done.',
+                subtitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -228,7 +236,6 @@ class _TasksSearchFieldState extends State<TasksSearchField> {
   void _clearSearch() {
     _controller.clear();
     widget.onChanged?.call('');
-
     _focusNode.requestFocus();
   }
 
@@ -270,7 +277,6 @@ class _TasksSearchFieldState extends State<TasksSearchField> {
       ),
       child: Row(
         children: [
-          // SEARCH ICON
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             width: 42,
@@ -290,7 +296,6 @@ class _TasksSearchFieldState extends State<TasksSearchField> {
 
           const SizedBox(width: 10),
 
-          // TEXT INPUT
           Expanded(
             child: TextField(
               controller: _controller,
@@ -313,15 +318,10 @@ class _TasksSearchFieldState extends State<TasksSearchField> {
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
-
-                // IMPORTANT:
-                // No background inside the input when focused.
                 filled: false,
                 fillColor: Colors.transparent,
-
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
-
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -332,7 +332,6 @@ class _TasksSearchFieldState extends State<TasksSearchField> {
             ),
           ),
 
-          // CLEAR
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 150),
             child: _hasText
@@ -356,7 +355,6 @@ class _TasksSearchFieldState extends State<TasksSearchField> {
                 : const SizedBox(key: ValueKey('empty'), width: 6),
           ),
 
-          // FILTER
           if (widget.onFilter != null) ...[
             Container(width: 1, height: 28, color: colors.border),
 
@@ -422,12 +420,14 @@ class _TasksSearchFieldState extends State<TasksSearchField> {
 
 // TASK HEADER
 class TasksHeader extends StatelessWidget {
+  final String title;
   final int count;
   final int activeFilterCount;
   final VoidCallback? onFilter;
 
   const TasksHeader({
     super.key,
+    required this.title,
     required this.count,
     this.activeFilterCount = 0,
     this.onFilter,
@@ -442,7 +442,7 @@ class TasksHeader extends StatelessWidget {
     return Row(
       children: [
         Text(
-          'My Tasks',
+          title,
           style: TextStyle(
             color: colors.textPrimary,
             fontSize: 16,
@@ -491,9 +491,11 @@ class TasksHeader extends StatelessWidget {
                       size: 12,
                       color: AppColors.brandPrimary,
                     ),
+
                     const SizedBox(width: 4),
+
                     Text(
-                      '$activeFilterCount active',
+                      '$activeFilterCount ${'tasks.active'.tr}',
                       style: TextStyle(
                         color: AppColors.brandPrimary,
                         fontSize: 8,
@@ -511,11 +513,17 @@ class TasksHeader extends StatelessWidget {
 }
 
 // TASK LIST
-
 class TasksList extends StatelessWidget {
   final List<TaskData> tasks;
+  final String emptyTitle;
+  final String emptyMessage;
 
-  const TasksList({super.key, required this.tasks});
+  const TasksList({
+    super.key,
+    required this.tasks,
+    required this.emptyTitle,
+    required this.emptyMessage,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -524,7 +532,11 @@ class TasksList extends StatelessWidget {
     );
 
     if (tasks.isEmpty) {
-      return _EmptyTasksState(colors: colors);
+      return _EmptyTasksState(
+        colors: colors,
+        title: emptyTitle,
+        message: emptyMessage,
+      );
     }
 
     return Container(
@@ -540,6 +552,7 @@ class TasksList extends StatelessWidget {
           children: [
             for (int i = 0; i < tasks.length; i++) ...[
               _TaskTile(task: tasks[i]),
+
               if (i != tasks.length - 1)
                 Divider(height: 1, thickness: 1, color: colors.border),
             ],
@@ -553,8 +566,14 @@ class TasksList extends StatelessWidget {
 // EMPTY STATE
 class _EmptyTasksState extends StatelessWidget {
   final TaskThemeColors colors;
+  final String title;
+  final String message;
 
-  const _EmptyTasksState({required this.colors});
+  const _EmptyTasksState({
+    required this.colors,
+    required this.title,
+    required this.message,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -585,7 +604,7 @@ class _EmptyTasksState extends StatelessWidget {
           const SizedBox(height: 16),
 
           Text(
-            'No tasks found',
+            title,
             style: TextStyle(
               color: colors.textPrimary,
               fontSize: 14,
@@ -596,7 +615,7 @@ class _EmptyTasksState extends StatelessWidget {
           const SizedBox(height: 6),
 
           Text(
-            'Try changing your search or filters.',
+            message,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: colors.textMuted,
@@ -645,12 +664,10 @@ class _TaskTileState extends State<_TaskTile> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
           child: Row(
             children: [
-              // CHECKBOX
               _TaskCheckbox(completed: completed, onTap: _toggleCompleted),
 
               const SizedBox(width: 12),
 
-              // CONTENT
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -723,7 +740,6 @@ class _TaskTileState extends State<_TaskTile> {
 
               const SizedBox(width: 10),
 
-              // PRIORITY
               _PriorityLabel(priority: widget.task.priority),
             ],
           ),
@@ -765,17 +781,17 @@ class _PriorityLabel extends StatelessWidget {
 
     switch (priority) {
       case TaskPriority.high:
-        text = 'HIGH';
+        text = 'tasks.priority.high'.tr;
         color = AppColors.financeAccent;
         break;
 
       case TaskPriority.medium:
-        text = 'MEDIUM';
+        text = 'tasks.priority.medium'.tr;
         color = AppColors.productivityAccent;
         break;
 
       case TaskPriority.low:
-        text = 'LOW';
+        text = 'tasks.priority.low'.tr;
         color = AppColors.growthAccent;
         break;
     }
@@ -800,6 +816,7 @@ class _PriorityLabel extends StatelessWidget {
 }
 
 // CHECKBOX
+
 class _TaskCheckbox extends StatelessWidget {
   final bool completed;
   final VoidCallback onTap;
@@ -839,17 +856,71 @@ class _TaskCheckbox extends StatelessWidget {
   }
 }
 
+// BOTTOM TIP
+class TasksBottomTip extends StatelessWidget {
+  final String text;
+
+  const TasksBottomTip({super.key, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = TaskThemeColors(
+      Theme.of(context).brightness == Brightness.dark,
+    );
+
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.touch_app_rounded, size: 12, color: colors.textMuted),
+
+          const SizedBox(width: 5),
+
+          Text(
+            text,
+            style: TextStyle(
+              color: colors.textMuted,
+              fontSize: 9,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // FILTER SHEET
 class TasksFilterSheet extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String statusTitle;
+  final String priorityTitle;
+  final String resetText;
+  final String applyText;
+
+  final List<String> statusOptions;
+  final List<String> priorityOptions;
+
   final int selectedStatus;
   final int selectedPriority;
+
   final ValueChanged<int> onStatusChanged;
   final ValueChanged<int> onPriorityChanged;
+
   final VoidCallback onReset;
   final VoidCallback onApply;
 
   const TasksFilterSheet({
     super.key,
+    required this.title,
+    required this.subtitle,
+    required this.statusTitle,
+    required this.priorityTitle,
+    required this.resetText,
+    required this.applyText,
+    required this.statusOptions,
+    required this.priorityOptions,
     required this.selectedStatus,
     required this.selectedPriority,
     required this.onStatusChanged,
@@ -914,7 +985,7 @@ class TasksFilterSheet extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Filter Tasks',
+                        title,
                         style: TextStyle(
                           color: colors.textPrimary,
                           fontSize: 18,
@@ -925,7 +996,7 @@ class TasksFilterSheet extends StatelessWidget {
                       const SizedBox(height: 3),
 
                       Text(
-                        'Customize your task list',
+                        subtitle,
                         style: TextStyle(
                           color: colors.textMuted,
                           fontSize: 10,
@@ -943,7 +1014,7 @@ class TasksFilterSheet extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                     ),
                     child: Text(
-                      'Reset',
+                      resetText,
                       style: TextStyle(
                         color: colors.textPrimary,
                         fontSize: 10,
@@ -956,12 +1027,12 @@ class TasksFilterSheet extends StatelessWidget {
 
             const SizedBox(height: 26),
 
-            _FilterTitle(title: 'STATUS', colors: colors),
+            _FilterTitle(title: statusTitle, colors: colors),
 
             const SizedBox(height: 10),
 
             _FilterOptionGroup(
-              options: const ['All', 'Today', 'Upcoming', 'Completed'],
+              options: statusOptions,
               selectedIndex: selectedStatus,
               colors: colors,
               onSelected: onStatusChanged,
@@ -969,12 +1040,12 @@ class TasksFilterSheet extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            _FilterTitle(title: 'PRIORITY', colors: colors),
+            _FilterTitle(title: priorityTitle, colors: colors),
 
             const SizedBox(height: 10),
 
             _FilterOptionGroup(
-              options: const ['All', 'High', 'Medium', 'Low'],
+              options: priorityOptions,
               selectedIndex: selectedPriority,
               colors: colors,
               onSelected: onPriorityChanged,
@@ -995,8 +1066,8 @@ class TasksFilterSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ),
-                child: const Text(
-                  'Apply Filters',
+                child: Text(
+                  applyText,
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                 ),
               ),

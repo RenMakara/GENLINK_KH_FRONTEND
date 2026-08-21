@@ -3,6 +3,7 @@ import 'package:genlink_frontend/features/productivity/presentation/focus_featur
 import 'package:genlink_frontend/features/productivity/presentation/habit_feature/habit_home_screen.dart';
 import 'package:genlink_frontend/features/productivity/presentation/task_feature/task_home_screen.dart';
 import 'package:genlink_frontend/features/productivity/presentation/widget/productivity_widget.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 
 class ProductivityPage extends StatelessWidget {
   const ProductivityPage({super.key});
@@ -19,7 +20,7 @@ class ProductivityPage extends StatelessWidget {
             children: [
               // HEADER
               ProductivityHeader(
-                title: 'Productivity',
+                title: 'productivity.title'.tr,
                 profileText: 'R',
                 onNotificationTap: () {
                   debugPrint('Notification tapped');
@@ -44,13 +45,12 @@ class ProductivityPage extends StatelessWidget {
 
               // TODAY PLAN
               ProductivityCard(
-                title: 'Today Plan',
-                actionText: 'See All',
+                title: 'productivity.todayplan'.tr,
+                actionText: 'productivity.seeall'.tr,
 
                 onAction: () async {
                   debugPrint('See All Tasks');
 
-                  // Navigate to task page here.
                   await Future.delayed(const Duration(milliseconds: 500));
                 },
 
@@ -79,7 +79,7 @@ class ProductivityPage extends StatelessWidget {
               const SizedBox(height: 16),
 
               // QUICK ACTIONS
-              const ProductivitySectionTitle(title: 'Quick Actions'),
+              ProductivitySectionTitle(title: 'productivity.quickActions'.tr),
 
               const SizedBox(height: 12),
 
@@ -87,7 +87,7 @@ class ProductivityPage extends StatelessWidget {
                 actions: [
                   ProductivityActionData(
                     icon: Icons.add_task_rounded,
-                    title: 'Add Task',
+                    title: 'productivity.addTask'.tr,
                     onTap: () async {
                       await Navigator.push(
                         context,
@@ -98,7 +98,7 @@ class ProductivityPage extends StatelessWidget {
 
                   ProductivityActionData(
                     icon: Icons.local_fire_department_outlined,
-                    title: 'Add Habit',
+                    title: 'productivity.addHabit'.tr,
                     onTap: () async {
                       await Navigator.push(
                         context,
@@ -111,7 +111,7 @@ class ProductivityPage extends StatelessWidget {
 
                   ProductivityActionData(
                     icon: Icons.timer_outlined,
-                    title: 'Focus',
+                    title: 'productivity.focus'.tr,
                     onTap: () async {
                       await Navigator.push(
                         context,
@@ -122,7 +122,7 @@ class ProductivityPage extends StatelessWidget {
 
                   ProductivityActionData(
                     icon: Icons.flag_outlined,
-                    title: 'New Goal',
+                    title: 'productivity.newGoal'.tr,
                     onTap: () async {
                       debugPrint('New Goal');
 
@@ -136,8 +136,8 @@ class ProductivityPage extends StatelessWidget {
 
               // WEEKLY FOCUS
               ProductivityCard(
-                title: 'Weekly Focus',
-                actionText: 'This week',
+                title: 'productivity.weeklyFocus'.tr,
+                actionText: 'productivity.thisWeek'.tr,
 
                 onAction: () async {
                   debugPrint('Weekly Focus');
@@ -158,8 +158,8 @@ class ProductivityPage extends StatelessWidget {
 
               // GOAL PROGRESS
               ProductivityCard(
-                title: 'Goal Progress',
-                actionText: 'See All',
+                title: 'productivity.goalProgress'.tr,
+                actionText: 'productivity.seeall'.tr,
 
                 onAction: () async {
                   debugPrint('See All Goals');
@@ -194,8 +194,8 @@ class ProductivityPage extends StatelessWidget {
               const SizedBox(height: 16),
 
               // SMART INSIGHT
-              const ProductivityInsight(
-                title: 'Smart Insight',
+              ProductivityInsight(
+                title: 'productivity.smartInsight'.tr,
                 message:
                     'You are most productive between 9 AM and 11 AM. '
                     'Consider scheduling your hardest task during this time.',
@@ -204,9 +204,9 @@ class ProductivityPage extends StatelessWidget {
               const SizedBox(height: 16),
 
               // RECENT ACTIVITY
-              const ProductivityCard(
-                title: 'Recent Activity',
-                child: ProductivityActivities(
+              ProductivityCard(
+                title: 'productivity.recentActivity'.tr,
+                child: const ProductivityActivities(
                   activities: [
                     ProductivityActivityData(
                       icon: Icons.timer_outlined,

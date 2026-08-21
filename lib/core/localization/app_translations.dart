@@ -669,6 +669,21 @@ class AppTranslations extends Translations {
     'finance.payment.acleda': 'ACLEDA',
     'finance.payment.ewallet': 'E-Wallet',
     'finance.payment.other': 'Other',
+
+    // ── Productivity ───────────────────────────────────────────────────────
+    'productivity.title': 'Productivity',
+    'productivity.todayplan': 'Today Plan',
+    'productivity.quickActions': 'Quick Actions',
+    'productivity.weeklyFocus': 'Weekly Focus',
+    'productivity.goalProgress': 'Goal Progress',
+    'productivity.smartInsight': 'Smart Insight',
+    'productivity.recentActivity': 'Recent Activity',
+    'productivity.seeall': 'See All',
+    'productivity.thisWeek': 'This week',
+    'productivity.addTask': 'Add Task',
+    'productivity.addHabit': 'Add Habit',
+    'productivity.focus': 'Focus',
+    'productivity.newGoal': 'New Goal',
   };
 
   static const _km = <String, String>{
@@ -1286,10 +1301,10 @@ class AppTranslations extends Translations {
         'បង្កើតគោលដៅសន្សំ ហើយចាប់ផ្តើមកសាងអនាគតរបស់អ្នក។',
 
     // ── E-Wallet ──────────────────────────────────────────────────────────
-    'finance.ewallet.title': 'កាបូបអេឡិចត្រូនិក',
+    'finance.ewallet.title': 'កាបូបលុយឌីជីថល',
     'finance.ewallet.balance': 'សមតុល្យកាបូប',
-    'finance.ewallet.addWallet': 'បន្ថែមកាបូប',
-    'finance.ewallet.linkWallet': 'ភ្ជាប់កាបូប',
+    'finance.ewallet.addWallet': 'បន្ថែមកាបូបលុយ',
+    'finance.ewallet.linkWallet': 'ភ្ជាប់កាបូបលុយ',
     'finance.ewallet.walletName': 'ឈ្មោះកាបូប',
     'finance.ewallet.walletType': 'ប្រភេទកាបូប',
     'finance.ewallet.accountNumber': 'លេខគណនី',
@@ -1297,9 +1312,9 @@ class AppTranslations extends Translations {
     'finance.ewallet.withdraw': 'ដកប្រាក់',
     'finance.ewallet.transfer': 'ផ្ទេរប្រាក់',
     'finance.ewallet.history': 'ប្រវត្តិប្រតិបត្តិការ',
-    'finance.ewallet.noWallet': 'មិនទាន់មានកាបូបអេឡិចត្រូនិក',
+    'finance.ewallet.noWallet': 'មិនទាន់មានកាបូបលុយឌីជីថល',
     'finance.ewallet.noWalletHint':
-        'ភ្ជាប់កាបូបអេឡិចត្រូនិក ដើម្បីគ្រប់គ្រងប្រាក់របស់អ្នកនៅកន្លែងតែមួយ។',
+        'ភ្ជាប់កាបូបលុយឌីជីថល ដើម្បីគ្រប់គ្រងប្រាក់របស់អ្នកនៅកន្លែងតែមួយ។',
 
     // ── Finance Categories ─────────────────────────────────────────────────
     'finance.category.food': 'អាហារ',
@@ -1323,5 +1338,20 @@ class AppTranslations extends Translations {
     'finance.payment.acleda': 'ធនាគារ ACLEDA',
     'finance.payment.ewallet': 'កាបូបអេឡិចត្រូនិក',
     'finance.payment.other': 'ផ្សេងៗ',
+
+    // ── Productivity ───────────────────────────────────────────────────────
+    'productivity.title': 'ការងារប្រចាំថ្ងៃ',
+    'productivity.todayplan': 'ផែនការថ្ងៃនេះ',
+    'productivity.quickActions': 'សកម្មភាពរហ័ស',
+    'productivity.weeklyFocus': 'ការផ្តោតប្រចាំសប្តាហ៍',
+    'productivity.goalProgress': 'វឌ្ឍនភាពគោលដៅ',
+    'productivity.smartInsight': 'ការណែនាំឆ្លាតវៃ',
+    'productivity.recentActivity': 'សកម្មភាពថ្មីៗ',
+    'productivity.seeall': 'មើលទាំងអស់',
+    'productivity.thisWeek': 'សប្តាហ៍នេះ',
+    'productivity.addTask': 'បន្ថែមកិច្ចការ',
+    'productivity.addHabit': 'បន្ថែមទម្លាប់',
+    'productivity.focus': 'ផ្តោតអារម្មណ៍',
+    'productivity.newGoal': 'គោលដៅថ្មី',
   };
 }

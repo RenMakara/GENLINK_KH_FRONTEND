@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/features/productivity/presentation/task_feature/task_create_screen.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/features/productivity/presentation/task_feature/widget/task_home_widget.dart';
@@ -210,7 +211,9 @@ class _TasksPageState extends State<TasksPage> {
 
   // CREATE TASK
   void _createTask() {
-    debugPrint('Create task');
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const CreateTaskPage()));
   }
 
   // DISPOSE

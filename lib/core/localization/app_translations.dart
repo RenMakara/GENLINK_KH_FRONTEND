@@ -710,6 +710,32 @@ class AppTranslations extends Translations {
     'tasks.priority.high': 'HIGH',
     'tasks.priority.medium': 'MEDIUM',
     'tasks.priority.low': 'LOW',
+
+    // ── Productivity - Task Create ───────────────────────────────────────────
+    // English
+    'task.create.title': 'Create Task',
+    'task.create.taskTitle': 'Task Title',
+    'task.create.taskTitleHint': 'Enter task title...',
+    'task.create.description': 'Description',
+    'task.create.descriptionHint': 'Add description...',
+    'task.create.priority': 'Priority',
+    'task.create.priority.high': 'High',
+    'task.create.priority.medium': 'Medium',
+    'task.create.priority.low': 'Low',
+    'task.create.category': 'Category',
+    'task.create.category.study': 'Study',
+    'task.create.category.work': 'Work',
+    'task.create.category.personal': 'Personal',
+    'task.create.category.health': 'Health',
+    'task.create.category.other': 'Other',
+    'task.create.dueDate': 'Due Date',
+    'task.create.selectDate': 'Select date',
+    'task.create.reminder': 'Reminder',
+    'task.create.setReminder': 'Set reminder',
+    'task.create.subtasks': 'Subtasks',
+    'task.create.addSubtask': 'Add subtask...',
+    'task.create.save': 'Save Task',
+    'task.create.validation.titleRequired': 'Please enter a task title',
   };
 
   static const _km = <String, String>{
@@ -1386,22 +1412,18 @@ class AppTranslations extends Translations {
     'tasks.searchHint': 'ស្វែងរកកិច្ចការរបស់អ្នក...',
     'tasks.myTasks': 'កិច្ចការរបស់ខ្ញុំ',
     'tasks.bottomTip': 'ចុចលើកិច្ចការ ដើម្បីសម្គាល់ថាបានបញ្ចប់',
-
     'tasks.empty.title': 'រកមិនឃើញកិច្ចការ',
     'tasks.empty.message': 'សាកល្បងផ្លាស់ប្តូរការស្វែងរក ឬតម្រង។',
-
     'tasks.filter.title': 'តម្រងកិច្ចការ',
     'tasks.filter.subtitle': 'កំណត់បញ្ជីកិច្ចការរបស់អ្នក',
     'tasks.filter.status': 'ស្ថានភាព',
     'tasks.filter.priority': 'អាទិភាព',
     'tasks.filter.reset': 'កំណត់ឡើងវិញ',
     'tasks.filter.apply': 'អនុវត្តតម្រង',
-
     'tasks.filter.all': 'ទាំងអស់',
     'tasks.filter.today': 'ថ្ងៃនេះ',
     'tasks.filter.upcoming': 'នាពេលខាងមុខ',
     'tasks.filter.completed': 'បានបញ្ចប់',
-
     'tasks.filter.high': 'ខ្ពស់',
     'tasks.filter.medium': 'មធ្យម',
     'tasks.filter.low': 'ទាប',
@@ -1409,9 +1431,33 @@ class AppTranslations extends Translations {
     'tasks.emptyTitle': 'រកមិនឃើញកិច្ចការ',
     'tasks.emptyMessage': 'សាកល្បងប្តូរការស្វែងរក ឬតម្រងរបស់អ្នក។',
     'tasks.active': 'សកម្ម',
-
     'tasks.priority.high': 'ខ្ពស់',
     'tasks.priority.medium': 'មធ្យម',
     'tasks.priority.low': 'ទាប',
+
+    // ── Productivity - Task Create ───────────────────────────────────────────
+    'task.create.title': 'បង្កើតកិច្ចការ',
+    'task.create.taskTitle': 'ចំណងជើងកិច្ចការ',
+    'task.create.taskTitleHint': 'បញ្ចូលចំណងជើងកិច្ចការ...',
+    'task.create.description': 'ការពិពណ៌នា',
+    'task.create.descriptionHint': 'បន្ថែមការពិពណ៌នា...',
+    'task.create.priority': 'អាទិភាព',
+    'task.create.priority.high': 'ខ្ពស់',
+    'task.create.priority.medium': 'មធ្យម',
+    'task.create.priority.low': 'ទាប',
+    'task.create.category': 'ប្រភេទ',
+    'task.create.category.study': 'ការសិក្សា',
+    'task.create.category.work': 'ការងារ',
+    'task.create.category.personal': 'ផ្ទាល់ខ្លួន',
+    'task.create.category.health': 'សុខភាព',
+    'task.create.category.other': 'ផ្សេងៗ',
+    'task.create.dueDate': 'កាលបរិច្ឆេទកំណត់',
+    'task.create.selectDate': 'ជ្រើសរើសកាលបរិច្ឆេទ',
+    'task.create.reminder': 'ការរំលឹក',
+    'task.create.setReminder': 'កំណត់ការរំលឹក',
+    'task.create.subtasks': 'កិច្ចការរង',
+    'task.create.addSubtask': 'បន្ថែមកិច្ចការរង...',
+    'task.create.save': 'រក្សាទុកកិច្ចការ',
+    'task.create.validation.titleRequired': 'សូមបញ្ចូលចំណងជើងកិច្ចការ',
   };
 }

@@ -3,7 +3,11 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:get/get.dart';
+import 'story_creator_screen.dart';
 import '../../../../app/routes/app_routes.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
@@ -222,6 +226,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     with TickerProviderStateMixin {
   late int _currentGroupIdx;
   int _currentStoryIdx = 0;
+
+  final GlobalKey _storyContentKey = GlobalKey();
 
   late AnimationController _progressAnimController;
   bool _isPaused = false;
@@ -1714,6 +1720,78 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     ).then((_) => _resumeStory());
   }
 
+  Future<void> _saveStoryToDevice() async {
+    _pauseStory();
+    try {
+      final permission = await PhotoManager.requestPermissionExtend();
+      if (!permission.isAuth) {
+        if (mounted) {
+          AppNotificationBanner.showDanger(
+            context: context,
+            title: "Permission Denied",
+            message: "Cannot save story without photo access.",
+          );
+        }
+        _resumeStory();
+        return;
+      }
+
+      if (mounted) {
+        AppNotificationBanner.showInfo(
+          context: context,
+          title: "Saving...",
+          message: "Saving story to device...",
+          icon: Icons.downloading_rounded,
+        );
+      }
+
+      final RenderRepaintBoundary? boundary = _storyContentKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        _resumeStory();
+        return;
+      }
+
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        _resumeStory();
+        return;
+      }
+
+      Uint8List pngBytes = byteData.buffer.asUint8List();
+      final title = "genlink_story_${DateTime.now().millisecondsSinceEpoch}.png";
+      
+      final asset = await PhotoManager.editor.saveImage(pngBytes, filename: title);
+      
+      if (mounted) {
+        if (asset != null) {
+          AppNotificationBanner.showSuccess(
+            context: context,
+            title: "Saved!",
+            message: "Story successfully saved to your gallery.",
+            icon: Icons.check_circle_rounded,
+          );
+        } else {
+          AppNotificationBanner.showDanger(
+            context: context,
+            title: "Save Failed",
+            message: "Could not save story to gallery.",
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: "Save Error",
+          message: "An error occurred while saving.",
+        );
+      }
+    } finally {
+      _resumeStory();
+    }
+  }
+
   void _showViewersSheet() {
     final story = _currentStory;
     if (story == null) return;
@@ -1755,7 +1833,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 padding: EdgeInsets.all(20),
                 child: Center(
                   child: Text(
-                    "No viewers yet.",
+                    "No insights available yet.",
                     style: TextStyle(color: Colors.white38),
                   ),
                 ),
@@ -1783,6 +1861,119 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         ),
       ),
     ).then((_) => _resumeStory());
+  }
+
+  void _showPrivacySheet() {
+    final story = _currentStory;
+    if (story == null) return;
+
+    _pauseStory();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: AppColors.darkSurfacePrimary,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Story Privacy",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white54),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildPrivacyOption(
+              ctx: ctx,
+              title: "Public",
+              subtitle: "Anyone on GenLink can see this",
+              icon: Icons.public,
+              isSelected: story.settings.visibility == StoryPrivacy.public,
+              onTap: () {
+                Get.find<StoryController>().updateStoryPrivacy(story.id, "Public");
+                Navigator.pop(ctx);
+              },
+            ),
+            _buildPrivacyOption(
+              ctx: ctx,
+              title: "Friends",
+              subtitle: "Only your friends can see this",
+              icon: Icons.group,
+              isSelected: story.settings.visibility == StoryPrivacy.friends,
+              onTap: () {
+                Get.find<StoryController>().updateStoryPrivacy(story.id, "Friends");
+                Navigator.pop(ctx);
+              },
+            ),
+            _buildPrivacyOption(
+              ctx: ctx,
+              title: "Only Me",
+              subtitle: "Only you can see this",
+              icon: Icons.lock,
+              isSelected: story.settings.visibility == StoryPrivacy.onlyMe,
+              onTap: () {
+                Get.find<StoryController>().updateStoryPrivacy(story.id, "Only Me");
+                Navigator.pop(ctx);
+              },
+            ),
+            _buildPrivacyOption(
+              ctx: ctx,
+              title: "Custom",
+              subtitle: "Coming Soon",
+              icon: Icons.settings,
+              isSelected: false,
+              onTap: null, // Disabled
+            ),
+          ],
+        ),
+      ),
+    ).then((_) {
+      _resumeStory();
+      if (mounted) setState(() {});
+    });
+  }
+
+  Widget _buildPrivacyOption({
+    required BuildContext ctx,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback? onTap,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      enabled: onTap != null,
+      leading: Icon(icon, color: isSelected ? AppColors.communityAccent : Colors.white54),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isSelected ? AppColors.communityAccent : (onTap == null ? Colors.white38 : Colors.white),
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(color: Colors.white38, fontSize: 12),
+      ),
+      trailing: isSelected ? const Icon(Icons.check, color: AppColors.communityAccent) : null,
+    );
   }
 
   void _openReportStorySheet(StoryGroupModel group, StoryItemModel story) {
@@ -2065,26 +2256,22 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           title: "Edit Story",
                           subtitle: "Modify story text, layers, or background",
                           onTap: () {
-                            AppNotificationBanner.showInfo(
-                              context: context,
-                              title: "Edit Story",
-                              message: "Story editor ready for modifications.",
-                              icon: Icons.edit_rounded,
-                            );
+                            Navigator.pop(ctx);
+                            _pauseStory();
+                            Get.to(() => StoryCreatorScreen(
+                              type: _currentStory!.type,
+                              existingStory: _currentStory,
+                            ))?.then((_) => _resumeStory());
                           },
                         ),
                         _buildMenuOptionTile(
                           ctx: ctx,
                           icon: Icons.lock_outline_rounded,
                           title: "Story Privacy",
-                          subtitle: "Who can see your story (Public)",
+                          subtitle: "Who can see your story (${_currentStory?.settings.visibility == StoryPrivacy.public ? 'Public' : (_currentStory?.settings.visibility == StoryPrivacy.onlyMe ? 'Only Me' : 'Friends')})",
                           onTap: () {
-                            AppNotificationBanner.showInfo(
-                              context: context,
-                              title: "Story Privacy",
-                              message: "Story visibility set to Public.",
-                              icon: Icons.lock_outline_rounded,
-                            );
+                            Navigator.pop(ctx);
+                            _showPrivacySheet();
                           },
                         ),
                         _buildMenuOptionTile(
@@ -2102,13 +2289,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           title: "Save to Device",
                           subtitle: "Save story photo/video to phone gallery",
                           onTap: () {
-                            AppNotificationBanner.showSuccess(
-                              context: context,
-                              title: "Story Saved",
-                              message:
-                                  "Story media saved to your device gallery!",
-                              icon: Icons.download_done_rounded,
-                            );
+                            Navigator.pop(ctx);
+                            _saveStoryToDevice();
                           },
                         ),
                         _buildMenuOptionTile(
@@ -2732,7 +2914,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   }
 
   Widget _buildViewerLayerWidget(MovableStoryLayer layer) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final size = MediaQuery.of(context).size;
+    final screenWidth = size.width;
+    final screenHeight = size.height;
     final maxCanvasWidth = screenWidth * 0.85;
 
     Widget content;
@@ -3054,12 +3238,17 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         break;
     }
 
+    final currentPos = layer.getCanvasOffset(Size(screenWidth, screenHeight));
+
     return Positioned(
-      left: layer.offset.dx,
-      top: layer.offset.dy,
-      child: Transform.scale(
-        scale: layer.scale,
-        child: Transform.rotate(angle: layer.rotation, child: content),
+      left: currentPos.dx,
+      top: currentPos.dy,
+      child: FractionalTranslation(
+        translation: const Offset(-0.5, -0.5),
+        child: Transform.scale(
+          scale: layer.scale,
+          child: Transform.rotate(angle: layer.rotation, child: content),
+        ),
       ),
     );
   }
@@ -3098,7 +3287,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 },
                 child: KeyedSubtree(
                   key: ValueKey("story_${story.id}"),
-                  child: _buildUnifiedStoryPageContent(story, group),
+                  child: RepaintBoundary(
+                    key: _storyContentKey,
+                    child: _buildUnifiedStoryPageContent(story, group),
+                  ),
                 ),
               ),
             ),
@@ -3301,7 +3493,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                                   children: [
                                     Flexible(
                                       child: Text(
-                                        group.userName,
+                                        group.isOwner ? "Your Story" : group.userName,
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,

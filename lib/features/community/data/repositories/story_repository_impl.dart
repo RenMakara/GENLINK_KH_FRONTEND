@@ -65,6 +65,14 @@ class StoryRepositoryImpl implements StoryRepository {
   }
 
   @override
+  Future<void> updateStory(String storyId, StoryItemModel updatedStory) async {
+    final ownerGroup = _mockStoryGroups.firstWhere((g) => g.isOwner);
+    final index = ownerGroup.stories.indexWhere((s) => s.id == storyId);
+    if (index != -1) {
+      ownerGroup.stories[index] = updatedStory;
+    }
+  }
+  @override
   Future<void> deleteStory(String storyId) async {
     await _apiClient.delete(ApiEndpoints.storyItem(storyId));
   }

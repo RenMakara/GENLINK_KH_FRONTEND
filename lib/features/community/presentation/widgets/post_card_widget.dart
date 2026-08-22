@@ -1139,7 +1139,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                             ? Image.network(
                                 event.imageUrl,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, _) => _buildMonochromeEventPlaceholder(isDark, textSecondary),
+                                errorBuilder: (context, error, stackTrace) => _buildMonochromeEventPlaceholder(isDark, textSecondary),
                               )
                             : _buildMonochromeEventPlaceholder(isDark, textSecondary)),
                   ),

@@ -18,6 +18,7 @@ abstract class StoryRepository {
     dynamic bgOffset,
     double bgRotation = 0.0,
   });
+  Future<void> updateStory(String storyId, StoryItemModel updatedStory);
   Future<void> deleteStory(String storyId);
   Future<void> toggleLikeStory(String storyId);
   Future<void> replyToStory(String storyId, String message);

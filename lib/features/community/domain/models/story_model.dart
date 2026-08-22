@@ -74,12 +74,12 @@ class MovableStoryLayer {
     );
   }
 
-  MovableStoryLayer clone() {
+  MovableStoryLayer clone({Offset? offset}) {
     return MovableStoryLayer(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       type: type,
       text: text,
-      offset: Offset(offset.dx + 20, offset.dy + 20),
+      offset: offset ?? this.offset,
       scale: scale,
       rotation: rotation,
       color: color,

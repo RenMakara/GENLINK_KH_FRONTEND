@@ -118,7 +118,9 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
 
       if (media != null && mounted) {
         if (instantPost) {
-          final controller = Get.find<StoryController>();
+          final controller = Get.isRegistered<StoryController>()
+              ? Get.find<StoryController>()
+              : Get.put(StoryController(), permanent: true);
           final success = await controller.publishStory(
             type: _isVideoMode ? StoryType.video : StoryType.photo,
             mediaUrl: media.path,
@@ -127,23 +129,53 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
           );
 
           if (mounted) {
-            Get.back();
             if (success) {
-              AppNotificationBanner.showSuccess(
+              final bannerContext =
+                  Get.context ?? Get.overlayContext ?? context;
+              if (bannerContext.mounted) {
+                AppNotificationBanner.showSuccess(
+                  context: bannerContext,
+                  title: "✓ Story Posted",
+                  message: "Your story is live on CampusLink KH!",
+                  icon: Icons.camera_alt_rounded,
+                  duration: const Duration(seconds: 3),
+                );
+              }
+
+              const storyRouteNames = {
+                '/StoryGalleryScreen',
+                '/InAppCameraScreen',
+                '/StoryCreatorScreen',
+              };
+
+              Get.until((route) {
+                if (route.isFirst) return true;
+                final name = route.settings.name;
+                if (name != null && storyRouteNames.contains(name)) {
+                  return false;
+                }
+                return true;
+              });
+            } else {
+              setState(() => _isCapturing = false);
+              AppNotificationBanner.showDanger(
                 context: context,
-                title: "✓ Story Posted",
-                message: "Your story is live on CampusLink KH!",
-                icon: Icons.camera_alt_rounded,
+                title: "Upload Failed",
+                message: "Couldn't post story. Please try again.",
               );
             }
           }
         } else {
-          Get.to(
+          final result = await Get.to(
             () => StoryCreatorScreen(
               type: _isVideoMode ? StoryType.video : StoryType.photo,
               mediaPaths: [media!.path],
             ),
+            routeName: '/StoryCreatorScreen',
           );
+          if (result == true && mounted) {
+            Get.back(result: true);
+          }
         }
       } else {
         setState(() => _isCapturing = false);
@@ -159,12 +191,16 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
             : await picker.pickImage(source: ImageSource.gallery, imageQuality: 95);
 
         if (media != null && mounted) {
-          Get.to(
+          final result = await Get.to(
             () => StoryCreatorScreen(
               type: _isVideoMode ? StoryType.video : StoryType.photo,
               mediaPaths: [media!.path],
             ),
+            routeName: '/StoryCreatorScreen',
           );
+          if (result == true && mounted) {
+            Get.back(result: true);
+          }
         } else {
           setState(() => _isCapturing = false);
         }

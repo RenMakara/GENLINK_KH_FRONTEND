@@ -23,13 +23,19 @@ class StoryCreationPickerSheet extends StatelessWidget {
 
   void _pickFromGallery(BuildContext context) {
     Get.back();
-    Get.to(() => const StoryGalleryScreen());
+    Get.to(
+      () => const StoryGalleryScreen(),
+      routeName: '/StoryGalleryScreen',
+    );
   }
 
   void _openCamera(BuildContext context) {
     Get.back();
     try {
-      Get.to(() => const InAppCameraScreen(initialIsVideoMode: false));
+      Get.to(
+        () => const InAppCameraScreen(initialIsVideoMode: false),
+        routeName: '/InAppCameraScreen',
+      );
     } catch (e) {
       if (context.mounted) {
         AppNotificationBanner.showDanger(
@@ -43,7 +49,10 @@ class StoryCreationPickerSheet extends StatelessWidget {
 
   void _openTextStory(BuildContext context) {
     Get.back();
-    Get.to(() => const StoryCreatorScreen(type: StoryType.text));
+    Get.to(
+      () => const StoryCreatorScreen(type: StoryType.text),
+      routeName: '/StoryCreatorScreen',
+    );
   }
 
   @override

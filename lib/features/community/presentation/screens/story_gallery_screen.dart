@@ -16,8 +16,28 @@ class StoryGalleryScreen extends StatefulWidget {
   State<StoryGalleryScreen> createState() => _StoryGalleryScreenState();
 }
 
-class _StoryGalleryScreenState extends State<StoryGalleryScreen> {
+class _StoryGalleryScreenState extends State<StoryGalleryScreen>
+    with WidgetsBindingObserver {
   final StoryGalleryController controller = Get.put(StoryGalleryController());
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      controller.checkAndRequestPermission();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,10 +98,14 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen> {
                   color: Colors.white,
                   size: 24,
                 ),
-                onPressed: () {
-                  Get.to(
+                onPressed: () async {
+                  final result = await Get.to(
                     () => const InAppCameraScreen(initialIsVideoMode: false),
+                    routeName: '/InAppCameraScreen',
                   );
+                  if (result == true && mounted) {
+                    Get.back(result: true);
+                  }
                 },
               ),
               IconButton(
@@ -108,12 +132,16 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen> {
         imageQuality: 95,
       );
       if (file != null) {
-        Get.to(
+        final result = await Get.to(
           () => StoryCreatorScreen(
             type: StoryType.photo,
             mediaPaths: [file.path],
           ),
+          routeName: '/StoryCreatorScreen',
         );
+        if (result == true && mounted) {
+          Get.back(result: true);
+        }
       }
     } catch (_) {}
   }
@@ -124,8 +152,15 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen> {
       (
         icon: Icons.text_fields_rounded,
         label: "Text",
-        onTap: () =>
-            Get.to(() => const StoryCreatorScreen(type: StoryType.text)),
+        onTap: () async {
+          final result = await Get.to(
+            () => const StoryCreatorScreen(type: StoryType.text),
+            routeName: '/StoryCreatorScreen',
+          );
+          if (result == true && mounted) {
+            Get.back(result: true);
+          }
+        },
       ),
       (
         icon: Icons.music_note_rounded,
@@ -273,63 +308,44 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen> {
             }),
           ),
 
-          // Tools: Search & Select Multiple
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                tooltip: "Search photos",
-                icon: const Icon(
-                  Icons.search_rounded,
-                  color: Colors.white70,
-                  size: 22,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: () {
-                  // Instant search trigger or filter
-                },
-              ),
-              const SizedBox(width: 14),
-              Obx(() {
-                final isMulti = controller.isMultiSelectMode.value;
-                final count = controller.selectedAssets.length;
-                final label = (isMulti && count > 0)
-                    ? "$count selected"
-                    : "Select multiple";
+          // Select Multiple Toggle Button (Search icon removed)
+          Obx(() {
+            final isMulti = controller.isMultiSelectMode.value;
+            final count = controller.selectedAssets.length;
+            final label = (isMulti && count > 0)
+                ? "$count selected"
+                : "Select multiple";
 
-                return GestureDetector(
-                  onTap: controller.toggleMultiSelectMode,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOut,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isMulti ? Colors.white : const Color(0xFF222226),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: isMulti
-                            ? Colors.white
-                            : Colors.white.withValues(alpha: 0.15),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        color: isMulti ? Colors.black : Colors.white,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+            return GestureDetector(
+              onTap: controller.toggleMultiSelectMode,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: isMulti ? Colors.white : const Color(0xFF222226),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isMulti
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.15),
+                    width: 1,
                   ),
-                );
-              }),
-            ],
-          ),
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: isMulti ? Colors.black : Colors.white,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -572,10 +588,14 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen> {
             ),
             const SizedBox(height: 24),
             GestureDetector(
-              onTap: () {
-                Get.to(
+              onTap: () async {
+                final result = await Get.to(
                   () => const InAppCameraScreen(initialIsVideoMode: false),
+                  routeName: '/InAppCameraScreen',
                 );
+                if (result == true && mounted) {
+                  Get.back(result: true);
+                }
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(
@@ -771,11 +791,15 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen> {
                         vertical: 10,
                       ),
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       controller.clearDraft();
-                      Get.to(
+                      final result = await Get.to(
                         () => const StoryCreatorScreen(type: StoryType.photo),
+                        routeName: '/StoryCreatorScreen',
                       );
+                      if (result == true && mounted) {
+                        Get.back(result: true);
+                      }
                     },
                     child: const Text(
                       "Continue",
@@ -815,12 +839,16 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen> {
                       }
                     }
                     if (paths.isNotEmpty) {
-                      Get.to(
+                      final result = await Get.to(
                         () => StoryCreatorScreen(
                           type: StoryType.photo,
                           mediaPaths: paths,
                         ),
+                        routeName: '/StoryCreatorScreen',
                       );
+                      if (result == true && mounted) {
+                        Get.back(result: true);
+                      }
                     }
                   }
                 : null,

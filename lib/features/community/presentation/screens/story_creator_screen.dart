@@ -7,6 +7,7 @@ import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../domain/models/story_model.dart';
 import '../controllers/story_controller.dart';
+import '../controllers/story_gallery_controller.dart';
 
 class StoryTemplateModel {
   final String id;
@@ -677,9 +678,32 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         if (presetIdx != -1) _gradientIdx = presetIdx;
       }
     } else {
-      _activeMediaPath = widget.mediaPaths?.isNotEmpty == true
-          ? widget.mediaPaths!.first
-          : null;
+      if (widget.mediaPaths != null && widget.mediaPaths!.isNotEmpty) {
+        if (widget.mediaPaths!.length == 1) {
+          _activeMediaPath = widget.mediaPaths!.first;
+        } else {
+          _activeMediaPath = null;
+          for (int i = 0; i < widget.mediaPaths!.length; i++) {
+            final path = widget.mediaPaths![i];
+            final col = i % 2;
+            final row = i ~/ 2;
+            final x = (0.35 + (col * 0.30)).clamp(0.2, 0.8);
+            final y = (0.35 + (row * 0.22)).clamp(0.2, 0.8);
+            _layers.add(
+              MovableStoryLayer(
+                id: "image_${DateTime.now().microsecondsSinceEpoch}_$i",
+                type: LayerType.image,
+                text: path,
+                offset: Offset(x, y),
+                scale: 1.0,
+              ),
+            );
+          }
+          if (_layers.isNotEmpty) {
+            _selectedLayer = _layers.first;
+          }
+        }
+      }
     }
     _fullScreenTextController.addListener(_onTextChanged);
     if (widget.type == StoryType.text) {
@@ -1360,7 +1384,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   }
 
   void _addMentionLayer(String mention) {
-    final size = MediaQuery.of(context).size;
     final formatted = mention.startsWith('@') ? mention : '@$mention';
 
     setState(() {
@@ -2384,6 +2407,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           createdAt: widget.existingStory!.createdAt,
           settings: newSettings,
           layers: List.from(_layers),
+          viewers: List.from(widget.existingStory!.viewers),
           bgScale: _bgImageScale,
           bgOffset: _bgImageOffset,
           bgRotation: _imageRotation,
@@ -2392,7 +2416,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         updatedStory.isLiked = widget.existingStory!.isLiked;
         updatedStory.isViewed = widget.existingStory!.isViewed;
         updatedStory.viewersCount = widget.existingStory!.viewersCount;
-        updatedStory.viewers.addAll(widget.existingStory!.viewers);
 
         success = await controller.updateStory(widget.existingStory!.id, updatedStory);
       } else {
@@ -2416,13 +2439,41 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       if (mounted) {
         setState(() => _isPublishing = false);
         if (success) {
-          AppNotificationBanner.showSuccess(
-            context: context,
-            title: "Success",
-            message: "Story posted successfully",
-            icon: Icons.check_circle_rounded,
-          );
-          Get.back();
+          final bannerContext = Get.context ?? Get.overlayContext ?? context;
+          if (bannerContext.mounted) {
+            AppNotificationBanner.showSuccess(
+              context: bannerContext,
+              title: "Success",
+              message: "Story posted successfully",
+              icon: Icons.check_circle_rounded,
+              duration: const Duration(seconds: 3),
+            );
+          }
+
+          if (Get.isRegistered<StoryGalleryController>()) {
+            try {
+              Get.find<StoryGalleryController>().clearDraft();
+            } catch (_) {}
+          }
+
+          if (widget.existingStory != null) {
+            Get.back(result: true);
+          } else {
+            const storyRouteNames = {
+              '/StoryGalleryScreen',
+              '/InAppCameraScreen',
+              '/StoryCreatorScreen',
+            };
+
+            Get.until((route) {
+              if (route.isFirst) return true;
+              final name = route.settings.name;
+              if (name != null && storyRouteNames.contains(name)) {
+                return false;
+              }
+              return true;
+            });
+          }
         } else {
           AppNotificationBanner.showDanger(
             context: context,
@@ -3176,7 +3227,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                     ),
                                   ),
                                   onTap: () {
-                                    final size = MediaQuery.of(context).size;
                                     setState(() {
                                       final newLayer = MovableStoryLayer(
                                         id: "location_${DateTime.now().microsecondsSinceEpoch}",
@@ -3521,14 +3571,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   bool _shouldShowObjectToolbar(MovableStoryLayer? layer) {
     if (layer == null) return false;
-    // TEXT: No floating toolbar
+    // TEXT: No floating toolbar (handled via in-place / bottom text editor)
     if (layer.type == LayerType.text) return false;
-    // EMOJI vs STICKER: Emojis do not show toolbar, graphic asset stickers do
-    if (layer.type == LayerType.sticker) {
-      return layer.text.startsWith('assets/');
-    }
-    // IMAGE: Shows toolbar
-    if (layer.type == LayerType.image) return true;
+    // STICKER & EMOJI: No floating toolbar
+    if (layer.type == LayerType.sticker) return false;
+    // IMAGE: No floating toolbar
+    if (layer.type == LayerType.image) return false;
     return false;
   }
 
@@ -3602,7 +3650,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   ),
                   tooltip: "Duplicate",
                   onPressed: () {
-                    final clone = layer.clone();
+                    final clone = layer.clone(
+                      offset: Offset(
+                        (layer.offset.dx + 0.04).clamp(0.0, 0.9),
+                        (layer.offset.dy + 0.04).clamp(0.0, 0.9),
+                      ),
+                    );
                     setState(() {
                       _layers.add(clone);
                       _selectedLayer = clone;
@@ -3662,7 +3715,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   ),
                   tooltip: "Duplicate",
                   onPressed: () {
-                    final clone = layer.clone();
+                    final clone = layer.clone(
+                      offset: Offset(
+                        (layer.offset.dx + 0.04).clamp(0.0, 0.9),
+                        (layer.offset.dy + 0.04).clamp(0.0, 0.9),
+                      ),
+                    );
                     setState(() {
                       _layers.add(clone);
                       _selectedLayer = clone;
@@ -3729,21 +3787,9 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         final remainingSlots = 10 - currentImagesCount;
         final selectedImages = images.take(remainingSlots).toList();
 
-        final screenWidth = MediaQuery.of(context).size.width;
-        final screenHeight = MediaQuery.of(context).size.height;
-
         setState(() {
           int count = currentImagesCount;
           for (final img in selectedImages) {
-            final col = count % 2;
-            final row = count ~/ 2;
-
-            final startX = (screenWidth * 0.15) + (col * 150.0);
-            final startY = (screenHeight * 0.20) + (row * 150.0);
-
-            final clampedX = startX.clamp(16.0, screenWidth - 160.0);
-            final clampedY = startY.clamp(80.0, screenHeight - 200.0);
-
             final newLayer = MovableStoryLayer(
               id: "${DateTime.now().microsecondsSinceEpoch}_$count",
               type: LayerType.image,
@@ -4506,7 +4552,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   }
 
   void _addStickerToCanvas(String stickerText) {
-    final size = MediaQuery.of(context).size;
     final newLayer = MovableStoryLayer(
       id: "sticker_${DateTime.now().microsecondsSinceEpoch}",
       type: LayerType.sticker,
@@ -4526,10 +4571,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     if (save) {
       final text = _fullScreenTextController.text.trim();
       if (text.isNotEmpty) {
-        final size = MediaQuery.of(context).size;
-        final maxCanvasWidth = size.width * 0.85;
-        final defaultLeft = (size.width - (maxCanvasWidth * 0.92)) / 2;
-
         setState(() {
           if (_editingTextLayer != null) {
             // ONLY update text content and styles — PRESERVE existing offset, scale, rotation
@@ -4543,15 +4584,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             _editingTextLayer!.fontSize = _activeFontSize;
             _selectedLayer = _editingTextLayer;
           } else {
-            final isTextStory = widget.type == StoryType.text;
-            final existingTextCount = _layers
-                .where((l) => l.type == LayerType.text)
-                .length;
-            final startY = isTextStory
-                ? (size.height * 0.38)
-                : ((size.height * 0.35) + (existingTextCount * 55.0));
-            final clampedY = startY.clamp(80.0, size.height - 220.0);
-
             final newLayer = MovableStoryLayer(
               id: "text_${DateTime.now().microsecondsSinceEpoch}",
               type: LayerType.text,
@@ -4643,46 +4675,49 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     final isEditingExistingImageText =
         _editingTextLayer != null && !isTextStory;
 
-    final textInputField = AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      padding: _activeTextBgStyle != TextBgStyle.none
-          ? const EdgeInsets.symmetric(horizontal: 14, vertical: 8)
-          : const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        color: boxColor,
-        borderRadius: BorderRadius.circular(16),
-        border: boxBorder,
-        boxShadow: boxShadow,
-      ),
-      child: IntrinsicWidth(
-        child: TextField(
-          controller: _fullScreenTextController,
-          focusNode: _fullScreenTextFocusNode,
-          autofocus: true,
-          maxLines: null,
-          maxLength: 300,
-          keyboardType: TextInputType.multiline,
-          textInputAction: TextInputAction.newline,
-          textAlign: _activeTextAlign,
-          textCapitalization: TextCapitalization.sentences,
-          style: baseTextStyle.copyWith(color: liveTextColor),
-          cursorColor: cursorColor,
-          cursorWidth: 2.5,
-          cursorRadius: const Radius.circular(2),
-          decoration: const InputDecoration(
-            hintText: 'Start typing...',
-            hintStyle: TextStyle(
-              color: Colors.white38,
-              fontWeight: FontWeight.w400,
-              fontSize: 26,
+    final textInputField = ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: screenWidth * 0.85 * 0.92),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: _activeTextBgStyle != TextBgStyle.none
+            ? const EdgeInsets.symmetric(horizontal: 14, vertical: 8)
+            : const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          color: boxColor,
+          borderRadius: BorderRadius.circular(14),
+          border: boxBorder,
+          boxShadow: boxShadow,
+        ),
+        child: IntrinsicWidth(
+          child: TextField(
+            controller: _fullScreenTextController,
+            focusNode: _fullScreenTextFocusNode,
+            autofocus: true,
+            maxLines: null,
+            maxLength: 300,
+            keyboardType: TextInputType.multiline,
+            textInputAction: TextInputAction.newline,
+            textAlign: _activeTextAlign,
+            textCapitalization: TextCapitalization.sentences,
+            style: baseTextStyle.copyWith(color: liveTextColor),
+            cursorColor: cursorColor,
+            cursorWidth: 2.5,
+            cursorRadius: const Radius.circular(2),
+            decoration: const InputDecoration(
+              hintText: 'Start typing...',
+              hintStyle: TextStyle(
+                color: Colors.white38,
+                fontWeight: FontWeight.w400,
+                fontSize: 26,
+              ),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              filled: false,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              counterText: '',
             ),
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            filled: false,
-            isDense: true,
-            contentPadding: EdgeInsets.zero,
-            counterText: '',
           ),
         ),
       ),
@@ -5137,14 +5172,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   top: _editingTextLayer!
                       .getCanvasOffset(Size(screenWidth, screenHeight))
                       .dy,
-                  child: Transform.scale(
-                    scale: _editingTextLayer!.scale,
-                    child: Transform.rotate(
-                      angle: _editingTextLayer!.rotation,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: screenWidth * 0.85 * 0.92,
-                        ),
+                  child: FractionalTranslation(
+                    translation: const Offset(-0.5, -0.5),
+                    child: Transform.scale(
+                      scale: _editingTextLayer!.scale,
+                      child: Transform.rotate(
+                        angle: _editingTextLayer!.rotation,
                         child: textInputField,
                       ),
                     ),

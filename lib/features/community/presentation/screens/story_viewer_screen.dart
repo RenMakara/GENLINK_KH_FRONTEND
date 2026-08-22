@@ -2258,10 +2258,13 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           onTap: () {
                             Navigator.pop(ctx);
                             _pauseStory();
-                            Get.to(() => StoryCreatorScreen(
-                              type: _currentStory!.type,
-                              existingStory: _currentStory,
-                            ))?.then((_) => _resumeStory());
+                            Get.to(
+                              () => StoryCreatorScreen(
+                                type: _currentStory!.type,
+                                existingStory: _currentStory,
+                              ),
+                              routeName: '/StoryCreatorScreen',
+                            )?.then((_) => _resumeStory());
                           },
                         ),
                         _buildMenuOptionTile(

@@ -4,8 +4,8 @@ import '../../../../core/errors/app_error.dart';
 import '../../../../core/localization/localization_service.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../../design_system/widgets/dialogs/app_dialog.dart';
-import '../../../profile/domain/repositories/profile_repository.dart';
 import '../../domain/entities/user_settings_entity.dart';
+import '../../domain/repositories/settings_repository.dart';
 
 /// Owns `/api/v1/profile/settings`.
 ///
@@ -17,9 +17,9 @@ class SettingsController extends GetxController {
     required this._repository,
     required ThemeController themeController,
     required this._localization,
-  })  : _theme = themeController;
+  }) : _theme = themeController;
 
-  final ProfileRepository _repository;
+  final SettingsRepository _repository;
   final ThemeController _theme;
   final LocalizationService _localization;
 
@@ -57,46 +57,57 @@ class SettingsController extends GetxController {
   // ── Appearance ────────────────────────────────────────────────────────
 
   Future<void> setTheme(String theme) async {
-    final previous = settings.value.theme;
-    if (previous == theme) return;
+    final previous = settings.value;
+    if (previous.theme == theme) return;
 
-    settings.value = settings.value.copyWith(theme: theme);
+    settings.value = previous.copyWith(theme: theme);
     await _theme.applyBackendTheme(theme);
 
-    await _patch(theme: theme);
+    if (!await _patch(theme: theme)) {
+      settings.value = previous;
+      await _theme.applyBackendTheme(previous.theme);
+    }
   }
 
   Future<void> setLanguage(String language) async {
-    final previous = settings.value.language;
-    if (previous == language) return;
+    final previous = settings.value;
+    if (previous.language == language) return;
 
-    settings.value = settings.value.copyWith(language: language);
+    settings.value = previous.copyWith(language: language);
     await _localization.setLanguage(language);
 
-    await _patch(language: language);
+    if (!await _patch(language: language)) {
+      settings.value = previous;
+      await _localization.setLanguage(previous.language);
+    }
   }
 
   // ── Toggles ───────────────────────────────────────────────────────────
 
-  Future<void> setNotificationEnabled(bool value) =>
-      _toggle((s) => s.copyWith(notificationEnabled: value),
-          () => _patch(notificationEnabled: value));
+  Future<void> setNotificationEnabled(bool value) => _toggle(
+    (s) => s.copyWith(notificationEnabled: value),
+    () => _patch(notificationEnabled: value),
+  );
 
   Future<void> setAllowMessages(bool value) => _toggle(
-      (s) => s.copyWith(allowMessages: value),
-      () => _patch(allowMessages: value));
+    (s) => s.copyWith(allowMessages: value),
+    () => _patch(allowMessages: value),
+  );
 
   Future<void> setAllowFollowRequest(bool value) => _toggle(
-      (s) => s.copyWith(allowFollowRequest: value),
-      () => _patch(allowFollowRequest: value));
+    (s) => s.copyWith(allowFollowRequest: value),
+    () => _patch(allowFollowRequest: value),
+  );
 
   Future<void> setBiometricEnabled(bool value) => _toggle(
-      (s) => s.copyWith(biometricEnabled: value),
-      () => _patch(biometricEnabled: value));
+    (s) => s.copyWith(biometricEnabled: value),
+    () => _patch(biometricEnabled: value),
+  );
 
   Future<void> setPrivacyProfile(String value) => _toggle(
-      (s) => s.copyWith(privacyProfile: value),
-      () => _patch(privacyProfile: value));
+    (s) => s.copyWith(privacyProfile: value),
+    () => _patch(privacyProfile: value),
+  );
 
   // ── Helpers ───────────────────────────────────────────────────────────
 

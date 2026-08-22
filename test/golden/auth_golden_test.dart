@@ -20,6 +20,9 @@ class _MockAuthRepository extends Mock implements AuthRepository {}
 void main() {
   const phone = Size(390, 844);
 
+  setUpAll(() => EditableText.debugDeterministicCursor = true);
+  tearDownAll(() => EditableText.debugDeterministicCursor = false);
+
   setUp(() {
     Get
       ..put<LocalStorage>(LocalStorage())

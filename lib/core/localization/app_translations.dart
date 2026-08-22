@@ -123,6 +123,7 @@ class AppTranslations extends Translations {
     // ── Navigation ──────────────────────────────────────────────────────
     'nav.home': 'Home',
     'nav.community': 'Community',
+    'nav.create': 'Create',
     'nav.financial': 'Financial',
     'nav.profile': 'Profile',
 
@@ -844,6 +845,7 @@ class AppTranslations extends Translations {
     // ── Navigation ──────────────────────────────────────────────────────
     'nav.home': 'ទំព័រដើម',
     'nav.community': 'សហគមន៍',
+    'nav.create': 'បង្កើត',
     'nav.financial': 'ហិរញ្ញវត្ថុ',
     'nav.profile': 'ប្រវត្តិរូប',
 

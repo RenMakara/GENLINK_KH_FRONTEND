@@ -9,7 +9,7 @@ import '../../../features/auth/domain/repositories/auth_repository.dart';
 ///
 /// Behavior:
 /// 1. Attaches `Authorization: Bearer <token>` to every request.
-/// 2. On 401/403, refreshes once using the stored refresh token.
+/// 2. On 401, refreshes once using the stored refresh token.
 /// 3. Retries the original request through the *configured* Dio instance.
 /// 4. If refresh fails, clears the session and invokes [onSessionExpired]
 ///    so the app can route to login; the error still propagates.
@@ -20,13 +20,14 @@ class AuthInterceptor extends Interceptor {
     required SecureStorage secureStorage,
     required this._authRepository,
     this.onSessionExpired,
-  })  : _storage = secureStorage;
+  }) : _storage = secureStorage;
 
   final SecureStorage _storage;
   final AuthRepository _authRepository;
 
-  /// Called once after a refresh failure clears the session.
-  final void Function()? onSessionExpired;
+  /// Called once when refresh fails so app state and stored credentials can
+  /// be cleared before the failed request continues through the Dio chain.
+  final FutureOr<void> Function()? onSessionExpired;
 
   /// The configured client, used to replay a request after refresh.
   ///
@@ -70,7 +71,8 @@ class AuthInterceptor extends Interceptor {
     final options = err.requestOptions;
 
     final token = await _storage.readAccessToken();
-    final isDemoToken = token == 'demo_access_token' ||
+    final isDemoToken =
+        token == 'demo_access_token' ||
         token == 'mock_access_token_123' ||
         token == 'mock_google_token';
 
@@ -80,7 +82,11 @@ class AuthInterceptor extends Interceptor {
       return;
     }
 
-    final shouldRefresh = (statusCode == 401 || statusCode == 403) &&
+    // A 403 means the authenticated user lacks permission; refreshing does
+    // not change authorization and must never turn a forbidden operation
+    // into a logout. Only a 401 is a token-authentication failure.
+    final shouldRefresh =
+        statusCode == 401 &&
         !_isAuthEndpoint(options.path) &&
         options.extra[_retriedFlag] != true;
 
@@ -93,8 +99,18 @@ class AuthInterceptor extends Interceptor {
 
     if (!refreshed) {
       // Refresh failed — the session is unrecoverable.
-      await _storage.clearAll();
-      onSessionExpired?.call();
+      final callback = onSessionExpired;
+      if (callback != null) {
+        try {
+          await callback();
+        } catch (_) {
+          // A routing/state callback must not prevent local token cleanup or
+          // leave Dio's interceptor queue unresolved.
+          await _storage.clearAll();
+        }
+      } else {
+        await _storage.clearAll();
+      }
       handler.next(err);
       return;
     }
@@ -136,8 +152,9 @@ class AuthInterceptor extends Interceptor {
           completer.complete(false);
           return;
         }
-        final session =
-            await _authRepository.refreshToken(refreshToken: refreshToken);
+        final session = await _authRepository.refreshToken(
+          refreshToken: refreshToken,
+        );
         await _storage.saveTokenPair(
           accessToken: session.accessToken,
           refreshToken: session.refreshToken,

@@ -1,7 +1,5 @@
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
-import '../../../settings/data/models/user_settings_model.dart';
-import '../../../settings/domain/entities/user_settings_entity.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../models/profile_models.dart';
 
@@ -58,23 +56,6 @@ class ProfileRemoteDatasource {
     return _client.get(
       ApiEndpoints.publicProfile(username),
       parse: (data) => ProfileMapper.publicProfile(ApiClient.asMap(data)),
-    );
-  }
-
-  // ── Settings ──────────────────────────────────────────────────────────
-
-  Future<UserSettingsEntity> getSettings() {
-    return _client.get(
-      ApiEndpoints.profileSettings,
-      parse: (data) => UserSettingsMapper.fromJson(ApiClient.asMap(data)),
-    );
-  }
-
-  Future<UserSettingsEntity> updateSettings(Map<String, dynamic> body) {
-    return _client.put(
-      ApiEndpoints.profileSettings,
-      body: body,
-      parse: (data) => UserSettingsMapper.fromJson(ApiClient.asMap(data)),
     );
   }
 

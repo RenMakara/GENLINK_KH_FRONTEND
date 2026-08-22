@@ -24,13 +24,15 @@ class AuthController extends GetxController {
     required SecureStorage secureStorage,
     required this._localization,
     GoogleAuthService googleAuthService = const UnconfiguredGoogleAuthService(),
-  })  : _storage = secureStorage,
-        _google = googleAuthService;
+    this.onSessionCleared,
+  }) : _storage = secureStorage,
+       _google = googleAuthService;
 
   final AuthRepository _authRepository;
   final SecureStorage _storage;
   final LocalizationService _localization;
   final GoogleAuthService _google;
+  final void Function()? onSessionCleared;
 
   /// Seconds a user must wait before requesting another OTP.
   static const resendCooldownSeconds = 60;
@@ -86,19 +88,24 @@ class AuthController extends GetxController {
       // the language against device-following.
       _localization.syncFromAccount(user.preferredLanguage);
       return true;
+    } on AppError catch (e) {
+      // Only confirmed authentication/account failures invalidate the
+      // stored session. A timeout, offline launch, or 5xx response must not
+      // destroy a valid refresh token and force the user to sign in again.
+      if (e.shouldLogout || e.isAccountBanned || e.isNotFound) {
+        await _clearSession();
+      }
+      return false;
     } catch (_) {
-      // Token invalid, expired, or the account is gone — clear silently.
-      await _clearSession();
+      // Preserve the stored session for transient or unexpected failures.
+      // Splash can fall back for this launch and retry restoration later.
       return false;
     }
   }
 
   // ── Login ─────────────────────────────────────────────────────────────
 
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) {
+  Future<bool> login({required String email, required String password}) {
     return _run(() async {
       final session = await _authRepository.login(
         email: email,
@@ -176,18 +183,25 @@ class AuthController extends GetxController {
   Future<bool> signInWithGoogle() async {
     isLoading.value = true;
     errorMessage.value = null;
-    String? idToken;
+    lastErrorCode.value = null;
     try {
-      idToken = await _google.signIn();
+      final idToken = await _google.signIn();
+      if (idToken == null) return false;
+
+      final session = await _authRepository.googleLogin(idToken: idToken);
+      await _persistSession(session);
+      return true;
+    } on AppError catch (e) {
+      errorMessage.value = e.message;
+      lastErrorCode.value = e.errorCode;
+      return false;
     } catch (_) {
-      // Fallback for dev mode / desktop / unconfigured native Google client
+      errorMessage.value = 'common.error'.tr;
+      lastErrorCode.value = 'UNKNOWN';
+      return false;
     } finally {
       isLoading.value = false;
     }
-
-    // If native Google login is unconfigured, fallback to instant demo login
-    idToken ??= 'demo_google_id_token_123';
-    return googleLogin(idToken: idToken);
   }
 
   /// Exchanges an existing Google ID token for a GenLink session.
@@ -203,15 +217,9 @@ class AuthController extends GetxController {
 
   /// Verifies the OTP. The backend returns a full token pair here, so a
   /// successful verification signs the user straight in.
-  Future<bool> verifyEmail({
-    required String email,
-    required String otp,
-  }) {
+  Future<bool> verifyEmail({required String email, required String otp}) {
     return _run(() async {
-      final session = await _authRepository.verifyEmail(
-        email: email,
-        otp: otp,
-      );
+      final session = await _authRepository.verifyEmail(email: email, otp: otp);
       await _persistSession(session);
       return true;
     });
@@ -349,5 +357,6 @@ class AuthController extends GetxController {
     await _storage.clearAll();
     currentUser.value = null;
     isAuthenticated.value = false;
+    onSessionCleared?.call();
   }
 }

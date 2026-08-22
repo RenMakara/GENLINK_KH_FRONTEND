@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'features/community/presentation/bindings/community_binding.dart';
 import 'features/community/presentation/controllers/community_controller.dart';
 import 'features/community/presentation/screens/community_screen.dart';
 import 'features/community/presentation/screens/create_discussion_screen.dart';
@@ -10,9 +9,7 @@ import 'features/community/presentation/screens/create_opportunity_screen.dart';
 import 'features/community/presentation/screens/create_post_screen.dart';
 import 'features/community/presentation/widgets/story_creation_picker_sheet.dart';
 import 'features/finance/presentation/screens/Finance Home/screens/finance_screen.dart';
-import 'features/home/presentation/bindings/home_binding.dart';
 import 'features/home/presentation/screens/home_screen.dart';
-import 'features/profile/presentation/bindings/profile_binding.dart';
 import 'features/profile/presentation/screens/profile_screen.dart';
 import 'main_controller.dart';
 import 'shared/widgets/bottom_nav_bar.dart';
@@ -39,13 +36,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    controller = Get.isRegistered<MainController>()
-        ? Get.find<MainController>()
-        : Get.put(MainController(), permanent: true);
-
-    HomeBinding().dependencies();
-    ProfileBinding().dependencies();
-    CommunityBinding().dependencies();
+    controller = Get.find<MainController>();
   }
 
   /// Context-aware "+" tap handler.
@@ -58,8 +49,8 @@ class _MainScreenState extends State<MainScreen> {
       // Currently on the Community tab — route by active community sub-tab
       final CommunityController? commController =
           Get.isRegistered<CommunityController>()
-              ? Get.find<CommunityController>()
-              : null;
+          ? Get.find<CommunityController>()
+          : null;
 
       final activeTab = commController?.selectedCategory.value ?? 'Feed';
 
@@ -87,7 +78,7 @@ class _MainScreenState extends State<MainScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? const Color(0xFF161616) : Colors.white;
     final textPrimary = isDark ? Colors.white : Colors.black87;
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -103,7 +94,9 @@ class _MainScreenState extends State<MainScreen> {
           children: [
             Center(
               child: Container(
-                width: 36, height: 4, margin: const EdgeInsets.only(bottom: 16),
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   color: isDark ? Colors.white24 : Colors.black12,
                   borderRadius: BorderRadius.circular(2),
@@ -112,7 +105,13 @@ class _MainScreenState extends State<MainScreen> {
             ),
             ListTile(
               leading: Icon(Icons.post_add, color: textPrimary),
-              title: Text('community.createPost'.tr, style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
+              title: Text(
+                'community.createPost'.tr,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 Get.to(() => const CreatePostScreen());
@@ -120,7 +119,13 @@ class _MainScreenState extends State<MainScreen> {
             ),
             ListTile(
               leading: Icon(Icons.amp_stories_outlined, color: textPrimary),
-              title: Text('community.createStory'.tr, style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
+              title: Text(
+                'community.createStory'.tr,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 StoryCreationPickerSheet.show(context);
@@ -128,7 +133,13 @@ class _MainScreenState extends State<MainScreen> {
             ),
             ListTile(
               leading: Icon(Icons.event_available_outlined, color: textPrimary),
-              title: Text('community.createEvent'.tr, style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
+              title: Text(
+                'community.createEvent'.tr,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 Get.to(() => const CreateEventScreen());

@@ -14,9 +14,22 @@ import '../../domain/repositories/profile_repository.dart';
 /// Each section loads independently so one failing call (say, portfolio)
 /// does not blank the whole screen.
 class ProfileController extends GetxController {
-  ProfileController({required this._repository});
+  ProfileController({
+    required this._repository,
+    this.viewingUsername,
+    this.onOwnerProfileChanged,
+  });
 
   final ProfileRepository _repository;
+  final void Function(ProfileEntity profile)? onOwnerProfileChanged;
+
+  /// Null for the signed-in owner's controller; set for a route-scoped
+  /// public-profile controller.
+  final String? viewingUsername;
+
+  static String publicTag(String username) => 'public-profile:$username';
+
+  bool get isOwner => viewingUsername == null;
 
   final isLoading = false.obs;
   final isSaving = false.obs;
@@ -24,7 +37,6 @@ class ProfileController extends GetxController {
 
   final profile = Rxn<ProfileEntity>();
   final publicProfile = Rxn<PublicProfileEntity>();
-  String? viewingUsername;
   final interests = <InterestEntity>[].obs;
   final portfolio = <PortfolioItemEntity>[].obs;
   final socialLinks = <SocialLinkEntity>[].obs;
@@ -37,7 +49,6 @@ class ProfileController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    viewingUsername = Get.parameters['username'];
     load();
   }
 
@@ -46,12 +57,26 @@ class ProfileController extends GetxController {
   Future<void> load() async {
     isLoading.value = true;
     errorMessage.value = null;
-    try {
-      if (viewingUsername != null) {
-        publicProfile.value = await _repository.getPublicProfile(viewingUsername!);
-      } else {
-        profile.value = await _repository.getMyProfile();
+
+    if (!isOwner) {
+      try {
+        final loaded = await _repository.getPublicProfile(viewingUsername!);
+        publicProfile.value = loaded;
+        interests.assignAll(loaded.interests);
+        portfolio.assignAll(loaded.portfolio);
+        socialLinks.assignAll(loaded.socialLinks);
+      } on AppError catch (e) {
+        errorMessage.value = e.message;
+      } catch (_) {
+        errorMessage.value = 'common.error'.tr;
+      } finally {
+        isLoading.value = false;
       }
+      return;
+    }
+
+    try {
+      _setOwnerProfile(await _repository.getMyProfile());
     } on AppError catch (e) {
       errorMessage.value = e.message;
     } catch (_) {
@@ -62,14 +87,18 @@ class ProfileController extends GetxController {
 
     await Future.wait([
       _loadSection(
-          () async => interests.value = await _repository.getMyInterests()),
+        () async => interests.value = await _repository.getMyInterests(),
+      ),
       _loadSection(
-          () async => portfolio.value = await _repository.getPortfolio()),
+        () async => portfolio.value = await _repository.getPortfolio(),
+      ),
       _loadSection(
-          () async => socialLinks.value = await _repository.getSocialLinks()),
+        () async => socialLinks.value = await _repository.getSocialLinks(),
+      ),
       _loadSection(() async => badges.value = await _repository.getBadges()),
       _loadSection(
-          () async => savedItems.value = await _repository.getSavedItems()),
+        () async => savedItems.value = await _repository.getSavedItems(),
+      ),
     ]);
   }
 
@@ -91,16 +120,18 @@ class ProfileController extends GetxController {
     String? location,
   }) {
     return _save(() async {
-      profile.value = await _repository.updateProfile(
-        fullName: fullName,
-        username: username,
-        phoneNumber: phoneNumber,
-        bio: bio,
-        dateOfBirth: dateOfBirth,
-        gender: gender,
-        universityName: universityName,
-        workStatus: workStatus,
-        location: location,
+      _setOwnerProfile(
+        await _repository.updateProfile(
+          fullName: fullName,
+          username: username,
+          phoneNumber: phoneNumber,
+          bio: bio,
+          dateOfBirth: dateOfBirth,
+          gender: gender,
+          universityName: universityName,
+          workStatus: workStatus,
+          location: location,
+        ),
       );
       AppSnackbar.show('profile.updated'.tr);
     });
@@ -108,7 +139,7 @@ class ProfileController extends GetxController {
 
   Future<bool> updateAvatar(String avatarUrl) {
     return _save(() async {
-      profile.value = await _repository.updateAvatar(avatarUrl);
+      _setOwnerProfile(await _repository.updateAvatar(avatarUrl));
     });
   }
 
@@ -133,7 +164,7 @@ class ProfileController extends GetxController {
         height: picked.height,
         onProgress: (fraction) => avatarUploadProgress.value = fraction,
       );
-      profile.value = await _repository.updateAvatarFromMedia(media.mediaId);
+      _setOwnerProfile(await _repository.updateAvatarFromMedia(media.mediaId));
     });
     avatarUploadProgress.value = null;
     return ok;
@@ -155,7 +186,8 @@ class ProfileController extends GetxController {
   Future<void> loadInterestCatalog() async {
     if (interestCatalog.isNotEmpty) return;
     await _loadSection(
-      () async => interestCatalog.value = await _repository.getInterestCatalog(),
+      () async =>
+          interestCatalog.value = await _repository.getInterestCatalog(),
     );
   }
 
@@ -200,8 +232,9 @@ class ProfileController extends GetxController {
         link: link,
         imageUrl: imageUrl,
       );
-      final index =
-          portfolio.indexWhere((item) => item.portfolioId == portfolioId);
+      final index = portfolio.indexWhere(
+        (item) => item.portfolioId == portfolioId,
+      );
       if (index >= 0) {
         portfolio[index] = updated;
       } else {
@@ -224,10 +257,13 @@ class ProfileController extends GetxController {
     required String url,
   }) {
     return _save(() async {
-      final link =
-          await _repository.upsertSocialLink(platform: platform, url: url);
-      final index =
-          socialLinks.indexWhere((existing) => existing.platform == platform);
+      final link = await _repository.upsertSocialLink(
+        platform: platform,
+        url: url,
+      );
+      final index = socialLinks.indexWhere(
+        (existing) => existing.platform == platform,
+      );
       if (index >= 0) {
         socialLinks[index] = link;
       } else {
@@ -244,6 +280,11 @@ class ProfileController extends GetxController {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────
+
+  void _setOwnerProfile(ProfileEntity updated) {
+    profile.value = updated;
+    onOwnerProfileChanged?.call(updated);
+  }
 
   /// Run a mutation with saving state + snackbar error reporting.
   Future<bool> _save(Future<void> Function() action) async {

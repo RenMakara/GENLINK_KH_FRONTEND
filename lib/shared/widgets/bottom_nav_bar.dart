@@ -34,14 +34,21 @@ class BottomNavBar extends StatelessWidget {
           final isNarrow = width < 360;
           final isVeryNarrow = width < 335;
           final barHeight = isVeryNarrow ? 74.0 : (isNarrow ? 78.0 : 84.0);
-          final horizontalPadding = isVeryNarrow ? 4.0 : (isNarrow ? 6.0 : 10.0);
+          final horizontalPadding = isVeryNarrow
+              ? 4.0
+              : (isNarrow ? 6.0 : 10.0);
           final centerBtnSize = isVeryNarrow ? 52.0 : (isNarrow ? 56.0 : 62.0);
           final centerIconSize = isVeryNarrow ? 24.0 : (isNarrow ? 26.0 : 28.0);
           final navIconSize = isVeryNarrow ? 22.0 : (isNarrow ? 24.0 : 26.0);
           final navFontSize = isVeryNarrow ? 10.0 : (isNarrow ? 11.0 : 11.5);
 
           return Padding(
-            padding: EdgeInsets.fromLTRB(horizontalPadding, 0, horizontalPadding, 6),
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding,
+              0,
+              horizontalPadding,
+              6,
+            ),
             child: Container(
               height: barHeight,
               decoration: BoxDecoration(
@@ -123,11 +130,7 @@ class _CenterButton extends StatelessWidget {
   final double size;
   final double iconSize;
 
-  const _CenterButton({
-    this.onTap,
-    this.size = 62.0,
-    this.iconSize = 28.0,
-  });
+  const _CenterButton({this.onTap, this.size = 62.0, this.iconSize = 28.0});
 
   @override
   Widget build(BuildContext context) {
@@ -161,7 +164,7 @@ class _CenterButton extends StatelessWidget {
                 CupertinoIcons.plus,
                 size: iconSize,
                 color: scheme.onSurface,
-                semanticLabel: 'Create',
+                semanticLabel: 'nav.create'.tr,
               ),
             ),
           ),

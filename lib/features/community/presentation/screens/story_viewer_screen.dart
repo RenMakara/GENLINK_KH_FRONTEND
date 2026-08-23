@@ -15,6 +15,7 @@ import '../../../chat/presentation/bindings/chat_binding.dart';
 import '../../../chat/presentation/controllers/chat_controller.dart';
 import '../../domain/models/story_model.dart';
 import '../controllers/story_controller.dart';
+import '../widgets/story_template_canvas.dart';
 import '../../../notification/presentation/controllers/notification_controller.dart';
 import '../../../notification/domain/models/notification_model.dart';
 
@@ -1761,23 +1762,15 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       Uint8List pngBytes = byteData.buffer.asUint8List();
       final title = "genlink_story_${DateTime.now().millisecondsSinceEpoch}.png";
       
-      final asset = await PhotoManager.editor.saveImage(pngBytes, filename: title);
+      await PhotoManager.editor.saveImage(pngBytes, filename: title);
       
       if (mounted) {
-        if (asset != null) {
-          AppNotificationBanner.showSuccess(
-            context: context,
-            title: "Saved!",
-            message: "Story successfully saved to your gallery.",
-            icon: Icons.check_circle_rounded,
-          );
-        } else {
-          AppNotificationBanner.showDanger(
-            context: context,
-            title: "Save Failed",
-            message: "Could not save story to gallery.",
-          );
-        }
+        AppNotificationBanner.showSuccess(
+          context: context,
+          title: "Saved!",
+          message: "Story successfully saved to your gallery.",
+          icon: Icons.check_circle_rounded,
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -2264,6 +2257,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                                 existingStory: _currentStory,
                               ),
                               routeName: '/StoryCreatorScreen',
+                              transition: Transition.fadeIn,
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeOutCubic,
                             )?.then((_) => _resumeStory());
                           },
                         ),
@@ -2626,11 +2622,35 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     StoryItemModel story,
     StoryGroupModel group,
   ) {
+    final isTemplate =
+        story.templateId != null || story.type == StoryType.template;
+    StoryTemplateConfig? matchedTemplate;
+    if (isTemplate) {
+      final tid = story.templateId ?? 'single_polaroid';
+      for (final t in storyTemplatePresets) {
+        if (t.id == tid) {
+          matchedTemplate = t;
+          break;
+        }
+      }
+      matchedTemplate ??= storyTemplatePresets.first;
+    }
+
     return Stack(
       children: [
         Positioned.fill(child: _buildMediaWidget(story, group)),
+        if (isTemplate && matchedTemplate != null)
+          Positioned.fill(
+            child: StoryTemplateCanvas(
+              template: matchedTemplate,
+              slots: story.templateSlots,
+              isInteractive: false,
+              customText: story.textContent,
+            ),
+          ),
         ...story.layers.map((layer) => _buildViewerLayerWidget(layer)),
-        if (story.layers.isEmpty &&
+        if (!isTemplate &&
+            story.layers.isEmpty &&
             story.textContent != null &&
             story.textContent!.trim().isNotEmpty)
           Positioned(
@@ -2664,7 +2684,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       } catch (_) {}
     }
 
-    if (story.mediaUrl == null || story.mediaUrl!.isEmpty) {
+    final isTemplate =
+        story.templateId != null || story.type == StoryType.template;
+
+    if (isTemplate || story.mediaUrl == null || story.mediaUrl!.isEmpty) {
       return Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -2682,7 +2705,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     if (url.startsWith('assets/')) {
       mediaWidget = Image.asset(
         url,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         alignment: Alignment.center,
         errorBuilder: (context, error, stackTrace) =>
             _buildErrorMediaPlaceholder(),
@@ -2761,7 +2784,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     } else if (url.startsWith('http://') || url.startsWith('https://')) {
       mediaWidget = Image.network(
         url,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         alignment: Alignment.center,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
@@ -2789,7 +2812,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           url.contains(':\\')) {
         mediaWidget = Image.file(
           localFile,
-          fit: BoxFit.cover,
+          fit: BoxFit.contain,
           alignment: Alignment.center,
           errorBuilder: (context, error, stackTrace) =>
               _buildErrorMediaPlaceholder(),
@@ -2797,7 +2820,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       } else {
         mediaWidget = Image.network(
           url,
-          fit: BoxFit.cover,
+          fit: BoxFit.contain,
           alignment: Alignment.center,
           errorBuilder: (context, error, stackTrace) =>
               _buildErrorMediaPlaceholder(),
@@ -3206,14 +3229,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         final localFile = _resolveFile(layer.text);
         Widget imgWidget;
         if (localFile.existsSync()) {
-          imgWidget = Image.file(localFile, width: 180, fit: BoxFit.cover);
+          imgWidget = Image.file(localFile, width: 180, fit: BoxFit.contain);
         } else if (layer.text.startsWith('assets/')) {
-          imgWidget = Image.asset(layer.text, width: 180, fit: BoxFit.cover);
+          imgWidget = Image.asset(layer.text, width: 180, fit: BoxFit.contain);
         } else {
           imgWidget = Image.network(
             layer.text,
             width: 180,
-            fit: BoxFit.cover,
+            fit: BoxFit.contain,
             errorBuilder: (c, e, s) =>
                 const Icon(Icons.broken_image, color: Colors.white54),
           );
@@ -3244,6 +3267,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     final currentPos = layer.getCanvasOffset(Size(screenWidth, screenHeight));
 
     return Positioned(
+      key: ValueKey(layer.id),
       left: currentPos.dx,
       top: currentPos.dy,
       child: FractionalTranslation(

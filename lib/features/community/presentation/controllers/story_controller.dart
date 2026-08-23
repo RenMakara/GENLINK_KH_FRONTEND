@@ -43,6 +43,8 @@ class StoryController extends GetxController {
     double bgScale = 1.0,
     dynamic bgOffset,
     double bgRotation = 0.0,
+    String? templateId,
+    List<StoryTemplateSlot>? templateSlots,
   }) async {
     if (isUploading.value) return false;
     isUploading.value = true;
@@ -70,6 +72,8 @@ class StoryController extends GetxController {
         bgScale: bgScale,
         bgOffset: bgOffset,
         bgRotation: bgRotation,
+        templateId: templateId,
+        templateSlots: templateSlots,
       );
 
       // Update owner story group in reactive tray list (preventing duplicates)

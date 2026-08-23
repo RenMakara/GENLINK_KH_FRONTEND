@@ -8,6 +8,8 @@ import 'package:genlink_frontend/design_system/widgets/notifications/app_notific
 import '../../domain/models/story_model.dart';
 import '../controllers/story_controller.dart';
 import '../controllers/story_gallery_controller.dart';
+import '../widgets/story_template_canvas.dart';
+import '../widgets/story_template_picker_sheet.dart';
 
 class StoryTemplateModel {
   final String id;
@@ -89,8 +91,15 @@ class StoryCreatorScreen extends StatefulWidget {
   final StoryType type;
   final List<String>? mediaPaths;
   final StoryItemModel? existingStory;
+  final String? templateId;
 
-  const StoryCreatorScreen({super.key, required this.type, this.mediaPaths, this.existingStory});
+  const StoryCreatorScreen({
+    super.key,
+    required this.type,
+    this.mediaPaths,
+    this.existingStory,
+    this.templateId,
+  });
 
   @override
   State<StoryCreatorScreen> createState() => _StoryCreatorScreenState();
@@ -102,6 +111,33 @@ enum StoryBgMode { none, solid, gradient }
 
 class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   final List<MovableStoryLayer> _layers = [];
+
+  // ── Template Story Mode State ──
+  late StoryTemplateConfig _selectedTemplate;
+  List<StoryTemplateSlot> _templateSlots = [];
+  String? _templateCustomText;
+
+  static int _layerSequenceCounter = 0;
+
+  String _generateUniqueLayerId([String prefix = 'layer']) {
+    _layerSequenceCounter++;
+    return '${prefix}_${DateTime.now().microsecondsSinceEpoch}_$_layerSequenceCounter';
+  }
+
+  Offset _calculateInitialLayerOffset(int index, int totalCount) {
+    if (totalCount <= 1 || index == 0) {
+      return const Offset(0.5, 0.5);
+    }
+    final step = index % 6;
+    final dx = (0.50 + (step * 0.035)).clamp(0.20, 0.80);
+    final dy = (0.50 + (step * 0.035)).clamp(0.20, 0.80);
+    return Offset(dx, dy);
+  }
+
+  File _resolveStoryMediaFile(String rawPath) {
+    final clean = rawPath.replaceAll(RegExp(r'^file://'), '');
+    return File(clean);
+  }
 
   MovableStoryLayer? _selectedLayer;
   ActiveContextTool _activeContextTool = ActiveContextTool.none;
@@ -659,9 +695,40 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   @override
   void initState() {
     super.initState();
+
+    // ── 1. Initialize Story Template Mode ──
+    final targetTemplateId = widget.templateId ?? widget.existingStory?.templateId;
+    if (targetTemplateId != null) {
+      StoryTemplateConfig? matched;
+      for (final t in storyTemplatePresets) {
+        if (t.id == targetTemplateId) {
+          matched = t;
+          break;
+        }
+      }
+      _selectedTemplate = matched ?? storyTemplatePresets.first;
+    } else {
+      _selectedTemplate = storyTemplatePresets.first;
+    }
+
+    if (widget.existingStory != null && widget.existingStory!.templateSlots.isNotEmpty) {
+      _templateSlots = widget.existingStory!.templateSlots.map((s) => s.clone()).toList();
+      _templateCustomText = widget.existingStory!.textContent;
+    } else {
+      _templateSlots = List.generate(
+        _selectedTemplate.slotCount,
+        (i) => StoryTemplateSlot(id: 'slot_$i'),
+      );
+      if (widget.mediaPaths != null && widget.mediaPaths!.isNotEmpty) {
+        for (int i = 0; i < widget.mediaPaths!.length && i < _templateSlots.length; i++) {
+          _templateSlots[i].mediaPath = widget.mediaPaths![i];
+        }
+      }
+    }
+
     if (widget.existingStory != null) {
       final s = widget.existingStory!;
-      _layers.addAll(s.layers.map((l) => l.clone()));
+      _layers.addAll(s.layers.map((l) => l.clone(id: l.id)));
       _storySettings = s.settings;
       _activeMediaPath = s.mediaUrl;
       _bgImageScale = s.bgScale;
@@ -678,24 +745,22 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         if (presetIdx != -1) _gradientIdx = presetIdx;
       }
     } else {
-      if (widget.mediaPaths != null && widget.mediaPaths!.isNotEmpty) {
+      if (widget.type != StoryType.template && widget.mediaPaths != null && widget.mediaPaths!.isNotEmpty) {
         if (widget.mediaPaths!.length == 1) {
           _activeMediaPath = widget.mediaPaths!.first;
         } else {
           _activeMediaPath = null;
           for (int i = 0; i < widget.mediaPaths!.length; i++) {
             final path = widget.mediaPaths![i];
-            final col = i % 2;
-            final row = i ~/ 2;
-            final x = (0.35 + (col * 0.30)).clamp(0.2, 0.8);
-            final y = (0.35 + (row * 0.22)).clamp(0.2, 0.8);
+            final offset = _calculateInitialLayerOffset(i, widget.mediaPaths!.length);
             _layers.add(
               MovableStoryLayer(
-                id: "image_${DateTime.now().microsecondsSinceEpoch}_$i",
+                id: _generateUniqueLayerId('image'),
                 type: LayerType.image,
                 text: path,
-                offset: Offset(x, y),
+                offset: offset,
                 scale: 1.0,
+                rotation: 0.0,
               ),
             );
           }
@@ -713,6 +778,203 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         }
       });
     }
+  }
+
+  // ── Template Slot Operations ──
+  Future<void> _pickPhotosForTemplate(StoryTemplateConfig template, {int startSlotIndex = 0}) async {
+    final neededCount = template.slotCount - startSlotIndex;
+    if (neededCount <= 0) return;
+
+    try {
+      final picker = ImagePicker();
+      if (neededCount == 1) {
+        final XFile? file = await picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 95,
+        );
+        if (file != null && mounted) {
+          setState(() {
+            if (startSlotIndex < _templateSlots.length) {
+              _templateSlots[startSlotIndex].mediaPath = file.path;
+              _templateSlots[startSlotIndex].scale = 1.0;
+              _templateSlots[startSlotIndex].offset = Offset.zero;
+              _templateSlots[startSlotIndex].rotation = 0.0;
+            }
+          });
+        }
+      } else {
+        final List<XFile> files = await picker.pickMultiImage(
+          imageQuality: 95,
+          limit: neededCount,
+        );
+        if (files.isNotEmpty && mounted) {
+          setState(() {
+            for (int i = 0; i < files.length && (startSlotIndex + i) < _templateSlots.length; i++) {
+              _templateSlots[startSlotIndex + i].mediaPath = files[i].path;
+              _templateSlots[startSlotIndex + i].scale = 1.0;
+              _templateSlots[startSlotIndex + i].offset = Offset.zero;
+              _templateSlots[startSlotIndex + i].rotation = 0.0;
+            }
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('[StoryCreatorScreen] Error picking photos for template: $e');
+    }
+  }
+
+  Future<void> _onTapTemplateSlot(int slotIndex) async {
+    try {
+      final picker = ImagePicker();
+      final XFile? file = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 95,
+      );
+      if (file != null && mounted) {
+        setState(() {
+          if (slotIndex < _templateSlots.length) {
+            _templateSlots[slotIndex].mediaPath = file.path;
+            _templateSlots[slotIndex].scale = 1.0;
+            _templateSlots[slotIndex].offset = Offset.zero;
+            _templateSlots[slotIndex].rotation = 0.0;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('[StoryCreatorScreen] Slot image pick error: $e');
+    }
+  }
+
+  void _onUpdateTemplateSlot(
+    int slotIndex,
+    double scale,
+    Offset offset,
+    double rotation,
+  ) {
+    if (slotIndex < _templateSlots.length) {
+      setState(() {
+        _templateSlots[slotIndex].scale = scale;
+        _templateSlots[slotIndex].offset = offset;
+        _templateSlots[slotIndex].rotation = rotation;
+      });
+    }
+  }
+
+  void _onClearTemplateSlot(int slotIndex) {
+    if (slotIndex < _templateSlots.length) {
+      setState(() {
+        _templateSlots[slotIndex].mediaPath = null;
+        _templateSlots[slotIndex].scale = 1.0;
+        _templateSlots[slotIndex].offset = Offset.zero;
+        _templateSlots[slotIndex].rotation = 0.0;
+      });
+    }
+  }
+
+  void _onSelectTemplate(StoryTemplateConfig newTemplate) {
+    setState(() {
+      _selectedTemplate = newTemplate;
+      // Preserve existing loaded slot images
+      final existingMedia = _templateSlots
+          .where((s) => s.mediaPath != null && s.mediaPath!.isNotEmpty)
+          .map((s) => s.mediaPath)
+          .toList();
+
+      _templateSlots = List.generate(newTemplate.slotCount, (i) {
+        final path = i < existingMedia.length ? existingMedia[i] : null;
+        return StoryTemplateSlot(
+          id: 'slot_$i',
+          mediaPath: path,
+        );
+      });
+    });
+
+    final filledCount = _templateSlots.where((s) => s.mediaPath != null && s.mediaPath!.isNotEmpty).length;
+    if (filledCount < newTemplate.slotCount) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _pickPhotosForTemplate(newTemplate, startSlotIndex: filledCount);
+        }
+      });
+    }
+  }
+
+  void _openTemplatePickerSheet() {
+    StoryTemplatePickerSheet.show(
+      context,
+      currentTemplate: _selectedTemplate,
+      onSelect: _onSelectTemplate,
+    );
+  }
+
+  void _editTemplateCaptionDialog([String? initial]) {
+    final textCtrl = TextEditingController(
+      text: initial ?? _templateCustomText ?? _selectedTemplate.defaultText ?? '',
+    );
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161618),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          16,
+          20,
+          MediaQuery.of(ctx).viewInsets.bottom + 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Edit Caption",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.check_rounded,
+                    color: AppColors.communityAccent,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _templateCustomText = textCtrl.text.trim();
+                    });
+                    Navigator.pop(ctx);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: textCtrl,
+              autofocus: true,
+              maxLines: 3,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              decoration: InputDecoration(
+                hintText: "Enter your text...",
+                hintStyle: const TextStyle(color: Colors.white38),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.08),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _onTextChanged() {
@@ -831,8 +1093,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                               setState(() {
                                 _layers.add(
                                   MovableStoryLayer(
-                                    id: DateTime.now().microsecondsSinceEpoch
-                                        .toString(),
+                                    id: _generateUniqueLayerId('sticker'),
                                     type: LayerType.sticker,
                                     text: st,
                                     offset: const Offset(0.5, 0.5),
@@ -1270,7 +1531,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     setState(() {
       _layers.add(
         MovableStoryLayer(
-          id: DateTime.now().microsecondsSinceEpoch.toString(),
+          id: _generateUniqueLayerId('hashtag'),
           type: LayerType.hashtag,
           text: tag,
           offset: const Offset(0.5, 0.5),
@@ -1388,7 +1649,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
     setState(() {
       final newLayer = MovableStoryLayer(
-        id: "mention_${DateTime.now().microsecondsSinceEpoch}",
+        id: _generateUniqueLayerId('mention'),
         type: LayerType.mention,
         text: formatted,
         offset: const Offset(0.5, 0.5),
@@ -1490,12 +1751,15 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       final picker = ImagePicker();
       final XFile? media = await picker.pickMedia(imageQuality: 95);
       if (media != null && mounted) {
+        final currentImagesCount = _layers.where((l) => l.type == LayerType.image).length;
+        final offset = _calculateInitialLayerOffset(currentImagesCount, currentImagesCount + 1);
         final newLayer = MovableStoryLayer(
-          id: DateTime.now().microsecondsSinceEpoch.toString(),
+          id: _generateUniqueLayerId('image'),
           type: LayerType.image,
           text: media.path,
-          offset: Offset(60, 180 + (_layers.length * 25)),
+          offset: offset,
           scale: 1.0,
+          rotation: 0.0,
         );
         setState(() {
           _layers.add(newLayer);
@@ -1794,6 +2058,48 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   Widget _buildImageCanvas(File file) {
     final size = MediaQuery.of(context).size;
 
+    Widget imgWidget;
+    if (_activeMediaPath != null &&
+        _activeMediaPath!.startsWith('assets/')) {
+      imgWidget = Image.asset(
+        _activeMediaPath!,
+        fit: BoxFit.contain,
+        alignment: Alignment.center,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (ctx, err, stack) =>
+            _buildErrorMediaPlaceholder(),
+      );
+    } else if (file.existsSync()) {
+      imgWidget = Image.file(
+        file,
+        fit: BoxFit.contain,
+        alignment: Alignment.center,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (ctx, err, stack) =>
+            _buildErrorMediaPlaceholder(),
+      );
+    } else if (_activeMediaPath != null &&
+        (_activeMediaPath!.startsWith('http://') ||
+            _activeMediaPath!.startsWith('https://'))) {
+      imgWidget = Image.network(
+        _activeMediaPath!,
+        fit: BoxFit.contain,
+        alignment: Alignment.center,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (ctx, err, stack) =>
+            _buildErrorMediaPlaceholder(),
+      );
+    } else {
+      imgWidget = Image.file(
+        file,
+        fit: BoxFit.contain,
+        alignment: Alignment.center,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (ctx, err, stack) =>
+            _buildErrorMediaPlaceholder(),
+      );
+    }
+
     return GestureDetector(
       onTap: () {
         setState(() => _selectedLayer = null);
@@ -1842,15 +2148,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               scale: _bgImageScale,
               child: RotatedBox(
                 quarterTurns: (_imageRotation / 90).round() % 4,
-                child: Image.file(
-                  file,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  filterQuality: FilterQuality.high,
-                  errorBuilder: (ctx, err, stack) =>
-                      _buildErrorMediaPlaceholder(),
-                ),
+                child: SizedBox.expand(child: imgWidget),
               ),
             ),
           ),
@@ -2299,7 +2597,57 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     );
   }
 
+  Widget _buildTemplateStoryCanvas() {
+    Widget bgWidget;
+    if (_storyBgMode == StoryBgMode.solid && _selectedSolidBgColor != null) {
+      bgWidget = Container(
+        key: ValueKey('solid_${_selectedSolidBgColor!.toARGB32()}'),
+        color: _selectedSolidBgColor,
+      );
+    } else {
+      final preset = _bgPresets[_gradientIdx.clamp(0, _bgPresets.length - 1)];
+      bgWidget = Container(
+        key: ValueKey('gradient_${preset.name}'),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: preset.colors,
+            begin: preset.begin,
+            end: preset.end,
+          ),
+        ),
+      );
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Positioned.fill(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            child: bgWidget,
+          ),
+        ),
+        Positioned.fill(
+          child: StoryTemplateCanvas(
+            template: _selectedTemplate,
+            slots: _templateSlots,
+            isInteractive: true,
+            onTapSlot: _onTapTemplateSlot,
+            onUpdateSlot: _onUpdateTemplateSlot,
+            onClearSlot: _onClearTemplateSlot,
+            onEditText: (text) => _editTemplateCaptionDialog(text),
+            customText: _templateCustomText,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildMediaCanvas() {
+    if (widget.type == StoryType.template) {
+      return _buildTemplateStoryCanvas();
+    }
+
     if (_activeMediaPath == null ||
         _activeMediaPath!.isEmpty ||
         widget.type == StoryType.text) {
@@ -2351,6 +2699,26 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       return;
     }
 
+    // Validate non-empty template story
+    final hasTemplateSlotImage = _templateSlots.any(
+      (s) => s.mediaPath != null && s.mediaPath!.trim().isNotEmpty,
+    );
+    if (widget.type == StoryType.template &&
+        !hasTemplateSlotImage &&
+        !hasTextLayer &&
+        !hasOtherLayer &&
+        textFromInput.isEmpty &&
+        caption.isEmpty &&
+        (_templateCustomText == null || _templateCustomText!.trim().isEmpty)) {
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: "Empty Template",
+        message: "Please add at least one photo to your template before publishing.",
+        icon: Icons.dashboard_customize_rounded,
+      );
+      return;
+    }
+
     setState(() => _isPublishing = true);
 
     try {
@@ -2360,7 +2728,9 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
       // Extract primary text content
       String? textContent;
-      if (caption.isNotEmpty) {
+      if (_templateCustomText != null && _templateCustomText!.isNotEmpty) {
+        textContent = _templateCustomText;
+      } else if (caption.isNotEmpty) {
         textContent = caption;
       } else if (hasTextLayer) {
         textContent = _layers.firstWhere((l) => l.type == LayerType.text).text;
@@ -2388,6 +2758,10 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       }
 
       bool success = false;
+      final isTemplateStory = widget.type == StoryType.template;
+      final effectiveMediaUrl = isTemplateStory
+          ? (_templateSlots.firstWhereOrNull((s) => s.mediaPath != null && s.mediaPath!.isNotEmpty)?.mediaPath ?? _activeMediaPath)
+          : _activeMediaPath;
 
       if (widget.existingStory != null) {
         final newSettings = StorySettings(
@@ -2398,7 +2772,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         final updatedStory = StoryItemModel(
           id: widget.existingStory!.id,
           type: widget.type,
-          mediaUrl: _activeMediaPath,
+          mediaUrl: effectiveMediaUrl,
           textContent: textContent,
           bgGradientStart: startHex,
           bgGradientEnd: endHex,
@@ -2411,6 +2785,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           bgScale: _bgImageScale,
           bgOffset: _bgImageOffset,
           bgRotation: _imageRotation,
+          templateId: isTemplateStory ? _selectedTemplate.id : null,
+          templateSlots: isTemplateStory ? List.from(_templateSlots) : const [],
         );
         updatedStory.likesCount = widget.existingStory!.likesCount;
         updatedStory.isLiked = widget.existingStory!.isLiked;
@@ -2421,7 +2797,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       } else {
         success = await controller.publishStory(
           type: widget.type,
-          mediaUrl: _activeMediaPath,
+          mediaUrl: effectiveMediaUrl,
           textContent: textContent,
           storySettings: _storySettings,
           visibility: _selectedVisibility,
@@ -2433,6 +2809,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           bgScale: _bgImageScale,
           bgOffset: _bgImageOffset,
           bgRotation: _imageRotation,
+          templateId: isTemplateStory ? _selectedTemplate.id : null,
+          templateSlots: isTemplateStory ? List.from(_templateSlots) : null,
         );
       }
 
@@ -2621,7 +2999,34 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
     switch (layer.type) {
       case LayerType.image:
-        final file = File(layer.text);
+        final localFile = _resolveStoryMediaFile(layer.text);
+        Widget imgWidget;
+        if (localFile.existsSync()) {
+          imgWidget = Image.file(
+            localFile,
+            width: 180,
+            fit: BoxFit.contain,
+            errorBuilder: (ctx, err, stack) =>
+                _buildErrorMediaPlaceholder(),
+          );
+        } else if (layer.text.startsWith('assets/')) {
+          imgWidget = Image.asset(
+            layer.text,
+            width: 180,
+            fit: BoxFit.contain,
+            errorBuilder: (ctx, err, stack) =>
+                _buildErrorMediaPlaceholder(),
+          );
+        } else {
+          imgWidget = Image.network(
+            layer.text,
+            width: 180,
+            fit: BoxFit.contain,
+            errorBuilder: (ctx, err, stack) =>
+                _buildErrorMediaPlaceholder(),
+          );
+        }
+
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
           child: Container(
@@ -2643,13 +3048,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(14),
-              child: Image.file(
-                file,
-                width: 180,
-                fit: BoxFit.cover,
-                errorBuilder: (ctx, err, stack) =>
-                    _buildErrorMediaPlaceholder(),
-              ),
+              child: imgWidget,
             ),
           ),
         );
@@ -2965,6 +3364,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     final currentPos = layer.getCanvasOffset(Size(screenWidth, screenHeight));
 
     return Positioned(
+      key: ValueKey(layer.id),
       left: currentPos.dx,
       top: currentPos.dy,
       child: FractionalTranslation(
@@ -3229,7 +3629,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                   onTap: () {
                                     setState(() {
                                       final newLayer = MovableStoryLayer(
-                                        id: "location_${DateTime.now().microsecondsSinceEpoch}",
+                                        id: _generateUniqueLayerId('location'),
                                         type: LayerType.location,
                                         text: loc,
                                         offset: const Offset(0.5, 0.5),
@@ -3295,7 +3695,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   setState(() {
                     _layers.add(
                       MovableStoryLayer(
-                        id: DateTime.now().microsecondsSinceEpoch.toString(),
+                        id: _generateUniqueLayerId('music'),
                         type: LayerType.music,
                         text: track,
                         offset: const Offset(0.5, 0.5),
@@ -3788,19 +4188,24 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         final selectedImages = images.take(remainingSlots).toList();
 
         setState(() {
-          int count = currentImagesCount;
-          for (final img in selectedImages) {
+          for (int i = 0; i < selectedImages.length; i++) {
+            final img = selectedImages[i];
+            final layerIndex = currentImagesCount + i;
+            final offset = _calculateInitialLayerOffset(
+              layerIndex,
+              currentImagesCount + selectedImages.length,
+            );
             final newLayer = MovableStoryLayer(
-              id: "${DateTime.now().microsecondsSinceEpoch}_$count",
+              id: _generateUniqueLayerId('image'),
               type: LayerType.image,
               text: img.path,
-              offset: const Offset(0.5, 0.5),
+              offset: offset,
               scale: 1.0,
+              rotation: 0.0,
             );
 
             _layers.add(newLayer);
             _selectedLayer = newLayer;
-            count++;
           }
         });
       }
@@ -4553,7 +4958,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   void _addStickerToCanvas(String stickerText) {
     final newLayer = MovableStoryLayer(
-      id: "sticker_${DateTime.now().microsecondsSinceEpoch}",
+      id: _generateUniqueLayerId('sticker'),
       type: LayerType.sticker,
       text: stickerText,
       offset: const Offset(0.5, 0.5),
@@ -4585,7 +4990,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             _selectedLayer = _editingTextLayer;
           } else {
             final newLayer = MovableStoryLayer(
-              id: "text_${DateTime.now().microsecondsSinceEpoch}",
+              id: _generateUniqueLayerId('text'),
               type: LayerType.text,
               text: text,
               color: _activeTextColor,
@@ -6965,6 +7370,49 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                   }
                                 },
                               ),
+                              if (widget.type == StoryType.template)
+                                GestureDetector(
+                                  onTap: _openTemplatePickerSheet,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: Colors.white24,
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _selectedTemplate.icon,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          _selectedTemplate.name,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12.5,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 2),
+                                        const Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          color: Colors.white70,
+                                          size: 18,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               const Spacer(),
                             ],
                           ),
@@ -7104,22 +7552,34 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                 physics: const BouncingScrollPhysics(),
                                 child: Row(
                                   children: [
-                                    // 1. Add Photo (Only for Image / Video Stories)
+                                    // 1. Template Layout Switcher
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.dashboard_customize_outlined,
+                                      label: "Template",
+                                      onTap: _openTemplatePickerSheet,
+                                    ),
+
+                                    // 2. Add Photo (For Image / Video / Template Stories)
                                     if (widget.type != StoryType.text)
                                       _buildHorizontalToolItem(
                                         icon: Icons.photo_library_outlined,
                                         label: "Photo",
-                                        onTap: _showAddImagePicker,
+                                        onTap: widget.type == StoryType.template
+                                            ? () {
+                                                final firstEmptyIdx = _templateSlots.indexWhere((s) => s.mediaPath == null || s.mediaPath!.isEmpty);
+                                                _onTapTemplateSlot(firstEmptyIdx != -1 ? firstEmptyIdx : 0);
+                                              }
+                                            : _showAddImagePicker,
                                       ),
 
-                                    // 2. Add Text Overlay
+                                    // 3. Add Text Overlay
                                     _buildHorizontalToolItem(
                                       icon: Icons.title_rounded,
                                       label: "Text",
                                       onTap: () => _openFloatingTextEditor(),
                                     ),
 
-                                    // 3. Stickers & Emojis
+                                    // 4. Stickers & Emojis
                                     _buildHorizontalToolItem(
                                       icon: Icons
                                           .sentiment_satisfied_alt_outlined,
@@ -7127,38 +7587,37 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                       onTap: _openEmojiPicker,
                                     ),
 
-                                    // 4. Location Tag
+                                    // 5. Location Tag
                                     _buildHorizontalToolItem(
                                       icon: Icons.location_on_outlined,
                                       label: "Location",
                                       onTap: _openLocationPicker,
                                     ),
 
-                                    // 5. Mention Tag (@)
+                                    // 6. Mention Tag (@)
                                     _buildHorizontalToolItem(
                                       icon: Icons.alternate_email_rounded,
                                       label: "Mention",
                                       onTap: _showMentionSheet,
                                     ),
 
-                                    // 6. Rotate (Image/Video Stories only)
-                                    if (widget.type != StoryType.text)
+                                    // 7. Rotate (Image/Video Stories only)
+                                    if (widget.type == StoryType.photo || widget.type == StoryType.video)
                                       _buildHorizontalToolItem(
                                         icon: Icons.rotate_right_rounded,
                                         label: "Rotate",
                                         onTap: _rotateImage,
                                       ),
 
-                                    // 7. Music (Image/Video Stories only)
-                                    if (widget.type != StoryType.text)
-                                      _buildHorizontalToolItem(
-                                        icon: Icons.music_note_rounded,
-                                        label: "Music",
-                                        onTap: _showMusicSheet,
-                                      ),
+                                    // 8. Music
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.music_note_rounded,
+                                      label: "Music",
+                                      onTap: _showMusicSheet,
+                                    ),
 
-                                    // 8. Dedicated Canvas Background Control (Text Story Mode)
-                                    if (widget.type == StoryType.text)
+                                    // 9. Dedicated Canvas Background Control (Text & Template Story Modes)
+                                    if (widget.type == StoryType.text || widget.type == StoryType.template)
                                       _buildHorizontalToolItem(
                                         icon: Icons.palette_outlined,
                                         label: "Background",

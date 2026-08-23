@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'story_template_model.dart';
+export 'story_template_model.dart';
 
-enum StoryType { photo, video, text, event, announcement, achievement }
+enum StoryType { photo, video, text, event, announcement, achievement, template }
 
 enum LayerType { text, sticker, location, hashtag, mention, music, image }
 
@@ -74,12 +76,15 @@ class MovableStoryLayer {
     );
   }
 
-  MovableStoryLayer clone({Offset? offset}) {
+  static int _cloneCounter = 0;
+
+  MovableStoryLayer clone({String? id, Offset? offset}) {
+    _cloneCounter++;
     return MovableStoryLayer(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      id: id ?? '${type.name}_${DateTime.now().microsecondsSinceEpoch}_$_cloneCounter',
       type: type,
       text: text,
-      offset: offset ?? this.offset,
+      offset: offset != null ? Offset(offset.dx, offset.dy) : Offset(this.offset.dx, this.offset.dy),
       scale: scale,
       rotation: rotation,
       color: color,
@@ -208,6 +213,8 @@ class StoryItemModel {
   final double bgScale;
   final Offset bgOffset;
   final double bgRotation;
+  final String? templateId;
+  final List<StoryTemplateSlot> templateSlots;
 
   StoryItemModel({
     required this.id,
@@ -232,6 +239,8 @@ class StoryItemModel {
     this.bgScale = 1.0,
     this.bgOffset = Offset.zero,
     this.bgRotation = 0.0,
+    this.templateId,
+    this.templateSlots = const [],
   }) : settings =
            settings ??
            StorySettings(

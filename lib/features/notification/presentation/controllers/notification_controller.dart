@@ -135,6 +135,9 @@ class NotificationController extends GetxController {
             initialGroupIndex: targetGroupIdx,
             groups: storyCtrl.storyGroups,
           ),
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOutCubic,
         );
       } else {
         AppNotificationBanner.showInfo(

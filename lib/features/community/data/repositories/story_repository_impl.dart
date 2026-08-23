@@ -163,6 +163,8 @@ class StoryRepositoryImpl implements StoryRepository {
     double bgScale = 1.0,
     dynamic bgOffset,
     double bgRotation = 0.0,
+    String? templateId,
+    List<StoryTemplateSlot>? templateSlots,
   }) async {
     await Future.delayed(const Duration(milliseconds: 400));
     final resolvedSettings =
@@ -186,6 +188,8 @@ class StoryRepositoryImpl implements StoryRepository {
       bgScale: bgScale,
       bgOffset: bgOffset ?? Offset.zero,
       bgRotation: bgRotation,
+      templateId: templateId,
+      templateSlots: templateSlots ?? const [],
       timeAgo: 'Just now',
       createdAt: DateTime.now(),
     );

@@ -172,6 +172,9 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
               mediaPaths: [media!.path],
             ),
             routeName: '/StoryCreatorScreen',
+            transition: Transition.fadeIn,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
           );
           if (result == true && mounted) {
             Get.back(result: true);
@@ -197,6 +200,9 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
               mediaPaths: [media!.path],
             ),
             routeName: '/StoryCreatorScreen',
+            transition: Transition.fadeIn,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
           );
           if (result == true && mounted) {
             Get.back(result: true);

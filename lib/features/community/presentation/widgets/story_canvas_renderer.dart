@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import '../../domain/models/story_model.dart';
+import 'story_template_canvas.dart';
 
 /// Shared typography helper for Story layers across Composer and Viewer.
 TextStyle getStoryTextStyle({
@@ -430,14 +431,14 @@ Widget buildStoryLayerContent({
       final localFile = _resolveStoryMediaFile(layer.text);
       Widget imgWidget;
       if (localFile.existsSync()) {
-        imgWidget = Image.file(localFile, width: 180, fit: BoxFit.cover);
+        imgWidget = Image.file(localFile, width: 180, fit: BoxFit.contain);
       } else if (layer.text.startsWith('assets/')) {
-        imgWidget = Image.asset(layer.text, width: 180, fit: BoxFit.cover);
+        imgWidget = Image.asset(layer.text, width: 180, fit: BoxFit.contain);
       } else {
         imgWidget = Image.network(
           layer.text,
           width: 180,
-          fit: BoxFit.cover,
+          fit: BoxFit.contain,
           errorBuilder: (c, e, s) =>
               imageErrorWidget ??
               const Icon(Icons.broken_image, color: Colors.white54),
@@ -507,7 +508,7 @@ Widget buildStoryBackground({
   if (mediaUrl.startsWith('assets/')) {
     mediaWidget = Image.asset(
       mediaUrl,
-      fit: BoxFit.cover,
+      fit: BoxFit.contain,
       alignment: Alignment.center,
       errorBuilder: (context, error, stackTrace) =>
           placeholderWidget ?? const SizedBox.shrink(),
@@ -586,7 +587,7 @@ Widget buildStoryBackground({
   } else if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
     mediaWidget = Image.network(
       mediaUrl,
-      fit: BoxFit.cover,
+      fit: BoxFit.contain,
       alignment: Alignment.center,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
@@ -614,7 +615,7 @@ Widget buildStoryBackground({
         mediaUrl.contains(':\\')) {
       mediaWidget = Image.file(
         localFile,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         alignment: Alignment.center,
         errorBuilder: (context, error, stackTrace) =>
             placeholderWidget ?? const SizedBox.shrink(),
@@ -622,7 +623,7 @@ Widget buildStoryBackground({
     } else {
       mediaWidget = Image.network(
         mediaUrl,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
         alignment: Alignment.center,
         errorBuilder: (context, error, stackTrace) =>
             placeholderWidget ?? const SizedBox.shrink(),
@@ -660,6 +661,9 @@ class StoryCanvasRenderer extends StatelessWidget {
   final String? selectedLayerId;
   final String? editingLayerId;
 
+  final String? templateId;
+  final List<StoryTemplateSlot>? templateSlots;
+
   // Composer interaction callbacks
   final ValueChanged<MovableStoryLayer>? onSelectLayer;
   final ValueChanged<MovableStoryLayer>? onEditLayer;
@@ -683,6 +687,8 @@ class StoryCanvasRenderer extends StatelessWidget {
     this.isInteractive = false,
     this.selectedLayerId,
     this.editingLayerId,
+    this.templateId,
+    this.templateSlots,
     this.onSelectLayer,
     this.onEditLayer,
     this.onScaleStartLayer,
@@ -697,6 +703,21 @@ class StoryCanvasRenderer extends StatelessWidget {
         : MediaQuery.of(context).size;
     final maxCanvasWidth = effectiveCanvasSize.width * 0.85;
 
+    final isTemplateStory =
+        templateId != null || storyType == StoryType.template;
+
+    StoryTemplateConfig? matchedTemplate;
+    if (isTemplateStory) {
+      final tid = templateId ?? 'single_polaroid';
+      for (final t in storyTemplatePresets) {
+        if (t.id == tid) {
+          matchedTemplate = t;
+          break;
+        }
+      }
+      matchedTemplate ??= storyTemplatePresets.first;
+    }
+
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -704,8 +725,8 @@ class StoryCanvasRenderer extends StatelessWidget {
         Positioned.fill(
           child: customBackground ??
               buildStoryBackground(
-                storyType: storyType,
-                mediaUrl: mediaUrl,
+                storyType: isTemplateStory ? StoryType.text : storyType,
+                mediaUrl: isTemplateStory ? null : mediaUrl,
                 bgGradientStart: bgGradientStart,
                 bgGradientEnd: bgGradientEnd,
                 bgScale: bgScale,
@@ -713,6 +734,17 @@ class StoryCanvasRenderer extends StatelessWidget {
                 bgRotation: bgRotation,
               ),
         ),
+
+        // 1.5 Template Canvas (if Template Story)
+        if (isTemplateStory && matchedTemplate != null)
+          Positioned.fill(
+            child: StoryTemplateCanvas(
+              template: matchedTemplate,
+              slots: templateSlots ?? const [],
+              isInteractive: false,
+              customText: textContent,
+            ),
+          ),
 
         // 2. Movable Overlays (Text, Stickers, Hashtags, Mentions, Locations, Music, Images)
         ...layers.map((layer) {
@@ -762,6 +794,7 @@ class StoryCanvasRenderer extends StatelessWidget {
           }
 
           return Positioned(
+            key: ValueKey(layer.id),
             left: currentPos.dx,
             top: currentPos.dy,
             child: FractionalTranslation(
@@ -778,7 +811,10 @@ class StoryCanvasRenderer extends StatelessWidget {
         }),
 
         // 3. Fallback text content if no layers exist
-        if (layers.isEmpty && textContent != null && textContent!.trim().isNotEmpty)
+        if (!isTemplateStory &&
+            layers.isEmpty &&
+            textContent != null &&
+            textContent!.trim().isNotEmpty)
           Positioned(
             left: 28,
             right: 28,

@@ -26,6 +26,9 @@ class StoryCreationPickerSheet extends StatelessWidget {
     Get.to(
       () => const StoryGalleryScreen(),
       routeName: '/StoryGalleryScreen',
+      transition: Transition.fadeIn,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
     );
   }
 
@@ -35,6 +38,9 @@ class StoryCreationPickerSheet extends StatelessWidget {
       Get.to(
         () => const InAppCameraScreen(initialIsVideoMode: false),
         routeName: '/InAppCameraScreen',
+        transition: Transition.fadeIn,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
       );
     } catch (e) {
       if (context.mounted) {
@@ -52,6 +58,41 @@ class StoryCreationPickerSheet extends StatelessWidget {
     Get.to(
       () => const StoryCreatorScreen(type: StoryType.text),
       routeName: '/StoryCreatorScreen',
+      transition: Transition.fadeIn,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _openTemplateStory(BuildContext context) {
+    Get.back();
+    StoryTemplatePickerSheet.show(
+      context,
+      onSelect: (tmpl) async {
+        final picker = ImagePicker();
+        List<String> pickedPaths = [];
+        try {
+          if (tmpl.slotCount == 1) {
+            final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 95);
+            if (file != null) pickedPaths.add(file.path);
+          } else {
+            final files = await picker.pickMultiImage(imageQuality: 95, limit: tmpl.slotCount);
+            pickedPaths.addAll(files.map((f) => f.path));
+          }
+        } catch (_) {}
+
+        Get.to(
+          () => StoryCreatorScreen(
+            type: StoryType.template,
+            templateId: tmpl.id,
+            mediaPaths: pickedPaths,
+          ),
+          routeName: '/StoryCreatorScreen',
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+        );
+      },
     );
   }
 
@@ -168,6 +209,34 @@ class StoryCreationPickerSheet extends StatelessWidget {
                 style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
               onTap: () => _openTextStory(context),
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          // 4. Template Story Action
+          Material(
+            color: Colors.transparent,
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              leading: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.dashboard_customize_rounded, color: textPrimary, size: 22),
+              ),
+              title: Text(
+                'Templates',
+                style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              subtitle: Text(
+                'Collages, Polaroids & Layouts',
+                style: TextStyle(color: textPrimary.withValues(alpha: 0.6), fontSize: 12),
+              ),
+              onTap: () => _openTemplateStory(context),
             ),
           ),
 

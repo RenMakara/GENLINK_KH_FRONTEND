@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 import '../controllers/story_gallery_controller.dart';
-import '../widgets/story_template_picker_sheet.dart';
 import 'story_creator_screen.dart';
 import 'in_app_camera_screen.dart';
 import '../../domain/models/story_model.dart';
@@ -178,43 +177,6 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
         icon: Icons.all_inclusive_rounded,
         label: "Boomerang",
         onTap: () => _showComingSoon("Boomerang"),
-      ),
-      (
-        icon: Icons.dashboard_customize_outlined,
-        label: "Template",
-        onTap: () {
-          StoryTemplatePickerSheet.show(
-            context,
-            onSelect: (tmpl) async {
-              final picker = ImagePicker();
-              List<String> pickedPaths = [];
-              try {
-                if (tmpl.slotCount == 1) {
-                  final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 95);
-                  if (file != null) pickedPaths.add(file.path);
-                } else {
-                  final files = await picker.pickMultiImage(imageQuality: 95, limit: tmpl.slotCount);
-                  pickedPaths.addAll(files.map((f) => f.path));
-                }
-              } catch (_) {}
-
-              final result = await Get.to(
-                () => StoryCreatorScreen(
-                  type: StoryType.template,
-                  templateId: tmpl.id,
-                  mediaPaths: pickedPaths,
-                ),
-                routeName: '/StoryCreatorScreen',
-                transition: Transition.fadeIn,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-              );
-              if (result == true && mounted) {
-                Get.back(result: true);
-              }
-            },
-          );
-        },
       ),
     ];
 

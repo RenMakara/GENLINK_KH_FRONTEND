@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../domain/models/story_model.dart';
 import '../screens/story_creator_screen.dart';
 import '../screens/in_app_camera_screen.dart';
 import '../screens/story_gallery_screen.dart';
+import 'story_template_picker_sheet.dart';
 
 class StoryCreationPickerSheet extends StatelessWidget {
   const StoryCreationPickerSheet({super.key});

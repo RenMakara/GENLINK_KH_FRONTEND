@@ -400,17 +400,16 @@ void main() {
     });
 
     // ── 9. Complete End-to-End Scenario Test ──
-    testWidgets('Test 14: Exact Scenario - Create Story -> Polaroid Classic -> 1 Photo -> Add & Move Text & Sticker -> Post -> Viewer Identical', (tester) async {
+    testWidgets('Test 14: Exact Flow - Gallery -> Image Story Editor -> Tap Template -> Select Polaroid Classic -> Image applied in frame -> Add Text & Sticker -> Post -> Viewer Identical', (tester) async {
       final controller = Get.put(StoryController());
       await tester.runAsync(() async => await controller.fetchStories());
       final initialCount = controller.storyGroups.firstWhere((g) => g.isOwner).stories.length;
 
-      // 1. Open Story Creator in Template Mode with 1 photo for Polaroid Classic
+      // 1. Open Image Story Editor with selected image from Gallery
       await tester.pumpWidget(
         const GetMaterialApp(
           home: StoryCreatorScreen(
-            type: StoryType.template,
-            templateId: 'single_polaroid',
+            type: StoryType.photo,
             mediaPaths: ['assets/images/user_profile.png'],
           ),
         ),
@@ -418,18 +417,28 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // 2. Verify Polaroid template and photo are rendered on canvas
-      expect(find.byType(StoryTemplateCanvas), findsOneWidget);
-      expect(find.byType(Image), findsOneWidget);
-
-      // 3. Verify all Story Creator toolbar controls are available
+      // 2. Verify all Story Creator toolbar controls are available including Template/Layout
       expect(find.byTooltip('Template'), findsOneWidget);
-      expect(find.byTooltip('Background'), findsOneWidget);
       expect(find.byTooltip('Text'), findsOneWidget);
       expect(find.byTooltip('Stickers'), findsOneWidget);
       expect(find.text('Post Story'), findsOneWidget);
 
-      // 4. Publish Template Story with Text and Sticker layers via Controller
+      // 3. Tap Template toolbar button to open StoryTemplatePickerSheet
+      await tester.tap(find.byTooltip('Template'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(StoryTemplatePickerSheet), findsOneWidget);
+      expect(find.text('Polaroid Classic'), findsOneWidget);
+
+      // 4. Select Polaroid Classic template
+      await tester.tap(find.text('Polaroid Classic'));
+      await tester.pumpAndSettle();
+
+      // 5. Verify Polaroid template and current image are applied directly on canvas
+      expect(find.byType(StoryTemplateCanvas), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
+
+      // 6. Publish Template Story with Text and Sticker layers via Controller
       final textLayer = MovableStoryLayer(
         id: 'layer_text_1',
         type: LayerType.text,
@@ -463,7 +472,7 @@ void main() {
       });
       expect(publishSuccess, isTrue);
 
-      // 5. Verify posted story in storyGroups
+      // 7. Verify posted story in storyGroups
       final ownerGroup = controller.storyGroups.firstWhere((g) => g.isOwner);
       expect(ownerGroup.stories.length, initialCount + 1);
 
@@ -476,7 +485,7 @@ void main() {
       expect(postedStory.layers.any((l) => l.type == LayerType.text && l.text == 'Our Campus Memory ✨'), isTrue);
       expect(postedStory.layers.any((l) => l.type == LayerType.sticker && l.text == '🔥'), isTrue);
 
-      // 6. Verify StoryViewer / StoryCanvasRenderer renders identical composition
+      // 8. Verify StoryViewer / StoryCanvasRenderer renders identical composition
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -547,8 +556,8 @@ void main() {
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     });
 
-    // ── 11. Create Story Sheet -> Template Picker Navigation ──
-    testWidgets('Test 16: Tapping Templates in StoryCreationPickerSheet triggers StoryTemplatePickerSheet', (tester) async {
+    // ── 11. Initial Create Story Sheet contains ONLY Camera, Gallery, and Text Story ──
+    testWidgets('Test 16: Initial Create Story sheet contains ONLY Camera, Gallery, and Text Story (No Templates)', (tester) async {
       await tester.pumpWidget(
         GetMaterialApp(
           home: Scaffold(
@@ -567,12 +576,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(StoryCreationPickerSheet), findsOneWidget);
-      expect(find.text('Templates'), findsOneWidget);
+      expect(find.text('community.camera'.tr), findsOneWidget);
+      expect(find.text('community.gallery'.tr), findsOneWidget);
+      expect(find.text('community.textStory'.tr), findsOneWidget);
 
-      await tester.tap(find.text('Templates'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(StoryTemplatePickerSheet), findsOneWidget);
+      // Verify "Templates" does NOT exist in initial Create Story bottom sheet
+      expect(find.text('Templates'), findsNothing);
     });
   });
 }

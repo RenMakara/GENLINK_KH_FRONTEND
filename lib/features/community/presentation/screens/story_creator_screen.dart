@@ -116,6 +116,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   late StoryTemplateConfig _selectedTemplate;
   List<StoryTemplateSlot> _templateSlots = [];
   String? _templateCustomText;
+  bool _isTemplateApplied = false;
 
   static int _layerSequenceCounter = 0;
 
@@ -697,6 +698,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     super.initState();
 
     // ── 1. Initialize Story Template Mode ──
+    _isTemplateApplied = widget.type == StoryType.template || (widget.existingStory?.templateId != null);
     final targetTemplateId = widget.templateId ?? widget.existingStory?.templateId;
     if (targetTemplateId != null) {
       StoryTemplateConfig? matched;
@@ -873,12 +875,18 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   void _onSelectTemplate(StoryTemplateConfig newTemplate) {
     setState(() {
+      _isTemplateApplied = true;
       _selectedTemplate = newTemplate;
-      // Preserve existing loaded slot images
+      
+      // Preserve existing loaded slot images or current image from Gallery
       final existingMedia = _templateSlots
           .where((s) => s.mediaPath != null && s.mediaPath!.isNotEmpty)
-          .map((s) => s.mediaPath)
+          .map((s) => s.mediaPath!)
           .toList();
+
+      if (existingMedia.isEmpty && _activeMediaPath != null && _activeMediaPath!.isNotEmpty) {
+        existingMedia.add(_activeMediaPath!);
+      }
 
       _templateSlots = List.generate(newTemplate.slotCount, (i) {
         final path = i < existingMedia.length ? existingMedia[i] : null;
@@ -2644,7 +2652,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   }
 
   Widget _buildMediaCanvas() {
-    if (widget.type == StoryType.template) {
+    if (widget.type == StoryType.template || _isTemplateApplied) {
       return _buildTemplateStoryCanvas();
     }
 
@@ -2700,10 +2708,11 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     }
 
     // Validate non-empty template story
+    final isTemplateStory = widget.type == StoryType.template || _isTemplateApplied;
     final hasTemplateSlotImage = _templateSlots.any(
       (s) => s.mediaPath != null && s.mediaPath!.trim().isNotEmpty,
     );
-    if (widget.type == StoryType.template &&
+    if (isTemplateStory &&
         !hasTemplateSlotImage &&
         !hasTextLayer &&
         !hasOtherLayer &&
@@ -2758,7 +2767,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       }
 
       bool success = false;
-      final isTemplateStory = widget.type == StoryType.template;
+      final effectiveType = isTemplateStory ? StoryType.template : widget.type;
       final effectiveMediaUrl = isTemplateStory
           ? (_templateSlots.firstWhereOrNull((s) => s.mediaPath != null && s.mediaPath!.isNotEmpty)?.mediaPath ?? _activeMediaPath)
           : _activeMediaPath;
@@ -2771,7 +2780,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         );
         final updatedStory = StoryItemModel(
           id: widget.existingStory!.id,
-          type: widget.type,
+          type: effectiveType,
           mediaUrl: effectiveMediaUrl,
           textContent: textContent,
           bgGradientStart: startHex,
@@ -2796,7 +2805,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         success = await controller.updateStory(widget.existingStory!.id, updatedStory);
       } else {
         success = await controller.publishStory(
-          type: widget.type,
+          type: effectiveType,
           mediaUrl: effectiveMediaUrl,
           textContent: textContent,
           storySettings: _storySettings,
@@ -7370,7 +7379,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                   }
                                 },
                               ),
-                              if (widget.type == StoryType.template)
+                              if (widget.type == StoryType.template || _isTemplateApplied)
                                 GestureDetector(
                                   onTap: _openTemplatePickerSheet,
                                   child: Container(
@@ -7564,7 +7573,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                       _buildHorizontalToolItem(
                                         icon: Icons.photo_library_outlined,
                                         label: "Photo",
-                                        onTap: widget.type == StoryType.template
+                                        onTap: (widget.type == StoryType.template || _isTemplateApplied)
                                             ? () {
                                                 final firstEmptyIdx = _templateSlots.indexWhere((s) => s.mediaPath == null || s.mediaPath!.isEmpty);
                                                 _onTapTemplateSlot(firstEmptyIdx != -1 ? firstEmptyIdx : 0);
@@ -7617,7 +7626,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                     ),
 
                                     // 9. Dedicated Canvas Background Control (Text & Template Story Modes)
-                                    if (widget.type == StoryType.text || widget.type == StoryType.template)
+                                    if (widget.type == StoryType.text || widget.type == StoryType.template || _isTemplateApplied)
                                       _buildHorizontalToolItem(
                                         icon: Icons.palette_outlined,
                                         label: "Background",

@@ -68,34 +68,45 @@ class StoryCreationPickerSheet extends StatelessWidget {
 
   void _openTemplateStory(BuildContext context) {
     Get.back();
-    StoryTemplatePickerSheet.show(
-      context,
-      onSelect: (tmpl) async {
-        final picker = ImagePicker();
-        List<String> pickedPaths = [];
-        try {
-          if (tmpl.slotCount == 1) {
-            final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 95);
-            if (file != null) pickedPaths.add(file.path);
-          } else {
-            final files = await picker.pickMultiImage(imageQuality: 95, limit: tmpl.slotCount);
-            pickedPaths.addAll(files.map((f) => f.path));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final targetContext = Get.context ?? Get.overlayContext ?? context;
+      StoryTemplatePickerSheet.show(
+        targetContext,
+        onSelect: (tmpl) async {
+          final picker = ImagePicker();
+          List<String> pickedPaths = [];
+          try {
+            if (tmpl.slotCount == 1) {
+              final file = await picker.pickImage(
+                source: ImageSource.gallery,
+                imageQuality: 95,
+              );
+              if (file != null) pickedPaths.add(file.path);
+            } else {
+              final files = await picker.pickMultiImage(
+                imageQuality: 95,
+                limit: tmpl.slotCount,
+              );
+              pickedPaths.addAll(files.map((f) => f.path));
+            }
+          } catch (e) {
+            debugPrint('[StoryCreationPickerSheet] Pick error: $e');
           }
-        } catch (_) {}
 
-        Get.to(
-          () => StoryCreatorScreen(
-            type: StoryType.template,
-            templateId: tmpl.id,
-            mediaPaths: pickedPaths,
-          ),
-          routeName: '/StoryCreatorScreen',
-          transition: Transition.fadeIn,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-        );
-      },
-    );
+          Get.to(
+            () => StoryCreatorScreen(
+              type: StoryType.template,
+              templateId: tmpl.id,
+              mediaPaths: pickedPaths,
+            ),
+            routeName: '/StoryCreatorScreen',
+            transition: Transition.fadeIn,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+          );
+        },
+      );
+    });
   }
 
   @override

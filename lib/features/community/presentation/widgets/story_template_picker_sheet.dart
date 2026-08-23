@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import '../../domain/models/story_template_model.dart';
 
@@ -17,10 +18,13 @@ class StoryTemplatePickerSheet extends StatefulWidget {
     StoryTemplateConfig? currentTemplate,
     required ValueChanged<StoryTemplateConfig> onSelect,
   }) {
+    final targetContext = Get.context ?? Get.overlayContext ?? context;
     return showModalBottomSheet<StoryTemplateConfig>(
-      context: context,
+      context: targetContext,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      enableDrag: true,
+      isDismissible: true,
       builder: (ctx) => StoryTemplatePickerSheet(
         selectedTemplate: currentTemplate,
         onSelectTemplate: onSelect,
@@ -87,27 +91,29 @@ class _StoryTemplatePickerSheetState extends State<StoryTemplatePickerSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Story Templates",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.2,
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Story Templates",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.2,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      "Choose aesthetic layout for your story",
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 12.5,
+                      SizedBox(height: 2),
+                      Text(
+                        "Choose aesthetic layout for your story",
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12.5,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 GestureDetector(
                   onTap: () => Navigator.pop(context),

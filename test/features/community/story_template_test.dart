@@ -6,6 +6,7 @@ import 'package:genlink_frontend/features/community/presentation/controllers/sto
 import 'package:genlink_frontend/features/community/presentation/screens/story_creator_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/story_template_canvas.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/story_template_picker_sheet.dart';
+import 'package:genlink_frontend/features/community/presentation/widgets/story_creation_picker_sheet.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/story_canvas_renderer.dart';
 import 'package:genlink_frontend/core/storage/local_storage.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -544,6 +545,34 @@ void main() {
 
       // Remove photo pill action
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+    });
+
+    // ── 11. Create Story Sheet -> Template Picker Navigation ──
+    testWidgets('Test 16: Tapping Templates in StoryCreationPickerSheet triggers StoryTemplatePickerSheet', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (ctx) => ElevatedButton(
+                onPressed: () => StoryCreationPickerSheet.show(ctx),
+                child: const Text('Open Create Story'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Create Story'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(StoryCreationPickerSheet), findsOneWidget);
+      expect(find.text('Templates'), findsOneWidget);
+
+      await tester.tap(find.text('Templates'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(StoryTemplatePickerSheet), findsOneWidget);
     });
   });
 }

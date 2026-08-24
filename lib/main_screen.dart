@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:genlink_frontend/features/productivity/productivity_screen.dart';
 import 'package:get/get.dart';
 
 import 'features/community/presentation/bindings/community_binding.dart';
@@ -33,8 +32,7 @@ class _MainScreenState extends State<MainScreen> {
   late final List<Widget> pages = [
     HomeScreen(onNavigateTab: (index) => controller.changeIndex(index)),
     const CommunityScreen(),
-    const ProductivityPage(),
-    // const FinanceScreen(),
+    const FinanceScreen(),
     const ProfileScreen(),
   ];
 

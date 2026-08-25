@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 /// Represents an individual media/image slot within a Story Template.
 class StoryTemplateSlot {
@@ -73,6 +73,16 @@ enum StoryTemplateLayoutType {
   // Four Photos
   fourGrid,
   fourHeroStrip,
+
+  // Five Photos
+  fiveHeroGrid,
+  fiveHeroLeft,
+  fiveSplit,
+
+  // Six Photos
+  sixGrid,
+  sixHeroGrid,
+  sixMosaic,
 
   // Photo + Text
   photoTextPolaroid,
@@ -227,7 +237,71 @@ const List<StoryTemplateConfig> storyTemplatePresets = [
     defaultBgColors: [Color(0xFF1F2937), Color(0xFF0F172A)],
   ),
 
-  // ── 5. PHOTO + TEXT ──
+  // ── 5. FIVE PHOTOS ──
+  StoryTemplateConfig(
+    id: 'five_hero_grid',
+    name: '1 Top + 4 Grid',
+    category: 'Five Photos',
+    layoutType: StoryTemplateLayoutType.fiveHeroGrid,
+    slotCount: 5,
+    icon: Icons.dashboard_rounded,
+    description: 'Hero header photo with 2x2 grid underneath',
+    defaultBgColors: [Color(0xFF18181B), Color(0xFF09090B)],
+  ),
+  StoryTemplateConfig(
+    id: 'five_hero_left',
+    name: '1 Left + 4 Grid',
+    category: 'Five Photos',
+    layoutType: StoryTemplateLayoutType.fiveHeroLeft,
+    slotCount: 5,
+    icon: Icons.view_quilt_rounded,
+    description: 'Tall hero on left with 2x2 grid on right',
+    defaultBgColors: [Color(0xFF1F2937), Color(0xFF111827)],
+  ),
+  StoryTemplateConfig(
+    id: 'five_split',
+    name: '2 Top, 3 Bottom',
+    category: 'Five Photos',
+    layoutType: StoryTemplateLayoutType.fiveSplit,
+    slotCount: 5,
+    icon: Icons.auto_awesome_mosaic_rounded,
+    description: '2 large photos on top, 3 photos on bottom',
+    defaultBgColors: [Color(0xFF27272A), Color(0xFF18181B)],
+  ),
+
+  // ── 6. SIX PHOTOS ──
+  StoryTemplateConfig(
+    id: 'six_grid',
+    name: '2x3 Grid',
+    category: 'Six Photos',
+    layoutType: StoryTemplateLayoutType.sixGrid,
+    slotCount: 6,
+    icon: Icons.grid_on_rounded,
+    description: 'Even 6 photo collage grid (2 columns by 3 rows)',
+    defaultBgColors: [Color(0xFF18181B), Color(0xFF000000)],
+  ),
+  StoryTemplateConfig(
+    id: 'six_hero_grid',
+    name: '2 Hero + 4 Grid',
+    category: 'Six Photos',
+    layoutType: StoryTemplateLayoutType.sixHeroGrid,
+    slotCount: 6,
+    icon: Icons.dashboard_customize_rounded,
+    description: '2 prominent photos on top with 4 photo grid below',
+    defaultBgColors: [Color(0xFF1E1E24), Color(0xFF0F0F12)],
+  ),
+  StoryTemplateConfig(
+    id: 'six_mosaic',
+    name: 'Hero Mosaic',
+    category: 'Six Photos',
+    layoutType: StoryTemplateLayoutType.sixMosaic,
+    slotCount: 6,
+    icon: Icons.view_compact_rounded,
+    description: 'Large corner hero photo with 5 surrounding tiles',
+    defaultBgColors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+  ),
+
+  // ── 7. PHOTO + TEXT ──
   StoryTemplateConfig(
     id: 'photo_text_polaroid',
     name: 'Polaroid Note',

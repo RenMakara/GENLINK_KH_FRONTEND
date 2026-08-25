@@ -15,11 +15,17 @@ class StoryController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchStories();
+    if (!Get.testMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        fetchStories();
+      });
+    }
   }
 
   Future<void> fetchStories() async {
-    isLoading.value = true;
+    if (!isLoading.value) {
+      isLoading.value = true;
+    }
     try {
       final data = await _repository.getStories();
       storyGroups.assignAll(data);

@@ -7,12 +7,27 @@ import '../controllers/story_controller.dart';
 import '../screens/story_viewer_screen.dart';
 import 'story_creation_picker_sheet.dart';
 
-class StoryTrayWidget extends StatelessWidget {
+class StoryTrayWidget extends StatefulWidget {
   const StoryTrayWidget({super.key});
 
   @override
+  State<StoryTrayWidget> createState() => _StoryTrayWidgetState();
+}
+
+class _StoryTrayWidgetState extends State<StoryTrayWidget> {
+  late final StoryController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.isRegistered<StoryController>()
+        ? Get.find<StoryController>()
+        : Get.put(StoryController());
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final controller = Get.put(StoryController());
+    final controller = _controller;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 

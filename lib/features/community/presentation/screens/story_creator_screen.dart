@@ -10,6 +10,7 @@ import '../controllers/story_controller.dart';
 import '../controllers/story_gallery_controller.dart';
 import '../widgets/story_template_canvas.dart';
 import '../widgets/story_template_picker_sheet.dart';
+import 'story_gallery_screen.dart';
 
 class StoryTemplateModel {
   final String id;
@@ -117,6 +118,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   List<StoryTemplateSlot> _templateSlots = [];
   String? _templateCustomText;
   bool _isTemplateApplied = false;
+  int? _selectedTemplateSlotIndex;
 
   static int _layerSequenceCounter = 0;
 
@@ -172,6 +174,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   // Full-Screen Immersive Text Editor State
   bool _isFullScreenTextEditing = false;
+  bool get isEditingText => _isFullScreenTextEditing;
   MovableStoryLayer? _editingTextLayer;
   final TextEditingController _fullScreenTextController =
       TextEditingController();
@@ -783,68 +786,124 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   }
 
   // ── Template Slot Operations ──
-  Future<void> _pickPhotosForTemplate(StoryTemplateConfig template, {int startSlotIndex = 0}) async {
-    final neededCount = template.slotCount - startSlotIndex;
-    if (neededCount <= 0) return;
-
+  Future<void> _pickPhotosForTemplate(StoryTemplateConfig template) async {
     try {
-      final picker = ImagePicker();
-      if (neededCount == 1) {
-        final XFile? file = await picker.pickImage(
-          source: ImageSource.gallery,
-          imageQuality: 95,
-        );
-        if (file != null && mounted) {
-          setState(() {
-            if (startSlotIndex < _templateSlots.length) {
-              _templateSlots[startSlotIndex].mediaPath = file.path;
-              _templateSlots[startSlotIndex].scale = 1.0;
-              _templateSlots[startSlotIndex].offset = Offset.zero;
-              _templateSlots[startSlotIndex].rotation = 0.0;
-            }
+      final galleryCtrl = Get.isRegistered<StoryGalleryController>()
+          ? Get.find<StoryGalleryController>()
+          : Get.put(StoryGalleryController());
+      galleryCtrl.configureForTemplate(
+        template: template,
+        requiredPhotos: template.slotCount,
+        maxSelection: template.slotCount,
+        isMultiSelect: template.slotCount > 1,
+        clearSelection: true,
+      );
+
+      final result = await Get.to(
+        () => StoryGalleryScreen(
+          targetTemplate: template,
+          requiredPhotos: template.slotCount,
+        ),
+        routeName: '/StoryGalleryScreen',
+        transition: Transition.fadeIn,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+      );
+
+      List<String> selectedPaths = [];
+      if (result is List<String>) {
+        selectedPaths = result;
+      } else if (result is String && result.trim().isNotEmpty) {
+        selectedPaths = [result];
+      }
+
+      if (selectedPaths.isNotEmpty && mounted) {
+        setState(() {
+          _isTemplateApplied = true;
+          _selectedTemplate = template;
+          _selectedTemplateSlotIndex = null;
+          _templateSlots = List.generate(template.slotCount, (i) {
+            final path = i < selectedPaths.length ? selectedPaths[i] : null;
+            return StoryTemplateSlot(
+              id: 'slot_$i',
+              mediaPath: path,
+              scale: 1.0,
+              offset: Offset.zero,
+              rotation: 0.0,
+            );
           });
-        }
-      } else {
-        final List<XFile> files = await picker.pickMultiImage(
-          imageQuality: 95,
-          limit: neededCount,
-        );
-        if (files.isNotEmpty && mounted) {
-          setState(() {
-            for (int i = 0; i < files.length && (startSlotIndex + i) < _templateSlots.length; i++) {
-              _templateSlots[startSlotIndex + i].mediaPath = files[i].path;
-              _templateSlots[startSlotIndex + i].scale = 1.0;
-              _templateSlots[startSlotIndex + i].offset = Offset.zero;
-              _templateSlots[startSlotIndex + i].rotation = 0.0;
-            }
-          });
-        }
+        });
       }
     } catch (e) {
-      debugPrint('[StoryCreatorScreen] Error picking photos for template: $e');
+      debugPrint('[StoryCreatorScreen] Error picking photos for template via Gallery: $e');
     }
   }
 
-  Future<void> _onTapTemplateSlot(int slotIndex) async {
+  Future<void> _onReplaceTemplateSlot(int slotIndex) async {
     try {
-      final picker = ImagePicker();
-      final XFile? file = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 95,
+      final galleryCtrl = Get.isRegistered<StoryGalleryController>()
+          ? Get.find<StoryGalleryController>()
+          : Get.put(StoryGalleryController());
+      galleryCtrl.configureForTemplate(
+        template: _selectedTemplate,
+        requiredPhotos: 1,
+        maxSelection: 1,
+        isMultiSelect: false,
+        clearSelection: true,
       );
-      if (file != null && mounted) {
+
+      final result = await Get.to(
+        () => StoryGalleryScreen(
+          targetTemplate: _selectedTemplate,
+          replaceSlotIndex: slotIndex,
+          requiredPhotos: 1,
+        ),
+        routeName: '/StoryGalleryScreen',
+        transition: Transition.fadeIn,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+      );
+      if (result != null && result is String && result.isNotEmpty && mounted) {
         setState(() {
           if (slotIndex < _templateSlots.length) {
-            _templateSlots[slotIndex].mediaPath = file.path;
+            _templateSlots[slotIndex].mediaPath = result;
             _templateSlots[slotIndex].scale = 1.0;
             _templateSlots[slotIndex].offset = Offset.zero;
             _templateSlots[slotIndex].rotation = 0.0;
+            _selectedTemplateSlotIndex = slotIndex;
+          }
+        });
+        return;
+      }
+      if (result != null && result is List<String> && result.isNotEmpty && mounted) {
+        setState(() {
+          if (slotIndex < _templateSlots.length) {
+            _templateSlots[slotIndex].mediaPath = result.first;
+            _templateSlots[slotIndex].scale = 1.0;
+            _templateSlots[slotIndex].offset = Offset.zero;
+            _templateSlots[slotIndex].rotation = 0.0;
+            _selectedTemplateSlotIndex = slotIndex;
           }
         });
       }
     } catch (e) {
-      debugPrint('[StoryCreatorScreen] Slot image pick error: $e');
+      debugPrint('[StoryCreatorScreen] Slot replacement error: $e');
     }
+  }
+
+  Future<void> _onTapTemplateSlot(int slotIndex) async {
+    // If slot already has image, select it to reveal contextual toolbar
+    if (slotIndex < _templateSlots.length &&
+        _templateSlots[slotIndex].mediaPath != null &&
+        _templateSlots[slotIndex].mediaPath!.isNotEmpty) {
+      setState(() {
+        _selectedTemplateSlotIndex = slotIndex;
+      });
+      return;
+    }
+
+    // If slot is empty, open gallery in single-photo mode for this slot
+    await _onReplaceTemplateSlot(slotIndex);
   }
 
   void _onUpdateTemplateSlot(
@@ -869,49 +928,304 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         _templateSlots[slotIndex].scale = 1.0;
         _templateSlots[slotIndex].offset = Offset.zero;
         _templateSlots[slotIndex].rotation = 0.0;
+        _selectedTemplateSlotIndex = null;
       });
     }
   }
 
   void _onSelectTemplate(StoryTemplateConfig newTemplate) {
-    setState(() {
-      _isTemplateApplied = true;
-      _selectedTemplate = newTemplate;
-      
-      // Preserve existing loaded slot images or current image from Gallery
-      final existingMedia = _templateSlots
-          .where((s) => s.mediaPath != null && s.mediaPath!.isNotEmpty)
-          .map((s) => s.mediaPath!)
-          .toList();
-
-      if (existingMedia.isEmpty && _activeMediaPath != null && _activeMediaPath!.isNotEmpty) {
-        existingMedia.add(_activeMediaPath!);
-      }
-
-      _templateSlots = List.generate(newTemplate.slotCount, (i) {
-        final path = i < existingMedia.length ? existingMedia[i] : null;
-        return StoryTemplateSlot(
-          id: 'slot_$i',
-          mediaPath: path,
-        );
-      });
-    });
-
-    final filledCount = _templateSlots.where((s) => s.mediaPath != null && s.mediaPath!.isNotEmpty).length;
-    if (filledCount < newTemplate.slotCount) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _pickPhotosForTemplate(newTemplate, startSlotIndex: filledCount);
+    // Collect all available media: from template slots, image layers, active image, and initial mediaPaths
+    final existingMedia = <String>[];
+    for (final s in _templateSlots) {
+      if (s.mediaPath != null && s.mediaPath!.trim().isNotEmpty) {
+        if (!existingMedia.contains(s.mediaPath!.trim())) {
+          existingMedia.add(s.mediaPath!.trim());
         }
-      });
+      }
     }
+    for (final l in _layers) {
+      if (l.type == LayerType.image && l.text.trim().isNotEmpty) {
+        if (!existingMedia.contains(l.text.trim())) {
+          existingMedia.add(l.text.trim());
+        }
+      }
+    }
+    if (_activeMediaPath != null && _activeMediaPath!.trim().isNotEmpty) {
+      if (!existingMedia.contains(_activeMediaPath!.trim())) {
+        existingMedia.add(_activeMediaPath!.trim());
+      }
+    }
+    if (widget.mediaPaths != null) {
+      for (final p in widget.mediaPaths!) {
+        if (p.trim().isNotEmpty && !existingMedia.contains(p.trim())) {
+          existingMedia.add(p.trim());
+        }
+      }
+    }
+
+    // 1. Single Photo template: automatically use currently selected image with no extra picker
+    if (newTemplate.slotCount == 1) {
+      setState(() {
+        _isTemplateApplied = true;
+        _selectedTemplate = newTemplate;
+        _selectedTemplateSlotIndex = null;
+        final path = existingMedia.isNotEmpty ? existingMedia.first : _activeMediaPath;
+        _templateSlots = [
+          StoryTemplateSlot(
+            id: 'slot_0',
+            mediaPath: path,
+          ),
+        ];
+        _layers.removeWhere((l) => l.type == LayerType.image);
+        _selectedLayer = null;
+      });
+      return;
+    }
+
+    // 2. Multi-photo template: reuse all existing loaded photos immediately
+    if (existingMedia.isNotEmpty) {
+      setState(() {
+        _isTemplateApplied = true;
+        _selectedTemplate = newTemplate;
+        _selectedTemplateSlotIndex = null;
+        _templateSlots = List.generate(newTemplate.slotCount, (i) {
+          final path = i < existingMedia.length ? existingMedia[i] : null;
+          return StoryTemplateSlot(
+            id: 'slot_$i',
+            mediaPath: path,
+          );
+        });
+        _layers.removeWhere((l) => l.type == LayerType.image);
+        _selectedLayer = null;
+      });
+      return;
+    }
+
+    // 3. Multi-photo template without any photos: open Gallery in multi-select mode
+    _pickPhotosForTemplate(newTemplate);
   }
 
-  void _openTemplatePickerSheet() {
-    StoryTemplatePickerSheet.show(
+  void _showTemplateReorderSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          return Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+            decoration: const BoxDecoration(
+              color: Color(0xFF18181A),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border(
+                top: BorderSide(color: Color(0xFF2A2A2E), width: 1.0),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Reorder Photos",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          "Drag items to reorder slot positions",
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.check_rounded,
+                        color: AppColors.communityAccent,
+                        size: 24,
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 110,
+                  child: ReorderableListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: _templateSlots.length,
+                    onReorderItem: (oldIndex, newIndex) {
+                      setState(() {
+                        final movedSlot = _templateSlots.removeAt(oldIndex);
+                        _templateSlots.insert(newIndex, movedSlot);
+                      });
+                      setSheetState(() {});
+                    },
+                    itemBuilder: (context, index) {
+                      final slot = _templateSlots[index];
+                      final hasImage = slot.mediaPath != null &&
+                          slot.mediaPath!.isNotEmpty;
+
+                      return Container(
+                        key: ValueKey('reorder_slot_${slot.id}_$index'),
+                        width: 80,
+                        margin: const EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF222226),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            if (hasImage)
+                              Positioned.fill(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(13),
+                                  child: slot.mediaPath!.startsWith('assets/')
+                                      ? Image.asset(slot.mediaPath!,
+                                          fit: BoxFit.cover)
+                                      : Image.file(
+                                          _resolveStoryMediaFile(slot.mediaPath!),
+                                          fit: BoxFit.cover),
+                                ),
+                              )
+                            else
+                              const Center(
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  color: Colors.white38,
+                                  size: 24,
+                                ),
+                              ),
+                            Positioned(
+                              top: 4,
+                              left: 4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.7),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  "${index + 1}",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const Positioned(
+                              bottom: 4,
+                              right: 4,
+                              child: Icon(
+                                Icons.drag_indicator_rounded,
+                                color: Colors.white70,
+                                size: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text(
+                      "Done",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _openTemplatePickerSheet() async {
+    final currentPaths = <String>[];
+    for (final s in _templateSlots) {
+      if (s.mediaPath != null && s.mediaPath!.trim().isNotEmpty) {
+        if (!currentPaths.contains(s.mediaPath!.trim())) {
+          currentPaths.add(s.mediaPath!.trim());
+        }
+      }
+    }
+    for (final l in _layers) {
+      if (l.type == LayerType.image && l.text.trim().isNotEmpty) {
+        if (!currentPaths.contains(l.text.trim())) {
+          currentPaths.add(l.text.trim());
+        }
+      }
+    }
+    if (_activeMediaPath != null && _activeMediaPath!.trim().isNotEmpty) {
+      if (!currentPaths.contains(_activeMediaPath!.trim())) {
+        currentPaths.add(_activeMediaPath!.trim());
+      }
+    }
+    if (widget.mediaPaths != null) {
+      for (final p in widget.mediaPaths!) {
+        if (p.trim().isNotEmpty && !currentPaths.contains(p.trim())) {
+          currentPaths.add(p.trim());
+        }
+      }
+    }
+
+    await StoryTemplatePickerSheet.show(
       context,
-      currentTemplate: _selectedTemplate,
-      onSelect: _onSelectTemplate,
+      currentTemplate: _isTemplateApplied ? _selectedTemplate : null,
+      initialMediaPaths: currentPaths,
+      onSelect: (selectedTmpl) {
+        _onSelectTemplate(selectedTmpl);
+      },
     );
   }
 
@@ -2626,28 +2940,41 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       );
     }
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Positioned.fill(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            child: bgWidget,
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        if (_selectedTemplateSlotIndex != null) {
+          setState(() => _selectedTemplateSlotIndex = null);
+        }
+      },
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child: bgWidget,
+            ),
           ),
-        ),
-        Positioned.fill(
-          child: StoryTemplateCanvas(
-            template: _selectedTemplate,
-            slots: _templateSlots,
-            isInteractive: true,
-            onTapSlot: _onTapTemplateSlot,
-            onUpdateSlot: _onUpdateTemplateSlot,
-            onClearSlot: _onClearTemplateSlot,
-            onEditText: (text) => _editTemplateCaptionDialog(text),
-            customText: _templateCustomText,
+          Positioned.fill(
+            child: StoryTemplateCanvas(
+              template: _selectedTemplate,
+              slots: _templateSlots,
+              isInteractive: true,
+              selectedSlotIndex: _selectedTemplateSlotIndex,
+              onSelectSlot: (idx) {
+                setState(() => _selectedTemplateSlotIndex = idx);
+              },
+              onTapSlot: _onTapTemplateSlot,
+              onReplaceSlot: _onReplaceTemplateSlot,
+              onUpdateSlot: _onUpdateTemplateSlot,
+              onClearSlot: _onClearTemplateSlot,
+              onEditText: (text) => _editTemplateCaptionDialog(text),
+              customText: _templateCustomText,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -2707,25 +3034,40 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       return;
     }
 
-    // Validate non-empty template story
+    // Validate template story slots
     final isTemplateStory = widget.type == StoryType.template || _isTemplateApplied;
     final hasTemplateSlotImage = _templateSlots.any(
       (s) => s.mediaPath != null && s.mediaPath!.trim().isNotEmpty,
     );
-    if (isTemplateStory &&
-        !hasTemplateSlotImage &&
-        !hasTextLayer &&
-        !hasOtherLayer &&
-        textFromInput.isEmpty &&
-        caption.isEmpty &&
-        (_templateCustomText == null || _templateCustomText!.trim().isEmpty)) {
-      AppNotificationBanner.showDanger(
-        context: context,
-        title: "Empty Template",
-        message: "Please add at least one photo to your template before publishing.",
-        icon: Icons.dashboard_customize_rounded,
-      );
-      return;
+    if (isTemplateStory) {
+      if (_selectedTemplate.slotCount > 1) {
+        final filledCount = _templateSlots
+            .where((s) => s.mediaPath != null && s.mediaPath!.trim().isNotEmpty)
+            .length;
+        if (filledCount < _selectedTemplate.slotCount) {
+          AppNotificationBanner.showDanger(
+            context: context,
+            title: "Incomplete Template",
+            message:
+                "Please select ${_selectedTemplate.slotCount} photos for this layout.",
+            icon: Icons.dashboard_customize_rounded,
+          );
+          return;
+        }
+      } else if (!hasTemplateSlotImage &&
+          !hasTextLayer &&
+          !hasOtherLayer &&
+          textFromInput.isEmpty &&
+          caption.isEmpty &&
+          (_templateCustomText == null || _templateCustomText!.trim().isEmpty)) {
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: "Empty Template",
+          message: "Please add at least one photo to your template before publishing.",
+          icon: Icons.dashboard_customize_rounded,
+        );
+        return;
+      }
     }
 
     setState(() => _isPublishing = true);
@@ -3599,55 +3941,58 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                 final distanceStr =
                                     distances[index % distances.length];
 
-                                return ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                  ),
-                                  leading: Container(
-                                    width: 38,
-                                    height: 38,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.08,
+                                return Material(
+                                  color: Colors.transparent,
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      vertical: 2,
+                                    ),
+                                    leading: Container(
+                                      width: 38,
+                                      height: 38,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.08,
+                                        ),
+                                        shape: BoxShape.circle,
                                       ),
-                                      shape: BoxShape.circle,
+                                      child: const Icon(
+                                        Icons.location_on_rounded,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
                                     ),
-                                    child: const Icon(
-                                      Icons.location_on_rounded,
-                                      color: Colors.white,
-                                      size: 18,
+                                    title: Text(
+                                      loc,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
+                                    subtitle: Text(
+                                      distanceStr,
+                                      style: const TextStyle(
+                                        color: Colors.white38,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    onTap: () {
+                                      setState(() {
+                                        final newLayer = MovableStoryLayer(
+                                          id: _generateUniqueLayerId('location'),
+                                          type: LayerType.location,
+                                          text: loc,
+                                          offset: const Offset(0.5, 0.5),
+                                        );
+                                        _layers.add(newLayer);
+                                        _selectedLayer = newLayer;
+                                      });
+                                      Navigator.pop(ctx);
+                                    },
                                   ),
-                                  title: Text(
-                                    loc,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    distanceStr,
-                                    style: const TextStyle(
-                                      color: Colors.white38,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  onTap: () {
-                                    setState(() {
-                                      final newLayer = MovableStoryLayer(
-                                        id: _generateUniqueLayerId('location'),
-                                        type: LayerType.location,
-                                        text: loc,
-                                        offset: const Offset(0.5, 0.5),
-                                      );
-                                      _layers.add(newLayer);
-                                      _selectedLayer = newLayer;
-                                    });
-                                    Navigator.pop(ctx);
-                                  },
                                 );
                               },
                             ),
@@ -3691,28 +4036,31 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             ),
             const SizedBox(height: 16),
             ..._musicOptions.map((track) {
-              return ListTile(
-                leading: const Icon(
-                  Icons.music_note_rounded,
-                  color: AppColors.communityAccent,
+              return Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.music_note_rounded,
+                    color: AppColors.communityAccent,
+                  ),
+                  title: Text(
+                    track,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                  onTap: () {
+                    setState(() {
+                      _layers.add(
+                        MovableStoryLayer(
+                          id: _generateUniqueLayerId('music'),
+                          type: LayerType.music,
+                          text: track,
+                          offset: const Offset(0.5, 0.5),
+                        ),
+                      );
+                    });
+                    Navigator.pop(ctx);
+                  },
                 ),
-                title: Text(
-                  track,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                ),
-                onTap: () {
-                  setState(() {
-                    _layers.add(
-                      MovableStoryLayer(
-                        id: _generateUniqueLayerId('music'),
-                        type: LayerType.music,
-                        text: track,
-                        offset: const Offset(0.5, 0.5),
-                      ),
-                    );
-                  });
-                  Navigator.pop(ctx);
-                },
               );
             }),
           ],
@@ -6937,11 +7285,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    String? tooltip,
     Widget? customIconWidget,
     bool isPlaceholder = false,
   }) {
     return Tooltip(
-      message: label,
+      message: tooltip ?? label,
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
@@ -7565,14 +7914,48 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                     _buildHorizontalToolItem(
                                       icon: Icons.dashboard_customize_outlined,
                                       label: "Template",
+                                      tooltip: "Template",
                                       onTap: _openTemplatePickerSheet,
                                     ),
 
-                                    // 2. Add Photo (For Image / Video / Template Stories)
+                                    // 2. Add Text Overlay
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.title_rounded,
+                                      label: "Text",
+                                      tooltip: "Text",
+                                      onTap: () => _openFloatingTextEditor(),
+                                    ),
+
+                                    // 3. Stickers & Emojis (Unified single action)
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.sentiment_satisfied_alt_outlined,
+                                      label: "Stickers",
+                                      tooltip: "Stickers",
+                                      onTap: _openEmojiPicker,
+                                    ),
+
+                                    // 4. Location Tag
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.location_on_outlined,
+                                      label: "Location",
+                                      tooltip: "Location",
+                                      onTap: _openLocationPicker,
+                                    ),
+
+                                    // 5. Mention Tag (@)
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.alternate_email_rounded,
+                                      label: "Mention",
+                                      tooltip: "Mention",
+                                      onTap: _showMentionSheet,
+                                    ),
+
+                                    // 6. Add Photo / Gallery (For Image / Video / Template Stories)
                                     if (widget.type != StoryType.text)
                                       _buildHorizontalToolItem(
                                         icon: Icons.photo_library_outlined,
                                         label: "Photo",
+                                        tooltip: "Photo",
                                         onTap: (widget.type == StoryType.template || _isTemplateApplied)
                                             ? () {
                                                 final firstEmptyIdx = _templateSlots.indexWhere((s) => s.mediaPath == null || s.mediaPath!.isEmpty);
@@ -7581,40 +7964,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                             : _showAddImagePicker,
                                       ),
 
-                                    // 3. Add Text Overlay
-                                    _buildHorizontalToolItem(
-                                      icon: Icons.title_rounded,
-                                      label: "Text",
-                                      onTap: () => _openFloatingTextEditor(),
-                                    ),
-
-                                    // 4. Stickers & Emojis
-                                    _buildHorizontalToolItem(
-                                      icon: Icons
-                                          .sentiment_satisfied_alt_outlined,
-                                      label: "Stickers",
-                                      onTap: _openEmojiPicker,
-                                    ),
-
-                                    // 5. Location Tag
-                                    _buildHorizontalToolItem(
-                                      icon: Icons.location_on_outlined,
-                                      label: "Location",
-                                      onTap: _openLocationPicker,
-                                    ),
-
-                                    // 6. Mention Tag (@)
-                                    _buildHorizontalToolItem(
-                                      icon: Icons.alternate_email_rounded,
-                                      label: "Mention",
-                                      onTap: _showMentionSheet,
-                                    ),
-
                                     // 7. Rotate (Image/Video Stories only)
                                     if (widget.type == StoryType.photo || widget.type == StoryType.video)
                                       _buildHorizontalToolItem(
                                         icon: Icons.rotate_right_rounded,
                                         label: "Rotate",
+                                        tooltip: "Rotate",
                                         onTap: _rotateImage,
                                       ),
 
@@ -7622,14 +7977,25 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                     _buildHorizontalToolItem(
                                       icon: Icons.music_note_rounded,
                                       label: "Music",
+                                      tooltip: "Music",
                                       onTap: _showMusicSheet,
                                     ),
 
-                                    // 9. Dedicated Canvas Background Control (Text & Template Story Modes)
+                                    // 9. Reorder Photos (Template Story Mode)
+                                    if (widget.type == StoryType.template || _isTemplateApplied)
+                                      _buildHorizontalToolItem(
+                                        icon: Icons.swap_horiz_rounded,
+                                        label: "Reorder",
+                                        tooltip: "Reorder",
+                                        onTap: _showTemplateReorderSheet,
+                                      ),
+
+                                    // 10. Dedicated Canvas Background Control (Text & Template Story Modes)
                                     if (widget.type == StoryType.text || widget.type == StoryType.template || _isTemplateApplied)
                                       _buildHorizontalToolItem(
                                         icon: Icons.palette_outlined,
                                         label: "Background",
+                                        tooltip: "Background",
                                         customIconWidget:
                                             _buildCurrentBgIndicatorWidget(),
                                         onTap: () => setState(() {

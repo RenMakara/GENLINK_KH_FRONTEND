@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../domain/models/story_model.dart';
+import '../controllers/story_gallery_controller.dart';
 import '../screens/story_creator_screen.dart';
 import '../screens/in_app_camera_screen.dart';
 import '../screens/story_gallery_screen.dart';
@@ -23,6 +24,16 @@ class StoryCreationPickerSheet extends StatelessWidget {
 
   void _pickFromGallery(BuildContext context) {
     Get.back();
+    final galleryCtrl = Get.isRegistered<StoryGalleryController>()
+        ? Get.find<StoryGalleryController>()
+        : Get.put(StoryGalleryController());
+    galleryCtrl.configureForTemplate(
+      template: null,
+      requiredPhotos: 0,
+      maxSelection: 0,
+      isMultiSelect: false,
+      clearSelection: true,
+    );
     Get.to(
       () => const StoryGalleryScreen(),
       routeName: '/StoryGalleryScreen',
@@ -128,6 +139,10 @@ class StoryCreationPickerSheet extends StatelessWidget {
                 'community.camera'.tr,
                 style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
+              subtitle: Text(
+                'Take photos or record videos',
+                style: TextStyle(color: textPrimary.withValues(alpha: 0.5), fontSize: 12.5),
+              ),
               onTap: () => _openCamera(context),
             ),
           ),
@@ -152,6 +167,10 @@ class StoryCreationPickerSheet extends StatelessWidget {
                 'community.gallery'.tr,
                 style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
               ),
+              subtitle: Text(
+                'Select photos or videos from camera roll',
+                style: TextStyle(color: textPrimary.withValues(alpha: 0.5), fontSize: 12.5),
+              ),
               onTap: () => _pickFromGallery(context),
             ),
           ),
@@ -175,6 +194,10 @@ class StoryCreationPickerSheet extends StatelessWidget {
               title: Text(
                 'community.textStory'.tr,
                 style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              subtitle: Text(
+                'Create text posts with rich gradient backgrounds',
+                style: TextStyle(color: textPrimary.withValues(alpha: 0.5), fontSize: 12.5),
               ),
               onTap: () => _openTextStory(context),
             ),

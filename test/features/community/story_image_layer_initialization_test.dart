@@ -20,8 +20,8 @@ class _MockLocalStorage extends LocalStorage {
 
 void main() {
   setUp(() {
-    Get.testMode = true;
     Get.reset();
+    Get.testMode = true;
     Get.put<LocalStorage>(_MockLocalStorage(), permanent: true);
     Get.put(StoryController());
   });

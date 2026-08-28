@@ -54,6 +54,8 @@ class StoryRepositoryImpl implements StoryRepository {
     double bgScale = 1.0,
     dynamic bgOffset,
     double bgRotation = 0.0,
+    String? templateId,
+    List<StoryTemplateSlot>? templateSlots,
   }) async {
     return _apiClient.post(
       ApiEndpoints.stories,
@@ -61,8 +63,27 @@ class StoryRepositoryImpl implements StoryRepository {
         'mediaUrl': mediaUrl ?? '',
         'mediaType': type == StoryType.video ? 'VIDEO' : 'IMAGE',
         'caption': textContent,
+        'location': location,
+        'visibility': settings?.visibilityLabel ?? visibility,
+        'replyPrivacy': settings?.replyPermissionLabel ?? replyPrivacy,
+        'allowReactions': settings?.allowReactions ?? allowReactions,
+        'templateId': templateId,
       },
       parse: (data) => _storyFromJson(ApiClient.asMap(data)),
+    );
+  }
+
+  @override
+  Future<void> updateStory(String storyId, StoryItemModel updatedStory) async {
+    await _apiClient.put(
+      ApiEndpoints.storyItem(storyId),
+      body: {
+        'caption': updatedStory.textContent,
+        'visibility': updatedStory.visibility,
+        'replyPrivacy': updatedStory.replyPrivacy,
+        'allowReactions': updatedStory.allowReactions,
+      },
+      parse: (_) {},
     );
   }
 
@@ -115,7 +136,11 @@ class StoryRepositoryImpl implements StoryRepository {
       textContent: json['caption'] as String?,
       timeAgo: _timeAgo(createdAt),
       createdAt: createdAt,
-      visibility: 'Public',
+      visibility: json['visibility'] as String? ?? 'Public',
+      replyPrivacy: json['replyPrivacy'] as String? ?? 'Everyone',
+      allowReactions: json['allowReactions'] as bool? ?? true,
+      location: json['location'] as String?,
+      templateId: json['templateId'] as String?,
     );
   }
 

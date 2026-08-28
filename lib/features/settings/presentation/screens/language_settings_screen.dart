@@ -22,12 +22,16 @@ class LanguageSettingsScreen extends GetView<SettingsController> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: AppSpacing.md),
+        leading: const Center(
           child: AppBackButton(),
         ),
-        leadingWidth: 58 + AppSpacing.md * 2,
-        title: Text('settings.language'.tr),
+        leadingWidth: 74,
+        title: Text(
+          'settings.language'.tr,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
       body: Obx(() {
         final current = controller.settings.value.language;
@@ -110,8 +114,9 @@ class _LanguageCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(color: foreground),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: foreground,
+                      ),
                     ),
                     Text(
                       subtitle,

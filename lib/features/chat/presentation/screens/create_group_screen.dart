@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/models/chat_models.dart';
 import '../controllers/chat_controller.dart';
 import 'chat_detail_screen.dart';
@@ -78,7 +79,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     final newGroup = ChatConversationModel(
       id: 'grp_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
-      avatar: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200',
+      avatar:
+          'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200',
       isGroup: true,
       isOnline: true,
       lastMessage: 'Group created by Sokny Enat',
@@ -101,10 +103,10 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-          onPressed: () => Get.back(),
+        leading: Center(
+          child: AppBackButton(onPressed: () => Get.back()),
         ),
+        leadingWidth: 72,
         title: const Text(
           "New Group Chat",
           style: TextStyle(
@@ -138,7 +140,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: const BoxDecoration(
                   color: AppColors.darkSurfacePrimary,
-                  border: Border(bottom: BorderSide(color: AppColors.darkBorderSubtle)),
+                  border: Border(
+                    bottom: BorderSide(color: AppColors.darkBorderSubtle),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -146,7 +150,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                       children: [
                         CircleAvatar(
                           radius: 28,
-                          backgroundColor: AppColors.communityAccent.withValues(alpha: 0.2),
+                          backgroundColor: AppColors.communityAccent.withValues(
+                            alpha: 0.2,
+                          ),
                           child: const Icon(
                             Icons.group_add_rounded,
                             color: AppColors.communityAccent,
@@ -162,7 +168,11 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                               color: AppColors.communityAccent,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.camera_alt, color: Colors.black, size: 10),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              color: Colors.black,
+                              size: 10,
+                            ),
                           ),
                         ),
                       ],
@@ -171,10 +181,16 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                     Expanded(
                       child: TextField(
                         controller: _groupNameController,
-                        style: const TextStyle(color: Colors.white, fontSize: 16),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
                         decoration: const InputDecoration(
                           hintText: "Group Name (e.g. AUB Flutter Team)",
-                          hintStyle: TextStyle(color: AppColors.darkTextMuted, fontSize: 14),
+                          hintStyle: TextStyle(
+                            color: AppColors.darkTextMuted,
+                            fontSize: 14,
+                          ),
                           border: InputBorder.none,
                         ),
                       ),
@@ -187,7 +203,10 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
               // Selected Count Header
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -233,14 +252,18 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                         color: AppColors.darkSurfaceSecondary,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isSelected ? AppColors.communityAccent : AppColors.darkBorderSubtle,
+                          color: isSelected
+                              ? AppColors.communityAccent
+                              : AppColors.darkBorderSubtle,
                         ),
                       ),
                       child: CheckboxListTile(
                         value: isSelected,
                         activeColor: AppColors.communityAccent,
                         checkColor: Colors.black,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         title: Text(
                           contact['name']!,
                           style: const TextStyle(

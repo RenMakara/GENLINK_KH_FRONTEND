@@ -57,7 +57,8 @@ class HomeRepositoryImpl implements HomeRepository {
           title: 'AI for Everyone Workshop',
           dateTime: '25 July 2026 (Sat) 10:00 AM',
           locationName: 'ACLEDA Uni, Phnom Penh',
-          coverImageUrl: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=600',
+          coverImageUrl:
+              'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=600',
         ),
       );
     }
@@ -76,8 +77,10 @@ class HomeRepositoryImpl implements HomeRepository {
       upcomingEvent: json['upcomingEvent'] == null
           ? null
           : _mapEvent(_map(json['upcomingEvent'])),
-      recommendedCommunities:
-          ApiClient.asList(json['recommendedCommunities'], _mapCommunity),
+      recommendedCommunities: ApiClient.asList(
+        json['recommendedCommunities'],
+        _mapCommunity,
+      ),
       dailyMotivation: json['dailyMotivation'] == null
           ? null
           : _mapMotivation(_map(json['dailyMotivation'])),
@@ -86,21 +89,19 @@ class HomeRepositoryImpl implements HomeRepository {
   }
 
   static HomeUser _mapUser(Map<String, dynamic> json) => HomeUser(
-        userId: json['userId'] as String? ?? '',
-        fullName: json['fullName'] as String?,
-        avatarUrl: json['avatarUrl'] as String?,
-        level: (json['level'] as num?)?.toInt() ?? 1,
-        totalXp: (json['totalXp'] as num?)?.toInt() ?? 0,
-      );
+    userId: json['userId'] as String? ?? '',
+    fullName: json['fullName'] as String?,
+    avatarUrl: json['avatarUrl'] as String?,
+    level: (json['level'] as num?)?.toInt() ?? 1,
+    totalXp: (json['totalXp'] as num?)?.toInt() ?? 0,
+  );
 
-  static TodayProgress _mapProgress(Map<String, dynamic> json) =>
-      TodayProgress(
-        habitsCompletedToday:
-            (json['habitsCompletedToday'] as num?)?.toInt() ?? 0,
-        habitsTotal: (json['habitsTotal'] as num?)?.toInt() ?? 0,
-        tasksCompleted: (json['tasksCompleted'] as num?)?.toInt() ?? 0,
-        tasksTotal: (json['tasksTotal'] as num?)?.toInt() ?? 0,
-      );
+  static TodayProgress _mapProgress(Map<String, dynamic> json) => TodayProgress(
+    habitsCompletedToday: (json['habitsCompletedToday'] as num?)?.toInt() ?? 0,
+    habitsTotal: (json['habitsTotal'] as num?)?.toInt() ?? 0,
+    tasksCompleted: (json['tasksCompleted'] as num?)?.toInt() ?? 0,
+    tasksTotal: (json['tasksTotal'] as num?)?.toInt() ?? 0,
+  );
 
   static ChallengePreview _mapChallenge(Map<String, dynamic> json) =>
       ChallengePreview(
@@ -122,12 +123,12 @@ class HomeRepositoryImpl implements HomeRepository {
       );
 
   static UpcomingEvent _mapEvent(Map<String, dynamic> json) => UpcomingEvent(
-        eventId: json['eventId'] as String? ?? '',
-        title: json['title'] as String? ?? '',
-        dateTime: json['dateTime'] as String?,
-        locationName: json['locationName'] as String?,
-        coverImageUrl: json['coverImageUrl'] as String?,
-      );
+    eventId: json['eventId'] as String? ?? '',
+    title: json['title'] as String? ?? '',
+    dateTime: json['dateTime'] as String?,
+    locationName: json['locationName'] as String?,
+    coverImageUrl: json['coverImageUrl'] as String?,
+  );
 
   static CommunitySuggestion _mapCommunity(Map<String, dynamic> json) =>
       CommunitySuggestion(
@@ -147,14 +148,14 @@ class HomeRepositoryImpl implements HomeRepository {
       );
 
   static FeedPreview _mapFeed(Map<String, dynamic> json) => FeedPreview(
-        postId: json['postId'] as String? ?? '',
-        authorName: json['authorName'] as String?,
-        authorAvatarUrl: json['authorAvatarUrl'] as String?,
-        contentText: json['contentText'] as String?,
-        imageUrl: json['imageUrl'] as String?,
-        likeCount: (json['likeCount'] as num?)?.toInt(),
-        createdAt: json['createdAt'] as String?,
-      );
+    postId: json['postId'] as String? ?? '',
+    authorName: json['authorName'] as String?,
+    authorAvatarUrl: json['authorAvatarUrl'] as String?,
+    contentText: json['contentText'] as String?,
+    imageUrl: json['imageUrl'] as String?,
+    likeCount: (json['likeCount'] as num?)?.toInt(),
+    createdAt: json['createdAt'] as String?,
+  );
 
   static Map<String, dynamic> _map(dynamic raw) =>
       (raw as Map?)?.cast<String, dynamic>() ?? const {};

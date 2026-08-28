@@ -15,7 +15,12 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
   String selectedMode = 'All';
   String selectedPrice = 'All';
 
-  final List<String> dateOptions = ['Today', 'This Week', 'This Month', 'Upcoming'];
+  final List<String> dateOptions = [
+    'Today',
+    'This Week',
+    'This Month',
+    'Upcoming',
+  ];
   final List<Map<String, dynamic>> categoryOptions = [
     {'name': 'Workshop', 'icon': Icons.tune},
     {'name': 'Seminar', 'icon': Icons.groups_outlined},
@@ -28,11 +33,21 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfacePrimary = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final unselectedBg = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightBgSecondary;
-    final unselectedBorder = isDark ? Colors.white10 : AppColors.lightBorderSubtle;
+    final surfacePrimary = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final unselectedBg = isDark
+        ? Colors.white.withValues(alpha: 0.04)
+        : AppColors.lightBgSecondary;
+    final unselectedBorder = isDark
+        ? Colors.white10
+        : AppColors.lightBorderSubtle;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -69,7 +84,10 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                   },
                   child: Text(
                     'community.reset'.tr,
-                    style: const TextStyle(color: AppColors.communityAccent, fontSize: 14),
+                    style: const TextStyle(
+                      color: AppColors.communityAccent,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ],
@@ -79,9 +97,19 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
             // 1. Date Section
             Row(
               children: [
-                Icon(Icons.calendar_today_outlined, color: textSecondary, size: 18),
+                Icon(
+                  Icons.calendar_today_outlined,
+                  color: textSecondary,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
-                Text('community.dateRange'.tr, style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
+                Text(
+                  'community.dateRange'.tr,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -92,29 +120,46 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                   onTap: () => setState(() => selectedDate = opt),
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? (isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.08))
+                          ? (isDark
+                                ? Colors.white.withValues(alpha: 0.15)
+                                : Colors.black.withValues(alpha: 0.08))
                           : unselectedBg,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? (isDark ? Colors.white : Colors.black) : unselectedBorder,
+                        color: isSelected
+                            ? (isDark ? Colors.white : Colors.black)
+                            : unselectedBorder,
                       ),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          isSelected ? Icons.check_circle : Icons.circle_outlined,
-                          color: isSelected ? (isDark ? Colors.white : Colors.black) : textSecondary,
+                          isSelected
+                              ? Icons.check_circle
+                              : Icons.circle_outlined,
+                          color: isSelected
+                              ? (isDark ? Colors.white : Colors.black)
+                              : textSecondary,
                           size: 20,
                         ),
                         const SizedBox(width: 10),
                         Text(
                           opt,
                           style: TextStyle(
-                            color: isSelected ? (isDark ? Colors.white : AppColors.lightTextPrimary) : textSecondary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected
+                                ? (isDark
+                                      ? Colors.white
+                                      : AppColors.lightTextPrimary)
+                                : textSecondary,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                       ],
@@ -131,7 +176,13 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
               children: [
                 Icon(Icons.grid_view, color: textSecondary, size: 18),
                 const SizedBox(width: 8),
-                Text('community.category'.tr, style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold)),
+                Text(
+                  'community.category'.tr,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -164,27 +215,41 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? (isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.08))
+                          ? (isDark
+                                ? Colors.white.withValues(alpha: 0.15)
+                                : Colors.black.withValues(alpha: 0.08))
                           : unselectedBg,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? (isDark ? Colors.white : Colors.black) : unselectedBorder,
+                        color: isSelected
+                            ? (isDark ? Colors.white : Colors.black)
+                            : unselectedBorder,
                       ),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          isSelected ? Icons.check_circle : item['icon'] as IconData,
-                          color: isSelected ? (isDark ? Colors.white : Colors.black) : textSecondary,
+                          isSelected
+                              ? Icons.check_circle
+                              : item['icon'] as IconData,
+                          color: isSelected
+                              ? (isDark ? Colors.white : Colors.black)
+                              : textSecondary,
                           size: 18,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           catName,
                           style: TextStyle(
-                            color: isSelected ? (isDark ? Colors.white : AppColors.lightTextPrimary) : textSecondary,
+                            color: isSelected
+                                ? (isDark
+                                      ? Colors.white
+                                      : AppColors.lightTextPrimary)
+                                : textSecondary,
                             fontSize: 13,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                       ],

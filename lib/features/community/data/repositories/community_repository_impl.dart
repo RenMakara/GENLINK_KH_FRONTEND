@@ -30,14 +30,14 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<CommunityPostModel> getPostDetails(String postId) async {
     final posts = await remoteDataSource.fetchPosts();
-    return posts.firstWhere(
-      (p) => p.id == postId,
-      orElse: () => posts.first,
-    );
+    return posts.firstWhere((p) => p.id == postId, orElse: () => posts.first);
   }
 
   @override
-  Future<CommunityPostModel> updatePost(String postId, {required String content}) async {
+  Future<CommunityPostModel> updatePost(
+    String postId, {
+    required String content,
+  }) async {
     final posts = await remoteDataSource.fetchPosts();
     final post = posts.firstWhere((p) => p.id == postId);
     return post.copyWith(content: content);
@@ -69,7 +69,11 @@ class CommunityRepositoryImpl implements CommunityRepository {
     String text, {
     String? parentCommentId,
   }) {
-    return remoteDataSource.addComment(postId, text, parentCommentId: parentCommentId);
+    return remoteDataSource.addComment(
+      postId,
+      text,
+      parentCommentId: parentCommentId,
+    );
   }
 
   @override

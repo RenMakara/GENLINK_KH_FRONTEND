@@ -38,20 +38,27 @@ class ForumCategoryCard extends StatelessWidget {
         ? Colors.white
         : (isDark ? const Color(0xFF303030) : AppColors.lightBorderSubtle);
 
-    final titleColor = isSelected ? Colors.black : (isDark ? Colors.white : AppColors.lightTextPrimary);
-    final countColor = isSelected ? Colors.black.withValues(alpha: 0.65) : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary);
-    final iconBoxBg = isSelected ? Colors.black.withValues(alpha: 0.08) : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05));
-    final iconColor = isSelected ? Colors.black : (isDark ? Colors.white : AppColors.lightTextPrimary);
+    final titleColor = isSelected
+        ? Colors.black
+        : (isDark ? Colors.white : AppColors.lightTextPrimary);
+    final countColor = isSelected
+        ? Colors.black.withValues(alpha: 0.65)
+        : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary);
+    final iconBoxBg = isSelected
+        ? Colors.black.withValues(alpha: 0.08)
+        : (isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.05));
+    final iconColor = isSelected
+        ? Colors.black
+        : (isDark ? Colors.white : AppColors.lightTextPrimary);
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 10,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(16),
@@ -66,11 +73,7 @@ class ForumCategoryCard extends StatelessWidget {
                 color: iconBoxBg,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 20,
-              ),
+              child: Icon(icon, color: iconColor, size: 20),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -138,11 +141,21 @@ class ForumThreadCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark ? const Color(0xFF171717) : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? const Color(0xFF303030) : AppColors.lightBorderSubtle;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark
+        ? const Color(0xFF171717)
+        : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark
+        ? const Color(0xFF303030)
+        : AppColors.lightBorderSubtle;
 
     return InkWell(
       onTap: onTap ?? () => Get.to(() => const CreateDiscussionScreen()),
@@ -154,9 +167,7 @@ class ForumThreadCard extends StatelessWidget {
           color: surfaceSecondary,
           borderRadius: BorderRadius.circular(AppRadius.squircle),
           border: Border.all(
-            color: isPinned
-                ? textPrimary.withValues(alpha: 0.3)
-                : borderSubtle,
+            color: isPinned ? textPrimary.withValues(alpha: 0.3) : borderSubtle,
           ),
         ),
         child: Column(
@@ -168,8 +179,8 @@ class ForumThreadCard extends StatelessWidget {
                   radius: 12,
                   backgroundImage: (avatarUrl != null && avatarUrl!.isNotEmpty)
                       ? (avatarUrl!.startsWith('assets/')
-                          ? AssetImage(avatarUrl!) as ImageProvider
-                          : NetworkImage(avatarUrl!))
+                            ? AssetImage(avatarUrl!) as ImageProvider
+                            : NetworkImage(avatarUrl!))
                       : const AssetImage('assets/images/user_profile.png'),
                 ),
                 const SizedBox(width: 8),
@@ -189,7 +200,8 @@ class ForumThreadCard extends StatelessWidget {
                           author,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelMedium?.copyWith(
+                          style:
+                              theme.textTheme.labelMedium?.copyWith(
                                 color: textPrimary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12.5,
@@ -204,14 +216,20 @@ class ForumThreadCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         "• $timeAgo",
-                        style: theme.textTheme.labelMedium?.copyWith(color: textMuted) ??
+                        style:
+                            theme.textTheme.labelMedium?.copyWith(
+                              color: textMuted,
+                            ) ??
                             TextStyle(color: textMuted, fontSize: 11.5),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: textPrimary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -231,7 +249,8 @@ class ForumThreadCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               title,
-              style: theme.textTheme.titleSmall?.copyWith(
+              style:
+                  theme.textTheme.titleSmall?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
                     height: 1.35,
@@ -256,7 +275,10 @@ class ForumThreadCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       "$likes",
-                      style: theme.textTheme.labelMedium?.copyWith(color: textSecondary) ??
+                      style:
+                          theme.textTheme.labelMedium?.copyWith(
+                            color: textSecondary,
+                          ) ??
                           TextStyle(color: textSecondary, fontSize: 12),
                     ),
                   ],
@@ -272,7 +294,10 @@ class ForumThreadCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       "$replies comments",
-                      style: theme.textTheme.labelMedium?.copyWith(color: textSecondary) ??
+                      style:
+                          theme.textTheme.labelMedium?.copyWith(
+                            color: textSecondary,
+                          ) ??
                           TextStyle(color: textSecondary, fontSize: 12),
                     ),
                   ],
@@ -307,13 +332,22 @@ class JobCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final surfaceSecondary = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     return InkWell(
-      onTap: () => Get.to(() => const CommunitySearchScreen(activeTab: 'Career')),
+      onTap: () =>
+          Get.to(() => const CommunitySearchScreen(activeTab: 'Career')),
       borderRadius: BorderRadius.circular(AppRadius.squircle),
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.sm + 4),
@@ -332,11 +366,7 @@ class JobCard extends StatelessWidget {
                 color: textPrimary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
-              child: Icon(
-                Icons.business_rounded,
-                color: textPrimary,
-                size: 22,
-              ),
+              child: Icon(Icons.business_rounded, color: textPrimary, size: 22),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
@@ -345,7 +375,8 @@ class JobCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: theme.textTheme.titleSmall?.copyWith(
+                    style:
+                        theme.textTheme.titleSmall?.copyWith(
                           color: textPrimary,
                           fontWeight: FontWeight.bold,
                         ) ??
@@ -358,14 +389,20 @@ class JobCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     company,
-                    style: theme.textTheme.bodySmall?.copyWith(color: textSecondary) ??
+                    style:
+                        theme.textTheme.bodySmall?.copyWith(
+                          color: textSecondary,
+                        ) ??
                         TextStyle(color: textSecondary, fontSize: 12),
                   ),
                   const SizedBox(height: AppSpacing.xs + 2),
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: textPrimary.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -382,7 +419,8 @@ class JobCard extends StatelessWidget {
                       const SizedBox(width: AppSpacing.sm),
                       Text(
                         salary,
-                        style: theme.textTheme.bodySmall?.copyWith(
+                        style:
+                            theme.textTheme.bodySmall?.copyWith(
                               color: textSecondary,
                               fontWeight: FontWeight.bold,
                             ) ??
@@ -421,13 +459,22 @@ class MentorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final surfaceSecondary = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     return InkWell(
-      onTap: () => Get.to(() => const CommunitySearchScreen(activeTab: 'Career')),
+      onTap: () =>
+          Get.to(() => const CommunitySearchScreen(activeTab: 'Career')),
       borderRadius: BorderRadius.circular(AppRadius.squircle),
       child: Container(
         width: 140,
@@ -440,16 +487,14 @@ class MentorCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            CircleAvatar(
-              radius: 26,
-              backgroundImage: NetworkImage(avatarUrl),
-            ),
+            CircleAvatar(radius: 26, backgroundImage: NetworkImage(avatarUrl)),
             const SizedBox(height: AppSpacing.sm),
             Text(
               name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleSmall?.copyWith(
+              style:
+                  theme.textTheme.titleSmall?.copyWith(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
                   ) ??
@@ -465,7 +510,8 @@ class MentorCard extends StatelessWidget {
               maxLines: 2,
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
+              style:
+                  theme.textTheme.bodySmall?.copyWith(
                     color: textSecondary,
                     fontSize: 10,
                   ) ??

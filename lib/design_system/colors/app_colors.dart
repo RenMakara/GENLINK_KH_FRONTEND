@@ -37,18 +37,18 @@ abstract final class AppColors {
   // =========================================================
 
   // Background
-  static const darkBgPrimary = Color(0xFF000000);   // #000000
+  static const darkBgPrimary = Color(0xFF131313); // #000000
   static const darkBgSecondary = Color(0xFF111111); // #111111
 
   // Surface
-  static const darkSurfacePrimary = Color(0xFF181818);   // #181818
+  static const darkSurfacePrimary = Color(0xFF181818); // #181818
   static const darkSurfaceSecondary = Color(0xFF111111); // #111111
   static const darkSurfaceGlass = Color.fromRGBO(24, 24, 24, 0.75);
 
   // Text
-  static const darkTextPrimary = Color(0xFFFFFFFF);   // #FFFFFF
+  static const darkTextPrimary = Color(0xFFFFFFFF); // #FFFFFF
   static const darkTextSecondary = Color(0xFFA0A0A0); // #A0A0A0
-  static const darkTextMuted = Color(0xFF666666);     // #666666
+  static const darkTextMuted = Color(0xFF666666); // #666666
   static const darkTextInverse = Color(0xFF000000);
 
   // Border
@@ -66,14 +66,18 @@ abstract final class AppColors {
   static const accentPremium = Color(0xFFC8BFAE);
 
   /// Social Liked state accent (#FF4D6D) - ONLY for active like/reaction
-  static const likedAccent = Color(0xFFFF4D6D);
-  static const likePink = Color(0xFFFF4D6D);
+  static const likedAccent = Color(0xFFFF1640);
+  static const likePink = Color(0xFFFF1640);
 
   /// Status colours (used strictly for meaningful semantic states)
-  static const danger = Color(0xFFEF4444);  // Red: Validation errors / Failed / Destructive
-  static const success = Color(0xFF22C55E); // Green: Successful creation / RSVP / Save / Confirm
+  static const danger = Color(
+    0xFFE41414,
+  ); // Red: Validation errors / Failed / Destructive
+  static const success = Color(
+    0xFF22C55E,
+  ); // Green: Successful creation / RSVP / Save / Confirm
   static const warning = Color(0xFFF59E0B); // Amber: Genuine warnings
-  static const info = Color(0xFFA0A0A0);    // Grayscale / Neutral
+  static const info = Color(0xFFA0A0A0); // Grayscale / Neutral
 
   // Feature accents
   static const brandPrimary = Color(0xFF1F6FEB);

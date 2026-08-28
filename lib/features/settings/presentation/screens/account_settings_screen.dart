@@ -22,12 +22,16 @@ class AccountSettingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: AppSpacing.md),
+        leading: const Center(
           child: AppBackButton(),
         ),
-        leadingWidth: 58 + AppSpacing.md * 2,
-        title: Text('settings.accountSettings'.tr),
+        leadingWidth: 74,
+        title: Text(
+          'settings.accountSettings'.tr,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
       body: Obx(() {
         final user = auth.currentUser.value;

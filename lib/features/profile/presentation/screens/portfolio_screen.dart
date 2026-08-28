@@ -20,12 +20,16 @@ class PortfolioScreen extends GetView<ProfileController> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: AppSpacing.md),
+        leading: const Center(
           child: AppBackButton(),
         ),
-        leadingWidth: 58 + AppSpacing.md * 2,
-        title: Text('profile.portfolio'.tr),
+        leadingWidth: 74,
+        title: Text(
+          'profile.portfolio'.tr,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -94,8 +98,9 @@ class PortfolioScreen extends GetView<ProfileController> {
                 controller: title,
                 autofocus: true,
                 textCapitalization: TextCapitalization.sentences,
-                decoration:
-                    InputDecoration(hintText: 'profile.portfolioTitle'.tr),
+                decoration: InputDecoration(
+                  hintText: 'profile.portfolioTitle'.tr,
+                ),
               ),
               const SizedBox(height: AppSpacing.sm),
               TextField(
@@ -103,21 +108,22 @@ class PortfolioScreen extends GetView<ProfileController> {
                 maxLines: 3,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
-                    hintText: 'profile.portfolioDescription'.tr),
+                  hintText: 'profile.portfolioDescription'.tr,
+                ),
               ),
               const SizedBox(height: AppSpacing.sm),
               TextField(
                 controller: link,
                 keyboardType: TextInputType.url,
-                decoration:
-                    InputDecoration(hintText: 'profile.portfolioLink'.tr),
+                decoration: InputDecoration(
+                  hintText: 'profile.portfolioLink'.tr,
+                ),
               ),
               const SizedBox(height: AppSpacing.sm),
               TextField(
                 controller: imageUrl,
                 keyboardType: TextInputType.url,
-                decoration:
-                    InputDecoration(hintText: 'portfolio.imageUrl'.tr),
+                decoration: InputDecoration(hintText: 'portfolio.imageUrl'.tr),
               ),
             ],
           ),
@@ -223,8 +229,9 @@ class _PortfolioCard extends StatelessWidget {
                           item.description!,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: muted),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: muted,
+                          ),
                         ),
                       ],
                       if ((item.link ?? '').isNotEmpty) ...[
@@ -238,8 +245,9 @@ class _PortfolioCard extends StatelessWidget {
                                 item.link!,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall
-                                    ?.copyWith(color: muted),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: muted,
+                                ),
                               ),
                             ),
                           ],
@@ -253,10 +261,7 @@ class _PortfolioCard extends StatelessWidget {
                   onSelected: (action) =>
                       action == 'edit' ? onEdit() : onDelete(),
                   itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'edit',
-                      child: Text('common.edit'.tr),
-                    ),
+                    PopupMenuItem(value: 'edit', child: Text('common.edit'.tr)),
                     PopupMenuItem(
                       value: 'delete',
                       child: Text('common.delete'.tr),

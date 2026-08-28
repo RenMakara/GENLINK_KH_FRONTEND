@@ -8,6 +8,8 @@ import '../core/localization/localization_service.dart';
 import '../core/theme/theme_controller.dart';
 import 'app.dart';
 import 'bindings/initial_binding.dart';
+import 'routes/app_routes.dart';
+import 'startup_route_resolver.dart';
 
 /// Bootstraps app-level setup before rendering GenLink KH.
 ///
@@ -41,6 +43,11 @@ Future<void> bootstrap() async {
 
   InitialBinding().dependencies();
 
+  var initialRoute = AppRoutes.splash;
+  final initialRouteFuture = StartupRouteResolver(
+    localStorage: Get.find(),
+  ).resolve();
+
   // Preload persisted preferences, but never let them block the first frame.
   // A keystore read can hang or throw on some devices/emulators; the timeout
   // caps the wait and the catch swallows a failure, so a slow or broken store
@@ -49,12 +56,14 @@ Future<void> bootstrap() async {
     await Future.wait([
       Get.find<ThemeController>().load(),
       Get.find<LocalizationService>().load(),
+      initialRouteFuture.then<void>((_) {}),
     ]).timeout(_preloadTimeout);
+    initialRoute = await initialRouteFuture;
   } catch (error, stack) {
     debugPrint('Preload skipped (${error.runtimeType}): $error\n$stack');
   }
 
-  runApp(const GenLinkKhApp());
+  runApp(GenLinkKhApp(initialRoute: initialRoute));
 }
 
 /// Long enough for a healthy keystore read, short enough that a stuck one

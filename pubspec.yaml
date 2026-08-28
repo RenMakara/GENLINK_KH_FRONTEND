@@ -31,7 +31,7 @@ dependencies:
   # ==============================
   # Secure Local Storage
   # ==============================
-  flutter_secure_storage: ^10.3.1
+  flutter_secure_storage: ^11.0.0
 
   # ==============================
   # Device Information
@@ -39,12 +39,13 @@ dependencies:
   device_info_plus: ^13.2.0
   google_sign_in: ^7.2.0
   image_picker: ^1.1.2
+  photo_manager: ^3.12.0
 
   # ==============================
   # Media upload
   # ==============================
   crypto: ^3.0.0
-  photo_manager: ^3.12.0
+
 
 dev_dependencies:
   flutter_test:
@@ -84,13 +85,9 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
 
-  # ==============================
-  # Assets
-  # ==============================
+
   assets:
 
-    # Icons
-    - assets/icons/svg/
     - assets/icons/png/
 
     # Stickers
@@ -101,25 +98,6 @@ flutter:
 
     # General Images
     - assets/images/
-
-    # Illustrations
-    - assets/illustrations/
-
-    # Lottie Animations
-    - assets/lottie/
-
-    # Backgrounds
-    - assets/backgrounds/
-    - assets/backgrounds/auth/
-    - assets/backgrounds/home/
-    - assets/backgrounds/community/
-    - assets/backgrounds/finance/
-    - assets/backgrounds/productivity/
-    - assets/backgrounds/growth/
-    - assets/backgrounds/profile/
-
-    # Textures
-    - assets/textures/
 
   # ==============================
   # Fonts

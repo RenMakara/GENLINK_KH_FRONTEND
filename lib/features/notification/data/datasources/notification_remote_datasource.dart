@@ -13,7 +13,8 @@ class NotificationRemoteDataSource {
       id: 'notif_1',
       type: NotificationType.like,
       title: 'Post Reaction',
-      body: 'Chhaeng Sokuntheara liked your post "Building cross-platform mobile apps with Flutter & Cloud Infrastructure".',
+      body:
+          'Chhaeng Sokuntheara liked your post "Building cross-platform mobile apps with Flutter & Cloud Infrastructure".',
       senderName: 'Chhaeng Sokuntheara',
       senderAvatar: 'assets/images/sokuntheara_profile.png',
       timeAgo: '10m ago',
@@ -39,7 +40,8 @@ class NotificationRemoteDataSource {
       id: 'notif_3',
       type: NotificationType.event,
       title: 'Upcoming Campus Event',
-      body: 'Flutter Mobile Dev Workshop 2026 starts in 2 hours at ACLEDA Institute.',
+      body:
+          'Flutter Mobile Dev Workshop 2026 starts in 2 hours at ACLEDA Institute.',
       senderName: 'AUB Tech Club',
       senderAvatar: 'assets/images/user_profile.png',
       timeAgo: '2h ago',
@@ -52,7 +54,8 @@ class NotificationRemoteDataSource {
       id: 'notif_4',
       type: NotificationType.mention,
       title: 'Mentioned You',
-      body: 'Heng Chansela mentioned you in a discussion: "@soknyenat check out this UI mockup!"',
+      body:
+          'Heng Chansela mentioned you in a discussion: "@soknyenat check out this UI mockup!"',
       senderName: 'Heng Chansela',
       senderAvatar: 'assets/images/heng_chansela_profile.png',
       timeAgo: '5h ago',
@@ -65,7 +68,8 @@ class NotificationRemoteDataSource {
       id: 'notif_5',
       type: NotificationType.system,
       title: 'Welcome to GenLink KH',
-      body: 'Your profile setup is complete! Explore your campus community feed, groups, and events.',
+      body:
+          'Your profile setup is complete! Explore your campus community feed, groups, and events.',
       senderName: 'GenLink KH Team',
       senderAvatar: 'assets/logos/genlink_logo.png',
       timeAgo: '1d ago',
@@ -83,10 +87,15 @@ class NotificationRemoteDataSource {
       );
       if (response.statusCode == 200 && response.data != null) {
         final body = response.data;
-        final rawData = body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        final rawData = body is Map<String, dynamic>
+            ? (body['data'] ?? body)
+            : body;
         if (rawData is List && rawData.isNotEmpty) {
           return rawData
-              .map((json) => NotificationModel.fromJson(json as Map<String, dynamic>))
+              .map(
+                (json) =>
+                    NotificationModel.fromJson(json as Map<String, dynamic>),
+              )
               .toList();
         }
       }
@@ -97,7 +106,9 @@ class NotificationRemoteDataSource {
   Future<bool> markAsRead(String notificationId) async {
     try {
       await guardDio(
-        () => dio.put<dynamic>('${ApiEndpoints.notifications}/$notificationId/read'),
+        () => dio.put<dynamic>(
+          '${ApiEndpoints.notifications}/$notificationId/read',
+        ),
       );
     } catch (_) {}
     final idx = _mockNotifications.indexWhere((n) => n.id == notificationId);
@@ -122,7 +133,9 @@ class NotificationRemoteDataSource {
   Future<bool> deleteNotification(String notificationId) async {
     try {
       await guardDio(
-        () => dio.delete<dynamic>('${ApiEndpoints.notifications}/$notificationId'),
+        () => dio.delete<dynamic>(
+          '${ApiEndpoints.notifications}/$notificationId',
+        ),
       );
     } catch (_) {}
     _mockNotifications.removeWhere((n) => n.id == notificationId);
@@ -131,12 +144,14 @@ class NotificationRemoteDataSource {
 
   Future<void> addNotification(NotificationModel notification) async {
     // Check duplicate notification by ID or identical target/actor combo within 1 minute
-    final exists = _mockNotifications.any((n) =>
-        n.id == notification.id ||
-        (n.targetId == notification.targetId &&
-            n.senderName == notification.senderName &&
-            n.type == notification.type &&
-            DateTime.now().difference(n.timestamp).inSeconds < 60));
+    final exists = _mockNotifications.any(
+      (n) =>
+          n.id == notification.id ||
+          (n.targetId == notification.targetId &&
+              n.senderName == notification.senderName &&
+              n.type == notification.type &&
+              DateTime.now().difference(n.timestamp).inSeconds < 60),
+    );
     if (!exists) {
       _mockNotifications.insert(0, notification);
     }

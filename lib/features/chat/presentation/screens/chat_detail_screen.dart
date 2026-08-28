@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/models/chat_models.dart';
 import '../controllers/chat_controller.dart';
 
@@ -17,7 +18,9 @@ class ChatDetailScreen extends GetView<ChatController> {
       if (conv == null) {
         return const Scaffold(
           backgroundColor: Colors.black,
-          body: Center(child: CircularProgressIndicator(color: AppColors.communityAccent)),
+          body: Center(
+            child: CircularProgressIndicator(color: AppColors.communityAccent),
+          ),
         );
       }
 
@@ -26,10 +29,8 @@ class ChatDetailScreen extends GetView<ChatController> {
         appBar: AppBar(
           backgroundColor: AppColors.darkSurfacePrimary,
           elevation: 1,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-            onPressed: () => Get.back(),
-          ),
+          leading: const Center(child: AppBackButton()),
+          leadingWidth: 72,
           titleSpacing: 0,
           title: Row(
             children: [
@@ -58,9 +59,13 @@ class ChatDetailScreen extends GetView<ChatController> {
                           ? "${conv.membersCount} members"
                           : (conv.isOnline ? "Online" : "Offline"),
                       style: TextStyle(
-                        color: conv.isOnline ? AppColors.success : AppColors.darkTextMuted,
+                        color: conv.isOnline
+                            ? AppColors.success
+                            : AppColors.darkTextMuted,
                         fontSize: 11,
-                        fontWeight: conv.isOnline ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight: conv.isOnline
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -70,7 +75,11 @@ class ChatDetailScreen extends GetView<ChatController> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.videocam_outlined, color: Colors.white, size: 22),
+              icon: const Icon(
+                Icons.videocam_outlined,
+                color: Colors.white,
+                size: 22,
+              ),
               onPressed: () {
                 Get.snackbar(
                   "Video Call",
@@ -82,7 +91,11 @@ class ChatDetailScreen extends GetView<ChatController> {
               },
             ),
             IconButton(
-              icon: const Icon(Icons.call_outlined, color: Colors.white, size: 22),
+              icon: const Icon(
+                Icons.call_outlined,
+                color: Colors.white,
+                size: 22,
+              ),
               onPressed: () {
                 Get.snackbar(
                   "Voice Call",
@@ -106,7 +119,9 @@ class ChatDetailScreen extends GetView<ChatController> {
                   child: Obx(() {
                     if (chatController.isLoadingMessages.value) {
                       return const Center(
-                        child: CircularProgressIndicator(color: AppColors.communityAccent),
+                        child: CircularProgressIndicator(
+                          color: AppColors.communityAccent,
+                        ),
                       );
                     }
 
@@ -140,7 +155,9 @@ class ChatDetailScreen extends GetView<ChatController> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMine
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMine) ...[
@@ -148,8 +165,8 @@ class ChatDetailScreen extends GetView<ChatController> {
               radius: 14,
               backgroundImage: msg.senderAvatar != null
                   ? (msg.senderAvatar!.startsWith('http')
-                      ? NetworkImage(msg.senderAvatar!) as ImageProvider
-                      : AssetImage(msg.senderAvatar!))
+                        ? NetworkImage(msg.senderAvatar!) as ImageProvider
+                        : AssetImage(msg.senderAvatar!))
                   : const AssetImage('assets/images/user_profile.png'),
             ),
             const SizedBox(width: 8),
@@ -158,7 +175,9 @@ class ChatDetailScreen extends GetView<ChatController> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: isMine ? AppColors.communityAccent : AppColors.darkSurfaceSecondary,
+                color: isMine
+                    ? AppColors.communityAccent
+                    : AppColors.darkSurfaceSecondary,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(18),
                   topRight: const Radius.circular(18),
@@ -166,12 +185,15 @@ class ChatDetailScreen extends GetView<ChatController> {
                   bottomRight: Radius.circular(isMine ? 4 : 18),
                 ),
                 border: Border.all(
-                  color: isMine ? AppColors.communityAccent : AppColors.darkBorderSubtle,
+                  color: isMine
+                      ? AppColors.communityAccent
+                      : AppColors.darkBorderSubtle,
                 ),
               ),
               child: Column(
-                crossAxisAlignment:
-                    isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                crossAxisAlignment: isMine
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
                 children: [
                   if (!isMine)
                     Padding(
@@ -218,14 +240,18 @@ class ChatDetailScreen extends GetView<ChatController> {
                               decoration: BoxDecoration(
                                 color: Colors.black45,
                                 borderRadius: BorderRadius.circular(6),
-                                image: (msg.mediaUrl != null && msg.mediaUrl!.isNotEmpty)
+                                image:
+                                    (msg.mediaUrl != null &&
+                                        msg.mediaUrl!.isNotEmpty)
                                     ? DecorationImage(
                                         image: NetworkImage(msg.mediaUrl!),
                                         fit: BoxFit.cover,
                                       )
                                     : null,
                               ),
-                              child: (msg.mediaUrl == null || msg.mediaUrl!.isEmpty)
+                              child:
+                                  (msg.mediaUrl == null ||
+                                      msg.mediaUrl!.isEmpty)
                                   ? const Center(
                                       child: Text(
                                         "Aa",
@@ -245,7 +271,9 @@ class ChatDetailScreen extends GetView<ChatController> {
                                 Text(
                                   "↩ Replied to Story",
                                   style: TextStyle(
-                                    color: isMine ? Colors.black87 : Colors.white70,
+                                    color: isMine
+                                        ? Colors.black87
+                                        : Colors.white70,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 11,
                                   ),
@@ -253,7 +281,9 @@ class ChatDetailScreen extends GetView<ChatController> {
                                 Text(
                                   "Tap to view story",
                                   style: TextStyle(
-                                    color: isMine ? Colors.black54 : Colors.white54,
+                                    color: isMine
+                                        ? Colors.black54
+                                        : Colors.white54,
                                     fontSize: 10,
                                   ),
                                 ),
@@ -290,7 +320,10 @@ class ChatDetailScreen extends GetView<ChatController> {
     );
   }
 
-  Widget _buildMessageInputBar(BuildContext context, ChatController controller) {
+  Widget _buildMessageInputBar(
+    BuildContext context,
+    ChatController controller,
+  ) {
     return Container(
       padding: EdgeInsets.only(
         left: 16,
@@ -305,7 +338,10 @@ class ChatDetailScreen extends GetView<ChatController> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.add_photo_alternate_rounded, color: AppColors.communityAccent),
+            icon: const Icon(
+              Icons.add_photo_alternate_rounded,
+              color: AppColors.communityAccent,
+            ),
             onPressed: () {
               Get.snackbar(
                 "Attachment",
@@ -323,10 +359,16 @@ class ChatDetailScreen extends GetView<ChatController> {
               style: const TextStyle(color: Colors.white, fontSize: 14),
               decoration: InputDecoration(
                 hintText: "Type a message...",
-                hintStyle: const TextStyle(color: AppColors.darkTextMuted, fontSize: 14),
+                hintStyle: const TextStyle(
+                  color: AppColors.darkTextMuted,
+                  fontSize: 14,
+                ),
                 filled: true,
                 fillColor: AppColors.darkSurfaceSecondary,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
@@ -340,7 +382,11 @@ class ChatDetailScreen extends GetView<ChatController> {
             radius: 20,
             backgroundColor: AppColors.communityAccent,
             child: IconButton(
-              icon: const Icon(Icons.send_rounded, color: Colors.black, size: 18),
+              icon: const Icon(
+                Icons.send_rounded,
+                color: Colors.black,
+                size: 18,
+              ),
               onPressed: () => controller.sendMessage(),
             ),
           ),

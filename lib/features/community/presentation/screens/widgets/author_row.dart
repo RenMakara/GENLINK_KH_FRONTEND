@@ -27,7 +27,9 @@ class AuthorRow extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 20,
-          backgroundColor: isDark ? const Color(0xFF2B313A) : const Color(0xFFE2E4E8),
+          backgroundColor: isDark
+              ? const Color(0xFF2B313A)
+              : const Color(0xFFE2E4E8),
           backgroundImage: hasNetwork
               ? NetworkImage(avatarUrl) as ImageProvider
               : const AssetImage('assets/images/user_profile.png'),

@@ -5,12 +5,7 @@ import 'package:flutter/material.dart';
 /// Falls back to initials when [imageUrl] is null or fails to load, so a
 /// missing avatar never renders as a broken image.
 class AppAvatar extends StatelessWidget {
-  const AppAvatar({
-    super.key,
-    this.imageUrl,
-    this.name,
-    this.size = 44,
-  });
+  const AppAvatar({super.key, this.imageUrl, this.name, this.size = 44});
 
   final String? imageUrl;
   final String? name;
@@ -24,8 +19,7 @@ class AppAvatar extends StatelessWidget {
     return CircleAvatar(
       radius: size / 2,
       backgroundColor: scheme.surfaceContainerHighest,
-      foregroundImage:
-          url != null && url.isNotEmpty ? NetworkImage(url) : null,
+      foregroundImage: url != null && url.isNotEmpty ? NetworkImage(url) : null,
       // Shown when there is no image, and when the network image errors.
       child: Text(
         _initials(name),

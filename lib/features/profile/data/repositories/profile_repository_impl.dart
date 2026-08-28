@@ -1,5 +1,3 @@
-import '../../../settings/data/models/user_settings_model.dart';
-import '../../../settings/domain/entities/user_settings_entity.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../datasources/profile_remote_datasource.dart';
@@ -56,44 +54,18 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Future<PublicProfileEntity> getPublicProfile(String username) =>
       _remote.getPublicProfile(username);
 
-  // ── Settings ──────────────────────────────────────────────────────────
-
-  @override
-  Future<UserSettingsEntity> getSettings() => _remote.getSettings();
-
-  @override
-  Future<UserSettingsEntity> updateSettings({
-    String? language,
-    String? theme,
-    bool? notificationEnabled,
-    String? privacyProfile,
-    bool? allowMessages,
-    bool? allowFollowRequest,
-    bool? biometricEnabled,
-  }) {
-    return _remote.updateSettings(
-      UserSettingsMapper.updateBody(
-        language: language,
-        theme: theme,
-        notificationEnabled: notificationEnabled,
-        privacyProfile: privacyProfile,
-        allowMessages: allowMessages,
-        allowFollowRequest: allowFollowRequest,
-        biometricEnabled: biometricEnabled,
-      ),
-    );
-  }
-
   // ── Interests ─────────────────────────────────────────────────────────
 
   @override
-  Future<List<InterestEntity>> getInterestCatalog() => _remote.getInterestCatalog();
+  Future<List<InterestEntity>> getInterestCatalog() =>
+      _remote.getInterestCatalog();
 
   @override
   Future<List<InterestEntity>> getMyInterests() => _remote.getMyInterests();
 
   @override
-  Future<List<InterestEntity>> replaceInterests(List<String> interestIds) => _remote.replaceInterests(interestIds);
+  Future<List<InterestEntity>> replaceInterests(List<String> interestIds) =>
+      _remote.replaceInterests(interestIds);
 
   // ── Portfolio ─────────────────────────────────────────────────────────
 
@@ -178,7 +150,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
       'description': description,
       'link': link,
       'imageUrl': imageUrl,
-    }..removeWhere((key, value) =>
-        key != 'title' && (value == null || (value as String).isEmpty));
+    }..removeWhere(
+      (key, value) =>
+          key != 'title' && (value == null || (value as String).isEmpty),
+    );
   }
 }

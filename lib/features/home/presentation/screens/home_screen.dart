@@ -12,40 +12,32 @@ import '../../../community/presentation/widgets/quick_create_post_card.dart';
 import '../../domain/entities/home_entity.dart';
 import '../controllers/home_controller.dart';
 
-/// Home Super Dashboard — one `GET /mobile/home` call renders the page.
-///
-/// Every card in the design that has backend data is here; the ones that
-/// do not (streaks, unread counts, focus minutes) are deliberately absent
-/// rather than filled with fake numbers. Null cards render empty states.
 class HomeScreen extends GetView<HomeController> {
   const HomeScreen({super.key, this.onNavigateTab});
 
-  /// Lets quick actions switch the bottom-nav tab; Home cannot reach the
-  /// shell's state directly.
   final ValueChanged<int>? onNavigateTab;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Obx(() {
-          final home = controller.home.value;
+    return Obx(() {
+      final home = controller.home.value;
 
-          if (controller.isLoading.value && home == null) {
-            return const AppLoader();
-          }
-          if (home == null) {
-            return AppEmptyState(
-              message: controller.errorMessage.value ?? 'common.error'.tr,
-              icon: Icons.cloud_off_outlined,
-              action: AppButton.secondary(
-                label: 'common.retry'.tr,
-                expanded: false,
-                onPressed: controller.reload,
-              ),
-            );
-          }
+      if (controller.isLoading.value && home == null) {
+        return const AppLoader();
+      }
+      if (home == null) {
+        return AppEmptyState(
+          message: controller.errorMessage.value ?? 'common.error'.tr,
+          icon: Icons.cloud_off_outlined,
+          action: AppButton.secondary(
+            label: 'common.retry'.tr,
+            expanded: false,
+            onPressed: controller.reload,
+          ),
+        );
+      }
 
+<<<<<<< HEAD
           return RefreshIndicator(
             onRefresh: controller.reload,
             child: ListView(
@@ -89,20 +81,63 @@ class HomeScreen extends GetView<HomeController> {
                   ),
                 ],
               ],
+=======
+      return RefreshIndicator(
+        onRefresh: controller.reload,
+        child: SafeArea(
+          bottom: false,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              120, // Padding to allow scrolling past floating bar
+>>>>>>> origin/dev
             ),
-          );
-        }),
+            children: [
+            _Header(
+              user: home.user,
+              onNavigateTab: onNavigateTab,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _LevelBar(user: home.user),
+            const SizedBox(height: AppSpacing.xl),
+            Text(
+              'home.headline'.tr,
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _TodayHub(home: home),
+            const SizedBox(height: AppSpacing.lg),
+            _QuickActions(onNavigateTab: onNavigateTab),
+            const SizedBox(height: AppSpacing.lg),
+            _StatGrid(home: home, onNavigateTab: onNavigateTab),
+            if (home.dailyMotivation != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              _MotivationTile(motivation: home.dailyMotivation!),
+            ],
+            if (home.feedPreview.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.xl),
+              _RecentActivity(
+                items: home.feedPreview,
+                onSeeAll: () => onNavigateTab?.call(1),
+              ),
+            ],
+          ],
+        ),
       ),
     );
+    });
   }
 }
 
 // ── Header ──────────────────────────────────────────────────────────────
 
 class _Header extends StatelessWidget {
-  const _Header({required this.user});
+  const _Header({required this.user, this.onNavigateTab});
 
   final HomeUser user;
+  final ValueChanged<int>? onNavigateTab;
 
   @override
   Widget build(BuildContext context) {
@@ -141,9 +176,17 @@ class _Header extends StatelessWidget {
         IconButton(
           icon: const Icon(Icons.notifications_none),
           tooltip: 'settings.notifications'.tr,
-          onPressed: () {},
+          onPressed: () => Get.toNamed<void>('/notifications'),
         ),
-        AppAvatar(imageUrl: user.avatarUrl, name: user.fullName, size: 36),
+        InkWell(
+          onTap: () => onNavigateTab?.call(3),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          child: AppAvatar(
+            imageUrl: user.avatarUrl,
+            name: user.fullName,
+            size: 36,
+          ),
+        ),
       ],
     );
   }
@@ -467,11 +510,17 @@ class _QuickActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Tab indices match MainScreen: 0 home, 1 community, 2 finance, 3 profile.
+    // -1 tab means navigate via named route instead.
     final actions = [
       (
         Icons.add,
         'home.actionCreate'.tr,
         () => CommunityCreationFlow.openCreatePost(context),
+      ),
+      (
+        Icons.sports_esports,
+        'Quiz',
+        () => Get.toNamed('/quiz/dashboard'),
       ),
       (
         Icons.attach_money,

@@ -15,13 +15,12 @@ class MediaRepositoryImpl implements MediaRepository {
     required int sizeBytes,
     required MediaPurpose purpose,
     required String checksumSha256,
-  }) =>
-      _remote.presign(
-        contentType: contentType,
-        sizeBytes: sizeBytes,
-        purpose: purpose,
-        checksumSha256: checksumSha256,
-      );
+  }) => _remote.presign(
+    contentType: contentType,
+    sizeBytes: sizeBytes,
+    purpose: purpose,
+    checksumSha256: checksumSha256,
+  );
 
   @override
   Future<void> uploadBytes({
@@ -29,11 +28,7 @@ class MediaRepositoryImpl implements MediaRepository {
     required Uint8List bytes,
     void Function(int sent, int total)? onProgress,
   }) =>
-      _remote.uploadBytes(
-        target: target,
-        bytes: bytes,
-        onProgress: onProgress,
-      );
+      _remote.uploadBytes(target: target, bytes: bytes, onProgress: onProgress);
 
   @override
   Future<MediaEntity> confirm({
@@ -41,13 +36,12 @@ class MediaRepositoryImpl implements MediaRepository {
     int? width,
     int? height,
     int? durationMs,
-  }) =>
-      _remote.confirm(
-        mediaId: mediaId,
-        width: width,
-        height: height,
-        durationMs: durationMs,
-      );
+  }) => _remote.confirm(
+    mediaId: mediaId,
+    width: width,
+    height: height,
+    durationMs: durationMs,
+  );
 
   @override
   Future<void> delete(String mediaId) => _remote.delete(mediaId);

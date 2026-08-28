@@ -4,11 +4,12 @@ import 'package:get/get.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/branding/app_logo.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/dialogs/app_dialog.dart';
-import '../../../../design_system/widgets/inputs/otp_input.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/auth_scaffold.dart';
+import '../widgets/otp_keypad.dart';
 
 /// Step 2 of password reset: enter the emailed code.
 ///
@@ -40,9 +41,18 @@ class _ResetOtpScreenState extends State<ResetOtpScreen> {
 
   bool get _isComplete => _otp.length == Validators.otpLength;
 
+  void _appendDigit(String digit) {
+    if (_verifying || _otp.length >= Validators.otpLength) return;
+    setState(() => _otp += digit);
+  }
+
+  void _deleteDigit() {
+    if (_verifying || _otp.isEmpty) return;
+    setState(() => _otp = _otp.substring(0, _otp.length - 1));
+  }
+
   Future<void> _continue() async {
     if (!_isComplete || _verifying) return;
-    FocusScope.of(context).unfocus();
 
     // A one-second hold so the filled code registers before the screen
     // changes — the same reassurance a real verification call would give.
@@ -68,9 +78,10 @@ class _ResetOtpScreenState extends State<ResetOtpScreen> {
     final theme = Theme.of(context);
 
     return AuthScaffold(
+      backBottomSpacing: AppSpacing.md,
       children: [
-        const AuthBadgeIcon(icon: Icons.lock_outline),
-        const SizedBox(height: AppSpacing.lg),
+        const AuthBrandLockup(),
+        const SizedBox(height: AppSpacing.xl),
         Text('auth.verifyTitle'.tr, style: theme.textTheme.displayMedium),
         const SizedBox(height: AppSpacing.sm),
         Text.rich(
@@ -90,21 +101,15 @@ class _ResetOtpScreenState extends State<ResetOtpScreen> {
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.xl),
-        // Locked during the verifying beat so the code cannot be edited or
-        // resubmitted while the redirect is pending.
-        IgnorePointer(
-          ignoring: _verifying,
-          child: Obx(
-            () => OtpInput(
-              length: Validators.otpLength,
-              errorText: _auth.errorMessage.value,
-              onChanged: (value) => setState(() => _otp = value),
-              onCompleted: (_) => _continue(),
-            ),
+        const SizedBox(height: AppSpacing.lg),
+        Obx(
+          () => OtpCodeDisplay(
+            code: _otp,
+            length: Validators.otpLength,
+            errorText: _auth.errorMessage.value,
           ),
         ),
-        const SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.md),
         Obx(() {
           final remaining = _auth.resendCooldown.value;
           if (remaining > 0) {
@@ -134,11 +139,30 @@ class _ResetOtpScreenState extends State<ResetOtpScreen> {
             ),
           );
         }),
-        const SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.md),
         AppButton(
+          key: const ValueKey('reset-otp-continue-button'),
           label: 'common.continue'.tr,
           loading: _verifying,
           onPressed: _isComplete ? _continue : null,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        IgnorePointer(
+          ignoring: _verifying,
+          child: OtpNumericKeypad(
+            onDigitPressed: _appendDigit,
+            onBackspacePressed: _deleteDigit,
+            onSymbolPressed: null,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          'auth.otpHelp'.tr,
+          key: const ValueKey('otp-help-text'),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+          ),
         ),
       ],
     );

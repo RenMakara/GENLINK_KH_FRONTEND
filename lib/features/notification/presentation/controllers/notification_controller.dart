@@ -33,17 +33,21 @@ class NotificationController extends GetxController {
             .toList();
       case 'Activity':
         return notifications
-            .where((n) =>
-                n.type == NotificationType.like ||
-                n.type == NotificationType.comment ||
-                n.type == NotificationType.follow)
+            .where(
+              (n) =>
+                  n.type == NotificationType.like ||
+                  n.type == NotificationType.comment ||
+                  n.type == NotificationType.follow,
+            )
             .toList();
       case 'System':
         return notifications
-            .where((n) =>
-                n.type == NotificationType.system ||
-                n.type == NotificationType.event ||
-                n.type == NotificationType.group)
+            .where(
+              (n) =>
+                  n.type == NotificationType.system ||
+                  n.type == NotificationType.event ||
+                  n.type == NotificationType.group,
+            )
             .toList();
       case 'All':
       default:
@@ -63,12 +67,14 @@ class NotificationController extends GetxController {
 
   Future<void> addActivityNotification(NotificationModel notif) async {
     // Deduplication check: prevent creating duplicate entries within short window
-    final isDuplicate = notifications.any((n) =>
-        n.id == notif.id ||
-        (n.targetId == notif.targetId &&
-            n.senderName == notif.senderName &&
-            n.type == notif.type &&
-            DateTime.now().difference(n.timestamp).inSeconds < 60));
+    final isDuplicate = notifications.any(
+      (n) =>
+          n.id == notif.id ||
+          (n.targetId == notif.targetId &&
+              n.senderName == notif.senderName &&
+              n.type == notif.type &&
+              DateTime.now().difference(n.timestamp).inSeconds < 60),
+    );
 
     if (isDuplicate) return;
 
@@ -104,7 +110,10 @@ class NotificationController extends GetxController {
   }
 
   /// Safe Navigation when tapping a notification item
-  Future<void> handleNotificationTap(NotificationModel notif, BuildContext context) async {
+  Future<void> handleNotificationTap(
+    NotificationModel notif,
+    BuildContext context,
+  ) async {
     // Mark ONLY this notification as read
     await markAsRead(notif.id);
 

@@ -15,10 +15,7 @@ enum FlashMode { off, on, auto }
 class InAppCameraScreen extends StatefulWidget {
   final bool initialIsVideoMode;
 
-  const InAppCameraScreen({
-    super.key,
-    this.initialIsVideoMode = false,
-  });
+  const InAppCameraScreen({super.key, this.initialIsVideoMode = false});
 
   @override
   State<InAppCameraScreen> createState() => _InAppCameraScreenState();
@@ -104,14 +101,20 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                 source: ImageSource.gallery,
                 maxDuration: const Duration(seconds: 60),
               )
-            : await picker.pickImage(source: ImageSource.gallery, imageQuality: 95);
+            : await picker.pickImage(
+                source: ImageSource.gallery,
+                imageQuality: 95,
+              );
       } else {
         media = _isVideoMode
             ? await picker.pickVideo(
                 source: ImageSource.camera,
                 maxDuration: const Duration(seconds: 60),
               )
-            : await picker.pickImage(source: ImageSource.camera, imageQuality: 95);
+            : await picker.pickImage(
+                source: ImageSource.camera,
+                imageQuality: 95,
+              );
       }
 
       _stopTimer();
@@ -191,7 +194,10 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                 source: ImageSource.gallery,
                 maxDuration: const Duration(seconds: 60),
               )
-            : await picker.pickImage(source: ImageSource.gallery, imageQuality: 95);
+            : await picker.pickImage(
+                source: ImageSource.gallery,
+                imageQuality: 95,
+              );
 
         if (media != null && mounted) {
           final result = await Get.to(
@@ -246,7 +252,9 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        _isFrontCamera ? Icons.person_pin_rounded : Icons.photo_camera_rounded,
+                        _isFrontCamera
+                            ? Icons.person_pin_rounded
+                            : Icons.photo_camera_rounded,
                         color: AppColors.communityAccent,
                         size: 80,
                       ),
@@ -275,7 +283,10 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                       if (_isVideoMode && _isCapturing) ...[
                         const SizedBox(height: 16),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.danger,
                             borderRadius: BorderRadius.circular(16),
@@ -283,11 +294,19 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.fiber_manual_record, color: Colors.white, size: 12),
+                              const Icon(
+                                Icons.fiber_manual_record,
+                                color: Colors.white,
+                                size: 12,
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 _formatRecordingTime(_recordingSeconds),
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
                               ),
                             ],
                           ),
@@ -307,12 +326,19 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
             right: 0,
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                       onPressed: () => Get.back(),
                     ),
                     Row(
@@ -321,15 +347,23 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                           icon: Icon(
                             _flashMode == FlashMode.on
                                 ? Icons.flash_on_rounded
-                                : (_flashMode == FlashMode.auto ? Icons.flash_auto_rounded : Icons.flash_off_rounded),
-                            color: _flashMode != FlashMode.off ? Colors.yellowAccent : Colors.white70,
+                                : (_flashMode == FlashMode.auto
+                                      ? Icons.flash_auto_rounded
+                                      : Icons.flash_off_rounded),
+                            color: _flashMode != FlashMode.off
+                                ? Colors.yellowAccent
+                                : Colors.white70,
                             size: 26,
                           ),
                           onPressed: _cycleFlash,
                         ),
                         const SizedBox(width: 8),
                         IconButton(
-                          icon: const Icon(Icons.flip_camera_ios_rounded, color: Colors.white, size: 26),
+                          icon: const Icon(
+                            Icons.flip_camera_ios_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          ),
                           onPressed: _toggleCameraLens,
                         ),
                       ],
@@ -365,15 +399,22 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                             onTap: () => setState(() => _isVideoMode = false),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 150),
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
-                                color: !_isVideoMode ? Colors.white : Colors.transparent,
+                                color: !_isVideoMode
+                                    ? Colors.white
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Text(
                                 'community.photo'.tr,
                                 style: TextStyle(
-                                  color: !_isVideoMode ? Colors.black : Colors.white70,
+                                  color: !_isVideoMode
+                                      ? Colors.black
+                                      : Colors.white70,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
                                 ),
@@ -385,15 +426,22 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                             onTap: () => setState(() => _isVideoMode = true),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 150),
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
-                                color: _isVideoMode ? AppColors.danger : Colors.transparent,
+                                color: _isVideoMode
+                                    ? AppColors.danger
+                                    : Colors.transparent,
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Text(
                                 'community.video'.tr,
                                 style: TextStyle(
-                                  color: _isVideoMode ? Colors.white : Colors.white70,
+                                  color: _isVideoMode
+                                      ? Colors.white
+                                      : Colors.white70,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
                                 ),
@@ -412,12 +460,30 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                       children: [
                         // Gallery Action Button
                         TextButton.icon(
-                          onPressed: _isCapturing ? null : () => _captureMedia(instantPost: true),
-                          icon: const Icon(Icons.photo_library_rounded, color: Colors.white, size: 20),
-                          label: Text('community.gallery'.tr, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                          onPressed: _isCapturing
+                              ? null
+                              : () => _captureMedia(instantPost: true),
+                          icon: const Icon(
+                            Icons.photo_library_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          label: Text(
+                            'community.gallery'.tr,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           style: TextButton.styleFrom(
-                            backgroundColor: Colors.white.withValues(alpha: 0.12),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            backgroundColor: Colors.white.withValues(
+                              alpha: 0.12,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(24),
                               side: const BorderSide(color: Colors.white12),
@@ -439,7 +505,9 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                             child: Container(
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: _isVideoMode ? AppColors.danger : Colors.white,
+                                color: _isVideoMode
+                                    ? AppColors.danger
+                                    : Colors.white,
                               ),
                               child: _isCapturing
                                   ? Center(
@@ -447,7 +515,9 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                                         width: 28,
                                         height: 28,
                                         child: CircularProgressIndicator(
-                                          color: _isVideoMode ? Colors.white : Colors.black,
+                                          color: _isVideoMode
+                                              ? Colors.white
+                                              : Colors.black,
                                           strokeWidth: 2.5,
                                         ),
                                       ),
@@ -459,7 +529,11 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
 
                         // Flip Camera Lens Action Button
                         IconButton(
-                          icon: const Icon(Icons.flip_camera_android_rounded, color: Colors.white70, size: 26),
+                          icon: const Icon(
+                            Icons.flip_camera_android_rounded,
+                            color: Colors.white70,
+                            size: 26,
+                          ),
                           onPressed: _toggleCameraLens,
                         ),
                       ],

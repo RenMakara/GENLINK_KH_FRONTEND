@@ -27,21 +27,32 @@ class ChatMessageModel {
     this.mediaUrl,
   });
 
-  factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
+  factory ChatMessageModel.fromJson(
+    Map<String, dynamic> json, {
+    required String conversationId,
+  }) {
+    final sender = json['sender'] is Map<String, dynamic>
+        ? json['sender'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    final createdAt =
+        DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+        DateTime.now();
+    final backendType = (json['type'] as String?) ?? 'TEXT';
     return ChatMessageModel(
-      id: json['id'] as String? ?? '',
-      conversationId: json['conversationId'] as String? ?? '',
-      senderId: json['senderId'] as String? ?? '',
-      senderName: json['senderName'] as String? ?? '',
-      senderAvatar: json['senderAvatar'] as String?,
+      id: json['messageId']?.toString() ?? '',
+      conversationId: conversationId,
+      senderId: sender['userId']?.toString() ?? '',
+      senderName:
+          (sender['fullName'] as String?) ??
+          (sender['username'] as String?) ??
+          'User',
+      senderAvatar: sender['avatarUrl'] as String?,
       content: json['content'] as String? ?? '',
-      timestamp: json['timestamp'] != null
-          ? DateTime.tryParse(json['timestamp'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-      timeAgo: json['timeAgo'] as String? ?? 'Just now',
-      isMine: json['isMine'] as bool? ?? false,
-      isRead: json['isRead'] as bool? ?? true,
-      messageType: json['messageType'] as String? ?? 'text',
+      timestamp: createdAt,
+      timeAgo: _timeAgo(createdAt),
+      isMine: json['mine'] as bool? ?? false,
+      isRead: true,
+      messageType: backendType.toLowerCase(),
       mediaUrl: json['mediaUrl'] as String?,
     );
   }
@@ -88,16 +99,42 @@ class ChatConversationModel {
   });
 
   factory ChatConversationModel.fromJson(Map<String, dynamic> json) {
+    final type = (json['type'] as String?) ?? 'PRIVATE';
+    final counterpart = json['counterpart'] is Map<String, dynamic>
+        ? json['counterpart'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    final lastMessage = json['lastMessage'] is Map<String, dynamic>
+        ? json['lastMessage'] as Map<String, dynamic>
+        : null;
+    final lastCreatedAt = lastMessage != null
+        ? DateTime.tryParse(lastMessage['createdAt']?.toString() ?? '')
+        : null;
+    final lastActivity =
+        DateTime.tryParse(json['lastActivityAt']?.toString() ?? '') ??
+        lastCreatedAt;
+    final lastType = (lastMessage?['type'] as String?) ?? 'TEXT';
     return ChatConversationModel(
-      id: json['id'] as String? ?? '',
-      name: json['name'] as String? ?? 'User',
-      avatar: json['avatar'] as String? ?? 'assets/images/user_profile.png',
-      isGroup: json['isGroup'] as bool? ?? false,
-      isOnline: json['isOnline'] as bool? ?? false,
-      lastMessage: json['lastMessage'] as String? ?? '',
-      lastMessageTime: json['lastMessageTime'] as String? ?? '',
-      unreadCount: json['unreadCount'] as int? ?? 0,
-      membersCount: json['membersCount'] as int? ?? 2,
+      id: json['roomId']?.toString() ?? '',
+      name:
+          (json['title'] as String?) ??
+          (counterpart['fullName'] as String?) ??
+          (counterpart['username'] as String?) ??
+          'Chat',
+      avatar:
+          counterpart['avatarUrl'] as String? ??
+          'assets/images/user_profile.png',
+      isGroup: type == 'GROUP',
+      isOnline: false,
+      lastMessage: lastMessage == null
+          ? ''
+          : lastType == 'IMAGE'
+          ? '[image]'
+          : lastType == 'VOICE'
+          ? '[voice message]'
+          : (lastMessage['content'] as String? ?? ''),
+      lastMessageTime: lastActivity == null ? '' : _timeAgo(lastActivity),
+      unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
+      membersCount: 0,
     );
   }
 
@@ -114,4 +151,13 @@ class ChatConversationModel {
       'membersCount': membersCount,
     };
   }
+}
+
+String _timeAgo(DateTime time) {
+  final diff = DateTime.now().difference(time);
+  if (diff.inSeconds < 60) return 'Just now';
+  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+  if (diff.inHours < 24) return '${diff.inHours}h ago';
+  if (diff.inDays < 7) return '${diff.inDays}d ago';
+  return time.toLocal().toString().substring(0, 10);
 }

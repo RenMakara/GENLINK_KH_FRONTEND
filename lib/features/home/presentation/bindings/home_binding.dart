@@ -6,8 +6,8 @@ import '../controllers/home_controller.dart';
 
 /// Binding for the Home tab.
 ///
-/// Registered by `MainScreen` (the tab is rendered inline, not pushed as a
-/// route). `lazyPut` keeps the fetch from firing before the tab exists.
+/// Composed by `MainBinding` because the tab is rendered inline rather than
+/// pushed as its own route. `lazyPut` delays fetching until the tab exists.
 class HomeBinding extends Bindings {
   @override
   void dependencies() {

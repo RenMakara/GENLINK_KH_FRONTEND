@@ -78,9 +78,13 @@ class StoryCreationPickerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfacePrimary = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+    final surfacePrimary = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final iconBgColor = isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBgSecondary;
+    final iconBgColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : AppColors.lightBgSecondary;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
@@ -125,7 +129,10 @@ class StoryCreationPickerSheet extends StatelessWidget {
           Material(
             color: Colors.transparent,
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
               leading: Container(
                 width: 48,
                 height: 48,
@@ -133,11 +140,19 @@ class StoryCreationPickerSheet extends StatelessWidget {
                   color: iconBgColor,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.camera_alt_rounded, color: textPrimary, size: 22),
+                child: Icon(
+                  Icons.camera_alt_rounded,
+                  color: textPrimary,
+                  size: 22,
+                ),
               ),
               title: Text(
                 'community.camera'.tr,
-                style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                  color: textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
               subtitle: Text(
                 'Take photos or record videos',
@@ -153,7 +168,10 @@ class StoryCreationPickerSheet extends StatelessWidget {
           Material(
             color: Colors.transparent,
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
               leading: Container(
                 width: 48,
                 height: 48,
@@ -161,11 +179,19 @@ class StoryCreationPickerSheet extends StatelessWidget {
                   color: iconBgColor,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.photo_library_rounded, color: textPrimary, size: 22),
+                child: Icon(
+                  Icons.photo_library_rounded,
+                  color: textPrimary,
+                  size: 22,
+                ),
               ),
               title: Text(
                 'community.gallery'.tr,
-                style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                  color: textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
               subtitle: Text(
                 'Select photos or videos from camera roll',
@@ -181,7 +207,10 @@ class StoryCreationPickerSheet extends StatelessWidget {
           Material(
             color: Colors.transparent,
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
               leading: Container(
                 width: 48,
                 height: 48,
@@ -193,7 +222,11 @@ class StoryCreationPickerSheet extends StatelessWidget {
               ),
               title: Text(
                 'community.textStory'.tr,
-                style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                  color: textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
               subtitle: Text(
                 'Create text posts with rich gradient backgrounds',

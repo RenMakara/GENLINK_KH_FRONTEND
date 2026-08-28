@@ -53,7 +53,8 @@ class CommunityController extends GetxController {
       name: 'Sum Sambo',
       avatarText: 'S',
       hasActiveStory: true,
-      storyImage: 'https://i.pinimg.com/736x/ec/31/fb/ec31fb6bb86683cf4d2d1680f79f14cb.jpg',
+      storyImage:
+          'https://i.pinimg.com/736x/ec/31/fb/ec31fb6bb86683cf4d2d1680f79f14cb.jpg',
     ),
     StoryModel(id: '2', name: 'Dary', avatarText: 'D', hasActiveStory: true),
     StoryModel(
@@ -85,7 +86,8 @@ class CommunityController extends GetxController {
       id: 'u_sambo',
       name: 'Sum Sambo',
       role: 'Cybersecurity Student',
-      avatarUrl: 'https://i.pinimg.com/736x/ec/31/fb/ec31fb6bb86683cf4d2d1680f79f14cb.jpg',
+      avatarUrl:
+          'https://i.pinimg.com/736x/ec/31/fb/ec31fb6bb86683cf4d2d1680f79f14cb.jpg',
     ),
     SuggestedUserModel(
       id: 'u1',
@@ -378,7 +380,10 @@ class CommunityController extends GetxController {
       repository.deletePost(postId).catchError((_) {
         // Revert on deletion failure
         if (_recentlyDeletedPost != null) {
-          posts.insert(_recentlyDeletedIndex.clamp(0, posts.length), _recentlyDeletedPost!);
+          posts.insert(
+            _recentlyDeletedIndex.clamp(0, posts.length),
+            _recentlyDeletedPost!,
+          );
           _recentlyDeletedPost = null;
         }
         return false;
@@ -451,22 +456,21 @@ class CommunityController extends GetxController {
     String? pollDuration,
     bool allowMultipleAnswers = false,
     EventModel? attachedEvent,
-  }) =>
-      addNewPost(
-        content: content,
-        imageUrls: imageUrls,
-        visibility: visibility,
-        community: community,
-        location: location,
-        linkUrl: linkUrl,
-        linkPreviewTitle: linkPreviewTitle,
-        linkPreviewDomain: linkPreviewDomain,
-        pollQuestion: pollQuestion,
-        pollOptions: pollOptions,
-        pollDuration: pollDuration,
-        allowMultipleAnswers: allowMultipleAnswers,
-        attachedEvent: attachedEvent,
-      );
+  }) => addNewPost(
+    content: content,
+    imageUrls: imageUrls,
+    visibility: visibility,
+    community: community,
+    location: location,
+    linkUrl: linkUrl,
+    linkPreviewTitle: linkPreviewTitle,
+    linkPreviewDomain: linkPreviewDomain,
+    pollQuestion: pollQuestion,
+    pollOptions: pollOptions,
+    pollDuration: pollDuration,
+    allowMultipleAnswers: allowMultipleAnswers,
+    attachedEvent: attachedEvent,
+  );
 
   Future<void> updatePost({
     required String postId,
@@ -482,22 +486,21 @@ class CommunityController extends GetxController {
     String? pollDuration,
     bool? allowMultipleAnswers,
     EventModel? attachedEvent,
-  }) =>
-      editPostFull(
-        postId: postId,
-        content: content,
-        imageUrls: imageUrls,
-        visibility: visibility,
-        location: location,
-        linkUrl: linkUrl,
-        linkPreviewTitle: linkPreviewTitle,
-        linkPreviewDomain: linkPreviewDomain,
-        pollQuestion: pollQuestion,
-        pollOptions: pollOptions,
-        pollDuration: pollDuration,
-        allowMultipleAnswers: allowMultipleAnswers,
-        attachedEvent: attachedEvent,
-      );
+  }) => editPostFull(
+    postId: postId,
+    content: content,
+    imageUrls: imageUrls,
+    visibility: visibility,
+    location: location,
+    linkUrl: linkUrl,
+    linkPreviewTitle: linkPreviewTitle,
+    linkPreviewDomain: linkPreviewDomain,
+    pollQuestion: pollQuestion,
+    pollOptions: pollOptions,
+    pollDuration: pollDuration,
+    allowMultipleAnswers: allowMultipleAnswers,
+    attachedEvent: attachedEvent,
+  );
 
   void repostPost(String postId, {String? caption}) {
     final idx = posts.indexWhere((p) => p.id == postId);

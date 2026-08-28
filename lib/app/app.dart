@@ -20,7 +20,9 @@ import 'routes/app_routes.dart';
 /// below run during `build`, which happens before `GetMaterialApp` would
 /// have had a chance to run its own binding.
 class GenLinkKhApp extends StatelessWidget {
-  const GenLinkKhApp({super.key});
+  const GenLinkKhApp({super.key, this.initialRoute = AppRoutes.splash});
+
+  final String initialRoute;
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +54,7 @@ class GenLinkKhApp extends StatelessWidget {
         // Splash, not home: it is what restores the session and decides where
         // the user actually belongs (home / onboarding / login). Starting at
         // home skips that decision and shows the app to a signed-out user.
-        initialRoute: AppRoutes.splash,
+        initialRoute: initialRoute,
         getPages: AppPages.pages,
         unknownRoute: AppPages.unknownRoute,
       ),

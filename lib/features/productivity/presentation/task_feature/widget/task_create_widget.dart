@@ -1011,6 +1011,7 @@ class _AddSubtaskField extends StatefulWidget {
 
 class _AddSubtaskFieldState extends State<_AddSubtaskField> {
   final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
 
   bool _hasText = false;
 
@@ -1031,20 +1032,31 @@ class _AddSubtaskFieldState extends State<_AddSubtaskField> {
     });
   }
 
+  // CREATE SUBTASK
   void _submit() {
     final value = _controller.text.trim();
 
-    if (value.isEmpty) return;
+    // Nothing typed
+    if (value.isEmpty) {
+      _focusNode.requestFocus();
+      return;
+    }
 
+    // SEND TO PARENT
     widget.onAdded(value);
 
+    // CLEAR CURRENT INPUT
     _controller.clear();
+
+    // KEEP INPUT FOCUSED
+    _focusNode.requestFocus();
   }
 
   @override
   void dispose() {
     _controller.removeListener(_handleTextChanged);
     _controller.dispose();
+    _focusNode.dispose();
 
     super.dispose();
   }
@@ -1060,7 +1072,7 @@ class _AddSubtaskFieldState extends State<_AddSubtaskField> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       child: Row(
         children: [
-          // PLUS ICON - NO GRAY BACKGROUND
+          // PLUS ICON - SAME STYLE
           Icon(Icons.add_rounded, size: 18, color: colors.textMuted),
 
           const SizedBox(width: 10),
@@ -1069,12 +1081,12 @@ class _AddSubtaskFieldState extends State<_AddSubtaskField> {
           Expanded(
             child: TextField(
               controller: _controller,
+              focusNode: _focusNode,
 
-              onSubmitted: (_) {
-                _submit();
-              },
+              // Don't use keyboard Enter to create
+              textInputAction: TextInputAction.none,
 
-              textInputAction: TextInputAction.done,
+              maxLines: 1,
 
               cursorColor: colors.textPrimary,
 
@@ -1093,8 +1105,6 @@ class _AddSubtaskFieldState extends State<_AddSubtaskField> {
                   fontWeight: FontWeight.w500,
                 ),
 
-                // IMPORTANT
-                // No background when focused
                 filled: false,
                 fillColor: Colors.transparent,
 
@@ -1114,18 +1124,18 @@ class _AddSubtaskFieldState extends State<_AddSubtaskField> {
 
           const SizedBox(width: 8),
 
-          // SUBMIT BUTTON
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 150),
-            opacity: _hasText ? 1 : .35,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: _hasText ? _submit : null,
-                borderRadius: BorderRadius.circular(9),
-                child: SizedBox(
-                  width: 34,
-                  height: 34,
+          // CREATE SUBTASK BUTTON
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _submit,
+              borderRadius: BorderRadius.circular(9),
+              child: SizedBox(
+                width: 34,
+                height: 34,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 150),
+                  opacity: _hasText ? 1.0 : 0.35,
                   child: Icon(
                     Icons.arrow_upward_rounded,
                     size: 17,

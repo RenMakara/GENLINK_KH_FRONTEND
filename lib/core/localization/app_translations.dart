@@ -712,7 +712,6 @@ class AppTranslations extends Translations {
     'tasks.priority.low': 'LOW',
 
     // ── Productivity - Task Create ───────────────────────────────────────────
-    // English
     'task.create.title': 'Create Task',
     'task.create.taskTitle': 'Task Title',
     'task.create.taskTitleHint': 'Enter task title...',
@@ -736,6 +735,23 @@ class AppTranslations extends Translations {
     'task.create.addSubtask': 'Add subtask...',
     'task.create.save': 'Save Task',
     'task.create.validation.titleRequired': 'Please enter a task title',
+
+    // ── Productivity - Task Detail ───────────────────────────────────────────
+    'task.detail.title': 'Task Details',
+    'task.detail.completed': 'Completed',
+    'task.detail.inProgress': 'In Progress',
+    'task.detail.taskInformation': 'Task Information',
+    'task.detail.progress': 'Progress',
+    'task.detail.subtasksCompleted': '@completed of @total subtasks completed',
+    'task.detail.noSubtasks': 'No subtasks yet',
+    'task.detail.markComplete': 'Mark as Complete',
+    'task.detail.markIncomplete': 'Mark as Incomplete',
+    'task.detail.edit': 'Edit task',
+    'task.detail.deleteTitle': 'Delete task?',
+    'task.detail.deleteMessage':
+        'This task will be permanently deleted. This action cannot be undone.',
+    'task.detail.cancel': 'Cancel',
+    'task.detail.delete': 'Delete',
   };
 
   static const _km = <String, String>{
@@ -1459,5 +1475,23 @@ class AppTranslations extends Translations {
     'task.create.addSubtask': 'បន្ថែមកិច្ចការរង...',
     'task.create.save': 'រក្សាទុកកិច្ចការ',
     'task.create.validation.titleRequired': 'សូមបញ្ចូលចំណងជើងកិច្ចការ',
+
+    // ── Productivity - Task Detail ───────────────────────────────────────────
+    'task.detail.title': 'ព័ត៌មានលម្អិតអំពីកិច្ចការ',
+    'task.detail.completed': 'បានបញ្ចប់',
+    'task.detail.inProgress': 'កំពុងដំណើរការ',
+    'task.detail.taskInformation': 'ព័ត៌មានអំពីកិច្ចការ',
+    'task.detail.progress': 'វឌ្ឍនភាព',
+    'task.detail.subtasksCompleted':
+        'បានបញ្ចប់អនុភារកិច្ច @completed ក្នុងចំណោម @total',
+    'task.detail.noSubtasks': 'មិនទាន់មានអនុភារកិច្ចទេ',
+    'task.detail.markComplete': 'សម្គាល់ថាបានបញ្ចប់',
+    'task.detail.markIncomplete': 'សម្គាល់ថាមិនទាន់បញ្ចប់',
+    'task.detail.edit': 'កែសម្រួលកិច្ចការ',
+    'task.detail.deleteTitle': 'លុបកិច្ចការឬ?',
+    'task.detail.deleteMessage':
+        'កិច្ចការនេះនឹងត្រូវបានលុបជាអចិន្ត្រៃយ៍។ សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
+    'task.detail.cancel': 'បោះបង់',
+    'task.detail.delete': 'លុប',
   };
 }

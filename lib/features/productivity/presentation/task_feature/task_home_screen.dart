@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:genlink_frontend/features/productivity/presentation/task_feature/task_create_screen.dart';
+import 'package:genlink_frontend/features/productivity/presentation/task_feature/task_deteail_screen.dart';
 import 'package:get/get.dart';
-
+import 'package:genlink_frontend/features/productivity/presentation/task_feature/task_create_screen.dart';
 import 'package:genlink_frontend/features/productivity/presentation/task_feature/widget/task_home_widget.dart';
 
 class TasksPage extends StatefulWidget {
@@ -12,49 +12,64 @@ class TasksPage extends StatefulWidget {
 }
 
 class _TasksPageState extends State<TasksPage> {
-  // CONTROLLERS
+  // ============================================================
+  // CONTROLLER
+  // ============================================================
+
   final TextEditingController _searchController = TextEditingController();
 
+  // ============================================================
   // STATE
+  // ============================================================
+
   String _searchText = '';
 
   int _selectedStatus = 0;
   int _selectedPriority = 0;
 
+  // ============================================================
   // TASK DATA
+  // ============================================================
+
   final List<TaskData> _tasks = const [
     TaskData(
       title: 'Deep work — React TypeScript',
       dueText: 'Due 2:00 PM',
       priority: TaskPriority.high,
     ),
+
     TaskData(
       title: 'Review weekly goals',
       dueText: 'Completed · 9:00 AM',
       priority: TaskPriority.high,
       completed: true,
     ),
+
     TaskData(
       title: 'Update portfolio design',
       dueText: 'Due 4:00 PM',
       priority: TaskPriority.medium,
     ),
+
     TaskData(
       title: 'Send client proposal',
       dueText: 'Due 5:00 PM',
       priority: TaskPriority.low,
     ),
+
     TaskData(
       title: 'Read design patterns book',
       dueText: 'Completed',
       priority: TaskPriority.high,
       completed: true,
     ),
+
     TaskData(
       title: 'Prepare presentation',
       dueText: 'Due Tomorrow · 10:00 AM',
       priority: TaskPriority.medium,
     ),
+
     TaskData(
       title: 'Check project GitHub issues',
       dueText: 'Due Tomorrow · 3:00 PM',
@@ -62,14 +77,20 @@ class _TasksPageState extends State<TasksPage> {
     ),
   ];
 
-  // FILTER OPTIONS
-  // Use getters so translations refresh correctly.
+  // ============================================================
+  // STATUS OPTIONS
+  // ============================================================
+
   List<String> get _statusOptions => [
     'tasks.filter.all'.tr,
     'tasks.filter.today'.tr,
     'tasks.filter.upcoming'.tr,
     'tasks.filter.completed'.tr,
   ];
+
+  // ============================================================
+  // PRIORITY OPTIONS
+  // ============================================================
 
   List<String> get _priorityOptions => [
     'tasks.filter.all'.tr,
@@ -78,7 +99,10 @@ class _TasksPageState extends State<TasksPage> {
     'tasks.filter.low'.tr,
   ];
 
+  // ============================================================
   // FILTERED TASKS
+  // ============================================================
+
   List<TaskData> get _filteredTasks {
     var result = List<TaskData>.from(_tasks);
 
@@ -103,6 +127,7 @@ class _TasksPageState extends State<TasksPage> {
               (due.contains('am') || due.contains('pm')) &&
               !due.contains('tomorrow');
         }).toList();
+
         break;
 
       case 2:
@@ -111,6 +136,7 @@ class _TasksPageState extends State<TasksPage> {
           return !task.completed &&
               task.dueText.toLowerCase().contains('tomorrow');
         }).toList();
+
         break;
 
       case 3:
@@ -118,6 +144,7 @@ class _TasksPageState extends State<TasksPage> {
         result = result.where((task) {
           return task.completed;
         }).toList();
+
         break;
     }
 
@@ -127,35 +154,49 @@ class _TasksPageState extends State<TasksPage> {
         result = result
             .where((task) => task.priority == TaskPriority.high)
             .toList();
+
         break;
 
       case 2:
         result = result
             .where((task) => task.priority == TaskPriority.medium)
             .toList();
+
         break;
 
       case 3:
         result = result
             .where((task) => task.priority == TaskPriority.low)
             .toList();
+
         break;
     }
 
     return result;
   }
 
+  // ============================================================
   // ACTIVE FILTER COUNT
+  // ============================================================
+
   int get _activeFilterCount {
     int count = 0;
 
-    if (_selectedStatus != 0) count++;
-    if (_selectedPriority != 0) count++;
+    if (_selectedStatus != 0) {
+      count++;
+    }
+
+    if (_selectedPriority != 0) {
+      count++;
+    }
 
     return count;
   }
 
-  // FILTER SHEET
+  // ============================================================
+  // OPEN FILTER
+  // ============================================================
+
   void _openFilterSheet() {
     int temporaryStatus = _selectedStatus;
     int temporaryPriority = _selectedPriority;
@@ -178,22 +219,26 @@ class _TasksPageState extends State<TasksPage> {
               priorityOptions: _priorityOptions,
               selectedStatus: temporaryStatus,
               selectedPriority: temporaryPriority,
+
               onStatusChanged: (index) {
                 setSheetState(() {
                   temporaryStatus = index;
                 });
               },
+
               onPriorityChanged: (index) {
                 setSheetState(() {
                   temporaryPriority = index;
                 });
               },
+
               onReset: () {
                 setSheetState(() {
                   temporaryStatus = 0;
                   temporaryPriority = 0;
                 });
               },
+
               onApply: () {
                 setState(() {
                   _selectedStatus = temporaryStatus;
@@ -209,21 +254,40 @@ class _TasksPageState extends State<TasksPage> {
     );
   }
 
+  // ============================================================
   // CREATE TASK
+  // ============================================================
+
   void _createTask() {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => const CreateTaskPage()));
   }
 
+  // ============================================================
+  // OPEN TASK DETAIL
+  // ============================================================
+
+  void _openTaskDetail(TaskData task) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => TaskDetailPage(task: task)));
+  }
+
+  // ============================================================
   // DISPOSE
+  // ============================================================
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
+  // ============================================================
   // BUILD
+  // ============================================================
+
   @override
   Widget build(BuildContext context) {
     final colors = TaskThemeColors(
@@ -232,36 +296,54 @@ class _TasksPageState extends State<TasksPage> {
 
     return Scaffold(
       backgroundColor: colors.background,
+
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
+
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 32),
+
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ==================================================
+              // TOP BAR
+              // ==================================================
               TasksTopBar(
                 title: 'tasks.title'.tr,
                 subtitle: 'tasks.subtitle'.tr,
-                onBack: () => Navigator.of(context).pop(),
+
+                onBack: () {
+                  Navigator.of(context).pop();
+                },
+
                 onAdd: _createTask,
               ),
 
               const SizedBox(height: 20),
 
+              // ==================================================
+              // SEARCH
+              // ==================================================
               TasksSearchField(
                 controller: _searchController,
                 hintText: 'tasks.searchHint'.tr,
                 activeFilterCount: _activeFilterCount,
+
                 onChanged: (value) {
                   setState(() {
                     _searchText = value;
                   });
                 },
+
                 onFilter: _openFilterSheet,
               ),
 
               const SizedBox(height: 22),
 
+              // ==================================================
+              // HEADER
+              // ==================================================
               TasksHeader(
                 title: 'tasks.myTasks'.tr,
                 count: _filteredTasks.length,
@@ -271,14 +353,24 @@ class _TasksPageState extends State<TasksPage> {
 
               const SizedBox(height: 10),
 
+              // ==================================================
+              // TASK LIST
+              // ==================================================
               TasksList(
                 tasks: _filteredTasks,
                 emptyTitle: 'tasks.empty.title'.tr,
                 emptyMessage: 'tasks.empty.message'.tr,
+
+                // THIS PASSES THE SELECTED TASK
+                // TO TASK DETAIL PAGE
+                onTaskTap: _openTaskDetail,
               ),
 
               const SizedBox(height: 20),
 
+              // ==================================================
+              // BOTTOM TIP
+              // ==================================================
               TasksBottomTip(text: 'tasks.bottomTip'.tr),
 
               const SizedBox(height: 30),

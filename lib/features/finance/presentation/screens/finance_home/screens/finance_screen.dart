@@ -198,11 +198,14 @@ class FinanceScreen extends StatelessWidget {
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 120),
-      // Padding to allow scrolling past floating bar
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 120),
+          // Padding to allow scrolling past floating bar
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           // =========================================================
           // HEADER
           // =========================================================
@@ -834,6 +837,8 @@ class FinanceScreen extends StatelessWidget {
           const SizedBox(height: 70),
         ],
       ),
+    ),
+    ),
     );
   }
 }

@@ -85,13 +85,9 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
 
-  # ==============================
-  # Assets
-  # ==============================
+
   assets:
 
-    # Icons
-    - assets/icons/svg/
     - assets/icons/png/
 
     # Stickers
@@ -102,22 +98,6 @@ flutter:
 
     # General Images
     - assets/images/
-
-    # Lottie Animations
-    - assets/lottie/
-
-    # Backgrounds
-    - assets/backgrounds/
-    - assets/backgrounds/auth/
-    - assets/backgrounds/home/
-    - assets/backgrounds/community/
-    - assets/backgrounds/finance/
-    - assets/backgrounds/productivity/
-    - assets/backgrounds/growth/
-    - assets/backgrounds/profile/
-
-    # Textures
-    - assets/textures/
 
   # ==============================
   # Fonts

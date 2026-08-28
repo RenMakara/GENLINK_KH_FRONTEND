@@ -12,11 +12,10 @@ import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/loaders/app_loader.dart';
 import '../../../../design_system/widgets/surfaces/app_surface.dart';
 import '../../domain/entities/profile_entity.dart';
+import '../../../community/presentation/widgets/full_screen_image_viewer.dart';
 import '../controllers/profile_controller.dart';
 import '../widgets/profile_widgets.dart';
 
-/// Owner and public profile shell. Public profiles use a route-tagged
-/// controller and never read or mutate the signed-in owner's identity.
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key, this.viewingUsername});
 
@@ -104,7 +103,7 @@ class ProfileScreen extends StatelessWidget {
       ),
       IconButton(
         tooltip: 'settings.title'.tr,
-        icon: const Icon(Icons.settings_outlined),
+        icon: const Icon(Icons.settings_rounded),
         onPressed: () => Get.toNamed<void>(AppRoutes.settings),
       ),
     ],
@@ -150,6 +149,59 @@ class _OwnerProfile extends StatelessWidget {
   final ProfileController controller;
   final ProfileEntity profile;
 
+  void _showAvatarMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Material(
+        color: Theme.of(context).colorScheme.surface,
+        clipBehavior: Clip.antiAlias,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16, top: 16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white24
+                      : Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.fullscreen),
+              title: Text('profile.viewAvatar'.tr),
+              onTap: () {
+                Navigator.pop(ctx);
+                if (profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty) {
+                  Get.to(
+                    () => FullScreenImageViewer(
+                      images: [profile.avatarUrl!],
+                    ),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: Text('profile.changeAvatar'.tr),
+              onTap: () {
+                Navigator.pop(ctx);
+                Get.toNamed<void>(AppRoutes.editProfile);
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -170,6 +222,7 @@ class _OwnerProfile extends StatelessWidget {
             name: profile.fullName,
             size: 98,
             onEdit: () => Get.toNamed<void>(AppRoutes.editProfile),
+            onTap: () => _showAvatarMenu(context),
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -381,6 +434,7 @@ class _CareerCard extends StatelessWidget {
           AppButton.inverse(
             expanded: false,
             height: 44,
+            radius: AppRadius.lg,
             label: 'profile.editCareer'.tr,
             onPressed: () => Get.toNamed<void>(AppRoutes.editProfile),
           ),
@@ -564,16 +618,27 @@ class _PublicHeader extends StatelessWidget {
               ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.xs),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              shape: BoxShape.circle,
-            ),
-            child: AppAvatar(
-              imageUrl: profile.avatarUrl,
-              name: profile.fullName,
-              size: 72,
+          GestureDetector(
+            onTap: () {
+              if (profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty) {
+                Get.to(
+                  () => FullScreenImageViewer(
+                    images: [profile.avatarUrl!],
+                  ),
+                );
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.xs),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                shape: BoxShape.circle,
+              ),
+              child: AppAvatar(
+                imageUrl: profile.avatarUrl,
+                name: profile.fullName,
+                size: 72,
+              ),
             ),
           ),
         ],

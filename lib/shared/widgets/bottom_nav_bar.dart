@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 
 import '../../design_system/colors/app_colors.dart';
 import '../../design_system/radius/app_radius.dart';
+import '../../design_system/widgets/avatar/app_avatar.dart';
+import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../main_controller.dart';
 
 class BottomNavBar extends StatelessWidget {
@@ -25,9 +27,11 @@ class BottomNavBar extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final mainController = Get.find<MainController>();
+    final authController = Get.find<AuthController>();
 
     return Obx(() {
       final isVisible = mainController.isNavBarVisible.value;
+      final user = authController.currentUser.value;
 
       return AnimatedSlide(
         offset: isVisible ? Offset.zero : const Offset(0, 1.0),
@@ -140,6 +144,8 @@ class BottomNavBar extends StatelessWidget {
                                 iconSize: navIconSize,
                                 fontSize: navFontSize,
                                 onTap: () => onTap(3),
+                                imageUrl: user?.avatarUrl,
+                                onLongPress: () => _showProfileMenu(context),
                               ),
                             ),
                           ],
@@ -154,6 +160,85 @@ class BottomNavBar extends StatelessWidget {
         ),
       );
     });
+  }
+
+  void _showProfileMenu(BuildContext context) {
+    final authController = Get.find<AuthController>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? const Color(0xFF161616) : Colors.white;
+    final textPrimary = isDark ? Colors.white : Colors.black87;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Material(
+        color: surface,
+        clipBehavior: Clip.antiAlias,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.group_add_outlined, color: textPrimary),
+              title: Text('auth.switchAccount'.tr),
+              onTap: () {
+                Navigator.pop(ctx);
+                Get.showSnackbar(
+                  GetSnackBar(
+                    message: 'Coming soon',
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.exit_to_app_rounded, color: Colors.redAccent),
+              title: Text('auth.logout'.tr, style: const TextStyle(color: Colors.redAccent)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showLogoutConfirm(context, authController);
+              },
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+  void _showLogoutConfirm(BuildContext context, AuthController authController) {
+    Get.dialog(
+      AlertDialog(
+        title: Text('auth.logout'.tr),
+        content: Text('auth.logoutConfirm'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('common.cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () {
+              Get.back();
+              authController.logout();
+            },
+            child: Text('auth.logout'.tr, style: const TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -223,6 +308,8 @@ class _NavItem extends StatelessWidget {
   final double iconSize;
   final double fontSize;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final String? imageUrl;
 
   const _NavItem({
     required this.icon,
@@ -232,6 +319,8 @@ class _NavItem extends StatelessWidget {
     required this.iconSize,
     required this.fontSize,
     required this.onTap,
+    this.onLongPress,
+    this.imageUrl,
   });
 
   @override
@@ -250,6 +339,7 @@ class _NavItem extends StatelessWidget {
         HapticFeedback.selectionClick();
         onTap();
       },
+      onLongPress: onLongPress,
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       child: Column(
@@ -259,12 +349,23 @@ class _NavItem extends StatelessWidget {
             scale: active ? 1.15 : 1.0,
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOutBack,
-            child: Icon(
-              active ? activeIcon : icon,
-              color: color,
-              size: iconSize,
-              semanticLabel: label,
-            ),
+            child: imageUrl != null && imageUrl!.isNotEmpty
+                ? Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: active ? color : Colors.transparent,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: AppAvatar(imageUrl: imageUrl, size: iconSize),
+                  )
+                : Icon(
+                    active ? activeIcon : icon,
+                    color: color,
+                    size: iconSize,
+                    semanticLabel: label,
+                  ),
           ),
           const SizedBox(height: 4),
           Padding(

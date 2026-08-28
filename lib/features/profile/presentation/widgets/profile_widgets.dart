@@ -15,12 +15,14 @@ class RingedAvatar extends StatelessWidget {
     this.name,
     this.size = 108,
     this.onEdit,
+    this.onTap,
   });
 
   final String? imageUrl;
   final String? name;
   final double size;
   final VoidCallback? onEdit;
+  final VoidCallback? onTap;
 
   static const _ringWidth = 3.0;
 
@@ -33,30 +35,33 @@ class RingedAvatar extends StatelessWidget {
       width: size,
       child: Stack(
         children: [
-          Container(
-            height: size,
-            width: size,
-            padding: const EdgeInsets.all(_ringWidth),
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: SweepGradient(
-                colors: [
-                  AppColors.accentPremium,
-                  AppColors.growthAccent,
-                  AppColors.accentPremium,
-                ],
-              ),
-            ),
+          GestureDetector(
+            onTap: onTap,
             child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
+              height: size,
+              width: size,
+              padding: const EdgeInsets.all(_ringWidth),
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: scheme.surface,
+                gradient: SweepGradient(
+                  colors: [
+                    AppColors.accentPremium,
+                    AppColors.growthAccent,
+                    AppColors.accentPremium,
+                  ],
+                ),
               ),
-              child: AppAvatar(
-                imageUrl: imageUrl,
-                name: name,
-                size: size - (_ringWidth + 2) * 2,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: scheme.surface,
+                ),
+                child: AppAvatar(
+                  imageUrl: imageUrl,
+                  name: name,
+                  size: size - (_ringWidth + 2) * 2,
+                ),
               ),
             ),
           ),

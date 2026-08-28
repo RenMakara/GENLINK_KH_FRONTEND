@@ -188,6 +188,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       AppInput(
                         label: 'profile.displayName'.tr,
                         controller: _fullName,
+                        radius: AppRadius.lg,
                         textCapitalization: TextCapitalization.words,
                         validator: Validators.required,
                       ),
@@ -195,12 +196,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       AppInput(
                         label: 'auth.username'.tr,
                         controller: _username,
+                        radius: AppRadius.lg,
                         validator: Validators.username,
                       ),
                       const SizedBox(height: AppSpacing.md),
                       AppInput(
                         label: 'profile.bio'.tr,
                         controller: _bio,
+                        radius: AppRadius.lg,
                         maxLines: 4,
                         maxLength: 500,
                         textCapitalization: TextCapitalization.sentences,
@@ -222,6 +225,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             child: AppInput(
                               label: 'profile.location'.tr,
                               controller: _location,
+                              radius: AppRadius.lg,
                             ),
                           ),
                         ],
@@ -230,6 +234,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       AppInput(
                         label: 'profile.universityWorkplace'.tr,
                         controller: _university,
+                        radius: AppRadius.lg,
                       ),
                       const SizedBox(height: AppSpacing.xl),
                       Center(
@@ -242,6 +247,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       AppInput(
                         label: 'profile.linkedIn'.tr,
                         controller: _linkedInUrl,
+                        radius: AppRadius.lg,
                         keyboardType: TextInputType.url,
                         hint: 'https://linkedin.com/in/…',
                       ),
@@ -249,6 +255,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       AppInput(
                         label: 'profile.website'.tr,
                         controller: _websiteUrl,
+                        radius: AppRadius.lg,
                         keyboardType: TextInputType.url,
                         hint: 'https://…',
                       ),
@@ -257,6 +264,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         AppInput(
                           label: 'GitHub',
                           controller: _githubUrl,
+                          radius: AppRadius.lg,
                           keyboardType: TextInputType.url,
                           hint: 'https://github.com/…',
                         ),
@@ -266,6 +274,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         AppInput(
                           label: 'Telegram',
                           controller: _telegramUrl,
+                          radius: AppRadius.lg,
                           keyboardType: TextInputType.url,
                           hint: 'https://t.me/…',
                         ),
@@ -288,7 +297,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   padding: const EdgeInsets.all(AppSpacing.md),
                   child: AppButton(
                     label: 'profile.saveChanges'.tr,
-                    icon: Icons.check_circle_outline,
                     loading: _controller.isSaving.value,
                     onPressed: _submit,
                   ),
@@ -441,6 +449,17 @@ class _RoleDropdown extends StatelessWidget {
           initialValue: options.contains(value) ? value : null,
           isExpanded: true,
           hint: Text('common.optional'.tr),
+          decoration: InputDecoration(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
+          ),
           items: options
               .map(
                 (option) => DropdownMenuItem(

@@ -316,7 +316,7 @@ class _LogOutTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final error = Theme.of(context).colorScheme.error;
     return ListTile(
-      leading: Icon(Icons.logout, color: error),
+      leading: Icon(Icons.exit_to_app_rounded, color: error),
       title: Text('auth.logout'.tr, style: TextStyle(color: error)),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),

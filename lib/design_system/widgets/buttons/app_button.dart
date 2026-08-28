@@ -21,12 +21,6 @@ enum AppButtonVariant {
   inverse,
 }
 
-/// The app's button. Backgrounds are rendered in Flutter, never exported
-/// from Figma.
-///
-/// While [loading] is true the label is swapped for a spinner and taps are
-/// ignored, so callers can bind straight to a controller's `isLoading`
-/// without also having to null out `onPressed`.
 class AppButton extends StatelessWidget {
   const AppButton({
     super.key,
@@ -38,6 +32,7 @@ class AppButton extends StatelessWidget {
     this.icon,
     this.muted = false,
     this.height = 60,
+    this.radius,
   });
 
   const AppButton.secondary({
@@ -48,6 +43,7 @@ class AppButton extends StatelessWidget {
     this.expanded = true,
     this.icon,
     this.height = 60,
+    this.radius,
   }) : variant = AppButtonVariant.secondary,
        muted = false;
 
@@ -59,6 +55,7 @@ class AppButton extends StatelessWidget {
     this.expanded = true,
     this.icon,
     this.height = 60,
+    this.radius,
   }) : variant = AppButtonVariant.inverse,
        muted = false;
 
@@ -71,6 +68,7 @@ class AppButton extends StatelessWidget {
     this.icon,
     this.muted = false,
     this.height = 44,
+    this.radius,
   }) : variant = AppButtonVariant.text;
 
   final String label;
@@ -80,9 +78,8 @@ class AppButton extends StatelessWidget {
   final bool expanded;
   final IconData? icon;
   final double height;
+  final double? radius;
 
-  /// Text buttons only: renders in the muted colour used by "Skip for now",
-  /// versus the strong colour used by inline links like "Log in".
   final bool muted;
 
   @override
@@ -117,7 +114,7 @@ class AppButton extends StatelessWidget {
           );
 
     final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(AppRadius.pill),
+      borderRadius: BorderRadius.circular(radius ?? AppRadius.pill),
     );
     const padding = EdgeInsets.symmetric(horizontal: AppSpacing.lg);
 

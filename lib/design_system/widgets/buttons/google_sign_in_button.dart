@@ -30,7 +30,7 @@ class GoogleSignInButton extends StatelessWidget {
         width: double.infinity,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.pill),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             boxShadow: [
               BoxShadow(
                 color: AppColors.lightPrimary.withValues(alpha: 0.04),

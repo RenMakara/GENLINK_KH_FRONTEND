@@ -12,7 +12,7 @@ abstract final class AppRadius {
   /// Squircle used by OTP boxes, avatars-in-a-square, and small tiles.
   static const squircle = 20.0;
 
-  static const pill = 999.0;
+  static const pill = 20.0;
 
   static const plateRatio = 107 / 321;
 }

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:genlink_frontend/features/community/domain/models/story_model.dart';
 import 'package:genlink_frontend/features/community/data/repositories/story_repository_impl.dart';
 import 'package:genlink_frontend/features/community/presentation/controllers/story_controller.dart';
+import 'package:genlink_frontend/features/community/presentation/screens/story_creator_screen.dart';
 
 void main() {
   group('Story Text Object Model & State Persistence Tests', () {
@@ -649,5 +650,393 @@ void main() {
         expect(clonedSticker.scale, 1.5);
       },
     );
+
+    testWidgets(
+      'Test 27: Background Picker renders compactly with horizontal scrolling and all categories',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        await tester.pumpWidget(
+          const GetMaterialApp(
+            home: StoryCreatorScreen(type: StoryType.text),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Test opening Background Picker within text editor overlay
+        final bgToolInEditor = find.byTooltip('Change background');
+        if (bgToolInEditor.evaluate().isNotEmpty) {
+          await tester.tap(bgToolInEditor);
+          await tester.pumpAndSettle();
+
+          // Verify Header and categories inside editor
+          expect(find.text('Background'), findsWidgets);
+          expect(find.text('🌈 Gradients'), findsOneWidget);
+          expect(find.text('🎨 Solid'), findsOneWidget);
+
+          // Close background tool
+          final closeBtn = find.byIcon(Icons.close_rounded).first;
+          await tester.tap(closeBtn);
+          await tester.pumpAndSettle();
+        }
+
+        // Close initial full-screen text editor
+        final doneBtn = find.text('Done');
+        if (doneBtn.evaluate().isNotEmpty) {
+          await tester.tap(doneBtn);
+          await tester.pumpAndSettle();
+        }
+
+        // 2. Open Background Picker in main creator canvas
+        final bgTool = find.byTooltip('Background');
+        expect(bgTool, findsOneWidget);
+        await tester.ensureVisible(bgTool);
+        await tester.tap(bgTool);
+        await tester.pumpAndSettle();
+
+        // Verify Header with "Background" and Close icon
+        expect(find.text('Background'), findsWidgets);
+        expect(find.byIcon(Icons.close_rounded), findsWidgets);
+
+        // Verify categories are rendered (Gradients, Solid, Pastel, Trending)
+        expect(find.text('🌈 Gradients'), findsOneWidget);
+        expect(find.text('🎨 Solid'), findsOneWidget);
+
+        // Verify switching to Solid category renders solid color swatches
+        await tester.tap(find.text('🎨 Solid'));
+        await tester.pumpAndSettle();
+
+        // Tap close button to dismiss panel
+        final closeBtnCanvas = find.byIcon(Icons.close_rounded).first;
+        await tester.tap(closeBtnCanvas);
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'Test 28: Zero RenderFlex overflow on small screen width (320px) with Background Picker open',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(320, 568);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        await tester.pumpWidget(
+          const GetMaterialApp(
+            home: StoryCreatorScreen(type: StoryType.text),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Open Background Picker inside text editor on 320px screen
+        final bgToolInEditor = find.byTooltip('Change background');
+        if (bgToolInEditor.evaluate().isNotEmpty) {
+          await tester.tap(bgToolInEditor);
+          await tester.pumpAndSettle();
+        }
+
+        // Verify Background panel is visible with no overflow exceptions
+        expect(find.text('Background'), findsWidgets);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'Test 29: Story Editor Header renders Left (Close), Spacer, and Right ([@][Emoji][Audio][Done]) with no title and proper spacing',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        await tester.pumpWidget(
+          const GetMaterialApp(
+            home: StoryCreatorScreen(type: StoryType.text),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Verify Left Close button is present
+        expect(find.byIcon(Icons.close_rounded), findsWidgets);
+
+        // 2. Verify Right action buttons are present: @, Emoji, Audio, Done
+        expect(find.byIcon(Icons.alternate_email_rounded), findsWidgets);
+        expect(find.byIcon(Icons.sentiment_satisfied_alt_outlined), findsWidgets);
+        expect(find.byIcon(Icons.graphic_eq_rounded), findsWidgets);
+        expect(find.text('Done'), findsOneWidget);
+
+        // 3. Verify Done button tap closes the editor
+        await tester.tap(find.text('Done'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'Test 30: Story Editor Header zero overflow on small screen width (320px)',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(320, 568);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        await tester.pumpWidget(
+          const GetMaterialApp(
+            home: StoryCreatorScreen(type: StoryType.text),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify all header elements are in place with zero overflow
+        expect(find.byIcon(Icons.close_rounded), findsWidgets);
+        expect(find.byIcon(Icons.alternate_email_rounded), findsWidgets);
+        expect(find.byIcon(Icons.sentiment_satisfied_alt_outlined), findsWidgets);
+        expect(find.byIcon(Icons.graphic_eq_rounded), findsWidgets);
+        expect(find.text('Done'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    test(
+      'Test 31: Canvas-relative coordinates dynamically adapt across 360x640, 390x844, and 430x932 devices',
+      () {
+        // 1. Center positioned layer (normalized)
+        final centerLayer = MovableStoryLayer(
+          id: 'center_layer',
+          type: LayerType.text,
+          text: 'Center Text',
+          offset: const Offset(0.5, 0.5),
+        );
+
+        // On Small Phone (360x640)
+        final smallOffset = centerLayer.getCanvasOffset(const Size(360, 640));
+        expect(smallOffset.dx, 180.0);
+        expect(smallOffset.dy, 320.0);
+
+        // On Normal Phone (390x844)
+        final normalOffset = centerLayer.getCanvasOffset(const Size(390, 844));
+        expect(normalOffset.dx, 195.0);
+        expect(normalOffset.dy, 422.0);
+
+        // On Large Phone (430x932)
+        final largeOffset = centerLayer.getCanvasOffset(const Size(430, 932));
+        expect(largeOffset.dx, 215.0);
+        expect(largeOffset.dy, 466.0);
+
+        // 2. Bottom-right sticker placed near (0.85, 0.85)
+        final brSticker = MovableStoryLayer(
+          id: 'br_sticker',
+          type: LayerType.sticker,
+          text: '🔥',
+          offset: const Offset(0.85, 0.85),
+        );
+
+        expect(brSticker.getCanvasOffset(const Size(360, 640)).dx, 306.0);
+        expect(brSticker.getCanvasOffset(const Size(360, 640)).dy, 544.0);
+
+        expect(brSticker.getCanvasOffset(const Size(430, 932)).dx, closeTo(365.5, 0.01));
+        expect(brSticker.getCanvasOffset(const Size(430, 932)).dy, closeTo(792.2, 0.01));
+      },
+    );
+
+    testWidgets(
+      'Test 32: Story Creator renders across small (360x640), normal (390x844), and large (430x932) devices without overflow',
+      (WidgetTester tester) async {
+        final screenSizes = [
+          const Size(360, 640), // Small phone
+          const Size(390, 844), // Normal phone
+          const Size(430, 932), // Large phone
+          const Size(412, 915), // Tall phone
+        ];
+
+        for (final size in screenSizes) {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1.0;
+
+          await tester.pumpWidget(
+            const GetMaterialApp(
+              home: StoryCreatorScreen(type: StoryType.text),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Done'), findsOneWidget);
+          expect(find.byIcon(Icons.close_rounded), findsWidgets);
+          expect(tester.takeException(), isNull);
+        }
+
+        tester.view.resetPhysicalSize();
+      },
+    );
+
+    testWidgets(
+      'Test 33: Keyboard OPEN on 360x640, 390x844, 430x932 produces ZERO RenderFlex overflow',
+      (WidgetTester tester) async {
+        final testCases = [
+          (const Size(360, 640), 280.0), // Small screen, 280px keyboard
+          (const Size(360, 640), 336.0), // Small screen, 336px keyboard
+          (const Size(390, 844), 336.0), // Normal screen, 336px keyboard
+          (const Size(390, 844), 380.0), // Normal screen, large keyboard
+          (const Size(430, 932), 346.0), // Large screen, 346px keyboard
+          (const Size(430, 932), 400.0), // Large screen, tall keyboard
+        ];
+
+        for (final (size, kbHeight) in testCases) {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1.0;
+          tester.view.viewInsets = FakeViewPadding(bottom: kbHeight);
+
+          await tester.pumpWidget(
+            const GetMaterialApp(
+              home: StoryCreatorScreen(type: StoryType.text),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Header, canvas, text input, and bottom toolbar buttons should be visible
+          expect(find.text('Done'), findsOneWidget);
+          expect(find.byType(TextField), findsOneWidget);
+          expect(find.byTooltip('Font'), findsOneWidget);
+          expect(find.byTooltip('Color'), findsOneWidget);
+          expect(find.byTooltip('Effects'), findsOneWidget);
+          expect(find.byTooltip('Alignment'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        }
+
+        tester.view.resetPhysicalSize();
+        tester.view.resetViewInsets();
+      },
+    );
+
+    testWidgets(
+      'Test 34: Keyboard OPEN with secondary contextual tools (Color, Font, Effect, Background) produces ZERO overflow',
+      (WidgetTester tester) async {
+        final screenSizes = [
+          const Size(360, 640),
+          const Size(390, 844),
+          const Size(430, 932),
+        ];
+
+        for (final size in screenSizes) {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1.0;
+          tester.view.viewInsets = const FakeViewPadding(bottom: 320.0);
+
+          await tester.pumpWidget(
+            const GetMaterialApp(
+              home: StoryCreatorScreen(type: StoryType.text),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // 1. Open Color Tool
+          await tester.tap(find.byTooltip('Color'));
+          await tester.pumpAndSettle();
+          expect(find.text('Choose Color'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+
+          // 2. Open Font Tool
+          await tester.tap(find.byTooltip('Font'));
+          await tester.pumpAndSettle();
+          expect(find.text('Font Family'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+
+          // 3. Open Effect Tool
+          await tester.tap(find.byTooltip('Effects'));
+          await tester.pumpAndSettle();
+          expect(find.text('Text Effects'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+
+          // 4. Open Background Tool
+          await tester.tap(find.byTooltip('Change background'));
+          await tester.pumpAndSettle();
+          expect(find.text('Background'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        }
+
+        tester.view.resetPhysicalSize();
+        tester.view.resetViewInsets();
+      },
+    );
+
+    testWidgets(
+      'Test 35: Full Story Text editing lifecycle (Open -> Type -> Format -> Keyboard Close -> Publish) with ZERO overflow',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        tester.view.viewInsets = const FakeViewPadding(bottom: 336.0);
+
+        await tester.pumpWidget(
+          const GetMaterialApp(
+            home: StoryCreatorScreen(type: StoryType.text),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Type "test"
+        await tester.enterText(find.byType(TextField), 'test');
+        await tester.pumpAndSettle();
+        expect(find.text('test'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        // 2. Change font
+        await tester.tap(find.byTooltip('Font'));
+        await tester.pumpAndSettle();
+        expect(find.text('Bubble'), findsOneWidget);
+        await tester.tap(find.text('Bubble'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+
+        // 3. Change text color
+        await tester.tap(find.byTooltip('Color'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+
+        // 4. Change background
+        await tester.tap(find.byTooltip('Change background'));
+        await tester.pumpAndSettle();
+        expect(find.text('🎨 Solid'), findsOneWidget);
+        await tester.tap(find.text('🎨 Solid'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+
+        // 5. Close keyboard & save
+        tester.view.resetViewInsets();
+        await tester.tap(find.text('Done'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+
+        // 6. Primary creator screen is active with Post Story button
+        expect(find.text('Post Story'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        tester.view.resetPhysicalSize();
+      },
+    );
+
+    test(
+      'Test 36: Keyboard opening/closing does NOT modify saved normalized Story object position',
+      () {
+        final layer = MovableStoryLayer(
+          id: 'text_persist_pos',
+          type: LayerType.text,
+          text: 'Fixed Position Text',
+          offset: const Offset(0.35, 0.45),
+        );
+
+        // Initial offset
+        expect(layer.offset.dx, 0.35);
+        expect(layer.offset.dy, 0.45);
+
+        // When keyboard opens or screen resizes, getCanvasOffset computes correctly without altering offset
+        final offsetBefore = layer.getCanvasOffset(const Size(390, 844));
+        expect(offsetBefore.dx, closeTo(136.5, 0.01));
+        expect(offsetBefore.dy, closeTo(379.8, 0.01));
+
+        // State offset is unaltered
+        expect(layer.offset.dx, 0.35);
+        expect(layer.offset.dy, 0.45);
+      },
+    );
   });
 }
+

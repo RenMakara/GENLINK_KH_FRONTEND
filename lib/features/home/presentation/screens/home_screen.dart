@@ -24,67 +24,63 @@ class HomeScreen extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Obx(() {
-          final home = controller.home.value;
+    return Obx(() {
+      final home = controller.home.value;
 
-          if (controller.isLoading.value && home == null) {
-            return const AppLoader();
-          }
-          if (home == null) {
-            return AppEmptyState(
-              message: controller.errorMessage.value ?? 'common.error'.tr,
-              icon: Icons.cloud_off_outlined,
-              action: AppButton.secondary(
-                label: 'common.retry'.tr,
-                expanded: false,
-                onPressed: controller.reload,
-              ),
-            );
-          }
+      if (controller.isLoading.value && home == null) {
+        return const AppLoader();
+      }
+      if (home == null) {
+        return AppEmptyState(
+          message: controller.errorMessage.value ?? 'common.error'.tr,
+          icon: Icons.cloud_off_outlined,
+          action: AppButton.secondary(
+            label: 'common.retry'.tr,
+            expanded: false,
+            onPressed: controller.reload,
+          ),
+        );
+      }
 
-          return RefreshIndicator(
-            onRefresh: controller.reload,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.sm,
-                AppSpacing.lg,
-                AppSpacing.xl,
-              ),
-              children: [
-                _Header(user: home.user),
-                const SizedBox(height: AppSpacing.md),
-                _LevelBar(user: home.user),
-                const SizedBox(height: AppSpacing.xl),
-                Text(
-                  'home.headline'.tr,
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _TodayHub(home: home),
-                const SizedBox(height: AppSpacing.lg),
-                _QuickActions(onNavigateTab: onNavigateTab),
-                const SizedBox(height: AppSpacing.lg),
-                _StatGrid(home: home, onNavigateTab: onNavigateTab),
-                if (home.dailyMotivation != null) ...[
-                  const SizedBox(height: AppSpacing.lg),
-                  _MotivationTile(motivation: home.dailyMotivation!),
-                ],
-                if (home.feedPreview.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.xl),
-                  _RecentActivity(
-                    items: home.feedPreview,
-                    onSeeAll: () => onNavigateTab?.call(1),
-                  ),
-                ],
-              ],
+      return RefreshIndicator(
+        onRefresh: controller.reload,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.sm,
+            AppSpacing.lg,
+            120, // Padding to allow scrolling past floating bar
+          ),
+          children: [
+            _Header(user: home.user),
+            const SizedBox(height: AppSpacing.md),
+            _LevelBar(user: home.user),
+            const SizedBox(height: AppSpacing.xl),
+            Text(
+              'home.headline'.tr,
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
-          );
-        }),
-      ),
-    );
+            const SizedBox(height: AppSpacing.md),
+            _TodayHub(home: home),
+            const SizedBox(height: AppSpacing.lg),
+            _QuickActions(onNavigateTab: onNavigateTab),
+            const SizedBox(height: AppSpacing.lg),
+            _StatGrid(home: home, onNavigateTab: onNavigateTab),
+            if (home.dailyMotivation != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              _MotivationTile(motivation: home.dailyMotivation!),
+            ],
+            if (home.feedPreview.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.xl),
+              _RecentActivity(
+                items: home.feedPreview,
+                onSeeAll: () => onNavigateTab?.call(1),
+              ),
+            ],
+          ],
+        ),
+      );
+    });
   }
 }
 

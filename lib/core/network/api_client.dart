@@ -26,8 +26,9 @@ class ApiClient {
     Map<String, dynamic>? query,
     required T Function(dynamic data) parse,
   }) async {
-    final response =
-        await guardDio(() => _dio.get<dynamic>(path, queryParameters: query));
+    final response = await guardDio(
+      () => _dio.get<dynamic>(path, queryParameters: query),
+    );
     return _unwrap(response, parse);
   }
 
@@ -38,7 +39,8 @@ class ApiClient {
     required T Function(dynamic data) parse,
   }) async {
     final response = await guardDio(
-        () => _dio.post<dynamic>(path, data: body, queryParameters: query));
+      () => _dio.post<dynamic>(path, data: body, queryParameters: query),
+    );
     return _unwrap(response, parse);
   }
 
@@ -53,7 +55,8 @@ class ApiClient {
 
   Future<void> delete(String path, {Map<String, dynamic>? query}) async {
     final response = await guardDio(
-        () => _dio.delete<dynamic>(path, queryParameters: query));
+      () => _dio.delete<dynamic>(path, queryParameters: query),
+    );
     _envelope(response);
   }
 
@@ -64,7 +67,10 @@ class ApiClient {
       (data as Map?)?.cast<String, dynamic>() ?? const {};
 
   /// Parse `data` as a list of JSON objects mapped through [item].
-  static List<T> asList<T>(dynamic data, T Function(Map<String, dynamic>) item) {
+  static List<T> asList<T>(
+    dynamic data,
+    T Function(Map<String, dynamic>) item,
+  ) {
     final list = data as List? ?? const [];
     return list
         .map((e) => item((e as Map).cast<String, dynamic>()))

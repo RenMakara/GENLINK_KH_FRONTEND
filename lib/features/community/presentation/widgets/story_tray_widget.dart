@@ -7,20 +7,43 @@ import '../controllers/story_controller.dart';
 import '../screens/story_viewer_screen.dart';
 import 'story_creation_picker_sheet.dart';
 
-class StoryTrayWidget extends StatelessWidget {
+class StoryTrayWidget extends StatefulWidget {
   const StoryTrayWidget({super.key});
 
   @override
+  State<StoryTrayWidget> createState() => _StoryTrayWidgetState();
+}
+
+class _StoryTrayWidgetState extends State<StoryTrayWidget> {
+  late final StoryController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.isRegistered<StoryController>()
+        ? Get.find<StoryController>()
+        : Get.put(StoryController());
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final controller = Get.put(StoryController());
+    final controller = _controller;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
     final bgPrimary = theme.scaffoldBackgroundColor;
-    final border = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-    final skeletonColor = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
+    final border = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+    final skeletonColor = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightBgSecondary;
 
     return Obx(() {
       if (controller.isLoading.value) {
@@ -34,10 +57,7 @@ class StoryTrayWidget extends StatelessWidget {
               padding: const EdgeInsets.only(right: 14),
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundColor: skeletonColor,
-                  ),
+                  CircleAvatar(radius: 32, backgroundColor: skeletonColor),
                   const SizedBox(height: 6),
                   Container(
                     width: 48,
@@ -65,10 +85,7 @@ class StoryTrayWidget extends StatelessWidget {
         return 0;
       });
 
-      final sortedGroups = [
-        ?ownerGroup,
-        ...otherGroups,
-      ];
+      final sortedGroups = [?ownerGroup, ...otherGroups];
 
       return Container(
         height: 94,
@@ -148,14 +165,13 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
           );
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final scaleAnimation = Tween<double>(
-            begin: 0.96,
-            end: 1.00,
-          ).animate(CurvedAnimation(
-            parent: animation,
-            curve: Curves.fastOutSlowIn,
-            reverseCurve: Curves.easeInCubic,
-          ));
+          final scaleAnimation = Tween<double>(begin: 0.96, end: 1.00).animate(
+            CurvedAnimation(
+              parent: animation,
+              curve: Curves.fastOutSlowIn,
+              reverseCurve: Curves.easeInCubic,
+            ),
+          );
 
           final fadeAnimation = CurvedAnimation(
             parent: animation,
@@ -166,10 +182,7 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
           return ScaleTransition(
             scale: scaleAnimation,
             alignment: Alignment.center,
-            child: FadeTransition(
-              opacity: fadeAnimation,
-              child: child,
-            ),
+            child: FadeTransition(opacity: fadeAnimation, child: child),
           );
         },
       ),
@@ -211,7 +224,9 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: group.stories.isNotEmpty ? AppColors.communityAccent : Colors.transparent,
+                          color: group.stories.isNotEmpty
+                              ? AppColors.communityAccent
+                              : Colors.transparent,
                           width: 1.5,
                         ),
                       ),
@@ -219,7 +234,8 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                         tag: 'story_avatar_${group.userId}',
                         child: CircleAvatar(
                           radius: 26,
-                          backgroundImage: group.userAvatar.startsWith('assets/')
+                          backgroundImage:
+                              group.userAvatar.startsWith('assets/')
                               ? AssetImage(group.userAvatar) as ImageProvider
                               : NetworkImage(group.userAvatar),
                         ),
@@ -239,7 +255,9 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                           ),
                           child: Icon(
                             Icons.add,
-                            color: isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse,
+                            color: isDark
+                                ? AppColors.darkTextInverse
+                                : AppColors.lightTextInverse,
                             size: 12,
                           ),
                         ),
@@ -252,7 +270,8 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                   width: 78,
                   child: Text(
                     'community.yourStory'.tr,
-                    style: theme.textTheme.labelSmall?.copyWith(
+                    style:
+                        theme.textTheme.labelSmall?.copyWith(
                           fontSize: 10.5,
                           color: textPrimary,
                           fontWeight: FontWeight.w600,
@@ -295,7 +314,10 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                   shape: BoxShape.circle,
                   gradient: group.hasUnseen
                       ? const LinearGradient(
-                          colors: [AppColors.communityAccent, AppColors.accentPremium],
+                          colors: [
+                            AppColors.communityAccent,
+                            AppColors.accentPremium,
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         )
@@ -330,17 +352,26 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                 width: 78,
                 child: Text(
                   group.userName,
-                  style: theme.textTheme.labelSmall?.copyWith(
+                  style:
+                      theme.textTheme.labelSmall?.copyWith(
                         color: group.hasUnseen ? textPrimary : textMuted,
-                        fontWeight: group.hasUnseen ? FontWeight.bold : FontWeight.normal,
-                        fontFamily: _containsKhmer(group.userName) ? 'KantumruyPro' : null,
+                        fontWeight: group.hasUnseen
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        fontFamily: _containsKhmer(group.userName)
+                            ? 'KantumruyPro'
+                            : null,
                         fontFamilyFallback: const ['KantumruyPro', 'Sora'],
                       ) ??
                       TextStyle(
                         color: group.hasUnseen ? textPrimary : textMuted,
                         fontSize: 11,
-                        fontWeight: group.hasUnseen ? FontWeight.bold : FontWeight.normal,
-                        fontFamily: _containsKhmer(group.userName) ? 'KantumruyPro' : null,
+                        fontWeight: group.hasUnseen
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        fontFamily: _containsKhmer(group.userName)
+                            ? 'KantumruyPro'
+                            : null,
                         fontFamilyFallback: const ['KantumruyPro', 'Sora'],
                       ),
                   maxLines: 2,

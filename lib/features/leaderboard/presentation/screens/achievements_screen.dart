@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../controllers/leaderboard_controller.dart';
 import '../../domain/models/leaderboard_models.dart';
 import '../../../quiz/presentation/quiz_colors.dart';
@@ -15,13 +17,18 @@ class AchievementsScreen extends GetView<LeaderboardController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
-          onPressed: () => Get.back(),
+        leading: const Padding(
+          padding: EdgeInsets.only(left: AppSpacing.md),
+          child: Center(child: AppBackButton()),
         ),
+        leadingWidth: 74,
         title: const Text(
           'All Achievements',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: QuizColors.heading),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: QuizColors.heading,
+          ),
         ),
       ),
       body: Obx(() {
@@ -38,7 +45,9 @@ class AchievementsScreen extends GetView<LeaderboardController> {
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
                 childAspectRatio: 0.85,
-                children: achievements.map((a) => _buildAchievementCard(a)).toList(),
+                children: achievements
+                    .map((a) => _buildAchievementCard(a))
+                    .toList(),
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -57,7 +66,11 @@ class AchievementsScreen extends GetView<LeaderboardController> {
                       child: const Center(
                         child: Text(
                           'Back to Leaderboard',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -89,7 +102,7 @@ class AchievementsScreen extends GetView<LeaderboardController> {
             height: 52,
             decoration: BoxDecoration(
               color: a.isUnlocked
-                  ? a.color.withOpacity(0.12)
+                  ? a.color.withValues(alpha: 0.12)
                   : const Color(0xFFF3F4F6),
               borderRadius: BorderRadius.circular(16),
             ),
@@ -129,7 +142,11 @@ class AchievementsScreen extends GetView<LeaderboardController> {
               ),
               child: const Text(
                 'Locked',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFFD1D5DB)),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFD1D5DB),
+                ),
               ),
             ),
           ],

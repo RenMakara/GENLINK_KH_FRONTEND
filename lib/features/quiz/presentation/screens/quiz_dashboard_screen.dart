@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../controllers/quiz_controller.dart';
 import '../../domain/models/quiz_models.dart';
 import '../quiz_colors.dart';
@@ -18,19 +20,27 @@ class QuizDashboardScreen extends GetView<QuizController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
-          onPressed: () {
-            if (Get.previousRoute.isNotEmpty) {
-              Get.back();
-            } else {
-              Get.offAllNamed(AppRoutes.home);
-            }
-          },
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.md),
+          child: Center(
+            child: AppBackButton(
+              onPressed: () {
+                if (Get.previousRoute.isNotEmpty) {
+                  Get.back();
+                } else {
+                  Get.offAllNamed(AppRoutes.home);
+                }
+              },
+            ),
+          ),
         ),
+        leadingWidth: 74,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: QuizColors.heading),
+            icon: const Icon(
+              Icons.notifications_outlined,
+              color: QuizColors.heading,
+            ),
             onPressed: () {},
           ),
         ],
@@ -77,7 +87,11 @@ class QuizDashboardScreen extends GetView<QuizController> {
                     shape: BoxShape.circle,
                     gradient: QuizColors.gradient,
                   ),
-                  child: const Icon(Icons.person, color: Colors.white, size: 28),
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -94,7 +108,10 @@ class QuizDashboardScreen extends GetView<QuizController> {
                       ),
                       const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           gradient: QuizColors.gradient,
                           borderRadius: BorderRadius.circular(12),
@@ -119,7 +136,9 @@ class QuizDashboardScreen extends GetView<QuizController> {
               child: LinearProgressIndicator(
                 value: stats.xp / stats.xpToNextLevel,
                 backgroundColor: QuizColors.border,
-                valueColor: const AlwaysStoppedAnimation<Color>(QuizColors.primary),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  QuizColors.primary,
+                ),
                 minHeight: 8,
               ),
             ),
@@ -148,15 +167,30 @@ class QuizDashboardScreen extends GetView<QuizController> {
             Expanded(
               child: Row(
                 children: [
-                  const Icon(Icons.local_fire_department, color: QuizColors.gold, size: 26),
+                  const Icon(
+                    Icons.local_fire_department,
+                    color: QuizColors.gold,
+                    size: 26,
+                  ),
                   const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${stats.streak} Days',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
-                      const Text('Active Streak',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
+                      Text(
+                        '${stats.streak} Days',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const Text(
+                        'Active Streak',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -167,15 +201,30 @@ class QuizDashboardScreen extends GetView<QuizController> {
             Expanded(
               child: Row(
                 children: [
-                  const Icon(Icons.monetization_on, color: QuizColors.gold, size: 26),
+                  const Icon(
+                    Icons.monetization_on,
+                    color: QuizColors.gold,
+                    size: 26,
+                  ),
                   const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${stats.coins}',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
-                      const Text('Coins',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
+                      Text(
+                        '${stats.coins}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const Text(
+                        'Coins',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -213,7 +262,13 @@ class QuizDashboardScreen extends GetView<QuizController> {
     );
   }
 
-  Widget _buildQuizTypeCard(IconData icon, String title, String subtitle, Color color, QuizType type) {
+  Widget _buildQuizTypeCard(
+    IconData icon,
+    String title,
+    String subtitle,
+    Color color,
+    QuizType type,
+  ) {
     return GestureDetector(
       onTap: () {
         controller.setQuizType(type);
@@ -234,11 +289,19 @@ class QuizDashboardScreen extends GetView<QuizController> {
               child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(height: 12),
-            Text(title,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: QuizColors.heading)),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: QuizColors.heading,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(subtitle,
-                style: const TextStyle(fontSize: 12, color: QuizColors.body)),
+            Text(
+              subtitle,
+              style: const TextStyle(fontSize: 12, color: QuizColors.body),
+            ),
           ],
         ),
       ),
@@ -257,27 +320,42 @@ class QuizDashboardScreen extends GetView<QuizController> {
               color: const Color(0xFFD1FAE5),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.trending_up, color: QuizColors.correct, size: 24),
+            child: const Icon(
+              Icons.trending_up,
+              color: QuizColors.correct,
+              size: 24,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Learning Progress',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: QuizColors.heading)),
+                const Text(
+                  'Learning Progress',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: QuizColors.heading,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(6),
                   child: LinearProgressIndicator(
                     value: 0.72,
                     backgroundColor: QuizColors.border,
-                    valueColor: const AlwaysStoppedAnimation<Color>(QuizColors.correct),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      QuizColors.correct,
+                    ),
                     minHeight: 8,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text('72% Complete', style: TextStyle(fontSize: 12, color: QuizColors.body)),
+                const Text(
+                  '72% Complete',
+                  style: TextStyle(fontSize: 12, color: QuizColors.body),
+                ),
               ],
             ),
           ),
@@ -293,12 +371,24 @@ class QuizDashboardScreen extends GetView<QuizController> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Categories',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: QuizColors.heading)),
+            const Text(
+              'Categories',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: QuizColors.heading,
+              ),
+            ),
             GestureDetector(
               onTap: () => Get.toNamed('/quiz/categories'),
-              child: const Text('See All',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: QuizColors.primary)),
+              child: const Text(
+                'See All',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: QuizColors.primary,
+                ),
+              ),
             ),
           ],
         ),
@@ -346,9 +436,15 @@ class QuizDashboardScreen extends GetView<QuizController> {
                         child: Icon(Icons.star, color: iconColor, size: 20),
                       ),
                       const SizedBox(height: 8),
-                      Text(cat.name,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: QuizColors.heading),
-                          overflow: TextOverflow.ellipsis),
+                      Text(
+                        cat.name,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: QuizColors.heading,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
                 ),
@@ -385,7 +481,11 @@ class QuizDashboardScreen extends GetView<QuizController> {
                 color: QuizColors.gold.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.emoji_events, color: QuizColors.gold, size: 26),
+              child: const Icon(
+                Icons.emoji_events,
+                color: QuizColors.gold,
+                size: 26,
+              ),
             ),
             const SizedBox(width: 14),
             const Expanded(
@@ -394,7 +494,11 @@ class QuizDashboardScreen extends GetView<QuizController> {
                 children: [
                   Text(
                     'View Leaderboard',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                   SizedBox(height: 4),
                   Text(
@@ -411,7 +515,11 @@ class QuizDashboardScreen extends GetView<QuizController> {
                 color: Colors.white.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+              child: const Icon(
+                Icons.arrow_forward,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ],
         ),

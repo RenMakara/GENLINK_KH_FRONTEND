@@ -75,8 +75,9 @@ class _OtpInputState extends State<OtpInput> {
     }
 
     _controllers[index].text = digits;
-    _controllers[index].selection =
-        TextSelection.collapsed(offset: digits.length);
+    _controllers[index].selection = TextSelection.collapsed(
+      offset: digits.length,
+    );
 
     if (digits.isNotEmpty && index < widget.length - 1) {
       _nodes[index + 1].requestFocus();
@@ -91,8 +92,7 @@ class _OtpInputState extends State<OtpInput> {
         _controllers[i].text = digits[digitIndex];
       }
     }
-    final lastFilled =
-        (from + digits.length).clamp(0, widget.length) - 1;
+    final lastFilled = (from + digits.length).clamp(0, widget.length) - 1;
     _nodes[lastFilled.clamp(0, widget.length - 1)].requestFocus();
     setState(() {});
     _report();

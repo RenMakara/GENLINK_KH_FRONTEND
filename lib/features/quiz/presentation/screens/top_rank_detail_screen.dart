@@ -35,11 +35,19 @@ class TopRankDetailScreen extends GetView<QuizController> {
               ),
               const SizedBox(height: 14),
               TextButton(
-                onPressed: () => Get.until((route) =>
-                    route.settings.name == '/quiz/dashboard' ||
-                    route.settings.name == '/home'),
-                child: const Text('Back to Dashboard',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: QuizColors.body)),
+                onPressed: () => Get.until(
+                  (route) =>
+                      route.settings.name == '/quiz/dashboard' ||
+                      route.settings.name == '/home',
+                ),
+                child: const Text(
+                  'Back to Dashboard',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: QuizColors.body,
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
             ],
@@ -50,8 +58,14 @@ class TopRankDetailScreen extends GetView<QuizController> {
   }
 
   Widget _buildHeaderSection() {
-    final topEntry = controller.leaderboard.firstWhereOrNull((e) => e.rank == 1) ??
-        const LeaderboardEntry(rank: 1, name: 'Sovannarith', avatarUrl: '', xp: 12450);
+    final topEntry =
+        controller.leaderboard.firstWhereOrNull((e) => e.rank == 1) ??
+        const LeaderboardEntry(
+          rank: 1,
+          name: 'Sovannarith',
+          avatarUrl: '',
+          xp: 12450,
+        );
 
     return Container(
       width: double.infinity,
@@ -96,33 +110,56 @@ class TopRankDetailScreen extends GetView<QuizController> {
               Positioned(
                 bottom: -6,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     gradient: QuizColors.gradient,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
-                      BoxShadow(color: QuizColors.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)),
+                      BoxShadow(
+                        color: QuizColors.primary.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
                     ],
                   ),
                   child: const Text(
                     'Global Rank #1',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 18),
-          Text(topEntry.name,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: QuizColors.heading)),
+          Text(
+            topEntry.name,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: QuizColors.heading,
+            ),
+          ),
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.star, color: QuizColors.gold, size: 16),
               const SizedBox(width: 6),
-              Text('${topEntry.xp} XP',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: QuizColors.body)),
+              Text(
+                '${topEntry.xp} XP',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: QuizColors.body,
+                ),
+              ),
             ],
           ),
         ],
@@ -138,8 +175,14 @@ class TopRankDetailScreen extends GetView<QuizController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Achievements',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: QuizColors.heading)),
+            const Text(
+              'Achievements',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: QuizColors.heading,
+              ),
+            ),
             const SizedBox(height: 16),
             GridView.count(
               crossAxisCount: 4,
@@ -193,7 +236,9 @@ class TopRankDetailScreen extends GetView<QuizController> {
           const SizedBox(width: 10),
           Expanded(child: _buildStatItem('12,450', 'XP', QuizColors.gold)),
           const SizedBox(width: 10),
-          Expanded(child: _buildStatItem('8', 'Badges', const Color(0xFFF59E0B))),
+          Expanded(
+            child: _buildStatItem('8', 'Badges', const Color(0xFFF59E0B)),
+          ),
         ],
       ),
     );
@@ -204,11 +249,19 @@ class TopRankDetailScreen extends GetView<QuizController> {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Column(
         children: [
-          Text(value,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: color)),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
           const SizedBox(height: 2),
-          Text(label,
-              style: const TextStyle(fontSize: 12, color: QuizColors.body)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: QuizColors.body),
+          ),
         ],
       ),
     );

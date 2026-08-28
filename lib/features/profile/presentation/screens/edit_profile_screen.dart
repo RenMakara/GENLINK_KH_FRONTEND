@@ -46,7 +46,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _university = TextEditingController();
   final _location = TextEditingController();
   final _avatarUrl = TextEditingController();
-  final _coverUrl = TextEditingController();
   final _linkedInUrl = TextEditingController();
   final _websiteUrl = TextEditingController();
   final _githubUrl = TextEditingController();
@@ -76,8 +75,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   String _existingLink(String platform) {
-    final match = _controller.socialLinks
-        .firstWhereOrNull((link) => link.platform == platform);
+    final match = _controller.socialLinks.firstWhereOrNull(
+      (link) => link.platform == platform,
+    );
     return match?.url ?? '';
   }
 
@@ -89,7 +89,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _university.dispose();
     _location.dispose();
     _avatarUrl.dispose();
-    _coverUrl.dispose();
     _linkedInUrl.dispose();
     _websiteUrl.dispose();
     _githubUrl.dispose();
@@ -145,12 +144,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: AppSpacing.md),
+        leading: const Center(
           child: AppBackButton(),
         ),
-        leadingWidth: 58 + AppSpacing.md * 2,
-        title: Text('profile.edit'.tr),
+        leadingWidth: 74,
+        title: Text(
+          'profile.edit'.tr,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         actions: [
           Obx(
             () => Padding(
@@ -167,109 +170,132 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       body: Obx(() {
         if (_controller.profile.value == null) return const AppLoader();
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _AvatarPicker(
-                  controller: _avatarUrl,
-                  onChanged: () => setState(() {}),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                AppInput(
-                  label: 'profile.displayName'.tr,
-                  controller: _fullName,
-                  textCapitalization: TextCapitalization.words,
-                  validator: Validators.required,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppInput(
-                  label: 'auth.username'.tr,
-                  controller: _username,
-                  validator: Validators.username,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppInput(
-                  label: 'profile.bio'.tr,
-                  controller: _bio,
-                  maxLines: 4,
-                  maxLength: 500,
-                  textCapitalization: TextCapitalization.sentences,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _RoleDropdown(
-                        value: _workStatus,
-                        options: _workStatuses,
-                        onChanged: (value) =>
-                            setState(() => _workStatus = value),
+        return Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _AvatarPicker(
+                        controller: _avatarUrl,
+                        onChanged: () => setState(() {}),
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: AppInput(
-                        label: 'profile.location'.tr,
-                        controller: _location,
+                      const SizedBox(height: AppSpacing.lg),
+                      AppInput(
+                        label: 'profile.displayName'.tr,
+                        controller: _fullName,
+                        textCapitalization: TextCapitalization.words,
+                        validator: Validators.required,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppInput(
-                  label: 'profile.universityWorkplace'.tr,
-                  controller: _university,
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Center(
-                  child: Text(
-                    'profile.socialPresence'.tr,
-                    style: theme.textTheme.titleSmall,
+                      const SizedBox(height: AppSpacing.md),
+                      AppInput(
+                        label: 'auth.username'.tr,
+                        controller: _username,
+                        validator: Validators.username,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      AppInput(
+                        label: 'profile.bio'.tr,
+                        controller: _bio,
+                        maxLines: 4,
+                        maxLength: 500,
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _RoleDropdown(
+                              value: _workStatus,
+                              options: _workStatuses,
+                              onChanged: (value) =>
+                                  setState(() => _workStatus = value),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: AppInput(
+                              label: 'profile.location'.tr,
+                              controller: _location,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      AppInput(
+                        label: 'profile.universityWorkplace'.tr,
+                        controller: _university,
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      Center(
+                        child: Text(
+                          'profile.socialPresence'.tr,
+                          style: theme.textTheme.titleSmall,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      AppInput(
+                        label: 'profile.linkedIn'.tr,
+                        controller: _linkedInUrl,
+                        keyboardType: TextInputType.url,
+                        hint: 'https://linkedin.com/in/…',
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      AppInput(
+                        label: 'profile.website'.tr,
+                        controller: _websiteUrl,
+                        keyboardType: TextInputType.url,
+                        hint: 'https://…',
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      if (_githubUrl.text.isNotEmpty) ...[
+                        AppInput(
+                          label: 'GitHub',
+                          controller: _githubUrl,
+                          keyboardType: TextInputType.url,
+                          hint: 'https://github.com/…',
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                      ],
+                      if (_telegramUrl.text.isNotEmpty)
+                        AppInput(
+                          label: 'Telegram',
+                          controller: _telegramUrl,
+                          keyboardType: TextInputType.url,
+                          hint: 'https://t.me/…',
+                        ),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
-                AppInput(
-                  label: 'profile.linkedIn'.tr,
-                  controller: _linkedInUrl,
-                  keyboardType: TextInputType.url,
-                  hint: 'https://linkedin.com/in/…',
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppInput(
-                  label: 'profile.website'.tr,
-                  controller: _websiteUrl,
-                  keyboardType: TextInputType.url,
-                  hint: 'https://…',
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppInput(
-                  label: 'GitHub',
-                  controller: _githubUrl,
-                  keyboardType: TextInputType.url,
-                  hint: 'https://github.com/…',
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppInput(
-                  label: 'Telegram',
-                  controller: _telegramUrl,
-                  keyboardType: TextInputType.url,
-                  hint: 'https://t.me/…',
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                AppButton(
-                  label: 'profile.saveChanges'.tr,
-                  icon: Icons.check_circle_outline,
-                  loading: _controller.isSaving.value,
-                  onPressed: _submit,
-                ),
-              ],
+              ),
             ),
-          ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border(
+                  top: BorderSide(color: theme.colorScheme.outlineVariant),
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: AppButton(
+                    label: 'profile.saveChanges'.tr,
+                    icon: Icons.check_circle_outline,
+                    loading: _controller.isSaving.value,
+                    onPressed: _submit,
+                  ),
+                ),
+              ),
+            ),
+          ],
         );
       }),
     );
@@ -371,8 +397,7 @@ class _AvatarPicker extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
               title: Text('profile.chooseFromGallery'.tr),
-              onTap: () =>
-                  Navigator.of(sheetContext).pop(ImageSource.gallery),
+              onTap: () => Navigator.of(sheetContext).pop(ImageSource.gallery),
             ),
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined),
@@ -432,7 +457,9 @@ class _RoleDropdown extends StatelessWidget {
 
   static String _label(String enumValue) => enumValue
       .split('_')
-      .map((word) =>
-          word.isEmpty ? word : word[0] + word.substring(1).toLowerCase())
+      .map(
+        (word) =>
+            word.isEmpty ? word : word[0] + word.substring(1).toLowerCase(),
+      )
       .join(' ');
 }

@@ -28,8 +28,11 @@ class CategorySelectionScreen extends GetView<QuizController> {
     }
 
     if (options.isEmpty) {
-      Get.snackbar('No quizzes', 'No quizzes found for $categoryName yet.',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'No quizzes',
+        'No quizzes found for $categoryName yet.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
 
@@ -77,19 +80,24 @@ class CategorySelectionScreen extends GetView<QuizController> {
                   itemBuilder: (context, index) {
                     final quiz = options[index];
                     return ListTile(
-                      leading: const Icon(Icons.quiz_outlined,
-                          color: QuizColors.primary),
+                      leading: const Icon(
+                        Icons.quiz_outlined,
+                        color: QuizColors.primary,
+                      ),
                       title: Text(
                         (quiz['title'] as String?) ?? 'Quiz ${index + 1}',
                         style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: QuizColors.heading),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: QuizColors.heading,
+                        ),
                       ),
                       subtitle: Text(
                         (quiz['difficulty'] as String?) ?? '',
-                        style:
-                            const TextStyle(fontSize: 12, color: QuizColors.body),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: QuizColors.body,
+                        ),
                       ),
                       onTap: () => Navigator.pop(context, quiz),
                     );
@@ -199,10 +207,7 @@ class CategorySelectionScreen extends GetView<QuizController> {
                 const SizedBox(height: 4),
                 Text(
                   '${cat.questionCount} Questions',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: QuizColors.body,
-                  ),
+                  style: const TextStyle(fontSize: 13, color: QuizColors.body),
                 ),
               ],
             ),
@@ -238,15 +243,23 @@ class CategorySelectionScreen extends GetView<QuizController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(cat.name,
-                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: QuizColors.heading)),
+                        Text(
+                          cat.name,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: QuizColors.heading,
+                          ),
+                        ),
                         const SizedBox(height: 4),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
                             value: 0.65,
                             backgroundColor: QuizColors.border,
-                            valueColor: const AlwaysStoppedAnimation<Color>(QuizColors.primary),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              QuizColors.primary,
+                            ),
                             minHeight: 5,
                           ),
                         ),
@@ -260,7 +273,10 @@ class CategorySelectionScreen extends GetView<QuizController> {
                       _navigateAfterCategory();
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         gradient: QuizColors.gradient,
                         borderRadius: BorderRadius.circular(20),

@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/localization/localization_service.dart';
 import '../../../../core/storage/local_storage.dart';
+import '../../../../core/theme/theme_controller.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../onboarding/presentation/controllers/language_select_controller.dart';
 import '../../../onboarding/presentation/controllers/onboarding_controller.dart';
@@ -29,6 +30,8 @@ class LanguageSelectBinding extends Bindings {
     Get.lazyPut<LanguageSelectController>(
       () => LanguageSelectController(
         localization: Get.find<LocalizationService>(),
+        themeController: Get.find<ThemeController>(),
+        localStorage: Get.find<LocalStorage>(),
       ),
     );
   }

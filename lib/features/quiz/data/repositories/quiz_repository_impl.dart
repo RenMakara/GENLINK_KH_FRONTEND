@@ -8,22 +8,29 @@ class QuizRepositoryImpl implements QuizRepository {
   const QuizRepositoryImpl(this._remoteDataSource);
 
   @override
-  Future<List<Map<String, dynamic>>> getQuizzes({String? category, String? difficulty}) => 
+  Future<List<Map<String, dynamic>>> getQuizzes({
+    String? category,
+    String? difficulty,
+  }) =>
       _remoteDataSource.getQuizzes(category: category, difficulty: difficulty);
 
   @override
-  Future<List<QuizQuestion>> getQuizDetails(String quizId) => 
+  Future<List<QuizQuestion>> getQuizDetails(String quizId) =>
       _remoteDataSource.getQuizDetails(quizId);
 
   @override
-  Future<QuizResult> submitQuizAttempt(String quizId, List<Map<String, String>> answers) => 
-      _remoteDataSource.submitQuizAttempt(quizId, answers);
+  Future<QuizResult> submitQuizAttempt(
+    String quizId,
+    List<Map<String, String>> answers,
+  ) => _remoteDataSource.submitQuizAttempt(quizId, answers);
 
   @override
-  Future<List<Map<String, dynamic>>> getQuizHistory() => 
+  Future<List<Map<String, dynamic>>> getQuizHistory() =>
       _remoteDataSource.getQuizHistory();
 
   @override
-  Future<List<LeaderboardEntry>> getLeaderboard(String category, String period) => 
-      _remoteDataSource.getLeaderboard(category, period);
+  Future<List<LeaderboardEntry>> getLeaderboard(
+    String category,
+    String period,
+  ) => _remoteDataSource.getLeaderboard(category, period);
 }

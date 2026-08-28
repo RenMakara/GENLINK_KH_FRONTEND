@@ -19,12 +19,49 @@ class LeaderboardController extends GetxController {
     countryFlag: '🇰🇭',
     topSubjects: ['Science', 'Technology', 'Math'],
     achievements: [
-      Achievement(id: 'a1', title: 'Quiz Master', description: 'Answer 100 quizzes', icon: Icons.emoji_events, color: Color(0xFFFFD700)),
-      Achievement(id: 'a2', title: 'Speed Learner', description: 'Finish quiz < 60s', icon: Icons.bolt, color: Color(0xFF8B5CF6)),
-      Achievement(id: 'a3', title: 'Perfect Score', description: 'Get 100% in a quiz', icon: Icons.star, color: Color(0xFF10B981)),
-      Achievement(id: 'a4', title: 'Streak 7 Days', description: '7-day streak', icon: Icons.local_fire_department, color: Color(0xFFEF4444), isUnlocked: true),
-      Achievement(id: 'a5', title: 'Knowledge King', description: 'Top 10 Global', icon: Icons.psychology, color: Color(0xFFF59E0B)),
-      Achievement(id: 'a6', title: 'Top 10 Global', description: 'Reach top 10', icon: Icons.public, color: Color(0xFF3B82F6)),
+      Achievement(
+        id: 'a1',
+        title: 'Quiz Master',
+        description: 'Answer 100 quizzes',
+        icon: Icons.emoji_events,
+        color: Color(0xFFFFD700),
+      ),
+      Achievement(
+        id: 'a2',
+        title: 'Speed Learner',
+        description: 'Finish quiz < 60s',
+        icon: Icons.bolt,
+        color: Color(0xFF8B5CF6),
+      ),
+      Achievement(
+        id: 'a3',
+        title: 'Perfect Score',
+        description: 'Get 100% in a quiz',
+        icon: Icons.star,
+        color: Color(0xFF10B981),
+      ),
+      Achievement(
+        id: 'a4',
+        title: 'Streak 7 Days',
+        description: '7-day streak',
+        icon: Icons.local_fire_department,
+        color: Color(0xFFEF4444),
+        isUnlocked: true,
+      ),
+      Achievement(
+        id: 'a5',
+        title: 'Knowledge King',
+        description: 'Top 10 Global',
+        icon: Icons.psychology,
+        color: Color(0xFFF59E0B),
+      ),
+      Achievement(
+        id: 'a6',
+        title: 'Top 10 Global',
+        description: 'Reach top 10',
+        icon: Icons.public,
+        color: Color(0xFF3B82F6),
+      ),
     ],
     isCurrentUser: true,
   );
@@ -54,9 +91,27 @@ class LeaderboardController extends GetxController {
         quote: 'I love learning new things and challenging myself everyday ✨',
         topSubjects: ['Science', 'Math', 'Technology'],
         achievements: [
-          Achievement(id: 'e1', title: 'Quiz Master', description: '100 quizzes', icon: Icons.emoji_events, color: Color(0xFFFFD700)),
-          Achievement(id: 'e2', title: 'Perfect Score', description: '100% accuracy', icon: Icons.star, color: Color(0xFF10B981)),
-          Achievement(id: 'e3', title: 'Streak 21', description: '21-day streak', icon: Icons.local_fire_department, color: Color(0xFFEF4444)),
+          Achievement(
+            id: 'e1',
+            title: 'Quiz Master',
+            description: '100 quizzes',
+            icon: Icons.emoji_events,
+            color: Color(0xFFFFD700),
+          ),
+          Achievement(
+            id: 'e2',
+            title: 'Perfect Score',
+            description: '100% accuracy',
+            icon: Icons.star,
+            color: Color(0xFF10B981),
+          ),
+          Achievement(
+            id: 'e3',
+            title: 'Streak 21',
+            description: '21-day streak',
+            icon: Icons.local_fire_department,
+            color: Color(0xFFEF4444),
+          ),
         ],
       ),
       const LeaderboardUser(
@@ -157,8 +212,12 @@ class LeaderboardController extends GetxController {
       ),
     ].obs;
 
-    friendsUsers = RxList<LeaderboardUser>(globalUsers.where((u) => u.isCurrentUser || u.isFriend).toList());
-    countryUsers = RxList<LeaderboardUser>(globalUsers.where((u) => u.country == 'Cambodia').toList());
+    friendsUsers = RxList<LeaderboardUser>(
+      globalUsers.where((u) => u.isCurrentUser || u.isFriend).toList(),
+    );
+    countryUsers = RxList<LeaderboardUser>(
+      globalUsers.where((u) => u.country == 'Cambodia').toList(),
+    );
     if (countryUsers.isEmpty) {
       countryUsers = RxList<LeaderboardUser>([currentUser]);
     }
@@ -195,13 +254,64 @@ class LeaderboardController extends GetxController {
   }
 
   List<Achievement> get allAchievements => [
-    const Achievement(id: 'all1', title: 'Quiz Master', description: 'Answer 100 quizzes', icon: Icons.emoji_events, color: Color(0xFFFFD700)),
-    const Achievement(id: 'all2', title: 'Speed Learner', description: 'Finish quiz < 60s', icon: Icons.bolt, color: Color(0xFF8B5CF6)),
-    const Achievement(id: 'all3', title: 'Perfect Score', description: 'Get 100% in a quiz', icon: Icons.star, color: Color(0xFF10B981)),
-    const Achievement(id: 'all4', title: 'Streak 7 Days', description: '7-day streak', icon: Icons.local_fire_department, color: Color(0xFFEF4444)),
-    const Achievement(id: 'all5', title: 'Knowledge King', description: 'Top 10 Global', icon: Icons.psychology, color: Color(0xFFF59E0B)),
-    const Achievement(id: 'all6', title: 'Top 10 Global', description: 'Reach top 10', icon: Icons.public, color: Color(0xFF3B82F6), isUnlocked: false),
-    const Achievement(id: 'all7', title: 'Streak 30 Days', description: '30-day streak', icon: Icons.whatshot, color: Color(0xFFFF6D00), isUnlocked: false),
-    const Achievement(id: 'all8', title: 'Scholar', description: 'Complete 500 quizzes', icon: Icons.school, color: Color(0xFF3B82F6), isUnlocked: false),
+    const Achievement(
+      id: 'all1',
+      title: 'Quiz Master',
+      description: 'Answer 100 quizzes',
+      icon: Icons.emoji_events,
+      color: Color(0xFFFFD700),
+    ),
+    const Achievement(
+      id: 'all2',
+      title: 'Speed Learner',
+      description: 'Finish quiz < 60s',
+      icon: Icons.bolt,
+      color: Color(0xFF8B5CF6),
+    ),
+    const Achievement(
+      id: 'all3',
+      title: 'Perfect Score',
+      description: 'Get 100% in a quiz',
+      icon: Icons.star,
+      color: Color(0xFF10B981),
+    ),
+    const Achievement(
+      id: 'all4',
+      title: 'Streak 7 Days',
+      description: '7-day streak',
+      icon: Icons.local_fire_department,
+      color: Color(0xFFEF4444),
+    ),
+    const Achievement(
+      id: 'all5',
+      title: 'Knowledge King',
+      description: 'Top 10 Global',
+      icon: Icons.psychology,
+      color: Color(0xFFF59E0B),
+    ),
+    const Achievement(
+      id: 'all6',
+      title: 'Top 10 Global',
+      description: 'Reach top 10',
+      icon: Icons.public,
+      color: Color(0xFF3B82F6),
+      isUnlocked: false,
+    ),
+    const Achievement(
+      id: 'all7',
+      title: 'Streak 30 Days',
+      description: '30-day streak',
+      icon: Icons.whatshot,
+      color: Color(0xFFFF6D00),
+      isUnlocked: false,
+    ),
+    const Achievement(
+      id: 'all8',
+      title: 'Scholar',
+      description: 'Complete 500 quizzes',
+      icon: Icons.school,
+      color: Color(0xFF3B82F6),
+      isUnlocked: false,
+    ),
   ];
 }

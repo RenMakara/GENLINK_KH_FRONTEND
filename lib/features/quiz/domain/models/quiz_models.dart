@@ -1,7 +1,4 @@
-enum QuizType {
-  single,
-  random,
-}
+enum QuizType { single, random }
 
 class QuizCategory {
   final String id;
@@ -37,10 +34,7 @@ class QuizOptionModel {
   final String id;
   final String text;
 
-  const QuizOptionModel({
-    required this.id,
-    required this.text,
-  });
+  const QuizOptionModel({required this.id, required this.text});
 }
 
 class QuizQuestion {

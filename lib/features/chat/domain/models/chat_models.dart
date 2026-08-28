@@ -34,14 +34,16 @@ class ChatMessageModel {
     final sender = json['sender'] is Map<String, dynamic>
         ? json['sender'] as Map<String, dynamic>
         : const <String, dynamic>{};
-    final createdAt = DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+    final createdAt =
+        DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
         DateTime.now();
     final backendType = (json['type'] as String?) ?? 'TEXT';
     return ChatMessageModel(
       id: json['messageId']?.toString() ?? '',
       conversationId: conversationId,
       senderId: sender['userId']?.toString() ?? '',
-      senderName: (sender['fullName'] as String?) ??
+      senderName:
+          (sender['fullName'] as String?) ??
           (sender['username'] as String?) ??
           'User',
       senderAvatar: sender['avatarUrl'] as String?,
@@ -109,28 +111,28 @@ class ChatConversationModel {
         : null;
     final lastActivity =
         DateTime.tryParse(json['lastActivityAt']?.toString() ?? '') ??
-            lastCreatedAt;
+        lastCreatedAt;
     final lastType = (lastMessage?['type'] as String?) ?? 'TEXT';
     return ChatConversationModel(
       id: json['roomId']?.toString() ?? '',
-      name: (json['title'] as String?) ??
+      name:
+          (json['title'] as String?) ??
           (counterpart['fullName'] as String?) ??
           (counterpart['username'] as String?) ??
           'Chat',
-      avatar: counterpart['avatarUrl'] as String? ??
+      avatar:
+          counterpart['avatarUrl'] as String? ??
           'assets/images/user_profile.png',
       isGroup: type == 'GROUP',
       isOnline: false,
       lastMessage: lastMessage == null
           ? ''
           : lastType == 'IMAGE'
-              ? '[image]'
-              : lastType == 'VOICE'
-                  ? '[voice message]'
-                  : (lastMessage['content'] as String? ?? ''),
-      lastMessageTime: lastActivity == null
-          ? ''
-          : _timeAgo(lastActivity),
+          ? '[image]'
+          : lastType == 'VOICE'
+          ? '[voice message]'
+          : (lastMessage['content'] as String? ?? ''),
+      lastMessageTime: lastActivity == null ? '' : _timeAgo(lastActivity),
       unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
       membersCount: 0,
     );

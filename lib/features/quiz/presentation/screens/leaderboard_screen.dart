@@ -22,7 +22,11 @@ class LeaderboardScreen extends GetView<QuizController> {
         ),
         title: const Text(
           'Leaderboard',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: QuizColors.heading),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: QuizColors.heading,
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -42,11 +46,19 @@ class LeaderboardScreen extends GetView<QuizController> {
             ),
             const SizedBox(height: 14),
             TextButton(
-              onPressed: () => Get.until((route) =>
-                  route.settings.name == '/quiz/dashboard' ||
-                  route.settings.name == '/home'),
-              child: const Text('Back to Dashboard',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: QuizColors.body)),
+              onPressed: () => Get.until(
+                (route) =>
+                    route.settings.name == '/quiz/dashboard' ||
+                    route.settings.name == '/home',
+              ),
+              child: const Text(
+                'Back to Dashboard',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: QuizColors.body,
+                ),
+              ),
             ),
             const SizedBox(height: 20),
           ],
@@ -70,9 +82,7 @@ class LeaderboardScreen extends GetView<QuizController> {
               child: _buildPodiumItem(entries[1], 56, Colors.grey[400]!),
             ),
             // 1st place
-            Expanded(
-              child: _buildPodiumItem(entries[0], 72, QuizColors.gold),
-            ),
+            Expanded(child: _buildPodiumItem(entries[0], 72, QuizColors.gold)),
             // 3rd place
             Expanded(
               child: _buildPodiumItem(entries[2], 48, const Color(0xFFCD7F32)),
@@ -83,7 +93,11 @@ class LeaderboardScreen extends GetView<QuizController> {
     });
   }
 
-  Widget _buildPodiumItem(LeaderboardEntry entry, double crownSize, Color crownColor) {
+  Widget _buildPodiumItem(
+    LeaderboardEntry entry,
+    double crownSize,
+    Color crownColor,
+  ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.end,
@@ -100,7 +114,11 @@ class LeaderboardScreen extends GetView<QuizController> {
                   colors: [crownColor.withOpacity(0.8), crownColor],
                 ),
                 boxShadow: [
-                  BoxShadow(color: crownColor.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6)),
+                  BoxShadow(
+                    color: crownColor.withOpacity(0.3),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
                 ],
               ),
               child: const Icon(Icons.person, color: Colors.white, size: 32),
@@ -112,11 +130,23 @@ class LeaderboardScreen extends GetView<QuizController> {
           ],
         ),
         const SizedBox(height: 8),
-        Text(entry.name,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: QuizColors.heading),
-            overflow: TextOverflow.ellipsis),
-        Text('${entry.xp} XP',
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: QuizColors.primary)),
+        Text(
+          entry.name,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: QuizColors.heading,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+        Text(
+          '${entry.xp} XP',
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: QuizColors.primary,
+          ),
+        ),
       ],
     );
   }
@@ -166,7 +196,11 @@ class LeaderboardScreen extends GetView<QuizController> {
                     shape: BoxShape.circle,
                     gradient: QuizColors.gradient,
                   ),
-                  child: const Icon(Icons.person, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -181,20 +215,34 @@ class LeaderboardScreen extends GetView<QuizController> {
                           color: isMe ? QuizColors.primary : QuizColors.heading,
                         ),
                       ),
-                      Text('${entry.xp} XP',
-                          style: const TextStyle(fontSize: 12, color: QuizColors.body)),
+                      Text(
+                        '${entry.xp} XP',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: QuizColors.body,
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 if (isMe)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: QuizColors.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text('YOU',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                    child: const Text(
+                      'YOU',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
               ],
             ),

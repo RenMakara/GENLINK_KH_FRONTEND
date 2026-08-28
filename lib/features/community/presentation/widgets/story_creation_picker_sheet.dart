@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../domain/models/story_model.dart';
+import '../controllers/story_gallery_controller.dart';
 import '../screens/story_creator_screen.dart';
 import '../screens/in_app_camera_screen.dart';
 import '../screens/story_gallery_screen.dart';
@@ -24,13 +24,35 @@ class StoryCreationPickerSheet extends StatelessWidget {
 
   void _pickFromGallery(BuildContext context) {
     Get.back();
-    Get.to(() => const StoryGalleryScreen());
+    final galleryCtrl = Get.isRegistered<StoryGalleryController>()
+        ? Get.find<StoryGalleryController>()
+        : Get.put(StoryGalleryController());
+    galleryCtrl.configureForTemplate(
+      template: null,
+      requiredPhotos: 0,
+      maxSelection: 0,
+      isMultiSelect: false,
+      clearSelection: true,
+    );
+    Get.to(
+      () => const StoryGalleryScreen(),
+      routeName: '/StoryGalleryScreen',
+      transition: Transition.fadeIn,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   void _openCamera(BuildContext context) {
     Get.back();
     try {
-      Get.to(() => const InAppCameraScreen(initialIsVideoMode: false));
+      Get.to(
+        () => const InAppCameraScreen(initialIsVideoMode: false),
+        routeName: '/InAppCameraScreen',
+        transition: Transition.fadeIn,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+      );
     } catch (e) {
       if (context.mounted) {
         AppNotificationBanner.showDanger(
@@ -44,15 +66,25 @@ class StoryCreationPickerSheet extends StatelessWidget {
 
   void _openTextStory(BuildContext context) {
     Get.back();
-    Get.to(() => const StoryCreatorScreen(type: StoryType.text));
+    Get.to(
+      () => const StoryCreatorScreen(type: StoryType.text),
+      routeName: '/StoryCreatorScreen',
+      transition: Transition.fadeIn,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfacePrimary = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+    final surfacePrimary = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final iconBgColor = isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBgSecondary;
+    final iconBgColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : AppColors.lightBgSecondary;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
@@ -97,7 +129,10 @@ class StoryCreationPickerSheet extends StatelessWidget {
           Material(
             color: Colors.transparent,
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
               leading: Container(
                 width: 48,
                 height: 48,
@@ -105,11 +140,23 @@ class StoryCreationPickerSheet extends StatelessWidget {
                   color: iconBgColor,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.camera_alt_rounded, color: textPrimary, size: 22),
+                child: Icon(
+                  Icons.camera_alt_rounded,
+                  color: textPrimary,
+                  size: 22,
+                ),
               ),
               title: Text(
                 'community.camera'.tr,
-                style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                  color: textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              subtitle: Text(
+                'Take photos or record videos',
+                style: TextStyle(color: textPrimary.withValues(alpha: 0.5), fontSize: 12.5),
               ),
               onTap: () => _openCamera(context),
             ),
@@ -121,7 +168,10 @@ class StoryCreationPickerSheet extends StatelessWidget {
           Material(
             color: Colors.transparent,
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
               leading: Container(
                 width: 48,
                 height: 48,
@@ -129,11 +179,23 @@ class StoryCreationPickerSheet extends StatelessWidget {
                   color: iconBgColor,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.photo_library_rounded, color: textPrimary, size: 22),
+                child: Icon(
+                  Icons.photo_library_rounded,
+                  color: textPrimary,
+                  size: 22,
+                ),
               ),
               title: Text(
                 'community.gallery'.tr,
-                style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                  color: textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              subtitle: Text(
+                'Select photos or videos from camera roll',
+                style: TextStyle(color: textPrimary.withValues(alpha: 0.5), fontSize: 12.5),
               ),
               onTap: () => _pickFromGallery(context),
             ),
@@ -145,7 +207,10 @@ class StoryCreationPickerSheet extends StatelessWidget {
           Material(
             color: Colors.transparent,
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
               leading: Container(
                 width: 48,
                 height: 48,
@@ -157,7 +222,15 @@ class StoryCreationPickerSheet extends StatelessWidget {
               ),
               title: Text(
                 'community.textStory'.tr,
-                style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                  color: textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              subtitle: Text(
+                'Create text posts with rich gradient backgrounds',
+                style: TextStyle(color: textPrimary.withValues(alpha: 0.5), fontSize: 12.5),
               ),
               onTap: () => _openTextStory(context),
             ),

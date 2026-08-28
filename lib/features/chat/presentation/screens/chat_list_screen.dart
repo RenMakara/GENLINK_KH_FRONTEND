@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/models/chat_models.dart';
 import '../controllers/chat_controller.dart';
 import '../bindings/chat_binding.dart';
@@ -25,10 +26,10 @@ class ChatListScreen extends GetView<ChatController> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-          onPressed: () => Get.back(),
+        leading: Center(
+          child: AppBackButton(onPressed: () => Get.back()),
         ),
+        leadingWidth: 72,
         title: const Text(
           "Messages & Chats",
           style: TextStyle(
@@ -39,7 +40,11 @@ class ChatListScreen extends GetView<ChatController> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_note_rounded, color: AppColors.communityAccent, size: 26),
+            icon: const Icon(
+              Icons.edit_note_rounded,
+              color: AppColors.communityAccent,
+              size: 26,
+            ),
             onPressed: () {
               Get.snackbar(
                 "New Message",
@@ -68,7 +73,9 @@ class ChatListScreen extends GetView<ChatController> {
                 child: Obx(() {
                   if (chatController.isLoadingConversations.value) {
                     return const Center(
-                      child: CircularProgressIndicator(color: AppColors.communityAccent),
+                      child: CircularProgressIndicator(
+                        color: AppColors.communityAccent,
+                      ),
                     );
                   }
 
@@ -80,7 +87,9 @@ class ChatListScreen extends GetView<ChatController> {
                           Icon(
                             Icons.forum_outlined,
                             size: 56,
-                            color: AppColors.darkTextMuted.withValues(alpha: 0.5),
+                            color: AppColors.darkTextMuted.withValues(
+                              alpha: 0.5,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           const Text(
@@ -109,11 +118,18 @@ class ChatListScreen extends GetView<ChatController> {
                     color: AppColors.communityAccent,
                     backgroundColor: AppColors.darkSurfaceSecondary,
                     child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       itemCount: chatController.conversations.length,
                       itemBuilder: (context, index) {
                         final conv = chatController.conversations[index];
-                        return _buildConversationCard(context, conv, chatController);
+                        return _buildConversationCard(
+                          context,
+                          conv,
+                          chatController,
+                        );
                       },
                     ),
                   );
@@ -128,7 +144,10 @@ class ChatListScreen extends GetView<ChatController> {
 
   Widget _buildOnlineRow() {
     final onlineList = [
-      {'name': 'Sokuntheara', 'avatar': 'assets/images/sokuntheara_profile.png'},
+      {
+        'name': 'Sokuntheara',
+        'avatar': 'assets/images/sokuntheara_profile.png',
+      },
       {'name': 'Sum Sambo', 'avatar': 'assets/images/sum_sambo_profile.png'},
       {'name': 'Chansela', 'avatar': 'assets/images/heng_chansela_profile.png'},
       {'name': 'Ren Makara', 'avatar': 'assets/images/ren_makara_profile.png'},
@@ -258,9 +277,14 @@ class ChatListScreen extends GetView<ChatController> {
                             if (conv.isGroup) ...[
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.communityAccent.withValues(alpha: 0.2),
+                                  color: AppColors.communityAccent.withValues(
+                                    alpha: 0.2,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Text(
@@ -296,7 +320,9 @@ class ChatListScreen extends GetView<ChatController> {
                             color: conv.unreadCount > 0
                                 ? Colors.white
                                 : AppColors.darkTextSecondary,
-                            fontWeight: conv.unreadCount > 0 ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight: conv.unreadCount > 0
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                             fontSize: 13,
                           ),
                           maxLines: 1,
@@ -305,7 +331,10 @@ class ChatListScreen extends GetView<ChatController> {
                       ),
                       if (conv.unreadCount > 0)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
                           decoration: const BoxDecoration(
                             color: AppColors.communityAccent,
                             shape: BoxShape.circle,

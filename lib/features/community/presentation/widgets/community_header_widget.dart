@@ -11,13 +11,11 @@ import '../screens/community_search_screen.dart';
 ///
 /// Refactored to strictly match the design system tokens, layout, typography,
 /// and component architecture of the Finance header.
-class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidget {
+class CommunityHeaderWidget extends StatelessWidget
+    implements PreferredSizeWidget {
   final String activeCategory;
 
-  const CommunityHeaderWidget({
-    super.key,
-    required this.activeCategory,
-  });
+  const CommunityHeaderWidget({super.key, required this.activeCategory});
 
   @override
   Size get preferredSize => const Size.fromHeight(64.0);
@@ -27,15 +25,15 @@ class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidg
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final bg = isDark
-        ? AppColors.darkBgPrimary
-        : AppColors.lightBgPrimary;
+    final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
 
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
 
-    final titleText = 'community.title'.tr.isNotEmpty && 'community.title'.tr != 'community.title'
+    final titleText =
+        'community.title'.tr.isNotEmpty &&
+            'community.title'.tr != 'community.title'
         ? 'community.title'.tr
         : 'Community';
 
@@ -48,9 +46,13 @@ class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidg
             final isNarrow = constraints.maxWidth < 360;
             final isVeryNarrow = constraints.maxWidth < 335;
             final buttonSize = isVeryNarrow ? 34.0 : (isNarrow ? 38.0 : 42.0);
-            final buttonGap = isVeryNarrow ? 3.0 : (isNarrow ? 5.0 : AppSpacing.sm);
+            final buttonGap = isVeryNarrow
+                ? 3.0
+                : (isNarrow ? 5.0 : AppSpacing.sm);
             final iconSize = isVeryNarrow ? 18.0 : (isNarrow ? 20.0 : 22.0);
-            final titleFontSize = isVeryNarrow ? 18.0 : (isNarrow ? 20.0 : 22.0);
+            final titleFontSize = isVeryNarrow
+                ? 18.0
+                : (isNarrow ? 20.0 : 22.0);
             final horizontalPadding = isNarrow ? 10.0 : AppSpacing.md;
 
             return Center(
@@ -59,69 +61,74 @@ class CommunityHeaderWidget extends StatelessWidget implements PreferredSizeWidg
                 child: Container(
                   height: preferredSize.height,
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              child: Row(
-                children: [
-                  // 1. LEFT TITLE - Flexible and non-overflowing
-                  Expanded(
-                    child: Text(
-                      titleText,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: titleFontSize,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 6),
-
-                  // 2. RIGHT ACTION BUTTONS (Search, Chat, Notification)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Row(
                     children: [
-                      // Search Button
-                      _HeaderActionButton(
-                        icon: Icons.search_rounded,
-                        onTap: () => Get.to(() => CommunitySearchScreen(activeTab: activeCategory)),
-                        iconColor: textPrimary,
-                        buttonSize: buttonSize,
-                        iconSize: iconSize,
-                        tooltip: 'community.search'.tr,
+                      // 1. LEFT TITLE - Flexible and non-overflowing
+                      Expanded(
+                        child: Text(
+                          titleText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: titleFontSize,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
                       ),
 
-                      SizedBox(width: buttonGap),
+                      const SizedBox(width: 6),
 
-                      // Chat Button - Two overlapping speech bubbles icon
-                      _HeaderActionButton(
-                        icon: Icons.forum_outlined,
-                        onTap: () => Get.to(() => const ChatListScreen()),
-                        iconColor: textPrimary,
-                        buttonSize: buttonSize,
-                        iconSize: iconSize,
-                        tooltip: 'community.chat'.tr,
-                      ),
+                      // 2. RIGHT ACTION BUTTONS (Search, Chat, Notification)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Search Button
+                          _HeaderActionButton(
+                            icon: Icons.search_rounded,
+                            onTap: () => Get.to(
+                              () => CommunitySearchScreen(
+                                activeTab: activeCategory,
+                              ),
+                            ),
+                            iconColor: textPrimary,
+                            buttonSize: buttonSize,
+                            iconSize: iconSize,
+                            tooltip: 'community.search'.tr,
+                          ),
 
-                      SizedBox(width: buttonGap),
+                          SizedBox(width: buttonGap),
 
-                      // Notification Button
-                      _HeaderActionButton(
-                        icon: Icons.notifications_none_rounded,
-                        onTap: () => Get.to(() => const NotificationScreen()),
-                        iconColor: textPrimary,
-                        buttonSize: buttonSize,
-                        iconSize: iconSize,
-                        tooltip: 'community.notifications'.tr,
+                          // Chat Button - Two overlapping speech bubbles icon
+                          _HeaderActionButton(
+                            icon: Icons.forum_outlined,
+                            onTap: () => Get.to(() => const ChatListScreen()),
+                            iconColor: textPrimary,
+                            buttonSize: buttonSize,
+                            iconSize: iconSize,
+                            tooltip: 'community.chat'.tr,
+                          ),
+
+                          SizedBox(width: buttonGap),
+
+                          // Notification Button
+                          _HeaderActionButton(
+                            icon: Icons.notifications_none_rounded,
+                            onTap: () =>
+                                Get.to(() => const NotificationScreen()),
+                            iconColor: textPrimary,
+                            buttonSize: buttonSize,
+                            iconSize: iconSize,
+                            tooltip: 'community.notifications'.tr,
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-        );
+            );
           },
         ),
       ),
@@ -161,11 +168,7 @@ class _HeaderActionButton extends StatelessWidget {
             width: buttonSize,
             height: buttonSize,
             child: Center(
-              child: Icon(
-                icon,
-                size: iconSize,
-                color: iconColor,
-              ),
+              child: Icon(icon, size: iconSize, color: iconColor),
             ),
           ),
         ),

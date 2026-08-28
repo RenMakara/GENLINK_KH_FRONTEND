@@ -41,9 +41,7 @@ class CommunityRemoteDataSource {
       timeAgo: '1h ago',
       content:
           '✨ Working on a new UI/UX design for CampusLink KH. Every detail matters when creating an app that\'s simple, modern, and enjoyable to use. Looking forward to sharing more updates soon! 🎨📱',
-      imageUrls: [
-        'assets/images/sokuntheara_post.png',
-      ],
+      imageUrls: ['assets/images/sokuntheara_post.png'],
       location: 'ACLEDA University of Business',
       likesCount: 54,
       commentsCount: 11,
@@ -58,7 +56,8 @@ class CommunityRemoteDataSource {
       userId: 'user_sambo',
       authorName: 'Sum Sambo',
       authorTag: '@sumsambo',
-      authorAvatar: 'https://i.pinimg.com/736x/ec/31/fb/ec31fb6bb86683cf4d2d1680f79f14cb.jpg',
+      authorAvatar:
+          'https://i.pinimg.com/736x/ec/31/fb/ec31fb6bb86683cf4d2d1680f79f14cb.jpg',
       isVerified: false,
       timeAgo: '3h ago',
       content:
@@ -85,9 +84,7 @@ class CommunityRemoteDataSource {
       timeAgo: '2h ago',
       content:
           '❤️ Creating beautiful memories together after classes at AUB.\nCampus life is more meaningful when you have someone to share every moment with. ☕📸',
-      imageUrls: [
-        'assets/images/heng_chansela_post.png',
-      ],
+      imageUrls: ['assets/images/heng_chansela_post.png'],
       location: 'ACLEDA University of Business, Phnom Penh',
       likesCount: 42,
       commentsCount: 8,
@@ -107,9 +104,7 @@ class CommunityRemoteDataSource {
       timeAgo: '5h ago',
       content:
           '🚀 មកស្គាល់គម្រោង «AuthGate»\n\nAuthGate គឺជាប្រព័ន្ធគ្រប់គ្រងសិទ្ធិចូលប្រើប្រាស់ និងផ្ទៀងផ្ទាត់អត្តសញ្ញាណ (Authentication & Access Control System) ដែលអភិវឌ្ឍដោយប្រើ Spring Boot Microservices។\n\nFeatures:\n• Secure Login & Authentication\n• Role-Based Access Control (RBAC)\n• JWT Authentication\n• Refresh Token\n• REST API\n• Spring Boot Microservices\n• Docker\n• Swagger API Documentation\n\n#SpringBoot #Microservices #Java #BackendDevelopment #Docker #JWT #AuthGate',
-      imageUrls: [
-        'assets/images/authgate_project.png',
-      ],
+      imageUrls: ['assets/images/authgate_project.png'],
       location: 'ACLEDA University of Business',
       likesCount: 65,
       commentsCount: 14,
@@ -151,9 +146,8 @@ class CommunityRemoteDataSource {
         if (content.isNotEmpty) {
           return content
               .map(
-                (json) => CommunityPostModel.fromJson(
-                  json as Map<String, dynamic>,
-                ),
+                (json) =>
+                    CommunityPostModel.fromJson(json as Map<String, dynamic>),
               )
               .toList();
         }
@@ -258,8 +252,9 @@ class CommunityRemoteDataSource {
       );
       if (response.statusCode == 200 && response.data != null) {
         final body = response.data;
-        final rawData =
-            body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        final rawData = body is Map<String, dynamic>
+            ? (body['data'] ?? body)
+            : body;
         if (rawData is List) {
           return rawData
               .map(
@@ -276,8 +271,7 @@ class CommunityRemoteDataSource {
         postId: postId,
         userId: 'u_10',
         userName: 'Rathana P.',
-        userAvatar:
-            'assets/images/user_profile.png',
+        userAvatar: 'assets/images/user_profile.png',
         text: 'Awesome post! Looking forward to seeing more updates 🔥',
         timeAgo: '1h ago',
         likesCount: 3,
@@ -287,8 +281,7 @@ class CommunityRemoteDataSource {
         postId: postId,
         userId: 'u_11',
         userName: 'Sothea N.',
-        userAvatar:
-            'assets/images/user_profile.png',
+        userAvatar: 'assets/images/user_profile.png',
         text: 'Great work team! Keep it up 👏',
         timeAgo: '30m ago',
         likesCount: 1,
@@ -316,10 +309,7 @@ class CommunityRemoteDataSource {
       await guardDio(
         () => dio.post<dynamic>(
           ApiEndpoints.communityPostComments(postId),
-          data: {
-            'text': text,
-            'parentCommentId': parentCommentId,
-          },
+          data: {'text': text, 'parentCommentId': parentCommentId},
         ),
       );
     } catch (_) {}

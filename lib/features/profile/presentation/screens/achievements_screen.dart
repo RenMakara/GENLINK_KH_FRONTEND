@@ -23,12 +23,16 @@ class AchievementsScreen extends GetView<ProfileController> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: AppSpacing.md),
+        leading: const Center(
           child: AppBackButton(),
         ),
-        leadingWidth: 58 + AppSpacing.md * 2,
-        title: Text('profile.achievements'.tr),
+        leadingWidth: 74,
+        title: Text(
+          'profile.achievements'.tr,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
       body: Obx(() {
         final profile = controller.profile.value;
@@ -72,8 +76,9 @@ class AchievementsScreen extends GetView<ProfileController> {
                     child: LinearProgressIndicator(
                       value: profile.levelProgress,
                       minHeight: 6,
-                      backgroundColor:
-                          theme.colorScheme.onPrimary.withValues(alpha: 0.2),
+                      backgroundColor: theme.colorScheme.onPrimary.withValues(
+                        alpha: 0.2,
+                      ),
                       valueColor: AlwaysStoppedAnimation<Color>(
                         theme.colorScheme.onPrimary,
                       ),
@@ -86,8 +91,7 @@ class AchievementsScreen extends GetView<ProfileController> {
                       'level': '${profile.level + 1}',
                     }),
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color:
-                          theme.colorScheme.onPrimary.withValues(alpha: 0.7),
+                      color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -96,8 +100,10 @@ class AchievementsScreen extends GetView<ProfileController> {
             const SizedBox(height: AppSpacing.xl),
 
             // ── Badge grid ─────────────────────────────────────────────
-            Text('achievements.myBadges'.tr,
-                style: theme.textTheme.titleMedium),
+            Text(
+              'achievements.myBadges'.tr,
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: AppSpacing.md),
             if (badges.isEmpty)
               AppEmptyState(

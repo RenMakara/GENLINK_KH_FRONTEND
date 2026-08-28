@@ -87,10 +87,7 @@ class _DashedBorderPainter extends CustomPainter {
 
       for (var i = 0; i < count; i++) {
         final start = i * actualStep;
-        canvas.drawPath(
-          metric.extractPath(start, start + actualDash),
-          paint,
-        );
+        canvas.drawPath(metric.extractPath(start, start + actualDash), paint);
       }
     }
   }

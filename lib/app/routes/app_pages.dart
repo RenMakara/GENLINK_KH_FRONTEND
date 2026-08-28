@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../features/auth/presentation/middleware/auth_middleware.dart';
+import '../../features/auth/presentation/screens/auth_choice_screen.dart';
 import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
@@ -79,6 +80,10 @@ abstract final class AppPages {
     ),
 
     // ── Auth ────────────────────────────────────────────────────────────
+    GetPage<dynamic>(
+      name: AppRoutes.authChoice,
+      page: () => const AuthChoiceScreen(),
+    ),
     GetPage<dynamic>(name: AppRoutes.login, page: () => const LoginScreen()),
     GetPage<dynamic>(
       name: AppRoutes.register,

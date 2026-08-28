@@ -8,7 +8,7 @@ class StoryRepositoryImpl implements StoryRepository {
   final ApiClient _apiClient;
 
   StoryRepositoryImpl({ApiClient? apiClient})
-      : _apiClient = apiClient ?? Get.find<ApiClient>();
+    : _apiClient = apiClient ?? Get.find<ApiClient>();
 
   @override
   Future<List<StoryGroupModel>> getStories() async {
@@ -21,10 +21,12 @@ class StoryRepositoryImpl implements StoryRepository {
         final stories = json['stories'] as List? ?? const [];
         return StoryGroupModel(
           userId: author['userId']?.toString() ?? '',
-          userName: (author['fullName'] as String?) ??
+          userName:
+              (author['fullName'] as String?) ??
               (author['username'] as String?) ??
               'User',
-          userAvatar: author['avatarUrl'] as String? ??
+          userAvatar:
+              author['avatarUrl'] as String? ??
               'assets/images/user_profile.png',
           isOwner: false,
           hasUnseen: json['hasUnseen'] as bool? ?? false,
@@ -71,10 +73,7 @@ class StoryRepositoryImpl implements StoryRepository {
 
   @override
   Future<void> markViewed(String storyId) async {
-    await _apiClient.post(
-      ApiEndpoints.storyView(storyId),
-      parse: (_) {},
-    );
+    await _apiClient.post(ApiEndpoints.storyView(storyId), parse: (_) {});
   }
 
   @override
@@ -84,13 +83,15 @@ class StoryRepositoryImpl implements StoryRepository {
       parse: (data) => ApiClient.asList(data, (json) {
         return StoryViewerModel(
           id: json['userId']?.toString() ?? '',
-          userName: (json['fullName'] as String?) ??
+          userName:
+              (json['fullName'] as String?) ??
               (json['username'] as String?) ??
               'User',
-          userAvatar: json['avatarUrl'] as String? ??
-              'assets/images/user_profile.png',
+          userAvatar:
+              json['avatarUrl'] as String? ?? 'assets/images/user_profile.png',
           viewedTimeAgo: _timeAgo(
-              DateTime.tryParse(json['viewedAt']?.toString() ?? '')),
+            DateTime.tryParse(json['viewedAt']?.toString() ?? ''),
+          ),
         );
       }),
     );
@@ -105,7 +106,7 @@ class StoryRepositoryImpl implements StoryRepository {
   StoryItemModel _storyFromJson(Map<String, dynamic> json) {
     final createdAt =
         DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
-            DateTime.now();
+        DateTime.now();
     final mediaType = (json['mediaType'] as String?) ?? 'IMAGE';
     return StoryItemModel(
       id: json['storyId']?.toString() ?? '',

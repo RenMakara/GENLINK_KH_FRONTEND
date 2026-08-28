@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../controllers/leaderboard_controller.dart';
 import '../../domain/models/leaderboard_models.dart';
 import '../../../quiz/presentation/quiz_colors.dart';
@@ -15,30 +17,42 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
-          onPressed: () => Get.back(),
+        leading: const Padding(
+          padding: EdgeInsets.only(left: AppSpacing.md),
+          child: Center(child: AppBackButton()),
         ),
+        leadingWidth: 74,
         title: const Text(
           'Leaderboard',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: QuizColors.heading),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: QuizColors.heading,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.emoji_events_outlined, color: QuizColors.primary),
+            icon: const Icon(
+              Icons.emoji_events_outlined,
+              color: QuizColors.primary,
+            ),
             onPressed: () => Get.toNamed('/leaderboard/achievements'),
           ),
         ],
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator(color: QuizColors.primary));
+          return const Center(
+            child: CircularProgressIndicator(color: QuizColors.primary),
+          );
         }
 
         final users = controller.activeUsers;
         final isGlobal = controller.selectedTab.value == LeaderboardTab.global;
-        final isFriends = controller.selectedTab.value == LeaderboardTab.friends;
-        final isCountry = controller.selectedTab.value == LeaderboardTab.country;
+        final isFriends =
+            controller.selectedTab.value == LeaderboardTab.friends;
+        final isCountry =
+            controller.selectedTab.value == LeaderboardTab.country;
 
         return SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -54,8 +68,7 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               if (isFriends) _buildInviteBanner(),
               if (isCountry) _buildCountryBanner(),
               const SizedBox(height: 16),
-              if (isGlobal)
-                _buildFullLeaderboardButton(),
+              if (isGlobal) _buildFullLeaderboardButton(),
               _buildBottomBanner(isGlobal, isCountry),
               const SizedBox(height: 20),
             ],
@@ -115,7 +128,7 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
       decoration: BoxDecoration(
         color: QuizColors.primaryLight,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: QuizColors.primary.withOpacity(0.2)),
+        border: Border.all(color: QuizColors.primary.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -124,7 +137,11 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
           const Expanded(
             child: Text(
               'Cambodia Ranking',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: QuizColors.heading),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: QuizColors.heading,
+              ),
             ),
           ),
         ],
@@ -144,15 +161,41 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Expanded(child: _buildPodiumItem(second!, 2, _silverGradient, const Color(0xFF9CA3AF))),
-          Expanded(child: _buildPodiumItem(first, 1, _goldGradient, const Color(0xFFFFC107))),
-          Expanded(child: _buildPodiumItem(third!, 3, _bronzeGradient, const Color(0xFFD97706))),
+          Expanded(
+            child: _buildPodiumItem(
+              second!,
+              2,
+              _silverGradient,
+              const Color(0xFF9CA3AF),
+            ),
+          ),
+          Expanded(
+            child: _buildPodiumItem(
+              first,
+              1,
+              _goldGradient,
+              const Color(0xFFFFC107),
+            ),
+          ),
+          Expanded(
+            child: _buildPodiumItem(
+              third!,
+              3,
+              _bronzeGradient,
+              const Color(0xFFD97706),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildPodiumItem(LeaderboardUser user, int rank, LinearGradient gradient, Color accent) {
+  Widget _buildPodiumItem(
+    LeaderboardUser user,
+    int rank,
+    LinearGradient gradient,
+    Color accent,
+  ) {
     final isFirst = rank == 1;
     final avatarSize = isFirst ? 72.0 : 56.0;
     final crownSize = isFirst ? 20.0 : 14.0;
@@ -176,7 +219,7 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               gradient: gradient,
               boxShadow: [
                 BoxShadow(
-                  color: accent.withOpacity(0.35),
+                  color: accent.withValues(alpha: 0.35),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -199,12 +242,16 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.12),
+              color: accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
               '${user.xp} XP',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: accent),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: accent,
+              ),
             ),
           ),
         ],
@@ -222,7 +269,10 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Text(
               'No more users to display',
-              style: TextStyle(fontSize: 14, color: QuizColors.body.withOpacity(0.7)),
+              style: TextStyle(
+                fontSize: 14,
+                color: QuizColors.body.withValues(alpha: 0.7),
+              ),
             ),
           ),
         ...listUsers.map((user) => _buildRankRow(user)),
@@ -291,21 +341,31 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
                   ),
                   Text(
                     '${user.xp} XP',
-                    style: const TextStyle(fontSize: 12, color: QuizColors.body),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: QuizColors.body,
+                    ),
                   ),
                 ],
               ),
             ),
             if (isMe)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: QuizColors.primary,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(
                   'YOU',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
               ),
           ],
@@ -333,7 +393,11 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               color: QuizColors.primaryLight,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.celebration, color: QuizColors.primary, size: 26),
+            child: const Icon(
+              Icons.celebration,
+              color: QuizColors.primary,
+              size: 26,
+            ),
           ),
           const SizedBox(width: 14),
           const Expanded(
@@ -342,7 +406,11 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               children: [
                 Text(
                   'Invite your friends',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: QuizColors.heading),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: QuizColors.heading,
+                  ),
                 ),
                 SizedBox(height: 2),
                 Text(
@@ -362,7 +430,11 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               ),
               child: const Text(
                 'Invite',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
@@ -378,7 +450,7 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
       decoration: BoxDecoration(
         color: QuizColors.primaryLight,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: QuizColors.primary.withOpacity(0.2)),
+        border: Border.all(color: QuizColors.primary.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -386,7 +458,7 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: QuizColors.primary.withOpacity(0.15),
+              color: QuizColors.primary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Center(
@@ -400,7 +472,11 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               children: [
                 const Text(
                   'Your Country Rank: #3',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: QuizColors.heading),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: QuizColors.heading,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -435,7 +511,11 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               child: const Center(
                 child: Text(
                   'View Full Leaderboard',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -448,9 +528,11 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
   Widget _buildBottomBanner(bool isGlobal, bool isCountry) {
     String text;
     if (isCountry) {
-      text = 'Your Rank: #3 (${controller.countryRankPercent}) - Keep learning to climb higher!';
+      text =
+          'Your Rank: #3 (${controller.countryRankPercent}) - Keep learning to climb higher!';
     } else {
-      text = 'Your Rank: #${controller.currentUserRank} (${controller.rankPercent}) - Keep learning to climb higher!';
+      text =
+          'Your Rank: #${controller.currentUserRank} (${controller.rankPercent}) - Keep learning to climb higher!';
     }
 
     return Container(
@@ -466,11 +548,19 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: QuizColors.body),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: QuizColors.body,
+              ),
             ),
           ),
           const SizedBox(width: 8),
-          const Icon(Icons.arrow_forward_ios, color: QuizColors.primary, size: 14),
+          const Icon(
+            Icons.arrow_forward_ios,
+            color: QuizColors.primary,
+            size: 14,
+          ),
         ],
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
+import 'animated_auth_background.dart';
 
 /// Shared frame for every auth screen: floating back button, an optional
 /// title/subtitle block, a scrollable body that survives the keyboard, and
@@ -18,6 +19,7 @@ class AuthScaffold extends StatelessWidget {
     required this.children,
     this.footer,
     this.showBack = true,
+    this.backBottomSpacing = AppSpacing.xl,
   });
 
   final String? title;
@@ -25,65 +27,69 @@ class AuthScaffold extends StatelessWidget {
   final List<Widget> children;
   final Widget? footer;
   final bool showBack;
+  final double backBottomSpacing;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                  AppSpacing.lg,
-                  AppSpacing.lg,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // The back control floats over the page instead of
-                    // living in an app bar, as in the design.
-                    if (showBack) ...[
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: AppBackButton(),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                    ],
-                    if (title != null) ...[
-                      Text(title!, style: theme.textTheme.displayMedium),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          subtitle!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.65),
-                          ),
+      body: AuthBackgroundShell(
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // The back control floats over the page instead of
+                      // living in an app bar, as in the design.
+                      if (showBack) ...[
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: AppBackButton(),
                         ),
+                        SizedBox(height: backBottomSpacing),
                       ],
-                      const SizedBox(height: AppSpacing.xl),
+                      if (title != null) ...[
+                        Text(title!, style: theme.textTheme.displayMedium),
+                        if (subtitle != null) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            subtitle!,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.65,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: AppSpacing.xl),
+                      ],
+                      ...children,
                     ],
-                    ...children,
-                  ],
+                  ),
                 ),
               ),
-            ),
-            if (footer != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  0,
-                  AppSpacing.lg,
-                  AppSpacing.md,
+              if (footer != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                  ),
+                  child: footer,
                 ),
-                child: footer,
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -172,10 +178,9 @@ class AuthErrorBanner extends StatelessWidget {
             Expanded(
               child: Text(
                 text,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: scheme.error),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: scheme.error),
               ),
             ),
           ],

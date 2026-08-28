@@ -86,12 +86,15 @@ class AppNotificationBanner {
 
     OverlayState? overlayState;
     try {
-      overlayState = Overlay.maybeOf(context, rootOverlay: true) ??
+      overlayState =
+          Overlay.maybeOf(context, rootOverlay: true) ??
           Overlay.maybeOf(context);
     } catch (_) {}
 
     if (overlayState == null) {
-      debugPrint('[AppNotificationBanner] No Overlay found for banner: $title - $message');
+      debugPrint(
+        '[AppNotificationBanner] No Overlay found for banner: $title - $message',
+      );
       return;
     }
 
@@ -143,7 +146,8 @@ class _NotificationBannerWidget extends StatefulWidget {
   });
 
   @override
-  State<_NotificationBannerWidget> createState() => _NotificationBannerWidgetState();
+  State<_NotificationBannerWidget> createState() =>
+      _NotificationBannerWidgetState();
 }
 
 class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
@@ -161,18 +165,12 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
       duration: const Duration(milliseconds: 350),
     );
 
-    _fadeAnim = CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOut,
-    );
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
 
-    _slideAnim = Tween<Offset>(
-      begin: const Offset(0, -1.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOutBack,
-    ));
+    _slideAnim = Tween<Offset>(begin: const Offset(0, -1.2), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOutBack),
+        );
 
     _animController.forward();
 
@@ -242,9 +240,14 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
-                      color: AppColors.darkSurfacePrimary.withValues(alpha: 0.92),
+                      color: AppColors.darkSurfacePrimary.withValues(
+                        alpha: 0.92,
+                      ),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: _accentColor.withValues(alpha: 0.35),
@@ -320,7 +323,10 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
                             },
                             borderRadius: BorderRadius.circular(12),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
                                 color: _accentColor,
                                 borderRadius: BorderRadius.circular(12),
@@ -339,8 +345,15 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
                           const SizedBox(width: 4),
                           IconButton(
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                            icon: const Icon(Icons.close_rounded, color: AppColors.darkTextMuted, size: 18),
+                            constraints: const BoxConstraints(
+                              minWidth: 28,
+                              minHeight: 28,
+                            ),
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              color: AppColors.darkTextMuted,
+                              size: 18,
+                            ),
                             onPressed: _hide,
                             tooltip: 'Close',
                           ),

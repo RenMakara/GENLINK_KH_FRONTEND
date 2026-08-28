@@ -32,7 +32,11 @@ class QuizInProgressScreen extends GetView<QuizController> {
                   SizedBox(height: 16),
                   Text(
                     'No questions available right now.',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: QuizColors.heading),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: QuizColors.heading,
+                    ),
                   ),
                   SizedBox(height: 8),
                   Text(
@@ -45,7 +49,7 @@ class QuizInProgressScreen extends GetView<QuizController> {
             ),
           );
         }
-        
+
         return Column(
           children: [
             _buildTopBar(),
@@ -75,9 +79,14 @@ class QuizInProgressScreen extends GetView<QuizController> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Quit Quiz?', style: TextStyle(color: QuizColors.heading)),
-        content: const Text('Your progress will be lost.',
-            style: TextStyle(color: QuizColors.body)),
+        title: const Text(
+          'Quit Quiz?',
+          style: TextStyle(color: QuizColors.heading),
+        ),
+        content: const Text(
+          'Your progress will be lost.',
+          style: TextStyle(color: QuizColors.body),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -86,12 +95,17 @@ class QuizInProgressScreen extends GetView<QuizController> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              Get.until((route) =>
-                  route.settings.name == '/quiz/dashboard' ||
-                  route.settings.name == '/home');
+              Get.until(
+                (route) =>
+                    route.settings.name == '/quiz/dashboard' ||
+                    route.settings.name == '/home',
+              );
               controller.resetQuiz();
             },
-            child: const Text('Quit', style: TextStyle(color: QuizColors.incorrect)),
+            child: const Text(
+              'Quit',
+              style: TextStyle(color: QuizColors.incorrect),
+            ),
           ),
         ],
       ),
@@ -106,7 +120,11 @@ class QuizInProgressScreen extends GetView<QuizController> {
           children: [
             Text(
               'Question ${controller.currentQuestionIndex.value + 1} of ${controller.totalQuestions}',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: QuizColors.heading),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: QuizColors.heading,
+              ),
             ),
             const Spacer(),
             _buildTimer(),
@@ -172,7 +190,8 @@ class QuizInProgressScreen extends GetView<QuizController> {
           ),
         );
       }
-      final question = controller.questions[controller.currentQuestionIndex.value];
+      final question =
+          controller.questions[controller.currentQuestionIndex.value];
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(24),
@@ -200,8 +219,10 @@ class QuizInProgressScreen extends GetView<QuizController> {
       if (controller.questions.isEmpty) {
         return const SizedBox.shrink();
       }
-      final question = controller.questions[controller.currentQuestionIndex.value];
-      final selected = controller.selectedAnswers[controller.currentQuestionIndex.value];
+      final question =
+          controller.questions[controller.currentQuestionIndex.value];
+      final selected =
+          controller.selectedAnswers[controller.currentQuestionIndex.value];
 
       return Column(
         children: List.generate(question.options.length, (i) {
@@ -209,7 +230,10 @@ class QuizInProgressScreen extends GetView<QuizController> {
             label: question.options[i].text,
             index: i,
             isSelected: selected == i,
-            onTap: () => controller.selectAnswer(controller.currentQuestionIndex.value, i),
+            onTap: () => controller.selectAnswer(
+              controller.currentQuestionIndex.value,
+              i,
+            ),
           );
         }),
       );
@@ -218,7 +242,9 @@ class QuizInProgressScreen extends GetView<QuizController> {
 
   Widget _buildBottomBar() {
     return Obx(() {
-      final isLast = controller.currentQuestionIndex.value == controller.totalQuestions - 1;
+      final isLast =
+          controller.currentQuestionIndex.value ==
+          controller.totalQuestions - 1;
 
       return Container(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
@@ -241,11 +267,15 @@ class QuizInProgressScreen extends GetView<QuizController> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: QuizColors.body,
                     side: const BorderSide(color: QuizColors.border),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     minimumSize: const Size(0, 52),
                   ),
-                  child: const Text('Skip',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                  child: const Text(
+                    'Skip',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
               const SizedBox(width: 14),
@@ -282,7 +312,11 @@ class QuizInProgressScreen extends GetView<QuizController> {
                             ),
                             if (!isLast) ...[
                               const SizedBox(width: 6),
-                              const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                              const Icon(
+                                Icons.arrow_forward,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             ],
                           ],
                         ),

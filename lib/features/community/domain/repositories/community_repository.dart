@@ -12,7 +12,10 @@ abstract class CommunityRepository {
 
   Future<CommunityPostModel> getPostDetails(String postId);
 
-  Future<CommunityPostModel> updatePost(String postId, {required String content});
+  Future<CommunityPostModel> updatePost(
+    String postId, {
+    required String content,
+  });
 
   Future<bool> deletePost(String postId);
 

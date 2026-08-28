@@ -21,22 +21,70 @@ class QuizController extends GetxController {
   ).obs;
 
   final categories = <QuizCategory>[
-    const QuizCategory(id: '1', name: 'Science', icon: 'biotech', questionCount: 120, colorIndex: 0),
-    const QuizCategory(id: '2', name: 'History', icon: 'museum', questionCount: 95, colorIndex: 1),
-    const QuizCategory(id: '3', name: 'Technology', icon: 'devices', questionCount: 150, colorIndex: 2),
-    const QuizCategory(id: '4', name: 'Geography', icon: 'public', questionCount: 80, colorIndex: 3),
-    const QuizCategory(id: '5', name: 'Mathematics', icon: 'functions', questionCount: 200, colorIndex: 0),
-    const QuizCategory(id: '6', name: 'Literature', icon: 'menu_book', questionCount: 110, colorIndex: 1),
+    const QuizCategory(
+      id: '1',
+      name: 'Science',
+      icon: 'biotech',
+      questionCount: 120,
+      colorIndex: 0,
+    ),
+    const QuizCategory(
+      id: '2',
+      name: 'History',
+      icon: 'museum',
+      questionCount: 95,
+      colorIndex: 1,
+    ),
+    const QuizCategory(
+      id: '3',
+      name: 'Technology',
+      icon: 'devices',
+      questionCount: 150,
+      colorIndex: 2,
+    ),
+    const QuizCategory(
+      id: '4',
+      name: 'Geography',
+      icon: 'public',
+      questionCount: 80,
+      colorIndex: 3,
+    ),
+    const QuizCategory(
+      id: '5',
+      name: 'Mathematics',
+      icon: 'functions',
+      questionCount: 200,
+      colorIndex: 0,
+    ),
+    const QuizCategory(
+      id: '6',
+      name: 'Literature',
+      icon: 'menu_book',
+      questionCount: 110,
+      colorIndex: 1,
+    ),
   ];
 
   final recentCategories = <QuizCategory>[
-    const QuizCategory(id: '1', name: 'Science', icon: 'biotech', questionCount: 120, colorIndex: 0),
-    const QuizCategory(id: '3', name: 'Technology', icon: 'devices', questionCount: 150, colorIndex: 2),
+    const QuizCategory(
+      id: '1',
+      name: 'Science',
+      icon: 'biotech',
+      questionCount: 120,
+      colorIndex: 0,
+    ),
+    const QuizCategory(
+      id: '3',
+      name: 'Technology',
+      icon: 'devices',
+      questionCount: 150,
+      colorIndex: 2,
+    ),
   ].obs;
 
   final quizType = QuizType.random.obs;
   final selectedCategory = Rxn<QuizCategory>();
-  
+
   final currentQuizId = RxnString();
 
   final opponent = Opponent(
@@ -84,7 +132,10 @@ class QuizController extends GetxController {
 
   Future<void> _loadLeaderboard() async {
     try {
-      final entries = await _quizRepository.getLeaderboard('OVERALL_XP', 'ALL_TIME');
+      final entries = await _quizRepository.getLeaderboard(
+        'OVERALL_XP',
+        'ALL_TIME',
+      );
       leaderboard.value = entries;
     } catch (e) {
       // Fallback or ignore
@@ -103,12 +154,14 @@ class QuizController extends GetxController {
     _matchmakingCancelled = false;
     isFindingOpponent.value = true;
     opponentSearchProgress.value = 0.0;
-    
+
     // Fetch a real quiz while matchmaking!
     _fetchRandomQuiz();
 
     _matchmakingTimer?.cancel();
-    _matchmakingTimer = Timer.periodic(const Duration(milliseconds: 80), (timer) {
+    _matchmakingTimer = Timer.periodic(const Duration(milliseconds: 80), (
+      timer,
+    ) {
       opponentSearchProgress.value += 0.015;
       if (opponentSearchProgress.value >= 1.0) {
         opponentSearchProgress.value = 1.0;
@@ -124,12 +177,14 @@ class QuizController extends GetxController {
       }
     });
   }
-  
+
   Future<void> _fetchRandomQuiz() async {
     try {
       // First get all quizzes for category
       final categoryName = selectedCategory.value?.name;
-      final quizzesList = await _quizRepository.getQuizzes(category: categoryName);
+      final quizzesList = await _quizRepository.getQuizzes(
+        category: categoryName,
+      );
       if (quizzesList.isNotEmpty) {
         final pick = quizzesList[Random().nextInt(quizzesList.length)];
         final qId = pick['quizId'] as String;
@@ -221,7 +276,7 @@ class QuizController extends GetxController {
 
     isSubmitting.value = true;
     _questionTimer?.cancel();
-    
+
     final answersPayload = <Map<String, String>>[];
     for (int i = 0; i < totalQuestions; i++) {
       if (selectedAnswers.containsKey(i)) {
@@ -233,7 +288,10 @@ class QuizController extends GetxController {
     }
 
     try {
-      final result = await _quizRepository.submitQuizAttempt(currentQuizId.value!, answersPayload);
+      final result = await _quizRepository.submitQuizAttempt(
+        currentQuizId.value!,
+        answersPayload,
+      );
       final elapsedSeconds = _quizStartTime == null
           ? 0
           : DateTime.now().difference(_quizStartTime!).inSeconds;

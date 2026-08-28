@@ -5,11 +5,7 @@ class PollOptionModel {
   int votes;
   bool isVoted;
 
-  PollOptionModel({
-    required this.text,
-    this.votes = 0,
-    this.isVoted = false,
-  });
+  PollOptionModel({required this.text, this.votes = 0, this.isVoted = false});
 }
 
 class CommunityPostModel {
@@ -148,19 +144,37 @@ class CommunityPostModel {
 
   factory CommunityPostModel.fromJson(Map<String, dynamic> json) {
     // Parse Spring Boot AuthorSummary object or fallback flat properties
-    final authorObj = json['author'] is Map<String, dynamic> ? json['author'] as Map<String, dynamic> : null;
-    final authorName = authorObj?['fullName'] as String? ?? json['authorName'] as String? ?? json['username'] as String? ?? 'User';
-    final authorTag = authorObj?['username'] != null ? '@${authorObj!['username']}' : (json['authorTag'] as String? ?? '@user');
-    final authorAvatar = authorObj?['avatarUrl'] as String? ?? json['authorAvatar'] as String? ?? json['avatar'] as String? ?? '';
-    final userId = authorObj?['userId'] as String? ?? json['userId'] as String? ?? 'user_1';
+    final authorObj = json['author'] is Map<String, dynamic>
+        ? json['author'] as Map<String, dynamic>
+        : null;
+    final authorName =
+        authorObj?['fullName'] as String? ??
+        json['authorName'] as String? ??
+        json['username'] as String? ??
+        'User';
+    final authorTag = authorObj?['username'] != null
+        ? '@${authorObj!['username']}'
+        : (json['authorTag'] as String? ?? '@user');
+    final authorAvatar =
+        authorObj?['avatarUrl'] as String? ??
+        json['authorAvatar'] as String? ??
+        json['avatar'] as String? ??
+        '';
+    final userId =
+        authorObj?['userId'] as String? ??
+        json['userId'] as String? ??
+        'user_1';
 
     // Parse image list or single imageUrl
     List<String> imagesList = [];
     if (json['imageUrls'] is List) {
-      imagesList = (json['imageUrls'] as List).map((e) => e.toString()).toList();
+      imagesList = (json['imageUrls'] as List)
+          .map((e) => e.toString())
+          .toList();
     } else if (json['images'] is List) {
       imagesList = (json['images'] as List).map((e) => e.toString()).toList();
-    } else if (json['imageUrl'] != null && (json['imageUrl'] as String).isNotEmpty) {
+    } else if (json['imageUrl'] != null &&
+        (json['imageUrl'] as String).isNotEmpty) {
       imagesList = [json['imageUrl'] as String];
     }
 
@@ -170,19 +184,37 @@ class CommunityPostModel {
       authorName: authorName,
       authorTag: authorTag,
       authorAvatar: authorAvatar,
-      isVerified: json['isVerified'] as bool? ?? json['verified'] as bool? ?? false,
-      timeAgo: json['timeAgo'] as String? ?? json['createdAt'] as String? ?? 'Just now',
-      content: json['contentText'] as String? ?? json['content'] as String? ?? json['text'] as String? ?? '',
+      isVerified:
+          json['isVerified'] as bool? ?? json['verified'] as bool? ?? false,
+      timeAgo:
+          json['timeAgo'] as String? ??
+          json['createdAt'] as String? ??
+          'Just now',
+      content:
+          json['contentText'] as String? ??
+          json['content'] as String? ??
+          json['text'] as String? ??
+          '',
       imageUrls: imagesList,
-      likesCount: json['likeCount'] as int? ?? json['likesCount'] as int? ?? json['likes'] as int? ?? 0,
-      commentsCount: json['commentCount'] as int? ?? json['commentsCount'] as int? ?? json['comments'] as int? ?? 0,
+      likesCount:
+          json['likeCount'] as int? ??
+          json['likesCount'] as int? ??
+          json['likes'] as int? ??
+          0,
+      commentsCount:
+          json['commentCount'] as int? ??
+          json['commentsCount'] as int? ??
+          json['comments'] as int? ??
+          0,
       sharesCount: json['sharesCount'] as int? ?? json['shares'] as int? ?? 0,
       isLiked: json['likedByMe'] as bool? ?? json['isLiked'] as bool? ?? false,
-      isBookmarked: json['savedByMe'] as bool? ?? json['isBookmarked'] as bool? ?? false,
+      isBookmarked:
+          json['savedByMe'] as bool? ?? json['isBookmarked'] as bool? ?? false,
       isOwner: json['isOwner'] as bool? ?? false,
       visibility: json['visibility'] as String? ?? 'Public',
       community: json['community'] as String? ?? 'All GenLink',
-      comments: (json['commentsList'] as List<dynamic>?)
+      comments:
+          (json['commentsList'] as List<dynamic>?)
               ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],

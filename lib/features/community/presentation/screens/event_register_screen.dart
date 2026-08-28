@@ -99,7 +99,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                                 width: 60,
                                 height: 60,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, _) => Container(
+                                errorBuilder: (context, error, stackTrace) => Container(
                                   width: 60,
                                   height: 60,
                                   color: isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0),

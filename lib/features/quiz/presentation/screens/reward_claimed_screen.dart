@@ -23,7 +23,11 @@ class RewardClaimedScreen extends GetView<QuizController> {
               const SizedBox(height: 20),
               const Text(
                 'Reward Claimed!',
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: QuizColors.heading),
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: QuizColors.heading,
+                ),
               ),
               const SizedBox(height: 6),
               const Text(
@@ -34,31 +38,43 @@ class RewardClaimedScreen extends GetView<QuizController> {
               const SizedBox(height: 28),
               _buildBalanceDisplay(),
               const SizedBox(height: 32),
-              Obx(() => QuizGradientButton(
-                    label: 'Continue',
-                    icon: Icons.arrow_forward,
-                    isLoading: controller.isRewardClaimed.value,
-                    onPressed: controller.isRewardClaimed.value
-                        ? null
-                        : () {
-                            controller.claimReward();
-                            Get.until((route) =>
+              Obx(
+                () => QuizGradientButton(
+                  label: 'Continue',
+                  icon: Icons.arrow_forward,
+                  isLoading: controller.isRewardClaimed.value,
+                  onPressed: controller.isRewardClaimed.value
+                      ? null
+                      : () {
+                          controller.claimReward();
+                          Get.until(
+                            (route) =>
                                 route.settings.name == '/quiz/dashboard' ||
-                                route.settings.name == '/home');
-                          },
-                  )),
+                                route.settings.name == '/home',
+                          );
+                        },
+                ),
+              ),
               const SizedBox(height: 14),
               TextButton(
                 onPressed: () {
                   if (!controller.isRewardClaimed.value) {
                     controller.claimReward();
                   }
-                  Get.until((route) =>
-                      route.settings.name == '/quiz/dashboard' ||
-                      route.settings.name == '/home');
+                  Get.until(
+                    (route) =>
+                        route.settings.name == '/quiz/dashboard' ||
+                        route.settings.name == '/home',
+                  );
                 },
-                child: const Text('Back to Dashboard',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: QuizColors.body)),
+                child: const Text(
+                  'Back to Dashboard',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: QuizColors.body,
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
             ],
@@ -81,13 +97,21 @@ class RewardClaimedScreen extends GetView<QuizController> {
               color: Color(0x2010B981),
             ),
             child: const Center(
-              child: Icon(Icons.check_circle, color: QuizColors.correct, size: 48),
+              child: Icon(
+                Icons.check_circle,
+                color: QuizColors.correct,
+                size: 48,
+              ),
             ),
           ),
           const SizedBox(height: 14),
           const Text(
             'Congratulations!',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: QuizColors.heading),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: QuizColors.heading,
+            ),
           ),
           const SizedBox(height: 4),
           const Text(
@@ -106,18 +130,42 @@ class RewardClaimedScreen extends GetView<QuizController> {
         padding: const EdgeInsets.all(20),
         child: Row(
           children: [
-            _buildBalancePill(Icons.star, 'XP', '${stats.xp}', QuizColors.primary, '+${controller.quizResult.value?.xpEarned ?? 0}'),
+            _buildBalancePill(
+              Icons.star,
+              'XP',
+              '${stats.xp}',
+              QuizColors.primary,
+              '+${controller.quizResult.value?.xpEarned ?? 0}',
+            ),
             const SizedBox(width: 10),
-            _buildBalancePill(Icons.monetization_on, 'Coins', '${stats.coins}', QuizColors.gold, '+${controller.quizResult.value?.coinsEarned ?? 0}'),
+            _buildBalancePill(
+              Icons.monetization_on,
+              'Coins',
+              '${stats.coins}',
+              QuizColors.gold,
+              '+${controller.quizResult.value?.coinsEarned ?? 0}',
+            ),
             const SizedBox(width: 10),
-            _buildBalancePill(Icons.military_tech, 'Badges', '${stats.badges}', const Color(0xFFF59E0B), '+1'),
+            _buildBalancePill(
+              Icons.military_tech,
+              'Badges',
+              '${stats.badges}',
+              const Color(0xFFF59E0B),
+              '+1',
+            ),
           ],
         ),
       );
     });
   }
 
-  Widget _buildBalancePill(IconData icon, String label, String value, Color color, String increment) {
+  Widget _buildBalancePill(
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+    String increment,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -129,11 +177,23 @@ class RewardClaimedScreen extends GetView<QuizController> {
           children: [
             Icon(icon, color: color, size: 24),
             const SizedBox(height: 6),
-            Text(value,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: color)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(label,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: QuizColors.body)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: QuizColors.body,
+              ),
+            ),
             const SizedBox(height: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -141,8 +201,14 @@ class RewardClaimedScreen extends GetView<QuizController> {
                 color: const Color(0x2010B981),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(increment,
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: QuizColors.correct)),
+              child: Text(
+                increment,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: QuizColors.correct,
+                ),
+              ),
             ),
           ],
         ),

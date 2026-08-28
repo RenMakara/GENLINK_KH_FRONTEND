@@ -46,12 +46,12 @@ class AppInput extends StatefulWidget {
     this.onSubmitted,
     this.prefixIcon,
     this.suffix,
-  })  : obscure = false,
-        maxLines = 1,
-        maxLength = null,
-        keyboardType = TextInputType.emailAddress,
-        textCapitalization = TextCapitalization.none,
-        inputFormatters = null;
+  }) : obscure = false,
+       maxLines = 1,
+       maxLength = null,
+       keyboardType = TextInputType.emailAddress,
+       textCapitalization = TextCapitalization.none,
+       inputFormatters = null;
 
   /// Password field with the obscure toggle enabled.
   const AppInput.password({
@@ -67,13 +67,13 @@ class AppInput extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.prefixIcon,
-  })  : obscure = true,
-        maxLines = 1,
-        maxLength = null,
-        keyboardType = null,
-        textCapitalization = TextCapitalization.none,
-        inputFormatters = null,
-        suffix = null;
+  }) : obscure = true,
+       maxLines = 1,
+       maxLength = null,
+       keyboardType = null,
+       textCapitalization = TextCapitalization.none,
+       inputFormatters = null,
+       suffix = null;
 
   final String label;
   final TextEditingController? controller;
@@ -129,8 +129,9 @@ class _AppInputState extends State<AppInput> {
             hintText: widget.hint,
             helperText: widget.helper,
             counterText: '',
-            prefixIcon:
-                widget.prefixIcon == null ? null : Icon(widget.prefixIcon),
+            prefixIcon: widget.prefixIcon == null
+                ? null
+                : Icon(widget.prefixIcon),
             suffixIcon: _suffixIcon(),
           ).applyDefaults(_decorationTheme(theme)),
         ),
@@ -146,10 +147,10 @@ class _AppInputState extends State<AppInput> {
     if (widget.maxLines <= 1 || widget.obscure) return base;
 
     InputBorder reshape(InputBorder? border) {
-      if (border is! OutlineInputBorder) return border ?? const OutlineInputBorder();
-      return border.copyWith(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-      );
+      if (border is! OutlineInputBorder) {
+        return border ?? const OutlineInputBorder();
+      }
+      return border.copyWith(borderRadius: BorderRadius.circular(AppRadius.xl));
     }
 
     return base.copyWith(

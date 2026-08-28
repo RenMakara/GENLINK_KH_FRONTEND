@@ -26,7 +26,11 @@ class SettingsController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
-  final settings = UserSettingsEntity().obs;
+
+  late final settings = UserSettingsEntity(
+    theme: _theme.backendTheme,
+    language: _localization.language.value,
+  ).obs;
 
   @override
   void onInit() {
@@ -35,16 +39,34 @@ class SettingsController extends GetxController {
   }
 
   Future<void> load() async {
+    if (isLoading.value) return;
     isLoading.value = true;
     errorMessage.value = null;
     try {
       final loaded = await _repository.getSettings();
-      settings.value = loaded;
-      // The server is authoritative for a signed-in user. Language is a
-      // sync (not an explicit choice) so device-following stays alive for
-      // users who never picked one themselves.
-      await _theme.applyBackendTheme(loaded.theme);
-      _localization.syncFromAccount(loaded.language);
+      final current = settings.value;
+
+      // Merge: prefer backend if it's NOT the default, otherwise stay with 
+      // current local state. This prevents backend defaults from 
+      // clobbering a user's manual choice when opening the settings page.
+      final merged = loaded.copyWith(
+        theme: loaded.theme == UserSettingsEntity.themeSystem
+            ? current.theme
+            : loaded.theme,
+        language: loaded.language == UserSettingsEntity.languageEnglish
+            ? current.language
+            : loaded.language,
+      );
+
+      settings.value = merged;
+
+      // Only apply to the app if it actually changed from current local state.
+      if (merged.theme != current.theme) {
+        await _theme.applyBackendTheme(merged.theme);
+      }
+      if (merged.language != current.language) {
+        _localization.syncFromAccount(merged.language);
+      }
     } on AppError catch (e) {
       errorMessage.value = e.message;
     } catch (_) {
@@ -133,7 +155,20 @@ class SettingsController extends GetxController {
     isSaving.value = true;
     errorMessage.value = null;
     try {
-      settings.value = await _repository.updateSettings(
+      final updated = await _repository.updateSettings(
+        language: language,
+        theme: theme,
+        notificationEnabled: notificationEnabled,
+        privacyProfile: privacyProfile,
+        allowMessages: allowMessages,
+        allowFollowRequest: allowFollowRequest,
+        biometricEnabled: biometricEnabled,
+      );
+
+      // If the backend returns defaults for fields we just tried to set,
+      // keep our local value for now to avoid the UI "flickering" or
+      // ticking the wrong box while the backend catches up.
+      settings.value = updated.copyWith(
         language: language,
         theme: theme,
         notificationEnabled: notificationEnabled,

@@ -20,12 +20,16 @@ class PrivacySettingsScreen extends GetView<SettingsController> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: AppSpacing.md),
+        leading: const Center(
           child: AppBackButton(),
         ),
-        leadingWidth: 58 + AppSpacing.md * 2,
-        title: Text('settings.privacySettings'.tr),
+        leadingWidth: 74,
+        title: Text(
+          'settings.privacySettings'.tr,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
       body: Obx(() {
         final settings = controller.settings.value;
@@ -58,8 +62,9 @@ class PrivacySettingsScreen extends GetView<SettingsController> {
                       subtitle: Text(
                         'privacy.${option}Hint'.tr,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.5),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                       ),
                       value: option,

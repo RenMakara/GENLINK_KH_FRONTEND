@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../colors/app_colors.dart';
+import '../../icons/app_icons.dart';
 import '../../radius/app_radius.dart';
+import '../../spacing/app_spacing.dart';
 
-/// "Continue with Google" button.
-///
-/// The artwork ships the whole button — pill, soft shadow, G mark and
-/// label — so this widget only makes it tappable and holds its aspect
-/// ratio. The asset is designed to read on both light and dark
-/// backgrounds, so there is no per-theme variant.
-///
-/// [semanticLabel] is passed in already translated; the design system
-/// stays free of GetX.
 class GoogleSignInButton extends StatelessWidget {
   const GoogleSignInButton({
     super.key,
@@ -19,37 +13,68 @@ class GoogleSignInButton extends StatelessWidget {
     this.semanticLabel,
   });
 
-  static const asset = 'assets/backgrounds/auth/GBtn-light.png';
-
-  /// Intrinsic size of the artwork, so it keeps its proportions at any
-  /// width instead of stretching.
-  static const _aspectRatio = 561 / 90;
-
   final VoidCallback? onPressed;
   final double height;
   final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+
     return Semantics(
       button: true,
+      enabled: enabled,
       label: semanticLabel,
       child: SizedBox(
         height: height,
         width: double.infinity,
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          child: InkWell(
-            onTap: onPressed,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.pill),
-            child: Center(
-              child: AspectRatio(
-                aspectRatio: _aspectRatio,
-                child: Image.asset(
-                  asset,
-                  fit: BoxFit.contain,
-                  excludeFromSemantics: true,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.lightPrimary.withValues(alpha: 0.04),
+                blurRadius: AppSpacing.md,
+                offset: const Offset(0, AppSpacing.xs),
+              ),
+            ],
+          ),
+          child: Material(
+            color: enabled
+                ? AppColors.lightSurfacePrimary
+                : AppColors.lightSurfaceSecondary,
+            shape: const StadiumBorder(
+              side: BorderSide(color: AppColors.lightBorderSubtle),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onPressed,
+              overlayColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.pressed)
+                    ? AppColors.lightPrimary.withValues(alpha: 0.06)
+                    : null,
+              ),
+              child: ExcludeSemantics(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      AppIcons.google,
+                      height: 24,
+                      width: 24,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Text(
+                      semanticLabel ?? 'Continue with Google',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: enabled
+                            ? AppColors.lightTextPrimary
+                            : AppColors.lightTextMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

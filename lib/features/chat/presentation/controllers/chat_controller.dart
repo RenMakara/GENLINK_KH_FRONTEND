@@ -42,8 +42,11 @@ class ChatController extends GetxController {
       conversations.assignAll(list);
     } catch (e) {
       conversations.clear();
-      Get.snackbar('Chats unavailable', 'Could not load your chats. Pull to retry.',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Chats unavailable',
+        'Could not load your chats. Pull to retry.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isLoadingConversations.value = false;
     }
@@ -62,8 +65,11 @@ class ChatController extends GetxController {
       _scrollToBottom();
     } catch (e) {
       activeMessages.clear();
-      Get.snackbar('Messages unavailable', 'Could not load messages for this chat.',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Messages unavailable',
+        'Could not load messages for this chat.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isLoadingMessages.value = false;
     }
@@ -82,7 +88,9 @@ class ChatController extends GetxController {
     try {
       final newMsg = await repository.sendMessage(
         conv.id,
-        text.isEmpty ? (type == 'image' ? '📷 Photo' : 'Shared attachment') : text,
+        text.isEmpty
+            ? (type == 'image' ? '📷 Photo' : 'Shared attachment')
+            : text,
         messageType: type,
         mediaUrl: mediaUrl,
       );
@@ -93,8 +101,11 @@ class ChatController extends GetxController {
       conversations.refresh();
       _scrollToBottom();
     } catch (e) {
-      Get.snackbar('Send failed', 'Your message was not sent. Try again.',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Send failed',
+        'Your message was not sent. Try again.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isSendingMessage.value = false;
     }
@@ -135,8 +146,11 @@ class ChatController extends GetxController {
         mediaUrl: mediaUrl,
       );
     } catch (e) {
-      Get.snackbar('Reply failed', 'Could not send your story reply.',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Reply failed',
+        'Could not send your story reply.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
       rethrow;
     }
 

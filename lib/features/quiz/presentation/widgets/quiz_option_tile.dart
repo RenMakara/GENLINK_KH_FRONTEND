@@ -36,13 +36,21 @@ class QuizOptionTile extends StatelessWidget {
         borderColor = QuizColors.correct;
         textColor = const Color(0xFF065F46);
         radioColor = QuizColors.correct;
-        suffixIcon = const Icon(Icons.check_circle, color: QuizColors.correct, size: 22);
+        suffixIcon = const Icon(
+          Icons.check_circle,
+          color: QuizColors.correct,
+          size: 22,
+        );
       } else if (isSelected) {
         bgColor = const Color(0xFFFEE2E2);
         borderColor = QuizColors.incorrect;
         textColor = const Color(0xFF991B1B);
         radioColor = QuizColors.incorrect;
-        suffixIcon = const Icon(Icons.cancel, color: QuizColors.incorrect, size: 22);
+        suffixIcon = const Icon(
+          Icons.cancel,
+          color: QuizColors.incorrect,
+          size: 22,
+        );
       }
     } else if (isSelected) {
       bgColor = QuizColors.primaryLight;
@@ -59,7 +67,10 @@ class QuizOptionTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor, width: isSelected || (showResult && isCorrect != null) ? 2 : 1),
+          border: Border.all(
+            color: borderColor,
+            width: isSelected || (showResult && isCorrect != null) ? 2 : 1,
+          ),
         ),
         child: Row(
           children: [
@@ -69,10 +80,14 @@ class QuizOptionTile extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected && !showResult ? QuizColors.primary : radioColor,
+                  color: isSelected && !showResult
+                      ? QuizColors.primary
+                      : radioColor,
                   width: 2,
                 ),
-                color: isSelected && !showResult ? QuizColors.primary : Colors.transparent,
+                color: isSelected && !showResult
+                    ? QuizColors.primary
+                    : Colors.transparent,
               ),
               child: isSelected && !showResult
                   ? const Center(

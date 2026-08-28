@@ -41,12 +41,16 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: AppSpacing.md),
+        leading: const Center(
           child: AppBackButton(),
         ),
-        leadingWidth: 58 + AppSpacing.md * 2,
-        title: Text('profile.saved'.tr),
+        leadingWidth: 74,
+        title: Text(
+          'profile.saved'.tr,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
       body: Obx(() {
         if (_controller.isLoading.value && _controller.savedItems.isEmpty) {
@@ -61,8 +65,7 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
           );
         }
 
-        final types = all.map((item) => item.itemType).toSet().toList()
-          ..sort();
+        final types = all.map((item) => item.itemType).toSet().toList()..sort();
         final filtered = _filter == null
             ? all
             : all.where((item) => item.itemType == _filter).toList();
@@ -149,8 +152,8 @@ class _FilterChip extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: selected ? scheme.onPrimary : scheme.onSurface,
-                ),
+              color: selected ? scheme.onPrimary : scheme.onSurface,
+            ),
           ),
         ),
       ),

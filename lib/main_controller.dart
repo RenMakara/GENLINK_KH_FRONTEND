@@ -7,10 +7,19 @@ class MainController extends GetxController {
   static const defaultIndex = 0;
 
   final currentIndex = defaultIndex.obs;
+  final isNavBarVisible = true.obs;
 
   void changeIndex(int index) {
     if (index < 0 || index > 3) return;
     currentIndex.value = index;
+    // Ensure navbar is visible when switching tabs
+    isNavBarVisible.value = true;
+  }
+
+  void setNavBarVisibility(bool visible) {
+    if (isNavBarVisible.value != visible) {
+      isNavBarVisible.value = visible;
+    }
   }
 
   /// Return the signed-in shell to Home when a session ends, so a different

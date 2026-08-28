@@ -31,7 +31,7 @@ dependencies:
   # ==============================
   # Secure Local Storage
   # ==============================
-  flutter_secure_storage: ^10.3.1
+  flutter_secure_storage: ^11.0.0
 
   # ==============================
   # Device Information
@@ -102,9 +102,6 @@ flutter:
 
     # General Images
     - assets/images/
-
-    # Illustrations
-    - assets/illustrations/
 
     # Lottie Animations
     - assets/lottie/

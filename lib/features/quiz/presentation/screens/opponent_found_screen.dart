@@ -64,9 +64,16 @@ class OpponentFoundScreen extends GetView<QuizController> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildPlayerColumn(user.name, 'Lv. ${user.level}', '${user.streak} Streak'),
+                _buildPlayerColumn(
+                  user.name,
+                  'Lv. ${user.level}',
+                  '${user.streak} Streak',
+                ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     gradient: QuizColors.gradient,
                     borderRadius: BorderRadius.circular(20),
@@ -81,7 +88,11 @@ class OpponentFoundScreen extends GetView<QuizController> {
                     ),
                   ),
                 ),
-                _buildPlayerColumn(opp.name, 'Lv. ${opp.level}', '${opp.winRate}% Win'),
+                _buildPlayerColumn(
+                  opp.name,
+                  'Lv. ${opp.level}',
+                  '${opp.winRate}% Win',
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -106,7 +117,11 @@ class OpponentFoundScreen extends GetView<QuizController> {
             const SizedBox(height: 6),
             const Text(
               'Fair Match',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: QuizColors.correct),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: QuizColors.correct,
+              ),
             ),
           ],
         ),
@@ -127,14 +142,32 @@ class OpponentFoundScreen extends GetView<QuizController> {
           child: const Icon(Icons.person, color: Colors.white, size: 32),
         ),
         const SizedBox(height: 10),
-        Text(name,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: QuizColors.heading)),
+        Text(
+          name,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: QuizColors.heading,
+          ),
+        ),
         const SizedBox(height: 4),
-        Text(level,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: QuizColors.body)),
+        Text(
+          level,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: QuizColors.body,
+          ),
+        ),
         const SizedBox(height: 2),
-        Text(stat,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: QuizColors.primary)),
+        Text(
+          stat,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: QuizColors.primary,
+          ),
+        ),
       ],
     );
   }
@@ -147,14 +180,21 @@ class OpponentFoundScreen extends GetView<QuizController> {
         children: [
           const Text(
             'Game Rules',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: QuizColors.heading),
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: QuizColors.heading,
+            ),
           ),
           const SizedBox(height: 14),
           _buildRuleRow(Icons.quiz_outlined, '10 Questions'),
           const SizedBox(height: 10),
           _buildRuleRow(Icons.timer_outlined, '30 Seconds per question'),
           const SizedBox(height: 10),
-          _buildRuleRow(Icons.emoji_events_outlined, 'Earn XP & Coins for correct answers'),
+          _buildRuleRow(
+            Icons.emoji_events_outlined,
+            'Earn XP & Coins for correct answers',
+          ),
           const SizedBox(height: 10),
           _buildRuleRow(Icons.skip_next_outlined, 'Skip questions anytime'),
         ],
@@ -175,7 +215,10 @@ class OpponentFoundScreen extends GetView<QuizController> {
           child: Icon(icon, color: QuizColors.primary, size: 18),
         ),
         const SizedBox(width: 12),
-        Text(text, style: const TextStyle(fontSize: 14, color: QuizColors.body)),
+        Text(
+          text,
+          style: const TextStyle(fontSize: 14, color: QuizColors.body),
+        ),
       ],
     );
   }

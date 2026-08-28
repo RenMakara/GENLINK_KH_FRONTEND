@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
-import 'create_event_screen.dart';
+import '../widgets/community_creation_flow.dart';
 import 'event_details_screen.dart';
 
 class EventsScreen extends StatefulWidget {
@@ -75,7 +75,7 @@ class _EventsScreenState extends State<EventsScreen> {
                   const SizedBox(width: 10),
                   // Create Event shortcut button
                   GestureDetector(
-                    onTap: () => Get.to(() => const CreateEventScreen()),
+                    onTap: () => CommunityCreationFlow.openCreateEvent(context),
                     child: Container(
                       height: 46,
                       padding: const EdgeInsets.symmetric(horizontal: 14),

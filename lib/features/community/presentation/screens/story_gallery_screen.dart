@@ -887,6 +887,41 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                 ),
               ),
 
+            // Video Duration / Camera Badge
+            if (asset.type == AssetType.video)
+              Positioned(
+                bottom: 6,
+                right: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.65),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.videocam_rounded,
+                        color: Colors.white,
+                        size: 13,
+                      ),
+                      if (asset.videoDuration.inSeconds > 0) ...[
+                        const SizedBox(width: 3),
+                        Text(
+                          _formatDuration(asset.videoDuration),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+
             // Numbered / Checkmark Selection Badge
             Positioned(
               top: 6,
@@ -927,6 +962,23 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
         ),
       );
     });
+  }
+
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes;
+    final seconds = d.inSeconds.remainder(60);
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  bool _isVideoFile(String path) {
+    final p = path.toLowerCase();
+    return p.endsWith('.mp4') ||
+        p.endsWith('.mov') ||
+        p.endsWith('.m4v') ||
+        p.endsWith('.webm') ||
+        p.endsWith('.avi') ||
+        p.endsWith('.mkv') ||
+        p.endsWith('.flv');
   }
 
   // ── 8. Draft Overlay Card ──
@@ -1080,9 +1132,12 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                       Get.back(result: paths);
                       return;
                     } else {
+                      final bool isVideo = paths.isNotEmpty &&
+                          (_isVideoFile(paths.first) ||
+                              controller.selectedAssets.any((a) => a.type == AssetType.video));
                       final result = await Get.to(
                         () => StoryCreatorScreen(
-                          type: StoryType.photo,
+                          type: isVideo ? StoryType.video : StoryType.photo,
                           mediaPaths: paths,
                         ),
                         routeName: '/StoryCreatorScreen',

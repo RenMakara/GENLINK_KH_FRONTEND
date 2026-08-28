@@ -477,3 +477,134 @@ class MentorCard extends StatelessWidget {
     );
   }
 }
+
+/// Career & Networking Tab View component
+/// Preserved as a standalone widget for Career feature entry points.
+class CareerTabView extends StatelessWidget {
+  const CareerTabView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Context-Aware Career Search Bar
+            InkWell(
+              onTap: () => Get.to(
+                () => const CommunitySearchScreen(activeTab: 'Career'),
+              ),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              child: Container(
+                height: 46,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: surfaceSecondary,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(color: borderSubtle),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.work_outline,
+                      color: textMuted,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'community.searchJobs'.tr,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
+                          TextStyle(color: textMuted, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Recommended Opportunities Hero List
+            Text(
+              'community.recommendedOpportunities'.tr,
+              style: theme.textTheme.titleMedium?.copyWith(
+                    color: textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ) ??
+                  TextStyle(
+                    color: textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            const JobCard(
+              title: "Junior Flutter Developer",
+              company: "ABA Bank • Phnom Penh",
+              type: "Full-Time",
+              salary: "\$600 - \$900 / mo",
+              logoColor: AppColors.brandPrimary,
+            ),
+            const JobCard(
+              title: "UI/UX Design Intern",
+              company: "Smart Axiata • Phnom Penh",
+              type: "Internship",
+              salary: "\$250 - \$350 / mo",
+              logoColor: AppColors.danger,
+            ),
+
+            const SizedBox(height: AppSpacing.lg),
+
+            // Campus Alumni Mentors
+            Text(
+              'community.campusAlumniMentors'.tr,
+              style: theme.textTheme.titleMedium?.copyWith(
+                    color: textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ) ??
+                  TextStyle(
+                    color: textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            const SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  MentorCard(
+                    name: "Sokha Kim",
+                    role: "Senior Tech Lead @ Wing",
+                    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+                  ),
+                  MentorCard(
+                    name: "Bopha V.",
+                    role: "Lead UX Designer @ ABA",
+                    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+                  ),
+                  MentorCard(
+                    name: "Dara N.",
+                    role: "Mobile Architect @ Chip Mong",
+                    avatarUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150",
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: AppSpacing.xl),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

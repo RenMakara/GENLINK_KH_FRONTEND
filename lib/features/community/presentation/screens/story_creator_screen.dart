@@ -3109,7 +3109,11 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       }
 
       bool success = false;
-      final effectiveType = isTemplateStory ? StoryType.template : widget.type;
+      final effectiveType = isTemplateStory
+          ? StoryType.template
+          : ((_activeMediaPath != null && _isVideoFile(_activeMediaPath!))
+              ? StoryType.video
+              : widget.type);
       final effectiveMediaUrl = isTemplateStory
           ? (_templateSlots.firstWhereOrNull((s) => s.mediaPath != null && s.mediaPath!.isNotEmpty)?.mediaPath ?? _activeMediaPath)
           : _activeMediaPath;

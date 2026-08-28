@@ -7,6 +7,8 @@ import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/loaders/app_loader.dart';
+import '../../../community/presentation/widgets/community_creation_flow.dart';
+import '../../../community/presentation/widgets/quick_create_post_card.dart';
 import '../../domain/entities/home_entity.dart';
 import '../controllers/home_controller.dart';
 
@@ -72,8 +74,15 @@ class HomeScreen extends GetView<HomeController> {
                   const SizedBox(height: AppSpacing.lg),
                   _MotivationTile(motivation: home.dailyMotivation!),
                 ],
+                const SizedBox(height: AppSpacing.xl),
+                QuickCreatePostCard(
+                  userName: home.user.firstName,
+                  avatarUrl: home.user.avatarUrl,
+                  padding: EdgeInsets.zero,
+                  onTap: () => CommunityCreationFlow.openCreatePost(context),
+                ),
                 if (home.feedPreview.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.xl),
+                  const SizedBox(height: AppSpacing.lg),
                   _RecentActivity(
                     items: home.feedPreview,
                     onSeeAll: () => onNavigateTab?.call(1),
@@ -459,20 +468,36 @@ class _QuickActions extends StatelessWidget {
   Widget build(BuildContext context) {
     // Tab indices match MainScreen: 0 home, 1 community, 2 finance, 3 profile.
     final actions = [
-      (Icons.add, 'home.actionCreate'.tr, 1),
-      (Icons.attach_money, 'home.actionExpense'.tr, 2),
-      (Icons.star_outline, 'home.actionGoal'.tr, 2),
-      (Icons.calendar_today_outlined, 'home.actionEvent'.tr, 1),
+      (
+        Icons.add,
+        'home.actionCreate'.tr,
+        () => CommunityCreationFlow.openCreatePost(context),
+      ),
+      (
+        Icons.attach_money,
+        'home.actionExpense'.tr,
+        () => onNavigateTab?.call(2),
+      ),
+      (
+        Icons.star_outline,
+        'home.actionGoal'.tr,
+        () => onNavigateTab?.call(2),
+      ),
+      (
+        Icons.calendar_today_outlined,
+        'home.actionEvent'.tr,
+        () => onNavigateTab?.call(1),
+      ),
     ];
 
     return Row(
       children: [
-        for (final (icon, label, tab) in actions) ...[
+        for (final (icon, label, onTap) in actions) ...[
           Expanded(
             child: _QuickAction(
               icon: icon,
               label: label,
-              onTap: () => onNavigateTab?.call(tab),
+              onTap: onTap,
             ),
           ),
           if (actions.last.$2 != label) const SizedBox(width: AppSpacing.md),

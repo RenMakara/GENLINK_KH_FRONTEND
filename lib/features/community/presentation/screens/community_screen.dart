@@ -10,14 +10,13 @@ import '../widgets/filter_events_sheet.dart';
 import '../widgets/post_card_widget.dart';
 import '../widgets/story_tray_widget.dart';
 import 'community_search_screen.dart';
-import 'create_post_screen.dart';
 import 'create_discussion_screen.dart';
 import 'event_details_screen.dart';
 import 'widgets/community_widgets.dart';
 
 /// GenLink KH Community Screen
 ///
-/// Features 4 sticky navigation tabs: Feed, Forum, Career, Event.
+/// Features 3 sticky navigation tabs: Feed, Forum, Event.
 /// Architected with GetX, responsive web/tablet constraints, and
 /// strict adherence to GenLink design tokens and GetX navigation.
 class CommunityScreen extends GetView<CommunityController> {
@@ -59,10 +58,11 @@ class CommunityScreen extends GetView<CommunityController> {
             children: [
               const SizedBox(height: 6),
 
-              // STICKY NAVIGATION TABS (Feed, Forum, Career, Event)
+              // STICKY NAVIGATION TABS (Feed, Forum, Event)
               Obx(
                 () => SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                   child: Row(
                     children: commController.categories.map((cat) {
@@ -121,8 +121,6 @@ class CommunityScreen extends GetView<CommunityController> {
                   switch (commController.selectedCategory.value) {
                     case 'Forum':
                       return _buildForumTab(context, commController);
-                    case 'Career':
-                      return _buildCareerTab(context, commController);
                     case 'Event':
                       return _buildEventTab(context, commController);
                     case 'Feed':
@@ -159,91 +157,6 @@ class CommunityScreen extends GetView<CommunityController> {
           children: [
             // Stories Tray
             const StoryTrayWidget(),
-
-            const SizedBox(height: AppSpacing.md),
-
-            // Create Post Quick Bar (Senior UI/UX Redesign - Finance Aligned)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: InkWell(
-                onTap: () => Get.to(() => const CreatePostScreen()),
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: surfaceSecondary,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    boxShadow: isDark
-                        ? []
-                        : [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const CircleAvatar(
-                        radius: 18,
-                        backgroundImage: AssetImage('assets/images/user_profile.png'),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'community.whatsHappeningSokny'.tr,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: textPrimary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13.5,
-                                  ) ??
-                                  TextStyle(
-                                    color: textPrimary,
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                            const SizedBox(height: 1),
-                            Text(
-                              'community.shareWithCommunity'.tr,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                    color: textMuted,
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w400,
-                                  ) ??
-                                  TextStyle(
-                                    color: textMuted,
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.edit_note_rounded,
-                        color: textMuted.withValues(alpha: 0.7),
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
 
             const SizedBox(height: AppSpacing.md),
 
@@ -689,130 +602,6 @@ class CommunityScreen extends GetView<CommunityController> {
                 ],
               );
             }),
-
-            const SizedBox(height: AppSpacing.xl),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // CAREER TAB
-  Widget _buildCareerTab(BuildContext context, CommunityController controller) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Context-Aware Career Search Bar
-            InkWell(
-              onTap: () => Get.to(
-                () => const CommunitySearchScreen(activeTab: 'Career'),
-              ),
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              child: Container(
-                height: 46,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: surfaceSecondary,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(color: borderSubtle),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.work_outline,
-                      color: textMuted,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'community.searchJobs'.tr,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
-                          TextStyle(color: textMuted, fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Recommended Opportunities Hero List
-            Text(
-              'community.recommendedOpportunities'.tr,
-              style: theme.textTheme.titleMedium?.copyWith(
-                    color: textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ) ??
-                  TextStyle(
-                    color: textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            const JobCard(
-              title: "Junior Flutter Developer",
-              company: "ABA Bank • Phnom Penh",
-              type: "Full-Time",
-              salary: "\$600 - \$900 / mo",
-              logoColor: AppColors.brandPrimary,
-            ),
-            const JobCard(
-              title: "UI/UX Design Intern",
-              company: "Smart Axiata • Phnom Penh",
-              type: "Internship",
-              salary: "\$250 - \$350 / mo",
-              logoColor: AppColors.danger,
-            ),
-
-            const SizedBox(height: AppSpacing.lg),
-
-            // Campus Alumni Mentors
-            Text(
-              'community.campusAlumniMentors'.tr,
-              style: theme.textTheme.titleMedium?.copyWith(
-                    color: textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ) ??
-                  TextStyle(
-                    color: textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            const SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  MentorCard(
-                    name: "Sokha Kim",
-                    role: "Senior Tech Lead @ Wing",
-                    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-                  ),
-                  MentorCard(
-                    name: "Bopha V.",
-                    role: "Lead UX Designer @ ABA",
-                    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
-                  ),
-                  MentorCard(
-                    name: "Dara N.",
-                    role: "Mobile Architect @ Chip Mong",
-                    avatarUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150",
-                  ),
-                ],
-              ),
-            ),
 
             const SizedBox(height: AppSpacing.xl),
           ],

@@ -12,13 +12,17 @@ import '../../domain/models/community_models.dart';
 import '../../domain/repositories/community_repository.dart';
 
 class CommunityController extends GetxController {
-  late final CommunityRepository repository;
+  late CommunityRepository repository;
+  final CommunityRepository? _injectedRepository;
+
+  CommunityController({CommunityRepository? repository})
+      : _injectedRepository = repository;
 
   final ScrollController scrollController = ScrollController();
 
   final selectedCategory = 'Feed'.obs;
   final selectedForumCategory = 'All'.obs;
-  final categories = ['Feed', 'Forum', 'Career', 'Event'];
+  final categories = ['Feed', 'Forum', 'Event'];
 
   // Feed State & Pagination
   final isLoadingFeed = false.obs;
@@ -170,10 +174,16 @@ class CommunityController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    final dio =
-        Get.isRegistered<Dio>() ? Get.find<Dio>() : DioProvider.create();
-    final dataSource = CommunityRemoteDataSource(dio: dio);
-    repository = CommunityRepositoryImpl(remoteDataSource: dataSource);
+    if (_injectedRepository != null) {
+      repository = _injectedRepository;
+    } else if (Get.isRegistered<CommunityRepository>()) {
+      repository = Get.find<CommunityRepository>();
+    } else {
+      final dio =
+          Get.isRegistered<Dio>() ? Get.find<Dio>() : DioProvider.create();
+      final dataSource = CommunityRemoteDataSource(dio: dio);
+      repository = CommunityRepositoryImpl(remoteDataSource: dataSource);
+    }
 
     scrollController.addListener(_onScrollListener);
     fetchPosts();

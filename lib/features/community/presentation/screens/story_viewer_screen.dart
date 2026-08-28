@@ -16,6 +16,7 @@ import '../../../chat/presentation/controllers/chat_controller.dart';
 import '../../domain/models/story_model.dart';
 import '../controllers/story_controller.dart';
 import '../widgets/story_template_canvas.dart';
+import '../widgets/story_interactive_like_button.dart';
 import '../../../notification/presentation/controllers/notification_controller.dart';
 import '../../../notification/domain/models/notification_model.dart';
 
@@ -237,9 +238,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
   final TextEditingController _replyController = TextEditingController();
 
-  late AnimationController _likeBtnAnimController;
-  late Animation<double> _likeBtnScaleAnim;
-
   late AnimationController _floatingHeartAnimController;
   late Animation<double> _floatingHeartScaleAnim;
   late Animation<double> _floatingHeartOpacityAnim;
@@ -283,56 +281,26 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       }
     });
 
-    // Dedicated sequence animation for Like/Unlike icon button (scale 1.0 -> 1.12 -> 1.0 over 200ms)
-    _likeBtnAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-
-    _likeBtnScaleAnim = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.0,
-          end: 1.12,
-        ).chain(CurveTween(curve: Curves.easeOutCubic)),
-        weight: 50,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.12,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.easeInCubic)),
-        weight: 50,
-      ),
-    ]).animate(_likeBtnAnimController);
-
-    // Floating Canvas Feedback Heart Animation for Double-Tap (0.5 -> 1.2 -> 1.0, 650ms)
+    // Floating Canvas Feedback Heart Animation for Double-Tap (Snappy 360ms pop & fade)
     _floatingHeartAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 650),
+      duration: const Duration(milliseconds: 360),
     );
 
     _floatingHeartScaleAnim = TweenSequence<double>([
       TweenSequenceItem(
         tween: Tween<double>(
-          begin: 0.5,
-          end: 1.2,
+          begin: 0.7,
+          end: 1.20,
         ).chain(CurveTween(curve: Curves.easeOutBack)),
-        weight: 40,
+        weight: 50,
       ),
       TweenSequenceItem(
         tween: Tween<double>(
-          begin: 1.2,
+          begin: 1.20,
           end: 1.0,
-        ).chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 25,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.0,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.linear)),
-        weight: 35,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 50,
       ),
     ]).animate(_floatingHeartAnimController);
 
@@ -342,7 +310,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           begin: 0.0,
           end: 1.0,
         ).chain(CurveTween(curve: Curves.easeIn)),
-        weight: 20,
+        weight: 25,
       ),
       TweenSequenceItem(
         tween: Tween<double>(
@@ -356,7 +324,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           begin: 1.0,
           end: 0.0,
         ).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 35,
+        weight: 30,
       ),
     ]).animate(_floatingHeartAnimController);
 
@@ -383,7 +351,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   void dispose() {
     _progressAnimController.dispose();
     _replyController.dispose();
-    _likeBtnAnimController.dispose();
     _floatingHeartAnimController.dispose();
     super.dispose();
   }
@@ -553,9 +520,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     // Rebuild UI with new state immediately
     setState(() {});
 
-    // Animate button heart icon (scale 1.0 -> 1.18 -> 1.0)
-    _likeBtnAnimController.forward(from: 0.0);
-
     // Create activity notification if story is liked
     if (story.isLiked && Get.isRegistered<NotificationController>()) {
       final notifCtrl = Get.find<NotificationController>();
@@ -584,8 +548,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
     if (!story.isLiked) {
       _toggleLike(story);
-    } else {
-      _likeBtnAnimController.forward(from: 0.0);
     }
 
     // Trigger center floating heart animation for double tap gesture
@@ -1806,13 +1768,45 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  "Story Viewers (${story.viewersCount})",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Story Insights",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Text(
+                          "${story.viewersCount} Viewers",
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const Text("  •  ", style: TextStyle(color: Colors.white38)),
+                        const Icon(
+                          Icons.favorite_rounded,
+                          color: AppColors.likedAccent,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "${story.likesCount} Reactions",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, color: Colors.white54),
@@ -2702,15 +2696,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     Widget mediaWidget;
 
     final url = story.mediaUrl!;
-    if (url.startsWith('assets/')) {
-      mediaWidget = Image.asset(
-        url,
-        fit: BoxFit.contain,
-        alignment: Alignment.center,
-        errorBuilder: (context, error, stackTrace) =>
-            _buildErrorMediaPlaceholder(),
-      );
-    } else if (_isVideoFile(url)) {
+    if (story.type == StoryType.video || _isVideoFile(url)) {
       mediaWidget = Container(
         color: Colors.black,
         child: Center(
@@ -2780,6 +2766,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             ],
           ),
         ),
+      );
+    } else if (url.startsWith('assets/')) {
+      mediaWidget = Image.asset(
+        url,
+        fit: BoxFit.contain,
+        alignment: Alignment.center,
+        errorBuilder: (context, error, stackTrace) =>
+            _buildErrorMediaPlaceholder(),
       );
     } else if (url.startsWith('http://') || url.startsWith('https://')) {
       mediaWidget = Image.network(
@@ -3498,16 +3492,13 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                               );
                               _resumeStory();
                             },
-                            child: Hero(
-                              tag: 'story_avatar_${group.userId}',
-                              child: CircleAvatar(
-                                radius: 18,
-                                backgroundImage:
-                                    group.userAvatar.startsWith('assets/')
-                                    ? AssetImage(group.userAvatar)
-                                          as ImageProvider
-                                    : NetworkImage(group.userAvatar),
-                              ),
+                            child: CircleAvatar(
+                              radius: 18,
+                              backgroundImage:
+                                  group.userAvatar.startsWith('assets/')
+                                  ? AssetImage(group.userAvatar)
+                                        as ImageProvider
+                                  : NetworkImage(group.userAvatar),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -3617,7 +3608,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       if (group.isOwner) ...[
-                        // ── Owner Actions: Viewers Pill Button ──
+                        // ── Owner Actions: Viewers & Likes Engagement Pill Button ──
                         InkWell(
                           borderRadius: BorderRadius.circular(22),
                           onTap: _showViewersSheet,
@@ -3639,13 +3630,34 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                                   color: Colors.white,
                                   size: 18,
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
                                 Text(
-                                  "${story.viewersCount} Viewers",
+                                  "${story.viewersCount}",
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Container(
+                                  width: 1,
+                                  height: 14,
+                                  color: Colors.white24,
+                                ),
+                                const SizedBox(width: 10),
+                                const Icon(
+                                  Icons.favorite_rounded,
+                                  color: AppColors.likedAccent,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  "${story.likesCount}",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],
@@ -3713,57 +3725,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                         if (story.allowReactions) ...[
                           const SizedBox(width: 10),
 
-                          // ── Monochrome Like Button ──
-                          Semantics(
-                            label: story.isLiked
-                                ? 'Unlike story'
-                                : 'Like story',
-                            button: true,
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () => _toggleLike(story),
-                              child: ScaleTransition(
-                                scale: _likeBtnScaleAnim,
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 180),
-                                  curve: Curves.easeOutCubic,
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.50),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: story.isLiked
-                                          ? Colors.white.withValues(alpha: 0.35)
-                                          : Colors.white.withValues(
-                                              alpha: 0.20,
-                                            ),
-                                      width: 1.0,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.30,
-                                        ),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Center(
-                                    child: Icon(
-                                      story.isLiked
-                                          ? Icons.favorite_rounded
-                                          : Icons.favorite_border_rounded,
-                                      color: story.isLiked
-                                          ? AppColors.likedAccent
-                                          : Colors.white,
-                                      size: 24,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
+                          // ── Interactive Like Button (Count hidden for other users' stories) ──
+                          StoryInteractiveLikeButton(
+                            isLiked: story.isLiked,
+                            likesCount: story.likesCount,
+                            showCount: false,
+                            onTap: () => _toggleLike(story),
                           ),
                         ],
 

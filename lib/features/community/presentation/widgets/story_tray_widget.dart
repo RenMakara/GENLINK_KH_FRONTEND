@@ -154,8 +154,8 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
-        transitionDuration: const Duration(milliseconds: 300),
-        reverseTransitionDuration: const Duration(milliseconds: 200),
+        transitionDuration: const Duration(milliseconds: 200),
+        reverseTransitionDuration: const Duration(milliseconds: 180),
         pageBuilder: (context, animation, secondaryAnimation) {
           return StoryViewerScreen(
             initialGroupIndex: widget.index,
@@ -164,18 +164,18 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final scaleAnimation = Tween<double>(
-            begin: 0.96,
+            begin: 0.98,
             end: 1.00,
           ).animate(CurvedAnimation(
             parent: animation,
-            curve: Curves.fastOutSlowIn,
+            curve: Curves.easeOutCubic,
             reverseCurve: Curves.easeInCubic,
           ));
 
           final fadeAnimation = CurvedAnimation(
             parent: animation,
-            curve: Curves.easeOutQuad,
-            reverseCurve: Curves.easeOutQuad,
+            curve: Curves.easeOut,
+            reverseCurve: Curves.easeIn,
           );
 
           return ScaleTransition(

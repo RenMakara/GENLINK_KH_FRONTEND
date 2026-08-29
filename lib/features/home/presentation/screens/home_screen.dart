@@ -37,51 +37,6 @@ class HomeScreen extends GetView<HomeController> {
         );
       }
 
-<<<<<<< HEAD
-          return RefreshIndicator(
-            onRefresh: controller.reload,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.sm,
-                AppSpacing.lg,
-                AppSpacing.xl,
-              ),
-              children: [
-                _Header(user: home.user),
-                const SizedBox(height: AppSpacing.md),
-                _LevelBar(user: home.user),
-                const SizedBox(height: AppSpacing.xl),
-                Text(
-                  'home.headline'.tr,
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _TodayHub(home: home),
-                const SizedBox(height: AppSpacing.lg),
-                _QuickActions(onNavigateTab: onNavigateTab),
-                const SizedBox(height: AppSpacing.lg),
-                _StatGrid(home: home, onNavigateTab: onNavigateTab),
-                if (home.dailyMotivation != null) ...[
-                  const SizedBox(height: AppSpacing.lg),
-                  _MotivationTile(motivation: home.dailyMotivation!),
-                ],
-                const SizedBox(height: AppSpacing.xl),
-                QuickCreatePostCard(
-                  userName: home.user.firstName,
-                  avatarUrl: home.user.avatarUrl,
-                  padding: EdgeInsets.zero,
-                  onTap: () => CommunityCreationFlow.openCreatePost(context),
-                ),
-                if (home.feedPreview.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.lg),
-                  _RecentActivity(
-                    items: home.feedPreview,
-                    onSeeAll: () => onNavigateTab?.call(1),
-                  ),
-                ],
-              ],
-=======
       return RefreshIndicator(
         onRefresh: controller.reload,
         child: SafeArea(
@@ -92,41 +47,47 @@ class HomeScreen extends GetView<HomeController> {
               AppSpacing.sm,
               AppSpacing.lg,
               120, // Padding to allow scrolling past floating bar
->>>>>>> origin/dev
             ),
             children: [
-            _Header(
-              user: home.user,
-              onNavigateTab: onNavigateTab,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _LevelBar(user: home.user),
-            const SizedBox(height: AppSpacing.xl),
-            Text(
-              'home.headline'.tr,
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _TodayHub(home: home),
-            const SizedBox(height: AppSpacing.lg),
-            _QuickActions(onNavigateTab: onNavigateTab),
-            const SizedBox(height: AppSpacing.lg),
-            _StatGrid(home: home, onNavigateTab: onNavigateTab),
-            if (home.dailyMotivation != null) ...[
-              const SizedBox(height: AppSpacing.lg),
-              _MotivationTile(motivation: home.dailyMotivation!),
-            ],
-            if (home.feedPreview.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.xl),
-              _RecentActivity(
-                items: home.feedPreview,
-                onSeeAll: () => onNavigateTab?.call(1),
+              _Header(
+                user: home.user,
+                onNavigateTab: onNavigateTab,
               ),
+              const SizedBox(height: AppSpacing.md),
+              _LevelBar(user: home.user),
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                'home.headline'.tr,
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _TodayHub(home: home),
+              const SizedBox(height: AppSpacing.lg),
+              _QuickActions(onNavigateTab: onNavigateTab),
+              const SizedBox(height: AppSpacing.lg),
+              _StatGrid(home: home, onNavigateTab: onNavigateTab),
+              if (home.dailyMotivation != null) ...[
+                const SizedBox(height: AppSpacing.lg),
+                _MotivationTile(motivation: home.dailyMotivation!),
+              ],
+              const SizedBox(height: AppSpacing.xl),
+              QuickCreatePostCard(
+                userName: home.user.firstName,
+                avatarUrl: home.user.avatarUrl,
+                padding: EdgeInsets.zero,
+                onTap: () => CommunityCreationFlow.openCreatePost(context),
+              ),
+              if (home.feedPreview.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.lg),
+                _RecentActivity(
+                  items: home.feedPreview,
+                  onSeeAll: () => onNavigateTab?.call(1),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
-      ),
-    );
+      );
     });
   }
 }

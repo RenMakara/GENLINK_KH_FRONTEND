@@ -6,9 +6,9 @@ import '../../features/community/presentation/screens/create_discussion_screen.d
 import '../../features/community/presentation/screens/create_event_screen.dart';
 import '../../features/community/presentation/screens/create_post_screen.dart';
 import '../../features/community/presentation/widgets/community_creation_flow.dart';
-import '../../features/finance/presentation/screens/Budget Feature/screens/set_budget_screen.dart';
-import '../../features/finance/presentation/screens/Expense Feature/screens/expense_add_screen.dart';
-import '../../features/finance/presentation/screens/Learn Feature/screens/investing_quiz.dart';
+import '../../features/finance/presentation/screens/budget_feature/screens/set_budget_screen.dart';
+import '../../features/finance/presentation/screens/expense_feature/screens/expense_add_screen.dart';
+import '../../features/finance/presentation/screens/learn_feature/screens/investing_quiz.dart';
 import '../../features/finance/presentation/screens/Saving Goal Feature/screens/saving_goals_create.dart';
 import '../../features/productivity/presentation/screens/create_habit_screen.dart';
 import '../../features/productivity/presentation/screens/create_task_screen.dart';

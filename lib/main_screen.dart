@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import 'features/community/presentation/screens/community_screen.dart';
 import 'features/community/presentation/widgets/community_creation_flow.dart';
-import 'features/finance/presentation/screens/Finance Home/screens/finance_screen.dart';
+import 'features/finance/presentation/screens/finance_home/screens/finance_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
 import 'features/profile/presentation/screens/profile_screen.dart';
 import 'main_controller.dart';

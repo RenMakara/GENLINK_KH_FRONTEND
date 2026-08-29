@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
-import '../../../finance/presentation/screens/Expense Feature/screens/expense_add_screen.dart';
+import '../../../finance/presentation/screens/expense_feature/screens/expense_add_screen.dart';
 import '../../../finance/presentation/screens/Saving Goal Feature/screens/saving_goals_create.dart';
 import '../../../productivity/presentation/screens/create_task_screen.dart';
 

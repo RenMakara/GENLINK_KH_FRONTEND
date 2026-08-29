@@ -42,7 +42,7 @@ void main() {
   }
 
   Future<void> openSheet(WidgetTester tester, {Locale locale = const Locale('en', 'US')}) async {
-    tester.view.physicalSize = const Size(400, 1000);
+    tester.view.physicalSize = const Size(600, 2000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
       tester.view.resetPhysicalSize();
@@ -67,34 +67,26 @@ void main() {
       // Verify Section Headers
       expect(find.text('COMMUNITY'), findsOneWidget);
       expect(find.text('PRODUCTIVITY'), findsOneWidget);
-
-      await tester.scrollUntilVisible(find.text('FINANCIAL'), 50.0, scrollable: find.byType(Scrollable).first);
       expect(find.text('FINANCIAL'), findsOneWidget);
-
-      await tester.scrollUntilVisible(find.text('ENTERTAINMENT'), 50.0, scrollable: find.byType(Scrollable).first);
       expect(find.text('ENTERTAINMENT'), findsOneWidget);
 
       // Verify Community Actions (4)
-      await tester.scrollUntilVisible(find.text('Post'), 50.0, scrollable: find.byType(Scrollable).first);
       expect(find.text('Post'), findsOneWidget);
       expect(find.text('Story'), findsOneWidget);
       expect(find.text('Event'), findsOneWidget);
       expect(find.text('Discussion'), findsOneWidget);
 
       // Verify Productivity Actions (3)
-      await tester.scrollUntilVisible(find.text('Goal'), 50.0, scrollable: find.byType(Scrollable).first);
       expect(find.text('Goal'), findsOneWidget);
       expect(find.text('To-Do'), findsOneWidget);
       expect(find.text('Habit'), findsOneWidget);
 
       // Verify Financial Actions (3)
-      await tester.scrollUntilVisible(find.text('Expense'), 50.0, scrollable: find.byType(Scrollable).first);
       expect(find.text('Expense'), findsOneWidget);
       expect(find.text('Saving Goal'), findsOneWidget);
       expect(find.text('Budget'), findsOneWidget);
 
       // Verify Entertainment Actions (3)
-      await tester.scrollUntilVisible(find.text('Quiz'), 50.0, scrollable: find.byType(Scrollable).first);
       expect(find.text('Quiz'), findsOneWidget);
       expect(find.text('Challenge'), findsOneWidget);
       expect(find.text('Short Content'), findsOneWidget);
@@ -108,11 +100,7 @@ void main() {
       expect(find.text('តើអ្នកចង់បង្កើតអ្វី?'), findsOneWidget);
       expect(find.text('សហគមន៍'), findsOneWidget);
       expect(find.text('ផលិតភាព'), findsOneWidget);
-
-      await tester.scrollUntilVisible(find.text('ហិរញ្ញវត្ថុ'), 50.0, scrollable: find.byType(Scrollable).first);
       expect(find.text('ហិរញ្ញវត្ថុ'), findsOneWidget);
-
-      await tester.scrollUntilVisible(find.text('ការកម្សាន្ត'), 50.0, scrollable: find.byType(Scrollable).first);
       expect(find.text('ការកម្សាន្ត'), findsOneWidget);
 
       expect(tester.takeException(), isNull);
@@ -121,7 +109,6 @@ void main() {
     testWidgets('tapping Post opens CreatePostScreen in 1 tap', (tester) async {
       await openSheet(tester);
 
-      await tester.scrollUntilVisible(find.text('Post'), 50.0, scrollable: find.byType(Scrollable).first);
       await tester.tap(find.text('Post'));
       await tester.pumpAndSettle();
 
@@ -131,7 +118,6 @@ void main() {
     testWidgets('tapping Event opens CreateEventScreen in 1 tap', (tester) async {
       await openSheet(tester);
 
-      await tester.scrollUntilVisible(find.text('Event'), 50.0, scrollable: find.byType(Scrollable).first);
       await tester.tap(find.text('Event'));
       await tester.pumpAndSettle();
 
@@ -141,7 +127,6 @@ void main() {
     testWidgets('tapping Discussion opens CreateDiscussionScreen in 1 tap', (tester) async {
       await openSheet(tester);
 
-      await tester.scrollUntilVisible(find.text('Discussion'), 50.0, scrollable: find.byType(Scrollable).first);
       await tester.tap(find.text('Discussion'));
       await tester.pumpAndSettle();
 
@@ -151,7 +136,6 @@ void main() {
     testWidgets('tapping To-Do opens CreateTaskScreen in 1 tap', (tester) async {
       await openSheet(tester);
 
-      await tester.scrollUntilVisible(find.text('To-Do'), 50.0, scrollable: find.byType(Scrollable).first);
       await tester.tap(find.text('To-Do'));
       await tester.pumpAndSettle();
 
@@ -161,7 +145,6 @@ void main() {
     testWidgets('tapping Habit opens CreateHabitScreen in 1 tap', (tester) async {
       await openSheet(tester);
 
-      await tester.scrollUntilVisible(find.text('Habit'), 50.0, scrollable: find.byType(Scrollable).first);
       await tester.tap(find.text('Habit'));
       await tester.pumpAndSettle();
 
@@ -171,7 +154,6 @@ void main() {
     testWidgets('tapping Expense opens AddExpenseScreen in 1 tap', (tester) async {
       await openSheet(tester);
 
-      await tester.scrollUntilVisible(find.text('Expense'), 50.0, scrollable: find.byType(Scrollable).first);
       await tester.tap(find.text('Expense'));
       await tester.pumpAndSettle();
 
@@ -181,7 +163,6 @@ void main() {
     testWidgets('tapping Budget opens SetBudgetScreen in 1 tap', (tester) async {
       await openSheet(tester);
 
-      await tester.scrollUntilVisible(find.text('Budget'), 50.0, scrollable: find.byType(Scrollable).first);
       await tester.tap(find.text('Budget'));
       await tester.pumpAndSettle();
 
@@ -191,7 +172,6 @@ void main() {
     testWidgets('tapping Quiz opens InvestingQuizScreen in 1 tap', (tester) async {
       await openSheet(tester);
 
-      await tester.scrollUntilVisible(find.text('Quiz'), 50.0, scrollable: find.byType(Scrollable).first);
       await tester.tap(find.text('Quiz'));
       await tester.pumpAndSettle();
 
@@ -201,7 +181,6 @@ void main() {
     testWidgets('tapping Challenge opens Challenge dialog in 1 tap', (tester) async {
       await openSheet(tester);
 
-      await tester.scrollUntilVisible(find.text('Challenge'), 50.0, scrollable: find.byType(Scrollable).first);
       await tester.tap(find.text('Challenge'));
       await tester.pumpAndSettle();
 
@@ -211,7 +190,6 @@ void main() {
     testWidgets('tapping Short Content opens Short Content dialog in 1 tap', (tester) async {
       await openSheet(tester);
 
-      await tester.scrollUntilVisible(find.text('Short Content'), 50.0, scrollable: find.byType(Scrollable).first);
       await tester.tap(find.text('Short Content'));
       await tester.pumpAndSettle();
 

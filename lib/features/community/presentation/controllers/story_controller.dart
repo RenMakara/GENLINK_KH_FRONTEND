@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../domain/models/story_model.dart';
 import '../../domain/repositories/story_repository.dart';
 import '../../data/repositories/story_repository_impl.dart';
@@ -111,23 +110,6 @@ class StoryController extends GetxController {
         );
       }
       storyGroups.refresh();
-
-      try {
-        final bannerContext = Get.context ?? Get.overlayContext;
-        if (bannerContext != null && bannerContext.mounted) {
-          AppNotificationBanner.showSuccess(
-            context: bannerContext,
-            title: "✓ Story Live",
-            message:
-                "Your story has been shared with $visibility on CampusLink KH!",
-            icon: Icons.auto_awesome_rounded,
-            duration: const Duration(seconds: 3),
-          );
-        }
-      } catch (bannerErr) {
-        debugPrint('[StoryController] Banner notification skipped: $bannerErr');
-      }
-
       return true;
     } finally {
       isUploading.value = false;
@@ -214,16 +196,18 @@ class StoryController extends GetxController {
         timeAgo: oldStory.timeAgo,
         createdAt: oldStory.createdAt,
         settings: newSettings,
-        layers: oldStory.layers,
+        layers: List.from(oldStory.layers),
         bgScale: oldStory.bgScale,
         bgOffset: oldStory.bgOffset,
         bgRotation: oldStory.bgRotation,
+        viewers: List.from(oldStory.viewers),
+        templateId: oldStory.templateId,
+        templateSlots: List.from(oldStory.templateSlots),
       );
       updatedStory.likesCount = oldStory.likesCount;
       updatedStory.isLiked = oldStory.isLiked;
       updatedStory.isViewed = oldStory.isViewed;
       updatedStory.viewersCount = oldStory.viewersCount;
-      updatedStory.viewers.addAll(oldStory.viewers);
 
       ownerGroup.stories[index] = updatedStory;
       storyGroups.refresh();
@@ -231,13 +215,19 @@ class StoryController extends GetxController {
     }
   }
 
-  void deleteStory(String storyId) {
-    for (final group in storyGroups) {
-      group.stories.removeWhere((s) => s.id == storyId);
+  Future<bool> deleteStory(String storyId) async {
+    try {
+      await _repository.deleteStory(storyId);
+      for (final group in storyGroups) {
+        group.stories.removeWhere((s) => s.id == storyId);
+      }
+      storyGroups.removeWhere((group) => group.stories.isEmpty && !group.isOwner);
+      storyGroups.refresh();
+      return true;
+    } catch (e) {
+      debugPrint('[StoryController] Delete story error: $e');
+      return false;
     }
-    storyGroups.removeWhere((group) => group.stories.isEmpty && !group.isOwner);
-    storyGroups.refresh();
-    _repository.deleteStory(storyId);
   }
 
   Future<void> markStoryViewed(String storyId) async {

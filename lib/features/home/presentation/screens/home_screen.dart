@@ -9,6 +9,7 @@ import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/loaders/app_loader.dart';
 import '../../../community/presentation/widgets/community_creation_flow.dart';
 import '../../../community/presentation/widgets/quick_create_post_card.dart';
+import '../../../../shared/widgets/global_create_sheet.dart';
 import '../../domain/entities/home_entity.dart';
 import '../controllers/home_controller.dart';
 
@@ -476,7 +477,7 @@ class _QuickActions extends StatelessWidget {
       (
         Icons.add,
         'home.actionCreate'.tr,
-        () => CommunityCreationFlow.openCreatePost(context),
+        () => GlobalCreateSheet.show(context),
       ),
       (
         Icons.sports_esports,

@@ -26,13 +26,14 @@ class BottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final mainController = Get.find<MainController>();
-    final authController = Get.find<AuthController>();
+    final mainController = Get.isRegistered<MainController>()
+        ? Get.find<MainController>()
+        : null;
+    final authController = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : null;
 
-    return Obx(() {
-      final isVisible = mainController.isNavBarVisible.value;
-      final user = authController.currentUser.value;
-
+    Widget buildBar(bool isVisible, String? avatarUrl) {
       return AnimatedSlide(
         offset: isVisible ? Offset.zero : const Offset(0, 1.0),
         duration: const Duration(milliseconds: 300),
@@ -49,7 +50,7 @@ class BottomNavBar extends StatelessWidget {
               // Refined heights for floating design
               final barHeight = isVeryNarrow ? 72.0 : (isNarrow ? 76.0 : 82.0);
               final horizontalMargin = isVeryNarrow ? 12.0 : 20.0;
-              
+
               // Use MediaQuery to get the bottom safe area and add extra float margin
               final safeBottom = MediaQuery.of(context).padding.bottom;
               final bottomMargin = safeBottom > 0 ? safeBottom + 8.0 : 20.0;
@@ -144,7 +145,7 @@ class BottomNavBar extends StatelessWidget {
                                 iconSize: navIconSize,
                                 fontSize: navFontSize,
                                 onTap: () => onTap(3),
-                                imageUrl: user?.avatarUrl,
+                                imageUrl: avatarUrl,
                                 onLongPress: () => _showProfileMenu(context),
                               ),
                             ),
@@ -159,6 +160,16 @@ class BottomNavBar extends StatelessWidget {
           ),
         ),
       );
+    }
+
+    if (mainController == null && authController == null) {
+      return buildBar(true, null);
+    }
+
+    return Obx(() {
+      final isVisible = mainController?.isNavBarVisible.value ?? true;
+      final user = authController?.currentUser.value;
+      return buildBar(isVisible, user?.avatarUrl);
     });
   }
 
@@ -291,6 +302,7 @@ class _CenterButton extends StatelessWidget {
                 CupertinoIcons.plus,
                 size: iconSize,
                 color: isDark ? Colors.black : Colors.white,
+                semanticLabel: 'nav.create'.tr,
               ),
             ),
           ),

@@ -7,7 +7,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:get/get.dart';
-import 'story_creator_screen.dart';
 import '../../../../app/routes/app_routes.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
@@ -1729,8 +1728,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       if (mounted) {
         AppNotificationBanner.showSuccess(
           context: context,
-          title: "Saved!",
-          message: "Story successfully saved to your gallery.",
+          title: "Story saved to your device.",
+          message: "",
           icon: Icons.check_circle_rounded,
         );
       }
@@ -1738,8 +1737,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       if (mounted) {
         AppNotificationBanner.showDanger(
           context: context,
-          title: "Save Error",
-          message: "An error occurred while saving.",
+          title: "Couldn't save story.",
+          message: "Please try again.",
         );
       }
     } finally {
@@ -2169,13 +2168,168 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     });
   }
 
-  void _showMoreMenu() {
+  void _openBlockConfirmationDialog(StoryGroupModel group) {
+    _pauseStory();
+    showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: Text(
+          "Block ${group.userName}?",
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+          ),
+        ),
+        content: const Text(
+          "They won't be able to see your stories or posts.",
+          style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: const Text(
+              "Cancel",
+              style: TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 10,
+              ),
+            ),
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: const Text(
+              "Block",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ).then((confirmed) {
+      if (confirmed == true && mounted) {
+        _closeViewer();
+        AppNotificationBanner.showSuccess(
+          context: context,
+          title: "User Blocked",
+          message: "You will no longer see stories from ${group.userName}.",
+          icon: Icons.block_rounded,
+        );
+      } else {
+        _resumeStory();
+      }
+    });
+  }
+
+  Future<void> _showDeleteStoryDialog(StoryItemModel story) async {
+    _pauseStory();
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: const Text(
+          "Delete Story?",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+          ),
+        ),
+        content: const Text(
+          "Are you sure you want to permanently delete this story?",
+          style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: const Text(
+              "Cancel",
+              style: TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 10,
+              ),
+            ),
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: const Text(
+              "Delete",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final controller = Get.isRegistered<StoryController>()
+          ? Get.find<StoryController>()
+          : null;
+      final success = await controller?.deleteStory(story.id) ?? true;
+      if (success) {
+        _closeViewer();
+        final bannerCtx = Get.context ?? Get.overlayContext ?? context;
+        if (bannerCtx.mounted) {
+          AppNotificationBanner.showSuccess(
+            context: bannerCtx,
+            title: "Story deleted successfully.",
+            message: "",
+            icon: Icons.check_circle_rounded,
+          );
+        }
+      } else {
+        final bannerCtx = Get.context ?? Get.overlayContext ?? context;
+        if (bannerCtx.mounted) {
+          AppNotificationBanner.showDanger(
+            context: bannerCtx,
+            title: "Couldn't delete story. Please try again.",
+            message: "",
+          );
+        }
+        _resumeStory();
+      }
+    } else {
+      _resumeStory();
+    }
+  }
+
+  Future<void> _showMoreMenu() async {
     final group = _currentGroup;
     final story = _currentStory;
     if (group == null || story == null) return;
 
     _pauseStory();
-    showModalBottomSheet(
+    final action = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -2239,51 +2393,20 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                         // ── MY STORY OPTIONS ──
                         _buildMenuOptionTile(
                           ctx: ctx,
-                          icon: Icons.edit_outlined,
-                          title: "Edit Story",
-                          subtitle: "Modify story text, layers, or background",
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            _pauseStory();
-                            Get.to(
-                              () => StoryCreatorScreen(
-                                type: _currentStory!.type,
-                                existingStory: _currentStory,
-                              ),
-                              routeName: '/StoryCreatorScreen',
-                              transition: Transition.fadeIn,
-                              duration: const Duration(milliseconds: 200),
-                              curve: Curves.easeOutCubic,
-                            )?.then((_) => _resumeStory());
-                          },
-                        ),
-                        _buildMenuOptionTile(
-                          ctx: ctx,
                           icon: Icons.lock_outline_rounded,
                           title: "Story Privacy",
-                          subtitle: "Who can see your story (${_currentStory?.settings.visibility == StoryPrivacy.public ? 'Public' : (_currentStory?.settings.visibility == StoryPrivacy.onlyMe ? 'Only Me' : 'Friends')})",
+                          subtitle: "Who can see your story",
                           onTap: () {
-                            Navigator.pop(ctx);
-                            _showPrivacySheet();
-                          },
-                        ),
-                        _buildMenuOptionTile(
-                          ctx: ctx,
-                          icon: Icons.bar_chart_rounded,
-                          title: "Story Insights",
-                          subtitle: "See viewers, likes, and story analytics",
-                          onTap: () {
-                            _showViewersSheet();
+                            Navigator.pop(ctx, 'privacy');
                           },
                         ),
                         _buildMenuOptionTile(
                           ctx: ctx,
                           icon: Icons.download_rounded,
                           title: "Save to Device",
-                          subtitle: "Save story photo/video to phone gallery",
+                          subtitle: "Save story photo/video to your phone gallery",
                           onTap: () {
-                            Navigator.pop(ctx);
-                            _saveStoryToDevice();
+                            Navigator.pop(ctx, 'save');
                           },
                         ),
                         _buildMenuOptionTile(
@@ -2292,79 +2415,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           title: "Delete Story",
                           subtitle: "Permanently remove this story",
                           isDanger: true,
-                          onTap: () async {
-                            final bool? confirmed = await showDialog<bool>(
-                              context: context,
-                              builder: (dialogCtx) => AlertDialog(
-                                backgroundColor: const Color(0xFF1E1E1E),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(22),
-                                ),
-                                title: const Text(
-                                  "Delete Story?",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 17,
-                                  ),
-                                ),
-                                content: const Text(
-                                  "This story will be permanently deleted.",
-                                  style: TextStyle(
-                                    color: Color(0xFFAAAAAA),
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(dialogCtx, false),
-                                    child: const Text(
-                                      "Cancel",
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.danger,
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 10,
-                                      ),
-                                    ),
-                                    onPressed: () =>
-                                        Navigator.pop(dialogCtx, true),
-                                    child: const Text(
-                                      "Delete",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-
-                            if (confirmed == true && mounted) {
-                              final controller = Get.find<StoryController>();
-                              controller.deleteStory(story.id);
-                              _closeViewer();
-                              AppNotificationBanner.showSuccess(
-                                context: context,
-                                title: "✓ Story Deleted",
-                                message:
-                                    "Your story has been permanently deleted.",
-                                icon: Icons.check_circle_rounded,
-                              );
-                            }
+                          onTap: () {
+                            Navigator.pop(ctx, 'delete');
                           },
                         ),
                       ] else ...[
@@ -2375,7 +2427,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           title: "Share Story",
                           subtitle: "Share to Campus Group or friends",
                           onTap: () {
-                            _openStoryShareSheet(group, story);
+                            Navigator.pop(ctx, 'share');
                           },
                         ),
                         _buildMenuOptionTile(
@@ -2384,17 +2436,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           title: "Copy Story Link",
                           subtitle: "Copy direct link to share anywhere",
                           onTap: () {
-                            Clipboard.setData(
-                              ClipboardData(
-                                text: "https://genlink.app/story/${story.id}",
-                              ),
-                            );
-                            AppNotificationBanner.showSuccess(
-                              context: context,
-                              title: "Link Copied",
-                              message: "Story link copied to clipboard!",
-                              icon: Icons.copy_rounded,
-                            );
+                            Navigator.pop(ctx, 'copy_link');
                           },
                         ),
                         _buildMenuOptionTile(
@@ -2403,7 +2445,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           title: "Report Story",
                           subtitle: "Report inappropriate content or spam",
                           onTap: () {
-                            _openReportStorySheet(group, story);
+                            Navigator.pop(ctx, 'report');
                           },
                         ),
                         _buildMenuOptionTile(
@@ -2412,7 +2454,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           title: "Mute Stories",
                           subtitle: "Stop seeing stories from this user",
                           onTap: () {
-                            _openMuteConfirmationDialog(group);
+                            Navigator.pop(ctx, 'mute');
                           },
                         ),
                         _buildMenuOptionTile(
@@ -2421,77 +2463,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           title: "Block User",
                           subtitle: "Block this user from contacting you",
                           isDanger: true,
-                          onTap: () async {
-                            final bool? confirmed = await showDialog<bool>(
-                              context: context,
-                              builder: (dialogCtx) => AlertDialog(
-                                backgroundColor: const Color(0xFF1E1E1E),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(22),
-                                ),
-                                title: Text(
-                                  "Block ${group.userName}?",
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 17,
-                                  ),
-                                ),
-                                content: const Text(
-                                  "They won't be able to see your stories or posts.",
-                                  style: TextStyle(
-                                    color: Color(0xFFAAAAAA),
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(dialogCtx, false),
-                                    child: const Text(
-                                      "Cancel",
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.danger,
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 10,
-                                      ),
-                                    ),
-                                    onPressed: () =>
-                                        Navigator.pop(dialogCtx, true),
-                                    child: const Text(
-                                      "Block",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-
-                            if (confirmed == true && mounted) {
-                              _closeViewer();
-                              AppNotificationBanner.showSuccess(
-                                context: context,
-                                title: "User Blocked",
-                                message:
-                                    "You will no longer see stories from ${group.userName}.",
-                                icon: Icons.block_rounded,
-                              );
-                            }
+                          onTap: () {
+                            Navigator.pop(ctx, 'block');
                           },
                         ),
                       ],
@@ -2503,7 +2476,37 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           ),
         ),
       ),
-    ).then((_) => _resumeStory());
+    );
+
+    if (action == 'privacy') {
+      _showPrivacySheet();
+    } else if (action == 'save') {
+      _saveStoryToDevice();
+    } else if (action == 'delete') {
+      await _showDeleteStoryDialog(story);
+    } else if (action == 'share') {
+      _openStoryShareSheet(group, story);
+    } else if (action == 'copy_link') {
+      Clipboard.setData(ClipboardData(text: "https://genlink.app/story/${story.id}"));
+      final bannerCtx = Get.context ?? Get.overlayContext ?? context;
+      if (bannerCtx.mounted) {
+        AppNotificationBanner.showSuccess(
+          context: bannerCtx,
+          title: "Link Copied",
+          message: "Story link copied to clipboard!",
+          icon: Icons.copy_rounded,
+        );
+      }
+      _resumeStory();
+    } else if (action == 'report') {
+      _openReportStorySheet(group, story);
+    } else if (action == 'mute') {
+      _openMuteConfirmationDialog(group);
+    } else if (action == 'block') {
+      _openBlockConfirmationDialog(group);
+    } else {
+      _resumeStory();
+    }
   }
 
   Widget _buildMenuOptionTile({
@@ -2526,34 +2529,35 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-        leading: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
-          child: Icon(icon, color: iconColor, size: 18),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: titleColor,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: ListTile(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+          leading: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
+            child: Icon(icon, color: iconColor, size: 18),
           ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
-            fontSize: 11.5,
+          title: Text(
+            title,
+            style: TextStyle(
+              color: titleColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
           ),
+          subtitle: Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.45),
+              fontSize: 11.5,
+            ),
+          ),
+          onTap: onTap,
         ),
-        onTap: () {
-          Navigator.pop(ctx);
-          onTap();
-        },
       ),
     );
   }

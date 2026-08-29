@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'features/community/presentation/screens/community_screen.dart';
-import 'features/community/presentation/widgets/community_creation_flow.dart';
 import 'features/finance/presentation/screens/finance_home/screens/finance_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
 import 'features/profile/presentation/screens/profile_screen.dart';
 import 'main_controller.dart';
 import 'shared/widgets/bottom_nav_bar.dart';
+import 'shared/widgets/global_create_sheet.dart';
 
 /// Signed-in shell. The tab order here must match [BottomNavBar]:
 /// Home (0), Community (1), Financial (2), Profile (3).
@@ -36,9 +36,9 @@ class _MainScreenState extends State<MainScreen> {
     _lastIndex = controller.currentIndex.value;
   }
 
-  /// Center '+' action in bottom navigation: opens New Post composer.
+  /// Center '+' action in bottom navigation: opens global creation sheet.
   void _onCenterTap() {
-    CommunityCreationFlow.openCreatePost(context);
+    GlobalCreateSheet.show(context);
   }
 
   @override

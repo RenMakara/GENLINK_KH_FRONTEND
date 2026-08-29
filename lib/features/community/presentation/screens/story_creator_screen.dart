@@ -3172,17 +3172,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       if (mounted) {
         setState(() => _isPublishing = false);
         if (success) {
-          final bannerContext = Get.context ?? Get.overlayContext ?? context;
-          if (bannerContext.mounted) {
-            AppNotificationBanner.showSuccess(
-              context: bannerContext,
-              title: "Success",
-              message: "Story posted successfully",
-              icon: Icons.check_circle_rounded,
-              duration: const Duration(seconds: 3),
-            );
-          }
-
           if (Get.isRegistered<StoryGalleryController>()) {
             try {
               Get.find<StoryGalleryController>().clearDraft();
@@ -3207,11 +3196,22 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               return true;
             });
           }
+
+          final bannerContext = Get.context ?? Get.overlayContext ?? context;
+          if (bannerContext.mounted) {
+            AppNotificationBanner.showSuccess(
+              context: bannerContext,
+              title: "✓ Story posted successfully",
+              message: "Your story is now live.",
+              icon: Icons.check_circle_rounded,
+              duration: const Duration(seconds: 3),
+            );
+          }
         } else {
           AppNotificationBanner.showDanger(
             context: context,
-            title: "Upload Failed",
-            message: "Couldn't post story. Please try again.",
+            title: "Couldn't post story",
+            message: "Please try again.",
           );
         }
       }
@@ -3221,8 +3221,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         setState(() => _isPublishing = false);
         AppNotificationBanner.showDanger(
           context: context,
-          title: "Upload Failed",
-          message: "Couldn't post story. Please try again.",
+          title: "Couldn't post story",
+          message: "Please try again.",
         );
       }
     } finally {

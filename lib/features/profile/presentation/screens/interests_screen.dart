@@ -240,7 +240,6 @@ class _SkillChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final selectedItems =
         catalog.where((item) => selected.contains(item.interestId)).toList();
     final unselectedItems =

@@ -3,12 +3,12 @@ import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
-import 'package:genlink_frontend/features/finance/presentation/screens/Budget%20Feature/screens/budget_screen.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/E%20Wallet%20Feature/screens/ewallet.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/Expense%20Feature/screens/expense_screen.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/Learn%20Feature/screens/learn_finance.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/Saving%20Goal%20Feature/screens/saving_goals_screen.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/Finance%20Home/widgets/finance_widget.dart';
+import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet.dart';
+import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/learn_finance_feature/learn_finance.dart';
+import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_screen.dart';
+import 'package:genlink_frontend/features/finance/widgets/finance_widget.dart';
 
 class FinanceScreen extends StatelessWidget {
   const FinanceScreen({super.key});

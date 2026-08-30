@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
 class AddExpenseScreen extends StatefulWidget {
@@ -16,8 +18,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   int selectedCategory = 0;
   int selectedPayment = 0;
 
-  final categories = ['Food', 'Transport', 'Study', 'Bills', 'Health', 'Other'];
-  final payments = ['Cash', 'Card', 'ABA'];
+  final categories = ['food', 'transport', 'study', 'bills', 'health', 'other'];
+
+  final payments = ['cash', 'card', 'aba'];
+
+  DateTime selectedDate = DateTime.now();
 
   @override
   void dispose() {
@@ -27,24 +32,108 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     super.dispose();
   }
 
+  // DATE PICKER
+  Future<void> _selectDate() async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      builder: (context, child) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: isDark
+                ? ColorScheme.dark(primary: AppColors.darkPrimary)
+                : ColorScheme.light(primary: AppColors.lightPrimary),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate != null) {
+      setState(() {
+        selectedDate = pickedDate;
+      });
+    }
+  }
+
+  // FORMAT DATE
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  // SAVE EXPENSE
+  void _saveExpense() {
+    final amount = _amountController.text.trim();
+    final title = _titleController.text.trim();
+
+    if (amount.isEmpty || amount == '0.00') {
+      Get.snackbar(
+        'finance.expense.validationError'.tr,
+        'finance.expense.enterAmount'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
+    if (title.isEmpty) {
+      Get.snackbar(
+        'finance.expense.validationError'.tr,
+        'finance.expense.enterTitle'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
+    // THEME COLORS
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
+
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
+
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
+
     final textMuted = isDark
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
+
     final border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
+
     final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
+
     final inverseText = isDark
         ? AppColors.darkTextInverse
         : AppColors.lightTextInverse;
@@ -54,7 +143,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Header ──
+            // HEADER
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
               child: Row(
@@ -72,9 +161,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       minHeight: 40,
                     ),
                   ),
+
                   const SizedBox(width: 4),
+
                   Text(
-                    'Add Expense',
+                    'finance.expense.add'.tr,
                     style: TextStyle(
                       color: textPrimary,
                       fontSize: 20,
@@ -86,6 +177,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               ),
             ),
 
+            // CONTENT
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -93,7 +185,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Amount ──
+                    // AMOUNT
                     Center(
                       child: Column(
                         children: [
@@ -105,7 +197,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
+
                           const SizedBox(height: 4),
+
                           TextField(
                             controller: _amountController,
                             keyboardType: const TextInputType.numberWithOptions(
@@ -124,6 +218,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                               contentPadding: EdgeInsets.zero,
                             ),
                           ),
+
                           Container(
                             width: 60,
                             height: 3,
@@ -139,12 +234,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
                     const SizedBox(height: 28),
 
-                    // ── Title ──
-                    _Label('Title', textPrimary),
+                    // TITLE
+                    _Label('finance.expense.description'.tr, textPrimary),
+
                     const SizedBox(height: 8),
+
                     _InputField(
                       controller: _titleController,
-                      hint: 'e.g. Grab Food',
+                      hint: 'finance.expense.titleHint'.tr,
                       surface: surface,
                       border: border,
                       textPrimary: textPrimary,
@@ -153,16 +250,23 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
                     const SizedBox(height: 18),
 
-                    // ── Category ──
-                    _Label('Category', textPrimary),
+                    // CATEGORY
+                    _Label('finance.expense.category'.tr, textPrimary),
+
                     const SizedBox(height: 10),
+
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: List.generate(categories.length, (i) {
                         final selected = selectedCategory == i;
+
                         return GestureDetector(
-                          onTap: () => setState(() => selectedCategory = i),
+                          onTap: () {
+                            setState(() {
+                              selectedCategory = i;
+                            });
+                          },
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 14,
@@ -176,7 +280,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                   : Border.all(color: border),
                             ),
                             child: Text(
-                              categories[i],
+                              'finance.expense.${categories[i]}'.tr,
                               style: TextStyle(
                                 color: selected ? inverseText : textPrimary,
                                 fontSize: 13,
@@ -190,12 +294,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
                     const SizedBox(height: 18),
 
-                    // ── Note ──
-                    _Label('Note (optional)', textPrimary),
+                    // NOTE
+                    _Label('finance.expense.note'.tr, textPrimary),
+
                     const SizedBox(height: 8),
+
                     _InputField(
                       controller: _noteController,
-                      hint: 'Add a note...',
+                      hint: 'finance.expense.noteHint'.tr,
                       surface: surface,
                       border: border,
                       textPrimary: textPrimary,
@@ -205,54 +311,76 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
                     const SizedBox(height: 18),
 
-                    // ── Date ──
-                    _Label('Date', textPrimary),
+                    // DATE
+                    _Label('finance.expense.date'.tr, textPrimary),
+
                     const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: border),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.calendar_today_outlined,
-                            size: 18,
-                            color: textMuted,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Jun 28, 2026',
-                            style: TextStyle(
-                              color: textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
+
+                    GestureDetector(
+                      onTap: _selectDate,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: border),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 18,
+                              color: textMuted,
                             ),
-                          ),
-                        ],
+
+                            const SizedBox(width: 10),
+
+                            Expanded(
+                              child: Text(
+                                _formatDate(selectedDate),
+                                style: TextStyle(
+                                  color: textPrimary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: textMuted,
+                              size: 20,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
 
                     const SizedBox(height: 18),
 
-                    // ── Payment Method ──
-                    _Label('Payment Method', textPrimary),
+                    // PAYMENT METHOD
+                    _Label('finance.expense.paymentMethod'.tr, textPrimary),
+
                     const SizedBox(height: 10),
+
                     Row(
                       children: List.generate(payments.length, (i) {
                         final selected = selectedPayment == i;
+
                         return Padding(
                           padding: EdgeInsets.only(
                             right: i < payments.length - 1 ? 8 : 0,
                           ),
                           child: GestureDetector(
-                            onTap: () => setState(() => selectedPayment = i),
+                            onTap: () {
+                              setState(() {
+                                selectedPayment = i;
+                              });
+                            },
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 18,
@@ -266,7 +394,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                                     : Border.all(color: border),
                               ),
                               child: Text(
-                                payments[i],
+                                'finance.expense.${payments[i]}'.tr,
                                 style: TextStyle(
                                   color: selected ? inverseText : textPrimary,
                                   fontSize: 13,
@@ -281,12 +409,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
                     const SizedBox(height: 32),
 
-                    // ── Save ──
+                    // SAVE BUTTON
                     SizedBox(
                       width: double.infinity,
                       height: 52,
                       child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: _saveExpense,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primary,
                           foregroundColor: inverseText,
@@ -295,9 +423,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: const Text(
-                          'Save Expense',
-                          style: TextStyle(
+                        child: Text(
+                          'finance.expense.save'.tr,
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
@@ -317,9 +445,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   }
 }
 
+// LABEL
 class _Label extends StatelessWidget {
   final String text;
   final Color color;
+
   const _Label(this.text, this.color);
 
   @override
@@ -331,6 +461,7 @@ class _Label extends StatelessWidget {
   }
 }
 
+// INPUT FIELD
 class _InputField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;

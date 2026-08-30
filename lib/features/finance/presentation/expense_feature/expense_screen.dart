@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/Expense%20Feature/widget/expense_widget.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/Expense%20Feature/screens/expense_add_screen.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/Expense%20Feature/screens/expense_detail_screen.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/Expense%20Feature/screens/expense_history_screen.dart';
+
+import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_widget.dart';
+import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_add_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_detail_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_history_screen.dart';
 
 class ExpenseScreen extends StatefulWidget {
   const ExpenseScreen({super.key});
@@ -17,13 +20,22 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // =======================================================================
+    // THEME COLORS
+    // =======================================================================
 
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
 
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
+
+    final surfaceSecondary = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfaceSecondary;
 
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
@@ -41,10 +53,6 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
 
-    final secondarySurface = isDark
-        ? AppColors.darkSurfaceSecondary
-        : AppColors.lightSurfaceSecondary;
-
     final primaryColor = isDark
         ? AppColors.darkPrimary
         : AppColors.lightPrimary;
@@ -58,11 +66,13 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // =================================================================
               // HEADER
+              // =================================================================
               Row(
                 children: [
                   IconButton(
@@ -85,17 +95,19 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
                   Expanded(
                     child: Text(
-                      'Expenses',
+                      'finance.expense.title'.tr,
                       style: TextStyle(
                         color: textPrimary,
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: -0.4,
+                        letterSpacing: -0.3,
                       ),
                     ),
                   ),
 
-                  // Add Expense button
+                  // -------------------------------------------------------------
+                  // ADD EXPENSE
+                  // -------------------------------------------------------------
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
@@ -106,8 +118,8 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       );
                     },
                     child: Container(
-                      width: 40,
-                      height: 40,
+                      width: 42,
+                      height: 42,
                       decoration: BoxDecoration(
                         color: primaryColor,
                         borderRadius: BorderRadius.circular(12),
@@ -115,7 +127,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       child: Icon(
                         Icons.add_rounded,
                         color: inverseText,
-                        size: 22,
+                        size: 23,
                       ),
                     ),
                   ),
@@ -124,12 +136,14 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
               const SizedBox(height: 18),
 
+              // =================================================================
               // PERIOD SELECTOR
+              // =================================================================
               Row(
                 children: [
                   Expanded(
                     child: PeriodButton(
-                      title: 'Today',
+                      title: 'finance.expense.today'.tr,
                       selected: selectedPeriod == 0,
                       onTap: () {
                         setState(() {
@@ -141,7 +155,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       selectedColor: primaryColor,
                       selectedTextColor: inverseText,
                       borderColor: border,
-                      backgroundColor: secondarySurface,
+                      backgroundColor: surfaceSecondary,
                     ),
                   ),
 
@@ -149,7 +163,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
                   Expanded(
                     child: PeriodButton(
-                      title: 'Week',
+                      title: 'finance.expense.week'.tr,
                       selected: selectedPeriod == 1,
                       onTap: () {
                         setState(() {
@@ -161,7 +175,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       selectedColor: primaryColor,
                       selectedTextColor: inverseText,
                       borderColor: border,
-                      backgroundColor: secondarySurface,
+                      backgroundColor: surfaceSecondary,
                     ),
                   ),
 
@@ -169,7 +183,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
                   Expanded(
                     child: PeriodButton(
-                      title: 'Month',
+                      title: 'finance.expense.month'.tr,
                       selected: selectedPeriod == 2,
                       onTap: () {
                         setState(() {
@@ -181,7 +195,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       selectedColor: primaryColor,
                       selectedTextColor: inverseText,
                       borderColor: border,
-                      backgroundColor: secondarySurface,
+                      backgroundColor: surfaceSecondary,
                     ),
                   ),
                 ],
@@ -189,7 +203,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
               const SizedBox(height: 16),
 
+              // =================================================================
               // TOTAL SPENT CARD
+              // =================================================================
               SurfaceCard(
                 color: surface,
                 borderColor: border,
@@ -199,7 +215,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                     ExpenseDonut(
                       size: 82,
                       strokeWidth: 9,
-                      backgroundColor: secondarySurface,
+                      backgroundColor: surfaceSecondary,
                       segments: const [
                         DonutSegment(value: .40, color: AppColors.growthAccent),
                         DonutSegment(value: .25, color: AppColors.brandPrimary),
@@ -221,7 +237,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Total Spent',
+                            'finance.expense.totalSpent'.tr,
                             style: TextStyle(
                               color: textMuted,
                               fontSize: 13,
@@ -252,9 +268,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                               color: AppColors.success.withValues(alpha: .10),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Text(
-                              'On track',
-                              style: TextStyle(
+                            child: Text(
+                              'finance.expense.onTrack'.tr,
+                              style: const TextStyle(
                                 color: AppColors.success,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -270,7 +286,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
               const SizedBox(height: 14),
 
+              // =================================================================
               // CATEGORY BREAKDOWN
+              // =================================================================
               SurfaceCard(
                 color: surface,
                 borderColor: border,
@@ -279,7 +297,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Category Breakdown',
+                      'finance.expense.categoryBreakdown'.tr,
                       style: TextStyle(
                         color: textPrimary,
                         fontSize: 16,
@@ -289,8 +307,11 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
                     const SizedBox(height: 14),
 
+                    // -----------------------------------------------------------
+                    // FOOD & DRINK
+                    // -----------------------------------------------------------
                     CategoryRow(
-                      title: 'Food & Drink',
+                      title: 'finance.expense.foodDrink'.tr,
                       amount: '\$255 / \$300',
                       percent: '85%',
                       progress: .85,
@@ -298,11 +319,14 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       textPrimary: textPrimary,
                       textSecondary: textSecondary,
                       textMuted: textMuted,
-                      backgroundColor: secondarySurface,
+                      backgroundColor: surfaceSecondary,
                     ),
 
+                    // -----------------------------------------------------------
+                    // TRANSPORT
+                    // -----------------------------------------------------------
                     CategoryRow(
-                      title: 'Transport',
+                      title: 'finance.expense.transport'.tr,
                       amount: '\$138 / \$150',
                       percent: '92%',
                       progress: .92,
@@ -310,11 +334,14 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       textPrimary: textPrimary,
                       textSecondary: textSecondary,
                       textMuted: textMuted,
-                      backgroundColor: secondarySurface,
+                      backgroundColor: surfaceSecondary,
                     ),
 
+                    // -----------------------------------------------------------
+                    // STUDY
+                    // -----------------------------------------------------------
                     CategoryRow(
-                      title: 'Study',
+                      title: 'finance.expense.study'.tr,
                       amount: '\$51 / \$150',
                       percent: '34%',
                       progress: .34,
@@ -322,11 +349,14 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       textPrimary: textPrimary,
                       textSecondary: textSecondary,
                       textMuted: textMuted,
-                      backgroundColor: secondarySurface,
+                      backgroundColor: surfaceSecondary,
                     ),
 
+                    // -----------------------------------------------------------
+                    // BILLS
+                    // -----------------------------------------------------------
                     CategoryRow(
-                      title: 'Bills',
+                      title: 'finance.expense.bills'.tr,
                       amount: '\$36 / \$300',
                       percent: '12%',
                       progress: .12,
@@ -334,7 +364,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       textPrimary: textPrimary,
                       textSecondary: textSecondary,
                       textMuted: textMuted,
-                      backgroundColor: secondarySurface,
+                      backgroundColor: surfaceSecondary,
                       showDivider: false,
                     ),
                   ],
@@ -343,7 +373,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
               const SizedBox(height: 14),
 
+              // =================================================================
               // RECENT EXPENSES
+              // =================================================================
               SurfaceCard(
                 color: surface,
                 borderColor: border,
@@ -351,17 +383,21 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // -----------------------------------------------------------
+                    // TITLE + SEE ALL
+                    // -----------------------------------------------------------
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Recent Expenses',
+                          'finance.expense.recentExpenses'.tr,
                           style: TextStyle(
                             color: textPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+
                         GestureDetector(
                           onTap: () {
                             Navigator.push(
@@ -372,7 +408,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                             );
                           },
                           child: Text(
-                            'See All',
+                            'finance.expense.seeAll'.tr,
                             style: TextStyle(
                               color: textMuted,
                               fontSize: 12,
@@ -385,6 +421,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
                     const SizedBox(height: 8),
 
+                    // ===========================================================
+                    // GRAB FOOD
+                    // ===========================================================
                     GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -396,8 +435,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       },
                       child: ExpenseItem(
                         icon: Icons.receipt_long_outlined,
-                        title: 'Grab Food',
-                        subtitle: 'Today · 12:30 PM · Food',
+                        title: 'finance.expense.grabFood'.tr,
+                        subtitle:
+                            '${'finance.expense.today'.tr} · 12:30 PM · ${'finance.expense.foodDrink'.tr}',
                         amount: '-\$8.50',
                         iconColor: textMuted,
                         textPrimary: textPrimary,
@@ -405,6 +445,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       ),
                     ),
 
+                    // ===========================================================
+                    // BUS PASS
+                    // ===========================================================
                     GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -416,8 +459,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       },
                       child: ExpenseItem(
                         icon: Icons.directions_bus_outlined,
-                        title: 'Bus Pass',
-                        subtitle: 'Today · 8:00 AM · Transport',
+                        title: 'finance.expense.busPass'.tr,
+                        subtitle:
+                            '${'finance.expense.today'.tr} · 8:00 AM · ${'finance.expense.transport'.tr}',
                         amount: '-\$1.25',
                         iconColor: textMuted,
                         textPrimary: textPrimary,
@@ -425,6 +469,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       ),
                     ),
 
+                    // ===========================================================
+                    // TEXTBOOKS
+                    // ===========================================================
                     GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -436,8 +483,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       },
                       child: ExpenseItem(
                         icon: Icons.menu_book_outlined,
-                        title: 'Textbooks',
-                        subtitle: 'Yesterday · Study',
+                        title: 'finance.expense.textbooks'.tr,
+                        subtitle:
+                            '${'finance.expense.yesterday'.tr} · ${'finance.expense.study'.tr}',
                         amount: '-\$45.00',
                         iconColor: textMuted,
                         textPrimary: textPrimary,
@@ -445,6 +493,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       ),
                     ),
 
+                    // ===========================================================
+                    // ELECTRICITY
+                    // ===========================================================
                     GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -456,8 +507,8 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       },
                       child: ExpenseItem(
                         icon: Icons.bolt_outlined,
-                        title: 'Electricity',
-                        subtitle: 'Jun 1 · Bills',
+                        title: 'finance.expense.electricity'.tr,
+                        subtitle: 'Jun 1 · ${'finance.expense.bills'.tr}',
                         amount: '-\$36.00',
                         iconColor: textMuted,
                         textPrimary: textPrimary,

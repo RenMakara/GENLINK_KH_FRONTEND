@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/E%20Wallet%20Feature/screens/ewallet_payment_success.dart';
+import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_payment_success.dart';
 
 class PayWithKHQRScreen extends StatelessWidget {
   const PayWithKHQRScreen({super.key});

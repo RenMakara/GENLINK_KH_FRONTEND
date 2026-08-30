@@ -580,19 +580,73 @@ class AppTranslations extends Translations {
     'finance.expense.edit': 'Edit Expense',
     'finance.expense.delete': 'Delete Expense',
     'finance.expense.details': 'Expense Details',
+
+    // ── Form ────────────────────────────────────────────────────────────────────
     'finance.expense.amount': 'Amount',
+    'finance.expense.titleLabel': 'Title',
+    'finance.expense.titleHint': 'e.g. Grab Food',
+
     'finance.expense.category': 'Category',
     'finance.expense.description': 'Description',
+
     'finance.expense.date': 'Date',
     'finance.expense.time': 'Time',
+
     'finance.expense.paymentMethod': 'Payment Method',
+
     'finance.expense.note': 'Note',
+    'finance.expense.noteOptional': 'Note (optional)',
     'finance.expense.noteHint': 'Add a note...',
+
+    // ── Actions ──────────────────────────────────────────────────────────────────
     'finance.expense.save': 'Save Expense',
     'finance.expense.update': 'Update Expense',
+
+    // ── Empty State ──────────────────────────────────────────────────────────────
     'finance.expense.noExpenses': 'No expenses yet',
     'finance.expense.noExpensesHint':
         'Your expenses will appear here once you add them.',
+
+    // ── Period ───────────────────────────────────────────────────────────────────
+    'finance.expense.today': 'Today',
+    'finance.expense.week': 'Week',
+    'finance.expense.month': 'Month',
+    'finance.expense.yesterday': 'Yesterday',
+
+    // ── Summary ──────────────────────────────────────────────────────────────────
+    'finance.expense.totalSpent': 'Total Spent',
+    'finance.expense.onTrack': 'On track',
+
+    // ── Category ─────────────────────────────────────────────────────────────────
+    'finance.expense.categoryBreakdown': 'Category Breakdown',
+
+    'finance.expense.foodDrink': 'Food & Drink',
+    'finance.expense.food': 'Food',
+    'finance.expense.transport': 'Transport',
+    'finance.expense.study': 'Study',
+    'finance.expense.bills': 'Bills',
+    'finance.expense.health': 'Health',
+    'finance.expense.other': 'Other',
+
+    // ── Payment ──────────────────────────────────────────────────────────────────
+    'finance.expense.cash': 'Cash',
+    'finance.expense.card': 'Card',
+    'finance.expense.aba': 'ABA',
+
+    // ── Recent Expenses ──────────────────────────────────────────────────────────
+    'finance.expense.recentExpenses': 'Recent Expenses',
+    'finance.expense.seeAll': 'See All',
+
+    // ── Expense Items ─────────────────────────────────────────────────────────────
+    'finance.expense.grabFood': 'Grab Food',
+    'finance.expense.busPass': 'Bus Pass',
+    'finance.expense.textbooks': 'Textbooks',
+    'finance.expense.electricity': 'Electricity',
+
+    // ── Validation ───────────────────────────────────────────────────────────────
+    'finance.expense.validationError': 'Invalid Input',
+    'finance.expense.enterAmount': 'Please enter an amount.',
+    'finance.expense.enterTitle': 'Please enter an expense description.',
 
     // ── Budget ─────────────────────────────────────────────────────────────
     'finance.budget.title': 'Budget',
@@ -1316,20 +1370,64 @@ class AppTranslations extends Translations {
     'finance.expense.add': 'បន្ថែមចំណាយ',
     'finance.expense.edit': 'កែសម្រួលចំណាយ',
     'finance.expense.delete': 'លុបចំណាយ',
-    'finance.expense.details': 'ព័ត៌មានលម្អិតចំណាយ',
+    'finance.expense.details': 'ព័ត៌មានលម្អិតអំពីចំណាយ',
+
     'finance.expense.amount': 'ចំនួនទឹកប្រាក់',
+    'finance.expense.titleLabel': 'ចំណងជើង',
+    'finance.expense.titleHint': 'ឧ. Grab Food',
+
     'finance.expense.category': 'ប្រភេទ',
     'finance.expense.description': 'ការពិពណ៌នា',
+
     'finance.expense.date': 'កាលបរិច្ឆេទ',
-    'finance.expense.time': 'ម៉ោង',
+    'finance.expense.time': 'ពេលវេលា',
+
     'finance.expense.paymentMethod': 'វិធីបង់ប្រាក់',
+
     'finance.expense.note': 'កំណត់ចំណាំ',
+    'finance.expense.noteOptional': 'កំណត់ចំណាំ (ជាជម្រើស)',
     'finance.expense.noteHint': 'បន្ថែមកំណត់ចំណាំ...',
+
     'finance.expense.save': 'រក្សាទុកចំណាយ',
     'finance.expense.update': 'ធ្វើបច្ចុប្បន្នភាពចំណាយ',
+
     'finance.expense.noExpenses': 'មិនទាន់មានចំណាយ',
     'finance.expense.noExpensesHint':
-        'ចំណាយរបស់អ្នកនឹងបង្ហាញនៅទីនេះ បន្ទាប់ពីអ្នកបន្ថែម។',
+        'ចំណាយរបស់អ្នកនឹងបង្ហាញនៅទីនេះ បន្ទាប់ពីអ្នកបន្ថែមចំណាយ។',
+
+    'finance.expense.today': 'ថ្ងៃនេះ',
+    'finance.expense.week': 'សប្តាហ៍',
+    'finance.expense.month': 'ខែ',
+    'finance.expense.yesterday': 'ម្សិលមិញ',
+
+    'finance.expense.totalSpent': 'ចំណាយសរុប',
+    'finance.expense.onTrack': 'ស្ថិតក្នុងផែនការ',
+
+    'finance.expense.categoryBreakdown': 'ការបែងចែកតាមប្រភេទ',
+
+    'finance.expense.foodDrink': 'អាហារ និងភេសជ្ជៈ',
+    'finance.expense.food': 'អាហារ',
+    'finance.expense.transport': 'ការធ្វើដំណើរ',
+    'finance.expense.study': 'ការសិក្សា',
+    'finance.expense.bills': 'វិក្កយបត្រ',
+    'finance.expense.health': 'សុខភាព',
+    'finance.expense.other': 'ផ្សេងៗ',
+
+    'finance.expense.cash': 'សាច់ប្រាក់',
+    'finance.expense.card': 'កាត',
+    'finance.expense.aba': 'ABA',
+
+    'finance.expense.recentExpenses': 'ចំណាយថ្មីៗ',
+    'finance.expense.seeAll': 'មើលទាំងអស់',
+
+    'finance.expense.grabFood': 'Grab Food',
+    'finance.expense.busPass': 'សំបុត្រឡានក្រុង',
+    'finance.expense.textbooks': 'សៀវភៅសិក្សា',
+    'finance.expense.electricity': 'អគ្គិសនី',
+
+    'finance.expense.validationError': 'ទិន្នន័យមិនត្រឹមត្រូវ',
+    'finance.expense.enterAmount': 'សូមបញ្ចូលចំនួនទឹកប្រាក់។',
+    'finance.expense.enterTitle': 'សូមបញ្ចូលការពិពណ៌នាអំពីចំណាយ។',
 
     // ── Budget ─────────────────────────────────────────────────────────────
     'finance.budget.title': 'ថវិកា',

@@ -9,7 +9,7 @@ import 'features/community/presentation/screens/create_event_screen.dart';
 import 'features/community/presentation/screens/create_opportunity_screen.dart';
 import 'features/community/presentation/screens/create_post_screen.dart';
 import 'features/community/presentation/widgets/story_creation_picker_sheet.dart';
-import 'features/finance/presentation/screens/Finance Home/screens/finance_screen.dart';
+import 'features/finance/finance_screen.dart';
 import 'features/home/presentation/bindings/home_binding.dart';
 import 'features/home/presentation/screens/home_screen.dart';
 import 'features/profile/presentation/bindings/profile_binding.dart';

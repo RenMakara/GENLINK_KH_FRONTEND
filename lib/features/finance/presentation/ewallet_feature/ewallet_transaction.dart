@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -90,7 +89,23 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   //Header
                   Row(
                     children: [
-                      const AppBackButton(),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: border),
+                          ),
+                          child: Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            size: 18,
+                            color: textPrimary,
+                          ),
+                        ),
+                      ),
                       const SizedBox(width: 14),
                       Text(
                         'Transactions',

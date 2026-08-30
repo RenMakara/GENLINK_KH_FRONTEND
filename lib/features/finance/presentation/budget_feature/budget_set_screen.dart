@@ -143,7 +143,10 @@ class _SetBudgetScreenState extends State<SetBudgetScreen> {
                     ),
                     Text(
                       'Monthly total budget',
-                      style: TextStyle(color: textMuted, fontSize: 13),
+                      style: TextStyle(
+                        color: textMuted,
+                        fontSize: 13,
+                      ),
                     ),
 
                     const SizedBox(height: 28),

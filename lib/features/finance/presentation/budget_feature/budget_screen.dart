@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/budget_feature/screens/set_budget_screen.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/budget_feature/screens/budget_detail_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/budget_feature/set_budget_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_detail_screen.dart';
 
 class BudgetScreen extends StatelessWidget {
   const BudgetScreen({super.key});
@@ -47,8 +46,20 @@ class BudgetScreen extends StatelessWidget {
               // ── Header ──
               Row(
                 children: [
-                  const AppBackButton(),
-                  const SizedBox(width: 12),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: textPrimary,
+                      size: 20,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       'Budget',

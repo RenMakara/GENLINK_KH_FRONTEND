@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 
 class BudgetDetailScreen extends StatelessWidget {
   const BudgetDetailScreen({super.key});
@@ -40,11 +39,23 @@ class BudgetDetailScreen extends StatelessWidget {
           children: [
             // ── Header ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
               child: Row(
                 children: [
-                  const AppBackButton(),
-                  const SizedBox(width: 12),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: textPrimary,
+                      size: 20,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       'Food & Drink',

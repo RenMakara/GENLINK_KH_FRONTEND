@@ -745,18 +745,22 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                           const SizedBox(height: 2),
                           Row(
                             children: [
-                              Text(
-                                _formatTimeAgo(widget.post.timeAgo),
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                      color: textMuted,
-                                      fontSize: isVeryNarrow ? 10.5 : 11.5,
-                                    ) ??
-                                    TextStyle(color: textMuted, fontSize: isVeryNarrow ? 10.5 : 11.5),
+                              Flexible(
+                                child: Text(
+                                  _formatTimeAgo(widget.post.timeAgo),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                        color: textMuted,
+                                        fontSize: isVeryNarrow ? 10.5 : 11.5,
+                                      ) ??
+                                      TextStyle(color: textMuted, fontSize: isVeryNarrow ? 10.5 : 11.5),
+                                ),
                               ),
                               const SizedBox(width: 4),
                               Text('·', style: TextStyle(color: textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
                               const SizedBox(width: 4),
-                              Flexible(
+                              Expanded(
                                 child: Text(
                                   (widget.post.postType == 'DISCUSSION' || widget.post.category != null)
                                       ? '${widget.post.category ?? 'Technology'} · ${'community.discussion'.tr.isNotEmpty && 'community.discussion'.tr != 'community.discussion' ? 'community.discussion'.tr : 'Discussion'}'

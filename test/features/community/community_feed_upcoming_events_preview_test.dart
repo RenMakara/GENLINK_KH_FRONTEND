@@ -422,5 +422,124 @@ void main() {
       expect(find.text('Upcoming Events'), findsNothing);
       expect(find.text('Trending Discussions'), findsNothing);
     });
+
+    testWidgets('9. Verify Feed composer renders in Khmer without redundant Post label', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('km', 'KH'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify localized Khmer composer placeholder
+      expect(find.text('តើអ្នកកំពុងគិតអ្វី?'), findsOneWidget);
+      expect(find.text('រូបថត'), findsOneWidget);
+      expect(find.text('វីដេអូ'), findsOneWidget);
+      expect(find.text('អារម្មណ៍'), findsOneWidget);
+      expect(find.text('ទីតាំង'), findsOneWidget);
+    });
+
+    testWidgets('10. Verify Upcoming Events preview in Khmer renders localized strings', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('km', 'KH'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify Upcoming Events header in Khmer
+      expect(find.text('ព្រឹត្តិការណ៍នាពេលខាងមុខ'), findsOneWidget);
+      expect(find.text('មើលទាំងអស់'), findsWidgets);
+      expect(find.text('ចូលរួម'), findsWidgets);
+      expect(find.text('🌐 ព្រឹត្តិការណ៍អនឡាញ'), findsOneWidget);
+    });
+
+    testWidgets('11. Verify Feed and compact event cards adapt responsively to small screens (320px)', (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Upcoming Events'), findsOneWidget);
+      expect(find.text('Flutter Workshop 2026'), findsOneWidget);
+    });
+
+    testWidgets('12. Verify Feed renders correctly in Light Mode and Dark Mode', (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
+
+      // 1. Light Mode
+      await tester.pumpWidget(
+        GetMaterialApp(
+          theme: ThemeData.light(),
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Upcoming Events'), findsOneWidget);
+
+      // 2. Dark Mode
+      await tester.pumpWidget(
+        GetMaterialApp(
+          theme: ThemeData.dark(),
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Upcoming Events'), findsOneWidget);
+    });
   });
 }

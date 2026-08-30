@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../community/presentation/controllers/story_controller.dart';
-import '../../../community/presentation/screens/story_viewer_screen.dart';
 import '../../data/repositories/notification_repository_impl.dart';
 import '../../domain/models/notification_model.dart';
 
@@ -123,38 +122,24 @@ class NotificationController extends GetxController {
     final targetId = notif.targetId;
 
     if (targetType == 'story' && targetId != null && targetId.isNotEmpty) {
-      if (!Get.isRegistered<StoryController>()) {
-        Get.put(StoryController());
-      }
-      final storyCtrl = Get.find<StoryController>();
-
-      // Locate the group containing the target story
-      int targetGroupIdx = -1;
-      for (int i = 0; i < storyCtrl.storyGroups.length; i++) {
-        final group = storyCtrl.storyGroups[i];
-        if (group.stories.any((s) => s.id == targetId)) {
-          targetGroupIdx = i;
-          break;
+      if (Get.isRegistered<StoryController>()) {
+        final storyCtrl = Get.find<StoryController>();
+        final hasTarget = storyCtrl.storyGroups
+            .any((group) => group.stories.any((s) => s.id == targetId));
+        if (hasTarget) {
+          AppNotificationBanner.showInfo(
+            context: context,
+            title: notif.title.isNotEmpty ? notif.title : 'Story',
+            message: notif.body,
+          );
+          return;
         }
       }
-
-      if (targetGroupIdx != -1 && storyCtrl.storyGroups.isNotEmpty) {
-        Get.to(
-          () => StoryViewerScreen(
-            initialGroupIndex: targetGroupIdx,
-            groups: storyCtrl.storyGroups,
-          ),
-          transition: Transition.fadeIn,
-          duration: const Duration(milliseconds: 240),
-          curve: Curves.easeOutCubic,
-        );
-      } else {
-        AppNotificationBanner.showInfo(
-          context: context,
-          title: 'Story unavailable',
-          message: 'This story has expired or was deleted.',
-        );
-      }
+      AppNotificationBanner.showInfo(
+        context: context,
+        title: 'Story unavailable',
+        message: 'This story has expired or was deleted.',
+      );
       return;
     }
 
@@ -176,5 +161,12 @@ class NotificationController extends GetxController {
       );
       return;
     }
+
+    // Safe fallback for forum, chat, system and other notification types
+    AppNotificationBanner.showInfo(
+      context: context,
+      title: notif.title.isNotEmpty ? notif.title : 'GenLink KH',
+      message: notif.body,
+    );
   }
 }

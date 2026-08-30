@@ -30,33 +30,29 @@ class _StoryInteractiveLikeButtonState
     with SingleTickerProviderStateMixin {
   late AnimationController _popController;
   late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
 
   @override
   void initState() {
     super.initState();
 
-    // Fast, crisp 180ms animation
+    // Fast, crisp 220ms micro-interaction animation
     _popController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 180),
+      duration: const Duration(milliseconds: 220),
     );
 
-    // Subtle 0.95 -> 1.06 -> 1.0 scale animation with smooth easing and no bounce
+    // Smooth, satisfying 1.0 -> 1.22 -> 1.0 micro-bounce scale animation
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 0.95)
-            .chain(CurveTween(curve: Curves.easeOut)),
-        weight: 25,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.95, end: 1.06)
-            .chain(CurveTween(curve: Curves.easeInOut)),
+        tween: Tween<double>(begin: 1.0, end: 1.22)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 45,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.06, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeIn)),
-        weight: 30,
+        tween: Tween<double>(begin: 1.22, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeInCubic)),
+        weight: 55,
       ),
     ]).animate(_popController);
   }
@@ -64,7 +60,7 @@ class _StoryInteractiveLikeButtonState
   @override
   void didUpdateWidget(covariant StoryInteractiveLikeButton oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Trigger subtle pop animation on like / unlike transitions
+    // Trigger smooth micro-animation on like / unlike transitions
     if (oldWidget.isLiked != widget.isLiked) {
       _popController.forward(from: 0.0);
     }
@@ -78,6 +74,7 @@ class _StoryInteractiveLikeButtonState
 
   void _handleTap() {
     HapticFeedback.lightImpact();
+    _popController.forward(from: 0.0);
     widget.onTap();
   }
 
@@ -97,47 +94,71 @@ class _StoryInteractiveLikeButtonState
       button: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
         onTap: _handleTap,
         child: Container(
-          width: widget.showCount ? null : 38,
-          height: 38,
-          padding: widget.showCount
-              ? const EdgeInsets.symmetric(horizontal: 12)
-              : EdgeInsets.zero,
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.35),
-            shape: widget.showCount ? BoxShape.rectangle : BoxShape.circle,
-            borderRadius:
-                widget.showCount ? BorderRadius.circular(19) : null,
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.12),
-              width: 0.6,
+          constraints: const BoxConstraints(
+            minWidth: 48,
+            minHeight: 48,
+          ),
+          alignment: Alignment.center,
+          color: Colors.transparent,
+          child: AnimatedScale(
+            scale: _isPressed ? 0.92 : 1.0,
+            duration: const Duration(milliseconds: 100),
+            curve: Curves.easeOutCubic,
+            child: Container(
+              width: widget.showCount ? null : 42,
+              height: 42,
+              padding: widget.showCount
+                  ? const EdgeInsets.symmetric(horizontal: 14)
+                  : EdgeInsets.zero,
+              decoration: BoxDecoration(
+                color: _isPressed
+                    ? (widget.isLiked
+                        ? AppColors.likedAccent.withValues(alpha: 0.28)
+                        : Colors.white.withValues(alpha: 0.18))
+                    : (widget.isLiked
+                        ? AppColors.likedAccent.withValues(alpha: 0.16)
+                        : Colors.black.withValues(alpha: 0.35)),
+                shape: widget.showCount ? BoxShape.rectangle : BoxShape.circle,
+                borderRadius:
+                    widget.showCount ? BorderRadius.circular(21) : null,
+                border: Border.all(
+                  color: widget.isLiked
+                      ? AppColors.likedAccent.withValues(alpha: 0.45)
+                      : Colors.white.withValues(alpha: 0.12),
+                  width: 0.6,
+                ),
+              ),
+              child: widget.showCount
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _buildHeart(iconSize: 20),
+                        const SizedBox(width: 6),
+                        Text(
+                          _formatCount(widget.likesCount),
+                          key: ValueKey<int>(widget.likesCount),
+                          style: TextStyle(
+                            color: widget.isLiked
+                                ? AppColors.likedAccent
+                                : Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.1,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Center(
+                      child: _buildHeart(iconSize: 22),
+                    ),
             ),
           ),
-          child: widget.showCount
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    _buildHeart(iconSize: 18),
-                    const SizedBox(width: 6),
-                    Text(
-                      _formatCount(widget.likesCount),
-                      key: ValueKey<int>(widget.likesCount),
-                      style: TextStyle(
-                        color: widget.isLiked
-                            ? AppColors.likedAccent
-                            : Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                  ],
-                )
-              : Center(
-                  child: _buildHeart(iconSize: 20),
-                ),
         ),
       ),
     );

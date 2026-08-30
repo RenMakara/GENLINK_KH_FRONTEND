@@ -89,7 +89,7 @@ void main() {
 
       // Initial state
       expect(find.text('3'), findsOneWidget); // Replies count
-      expect(find.text('No comments yet. Be the first to start the discussion!'), findsOneWidget);
+      expect(find.text('No comments yet'), findsOneWidget);
 
       // Type "tesy"
       await tester.enterText(find.byType(TextField), 'tesy');

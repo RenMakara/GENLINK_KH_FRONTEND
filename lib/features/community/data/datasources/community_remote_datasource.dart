@@ -433,21 +433,6 @@ class CommunityRemoteDataSource {
       isOwner: true,
     ),
     ForumTopicModel(
-      id: 'latest_2',
-      authorId: 'u1',
-      title: 'How to prepare for junior software engineer interviews in Phnom Penh?',
-      authorName: 'Rathana P.',
-      authorAvatar: 'assets/images/heng_chansela_profile.png',
-      timeAgo: '3h ago',
-      category: 'Career',
-      content:
-          'Preparing for tech interviews at local tech companies and banks? Focus on Data Structures, RESTful APIs, Git workflow, and real portfolio projects.',
-      repliesCount: 19,
-      upvotes: 45,
-      isLiked: false,
-      isOwner: false,
-    ),
-    ForumTopicModel(
       id: 'latest_3',
       authorId: 'u2',
       title: 'Study group for CADT Data Structures and Algorithms exam next week',

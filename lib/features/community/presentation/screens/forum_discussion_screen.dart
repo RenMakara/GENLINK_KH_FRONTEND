@@ -47,12 +47,19 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     _controller.fetchDiscussionComments(_discussion.id);
   }
 
-  void _handleLikeTap() {
+  void _handleLikeTap() async {
+    if (_controller.inFlightDiscussionLikes.contains(_discussion.id)) return;
     setState(() {
       _isLiked = !_isLiked;
       _upvotes += _isLiked ? 1 : -1;
     });
-    _controller.toggleDiscussionLike(_discussion.id);
+    final success = await _controller.toggleDiscussionLike(_discussion.id);
+    if (!success && mounted) {
+      setState(() {
+        _isLiked = !_isLiked;
+        _upvotes += _isLiked ? 1 : -1;
+      });
+    }
   }
 
   void _onTextChanged() {
@@ -81,22 +88,26 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
         text,
       );
 
-      if (newComment != null) {
+      if (newComment != null && mounted) {
         _commentController.clear();
         setState(() {
           _repliesCount++;
         });
+      } else if (mounted) {
+        AppNotificationBanner.showError(
+          context: context,
+          title: 'Error',
+          message: 'Failed to post comment. Please try again.',
+        );
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to post comment. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.redAccent,
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(12),
-        duration: const Duration(seconds: 2),
-      );
+      if (mounted) {
+        AppNotificationBanner.showError(
+          context: context,
+          title: 'Error',
+          message: 'Failed to post comment. Please try again.',
+        );
+      }
     }
   }
 
@@ -365,6 +376,9 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     final textSecondary = isDark
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
     final surfaceSecondary = isDark
         ? AppColors.darkSurfaceSecondary
         : AppColors.lightSurfacePrimary;
@@ -406,32 +420,41 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Author Info
+                  // Author Info & Category
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       CircleAvatar(
-                        radius: 20,
+                        radius: 18,
+                        backgroundImage: (_discussion.authorAvatar.isNotEmpty)
+                            ? (_discussion.authorAvatar.startsWith('assets/')
+                                ? AssetImage(_discussion.authorAvatar) as ImageProvider
+                                : NetworkImage(_discussion.authorAvatar))
+                            : null,
                         backgroundColor: AppColors.communityAccent.withValues(
-                          alpha: 0.2,
+                          alpha: 0.15,
                         ),
-                        child: Text(
-                          _discussion.authorName.isNotEmpty
-                              ? (_discussion.authorName.startsWith('@') &&
-                                      _discussion.authorName.length > 1
-                                  ? _discussion.authorName
-                                      .substring(1, 2)
-                                      .toUpperCase()
-                                  : _discussion.authorName
-                                      .substring(0, 1)
-                                      .toUpperCase())
-                              : 'U',
-                          style: const TextStyle(
-                            color: AppColors.communityAccent,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: _discussion.authorAvatar.isEmpty
+                            ? Text(
+                                _discussion.authorName.isNotEmpty
+                                    ? (_discussion.authorName.startsWith('@') &&
+                                            _discussion.authorName.length > 1
+                                        ? _discussion.authorName
+                                            .substring(1, 2)
+                                            .toUpperCase()
+                                        : _discussion.authorName
+                                            .substring(0, 1)
+                                            .toUpperCase())
+                                    : 'U',
+                                style: const TextStyle(
+                                  color: AppColors.communityAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              )
+                            : null,
                       ),
-                      const SizedBox(width: AppSpacing.sm),
+                      const SizedBox(width: AppSpacing.sm + 2),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,12 +464,22 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                               style: theme.textTheme.titleSmall?.copyWith(
                                 color: textPrimary,
                                 fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ) ?? TextStyle(
+                                color: textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
                               ),
                             ),
+                            const SizedBox(height: 1),
                             Text(
                               _discussion.timeAgo,
                               style: theme.textTheme.labelSmall?.copyWith(
-                                color: textSecondary,
+                                color: textMuted,
+                                fontSize: 11.5,
+                              ) ?? TextStyle(
+                                color: textMuted,
+                                fontSize: 11.5,
                               ),
                             ),
                           ],
@@ -454,13 +487,15 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
+                          horizontal: 9,
+                          vertical: 3.5,
                         ),
                         decoration: BoxDecoration(
-                          color: surfaceSecondary,
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : textPrimary.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(AppRadius.sm),
-                          border: Border.all(color: borderSubtle),
+                          border: Border.all(color: borderSubtle, width: 0.8),
                         ),
                         child: Text(
                           _discussion.category,
@@ -473,7 +508,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.md + 2),
 
                   // Title & Content
                   Text(
@@ -481,19 +516,31 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: textPrimary,
                       fontWeight: FontWeight.bold,
-                      fontSize: 20,
+                      fontSize: 18.5,
+                      height: 1.35,
+                    ) ?? TextStyle(
+                      color: textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18.5,
+                      height: 1.35,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    _discussion.content,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: textPrimary.withValues(alpha: 0.9),
-                      height: 1.6,
-                      fontSize: 15,
+                  if (_discussion.content.trim().isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.sm + 2),
+                    Text(
+                      _discussion.content,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                        height: 1.55,
+                        fontSize: 14.5,
+                      ) ?? TextStyle(
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                        height: 1.55,
+                        fontSize: 14.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
+                  ],
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Actions (Like & Comment Counts)
                   Row(
@@ -518,9 +565,9 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                                   color: _isLiked
                                       ? AppColors.danger
                                       : textSecondary,
-                                  size: 20,
+                                  size: 19,
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 5),
                                 Text(
                                   '$_upvotes',
                                   style: TextStyle(
@@ -532,6 +579,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                                     fontWeight: _isLiked
                                         ? FontWeight.w700
                                         : FontWeight.bold,
+                                    fontSize: 13,
                                   ),
                                 ),
                               ],
@@ -539,7 +587,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 14),
                       Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -550,14 +598,15 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                             Icon(
                               Icons.chat_bubble_outline_rounded,
                               color: textSecondary,
-                              size: 19,
+                              size: 18,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 5),
                             Text(
                               '$_repliesCount',
                               style: TextStyle(
                                 color: textSecondary,
                                 fontWeight: FontWeight.bold,
+                                fontSize: 13,
                               ),
                             ),
                           ],
@@ -565,19 +614,27 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.xl),
+                  const SizedBox(height: AppSpacing.md),
                   Divider(color: borderSubtle, height: 1),
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.md + 2),
 
-                  // Comments Section
+                  // Comments Section Header
                   Text(
-                    'Comments',
+                    'community.comments'.tr.isNotEmpty &&
+                            'community.comments'.tr != 'community.comments'
+                        ? 'community.comments'.tr
+                        : 'Comments',
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: textPrimary,
                       fontWeight: FontWeight.bold,
+                      fontSize: 15.5,
+                    ) ?? TextStyle(
+                      color: textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15.5,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.sm + 4),
                   Obx(() {
                     final comments = _controller
                         .getCommentsForDiscussion(widget.discussion.id);
@@ -598,14 +655,42 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
 
                     if (comments.isEmpty) {
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
                         child: Center(
-                          child: Text(
-                            'No comments yet. Be the first to start the discussion!',
-                            style: TextStyle(
-                              color: textSecondary,
-                              fontSize: 13,
-                            ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.chat_bubble_outline_rounded,
+                                color: textMuted.withValues(alpha: 0.5),
+                                size: 36,
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'community.noCommentsYet'.tr.isNotEmpty &&
+                                        'community.noCommentsYet'.tr != 'community.noCommentsYet'
+                                    ? 'community.noCommentsYet'.tr
+                                    : 'No comments yet',
+                                style: TextStyle(
+                                  color: textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'community.firstToStartDiscussion'.tr.isNotEmpty &&
+                                        'community.firstToStartDiscussion'.tr != 'community.firstToStartDiscussion'
+                                    ? 'community.firstToStartDiscussion'.tr
+                                    : 'Be the first to start the discussion!',
+                                style: TextStyle(
+                                  color: textSecondary,
+                                  fontSize: 12.5,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -619,6 +704,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                             borderSubtle,
                             textPrimary,
                             textSecondary,
+                            textMuted,
                           )).toList(),
                     );
                   }),
@@ -651,7 +737,10 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                       onSubmitted: (_) => _handleSendComment(),
                       style: TextStyle(color: textPrimary, fontSize: 14),
                       decoration: InputDecoration(
-                        hintText: 'Add a reply...',
+                        hintText: 'community.addReply'.tr.isNotEmpty &&
+                                'community.addReply'.tr != 'community.addReply'
+                            ? 'community.addReply'.tr
+                            : 'Add a reply...',
                         hintStyle:
                             TextStyle(color: textSecondary, fontSize: 14),
                         filled: true,
@@ -719,37 +808,47 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     Color borderSubtle,
     Color textPrimary,
     Color textSecondary,
+    Color textMuted,
   ) {
+    final hasAvatar = comment.userAvatar.isNotEmpty;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm + 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
-            radius: 16,
-            backgroundColor: surfaceSecondary,
-            child: Text(
-              comment.userName.isNotEmpty
-                  ? (comment.userName.startsWith('@') &&
-                          comment.userName.length > 1
-                      ? comment.userName.substring(1, 2).toUpperCase()
-                      : comment.userName.substring(0, 1).toUpperCase())
-                  : 'U',
-              style: const TextStyle(
-                color: AppColors.communityAccent,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
+            radius: 15,
+            backgroundImage: hasAvatar
+                ? (comment.userAvatar.startsWith('assets/')
+                    ? AssetImage(comment.userAvatar) as ImageProvider
+                    : NetworkImage(comment.userAvatar))
+                : null,
+            backgroundColor: AppColors.communityAccent.withValues(alpha: 0.15),
+            child: !hasAvatar
+                ? Text(
+                    comment.userName.isNotEmpty
+                        ? (comment.userName.startsWith('@') &&
+                                comment.userName.length > 1
+                            ? comment.userName.substring(1, 2).toUpperCase()
+                            : comment.userName.substring(0, 1).toUpperCase())
+                        : 'U',
+                    style: const TextStyle(
+                      color: AppColors.communityAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: surfaceSecondary,
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: borderSubtle),
+                border: Border.all(color: borderSubtle, width: 0.8),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -762,24 +861,25 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                         style: TextStyle(
                           color: textPrimary,
                           fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                          fontSize: 12.5,
                         ),
                       ),
                       Text(
                         comment.timeAgo,
                         style: TextStyle(
-                          color: textSecondary,
+                          color: textMuted,
                           fontSize: 11,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Text(
                     comment.text,
                     style: TextStyle(
                       color: textPrimary.withValues(alpha: 0.9),
                       fontSize: 13,
+                      height: 1.35,
                     ),
                   ),
                 ],

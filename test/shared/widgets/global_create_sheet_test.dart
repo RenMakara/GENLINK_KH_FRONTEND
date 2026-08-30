@@ -8,6 +8,7 @@ import 'package:genlink_frontend/features/community/presentation/screens/create_
 import 'package:genlink_frontend/features/finance/presentation/screens/budget_feature/screens/set_budget_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/expense_feature/screens/expense_add_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/screens/learn_feature/screens/investing_quiz.dart';
+import 'package:genlink_frontend/features/finance/presentation/screens/Saving Goal Feature/screens/saving_goals_create.dart';
 import 'package:genlink_frontend/features/productivity/presentation/screens/create_habit_screen.dart';
 import 'package:genlink_frontend/features/productivity/presentation/screens/create_task_screen.dart';
 import 'package:genlink_frontend/shared/widgets/global_create_sheet.dart';
@@ -24,10 +25,14 @@ void main() {
 
   Widget buildTestApp({
     Locale locale = const Locale('en', 'US'),
+    ThemeMode themeMode = ThemeMode.dark,
   }) {
     return GetMaterialApp(
       translations: AppTranslations(),
       locale: locale,
+      theme: ThemeData.light(useMaterial3: true),
+      darkTheme: ThemeData.dark(useMaterial3: true),
+      themeMode: themeMode,
       home: Scaffold(
         body: Builder(
           builder: (context) => Center(
@@ -41,15 +46,20 @@ void main() {
     );
   }
 
-  Future<void> openSheet(WidgetTester tester, {Locale locale = const Locale('en', 'US')}) async {
-    tester.view.physicalSize = const Size(600, 2000);
+  Future<void> openSheet(
+    WidgetTester tester, {
+    Locale locale = const Locale('en', 'US'),
+    ThemeMode themeMode = ThemeMode.dark,
+    Size size = const Size(600, 2000),
+  }) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
 
-    await tester.pumpWidget(buildTestApp(locale: locale));
+    await tester.pumpWidget(buildTestApp(locale: locale, themeMode: themeMode));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Open Sheet'));
@@ -92,6 +102,30 @@ void main() {
       expect(find.text('Short Content'), findsOneWidget);
     });
 
+    testWidgets('renders properly in Light Mode without errors', (tester) async {
+      await openSheet(tester, themeMode: ThemeMode.light);
+
+      expect(find.text('Create'), findsOneWidget);
+      expect(find.text('COMMUNITY'), findsOneWidget);
+      expect(find.text('Post'), findsOneWidget);
+      expect(find.text('Goal'), findsOneWidget);
+      expect(find.text('Expense'), findsOneWidget);
+      expect(find.text('Quiz'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('renders properly in Dark Mode without errors', (tester) async {
+      await openSheet(tester, themeMode: ThemeMode.dark);
+
+      expect(find.text('Create'), findsOneWidget);
+      expect(find.text('COMMUNITY'), findsOneWidget);
+      expect(find.text('Post'), findsOneWidget);
+      expect(find.text('Goal'), findsOneWidget);
+      expect(find.text('Expense'), findsOneWidget);
+      expect(find.text('Quiz'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('renders all section headers and actions in Khmer without overflow', (tester) async {
       await openSheet(tester, locale: const Locale('km', 'KH'));
 
@@ -103,6 +137,29 @@ void main() {
       expect(find.text('ហិរញ្ញវត្ថុ'), findsOneWidget);
       expect(find.text('ការកម្សាន្ត'), findsOneWidget);
 
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('adapts smoothly to small phone viewport (320x568) in Khmer without overflow', (tester) async {
+      await openSheet(
+        tester,
+        locale: const Locale('km', 'KH'),
+        size: const Size(320, 568),
+      );
+
+      expect(find.text('បង្កើត'), findsOneWidget);
+      expect(find.text('សហគមន៍'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('adapts smoothly to tablet / desktop viewport (800x1200)', (tester) async {
+      await openSheet(
+        tester,
+        size: const Size(800, 1200),
+      );
+
+      expect(find.text('Create'), findsOneWidget);
+      expect(find.text('COMMUNITY'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -133,6 +190,15 @@ void main() {
       expect(find.byType(CreateDiscussionScreen), findsOneWidget);
     });
 
+    testWidgets('tapping Goal opens CreateGoalScreen in 1 tap', (tester) async {
+      await openSheet(tester);
+
+      await tester.tap(find.text('Goal'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CreateGoalScreen), findsOneWidget);
+    });
+
     testWidgets('tapping To-Do opens CreateTaskScreen in 1 tap', (tester) async {
       await openSheet(tester);
 
@@ -158,6 +224,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AddExpenseScreen), findsOneWidget);
+    });
+
+    testWidgets('tapping Saving Goal opens CreateGoalScreen in 1 tap', (tester) async {
+      await openSheet(tester);
+
+      await tester.tap(find.text('Saving Goal'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CreateGoalScreen), findsOneWidget);
     });
 
     testWidgets('tapping Budget opens SetBudgetScreen in 1 tap', (tester) async {

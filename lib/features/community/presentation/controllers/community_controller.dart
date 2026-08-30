@@ -349,21 +349,6 @@ class CommunityController extends GetxController {
       isOwner: true,
     ),
     ForumTopicModel(
-      id: 'latest_2',
-      authorId: 'u1',
-      title: 'How to prepare for junior software engineer interviews in Phnom Penh?',
-      authorName: 'Rathana P.',
-      authorAvatar: 'assets/images/heng_chansela_profile.png',
-      timeAgo: '3h ago',
-      category: 'Career',
-      content:
-          'Preparing for tech interviews at local tech companies and banks? Focus on Data Structures, RESTful APIs, Git workflow, and real portfolio projects.',
-      repliesCount: 19,
-      upvotes: 45,
-      isLiked: false,
-      isOwner: false,
-    ),
-    ForumTopicModel(
       id: 'latest_3',
       authorId: 'u2',
       title: 'Study group for CADT Data Structures and Algorithms exam next week',
@@ -410,12 +395,59 @@ class CommunityController extends GetxController {
     ),
   ].obs;
 
-  /// Optimistically toggle like on a forum discussion and synchronize with Feed
-  void toggleDiscussionLike(String discussionId) {
+  // ── Forum Loading & Error States ──────────────────────────────────────────
+  final isLoadingForumDiscussions = false.obs;
+  final isRefreshingForumDiscussions = false.obs;
+  final hasForumError = false.obs;
+  final forumErrorMessage = ''.obs;
+  final inFlightDiscussionLikes = <String>{}.obs;
+
+  /// Fetches discussions from backend repository
+  Future<void> fetchDiscussions({bool isRefresh = false}) async {
+    if (isRefresh) {
+      isRefreshingForumDiscussions.value = true;
+    } else {
+      isLoadingForumDiscussions.value = true;
+    }
+    hasForumError.value = false;
+    forumErrorMessage.value = '';
+
+    try {
+      final category = selectedForumCategory.value == 'All'
+          ? null
+          : selectedForumCategory.value;
+      final fetched = await repository.getDiscussions(
+        category: category,
+        page: 1,
+        limit: 20,
+      );
+      if (fetched.isNotEmpty) {
+        forumLatestDiscussions.assignAll(fetched);
+      }
+    } catch (e) {
+      if (forumLatestDiscussions.isEmpty) {
+        hasForumError.value = true;
+        forumErrorMessage.value = e is AppError
+            ? e.message
+            : 'Couldn\'t load discussions. Try again.';
+      }
+    } finally {
+      isLoadingForumDiscussions.value = false;
+      isRefreshingForumDiscussions.value = false;
+    }
+  }
+
+  /// Optimistically toggle like on a forum discussion with in-flight deduplication,
+  /// Feed synchronization, and graceful error rollback
+  Future<bool> toggleDiscussionLike(String discussionId) async {
+    if (inFlightDiscussionLikes.contains(discussionId)) return false;
+    inFlightDiscussionLikes.add(discussionId);
+
     bool? newLikedState;
     int? newLikesCount;
 
-    final latestIdx = forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+    final latestIdx =
+        forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
     if (latestIdx != -1) {
       final item = forumLatestDiscussions[latestIdx];
       item.isLiked = !item.isLiked;
@@ -441,7 +473,38 @@ class CommunityController extends GetxController {
       posts.refresh();
     }
 
-    repository.toggleDiscussionLike(discussionId).catchError((_) => false);
+    try {
+      final success = await repository.toggleDiscussionLike(discussionId);
+      if (!success) {
+        _rollbackDiscussionLike(discussionId);
+      }
+      return success;
+    } catch (_) {
+      _rollbackDiscussionLike(discussionId);
+      return false;
+    } finally {
+      inFlightDiscussionLikes.remove(discussionId);
+    }
+  }
+
+  void _rollbackDiscussionLike(String discussionId) {
+    final latestIdx =
+        forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+    if (latestIdx != -1) {
+      final item = forumLatestDiscussions[latestIdx];
+      item.isLiked = !item.isLiked;
+      item.upvotes += item.isLiked ? 1 : -1;
+      forumLatestDiscussions[latestIdx] = item.copyWith();
+      forumLatestDiscussions.refresh();
+    }
+    final postIdx = posts.indexWhere((p) => p.id == discussionId);
+    if (postIdx != -1) {
+      final post = posts[postIdx];
+      post.isLiked = !post.isLiked;
+      post.likesCount += post.isLiked ? 1 : -1;
+      posts[postIdx] = post.copyWith();
+      posts.refresh();
+    }
   }
 
   /// Adds a new discussion (with backend sync and Feed sync)
@@ -604,6 +667,7 @@ class CommunityController extends GetxController {
 
     scrollController.addListener(_onScrollListener);
     fetchPosts();
+    fetchDiscussions();
   }
 
   @override

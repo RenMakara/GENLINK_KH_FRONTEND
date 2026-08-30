@@ -372,7 +372,10 @@ class CommunityScreen extends GetView<CommunityController> {
                   _buildComposerQuickButton(
                     context: context,
                     icon: Icons.photo_library_outlined,
-                    label: 'Photo',
+                    label: 'community.photo'.tr.isNotEmpty &&
+                            'community.photo'.tr != 'community.photo'
+                        ? 'community.photo'.tr
+                        : 'Photo',
                     color: const Color(0xFF4E95FF),
                     onTap: () => CommunityCreationFlow.openCreatePost(context),
                     textSecondary: textSecondary,
@@ -381,7 +384,10 @@ class CommunityScreen extends GetView<CommunityController> {
                   _buildComposerQuickButton(
                     context: context,
                     icon: Icons.videocam_outlined,
-                    label: 'Video',
+                    label: 'community.video'.tr.isNotEmpty &&
+                            'community.video'.tr != 'community.video'
+                        ? 'community.video'.tr
+                        : 'Video',
                     color: const Color(0xFF43C97E),
                     onTap: () => CommunityCreationFlow.openCreatePost(context),
                     textSecondary: textSecondary,
@@ -390,7 +396,10 @@ class CommunityScreen extends GetView<CommunityController> {
                   _buildComposerQuickButton(
                     context: context,
                     icon: Icons.sentiment_satisfied_alt_outlined,
-                    label: 'Feeling',
+                    label: 'community.feeling'.tr.isNotEmpty &&
+                            'community.feeling'.tr != 'community.feeling'
+                        ? 'community.feeling'.tr
+                        : 'Feeling',
                     color: const Color(0xFFF5A623),
                     onTap: () => CommunityCreationFlow.openCreatePost(context),
                     textSecondary: textSecondary,
@@ -399,7 +408,10 @@ class CommunityScreen extends GetView<CommunityController> {
                   _buildComposerQuickButton(
                     context: context,
                     icon: Icons.location_on_outlined,
-                    label: 'Location',
+                    label: 'community.location'.tr.isNotEmpty &&
+                            'community.location'.tr != 'community.location'
+                        ? 'community.location'.tr
+                        : 'Location',
                     color: const Color(0xFFE05252),
                     onTap: () => CommunityCreationFlow.openCreatePost(context),
                     textSecondary: textSecondary,
@@ -614,7 +626,7 @@ class CommunityScreen extends GetView<CommunityController> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        controller.forumLatestDiscussions.refresh();
+        await controller.fetchDiscussions(isRefresh: true);
       },
       color: AppColors.communityAccent,
       backgroundColor: surfaceSecondary,
@@ -630,6 +642,72 @@ class CommunityScreen extends GetView<CommunityController> {
         ),
         child: Obx(() {
           final latest = controller.forumLatestDiscussions;
+
+          // 1. Loading State
+          if (controller.isLoadingForumDiscussions.value && latest.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 64),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.communityAccent,
+                  strokeWidth: 2.5,
+                ),
+              ),
+            );
+          }
+
+          // 2. Error State with Retry
+          if (controller.hasForumError.value && latest.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: 48,
+                horizontal: AppSpacing.lg,
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      size: 48,
+                      color: AppColors.danger,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'community.couldNotLoadDiscussions'.tr.isNotEmpty &&
+                              'community.couldNotLoadDiscussions'.tr !=
+                                  'community.couldNotLoadDiscussions'
+                          ? 'community.couldNotLoadDiscussions'.tr
+                          : 'Couldn\'t load discussions.',
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () => controller.fetchDiscussions(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.communityAccent,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                      ),
+                      child: Text(
+                        'common.retry'.tr.isNotEmpty &&
+                                'common.retry'.tr != 'common.retry'
+                            ? 'common.retry'.tr
+                            : 'Retry',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
 
           if (latest.isEmpty) {
             return Padding(
@@ -1623,9 +1701,11 @@ class CommunityScreen extends GetView<CommunityController> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                     child: Text(
-                      'home.seeAll'.tr.isNotEmpty && 'home.seeAll'.tr != 'home.seeAll'
-                          ? 'home.seeAll'.tr
-                          : 'See all',
+                      'community.seeAll'.tr.isNotEmpty && 'community.seeAll'.tr != 'community.seeAll'
+                          ? 'community.seeAll'.tr
+                          : ('home.seeAll'.tr.isNotEmpty && 'home.seeAll'.tr != 'home.seeAll'
+                              ? 'home.seeAll'.tr
+                              : 'See all'),
                       style: TextStyle(
                         color: isDark ? Colors.white : AppColors.lightTextPrimary,
                         fontSize: 13,
@@ -1645,9 +1725,17 @@ class CommunityScreen extends GetView<CommunityController> {
             child: Column(
               children: previewEvents.map((ev) {
                 final isOnline = ev.eventType.toLowerCase().contains('online');
+                final String onlineLabel = 'community.onlineEvent'.tr.isNotEmpty &&
+                        'community.onlineEvent'.tr != 'community.onlineEvent'
+                    ? 'community.onlineEvent'.tr
+                    : 'Online Event';
+                final String inPersonLabel = 'community.inPerson'.tr.isNotEmpty &&
+                        'community.inPerson'.tr != 'community.inPerson'
+                    ? 'community.inPerson'.tr
+                    : 'In Person';
                 final String locationDisplay = isOnline
-                    ? '🌐 Online Event'
-                    : '📍 ${ev.location.isNotEmpty ? ev.location : "Phnom Penh"}';
+                    ? '🌐 $onlineLabel'
+                    : '📍 ${ev.location.isNotEmpty ? ev.location : inPersonLabel}';
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 10),
@@ -1655,6 +1743,13 @@ class CommunityScreen extends GetView<CommunityController> {
                     color: surfaceSecondary,
                     borderRadius: BorderRadius.circular(AppRadius.squircle),
                     border: Border.all(color: borderSubtle, width: 0.8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.03),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Material(
                     color: Colors.transparent,
@@ -1668,27 +1763,28 @@ class CommunityScreen extends GetView<CommunityController> {
                       ),
                       borderRadius: BorderRadius.circular(AppRadius.squircle),
                       child: Padding(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                         child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             // Left: Prominent Date Block
                             _buildDateBlock(ev, isDark, textPrimary, textSecondary),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8),
 
                             // Right: Title, Location, and Join Button
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
                                     ev.title,
-                                    maxLines: 2,
+                                    maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       color: textPrimary,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 14.5,
+                                      fontSize: 14.0,
                                       height: 1.25,
                                     ),
                                   ),
@@ -1702,15 +1798,15 @@ class CommunityScreen extends GetView<CommunityController> {
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
                                             color: textSecondary,
-                                            fontSize: 12,
+                                            fontSize: 11.5,
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
                                       ),
+                                      const SizedBox(width: 6),
+                                      _buildFeedJoinButton(ev, controller, isDark),
                                     ],
                                   ),
-                                  const SizedBox(height: 8),
-                                  _buildFeedJoinButton(ev, controller, isDark),
                                 ],
                               ),
                             ),
@@ -1871,15 +1967,15 @@ class CommunityScreen extends GetView<CommunityController> {
     Color textSecondary,
   ) {
     final (day, month) = _extractDayAndMonth(ev.dateString);
-    final blockBg = isDark ? const Color(0xFF1E2228) : const Color(0xFFE9ECF1);
-    final blockBorder = isDark ? const Color(0xFF2E3540) : const Color(0xFFD6DBE2);
+    final blockBg = isDark ? const Color(0xFF1E222A) : const Color(0xFFEFF2F6);
+    final blockBorder = isDark ? const Color(0x33FFFFFF) : const Color(0xFFE2E8F0);
 
     return Container(
-      width: 58,
-      height: 64,
+      width: 46,
+      height: 48,
       decoration: BoxDecoration(
         color: blockBg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: blockBorder, width: 0.8),
       ),
       child: Column(
@@ -1889,17 +1985,17 @@ class CommunityScreen extends GetView<CommunityController> {
             day,
             style: TextStyle(
               color: textPrimary,
-              fontSize: 20,
+              fontSize: 16,
               fontWeight: FontWeight.w800,
               height: 1.1,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 1),
           Text(
             month.toUpperCase(),
             style: const TextStyle(
               color: AppColors.communityAccent,
-              fontSize: 11,
+              fontSize: 9.5,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
             ),
@@ -1915,29 +2011,40 @@ class CommunityScreen extends GetView<CommunityController> {
     bool isDark,
   ) {
     final isJoined = ev.isRsvped;
+    final joinLabel = 'community.join'.tr.isNotEmpty &&
+            'community.join'.tr != 'community.join'
+        ? 'community.join'.tr
+        : 'Join';
+    final joinedLabel = 'community.joined'.tr.isNotEmpty &&
+            'community.joined'.tr != 'community.joined'
+        ? 'community.joined'.tr
+        : 'Joined';
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => controller.toggleRsvp(ev.id),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          controller.toggleRsvp(ev.id);
+        },
         borderRadius: BorderRadius.circular(AppRadius.pill),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           padding: EdgeInsets.symmetric(
-            horizontal: isJoined ? 12 : 16,
-            vertical: 5,
+            horizontal: isJoined ? 8 : 11,
+            vertical: 4,
           ),
           decoration: BoxDecoration(
             color: isJoined
                 ? (isDark
-                    ? AppColors.communityAccent.withValues(alpha: 0.16)
-                    : AppColors.communityAccent.withValues(alpha: 0.12))
-                : (isDark ? Colors.white : Colors.black87),
+                    ? const Color(0xFF222733)
+                    : const Color(0xFFEFF2F6))
+                : (isDark ? Colors.white : const Color(0xFF111827)),
             borderRadius: BorderRadius.circular(AppRadius.pill),
             border: isJoined
                 ? Border.all(
-                    color: AppColors.communityAccent.withValues(alpha: 0.6),
-                    width: 1.0,
+                    color: isDark ? const Color(0xFF333B4D) : const Color(0xFFCBD5E1),
+                    width: 0.8,
                   )
                 : null,
           ),
@@ -1945,21 +2052,21 @@ class CommunityScreen extends GetView<CommunityController> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (isJoined) ...[
-                const Icon(
+                Icon(
                   Icons.check_rounded,
-                  size: 13,
-                  color: AppColors.communityAccent,
+                  size: 12,
+                  color: isDark ? Colors.white70 : const Color(0xFF475569),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 2),
               ],
               Text(
-                isJoined ? 'Joined' : 'Join',
+                isJoined ? joinedLabel : joinLabel,
                 style: TextStyle(
                   color: isJoined
-                      ? AppColors.communityAccent
+                      ? (isDark ? Colors.white70 : const Color(0xFF475569))
                       : (isDark ? Colors.black : Colors.white),
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -2463,19 +2570,23 @@ class _FeaturedEventsCarouselState extends State<FeaturedEventsCarousel> {
                             ),
                             const SizedBox(width: 4),
                           ],
-                          Text(
-                            '${ev.attendeesCount} ${'community.joined'.tr.isNotEmpty && 'community.joined'.tr != 'community.joined' ? 'community.joined'.tr : 'joined'}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: Text(
+                              '${ev.attendeesCount} ${'community.joined'.tr.isNotEmpty && 'community.joined'.tr != 'community.joined' ? 'community.joined'.tr : 'joined'}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                          const Spacer(),
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4.5,
+                              horizontal: 8,
+                              vertical: 4,
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.20),

@@ -7,6 +7,7 @@ import 'package:genlink_frontend/features/community/domain/models/community_post
 import 'package:genlink_frontend/features/community/domain/repositories/community_repository.dart';
 import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/community_screen.dart';
+import 'package:genlink_frontend/features/community/presentation/screens/forum_discussion_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/widgets/community_widgets.dart';
 
 class _MockCommunityRepository implements CommunityRepository {
@@ -192,15 +193,16 @@ void main() {
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
-      // Verify latest authors & topics
-      expect(find.textContaining('Rathana P.'), findsOneWidget);
-      expect(find.text('How to prepare for junior software engineer interviews in Phnom Penh?'), findsOneWidget);
+      // Verify Rathana P. test discussion is completely removed
+      expect(find.textContaining('Rathana P.'), findsNothing);
+      expect(find.text('How to prepare for junior software engineer interviews in Phnom Penh?'), findsNothing);
+
+      // Verify remaining legitimate authors & topics are preserved
+      expect(find.textContaining('Sokny Enat'), findsOneWidget);
       expect(find.textContaining('Heng Chansela'), findsOneWidget);
       expect(find.text('Study group for CADT Data Structures and Algorithms exam next week'), findsOneWidget);
-
-      // Verify category badges
-      expect(find.text('Career'), findsOneWidget);
-      expect(find.text('Study & Education'), findsOneWidget);
+      expect(find.textContaining('Ren Makara'), findsOneWidget);
+      expect(find.textContaining('Chhaeng Sokuntheara'), findsOneWidget);
     });
 
     testWidgets('3. Verifies Forum scrollable content has safe bottom padding for bottom navigation', (tester) async {
@@ -361,7 +363,7 @@ void main() {
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
-      // Tap More menu on 2nd discussion (authored by Rathana P., authorId: 'u1')
+      // Tap More menu on 2nd discussion (authored by Heng Chansela, authorId: 'u2')
       final moreButtons = find.byIcon(Icons.more_horiz_rounded);
       await tester.tap(moreButtons.at(1));
       await tester.pumpAndSettle();
@@ -614,6 +616,109 @@ void main() {
       // User content still preserved exactly as written
       expect(find.text('តើ Flutter ល្អសម្រាប់ Mobile App ដែរឬទេ?'), findsOneWidget);
       expect(find.text('What is the best way to manage state in Flutter?'), findsOneWidget);
+    });
+
+    testWidgets('12. Verifies Discussion Detail screen visual hierarchy, header, and welcoming empty comments', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = _MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
+
+      final topic = ForumTopicModel(
+        id: 'disc_detail_test',
+        authorId: 'author_123',
+        authorName: 'Sokny Enat',
+        timeAgo: 'Just now',
+        category: 'Technology',
+        title: 'testt',
+        content: 'test',
+        upvotes: 1,
+        repliesCount: 0,
+        isLiked: false,
+      );
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: ForumDiscussionScreen(discussion: topic),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Header title
+      expect(find.text('Discussion'), findsOneWidget);
+      // Author and category
+      expect(find.text('Sokny Enat'), findsOneWidget);
+      expect(find.text('Just now'), findsOneWidget);
+      expect(find.text('Technology'), findsOneWidget);
+      // Title and content
+      expect(find.text('testt'), findsOneWidget);
+      expect(find.text('test'), findsOneWidget);
+      // Action row
+      expect(find.text('1'), findsOneWidget);
+      // Comments section header
+      expect(find.text('Comments'), findsOneWidget);
+      // Welcoming empty state
+      expect(find.text('No comments yet'), findsOneWidget);
+      expect(find.text('Be the first to start the discussion!'), findsOneWidget);
+      // Reply input placeholder
+      expect(find.text('Add a reply...'), findsOneWidget);
+    });
+
+    testWidgets('13. Verifies Discussion Detail screen in Khmer mode renders Khmer UI labels and keeps user content in original language', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = _MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
+
+      final topic = ForumTopicModel(
+        id: 'disc_km_test',
+        authorId: 'author_km',
+        authorName: 'Sokny Enat',
+        timeAgo: 'Just now',
+        category: 'Technology',
+        title: 'testt',
+        content: 'test',
+        upvotes: 1,
+        repliesCount: 0,
+        isLiked: false,
+      );
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('km', 'KH'),
+          home: ForumDiscussionScreen(discussion: topic),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Header title in Khmer
+      expect(find.text('ការពិភាក្សា'), findsOneWidget);
+      // Author and user content remain English (NOT translated)
+      expect(find.text('Sokny Enat'), findsOneWidget);
+      expect(find.text('testt'), findsOneWidget);
+      expect(find.text('test'), findsOneWidget);
+      // Comments section header in Khmer
+      expect(find.text('មតិយោបល់'), findsOneWidget);
+      // Welcoming empty state in Khmer
+      expect(find.text('មិនទាន់មានមតិយោបល់ទេ'), findsOneWidget);
+      expect(find.text('សូមធ្វើជាអ្នកដំបូងដែលចាប់ផ្តើមការពិភាក្សា!'), findsOneWidget);
+      // Reply input placeholder in Khmer
+      expect(find.text('បន្ថែមការឆ្លើយតប...'), findsOneWidget);
     });
   });
 }

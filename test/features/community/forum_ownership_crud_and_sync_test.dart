@@ -170,7 +170,7 @@ void main() {
       final repo = _MockTestCommunityRepository();
       final controller = CommunityController(repository: repo);
 
-      expect(controller.forumLatestDiscussions.length, equals(5)); // Initial latest
+      expect(controller.forumLatestDiscussions.length, equals(4)); // Initial latest (Rathana P. test discussion removed)
       expect(controller.forumPinnedDiscussions.isEmpty, isTrue); // Pinned discussions bypass
 
       final initialFeedCount = controller.posts.length;

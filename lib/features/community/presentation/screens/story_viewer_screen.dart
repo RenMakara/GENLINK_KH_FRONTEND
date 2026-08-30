@@ -238,7 +238,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   final TextEditingController _replyController = TextEditingController();
 
   bool _isMorePressed = false;
-  bool _isReacting = false;
   DateTime? _lastLikeTapTime;
 
   StoryGroupModel? get _currentGroup {
@@ -466,52 +465,27 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       return;
     }
 
-    // Guard against simultaneous in-flight requests
-    if (_isReacting) {
-      debugPrint('[StoryViewer] Ignored reaction: another reaction request is in progress.');
-      return;
-    }
-
-    // Debounce: prevent rapid duplicate like/unlike requests
+    // Debounce: prevent rapid multi-touch hardware jitter (<120ms)
     final now = DateTime.now();
     if (_lastLikeTapTime != null &&
-        now.difference(_lastLikeTapTime!).inMilliseconds < 250) {
-      debugPrint('[StoryViewer] Ignored reaction: within 250ms debounce window.');
+        now.difference(_lastLikeTapTime!).inMilliseconds < 120) {
+      debugPrint('[StoryViewer] Ignored reaction: within 120ms jitter window.');
       return;
     }
     _lastLikeTapTime = now;
-    _isReacting = true;
 
+    final previousLiked = story.isLiked;
+    final previousLikesCount = story.likesCount;
     final targetLiked = !story.isLiked;
     final targetLikesCount = story.likesCount + (targetLiked ? 1 : -1);
 
     debugPrint(
-      '[StoryViewer] API request started | '
+      '[StoryViewer] Reaction triggered immediately | '
       'Story ID: ${story.id} | '
       'Target liked state: $targetLiked',
     );
 
-    // Sync with backend via controller
-    if (Get.isRegistered<StoryController>()) {
-      final ctrl = Get.find<StoryController>();
-      try {
-        await ctrl.syncLikeToBackend(story.id);
-        debugPrint('[StoryViewer] API response status: SUCCESS for story: ${story.id}');
-      } catch (e) {
-        debugPrint('[StoryViewer] API response status: FAILED ($e). Previous liked state maintained.');
-        if (mounted) {
-          AppNotificationBanner.showDanger(
-            context: context,
-            title: "Error",
-            message: "Failed to update like status.",
-          );
-        }
-        _isReacting = false;
-        return;
-      }
-    }
-
-    // Update state and trigger animation only upon successful completion
+    // 1. Immediate optimistic UI update (0ms latency for smooth micro-interaction)
     story.isLiked = targetLiked;
     story.likesCount = targetLikesCount;
     if (mounted) setState(() {});
@@ -522,7 +496,27 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       'New likes count: ${story.likesCount}',
     );
 
-    _isReacting = false;
+    // 2. Sync with backend in background with rollback on error
+    if (Get.isRegistered<StoryController>()) {
+      final ctrl = Get.find<StoryController>();
+      try {
+        await ctrl.syncLikeToBackend(story.id);
+        debugPrint('[StoryViewer] API response status: SUCCESS for story: ${story.id}');
+      } catch (e) {
+        debugPrint('[StoryViewer] API response status: FAILED ($e). Rolling back liked state.');
+        if (mounted) {
+          story.isLiked = previousLiked;
+          story.likesCount = previousLikesCount;
+          setState(() {});
+          AppNotificationBanner.showDanger(
+            context: context,
+            title: "Error",
+            message: "Failed to update like status.",
+          );
+        }
+        return;
+      }
+    }
 
     // Create activity notification if story is liked
     if (story.isLiked && Get.isRegistered<NotificationController>()) {
@@ -1611,30 +1605,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             const SizedBox(height: 16),
 
             // 1. Copy Story Link
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.link_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              title: const Text(
-                "Copy Story Link",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              subtitle: const Text(
-                "Copy direct link to share anywhere",
-                style: TextStyle(color: Colors.white54, fontSize: 12),
-              ),
+            _StoryMenuActionTile(
+              icon: Icons.link_rounded,
+              title: "Copy Story Link",
+              subtitle: "Copy direct link to share anywhere",
               onTap: () {
                 Navigator.pop(ctx);
                 Clipboard.setData(
@@ -1650,30 +1624,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             ),
 
             // 2. Share to Campus Group
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.groups_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              title: const Text(
-                "Share to Campus Group",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              subtitle: const Text(
-                "Select a group to post story preview",
-                style: TextStyle(color: Colors.white54, fontSize: 12),
-              ),
+            _StoryMenuActionTile(
+              icon: Icons.groups_rounded,
+              title: "Share to Campus Group",
+              subtitle: "Select a group to post story preview",
               onTap: () {
                 Navigator.pop(ctx);
                 _openCampusGroupSelectionSheet(group, story);
@@ -2520,48 +2474,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     required VoidCallback onTap,
     bool isDanger = false,
   }) {
-    final titleColor = isDanger ? AppColors.danger : Colors.white;
-    final iconColor = isDanger ? AppColors.danger : Colors.white;
-    final iconBg = isDanger
-        ? AppColors.danger.withValues(alpha: 0.15)
-        : Colors.white.withValues(alpha: 0.08);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: ListTile(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-          leading: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
-            child: Icon(icon, color: iconColor, size: 18),
-          ),
-          title: Text(
-            title,
-            style: TextStyle(
-              color: titleColor,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-          ),
-          subtitle: Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.45),
-              fontSize: 11.5,
-            ),
-          ),
-          onTap: onTap,
-        ),
-      ),
+    return _StoryMenuActionTile(
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
+      onTap: onTap,
+      isDanger: isDanger,
     );
   }
 
@@ -3637,16 +3555,16 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                             StoryReplyPermission.off)
                           Expanded(
                             child: InkWell(
-                              borderRadius: BorderRadius.circular(19),
+                              borderRadius: BorderRadius.circular(21),
                               onTap: () => _openStoryReplySheet(group, story),
                               child: Container(
-                                height: 38,
+                                height: 42,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 14,
                                 ),
                                 decoration: BoxDecoration(
                                   color: Colors.black.withValues(alpha: 0.35),
-                                  borderRadius: BorderRadius.circular(19),
+                                  borderRadius: BorderRadius.circular(21),
                                   border: Border.all(
                                     color: Colors.white.withValues(alpha: 0.08),
                                     width: 0.5,
@@ -3660,7 +3578,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                                       color: Colors.white.withValues(
                                         alpha: 0.50,
                                       ),
-                                      size: 15,
+                                      size: 16,
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
@@ -3673,7 +3591,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                                           color: Colors.white.withValues(
                                             alpha: 0.45,
                                           ),
-                                          fontSize: 12,
+                                          fontSize: 12.5,
                                           fontWeight: FontWeight.w400,
                                           letterSpacing: 0.1,
                                         ),
@@ -3690,7 +3608,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           const Spacer(),
 
                         if (story.allowReactions && !_isOwnStory) ...[
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
 
                           // ── Interactive Like Button (Count hidden for other users' stories) ──
                           StoryInteractiveLikeButton(
@@ -3702,9 +3620,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           ),
                         ],
 
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 8),
 
-                        // More Menu Button (38x38)
+                        // More Menu Button (42x42 with 48x48 hit target)
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTapDown: (_) =>
@@ -3714,29 +3632,37 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           onTapCancel: () =>
                               setState(() => _isMorePressed = false),
                           onTap: _showMoreMenu,
-                          child: AnimatedScale(
-                            scale: _isMorePressed ? 0.90 : 1.0,
-                            duration: const Duration(milliseconds: 120),
-                            curve: Curves.easeOutCubic,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 160),
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                color: _isMorePressed
-                                    ? Colors.white.withValues(alpha: 0.16)
-                                    : Colors.black.withValues(alpha: 0.35),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.12),
-                                  width: 0.6,
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
+                            alignment: Alignment.center,
+                            color: Colors.transparent,
+                            child: AnimatedScale(
+                              scale: _isMorePressed ? 0.90 : 1.0,
+                              duration: const Duration(milliseconds: 120),
+                              curve: Curves.easeOutCubic,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 160),
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: _isMorePressed
+                                      ? Colors.white.withValues(alpha: 0.16)
+                                      : Colors.black.withValues(alpha: 0.35),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.12),
+                                    width: 0.6,
+                                  ),
                                 ),
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.more_horiz_rounded,
-                                  color: Colors.white,
-                                  size: 20,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.more_horiz_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                 ),
                               ),
                             ),
@@ -3754,4 +3680,122 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     ),
   );
 }
+}
+
+class _StoryMenuActionTile extends StatefulWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool isDanger;
+
+  const _StoryMenuActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.isDanger = false,
+  });
+
+  @override
+  State<_StoryMenuActionTile> createState() => _StoryMenuActionTileState();
+}
+
+class _StoryMenuActionTileState extends State<_StoryMenuActionTile> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final titleColor = widget.isDanger ? AppColors.danger : Colors.white;
+    final iconColor = widget.isDanger ? AppColors.danger : Colors.white;
+    final iconBg = widget.isDanger
+        ? AppColors.danger.withValues(alpha: 0.15)
+        : Colors.white.withValues(alpha: 0.08);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOutCubic,
+        child: AnimatedOpacity(
+          opacity: _isPressed ? 0.88 : 1.0,
+          duration: const Duration(milliseconds: 110),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 52),
+            decoration: BoxDecoration(
+              color: _isPressed
+                  ? Colors.white.withValues(alpha: 0.07)
+                  : Colors.white.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _isPressed
+                    ? Colors.white.withValues(alpha: 0.18)
+                    : Colors.white.withValues(alpha: 0.04),
+                width: 0.8,
+              ),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (_) {
+                  if (mounted) setState(() => _isPressed = true);
+                },
+                onPointerUp: (_) {
+                  if (mounted) setState(() => _isPressed = false);
+                },
+                onPointerCancel: (_) {
+                  if (mounted) setState(() => _isPressed = false);
+                },
+                child: ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 2,
+                  ),
+                  minVerticalPadding: 8,
+                  leading: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: iconBg,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Icon(widget.icon, color: iconColor, size: 19),
+                    ),
+                  ),
+                  title: Text(
+                    widget.title,
+                    style: TextStyle(
+                      color: titleColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      letterSpacing: -0.1,
+                    ),
+                  ),
+                  subtitle: Text(
+                    widget.subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.48),
+                      fontSize: 11.5,
+                      height: 1.2,
+                    ),
+                  ),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    widget.onTap();
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -25,16 +25,16 @@ class EventSuccessScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: bgPrimary,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Column(
             children: [
-              const Spacer(),
+              const SizedBox(height: 12),
 
               // Confetti Green Circle Checkmark Icon
               Container(
-                width: 90,
-                height: 90,
+                width: 80,
+                height: 80,
                 decoration: const BoxDecoration(
                   color: Color(0xFF22C55E),
                   shape: BoxShape.circle,
@@ -42,11 +42,11 @@ class EventSuccessScreen extends StatelessWidget {
                 child: const Icon(
                   Icons.check_rounded,
                   color: Colors.white,
-                  size: 56,
+                  size: 50,
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               Text(
                 'community.registrationSuccessful'.tr,
@@ -166,7 +166,7 @@ class EventSuccessScreen extends StatelessWidget {
                 onTap: () {},
               ),
 
-              const Spacer(),
+              const SizedBox(height: 32),
 
               // Back to Events Button
               SizedBox(
@@ -188,7 +188,6 @@ class EventSuccessScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
             ],
           ),
         ),

@@ -237,7 +237,7 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                     GestureDetector(
                       onTap: widget.onAuthorTap,
                       child: CircleAvatar(
-                        radius: 14,
+                        radius: 15,
                         backgroundImage: (widget.avatarUrl != null &&
                                 widget.avatarUrl!.isNotEmpty)
                             ? (widget.avatarUrl!.startsWith('assets/')
@@ -349,10 +349,13 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                 // Discussion Title
                 Text(
                   widget.title,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
                         color: textPrimary,
                         fontWeight: FontWeight.bold,
                         height: 1.35,
+                        fontSize: 14.5,
                       ) ??
                       TextStyle(
                         color: textPrimary,

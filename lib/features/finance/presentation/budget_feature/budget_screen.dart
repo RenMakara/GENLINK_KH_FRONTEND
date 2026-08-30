@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/features/finance/presentation/budget_feature/set_budget_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_detail_screen.dart';
@@ -11,25 +12,33 @@ class BudgetScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
+
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
+
     final secondarySurface = isDark
         ? AppColors.darkSurfaceSecondary
         : AppColors.lightSurfaceSecondary;
+
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
+
     final textSecondary = isDark
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
+
     final textMuted = isDark
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
+
     final border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
+
     final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
+
     final inverseText = isDark
         ? AppColors.darkTextInverse
         : AppColors.lightTextInverse;
@@ -43,7 +52,9 @@ class BudgetScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header ──
+              // =========================================================
+              // HEADER
+              // =========================================================
               Row(
                 children: [
                   IconButton(
@@ -59,10 +70,12 @@ class BudgetScreen extends StatelessWidget {
                       minHeight: 40,
                     ),
                   ),
+
                   const SizedBox(width: 4),
+
                   Expanded(
                     child: Text(
-                      'Budget',
+                      'finance.budget.title'.tr,
                       style: TextStyle(
                         color: textPrimary,
                         fontSize: 24,
@@ -71,6 +84,7 @@ class BudgetScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
@@ -90,7 +104,7 @@ class BudgetScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        'Set Budget',
+                        'finance.budget.setBudget'.tr,
                         style: TextStyle(
                           color: inverseText,
                           fontSize: 13,
@@ -104,7 +118,9 @@ class BudgetScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // ── Total Overview Card ──
+              // =========================================================
+              // TOTAL OVERVIEW
+              // =========================================================
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
@@ -115,29 +131,23 @@ class BudgetScreen extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
+                    // Progress
                     SizedBox(
                       width: 72,
                       height: 72,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          SizedBox(
-                            width: 72,
-                            height: 72,
-                            child: CircularProgressIndicator(
-                              value: 0.71,
-                              strokeWidth: 7,
-                              backgroundColor: secondarySurface,
-                              valueColor: const AlwaysStoppedAnimation(
-                                AppColors.growthAccent,
-                              ),
-                              strokeCap: StrokeCap.round,
-                            ),
-                          ),
-                        ],
+                      child: CircularProgressIndicator(
+                        value: 0.71,
+                        strokeWidth: 7,
+                        backgroundColor: secondarySurface,
+                        valueColor: const AlwaysStoppedAnimation(
+                          AppColors.growthAccent,
+                        ),
+                        strokeCap: StrokeCap.round,
                       ),
                     ),
+
                     const SizedBox(width: 18),
+
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,7 +160,9 @@ class BudgetScreen extends StatelessWidget {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
+
                           const SizedBox(height: 4),
+
                           Text.rich(
                             TextSpan(
                               children: [
@@ -174,7 +186,9 @@ class BudgetScreen extends StatelessWidget {
                               ],
                             ),
                           ),
+
                           const SizedBox(height: 8),
+
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
@@ -184,9 +198,9 @@ class BudgetScreen extends StatelessWidget {
                               color: AppColors.success.withValues(alpha: 0.10),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Text(
-                              'On track · \$258 remaining',
-                              style: TextStyle(
+                            child: Text(
+                              '${'finance.budget.onTrack'.tr} · \$258 ${'finance.budget.remaining'.tr.toLowerCase()}',
+                              style: const TextStyle(
                                 color: AppColors.success,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -202,9 +216,11 @@ class BudgetScreen extends StatelessWidget {
 
               const SizedBox(height: 18),
 
-              // ── Category Budgets ──
+              // =========================================================
+              // CATEGORY BUDGETS
+              // =========================================================
               Text(
-                'Category Budgets',
+                'finance.budget.categoryBudgets'.tr,
                 style: TextStyle(
                   color: textPrimary,
                   fontSize: 17,
@@ -242,7 +258,9 @@ class BudgetScreen extends StatelessWidget {
                         );
                       },
                     ),
+
                     Divider(height: 1, color: border),
+
                     _CategoryBudgetRow(
                       title: 'Transport',
                       amount: '\$138 / \$150',
@@ -254,7 +272,9 @@ class BudgetScreen extends StatelessWidget {
                       secondarySurface: secondarySurface,
                       onTap: () {},
                     ),
+
                     Divider(height: 1, color: border),
+
                     _CategoryBudgetRow(
                       title: 'Study',
                       amount: '\$51 / \$150',
@@ -266,7 +286,9 @@ class BudgetScreen extends StatelessWidget {
                       secondarySurface: secondarySurface,
                       onTap: () {},
                     ),
+
                     Divider(height: 1, color: border),
+
                     _CategoryBudgetRow(
                       title: 'Bills',
                       amount: '\$36 / \$300',
@@ -277,7 +299,6 @@ class BudgetScreen extends StatelessWidget {
                       textMuted: textMuted,
                       secondarySurface: secondarySurface,
                       onTap: () {},
-                      showDivider: false,
                     ),
                   ],
                 ),
@@ -285,7 +306,9 @@ class BudgetScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // ── Near Limit Notice ──
+              // =========================================================
+              // NEAR LIMIT NOTICE
+              // =========================================================
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -304,20 +327,24 @@ class BudgetScreen extends StatelessWidget {
                       size: 20,
                       color: Color(0xFFC9A227),
                     ),
+
                     const SizedBox(width: 10),
+
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Near limit on 2 categories',
+                            '${'finance.budget.nearLimit'.tr} on 2 categories',
                             style: TextStyle(
                               color: textPrimary,
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
+
                           const SizedBox(height: 4),
+
                           Text(
                             'Food & Transport budgets are nearly exhausted. Consider adjusting spending for the rest of the month.',
                             style: TextStyle(
@@ -342,6 +369,10 @@ class BudgetScreen extends StatelessWidget {
   }
 }
 
+// ============================================================================
+// CATEGORY BUDGET ROW
+// ============================================================================
+
 class _CategoryBudgetRow extends StatelessWidget {
   final String title;
   final String amount;
@@ -352,7 +383,6 @@ class _CategoryBudgetRow extends StatelessWidget {
   final Color textMuted;
   final Color secondarySurface;
   final VoidCallback onTap;
-  final bool showDivider;
 
   const _CategoryBudgetRow({
     required this.title,
@@ -364,13 +394,13 @@ class _CategoryBudgetRow extends StatelessWidget {
     required this.textMuted,
     required this.secondarySurface,
     required this.onTap,
-    this.showDivider = true,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Column(
@@ -385,7 +415,9 @@ class _CategoryBudgetRow extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                 ),
+
                 const SizedBox(width: 10),
+
                 Expanded(
                   child: Text(
                     title,
@@ -396,6 +428,7 @@ class _CategoryBudgetRow extends StatelessWidget {
                     ),
                   ),
                 ),
+
                 Text(
                   amount,
                   style: TextStyle(
@@ -404,7 +437,9 @@ class _CategoryBudgetRow extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+
                 const SizedBox(width: 8),
+
                 Text(
                   percent,
                   style: TextStyle(
@@ -415,7 +450,9 @@ class _CategoryBudgetRow extends StatelessWidget {
                 ),
               ],
             ),
+
             const SizedBox(height: 8),
+
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(

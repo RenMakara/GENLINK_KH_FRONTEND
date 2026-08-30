@@ -625,10 +625,6 @@ class AppTranslations extends Translations {
     'finance.transaction.mobile': 'Mobile',
     'finance.transaction.mall': 'Mall',
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // EXPENSE
-    // ═══════════════════════════════════════════════════════════════════════
-
     // ── Expense Screen ────────────────────────────────────────────────────
     'finance.expense.title': 'Expenses',
 
@@ -748,20 +744,37 @@ class AppTranslations extends Translations {
     'finance.budget.title': 'Budget',
     'finance.budget.setBudget': 'Set Budget',
     'finance.budget.editBudget': 'Edit Budget',
+    'finance.budget.adjustBudget': 'Adjust Budget',
+    'finance.budget.saveBudget': 'Save Budget',
     'finance.budget.monthlyBudget': 'Monthly Budget',
     'finance.budget.totalBudget': 'Total Budget',
+    'finance.budget.monthlyTotalBudget': 'Monthly total budget',
     'finance.budget.spent': 'Spent',
     'finance.budget.remaining': 'Remaining',
+    'finance.budget.left': 'Left',
     'finance.budget.limit': 'Limit',
+    'finance.budget.overLimit': 'Over limit',
+    'finance.budget.overBudget': 'Over Budget',
+    'finance.budget.onTrack': 'On Track',
+    'finance.budget.used': 'Used',
     'finance.budget.category': 'Category',
-    'finance.budget.amount': 'Budget Amount',
-    'finance.budget.period': 'Budget Period',
+    'finance.budget.categories': 'Categories',
+    'finance.budget.categoryBudgets': 'Category Budgets',
+    'finance.budget.categoryAllocation': 'Category Allocation',
+    'finance.budget.budgetAmount': 'Budget Amount',
+    'finance.budget.budgetPeriod': 'Budget Period',
+    'finance.budget.expenses': 'Expenses',
+    'finance.budget.nearLimit': 'Near Limit',
+    'finance.budget.nearLimitCategories': 'Near limit on categories',
+    'finance.budget.budgetAlmostExhausted': 'Budget almost exhausted',
+    'finance.budget.remainingForMonth': 'remaining for this month',
+    'finance.budget.considerReducingSpending':
+        'Consider reducing spending for the rest of the month.',
+    'finance.budget.considerReducingDiningOut': 'Consider reducing dining out.',
     'finance.budget.noBudget': 'No budget set yet',
     'finance.budget.noBudgetHint':
         'Create a budget to start tracking your spending.',
-    'finance.budget.overBudget': 'Over Budget',
-    'finance.budget.onTrack': 'On Track',
-    'finance.budget.nearLimit': 'Near Limit',
+    'finance.budget.budgetSaved': 'Budget saved successfully',
 
     // ── Saving Goals ───────────────────────────────────────────────────────
     'finance.goal.title': 'Saving Goals',
@@ -1566,69 +1579,78 @@ class AppTranslations extends Translations {
     // ── Expense Detail Screen ────────────────────────────────────────────
     'finance.expense.details': 'ព័ត៌មានលម្អិតចំណាយ',
     'finance.expense.detail': 'ព័ត៌មានលម្អិតចំណាយ',
-
-    // Actions
     'finance.expense.edit': 'កែប្រែ',
     'finance.expense.delete': 'លុប',
-
-    // Detail Information
     'finance.expense.payment': 'ការបង់ប្រាក់',
 
     // Budget
     'finance.expense.budgetImpact': 'ផលប៉ះពាល់ដល់ថវិកា',
     'finance.expense.nearLimit': 'ជិតដល់កម្រិត',
-
     'finance.expense.foodBudgetUsed':
         'ថវិកាអាហារ: \$252 ក្នុងចំណោម \$300 ត្រូវបានប្រើប្រាស់ (84%)។ នៅសល់តែ \$48 ប៉ុណ្ណោះ។',
-
-    // Detail Note
     'finance.expense.dinnerNote':
         'ញ៉ាំអាហារពេលល្ងាចជាមួយមិត្តភក្តិនៅជិត Riverside។ បានកម្ម៉ង់គុយទាវខ្មែរ។',
-
-    // Delete Confirmation
     'finance.expense.deleteConfirmTitle': 'លុបចំណាយនេះ?',
     'finance.expense.deleteConfirmMessage':
         'តើអ្នកប្រាកដថាចង់លុបចំណាយនេះមែនទេ?',
 
     // ── Expense History Screen ───────────────────────────────────────────
     'finance.expense.history': 'ប្រវត្តិចំណាយ',
-
-    // Search
     'finance.expense.searchHint': 'ស្វែងរកចំណាយ...',
-
-    // Filters
     'finance.expense.all': 'ទាំងអស់',
-
-    // History Dates
     'finance.expense.todayDate': 'ថ្ងៃនេះ, Jun 28',
     'finance.expense.yesterdayDate': 'ម្សិលមិញ, Jun 27',
-
-    // History Items
     'finance.expense.lunchBox': 'ប្រអប់អាហារថ្ងៃត្រង់',
     'finance.expense.abaTransfer': 'ផ្ទេរប្រាក់ ABA',
     'finance.expense.netflix': 'Netflix',
-
-    // History Categories
     'finance.expense.deposit': 'ការដាក់ប្រាក់',
 
     // ── Budget ─────────────────────────────────────────────────────────────
     'finance.budget.title': 'ថវិកា',
     'finance.budget.setBudget': 'កំណត់ថវិកា',
     'finance.budget.editBudget': 'កែសម្រួលថវិកា',
+    'finance.budget.adjustBudget': 'កែសម្រួលថវិកា',
+    'finance.budget.saveBudget': 'រក្សាទុកថវិកា',
+
     'finance.budget.monthlyBudget': 'ថវិកាប្រចាំខែ',
     'finance.budget.totalBudget': 'ថវិកាសរុប',
+    'finance.budget.monthlyTotalBudget': 'ថវិកាសរុបប្រចាំខែ',
+
     'finance.budget.spent': 'បានចំណាយ',
     'finance.budget.remaining': 'នៅសល់',
-    'finance.budget.limit': 'កម្រិត',
-    'finance.budget.category': 'ប្រភេទ',
-    'finance.budget.amount': 'ចំនួនថវិកា',
-    'finance.budget.period': 'រយៈពេលថវិកា',
-    'finance.budget.noBudget': 'មិនទាន់កំណត់ថវិកា',
-    'finance.budget.noBudgetHint':
-        'បង្កើតថវិកា ដើម្បីចាប់ផ្តើមតាមដានការចំណាយរបស់អ្នក',
+    'finance.budget.left': 'នៅសល់',
+    'finance.budget.limit': 'កំណត់',
+    'finance.budget.used': 'បានប្រើប្រាស់',
+
+    'finance.budget.overLimit': 'លើសកំណត់',
     'finance.budget.overBudget': 'លើសថវិកា',
-    'finance.budget.onTrack': 'ស្ថិតក្នុងផែនការ',
-    'finance.budget.nearLimit': 'ជិតដល់កម្រិត',
+    'finance.budget.onTrack': 'កំពុងស្ថិតក្នុងផែនការ',
+
+    'finance.budget.category': 'ប្រភេទ',
+    'finance.budget.categories': 'ប្រភេទទាំងអស់',
+    'finance.budget.categoryBudgets': 'ថវិកាតាមប្រភេទ',
+    'finance.budget.categoryAllocation': 'ការបែងចែកថវិកា',
+
+    'finance.budget.budgetAmount': 'ចំនួនថវិកា',
+    'finance.budget.budgetPeriod': 'រយៈពេលថវិកា',
+
+    'finance.budget.expenses': 'ការចំណាយ',
+    'finance.budget.nearLimit': 'ជិតដល់កំណត់',
+
+    'finance.budget.budgetAlmostExhausted': 'ថវិកាជិតអស់',
+    'finance.budget.remainingForMonth': 'នៅសល់សម្រាប់ខែនេះ',
+
+    'finance.budget.considerReducingSpending':
+        'សូមពិចារណាកាត់បន្ថយការចំណាយសម្រាប់រយៈពេលដែលនៅសល់។',
+
+    'finance.budget.considerReducingDiningOut':
+        'សូមពិចារណាកាត់បន្ថយការចំណាយលើការញ៉ាំអាហារក្រៅ។',
+
+    'finance.budget.noBudget': 'មិនទាន់បានកំណត់ថវិកាទេ',
+    'finance.budget.noBudgetHint':
+        'បង្កើតថវិកាដើម្បីចាប់ផ្តើមតាមដានការចំណាយរបស់អ្នក។',
+
+    'finance.budget.budgetSaved': 'បានរក្សាទុកថវិកាដោយជោគជ័យ',
 
     // ── Saving Goals ───────────────────────────────────────────────────────
     'finance.goal.title': 'គោលដៅសន្សំ',

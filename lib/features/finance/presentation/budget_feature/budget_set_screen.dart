@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
 class SetBudgetScreen extends StatefulWidget {
@@ -9,43 +10,99 @@ class SetBudgetScreen extends StatefulWidget {
 }
 
 class _SetBudgetScreenState extends State<SetBudgetScreen> {
-  final _totalController = TextEditingController(text: '900');
-  final _foodController = TextEditingController(text: '300');
-  final _transportController = TextEditingController(text: '150');
-  final _studyController = TextEditingController(text: '150');
-  final _billsController = TextEditingController(text: '300');
+  final TextEditingController foodController = TextEditingController(
+    text: '300',
+  );
+
+  final TextEditingController transportController = TextEditingController(
+    text: '150',
+  );
+
+  final TextEditingController studyController = TextEditingController(
+    text: '150',
+  );
+
+  final TextEditingController billsController = TextEditingController(
+    text: '300',
+  );
+
+  String selectedMonth = 'June 2026';
+
+  @override
+  void initState() {
+    super.initState();
+
+    foodController.addListener(_updateTotal);
+    transportController.addListener(_updateTotal);
+    studyController.addListener(_updateTotal);
+    billsController.addListener(_updateTotal);
+  }
 
   @override
   void dispose() {
-    _totalController.dispose();
-    _foodController.dispose();
-    _transportController.dispose();
-    _studyController.dispose();
-    _billsController.dispose();
+    foodController.removeListener(_updateTotal);
+    transportController.removeListener(_updateTotal);
+    studyController.removeListener(_updateTotal);
+    billsController.removeListener(_updateTotal);
+
+    foodController.dispose();
+    transportController.dispose();
+    studyController.dispose();
+    billsController.dispose();
+
     super.dispose();
+  }
+
+  void _updateTotal() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  double _getAmount(TextEditingController controller) {
+    return double.tryParse(controller.text.replaceAll(',', '').trim()) ?? 0;
+  }
+
+  double get totalBudget {
+    return _getAmount(foodController) +
+        _getAmount(transportController) +
+        _getAmount(studyController) +
+        _getAmount(billsController);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
+
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
-    final secondarySurface = isDark
+
+    final surfaceSecondary = isDark
         ? AppColors.darkSurfaceSecondary
         : AppColors.lightSurfaceSecondary;
+
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
+
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+
     final textMuted = isDark
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
+
     final border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
+
     final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
+
     final inverseText = isDark
         ? AppColors.darkTextInverse
         : AppColors.lightTextInverse;
@@ -53,12 +110,16 @@ class _SetBudgetScreenState extends State<SetBudgetScreen> {
     return Scaffold(
       backgroundColor: bg,
       body: SafeArea(
-        child: Column(
-          children: [
-            // ── Header ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
-              child: Row(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // =========================================================
+              // HEADER
+              // =========================================================
+              Row(
                 children: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -73,189 +134,278 @@ class _SetBudgetScreenState extends State<SetBudgetScreen> {
                       minHeight: 40,
                     ),
                   ),
-                  const SizedBox(width: 4),
+
+                  const SizedBox(width: 8),
+
                   Text(
-                    'Set Budget',
+                    'finance.budget.setBudget'.tr,
                     style: TextStyle(
                       color: textPrimary,
-                      fontSize: 20,
+                      fontSize: 24,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
+                      letterSpacing: -0.4,
                     ),
                   ),
                 ],
               ),
-            ),
 
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 30),
+              const SizedBox(height: 16),
+
+              // =========================================================
+              // MONTH SELECTOR
+              // =========================================================
+              _MonthSelector(
+                month: selectedMonth,
+                background: surfaceSecondary,
+                textColor: textPrimary,
+                iconColor: textSecondary,
+                borderColor: border,
+                onTap: _selectMonth,
+              ),
+
+              const SizedBox(height: 22),
+
+              // =========================================================
+              // TOTAL BUDGET
+              // =========================================================
+              Center(
                 child: Column(
                   children: [
-                    // ── Month ──
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'June 2026',
-                          style: TextStyle(
-                            color: textMuted,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.calendar_today_outlined,
-                          size: 16,
-                          color: textMuted,
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // ── Total Amount ──
                     Text(
-                      '\$',
-                      style: TextStyle(
-                        color: textMuted,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    TextField(
-                      controller: _totalController,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
+                      '\$${totalBudget.toStringAsFixed(0)}',
                       style: TextStyle(
                         color: textPrimary,
-                        fontSize: 42,
+                        fontSize: 32,
+                        height: 1,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: -1,
-                      ),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
+                        letterSpacing: -1.2,
                       ),
                     ),
+
+                    const SizedBox(height: 8),
+
                     Text(
-                      'Monthly total budget',
+                      'finance.budget.monthlyTotalBudget'.tr,
                       style: TextStyle(
                         color: textMuted,
-                        fontSize: 13,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-
-                    const SizedBox(height: 28),
-
-                    // ── Category Allocation ──
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Category Allocation',
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: border),
-                      ),
-                      child: Column(
-                        children: [
-                          _AllocRow(
-                            icon: Icons.restaurant_outlined,
-                            title: 'Food & Drink',
-                            controller: _foodController,
-                            color: AppColors.growthAccent,
-                            textPrimary: textPrimary,
-                            textMuted: textMuted,
-                            secondarySurface: secondarySurface,
-                            border: border,
-                          ),
-                          Divider(height: 1, color: border),
-                          _AllocRow(
-                            icon: Icons.directions_bus_outlined,
-                            title: 'Transport',
-                            controller: _transportController,
-                            color: AppColors.brandPrimary,
-                            textPrimary: textPrimary,
-                            textMuted: textMuted,
-                            secondarySurface: secondarySurface,
-                            border: border,
-                          ),
-                          Divider(height: 1, color: border),
-                          _AllocRow(
-                            icon: Icons.menu_book_outlined,
-                            title: 'Study',
-                            controller: _studyController,
-                            color: AppColors.productivityAccent,
-                            textPrimary: textPrimary,
-                            textMuted: textMuted,
-                            secondarySurface: secondarySurface,
-                            border: border,
-                          ),
-                          Divider(height: 1, color: border),
-                          _AllocRow(
-                            icon: Icons.bolt_outlined,
-                            title: 'Bills',
-                            controller: _billsController,
-                            color: AppColors.financeAccent,
-                            textPrimary: textPrimary,
-                            textMuted: textMuted,
-                            secondarySurface: secondarySurface,
-                            border: border,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primary,
-                          foregroundColor: inverseText,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text(
-                          'Save Budget',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),
+
+              const SizedBox(height: 18),
+
+              // =========================================================
+              // CATEGORY ALLOCATION
+              // =========================================================
+              _CategoryAllocationCard(
+                surface: surface,
+                border: border,
+                titleColor: textPrimary,
+                children: [
+                  _BudgetCategoryRow(
+                    icon: Icons.fastfood_outlined,
+                    title: 'Food & Drink',
+                    controller: foodController,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    iconBackground: surfaceSecondary,
+                    border: border,
+                  ),
+
+                  _BudgetCategoryRow(
+                    icon: Icons.directions_bus_outlined,
+                    title: 'Transport',
+                    controller: transportController,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    iconBackground: surfaceSecondary,
+                    border: border,
+                  ),
+
+                  _BudgetCategoryRow(
+                    icon: Icons.menu_book_outlined,
+                    title: 'Study',
+                    controller: studyController,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    iconBackground: surfaceSecondary,
+                    border: border,
+                  ),
+
+                  _BudgetCategoryRow(
+                    icon: Icons.account_balance_wallet_outlined,
+                    title: 'Bills',
+                    controller: billsController,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
+                    iconBackground: surfaceSecondary,
+                    border: border,
+                    last: true,
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // =========================================================
+              // SAVE BUTTON
+              // =========================================================
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _saveBudget,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primary,
+                    foregroundColor: inverseText,
+                    elevation: 0,
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    'finance.budget.saveBudget'.tr,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ================================================================
+  // MONTH PICKER
+  // ================================================================
+
+  Future<void> _selectMonth() async {
+    final now = DateTime.now();
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(now.year, now.month, 1),
+      firstDate: DateTime(2024),
+      lastDate: DateTime(2035),
+      initialDatePickerMode: DatePickerMode.year,
+      builder: (context, child) {
+        final theme = Theme.of(context);
+
+        return Theme(
+          data: theme.copyWith(
+            colorScheme: theme.colorScheme.copyWith(
+              primary: AppColors.financeAccent,
             ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      selectedMonth = '${_monthName(picked.month)} ${picked.year}';
+    });
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+
+    return months[month - 1];
+  }
+
+  // ================================================================
+  // SAVE
+  // ================================================================
+
+  void _saveBudget() {
+    FocusScope.of(context).unfocus();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'finance.budget.savedSuccessfully'.tr,
+          style: const TextStyle(fontSize: 13),
+        ),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// MONTH SELECTOR
+// ============================================================================
+
+class _MonthSelector extends StatelessWidget {
+  final String month;
+  final Color background;
+  final Color textColor;
+  final Color iconColor;
+  final Color borderColor;
+  final VoidCallback onTap;
+
+  const _MonthSelector({
+    required this.month,
+    required this.background,
+    required this.textColor,
+    required this.iconColor,
+    required this.borderColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 42,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(color: borderColor, width: 0.8),
+        ),
+        child: Row(
+          children: [
+            Text(
+              month,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+
+            const Spacer(),
+
+            Icon(Icons.calendar_today_outlined, color: iconColor, size: 15),
           ],
         ),
       ),
@@ -263,74 +413,168 @@ class _SetBudgetScreenState extends State<SetBudgetScreen> {
   }
 }
 
-class _AllocRow extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final TextEditingController controller;
-  final Color color;
-  final Color textPrimary;
-  final Color textMuted;
-  final Color secondarySurface;
-  final Color border;
+// ============================================================================
+// CATEGORY ALLOCATION CARD
+// ============================================================================
 
-  const _AllocRow({
-    required this.icon,
-    required this.title,
-    required this.controller,
-    required this.color,
-    required this.textPrimary,
-    required this.textMuted,
-    required this.secondarySurface,
+class _CategoryAllocationCard extends StatelessWidget {
+  final Color surface;
+  final Color border;
+  final Color titleColor;
+  final List<Widget> children;
+
+  const _CategoryAllocationCard({
+    required this.surface,
     required this.border,
+    required this.titleColor,
+    required this.children,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: border, width: 0.8),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 13, 14, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'finance.budget.categoryAllocation'.tr,
+                style: TextStyle(
+                  color: titleColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+
+          ..._buildChildrenWithDividers(),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildChildrenWithDividers() {
+    final result = <Widget>[];
+
+    for (int i = 0; i < children.length; i++) {
+      result.add(children[i]);
+
+      if (i < children.length - 1) {
+        result.add(Divider(height: 1, color: border));
+      }
+    }
+
+    return result;
+  }
+}
+
+// ============================================================================
+// CATEGORY ROW
+// ============================================================================
+
+class _BudgetCategoryRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final TextEditingController controller;
+
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color iconBackground;
+  final Color border;
+
+  final bool last;
+
+  const _BudgetCategoryRow({
+    required this.icon,
+    required this.title,
+    required this.controller,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.iconBackground,
+    required this.border,
+    this.last = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        border: last
+            ? null
+            : Border(bottom: BorderSide(color: border, width: 0.8)),
+      ),
       child: Row(
         children: [
+          // =========================================================
+          // ICON
+          // =========================================================
           Container(
-            width: 36,
-            height: 36,
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+              color: iconBackground,
+              shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 18, color: color),
+            child: Icon(icon, size: 14, color: textSecondary),
           ),
-          const SizedBox(width: 12),
+
+          const SizedBox(width: 11),
+
+          // =========================================================
+          // TITLE
+          // =========================================================
           Expanded(
             child: Text(
               title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
+
+          // =========================================================
+          // AMOUNT
+          // =========================================================
           SizedBox(
-            width: 80,
+            width: 75,
             child: TextField(
               controller: controller,
-              keyboardType: TextInputType.number,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               textAlign: TextAlign.right,
+              textInputAction: TextInputAction.done,
               style: TextStyle(
                 color: textPrimary,
-                fontSize: 15,
+                fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
+              cursorColor: AppColors.financeAccent,
               decoration: InputDecoration(
-                prefixText: '\$',
-                prefixStyle: TextStyle(
-                  color: textMuted,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
+                prefixText: '\$',
+                prefixStyle: TextStyle(
+                  color: textPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),

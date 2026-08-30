@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
 class BudgetDetailScreen extends StatelessWidget {
@@ -9,25 +10,33 @@ class BudgetDetailScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
+
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
+
     final secondarySurface = isDark
         ? AppColors.darkSurfaceSecondary
         : AppColors.lightSurfaceSecondary;
+
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
+
     final textSecondary = isDark
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
+
     final textMuted = isDark
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
+
     final border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
+
     final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
+
     final inverseText = isDark
         ? AppColors.darkTextInverse
         : AppColors.lightTextInverse;
@@ -37,7 +46,9 @@ class BudgetDetailScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Header ──
+            // =========================================================
+            // HEADER
+            // =========================================================
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
               child: Row(
@@ -55,7 +66,9 @@ class BudgetDetailScreen extends StatelessWidget {
                       minHeight: 40,
                     ),
                   ),
+
                   const SizedBox(width: 4),
+
                   Expanded(
                     child: Text(
                       'Food & Drink',
@@ -67,8 +80,9 @@ class BudgetDetailScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+
                   Text(
-                    'Adjust',
+                    'finance.budget.editBudget'.tr,
                     style: TextStyle(
                       color: primary,
                       fontSize: 14,
@@ -86,7 +100,9 @@ class BudgetDetailScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Stats Row ──
+                    // =====================================================
+                    // STATS
+                    // =====================================================
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
@@ -101,23 +117,25 @@ class BudgetDetailScreen extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: _StatCell(
-                                  label: 'Budget',
+                                  label: 'finance.budget.totalBudget'.tr,
                                   value: '\$300',
                                   color: textPrimary,
                                   textMuted: textMuted,
                                 ),
                               ),
+
                               Expanded(
                                 child: _StatCell(
-                                  label: 'Spent',
+                                  label: 'finance.budget.spent'.tr,
                                   value: '\$320',
                                   color: AppColors.brandPrimary,
                                   textMuted: textMuted,
                                 ),
                               ),
+
                               Expanded(
                                 child: _StatCell(
-                                  label: 'Left',
+                                  label: 'finance.budget.left'.tr,
                                   value: '-\$20',
                                   color: Colors.redAccent,
                                   textMuted: textMuted,
@@ -125,7 +143,9 @@ class BudgetDetailScreen extends StatelessWidget {
                               ),
                             ],
                           ),
+
                           const SizedBox(height: 14),
+
                           ClipRRect(
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
@@ -137,32 +157,35 @@ class BudgetDetailScreen extends StatelessWidget {
                               ),
                             ),
                           ),
+
                           const SizedBox(height: 8),
+
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '106% used',
+                                '106% ${'finance.budget.used'.tr.toLowerCase()}',
                                 style: TextStyle(
                                   color: textMuted,
                                   fontSize: 12,
                                 ),
                               ),
+
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  // color: AppColors.error.withValues(
-                                  //   alpha: 0.10,
-                                  // ),
+                                  color: Colors.redAccent.withValues(
+                                    alpha: 0.10,
+                                  ),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: const Text(
-                                  'Over limit',
-                                  style: TextStyle(
-                                    // color: AppColors.error,
+                                child: Text(
+                                  'finance.budget.overLimit'.tr,
+                                  style: const TextStyle(
+                                    color: Colors.redAccent,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -176,9 +199,11 @@ class BudgetDetailScreen extends StatelessWidget {
 
                     const SizedBox(height: 22),
 
-                    // ── Expenses ──
+                    // =====================================================
+                    // EXPENSES
+                    // =====================================================
                     Text(
-                      'Expenses',
+                      'finance.budget.expenses'.tr,
                       style: TextStyle(
                         color: textPrimary,
                         fontSize: 17,
@@ -199,6 +224,7 @@ class BudgetDetailScreen extends StatelessWidget {
                       textPrimary: textPrimary,
                       textMuted: textMuted,
                     ),
+
                     _ExpenseCard(
                       icon: Icons.lunch_dining_outlined,
                       title: 'Lunch Box',
@@ -210,6 +236,7 @@ class BudgetDetailScreen extends StatelessWidget {
                       textPrimary: textPrimary,
                       textMuted: textMuted,
                     ),
+
                     _ExpenseCard(
                       icon: Icons.restaurant_outlined,
                       title: 'Phnom Penh Kitchen',
@@ -221,6 +248,7 @@ class BudgetDetailScreen extends StatelessWidget {
                       textPrimary: textPrimary,
                       textMuted: textMuted,
                     ),
+
                     _ExpenseCard(
                       icon: Icons.shopping_bag_outlined,
                       title: 'Market Grocery',
@@ -235,7 +263,9 @@ class BudgetDetailScreen extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // ── Warning ──
+                    // =====================================================
+                    // WARNING
+                    // =====================================================
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
@@ -247,7 +277,7 @@ class BudgetDetailScreen extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        'Budget almost exhausted\nOnly \$60 remaining for food this month. Consider reducing dining out.',
+                        'finance.budget.budgetAlmostExhausted'.tr,
                         style: TextStyle(
                           color: textSecondary,
                           fontSize: 12,
@@ -258,6 +288,9 @@ class BudgetDetailScreen extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
+                    // =====================================================
+                    // ADJUST BUTTON
+                    // =====================================================
                     SizedBox(
                       width: double.infinity,
                       height: 52,
@@ -271,9 +304,9 @@ class BudgetDetailScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: const Text(
-                          'Adjust Budget',
-                          style: TextStyle(
+                        child: Text(
+                          'finance.budget.adjustBudget'.tr,
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
@@ -292,6 +325,10 @@ class BudgetDetailScreen extends StatelessWidget {
     );
   }
 }
+
+// ============================================================================
+// STAT CELL
+// ============================================================================
 
 class _StatCell extends StatelessWidget {
   final String label;
@@ -318,18 +355,29 @@ class _StatCell extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
+
         const SizedBox(height: 4),
-        Text(label, style: TextStyle(color: textMuted, fontSize: 12)),
+
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: textMuted, fontSize: 12),
+        ),
       ],
     );
   }
 }
+
+// ============================================================================
+// EXPENSE CARD
+// ============================================================================
 
 class _ExpenseCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
   final String amount;
+
   final Color surface;
   final Color secondarySurface;
   final Color border;
@@ -370,7 +418,9 @@ class _ExpenseCard extends StatelessWidget {
               ),
               child: Icon(icon, size: 20, color: textMuted),
             ),
+
             const SizedBox(width: 12),
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,7 +433,9 @@ class _ExpenseCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+
                   const SizedBox(height: 3),
+
                   Text(
                     subtitle,
                     style: TextStyle(color: textMuted, fontSize: 12),
@@ -391,6 +443,7 @@ class _ExpenseCard extends StatelessWidget {
                 ],
               ),
             ),
+
             Text(
               amount,
               style: TextStyle(

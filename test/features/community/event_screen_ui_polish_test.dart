@@ -86,8 +86,9 @@ void main() {
     // Verify large Search bar is removed
     expect(find.text('Search Events & Workshops...'), findsNothing);
 
-    // Verify Featured Events section
-    expect(find.text('Featured Events'), findsOneWidget);
+    // Verify Featured Events header is removed so tabs transition directly into carousel
+    expect(find.text('Featured Events'), findsNothing);
+    expect(find.byType(FeaturedEventsCarousel), findsOneWidget);
     expect(find.text('Flutter Workshop 2026'), findsWidgets);
 
     // Verify In-Person vs Online labeling

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
+import 'package:genlink_frontend/features/community/domain/models/community_models.dart';
 import 'package:genlink_frontend/features/community/domain/models/community_post_model.dart';
 import 'package:genlink_frontend/features/community/domain/repositories/community_repository.dart';
 import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
@@ -101,6 +102,35 @@ class _MockCommunityRepository implements CommunityRepository {
 
   @override
   Future<CommentModel> addDiscussionComment(String discussionId, String text, {String? parentCommentId}) async => throw UnimplementedError();
+
+  @override
+  Future<List<ForumTopicModel>> getDiscussions({
+    String? category,
+    int page = 1,
+    int limit = 20,
+  }) async => [];
+
+  @override
+  Future<ForumTopicModel> createDiscussion({
+    required String title,
+    required String content,
+    required String category,
+    bool anonymous = false,
+  }) async => throw UnimplementedError();
+
+  @override
+  Future<ForumTopicModel> updateDiscussion(
+    String discussionId, {
+    required String title,
+    required String content,
+    required String category,
+  }) async => throw UnimplementedError();
+
+  @override
+  Future<bool> deleteDiscussion(String discussionId) async => true;
+
+  @override
+  Future<bool> toggleDiscussionLike(String discussionId) async => true;
 
   @override
   Future<bool> followUser(String userId) async => true;

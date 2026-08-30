@@ -231,7 +231,15 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                   final ctrl = Get.isRegistered<CommunityController>()
                       ? Get.find<CommunityController>()
                       : null;
-                  ctrl?.toggleRsvp(widget.event.id);
+                  if (ctrl != null) {
+                    final ev = ctrl.events.firstWhereOrNull((e) => e.id == widget.event.id);
+                    if (ev != null && !ev.isRsvped) {
+                      ctrl.toggleRsvp(widget.event.id);
+                    }
+                  } else {
+                    widget.event.isRsvped = true;
+                    widget.event.attendeesCount += 1;
+                  }
 
                   Navigator.push(
                     context,
@@ -239,7 +247,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                       builder: (_) => EventSuccessScreen(event: widget.event),
                     ),
                   );
-                  },
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isDark ? Colors.white : Colors.black,
                   shape: RoundedRectangleBorder(

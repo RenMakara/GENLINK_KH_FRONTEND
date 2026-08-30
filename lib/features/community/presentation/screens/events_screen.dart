@@ -59,7 +59,10 @@ class _EventsScreenState extends State<EventsScreen> {
                       controller: _searchController,
                       style: TextStyle(color: textPrimary, fontSize: 15),
                       decoration: InputDecoration(
-                        hintText: 'Search events...',
+                        hintText: 'community.searchEvents'.tr.isNotEmpty &&
+                                'community.searchEvents'.tr != 'community.searchEvents'
+                            ? 'community.searchEvents'.tr
+                            : 'Search events...',
                         hintStyle: TextStyle(color: textMuted, fontSize: 15),
                         prefixIcon: Icon(Icons.search, color: textMuted, size: 20),
                         filled: true,
@@ -88,7 +91,10 @@ class _EventsScreenState extends State<EventsScreen> {
                           Icon(Icons.add, color: bg, size: 18),
                           const SizedBox(width: 6),
                           Text(
-                            'Create',
+                            'community.create'.tr.isNotEmpty &&
+                                    'community.create'.tr != 'community.create'
+                                ? 'community.create'.tr
+                                : 'Create',
                             style: TextStyle(
                               color: bg,
                               fontWeight: FontWeight.w600,

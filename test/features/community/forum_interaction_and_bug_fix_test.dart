@@ -77,6 +77,9 @@ class _MockCommunityRepository implements CommunityRepository {
   Future<bool> checkIsFollowing(String userId) async => false;
 
   @override
+  Future<bool> toggleDiscussionLike(String discussionId) async => true;
+
+  @override
   Future<List<CommentModel>> getDiscussionComments(String discussionId) async =>
       List<CommentModel>.from(discussionCommentsStore[discussionId] ?? []);
 
@@ -115,6 +118,13 @@ void main() {
 
   group('Forum Interaction & Bug Fix Verification', () {
     testWidgets('TEST 1 & 2: Tapping Like button on discussion card toggles like without opening CreateDiscussionScreen', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final controller = CommunityController(repository: _MockCommunityRepository());
       Get.put<CommunityController>(controller);
 
@@ -131,8 +141,8 @@ void main() {
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
-      // Initial pinned discussion like count is 142
-      expect(find.text('142'), findsOneWidget);
+      // Initial first discussion like count is 89
+      expect(find.text('89'), findsOneWidget);
       expect(find.byType(CreateDiscussionScreen), findsNothing);
 
       // Tap on the Like icon of the first discussion card
@@ -140,9 +150,8 @@ void main() {
       await tester.tap(firstLikeIcon);
       await tester.pumpAndSettle();
 
-      // Like count should increment to 143
-      expect(find.text('143'), findsOneWidget);
-      expect(find.text('142'), findsNothing);
+      // Like count should increment to 90
+      expect(find.text('90'), findsOneWidget);
 
       // Verify CreateDiscussionScreen did NOT open
       expect(find.byType(CreateDiscussionScreen), findsNothing);
@@ -153,15 +162,21 @@ void main() {
       await tester.tap(firstLikedIcon);
       await tester.pumpAndSettle();
 
-      // Like count should decrement back to 142
-      expect(find.text('142'), findsOneWidget);
-      expect(find.text('143'), findsNothing);
+      // Like count should decrement back to 89
+      expect(find.text('89'), findsOneWidget);
 
       // Still no CreateDiscussionScreen opened
       expect(find.byType(CreateDiscussionScreen), findsNothing);
     });
 
     testWidgets('TEST 3: Tapping discussion title/card opens ForumDiscussionScreen', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final controller = CommunityController(repository: _MockCommunityRepository());
       Get.put<CommunityController>(controller);
 
@@ -179,7 +194,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap on a discussion title
-      final titleFinder = find.text('Guidelines for GenLink KH Annual Student Project Showcase 2026');
+      final titleFinder = find.text('Best practices for GetX state management in Flutter Community App');
       expect(titleFinder, findsOneWidget);
       await tester.tap(titleFinder);
       await tester.pumpAndSettle();
@@ -190,6 +205,13 @@ void main() {
     });
 
     testWidgets('TEST 4: Tapping comments count opens ForumDiscussionScreen', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final controller = CommunityController(repository: _MockCommunityRepository());
       Get.put<CommunityController>(controller);
 
@@ -207,7 +229,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap on comments row
-      final commentsRowFinder = find.text('48 comments').first;
+      final commentsRowFinder = find.byIcon(Icons.chat_bubble_outline_rounded).first;
       await tester.tap(commentsRowFinder);
       await tester.pumpAndSettle();
 

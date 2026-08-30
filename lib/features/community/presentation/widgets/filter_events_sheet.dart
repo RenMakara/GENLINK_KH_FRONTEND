@@ -43,9 +43,63 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
     {'name': 'Seminar', 'icon': Icons.groups_outlined},
     {'name': 'Competition', 'icon': Icons.emoji_events_outlined},
     {'name': 'Hackathon', 'icon': Icons.terminal_outlined},
-    {'name': 'Volunteer', 'icon': Icons.favorite_border},
     {'name': 'Career', 'icon': Icons.work_outline},
+    {'name': 'Technology', 'icon': Icons.memory_rounded},
   ];
+
+  String _getLocalizedLabel(String key) {
+    final lower = key.toLowerCase();
+    if (lower == 'all') {
+      return 'community.all'.tr.isNotEmpty && 'community.all'.tr != 'community.all'
+          ? 'community.all'.tr
+          : 'All';
+    }
+    if (lower == 'today') {
+      return 'community.today'.tr.isNotEmpty && 'community.today'.tr != 'community.today'
+          ? 'community.today'.tr
+          : 'Today';
+    }
+    if (lower == 'this week') {
+      return 'community.thisWeek'.tr.isNotEmpty && 'community.thisWeek'.tr != 'community.thisWeek'
+          ? 'community.thisWeek'.tr
+          : 'This Week';
+    }
+    if (lower == 'this month') {
+      return 'community.thisMonth'.tr.isNotEmpty && 'community.thisMonth'.tr != 'community.thisMonth'
+          ? 'community.thisMonth'.tr
+          : 'This Month';
+    }
+    if (lower == 'upcoming') {
+      return 'community.upcoming'.tr.isNotEmpty && 'community.upcoming'.tr != 'community.upcoming'
+          ? 'community.upcoming'.tr
+          : 'Upcoming';
+    }
+    if (lower == 'in person') {
+      return 'community.inPerson'.tr.isNotEmpty && 'community.inPerson'.tr != 'community.inPerson'
+          ? 'community.inPerson'.tr
+          : 'In Person';
+    }
+    if (lower == 'online') {
+      return 'community.online'.tr.isNotEmpty && 'community.online'.tr != 'community.online'
+          ? 'community.online'.tr
+          : 'Online';
+    }
+    if (lower == 'free') {
+      return 'community.free'.tr.isNotEmpty && 'community.free'.tr != 'community.free'
+          ? 'community.free'.tr
+          : 'Free';
+    }
+    if (lower == 'paid') {
+      return 'community.paid'.tr.isNotEmpty && 'community.paid'.tr != 'community.paid'
+          ? 'community.paid'.tr
+          : 'Paid';
+    }
+    final catKey = 'community.$lower';
+    if (catKey.tr.isNotEmpty && catKey.tr != catKey) {
+      return catKey.tr;
+    }
+    return key;
+  }
 
   @override
   void initState() {
@@ -145,7 +199,10 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'community.filterEvents'.tr,
+                  'community.filterEvents'.tr.isNotEmpty &&
+                          'community.filterEvents'.tr != 'community.filterEvents'
+                      ? 'community.filterEvents'.tr
+                      : 'Filter Events',
                   style: TextStyle(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
@@ -155,7 +212,10 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                 TextButton(
                   onPressed: _reset,
                   child: Text(
-                    'community.reset'.tr,
+                    'community.reset'.tr.isNotEmpty &&
+                            'community.reset'.tr != 'community.reset'
+                        ? 'community.reset'.tr
+                        : 'Reset',
                     style: const TextStyle(
                       color: AppColors.communityAccent,
                       fontSize: 14,
@@ -201,7 +261,10 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                     // 2. Date Range
                     _buildSectionHeader(
                       icon: Icons.calendar_today_outlined,
-                      title: 'community.dateRange'.tr,
+                      title: 'community.dateRange'.tr.isNotEmpty &&
+                              'community.dateRange'.tr != 'community.dateRange'
+                          ? 'community.dateRange'.tr
+                          : 'Date Range',
                       textPrimary: textPrimary,
                       textMuted: textMuted,
                     ),
@@ -222,7 +285,10 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                     // 3. Category Section
                     _buildSectionHeader(
                       icon: Icons.grid_view_rounded,
-                      title: 'community.category'.tr,
+                      title: 'community.category'.tr.isNotEmpty &&
+                              'community.category'.tr != 'community.category'
+                          ? 'community.category'.tr
+                          : 'Category',
                       textPrimary: textPrimary,
                       textMuted: textMuted,
                     ),
@@ -241,6 +307,7 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                         final item = categoryOptions[i];
                         final catName = item['name'] as String;
                         final isSelected = selectedCategories.contains(catName);
+                        final localizedCat = _getLocalizedLabel(catName);
 
                         return GestureDetector(
                           onTap: () {
@@ -280,7 +347,7 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    catName,
+                                    localizedCat,
                                     style: TextStyle(
                                       color: isSelected
                                           ? (isDark ? Colors.black : Colors.white)
@@ -338,16 +405,19 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
               child: ElevatedButton(
                 onPressed: _apply,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.communityAccent,
+                  backgroundColor: isDark ? Colors.white : Colors.black,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
                 child: Text(
-                  'community.applyFilters'.tr,
-                  style: const TextStyle(
-                    color: Colors.black,
+                  'community.applyFilters'.tr.isNotEmpty &&
+                          'community.applyFilters'.tr != 'community.applyFilters'
+                      ? 'community.applyFilters'.tr
+                      : 'Apply Filters',
+                  style: TextStyle(
+                    color: isDark ? Colors.black : Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -395,6 +465,7 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
     return Row(
       children: options.map((opt) {
         final isSelected = selected == opt;
+        final label = _getLocalizedLabel(opt);
         return Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -416,7 +487,7 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                   ),
                 ),
                 child: Text(
-                  opt,
+                  label,
                   style: TextStyle(
                     color: isSelected
                         ? (isDark ? Colors.black : Colors.white)
@@ -448,6 +519,7 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
       runSpacing: 8,
       children: options.map((opt) {
         final isSelected = selected == opt;
+        final label = _getLocalizedLabel(opt);
         return GestureDetector(
           onTap: () => onSelect(opt),
           child: AnimatedContainer(
@@ -465,7 +537,7 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
               ),
             ),
             child: Text(
-              opt,
+              label,
               style: TextStyle(
                 color: isSelected
                     ? (isDark ? Colors.black : Colors.white)

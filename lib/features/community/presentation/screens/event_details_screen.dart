@@ -111,35 +111,69 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                             const Spacer(),
 
                             // Bookmark button
-                            CircleAvatar(
-                              radius: 20,
-                              backgroundColor: Colors.black.withValues(alpha: 0.55),
-                              child: IconButton(
-                                icon: Icon(
-                                  _isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                                  color: _isBookmarked ? AppColors.communityAccent : Colors.white,
-                                  size: 20,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _isBookmarked = !_isBookmarked;
-                                  });
-                                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        _isBookmarked ? 'Saved to Bookmarks' : 'Removed from Bookmarks',
-                                        style: TextStyle(color: textPrimary),
-                                      ),
-                                      duration: const Duration(seconds: 2),
-                                      backgroundColor: isDark ? const Color(0xFF222222) : Colors.white,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            if (controller != null)
+                              Obx(() {
+                                final ev = controller.events.firstWhereOrNull(
+                                  (e) => e.id == event.id,
+                                );
+                                final isBookmarked = ev?.isBookmarked ?? event.isBookmarked;
+                                return CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: Colors.black.withValues(alpha: 0.55),
+                                  child: IconButton(
+                                    icon: Icon(
+                                      isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                                      color: isBookmarked ? AppColors.communityAccent : Colors.white,
+                                      size: 20,
                                     ),
-                                  );
-                                },
+                                    onPressed: () {
+                                      controller.toggleEventBookmark(event.id);
+                                      final nowSaved = !(isBookmarked);
+                                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            nowSaved ? 'community.savedToBookmarks'.tr : 'community.removedFromBookmarks'.tr,
+                                            style: TextStyle(color: textPrimary),
+                                          ),
+                                          duration: const Duration(seconds: 2),
+                                          backgroundColor: isDark ? const Color(0xFF222222) : Colors.white,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                );
+                              })
+                            else
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundColor: Colors.black.withValues(alpha: 0.55),
+                                child: IconButton(
+                                  icon: Icon(
+                                    _isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                                    color: _isBookmarked ? AppColors.communityAccent : Colors.white,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setState(() => _isBookmarked = !_isBookmarked);
+                                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          _isBookmarked ? 'community.savedToBookmarks'.tr : 'community.removedFromBookmarks'.tr,
+                                          style: TextStyle(color: textPrimary),
+                                        ),
+                                        duration: const Duration(seconds: 2),
+                                        backgroundColor: isDark ? const Color(0xFF222222) : Colors.white,
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
-                            ),
                             const SizedBox(width: 8),
 
                             // Share button
@@ -153,7 +187,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        'Event link copied to clipboard.',
+                                        'community.share'.tr,
                                         style: TextStyle(color: textPrimary),
                                       ),
                                       duration: const Duration(seconds: 2),
@@ -176,7 +210,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       left: 16,
                       child: Row(
                         children: [
-                          if (event.category.isNotEmpty)
+                          if (event.category.isNotEmpty) ...[
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                               decoration: BoxDecoration(
@@ -184,7 +218,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                 borderRadius: BorderRadius.circular(AppRadius.sm),
                               ),
                               child: Text(
-                                event.category.toUpperCase(),
+                                ('community.${event.category.toLowerCase()}'.tr.isNotEmpty &&
+                                        'community.${event.category.toLowerCase()}'.tr != 'community.${event.category.toLowerCase()}'
+                                    ? 'community.${event.category.toLowerCase()}'.tr
+                                    : event.category).toUpperCase(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 11,
@@ -193,7 +230,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                 ),
                               ),
                             ),
-                          if (event.category.isNotEmpty) const SizedBox(width: 8),
+                            const SizedBox(width: 8),
+                          ],
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
@@ -201,7 +239,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                               borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
                             child: Text(
-                              event.eventType.toLowerCase().contains('online') ? 'ONLINE' : 'IN PERSON',
+                              (event.eventType.toLowerCase().contains('online')
+                                  ? ('community.onlineEvent'.tr.isNotEmpty && 'community.onlineEvent'.tr != 'community.onlineEvent' ? 'community.onlineEvent'.tr : 'ONLINE')
+                                  : ('community.inPerson'.tr.isNotEmpty && 'community.inPerson'.tr != 'community.inPerson' ? 'community.inPerson'.tr : 'IN PERSON')).toUpperCase(),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
@@ -262,7 +302,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         _buildInfoRow(
                           icon: Icons.location_on_rounded,
                           line1: event.location,
-                          line2: 'Physical Venue',
+                          line2: 'community.physicalVenue'.tr.isNotEmpty && 'community.physicalVenue'.tr != 'community.physicalVenue'
+                              ? 'community.physicalVenue'.tr
+                              : 'Physical Venue',
                           textPrimary: textPrimary,
                           textSecondary: textSecondary,
                           tileBg: tileBg,
@@ -271,7 +313,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       else if (event.eventType == 'Online' && event.onlineLink.isNotEmpty)
                         _buildInfoRow(
                           icon: Icons.videocam_rounded,
-                          line1: 'Online Event',
+                          line1: 'community.onlineEvent'.tr.isNotEmpty && 'community.onlineEvent'.tr != 'community.onlineEvent'
+                              ? 'community.onlineEvent'.tr
+                              : 'Online Event',
                           line2: event.onlineLink,
                           textPrimary: textPrimary,
                           textSecondary: textSecondary,
@@ -293,7 +337,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       _buildInfoRow(
                         icon: Icons.hub_rounded,
                         line1: event.organizerName.isNotEmpty ? event.organizerName : 'GenLink Community',
-                        line2: 'Event Organizer',
+                        line2: 'community.organizer'.tr.isNotEmpty && 'community.organizer'.tr != 'community.organizer'
+                            ? 'community.organizer'.tr
+                            : 'Event Organizer',
                         textPrimary: textPrimary,
                         textSecondary: textSecondary,
                         tileBg: tileBg,
@@ -306,10 +352,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         icon: Icons.confirmation_number_outlined,
                         line1: event.isPaid
                             ? '${event.priceKhr.toInt()} KHR'
-                            : ('community.free'.tr.isNotEmpty && 'community.free'.tr != 'community.free'
-                                ? 'community.free'.tr
-                                : 'Free Entry'),
-                        line2: event.isPaid ? 'Standard Ticket' : 'No Registration Fee',
+                            : ('community.freeEntry'.tr.isNotEmpty && 'community.freeEntry'.tr != 'community.freeEntry'
+                                ? 'community.freeEntry'.tr
+                                : ('community.free'.tr.isNotEmpty && 'community.free'.tr != 'community.free' ? 'community.free'.tr : 'Free Entry')),
+                        line2: event.isPaid
+                            ? ('community.standardTicket'.tr.isNotEmpty && 'community.standardTicket'.tr != 'community.standardTicket'
+                                ? 'community.standardTicket'.tr
+                                : 'Standard Ticket')
+                            : ('community.noRegistrationFee'.tr.isNotEmpty && 'community.noRegistrationFee'.tr != 'community.noRegistrationFee'
+                                ? 'community.noRegistrationFee'.tr
+                                : 'No Registration Fee'),
                         textPrimary: textPrimary,
                         textSecondary: textSecondary,
                         tileBg: tileBg,
@@ -324,10 +376,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                                 (e) => e.id == event.id,
                               );
                               final count = ev?.attendeesCount ?? event.attendeesCount;
+                              final goingLabel = 'community.going'.tr.isNotEmpty && 'community.going'.tr != 'community.going'
+                                  ? 'community.going'.tr
+                                  : 'Going';
+                              final attendeesLabel = 'community.registeredAttendees'.tr.isNotEmpty && 'community.registeredAttendees'.tr != 'community.registeredAttendees'
+                                  ? 'community.registeredAttendees'.tr
+                                  : 'Registered Attendees';
                               return _buildInfoRow(
                                 icon: Icons.people_alt_rounded,
-                                line1: '$count Going',
-                                line2: 'Registered Attendees',
+                                line1: '$count $goingLabel',
+                                line2: attendeesLabel,
                                 textPrimary: textPrimary,
                                 textSecondary: textSecondary,
                                 tileBg: tileBg,
@@ -336,8 +394,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                             })
                           : _buildInfoRow(
                               icon: Icons.people_alt_rounded,
-                              line1: '${event.attendeesCount} Going',
-                              line2: 'Registered Attendees',
+                              line1: '${event.attendeesCount} ${'community.going'.tr}',
+                              line2: 'community.registeredAttendees'.tr,
                               textPrimary: textPrimary,
                               textSecondary: textSecondary,
                               tileBg: tileBg,
@@ -384,7 +442,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             left: 0,
             right: 0,
             child: Container(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                MediaQuery.of(context).padding.bottom > 0
+                    ? MediaQuery.of(context).padding.bottom + 8
+                    : 20,
+              ),
               decoration: BoxDecoration(
                 color: surfacePrimary,
                 border: Border(top: BorderSide(color: borderSubtle, width: 0.8)),
@@ -477,16 +542,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (isRsvped) ...[
-                Icon(
+                const Icon(
                   Icons.check_circle_rounded,
-                  color: AppColors.communityAccent,
+                  color: AppColors.success,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
               ],
               Text(
                 isRsvped
-                    ? 'Going'
+                    ? ('community.going'.tr.isNotEmpty && 'community.going'.tr != 'community.going'
+                        ? 'community.going'.tr
+                        : 'Going')
                     : ('community.registerNow'.tr.isNotEmpty &&
                             'community.registerNow'.tr != 'community.registerNow'
                         ? 'community.registerNow'.tr

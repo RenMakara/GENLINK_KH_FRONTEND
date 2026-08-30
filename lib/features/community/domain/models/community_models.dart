@@ -31,6 +31,8 @@ class EventModel {
 
   int attendeesCount;
   bool isRsvped;
+  bool isBookmarked;
+  final List<String> attendeeAvatars;
 
   EventModel({
     required this.id,
@@ -50,11 +52,58 @@ class EventModel {
     this.coverImageFile,
     this.attendeesCount = 0,
     this.isRsvped = false,
+    this.isBookmarked = false,
+    this.attendeeAvatars = const [],
   });
+
+  EventModel copyWith({
+    String? id,
+    String? title,
+    String? subtitle,
+    String? organizerName,
+    String? eventType,
+    String? location,
+    String? onlineLink,
+    String? dateString,
+    String? timeString,
+    String? description,
+    String? category,
+    bool? isPaid,
+    double? priceKhr,
+    String? imageUrl,
+    File? coverImageFile,
+    int? attendeesCount,
+    bool? isRsvped,
+    bool? isBookmarked,
+    List<String>? attendeeAvatars,
+  }) {
+    return EventModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      subtitle: subtitle ?? this.subtitle,
+      organizerName: organizerName ?? this.organizerName,
+      eventType: eventType ?? this.eventType,
+      location: location ?? this.location,
+      onlineLink: onlineLink ?? this.onlineLink,
+      dateString: dateString ?? this.dateString,
+      timeString: timeString ?? this.timeString,
+      description: description ?? this.description,
+      category: category ?? this.category,
+      isPaid: isPaid ?? this.isPaid,
+      priceKhr: priceKhr ?? this.priceKhr,
+      imageUrl: imageUrl ?? this.imageUrl,
+      coverImageFile: coverImageFile ?? this.coverImageFile,
+      attendeesCount: attendeesCount ?? this.attendeesCount,
+      isRsvped: isRsvped ?? this.isRsvped,
+      isBookmarked: isBookmarked ?? this.isBookmarked,
+      attendeeAvatars: attendeeAvatars ?? this.attendeeAvatars,
+    );
+  }
 }
 
 class ForumTopicModel {
   final String id;
+  final String? authorId;
   final String title;
   final String authorName;
   final String authorAvatar;
@@ -65,9 +114,11 @@ class ForumTopicModel {
   final String timeAgo;
   bool isLiked;
   final bool isPinned;
+  final bool isOwner;
 
   ForumTopicModel({
     required this.id,
+    this.authorId,
     required this.title,
     required this.authorName,
     this.authorAvatar = 'assets/images/user_profile.png',
@@ -78,10 +129,31 @@ class ForumTopicModel {
     required this.timeAgo,
     this.isLiked = false,
     this.isPinned = false,
+    this.isOwner = false,
   });
+
+  /// Evaluates whether the given user ID matches this discussion's author ID.
+  /// Uses stable author ID comparison when available, and respects session ownership.
+  bool checkIsOwner(String? currentUserId) {
+    if (authorId != null && authorId!.isNotEmpty) {
+      if (currentUserId != null && currentUserId.isNotEmpty) {
+        if (authorId == currentUserId) return true;
+      }
+      if (authorId == 'user_me' ||
+          authorId == 'current_user' ||
+          authorId == 'demo_user_1') {
+        return true;
+      }
+      if (currentUserId != null && currentUserId.isNotEmpty && authorId != currentUserId) {
+        return false;
+      }
+    }
+    return isOwner;
+  }
 
   ForumTopicModel copyWith({
     String? id,
+    String? authorId,
     String? title,
     String? authorName,
     String? authorAvatar,
@@ -92,9 +164,11 @@ class ForumTopicModel {
     String? timeAgo,
     bool? isLiked,
     bool? isPinned,
+    bool? isOwner,
   }) {
     return ForumTopicModel(
       id: id ?? this.id,
+      authorId: authorId ?? this.authorId,
       title: title ?? this.title,
       authorName: authorName ?? this.authorName,
       authorAvatar: authorAvatar ?? this.authorAvatar,
@@ -105,7 +179,70 @@ class ForumTopicModel {
       timeAgo: timeAgo ?? this.timeAgo,
       isLiked: isLiked ?? this.isLiked,
       isPinned: isPinned ?? this.isPinned,
+      isOwner: isOwner ?? this.isOwner,
     );
+  }
+
+  factory ForumTopicModel.fromJson(Map<String, dynamic> json) {
+    final authorObj = json['author'] is Map<String, dynamic>
+        ? json['author'] as Map<String, dynamic>
+        : null;
+    final authorName = authorObj?['fullName'] as String? ??
+        json['authorName'] as String? ??
+        json['username'] as String? ??
+        'User';
+    final authorAvatar = authorObj?['avatarUrl'] as String? ??
+        json['authorAvatar'] as String? ??
+        'assets/images/user_profile.png';
+    final authorId = authorObj?['userId'] as String? ??
+        json['authorId'] as String? ??
+        json['userId'] as String?;
+
+    return ForumTopicModel(
+      id: json['discussionId'] as String? ?? json['id'] as String? ?? '',
+      authorId: authorId,
+      title: json['title'] as String? ?? '',
+      authorName: authorName,
+      authorAvatar: authorAvatar.isNotEmpty
+          ? authorAvatar
+          : 'assets/images/user_profile.png',
+      category: json['category'] as String? ?? 'General',
+      content: json['content'] as String? ?? '',
+      upvotes: json['reactionCount'] as int? ??
+          json['upvotes'] as int? ??
+          json['likesCount'] as int? ??
+          0,
+      repliesCount: json['commentCount'] as int? ??
+          json['repliesCount'] as int? ??
+          json['commentsCount'] as int? ??
+          0,
+      timeAgo: json['timeAgo'] as String? ??
+          json['createdAt'] as String? ??
+          'Just now',
+      isLiked: json['reactedByMe'] as bool? ??
+          json['isLiked'] as bool? ??
+          false,
+      isPinned: json['isPinned'] as bool? ?? false,
+      isOwner: json['mine'] as bool? ?? json['isOwner'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'discussionId': id,
+      'authorId': authorId,
+      'title': title,
+      'authorName': authorName,
+      'authorAvatar': authorAvatar,
+      'category': category,
+      'content': content,
+      'upvotes': upvotes,
+      'repliesCount': repliesCount,
+      'timeAgo': timeAgo,
+      'isLiked': isLiked,
+      'isPinned': isPinned,
+      'isOwner': isOwner,
+    };
   }
 }
 

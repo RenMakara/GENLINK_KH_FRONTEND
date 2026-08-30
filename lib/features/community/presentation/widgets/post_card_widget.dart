@@ -10,6 +10,7 @@ import '../../../../design_system/widgets/notifications/app_notification_banner.
 import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
 import '../../domain/models/community_models.dart';
 import '../../domain/models/community_post_model.dart';
+import '../screens/create_discussion_screen.dart';
 import '../screens/create_post_screen.dart';
 import '../screens/event_details_screen.dart';
 import '../controllers/community_controller.dart';
@@ -167,6 +168,92 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     );
   }
 
+  void _confirmDeleteDiscussion(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface =
+        isDark ? const Color(0xFF1E2228) : Colors.white;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? Colors.white70 : AppColors.lightTextSecondary;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: surface,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg)),
+        title: Text(
+          'community.deleteDiscussion'.tr.isNotEmpty &&
+                  'community.deleteDiscussion'.tr !=
+                      'community.deleteDiscussion'
+              ? '${'community.deleteDiscussion'.tr}?'
+              : 'Delete Discussion?',
+          style: TextStyle(
+            color: textPrimary,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        content: Text(
+          'community.deleteDiscussionConfirm'.tr.isNotEmpty &&
+                  'community.deleteDiscussionConfirm'.tr !=
+                      'community.deleteDiscussionConfirm'
+              ? 'community.deleteDiscussionConfirm'.tr
+              : 'Are you sure you want to delete this discussion? This action cannot be undone.',
+          style: TextStyle(color: textSecondary, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'common.cancel'.tr.isNotEmpty &&
+                      'common.cancel'.tr != 'common.cancel'
+                  ? 'common.cancel'.tr
+                  : 'Cancel',
+              style: TextStyle(color: textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final success =
+                  await widget.controller.deleteDiscussion(widget.post.id);
+              if (success && context.mounted) {
+                AppNotificationBanner.showSuccess(
+                  context: context,
+                  title: 'community.discussionDeleted'.tr.isNotEmpty &&
+                          'community.discussionDeleted'.tr !=
+                              'community.discussionDeleted'
+                      ? 'community.discussionDeleted'.tr
+                      : 'Discussion Deleted',
+                  message: 'community.discussionDeletedMsg'.tr.isNotEmpty &&
+                          'community.discussionDeletedMsg'.tr !=
+                              'community.discussionDeletedMsg'
+                      ? 'community.discussionDeletedMsg'.tr
+                      : 'Your discussion has been removed.',
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.pill)),
+            ),
+            child: Text(
+              'common.delete'.tr.isNotEmpty &&
+                      'common.delete'.tr != 'common.delete'
+                  ? 'common.delete'.tr
+                  : 'Delete',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   bool get _isOwnPost {
     String? currentUserId;
     if (Get.isRegistered<AuthController>()) {
@@ -192,6 +279,8 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     final isDark = theme.brightness == Brightness.dark;
     final surface = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+
+    final isDiscussion = widget.post.postType == 'DISCUSSION';
 
     showModalBottomSheet(
       context: context,
@@ -235,44 +324,49 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 
             // 2. OTHER USER'S POST OPTIONS: Repost / Unrepost, Report Post
             if (!_isOwnPost) ...[
-              Material(
-                color: Colors.transparent,
-                child: ListTile(
-                  leading: Icon(
-                    Icons.repeat_rounded,
-                    color: widget.post.isRepostedByMe ? AppColors.growthAccent : textPrimary,
+              if (!isDiscussion)
+                Material(
+                  color: Colors.transparent,
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.repeat_rounded,
+                      color: widget.post.isRepostedByMe ? AppColors.growthAccent : textPrimary,
+                    ),
+                    title: Text(
+                      widget.post.isRepostedByMe ? 'community.unrepost'.tr : 'community.repost'.tr,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                            color: widget.post.isRepostedByMe ? AppColors.growthAccent : textPrimary,
+                          ) ??
+                          TextStyle(
+                            color: widget.post.isRepostedByMe ? AppColors.growthAccent : textPrimary,
+                          ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      if (widget.post.isRepostedByMe) {
+                        widget.controller.unrepostPost(widget.post.id);
+                        AppNotificationBanner.showInfo(
+                          context: context,
+                          title: 'community.unreposted'.tr,
+                          message: 'community.unrepostedMsg'.tr,
+                          icon: Icons.repeat_rounded,
+                        );
+                      } else {
+                        _showRepostDialog(context);
+                      }
+                    },
                   ),
-                  title: Text(
-                    widget.post.isRepostedByMe ? 'community.unrepost'.tr : 'community.repost'.tr,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                          color: widget.post.isRepostedByMe ? AppColors.growthAccent : textPrimary,
-                        ) ??
-                        TextStyle(
-                          color: widget.post.isRepostedByMe ? AppColors.growthAccent : textPrimary,
-                        ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    if (widget.post.isRepostedByMe) {
-                      widget.controller.unrepostPost(widget.post.id);
-                      AppNotificationBanner.showInfo(
-                        context: context,
-                        title: 'community.unreposted'.tr,
-                        message: 'community.unrepostedMsg'.tr,
-                        icon: Icons.repeat_rounded,
-                      );
-                    } else {
-                      _showRepostDialog(context);
-                    }
-                  },
                 ),
-              ),
               Material(
                 color: Colors.transparent,
                 child: ListTile(
                   leading: Icon(Icons.flag_outlined, color: textPrimary),
                   title: Text(
-                    'community.reportPost'.tr,
+                    isDiscussion
+                        ? ('community.report'.tr.isNotEmpty && 'community.report'.tr != 'community.report'
+                            ? 'community.report'.tr
+                            : 'Report')
+                        : 'community.reportPost'.tr,
                     style: theme.textTheme.bodyMedium?.copyWith(color: textPrimary) ??
                         TextStyle(color: textPrimary),
                   ),
@@ -297,7 +391,13 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                 child: ListTile(
                   leading: Icon(Icons.edit_outlined, color: textPrimary),
                   title: Text(
-                    'community.editPost'.tr,
+                    isDiscussion
+                        ? ('community.editDiscussion'.tr.isNotEmpty &&
+                                'community.editDiscussion'.tr !=
+                                    'community.editDiscussion'
+                            ? 'community.editDiscussion'.tr
+                            : 'Edit Discussion')
+                        : 'community.editPost'.tr,
                     style: theme.textTheme.bodyMedium?.copyWith(color: textPrimary) ??
                         TextStyle(color: textPrimary),
                   ),
@@ -312,13 +412,23 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                 child: ListTile(
                   leading: const Icon(Icons.delete_outline, color: AppColors.danger),
                   title: Text(
-                    'community.deletePost'.tr,
+                    isDiscussion
+                        ? ('community.deleteDiscussion'.tr.isNotEmpty &&
+                                'community.deleteDiscussion'.tr !=
+                                    'community.deleteDiscussion'
+                            ? 'community.deleteDiscussion'.tr
+                            : 'Delete Discussion')
+                        : 'community.deletePost'.tr,
                     style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.danger) ??
                         const TextStyle(color: AppColors.danger),
                   ),
                   onTap: () {
                     Navigator.pop(ctx);
-                    _confirmDeletePost(context);
+                    if (isDiscussion) {
+                      _confirmDeleteDiscussion(context);
+                    } else {
+                      _confirmDeletePost(context);
+                    }
                   },
                 ),
               ),
@@ -330,6 +440,13 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
   }
 
   void _showEditDialog(BuildContext context) {
+    if (widget.post.postType == 'DISCUSSION') {
+      final topic = widget.controller.getDiscussionById(widget.post.id);
+      if (topic != null) {
+        Get.to(() => CreateDiscussionScreen(initialDiscussion: topic));
+        return;
+      }
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -641,7 +758,9 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
-                                  widget.post.community,
+                                  (widget.post.postType == 'DISCUSSION' || widget.post.category != null)
+                                      ? '${widget.post.category ?? 'Technology'} · ${'community.discussion'.tr.isNotEmpty && 'community.discussion'.tr != 'community.discussion' ? 'community.discussion'.tr : 'Discussion'}'
+                                      : widget.post.community,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: theme.textTheme.labelSmall?.copyWith(
@@ -740,6 +859,33 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               );
             },
           ),
+
+          // Discussion Title (if discussion post)
+          if (widget.post.discussionTitle != null &&
+              widget.post.discussionTitle!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                4,
+                AppSpacing.md,
+                2,
+              ),
+              child: Text(
+                widget.post.discussionTitle!,
+                style: theme.textTheme.titleMedium?.copyWith(
+                      color: textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16.0,
+                      height: 1.35,
+                    ) ??
+                    TextStyle(
+                      color: textPrimary,
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.bold,
+                      height: 1.35,
+                    ),
+              ),
+            ),
 
           // Post Content Text
           if (widget.post.content.isNotEmpty)

@@ -127,6 +127,7 @@ class ForumThreadCard extends StatefulWidget {
   final VoidCallback? onCommentTap;
   final VoidCallback? onCategoryTap;
   final VoidCallback? onAuthorTap;
+  final VoidCallback? onMoreTap;
 
   const ForumThreadCard({
     super.key,
@@ -137,13 +138,14 @@ class ForumThreadCard extends StatefulWidget {
     required this.category,
     required this.replies,
     required this.likes,
-    required this.isPinned,
+    this.isPinned = false,
     this.isLiked = false,
     this.onTap,
     this.onLikeTap,
     this.onCommentTap,
     this.onCategoryTap,
     this.onAuthorTap,
+    this.onMoreTap,
   });
 
   @override
@@ -213,11 +215,7 @@ class _ForumThreadCardState extends State<ForumThreadCard>
         color: surfaceSecondary,
         borderRadius: BorderRadius.circular(AppRadius.squircle),
         border: Border.all(
-          color: widget.isPinned
-              ? (isDark
-                  ? Colors.white.withValues(alpha: 0.16)
-                  : AppColors.lightBorderStrong)
-              : borderSubtle,
+          color: borderSubtle,
           width: 1.0,
         ),
       ),
@@ -232,13 +230,14 @@ class _ForumThreadCardState extends State<ForumThreadCard>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header Author & Category Row
+                // Header Author & Category Row with More Options
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     GestureDetector(
                       onTap: widget.onAuthorTap,
                       child: CircleAvatar(
-                        radius: 13,
+                        radius: 14,
                         backgroundImage: (widget.avatarUrl != null &&
                                 widget.avatarUrl!.isNotEmpty)
                             ? (widget.avatarUrl!.startsWith('assets/')
@@ -247,92 +246,105 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                             : const AssetImage('assets/images/user_profile.png'),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Expanded(
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (widget.isPinned) ...[
-                            Icon(
-                              Icons.push_pin_rounded,
-                              color: textPrimary,
-                              size: 13,
+                          GestureDetector(
+                            onTap: widget.onAuthorTap,
+                            child: Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: widget.author,
+                                    style: theme.textTheme.labelMedium?.copyWith(
+                                          color: textPrimary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ) ??
+                                        TextStyle(
+                                          color: textPrimary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  TextSpan(
+                                    text: " · ${widget.timeAgo}",
+                                    style: theme.textTheme.labelMedium?.copyWith(
+                                          color: textMuted,
+                                          fontSize: 11.5,
+                                        ) ??
+                                        TextStyle(
+                                          color: textMuted,
+                                          fontSize: 11.5,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(width: 4),
-                          ],
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: widget.onAuthorTap,
-                              child: Text.rich(
-                                TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text: widget.author,
-                                      style: theme.textTheme.labelMedium?.copyWith(
-                                            color: textPrimary,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12.5,
-                                          ) ??
-                                          TextStyle(
-                                            color: textPrimary,
-                                            fontSize: 12.5,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                    TextSpan(
-                                      text: " • ${widget.timeAgo}",
-                                      style: theme.textTheme.labelMedium?.copyWith(
-                                            color: textMuted,
-                                          ) ??
-                                          TextStyle(color: textMuted, fontSize: 11.5),
-                                    ),
-                                  ],
+                          ),
+                          const SizedBox(height: 3),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: widget.onCategoryTap,
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                decoration: BoxDecoration(
+                                  color: textPrimary.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                                  border: Border.all(
+                                    color: borderSubtle,
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Text(
+                                  widget.category,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: textSecondary,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 120),
-                      child: Material(
+                    if (widget.onMoreTap != null) ...[
+                      const SizedBox(width: 6),
+                      Material(
                         color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(18),
                         child: InkWell(
-                          onTap: widget.onCategoryTap,
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                          onTap: widget.onMoreTap,
+                          borderRadius: BorderRadius.circular(18),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: textPrimary.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                              border: Border.all(
-                                color: borderSubtle,
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Text(
-                              widget.category,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: textSecondary,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            width: 36,
+                            height: 36,
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.more_horiz_rounded,
+                              color: textMuted,
+                              size: 20,
                             ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
+                const SizedBox(height: AppSpacing.sm + 2),
 
                 // Discussion Title
                 Text(
@@ -436,7 +448,7 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                "${widget.replies} comments",
+                                "${widget.replies} ${'community.comments'.tr.isNotEmpty && 'community.comments'.tr != 'community.comments' ? 'community.comments'.tr : 'comments'}",
                                 style: theme.textTheme.labelMedium?.copyWith(
                                       color: textSecondary,
                                     ) ??

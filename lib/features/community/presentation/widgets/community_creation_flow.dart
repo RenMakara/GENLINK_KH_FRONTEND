@@ -5,7 +5,7 @@ import '../controllers/story_gallery_controller.dart';
 import '../screens/create_event_screen.dart';
 import '../screens/create_post_screen.dart';
 import '../screens/story_gallery_screen.dart';
-import '../../../../shared/widgets/global_create_sheet.dart';
+import 'community_creation_bottom_sheet.dart';
 import 'story_creation_picker_sheet.dart';
 
 /// Centralized creation flow helper for GenLink KH Community.
@@ -22,7 +22,25 @@ abstract final class CommunityCreationFlow {
   static Future<void> openCreateMenu([BuildContext? context]) async {
     final ctx = context ?? Get.context;
     if (ctx == null) return;
-    return GlobalCreateSheet.show(ctx);
+    return showModalBottomSheet<void>(
+      context: ctx,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (bottomSheetContext) => CommunityCreationBottomSheet(
+        onSelectCreatePost: () {
+          Navigator.pop(bottomSheetContext);
+          openCreatePost(ctx);
+        },
+        onSelectCreateStory: () {
+          Navigator.pop(bottomSheetContext);
+          openCreateStory(ctx);
+        },
+        onSelectCreateEvent: () {
+          Navigator.pop(bottomSheetContext);
+          openCreateEvent(ctx);
+        },
+      ),
+    );
   }
 
   /// Navigates directly to the Create Post composer screen.

@@ -45,6 +45,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     'community.workshop',
     'community.seminar',
     'community.hackathon',
+    'community.competition',
+    'community.career',
+    'community.technology',
     'community.categoryOther',
   ];
 
@@ -132,28 +135,34 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         _coverImage != null;
 
     if (hasContent) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final dialogBg = isDark ? const Color(0xFF1E2228) : Colors.white;
+      final titleColor = isDark ? Colors.white : Colors.black87;
+      final contentColor = isDark ? Colors.white70 : Colors.black54;
+
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E2228),
+          backgroundColor: dialogBg,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             'community.discardDraft'.tr,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: titleColor,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
           content: Text(
             'community.discardMessage'.tr,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
+            style: TextStyle(color: contentColor, fontSize: 14),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text(
                 'community.keepEditing'.tr,
-                style: const TextStyle(color: Colors.white60),
+                style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
               ),
             ),
             TextButton(
@@ -163,7 +172,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               },
               child: Text(
                 'community.discard'.tr,
-                style: const TextStyle(color: Colors.redAccent),
+                style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -378,7 +387,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           ),
           titleSpacing: 8,
           title: Text(
-            'Create Event',
+            'community.createEvent'.tr.isNotEmpty &&
+                    'community.createEvent'.tr != 'community.createEvent'
+                ? 'community.createEvent'.tr
+                : 'Create Event',
             style: TextStyle(
               color: textPrimary,
               fontSize: 17,
@@ -534,9 +546,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            _buildRadioButton('Online', textPrimary),
+                            _buildRadioButton('Online', 'Online', textPrimary),
                             const SizedBox(width: 24),
-                            _buildRadioButton('In person', textPrimary),
+                            _buildRadioButton('In person', 'In person', textPrimary),
                           ],
                         ),
                         const SizedBox(height: 24),
@@ -590,11 +602,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Your event timezone is set to Local Time',
-                          style: TextStyle(color: textMuted, fontSize: 13),
                         ),
                         const SizedBox(height: 24),
 
@@ -672,7 +679,14 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         const SizedBox(height: 24),
 
                         // ── Category (Preserved GenLink Feature) ────────────────
-                        _buildLabel('Category (Optional)', textMuted),
+                        _buildLabel(
+                          'community.category'.tr.isNotEmpty &&
+                                  'community.category'.tr !=
+                                      'community.category'
+                              ? 'community.category'.tr
+                              : 'Category (Optional)',
+                          textMuted,
+                        ),
                         const SizedBox(height: 8),
                         Wrap(
                           spacing: 8,
@@ -730,13 +744,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     );
   }
 
-  Widget _buildRadioButton(String title, Color textPrimary) {
-    final isSelected = _eventType == title;
+  Widget _buildRadioButton(String displayTitle, String rawValue, Color textPrimary) {
+    final isSelected = _eventType == rawValue;
     return GestureDetector(
       onTap: () {
-        if (_eventType != title) {
+        if (_eventType != rawValue) {
           setState(() {
-            _eventType = title;
+            _eventType = rawValue;
             _linkError = null;
             _locationError = null;
           });
@@ -757,7 +771,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          Text(title, style: TextStyle(color: textPrimary, fontSize: 15)),
+          Text(displayTitle, style: TextStyle(color: textPrimary, fontSize: 15)),
         ],
       ),
     );
@@ -872,11 +886,26 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFF111111);
-    const border = Color(0xFF303030);
-    const textPrimary = Color(0xFFFFFFFF);
-    const textSecondary = Color(0xFFA0A0A0);
-    const surfaceUnselected = Color(0xFF202020);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF141414) : Colors.white;
+    final border = isDark ? const Color(0xFF303030) : const Color(0xFFE5E7EB);
+    final textPrimary = isDark ? Colors.white : Colors.black87;
+    final textSecondary = isDark ? Colors.white60 : const Color(0xFF6B7280);
+    final surfaceUnselected = isDark ? const Color(0xFF222222) : const Color(0xFFF3F4F6);
+    final displayBoxBg = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF9FAFB);
+
+    final selectTimeTitle = 'community.selectTime'.tr.isNotEmpty &&
+            'community.selectTime'.tr != 'community.selectTime'
+        ? 'community.selectTime'.tr
+        : 'Select time';
+    final hourLabel = 'community.hour'.tr.isNotEmpty &&
+            'community.hour'.tr != 'community.hour'
+        ? 'community.hour'.tr
+        : 'Hour';
+    final minuteLabel = 'community.minute'.tr.isNotEmpty &&
+            'community.minute'.tr != 'community.minute'
+        ? 'community.minute'.tr
+        : 'Minute';
 
     return SafeArea(
       child: Container(
@@ -896,15 +925,15 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white24,
+                  color: isDark ? Colors.white24 : Colors.black12,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
 
             // Header Title
-            const Text(
-              'Select time',
+            Text(
+              selectTimeTitle,
               style: TextStyle(
                 color: textPrimary,
                 fontSize: 16,
@@ -919,14 +948,14 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
+                color: displayBoxBg,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: border, width: 0.8),
               ),
               child: Center(
                 child: Text(
                   _formattedSelectedTime,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: textPrimary,
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -957,7 +986,7 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                         duration: const Duration(milliseconds: 150),
                         decoration: BoxDecoration(
                           color: _selectedPeriod == DayPeriod.am
-                              ? Colors.white
+                              ? (isDark ? Colors.white : Colors.black)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(9),
                         ),
@@ -966,7 +995,7 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                           'AM',
                           style: TextStyle(
                             color: _selectedPeriod == DayPeriod.am
-                                ? Colors.black
+                                ? (isDark ? Colors.black : Colors.white)
                                 : textSecondary,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -983,7 +1012,7 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                         duration: const Duration(milliseconds: 150),
                         decoration: BoxDecoration(
                           color: _selectedPeriod == DayPeriod.pm
-                              ? Colors.white
+                              ? (isDark ? Colors.white : Colors.black)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(9),
                         ),
@@ -992,7 +1021,7 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                           'PM',
                           style: TextStyle(
                             color: _selectedPeriod == DayPeriod.pm
-                                ? Colors.black
+                                ? (isDark ? Colors.black : Colors.white)
                                 : textSecondary,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -1011,7 +1040,7 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Hour',
+                hourLabel,
                 style: TextStyle(
                   color: textSecondary,
                   fontSize: 13,
@@ -1035,10 +1064,14 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: isSelected ? Colors.white : surfaceUnselected,
+                          color: isSelected
+                              ? (isDark ? Colors.white : Colors.black)
+                              : surfaceUnselected,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected ? Colors.white : border,
+                            color: isSelected
+                                ? (isDark ? Colors.white : Colors.black)
+                                : border,
                             width: 1.0,
                           ),
                         ),
@@ -1046,7 +1079,9 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                         child: Text(
                           '$hour',
                           style: TextStyle(
-                            color: isSelected ? Colors.black : textPrimary,
+                            color: isSelected
+                                ? (isDark ? Colors.black : Colors.white)
+                                : textPrimary,
                             fontWeight: isSelected
                                 ? FontWeight.bold
                                 : FontWeight.w500,
@@ -1066,7 +1101,7 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Minute',
+                minuteLabel,
                 style: TextStyle(
                   color: textSecondary,
                   fontSize: 13,
@@ -1110,11 +1145,13 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                           height: 44,
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? Colors.white
+                                ? (isDark ? Colors.white : Colors.black)
                                 : surfaceUnselected,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected ? Colors.white : border,
+                              color: isSelected
+                                  ? (isDark ? Colors.white : Colors.black)
+                                  : border,
                               width: 1.0,
                             ),
                           ),
@@ -1122,7 +1159,9 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                           child: Text(
                             mStr,
                             style: TextStyle(
-                              color: isSelected ? Colors.black : textPrimary,
+                              color: isSelected
+                                  ? (isDark ? Colors.black : Colors.white)
+                                  : textPrimary,
                               fontWeight: isSelected
                                   ? FontWeight.bold
                                   : FontWeight.w500,
@@ -1150,11 +1189,14 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                       style: TextButton.styleFrom(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: border),
+                          side: BorderSide(color: border),
                         ),
                       ),
-                      child: const Text(
-                        'Cancel',
+                      child: Text(
+                        'common.cancel'.tr.isNotEmpty &&
+                                'common.cancel'.tr != 'common.cancel'
+                            ? 'common.cancel'.tr
+                            : 'Cancel',
                         style: TextStyle(
                           color: textSecondary,
                           fontWeight: FontWeight.w600,
@@ -1172,8 +1214,8 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                       onPressed: () =>
                           Navigator.pop(context, _resultingTimeOfDay),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
+                        backgroundColor: isDark ? Colors.white : Colors.black,
+                        foregroundColor: isDark ? Colors.black : Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1182,7 +1224,6 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                       child: const Text(
                         'OK',
                         style: TextStyle(
-                          color: Colors.black,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),

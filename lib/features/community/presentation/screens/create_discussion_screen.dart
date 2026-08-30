@@ -4,15 +4,23 @@ import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import 'widgets/author_row.dart';
 
-/// Create Discussion Screen — Forum tab creation flow.
+/// Create / Edit Discussion Screen — Forum tab creation & editing flow.
 ///
 /// Fields: Category selector, Title, Content.
 /// Localized with GetX. Black/white design — zero cyan/blue.
 class CreateDiscussionScreen extends StatefulWidget {
-  const CreateDiscussionScreen({super.key});
+  final ForumTopicModel? initialDiscussion;
+
+  const CreateDiscussionScreen({
+    super.key,
+    this.initialDiscussion,
+  });
+
+  bool get isEdit => initialDiscussion != null;
 
   @override
   State<CreateDiscussionScreen> createState() => _CreateDiscussionScreenState();
@@ -44,6 +52,11 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialDiscussion != null) {
+      _titleController.text = widget.initialDiscussion!.title;
+      _contentController.text = widget.initialDiscussion!.content;
+      _selectedCategory = widget.initialDiscussion!.category;
+    }
     _titleController.addListener(() => setState(() {}));
     _contentController.addListener(() => setState(() {}));
   }
@@ -241,35 +254,86 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
           ? Get.find<CommunityController>()
           : Get.put(CommunityController());
 
-      commController.addDiscussion(
-        title: title,
-        content: content,
-        category: category,
-      );
+      if (widget.isEdit) {
+        final success = await commController.updateDiscussion(
+          discussionId: widget.initialDiscussion!.id,
+          title: title,
+          content: content,
+          category: category,
+        );
 
-      await Future.delayed(const Duration(milliseconds: 300));
+        if (!mounted) return;
+        setState(() => _isSubmitting = false);
 
-      if (!mounted) return;
-      setState(() => _isSubmitting = false);
+        if (success) {
+          AppNotificationBanner.showSuccess(
+            context: context,
+            title: 'community.discussionUpdated'.tr.isNotEmpty &&
+                    'community.discussionUpdated'.tr !=
+                        'community.discussionUpdated'
+                ? 'community.discussionUpdated'.tr
+                : 'Discussion Updated',
+            message: 'community.discussionUpdatedMsg'.tr.isNotEmpty &&
+                    'community.discussionUpdatedMsg'.tr !=
+                        'community.discussionUpdatedMsg'
+                ? 'community.discussionUpdatedMsg'.tr
+                : 'Your discussion changes have been saved.',
+          );
+          Navigator.pop(context, true);
+        } else {
+          AppNotificationBanner.showError(
+            context: context,
+            title: 'Error',
+            message: 'community.couldNotUpdateDiscussion'.tr.isNotEmpty &&
+                    'community.couldNotUpdateDiscussion'.tr !=
+                        'community.couldNotUpdateDiscussion'
+                ? 'community.couldNotUpdateDiscussion'.tr
+                : 'Couldn\'t update discussion. Please try again.',
+          );
+        }
+      } else {
+        await commController.addDiscussion(
+          title: title,
+          content: content,
+          category: category,
+        );
 
-      AppNotificationBanner.showSuccess(
-        context: context,
-        title: 'community.discussionPublished'.tr.isNotEmpty &&
-                'community.discussionPublished'.tr !=
-                    'community.discussionPublished'
-            ? 'community.discussionPublished'.tr
-            : 'Discussion Published',
-        message: 'community.discussionPublishedMsg'.tr.isNotEmpty &&
-                'community.discussionPublishedMsg'.tr !=
-                    'community.discussionPublishedMsg'
-            ? 'community.discussionPublishedMsg'.tr
-            : 'Your discussion topic is now live.',
-      );
-      Navigator.pop(context);
+        if (!mounted) return;
+        setState(() => _isSubmitting = false);
+
+        AppNotificationBanner.showSuccess(
+          context: context,
+          title: 'community.discussionPublished'.tr.isNotEmpty &&
+                  'community.discussionPublished'.tr !=
+                      'community.discussionPublished'
+              ? 'community.discussionPublished'.tr
+              : 'Discussion Published',
+          message: 'community.discussionPublishedMsg'.tr.isNotEmpty &&
+                  'community.discussionPublishedMsg'.tr !=
+                      'community.discussionPublishedMsg'
+              ? 'community.discussionPublishedMsg'.tr
+              : 'Your discussion is now live in the Forum.',
+        );
+        Navigator.pop(context, true);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      Navigator.pop(context);
+      AppNotificationBanner.showError(
+        context: context,
+        title: 'Error',
+        message: widget.isEdit
+            ? ('community.couldNotUpdateDiscussion'.tr.isNotEmpty &&
+                    'community.couldNotUpdateDiscussion'.tr !=
+                        'community.couldNotUpdateDiscussion'
+                ? 'community.couldNotUpdateDiscussion'.tr
+                : 'Couldn\'t update discussion. Please try again.')
+            : ('community.couldNotPublishDiscussion'.tr.isNotEmpty &&
+                    'community.couldNotPublishDiscussion'.tr !=
+                        'community.couldNotPublishDiscussion'
+                ? 'community.couldNotPublishDiscussion'.tr
+                : 'Couldn\'t publish discussion. Please try again.'),
+      );
     }
   }
 
@@ -293,6 +357,27 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
     final charCount = _contentController.text.length;
     const maxChars = 5000;
 
+    final screenTitle = widget.isEdit
+        ? ('community.editDiscussion'.tr.isNotEmpty &&
+                'community.editDiscussion'.tr != 'community.editDiscussion'
+            ? 'community.editDiscussion'.tr
+            : 'Edit Discussion')
+        : ('community.createDiscussion'.tr.isNotEmpty &&
+                'community.createDiscussion'.tr != 'community.createDiscussion'
+            ? 'community.createDiscussion'.tr
+            : 'Create Discussion');
+
+    final actionButtonText = widget.isEdit
+        ? ('community.saveChanges'.tr.isNotEmpty &&
+                'community.saveChanges'.tr != 'community.saveChanges'
+            ? 'community.saveChanges'.tr
+            : 'Save Changes')
+        : ('community.publishDiscussion'.tr.isNotEmpty &&
+                'community.publishDiscussion'.tr !=
+                    'community.publishDiscussion'
+            ? 'community.publishDiscussion'.tr
+            : 'Publish');
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -312,7 +397,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
           ),
           titleSpacing: 8,
           title: Text(
-            'community.createDiscussion'.tr,
+            screenTitle,
             style: TextStyle(
               color: textPrimary,
               fontSize: 17,
@@ -354,7 +439,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                         ),
                       )
                     : Text(
-                        'community.publishDiscussion'.tr,
+                        actionButtonText,
                         style: TextStyle(
                           color: _canPublish
                               ? (isDark ? Colors.black : Colors.white)

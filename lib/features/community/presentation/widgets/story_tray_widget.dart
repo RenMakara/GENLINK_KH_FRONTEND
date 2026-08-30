@@ -87,11 +87,11 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
 
       final sortedGroups = [?ownerGroup, ...otherGroups];
 
-      return Container(
+      return SizedBox(
         height: 100,
-        margin: EdgeInsets.zero,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           itemCount: sortedGroups.length,
           itemBuilder: (context, idx) {

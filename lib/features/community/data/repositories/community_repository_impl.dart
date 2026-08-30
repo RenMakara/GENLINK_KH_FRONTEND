@@ -1,3 +1,4 @@
+import '../../domain/models/community_models.dart';
 import '../../domain/models/community_post_model.dart';
 import '../../domain/repositories/community_repository.dart';
 import '../datasources/community_remote_datasource.dart';
@@ -94,6 +95,59 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<bool> deleteComment(String postId, String commentId) async {
     return true;
+  }
+
+  @override
+  Future<List<ForumTopicModel>> getDiscussions({
+    String? category,
+    int page = 1,
+    int limit = 20,
+  }) {
+    return remoteDataSource.fetchDiscussions(
+      category: category,
+      page: page,
+      limit: limit,
+    );
+  }
+
+  @override
+  Future<ForumTopicModel> createDiscussion({
+    required String title,
+    required String content,
+    required String category,
+    bool anonymous = false,
+  }) {
+    return remoteDataSource.createDiscussion(
+      title: title,
+      content: content,
+      category: category,
+      anonymous: anonymous,
+    );
+  }
+
+  @override
+  Future<ForumTopicModel> updateDiscussion(
+    String discussionId, {
+    required String title,
+    required String content,
+    required String category,
+  }) {
+    return remoteDataSource.updateDiscussion(
+      discussionId,
+      title: title,
+      content: content,
+      category: category,
+    );
+  }
+
+  @override
+  Future<bool> deleteDiscussion(String discussionId) {
+    return remoteDataSource.deleteDiscussion(discussionId);
+  }
+
+  @override
+  Future<bool> toggleDiscussionLike(String discussionId) {
+    return remoteDataSource.toggleDiscussionLike(discussionId);
   }
 
   @override

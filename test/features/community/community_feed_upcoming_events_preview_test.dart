@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
-import 'package:genlink_frontend/features/community/domain/models/community_models.dart';
 import 'package:genlink_frontend/features/community/domain/models/community_post_model.dart';
 import 'package:genlink_frontend/features/community/domain/repositories/community_repository.dart';
 import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/community_screen.dart';
+import 'package:genlink_frontend/features/community/presentation/screens/create_post_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/event_details_screen.dart';
+import 'package:genlink_frontend/features/community/presentation/screens/forum_discussion_screen.dart';
+import 'package:genlink_frontend/features/community/presentation/widgets/story_tray_widget.dart';
 
 class MockCommunityRepository implements CommunityRepository {
   @override
@@ -129,8 +131,54 @@ void main() {
     Get.reset();
   });
 
-  group('Community Feed Upcoming Events Preview Tests', () {
-    testWidgets('1. Verify Upcoming Events preview renders in Feed with real events, date blocks, and locations', (tester) async {
+  group('Community Feed Mixed Content & Discovery Previews Tests', () {
+    testWidgets('1. Verify Feed renders Post Composer and Stories row without arrows', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify Stories row renders
+      expect(find.byType(StoryTrayWidget), findsOneWidget);
+      // Verify NO right arrow / chevron exists on Stories row
+      expect(find.text('Stories >'), findsNothing);
+
+      // Verify Post Composer renders "What's on your mind?" and action buttons
+      expect(find.text("What's on your mind?"), findsOneWidget);
+      expect(find.text('Photo'), findsOneWidget);
+      expect(find.text('Video'), findsOneWidget);
+      expect(find.text('Feeling'), findsOneWidget);
+      expect(find.text('Location'), findsOneWidget);
+
+      // Tapping composer opens CreatePostScreen
+      await tester.tap(find.text("What's on your mind?"));
+      await tester.pumpAndSettle();
+      expect(find.byType(CreatePostScreen), findsOneWidget);
+    });
+
+    testWidgets('2. Verify Upcoming Events preview renders 1-2 compact event cards with prominent date and location', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final repo = MockCommunityRepository();
       final controller = CommunityController(repository: repo);
       Get.put<CommunityController>(controller);
@@ -146,29 +194,34 @@ void main() {
 
       // Verify Header
       expect(find.text('Upcoming Events'), findsOneWidget);
-      expect(find.text('See all'), findsOneWidget);
+      final seeAllFinders = find.text('See all');
+      expect(seeAllFinders, findsWidgets);
 
-      // Verify Real Event Titles from controller
+      // Verify 1-2 Real Event Titles from controller
       expect(find.text('Flutter Workshop 2026'), findsOneWidget);
       expect(find.text('AI in Everyday Life'), findsOneWidget);
-      expect(find.text('GenLink Hackathon 2026'), findsOneWidget);
 
       // Verify Date blocks: day & month parsed from dateString
       expect(find.text('25'), findsOneWidget);
       expect(find.text('JUL'), findsWidgets);
       expect(find.text('26'), findsOneWidget);
-      expect(find.text('30'), findsOneWidget);
 
       // Verify Location and Online indicators
       expect(find.textContaining('ACLEDA University'), findsOneWidget);
       expect(find.text('🌐 Online Event'), findsOneWidget);
-      expect(find.textContaining('Diamond Island'), findsOneWidget);
 
       // Verify Join buttons
       expect(find.text('Join'), findsWidgets);
     });
 
-    testWidgets('2. Verify RSVP / Join button toggles state between Join and Joined', (tester) async {
+    testWidgets('3. Verify RSVP / Join button toggles state between Join and Joined', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final repo = MockCommunityRepository();
       final controller = CommunityController(repository: repo);
       Get.put<CommunityController>(controller);
@@ -204,7 +257,14 @@ void main() {
       expect(find.text('Joined'), findsNothing);
     });
 
-    testWidgets('3. Verify tapping "See all" navigates directly to the existing Event tab', (tester) async {
+    testWidgets('4. Verify tapping Upcoming Events "See all" navigates directly to Event tab', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final repo = MockCommunityRepository();
       final controller = CommunityController(repository: repo);
       Get.put<CommunityController>(controller);
@@ -220,18 +280,26 @@ void main() {
 
       expect(controller.selectedCategory.value, equals('Feed'));
 
-      // Tap "See all"
-      await tester.tap(find.text('See all'));
+      // Tap first "See all" (Upcoming Events)
+      final seeAllFinders = find.text('See all');
+      await tester.tap(seeAllFinders.first);
       await tester.pumpAndSettle();
 
       // Controller category should now be 'Event'
       expect(controller.selectedCategory.value, equals('Event'));
-      // Event tab has "Featured Events" and "Filter" button
-      expect(find.text('Featured Events'), findsOneWidget);
+      // Event tab has FeaturedEventsCarousel and Filter button
+      expect(find.byType(FeaturedEventsCarousel), findsOneWidget);
       expect(find.text('Filter'), findsOneWidget);
     });
 
-    testWidgets('4. Verify tapping an Event card opens EventDetailsScreen for that event', (tester) async {
+    testWidgets('5. Verify tapping an Event card opens EventDetailsScreen for that event', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final repo = MockCommunityRepository();
       final controller = CommunityController(repository: repo);
       Get.put<CommunityController>(controller);
@@ -255,10 +323,16 @@ void main() {
       expect(find.text('ACLEDA University, Phnom Penh'), findsWidgets);
     });
 
-    testWidgets('5. Verify Empty State cleanly hides preview when controller has no events', (tester) async {
+    testWidgets('6. Verify Trending Discussions preview renders and tapping "See all" navigates to Forum tab', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final repo = MockCommunityRepository();
       final controller = CommunityController(repository: repo);
-      controller.events.clear(); // Clear all events
       Get.put<CommunityController>(controller);
 
       await tester.pumpWidget(
@@ -270,9 +344,83 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Upcoming Events section should not render
+      // Verify Trending Discussions header
+      expect(find.text('Trending Discussions'), findsOneWidget);
+
+      // Verify discussion preview title
+      expect(
+        find.text('Best practices for GetX state management in Flutter Community App'),
+        findsOneWidget,
+      );
+
+      // Tap second "See all" (Trending Discussions)
+      final seeAllFinders = find.text('See all');
+      await tester.tap(seeAllFinders.last);
+      await tester.pumpAndSettle();
+
+      // Controller category should now be 'Forum'
+      expect(controller.selectedCategory.value, equals('Forum'));
+      expect(find.text('Latest Discussions'), findsOneWidget);
+    });
+
+    testWidgets('7. Verify tapping a Discussion card opens ForumDiscussionScreen', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap on discussion title
+      await tester.tap(
+        find.text('Best practices for GetX state management in Flutter Community App'),
+      );
+      await tester.pumpAndSettle();
+
+      // Should open ForumDiscussionScreen
+      expect(find.byType(ForumDiscussionScreen), findsOneWidget);
+    });
+
+    testWidgets('8. Verify Empty State cleanly hides preview when controller has no events or discussions', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      controller.events.clear();
+      controller.forumPinnedDiscussions.clear();
+      controller.forumLatestDiscussions.clear();
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Upcoming Events & Trending Discussions sections should not render
       expect(find.text('Upcoming Events'), findsNothing);
-      expect(find.text('See all'), findsNothing);
+      expect(find.text('Trending Discussions'), findsNothing);
     });
   });
 }

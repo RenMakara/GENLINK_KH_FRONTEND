@@ -1,11 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
+import '../widgets/community_creation_flow.dart';
 import '../widgets/community_header_widget.dart';
 import '../widgets/filter_events_sheet.dart';
 import '../widgets/post_card_widget.dart';
@@ -190,18 +194,20 @@ class CommunityScreen extends GetView<CommunityController> {
       backgroundColor: surfaceSecondary,
       child: SingleChildScrollView(
         controller: controller.scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
         padding: EdgeInsets.only(bottom: bottomPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Stories Tray
+            // 1. Stories Row (Horizontal swipeable row, no arrow, compact spacing)
             const StoryTrayWidget(),
 
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: 10),
 
-            // Upcoming Events Preview Section (Discovery Preview)
-            _buildUpcomingEventsFeedPreview(
+            // 2. Post Composer ("What's on your mind?" with Photo, Video, Feeling, Location)
+            _buildFeedPostComposer(
               context,
               controller,
               isDark,
@@ -212,11 +218,11 @@ class CommunityScreen extends GetView<CommunityController> {
               borderSubtle,
             ),
 
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: 12),
 
-            // Feed Posts List
+            // 3. Mixed Social Feed with Discovery Previews
             Obx(() {
-              if (controller.isLoadingFeed.value) {
+              if (controller.isLoadingFeed.value && controller.posts.isEmpty) {
                 return const Padding(
                   padding: EdgeInsets.all(AppSpacing.xl),
                   child: Center(
@@ -252,8 +258,8 @@ class CommunityScreen extends GetView<CommunityController> {
                         icon: const Icon(Icons.refresh, size: 18),
                         label: Text('common.retry'.tr),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.communityAccent,
-                          foregroundColor: textPrimary,
+                          backgroundColor: isDark ? Colors.white : Colors.black87,
+                          foregroundColor: isDark ? Colors.black : Colors.white,
                         ),
                       ),
                     ],
@@ -261,54 +267,330 @@ class CommunityScreen extends GetView<CommunityController> {
                 );
               }
 
-              if (controller.posts.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.all(AppSpacing.xl),
-                  child: Center(
-                    child: Text(
-                      'community.noPostsYet'.tr,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: textMuted) ??
-                          TextStyle(color: textMuted),
-                    ),
-                  ),
-                );
-              }
-
-              return Column(
-                children: [
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: controller.posts.length,
-                    itemBuilder: (context, index) {
-                      final post = controller.posts[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                        child: PostCardWidget(
-                          post: post,
-                          controller: controller,
-                        ),
-                      );
-                    },
-                  ),
-                  if (controller.isLoadingMore.value)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.communityAccent,
-                          strokeWidth: 2.5,
-                        ),
-                      ),
-                    ),
-                ],
+              return _buildMixedFeedContent(
+                context,
+                controller,
+                isDark,
+                textPrimary,
+                textSecondary,
+                textMuted,
+                surfaceSecondary,
+                borderSubtle,
               );
             }),
 
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.lg),
           ],
         ),
       ),
+    );
+  }
+
+  // POST COMPOSER WIDGET
+  Widget _buildFeedPostComposer(
+    BuildContext context,
+    CommunityController controller,
+    bool isDark,
+    Color textPrimary,
+    Color textSecondary,
+    Color textMuted,
+    Color surfaceSecondary,
+    Color borderSubtle,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Container(
+        decoration: BoxDecoration(
+          color: surfaceSecondary,
+          borderRadius: BorderRadius.circular(AppRadius.squircle),
+          border: Border.all(color: borderSubtle, width: 0.8),
+        ),
+        child: Column(
+          children: [
+            // Top Row: Avatar + "What's on your mind?"
+            InkWell(
+              onTap: () => CommunityCreationFlow.openCreatePost(context),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.squircle),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 18,
+                      backgroundImage: AssetImage('assets/images/user_profile.png'),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.black.withValues(alpha: 0.04),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          border: Border.all(
+                            color: borderSubtle,
+                            width: 0.6,
+                          ),
+                        ),
+                        child: Text(
+                          'community.whatsOnYourMind'.tr.isNotEmpty &&
+                                  'community.whatsOnYourMind'.tr !=
+                                      'community.whatsOnYourMind'
+                              ? 'community.whatsOnYourMind'.tr
+                              : "What's on your mind?",
+                          style: TextStyle(
+                            color: textMuted,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            Divider(height: 1, color: borderSubtle, thickness: 0.8),
+
+            // Bottom Row: Photo | Video | Feeling | Location
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildComposerQuickButton(
+                    context: context,
+                    icon: Icons.photo_library_outlined,
+                    label: 'Photo',
+                    color: const Color(0xFF4E95FF),
+                    onTap: () => CommunityCreationFlow.openCreatePost(context),
+                    textSecondary: textSecondary,
+                  ),
+                  const SizedBox(width: 6),
+                  _buildComposerQuickButton(
+                    context: context,
+                    icon: Icons.videocam_outlined,
+                    label: 'Video',
+                    color: const Color(0xFF43C97E),
+                    onTap: () => CommunityCreationFlow.openCreatePost(context),
+                    textSecondary: textSecondary,
+                  ),
+                  const SizedBox(width: 6),
+                  _buildComposerQuickButton(
+                    context: context,
+                    icon: Icons.sentiment_satisfied_alt_outlined,
+                    label: 'Feeling',
+                    color: const Color(0xFFF5A623),
+                    onTap: () => CommunityCreationFlow.openCreatePost(context),
+                    textSecondary: textSecondary,
+                  ),
+                  const SizedBox(width: 6),
+                  _buildComposerQuickButton(
+                    context: context,
+                    icon: Icons.location_on_outlined,
+                    label: 'Location',
+                    color: const Color(0xFFE05252),
+                    onTap: () => CommunityCreationFlow.openCreatePost(context),
+                    textSecondary: textSecondary,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildComposerQuickButton({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+    required Color textSecondary,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 17, color: color),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                color: textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // MIXED FEED CONTENT BUILDER
+  Widget _buildMixedFeedContent(
+    BuildContext context,
+    CommunityController controller,
+    bool isDark,
+    Color textPrimary,
+    Color textSecondary,
+    Color textMuted,
+    Color surfaceSecondary,
+    Color borderSubtle,
+  ) {
+    final posts = controller.posts;
+    final List<Widget> items = [];
+
+    if (posts.isEmpty) {
+      items.add(
+        _buildUpcomingEventsFeedPreview(
+          context,
+          controller,
+          isDark,
+          textPrimary,
+          textSecondary,
+          textMuted,
+          surfaceSecondary,
+          borderSubtle,
+        ),
+      );
+      items.add(const SizedBox(height: 12));
+      items.add(
+        _buildTrendingDiscussionsFeedPreview(
+          context,
+          controller,
+          isDark,
+          textPrimary,
+          textSecondary,
+          textMuted,
+          surfaceSecondary,
+          borderSubtle,
+        ),
+      );
+      items.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: AppSpacing.md),
+          child: Center(
+            child: Text(
+              'community.noPostsYet'.tr,
+              style: TextStyle(color: textMuted, fontSize: 14),
+            ),
+          ),
+        ),
+      );
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: items,
+      );
+    }
+
+    // 1. First Social Post
+    items.add(
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        child: PostCardWidget(
+          post: posts[0],
+          controller: controller,
+        ),
+      ),
+    );
+
+    // 2. Upcoming Events Preview Section (1-2 compact cards)
+    items.add(const SizedBox(height: 12));
+    items.add(
+      _buildUpcomingEventsFeedPreview(
+        context,
+        controller,
+        isDark,
+        textPrimary,
+        textSecondary,
+        textMuted,
+        surfaceSecondary,
+        borderSubtle,
+      ),
+    );
+
+    // 3. Second Social Post (if available)
+    if (posts.length > 1) {
+      items.add(const SizedBox(height: 12));
+      items.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: PostCardWidget(
+            post: posts[1],
+            controller: controller,
+          ),
+        ),
+      );
+    }
+
+    // 4. Trending Discussions Preview Section (1-2 compact cards)
+    items.add(const SizedBox(height: 12));
+    items.add(
+      _buildTrendingDiscussionsFeedPreview(
+        context,
+        controller,
+        isDark,
+        textPrimary,
+        textSecondary,
+        textMuted,
+        surfaceSecondary,
+        borderSubtle,
+      ),
+    );
+
+    // 5. Remaining Social Posts (post 2 onwards)
+    if (posts.length > 2) {
+      for (int i = 2; i < posts.length; i++) {
+        items.add(const SizedBox(height: 12));
+        items.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: PostCardWidget(
+              post: posts[i],
+              controller: controller,
+            ),
+          ),
+        );
+      }
+    }
+
+    // 6. Loading More Indicator
+    if (controller.isLoadingMore.value) {
+      items.add(
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+          child: Center(
+            child: CircularProgressIndicator(
+              color: AppColors.communityAccent,
+              strokeWidth: 2.5,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: items,
     );
   }
 
@@ -332,7 +614,6 @@ class CommunityScreen extends GetView<CommunityController> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        controller.forumPinnedDiscussions.refresh();
         controller.forumLatestDiscussions.refresh();
       },
       color: AppColors.communityAccent,
@@ -348,10 +629,9 @@ class CommunityScreen extends GetView<CommunityController> {
           bottomPadding,
         ),
         child: Obx(() {
-          final pinned = controller.forumPinnedDiscussions;
           final latest = controller.forumLatestDiscussions;
 
-          if (pinned.isEmpty && latest.isEmpty) {
+          if (latest.isEmpty) {
             return Padding(
               padding: const EdgeInsets.symmetric(
                 vertical: 48,
@@ -428,101 +708,314 @@ class CommunityScreen extends GetView<CommunityController> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (pinned.isNotEmpty) ...[
-                // Pinned Discussions Section
-                Text(
-                  'community.pinnedDiscussions'.tr.isNotEmpty &&
-                          'community.pinnedDiscussions'.tr !=
-                              'community.pinnedDiscussions'
-                      ? 'community.pinnedDiscussions'.tr
-                      : '📌 Pinned Discussions',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                        color: textPrimary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ) ??
-                      TextStyle(
-                        color: textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+              // Latest Discussions Section (Pinned Discussions completely removed)
+              Text(
+                'community.latestDiscussions'.tr.isNotEmpty &&
+                        'community.latestDiscussions'.tr !=
+                            'community.latestDiscussions'
+                    ? 'community.latestDiscussions'.tr
+                    : 'Latest Discussions',
+                style: theme.textTheme.titleMedium?.copyWith(
+                      color: textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ) ??
+                    TextStyle(
+                      color: textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 10),
+              ...latest.map((topic) => ForumThreadCard(
+                    title: topic.title,
+                    author: topic.authorName,
+                    avatarUrl: topic.authorAvatar,
+                    timeAgo: topic.timeAgo,
+                    category: topic.category,
+                    replies: topic.repliesCount,
+                    likes: topic.upvotes,
+                    isPinned: false,
+                    isLiked: topic.isLiked,
+                    onTap: () => Get.to(
+                      () => ForumDiscussionScreen(discussion: topic),
+                    ),
+                    onLikeTap: () =>
+                        controller.toggleDiscussionLike(topic.id),
+                    onCommentTap: () => Get.to(
+                      () => ForumDiscussionScreen(discussion: topic),
+                    ),
+                    onCategoryTap: () => Get.to(
+                      () => ForumCategoryScreen(
+                        categoryTitle: topic.category,
                       ),
-                ),
-                const SizedBox(height: 10),
-                ...pinned.map((topic) => ForumThreadCard(
-                      title: topic.title,
-                      author: topic.authorName,
-                      avatarUrl: topic.authorAvatar,
-                      timeAgo: topic.timeAgo,
-                      category: topic.category,
-                      replies: topic.repliesCount,
-                      likes: topic.upvotes,
-                      isPinned: topic.isPinned,
-                      isLiked: topic.isLiked,
-                      onTap: () => Get.to(
-                        () => ForumDiscussionScreen(discussion: topic),
-                      ),
-                      onLikeTap: () =>
-                          controller.toggleDiscussionLike(topic.id),
-                      onCommentTap: () => Get.to(
-                        () => ForumDiscussionScreen(discussion: topic),
-                      ),
-                      onCategoryTap: () => Get.to(
-                        () => ForumCategoryScreen(
-                          categoryTitle: topic.category,
-                        ),
-                      ),
-                    )),
-                const SizedBox(height: 10),
-              ],
-
-              if (latest.isNotEmpty) ...[
-                // Latest Discussions Section
-                Text(
-                  'community.latestDiscussions'.tr.isNotEmpty &&
-                          'community.latestDiscussions'.tr !=
-                              'community.latestDiscussions'
-                      ? 'community.latestDiscussions'.tr
-                      : 'Latest Discussions',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                        color: textPrimary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ) ??
-                      TextStyle(
-                        color: textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 10),
-                ...latest.map((topic) => ForumThreadCard(
-                      title: topic.title,
-                      author: topic.authorName,
-                      avatarUrl: topic.authorAvatar,
-                      timeAgo: topic.timeAgo,
-                      category: topic.category,
-                      replies: topic.repliesCount,
-                      likes: topic.upvotes,
-                      isPinned: topic.isPinned,
-                      isLiked: topic.isLiked,
-                      onTap: () => Get.to(
-                        () => ForumDiscussionScreen(discussion: topic),
-                      ),
-                      onLikeTap: () =>
-                          controller.toggleDiscussionLike(topic.id),
-                      onCommentTap: () => Get.to(
-                        () => ForumDiscussionScreen(discussion: topic),
-                      ),
-                      onCategoryTap: () => Get.to(
-                        () => ForumCategoryScreen(
-                          categoryTitle: topic.category,
-                        ),
-                      ),
-                    )),
-              ],
+                    ),
+                    onMoreTap: () =>
+                        _showDiscussionMoreMenu(context, controller, topic),
+                  )),
             ],
           );
         }),
+      ),
+    );
+  }
+
+  void _showDiscussionMoreMenu(
+    BuildContext context,
+    CommunityController controller,
+    ForumTopicModel topic,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF1E2228) : Colors.white;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final borderSubtle =
+        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
+    final isOwner = topic.checkIsOwner(controller.currentUserId);
+
+    Get.bottomSheet(
+      Material(
+        color: bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border.all(color: borderSubtle, width: 1),
+          ),
+          child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              if (isOwner) ...[
+                // Owner Option: Edit Discussion
+                ListTile(
+                  leading:
+                      Icon(Icons.edit_outlined, color: textPrimary, size: 22),
+                  title: Text(
+                    'community.editDiscussion'.tr.isNotEmpty &&
+                            'community.editDiscussion'.tr !=
+                                'community.editDiscussion'
+                        ? 'community.editDiscussion'.tr
+                        : 'Edit Discussion',
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  onTap: () {
+                    Get.back();
+                    Get.to(() => CreateDiscussionScreen(
+                          initialDiscussion: topic,
+                        ));
+                  },
+                ),
+                // Owner Option: Delete Discussion
+                ListTile(
+                  leading: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColors.danger,
+                    size: 22,
+                  ),
+                  title: Text(
+                    'community.deleteDiscussion'.tr.isNotEmpty &&
+                            'community.deleteDiscussion'.tr !=
+                                'community.deleteDiscussion'
+                        ? 'community.deleteDiscussion'.tr
+                        : 'Delete Discussion',
+                    style: const TextStyle(
+                      color: AppColors.danger,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  onTap: () {
+                    Get.back();
+                    _showDeleteDiscussionDialog(context, controller, topic);
+                  },
+                ),
+              ] else ...[
+                // Non-Owner Option: Save
+                ListTile(
+                  leading: Icon(
+                    Icons.bookmark_border_rounded,
+                    color: textPrimary,
+                    size: 22,
+                  ),
+                  title: Text(
+                    'community.save'.tr.isNotEmpty &&
+                            'community.save'.tr != 'community.save'
+                        ? 'community.save'.tr
+                        : 'Save',
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  onTap: () {
+                    Get.back();
+                    AppNotificationBanner.showSuccess(
+                      context: context,
+                      title: 'Saved',
+                      message: 'Discussion saved to bookmarks.',
+                    );
+                  },
+                ),
+                // Non-Owner Option: Report
+                ListTile(
+                  leading: const Icon(
+                    Icons.report_outlined,
+                    color: AppColors.danger,
+                    size: 22,
+                  ),
+                  title: Text(
+                    'community.report'.tr.isNotEmpty &&
+                            'community.report'.tr != 'community.report'
+                        ? 'community.report'.tr
+                        : 'Report',
+                    style: const TextStyle(
+                      color: AppColors.danger,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  onTap: () {
+                    Get.back();
+                    AppNotificationBanner.showSuccess(
+                      context: context,
+                      title: 'Reported',
+                      message:
+                          'Thank you for reporting. Our team will review it.',
+                    );
+                  },
+                ),
+              ],
+              const SizedBox(height: 8),
+              // Cancel
+              ListTile(
+                leading:
+                    Icon(Icons.close_rounded, color: textSecondary, size: 22),
+                title: Text(
+                  'common.cancel'.tr.isNotEmpty &&
+                          'common.cancel'.tr != 'common.cancel'
+                      ? 'common.cancel'.tr
+                      : 'Cancel',
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 15,
+                  ),
+                ),
+                onTap: () => Get.back(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+    isScrollControlled: true,
+  );
+  }
+
+  void _showDeleteDiscussionDialog(
+    BuildContext context,
+    CommunityController controller,
+    ForumTopicModel topic,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = isDark ? const Color(0xFF1E2228) : Colors.white;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? Colors.white70 : AppColors.lightTextSecondary;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: dialogBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        title: Text(
+          'community.deleteDiscussion'.tr.isNotEmpty &&
+                  'community.deleteDiscussion'.tr != 'community.deleteDiscussion'
+              ? '${'community.deleteDiscussion'.tr}?'
+              : 'Delete Discussion?',
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'community.deleteDiscussionConfirm'.tr.isNotEmpty &&
+                  'community.deleteDiscussionConfirm'.tr !=
+                      'community.deleteDiscussionConfirm'
+              ? 'community.deleteDiscussionConfirm'.tr
+              : 'Are you sure you want to delete this discussion? This action cannot be undone.',
+          style: TextStyle(color: textSecondary, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'common.cancel'.tr.isNotEmpty &&
+                      'common.cancel'.tr != 'common.cancel'
+                  ? 'common.cancel'.tr
+                  : 'Cancel',
+              style: TextStyle(color: textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final success = await controller.deleteDiscussion(topic.id);
+              if (success && context.mounted) {
+                AppNotificationBanner.showSuccess(
+                  context: context,
+                  title: 'community.discussionDeleted'.tr.isNotEmpty &&
+                          'community.discussionDeleted'.tr !=
+                              'community.discussionDeleted'
+                      ? 'community.discussionDeleted'.tr
+                      : 'Discussion Deleted',
+                  message: 'community.discussionDeletedMsg'.tr.isNotEmpty &&
+                          'community.discussionDeletedMsg'.tr !=
+                              'community.discussionDeletedMsg'
+                      ? 'community.discussionDeletedMsg'.tr
+                      : 'Your discussion has been removed.',
+                );
+              }
+            },
+            child: Text(
+              'common.delete'.tr.isNotEmpty &&
+                      'common.delete'.tr != 'common.delete'
+                  ? 'common.delete'.tr
+                  : 'Delete',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -589,31 +1082,9 @@ class CommunityScreen extends GetView<CommunityController> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 6),
+              const SizedBox(height: 10),
 
-              // ── Featured Events Header ─────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: Text(
-                  'community.featuredEvents'.tr.isNotEmpty &&
-                          'community.featuredEvents'.tr != 'community.featuredEvents'
-                      ? 'community.featuredEvents'.tr
-                      : 'Featured Events',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                        color: textPrimary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ) ??
-                      TextStyle(
-                        color: textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // ── Featured Events Carousel with smooth animation & page indicator ──
+              // ── Featured Events Carousel with smooth auto-play & page indicator ──
               FeaturedEventsCarousel(
                 events: featuredList,
                 isDark: isDark,
@@ -624,9 +1095,9 @@ class CommunityScreen extends GetView<CommunityController> {
                 borderSubtle: borderSubtle,
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 22),
 
-              // ── Upcoming Events Header with Relocated Filter Button ─────────
+              // ── Upcoming Events Header with Filter Button ──────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Row(
@@ -842,7 +1313,11 @@ class CommunityScreen extends GetView<CommunityController> {
         ? '📅 ${ev.dateString} · ${ev.timeString}'
         : (ev.dateString.isNotEmpty ? '📅 ${ev.dateString}' : '');
 
-    final String categoryDisplay = ev.category.isNotEmpty ? ev.category : 'Event';
+    final String rawCat = ev.category.isNotEmpty ? ev.category : 'Event';
+    final String catKey = 'community.${rawCat.toLowerCase()}';
+    final String categoryDisplay = catKey.tr.isNotEmpty && catKey.tr != catKey
+        ? catKey.tr
+        : rawCat;
 
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0.0, end: 1.0),
@@ -873,13 +1348,14 @@ class CommunityScreen extends GetView<CommunityController> {
             border: Border.all(color: borderSubtle, width: 0.8),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left: 88x88 Square Thumbnail with Hero
+              // Left: 92x92 Square Thumbnail with Hero
               ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderRadius: BorderRadius.circular(14),
                 child: SizedBox(
-                  width: 88,
-                  height: 88,
+                  width: 92,
+                  height: 92,
                   child: Hero(
                     tag: 'event-image-${ev.id}-upcoming',
                     child: _buildEventImage(ev, isDark, textMuted),
@@ -888,7 +1364,7 @@ class CommunityScreen extends GetView<CommunityController> {
               ),
               const SizedBox(width: 12),
 
-              // Right: 2-3 Information Lines
+              // Right: Information Lines
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -897,40 +1373,68 @@ class CommunityScreen extends GetView<CommunityController> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2.5,
+                          ),
                           decoration: BoxDecoration(
                             color: isDark
                                 ? Colors.white.withValues(alpha: 0.08)
                                 : Colors.black.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             categoryDisplay,
                             style: TextStyle(
-                              color: textMuted,
+                              color: isDark ? Colors.white70 : textSecondary,
                               fontSize: 10.5,
                               fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
                             ),
                           ),
                         ),
                         if (ev.isPaid) ...[
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: AppColors.communityAccent.withValues(alpha: 0.15),
+                              color: AppColors.communityAccent
+                                  .withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text(
-                              'PAID',
-                              style: TextStyle(
+                            child: Text(
+                              'community.paid'.tr.toUpperCase(),
+                              style: const TextStyle(
                                 color: AppColors.communityAccent,
-                                fontSize: 10,
+                                fontSize: 9.5,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
                         ],
+                        const Spacer(),
+                        InkWell(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            controller.toggleEventBookmark(ev.id);
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Padding(
+                            padding: const EdgeInsets.all(3),
+                            child: Icon(
+                              ev.isBookmarked
+                                  ? Icons.bookmark_rounded
+                                  : Icons.bookmark_border_rounded,
+                              color: ev.isBookmarked
+                                  ? AppColors.communityAccent
+                                  : textMuted,
+                              size: 18,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -947,7 +1451,7 @@ class CommunityScreen extends GetView<CommunityController> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 5),
 
                     // Date & Time
                     if (dateDisplay.isNotEmpty) ...[
@@ -968,9 +1472,9 @@ class CommunityScreen extends GetView<CommunityController> {
                     Text(
                       locationDisplay,
                       style: TextStyle(
-                        color: textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                        color: textMuted,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w400,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1078,7 +1582,7 @@ class CommunityScreen extends GetView<CommunityController> {
     final theme = Theme.of(context);
 
     return Obx(() {
-      final previewEvents = controller.events.take(3).toList();
+      final previewEvents = controller.events.take(2).toList();
       if (previewEvents.isEmpty) {
         return const SizedBox.shrink();
       }
@@ -1122,8 +1626,8 @@ class CommunityScreen extends GetView<CommunityController> {
                       'home.seeAll'.tr.isNotEmpty && 'home.seeAll'.tr != 'home.seeAll'
                           ? 'home.seeAll'.tr
                           : 'See all',
-                      style: const TextStyle(
-                        color: AppColors.communityAccent,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppColors.lightTextPrimary,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1209,6 +1713,142 @@ class CommunityScreen extends GetView<CommunityController> {
                                   _buildFeedJoinButton(ev, controller, isDark),
                                 ],
                               ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget _buildTrendingDiscussionsFeedPreview(
+    BuildContext context,
+    CommunityController controller,
+    bool isDark,
+    Color textPrimary,
+    Color textSecondary,
+    Color textMuted,
+    Color surfaceSecondary,
+    Color borderSubtle,
+  ) {
+    final theme = Theme.of(context);
+
+    return Obx(() {
+      final previewDiscussions =
+          controller.forumLatestDiscussions.take(2).toList();
+      if (previewDiscussions.isEmpty) {
+        return const SizedBox.shrink();
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Section Header: Trending Discussions | See all ───────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'community.trendingDiscussions'.tr.isNotEmpty &&
+                            'community.trendingDiscussions'.tr !=
+                                'community.trendingDiscussions'
+                        ? 'community.trendingDiscussions'.tr
+                        : 'Trending Discussions',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                          color: textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ) ??
+                        TextStyle(
+                          color: textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () => controller.setCategory('Forum'),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    child: Text(
+                      'home.seeAll'.tr.isNotEmpty &&
+                              'home.seeAll'.tr != 'home.seeAll'
+                          ? 'home.seeAll'.tr
+                          : 'See all',
+                      style: TextStyle(
+                        color:
+                            isDark ? Colors.white : AppColors.lightTextPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // ── Compact Discussion Cards ──────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Column(
+              children: previewDiscussions.map((topic) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: surfaceSecondary,
+                    borderRadius: BorderRadius.circular(AppRadius.squircle),
+                    border: Border.all(color: borderSubtle, width: 0.8),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadius.squircle),
+                    child: InkWell(
+                      onTap: () => Get.to(
+                        () => ForumDiscussionScreen(discussion: topic),
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.squircle),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              topic.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                height: 1.3,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '${topic.repliesCount} replies · ${topic.upvotes} likes · ${topic.category}',
+                              style: TextStyle(
+                                color: textMuted,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
@@ -1382,7 +2022,7 @@ class CommunityScreen extends GetView<CommunityController> {
   }
 }
 
-/// Featured Events Carousel with PageView, scale/opacity swipe animation, and minimal indicator
+/// Featured Events Carousel with auto-play, touch pause/resume, scale/opacity animation, and minimal indicator
 class FeaturedEventsCarousel extends StatefulWidget {
   final List<EventModel> events;
   final bool isDark;
@@ -1410,18 +2050,56 @@ class FeaturedEventsCarousel extends StatefulWidget {
 class _FeaturedEventsCarouselState extends State<FeaturedEventsCarousel> {
   late final PageController _pageController;
   int _currentPage = 0;
+  Timer? _autoPlayTimer;
+  Timer? _resumeTimer;
+  bool _isUserInteracting = false;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(
-      viewportFraction: 0.88,
+      viewportFraction: 0.90,
       initialPage: 0,
     );
+    _startAutoPlay();
+  }
+
+  void _startAutoPlay() {
+    _autoPlayTimer?.cancel();
+    if (widget.events.length <= 1) return;
+    _autoPlayTimer = Timer.periodic(const Duration(milliseconds: 4500), (timer) {
+      if (!mounted || _isUserInteracting) return;
+      if (_pageController.hasClients) {
+        final nextPage = (_currentPage + 1) % widget.events.length;
+        _pageController.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOutCubic,
+        );
+      }
+    });
+  }
+
+  void _onUserInteractionStart() {
+    _isUserInteracting = true;
+    _autoPlayTimer?.cancel();
+    _resumeTimer?.cancel();
+  }
+
+  void _onUserInteractionEnd() {
+    _resumeTimer?.cancel();
+    _resumeTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        _isUserInteracting = false;
+        _startAutoPlay();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _autoPlayTimer?.cancel();
+    _resumeTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -1433,42 +2111,48 @@ class _FeaturedEventsCarouselState extends State<FeaturedEventsCarousel> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
-          height: 250,
-          child: PageView.builder(
-            controller: _pageController,
-            physics: const BouncingScrollPhysics(),
-            itemCount: widget.events.length,
-            onPageChanged: (idx) => setState(() => _currentPage = idx),
-            itemBuilder: (context, index) {
-              final ev = widget.events[index];
-              return AnimatedBuilder(
-                animation: _pageController,
-                builder: (context, child) {
-                  double scale = 1.0;
-                  double opacity = 1.0;
+        Listener(
+          onPointerDown: (_) => _onUserInteractionStart(),
+          onPointerUp: (_) => _onUserInteractionEnd(),
+          onPointerCancel: (_) => _onUserInteractionEnd(),
+          child: SizedBox(
+            height: 330,
+            child: PageView.builder(
+              controller: _pageController,
+              physics: const BouncingScrollPhysics(),
+              itemCount: widget.events.length,
+              onPageChanged: (idx) => setState(() => _currentPage = idx),
+              itemBuilder: (context, index) {
+                final ev = widget.events[index];
+                return AnimatedBuilder(
+                  animation: _pageController,
+                  builder: (context, child) {
+                    double scale = 1.0;
+                    double opacity = 1.0;
 
-                  if (_pageController.position.haveDimensions) {
-                    final page = _pageController.page ?? _pageController.initialPage.toDouble();
-                    final diff = (page - index).abs();
-                    scale = (1.0 - (diff * 0.06)).clamp(0.94, 1.0);
-                    opacity = (1.0 - (diff * 0.18)).clamp(0.82, 1.0);
-                  } else {
-                    scale = index == _currentPage ? 1.0 : 0.94;
-                    opacity = index == _currentPage ? 1.0 : 0.85;
-                  }
+                    if (_pageController.position.haveDimensions) {
+                      final page = _pageController.page ??
+                          _pageController.initialPage.toDouble();
+                      final diff = (page - index).abs();
+                      scale = (1.0 - (diff * 0.05)).clamp(0.95, 1.0);
+                      opacity = (1.0 - (diff * 0.15)).clamp(0.85, 1.0);
+                    } else {
+                      scale = index == _currentPage ? 1.0 : 0.95;
+                      opacity = index == _currentPage ? 1.0 : 0.88;
+                    }
 
-                  return Transform.scale(
-                    scale: scale,
-                    child: Opacity(
-                      opacity: opacity,
-                      child: child,
-                    ),
-                  );
-                },
-                child: _buildFeaturedCard(ev),
-              );
-            },
+                    return Transform.scale(
+                      scale: scale,
+                      child: Opacity(
+                        opacity: opacity,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: _buildFeaturedCard(ev),
+                );
+              },
+            ),
           ),
         ),
         if (widget.events.length > 1) ...[
@@ -1478,15 +2162,17 @@ class _FeaturedEventsCarouselState extends State<FeaturedEventsCarousel> {
             children: List.generate(
               widget.events.length,
               (dotIndex) => AnimatedContainer(
-                duration: const Duration(milliseconds: 260),
+                duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
                 margin: const EdgeInsets.symmetric(horizontal: 3),
-                width: _currentPage == dotIndex ? 18 : 5,
-                height: 5,
+                width: _currentPage == dotIndex ? 22 : 5,
+                height: 4.5,
                 decoration: BoxDecoration(
                   color: _currentPage == dotIndex
                       ? (widget.isDark ? Colors.white : Colors.black)
-                      : (widget.isDark ? Colors.white24 : Colors.black12),
+                      : (widget.isDark
+                          ? Colors.white.withValues(alpha: 0.25)
+                          : Colors.black.withValues(alpha: 0.18)),
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
@@ -1500,19 +2186,24 @@ class _FeaturedEventsCarouselState extends State<FeaturedEventsCarousel> {
   Widget _buildFeaturedCard(EventModel ev) {
     final isOnline = ev.eventType.toLowerCase().contains('online');
     final String locationDisplay = isOnline
-        ? '🌐 Online Event'
-        : '📍 ${ev.location.isNotEmpty ? ev.location : "In Person"}';
+        ? ('community.onlineEvent'.tr.isNotEmpty &&
+                'community.onlineEvent'.tr != 'community.onlineEvent'
+            ? 'community.onlineEvent'.tr
+            : '🌐 Online Event')
+        : (ev.location.isNotEmpty ? '📍 ${ev.location}' : '📍 In Person');
 
     final String dateDisplay = ev.timeString.isNotEmpty
         ? '📅 ${ev.dateString} · ${ev.timeString}'
         : (ev.dateString.isNotEmpty ? '📅 ${ev.dateString}' : '');
 
-    final String categoryBadge = ev.category.isNotEmpty
-        ? ev.category.toUpperCase()
-        : 'FEATURED';
+    final String rawCat = ev.category.isNotEmpty ? ev.category : 'Event';
+    final String catKey = 'community.${rawCat.toLowerCase()}';
+    final String categoryBadge = catKey.tr.isNotEmpty && catKey.tr != catKey
+        ? catKey.tr.toUpperCase()
+        : rawCat.toUpperCase();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       child: InkWell(
         onTap: () => Get.to(
           () => EventDetailsScreen(
@@ -1520,117 +2211,311 @@ class _FeaturedEventsCarouselState extends State<FeaturedEventsCarousel> {
             heroTag: 'event-image-${ev.id}-featured',
           ),
         ),
-        borderRadius: BorderRadius.circular(AppRadius.squircle),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           decoration: BoxDecoration(
             color: widget.surfaceSecondary,
-            borderRadius: BorderRadius.circular(AppRadius.squircle),
-            border: Border.all(color: widget.borderSubtle, width: 0.8),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: widget.isDark
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : widget.borderSubtle,
+              width: 0.8,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: widget.isDark ? 0.25 : 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
+                color: Colors.black.withValues(
+                  alpha: widget.isDark ? 0.35 : 0.08,
+                ),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Event Image (Top)
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppRadius.squircle - 1),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // 1. Full-bleed Background Event Image
+                Hero(
+                  tag: 'event-image-${ev.id}-featured',
+                  child: CommunityScreen._buildEventImage(
+                    ev,
+                    widget.isDark,
+                    widget.textMuted,
+                  ),
                 ),
-                child: SizedBox(
-                  height: 124,
-                  width: double.infinity,
-                  child: Hero(
-                    tag: 'event-image-${ev.id}-featured',
-                    child: CommunityScreen._buildEventImage(
-                      ev,
-                      widget.isDark,
-                      widget.textMuted,
+
+                // 2. Multi-stop Dark Gradient Overlay for Maximum Readability
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.32),
+                        Colors.black.withValues(alpha: 0.48),
+                        Colors.black.withValues(alpha: 0.92),
+                      ],
+                      stops: const [0.0, 0.40, 1.0],
                     ),
                   ),
                 ),
-              ),
 
-              // Event Information (Bottom)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            categoryBadge,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.communityAccent,
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
+                // 3. Foreground Information Layer
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Top Row: Category Badge & Bookmark Button
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.50),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              categoryBadge,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6,
+                              ),
                             ),
                           ),
-                        ),
-                        if (ev.attendeesCount > 0) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            '${ev.attendeesCount} joined',
-                            style: TextStyle(
-                              color: widget.textMuted,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
+                          InkWell(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              Get.find<CommunityController>()
+                                  .toggleEventBookmark(ev.id);
+                            },
+                            borderRadius: BorderRadius.circular(18),
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.50),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.25),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Icon(
+                                ev.isBookmarked
+                                    ? Icons.bookmark_rounded
+                                    : Icons.bookmark_border_rounded,
+                                color: ev.isBookmarked
+                                    ? AppColors.communityAccent
+                                    : Colors.white,
+                                size: 19,
+                              ),
                             ),
                           ),
                         ],
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      ev.title,
-                      style: TextStyle(
-                        color: widget.textPrimary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14.5,
-                        height: 1.25,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    if (dateDisplay.isNotEmpty) ...[
+
+                      const Spacer(),
+
+                      // Title
                       Text(
-                        dateDisplay,
-                        style: TextStyle(
-                          color: widget.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                        ev.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 19,
+                          height: 1.22,
+                          letterSpacing: -0.3,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
-                    ],
-                    Text(
-                      locationDisplay,
-                      style: TextStyle(
-                        color: widget.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+
+                      // Subtitle
+                      if (ev.subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          ev.subtitle,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            fontSize: 12.5,
+                            height: 1.3,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+
+                      const SizedBox(height: 10),
+
+                      // Grouped Metadata Panel (Clean Frosted Container)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (dateDisplay.isNotEmpty)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      dateDisplay,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            if (dateDisplay.isNotEmpty)
+                              const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    locationDisplay,
+                                    style: TextStyle(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.9),
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+
+                      const SizedBox(height: 10),
+
+                      // Bottom Row: Attendees & View Details Action
+                      Row(
+                        children: [
+                          if (ev.attendeeAvatars.isNotEmpty) ...[
+                            SizedBox(
+                              width: 18.0 *
+                                      (ev.attendeeAvatars.take(3).length - 1) +
+                                  24,
+                              height: 24,
+                              child: Stack(
+                                children: List.generate(
+                                  ev.attendeeAvatars.take(3).length,
+                                  (avatarIdx) => Positioned(
+                                    left: avatarIdx * 16.0,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: CircleAvatar(
+                                        radius: 10.5,
+                                        backgroundImage: AssetImage(
+                                          ev.attendeeAvatars[avatarIdx],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                          ] else ...[
+                            const Icon(
+                              Icons.people_outline_rounded,
+                              color: Colors.white70,
+                              size: 15,
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                          Text(
+                            '${ev.attendeesCount} ${'community.joined'.tr.isNotEmpty && 'community.joined'.tr != 'community.joined' ? 'community.joined'.tr : 'joined'}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.20),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.30),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'community.viewDetails'.tr.isNotEmpty &&
+                                          'community.viewDetails'.tr !=
+                                              'community.viewDetails'
+                                      ? 'community.viewDetails'.tr
+                                      : 'View details',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.arrow_forward_rounded,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

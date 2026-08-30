@@ -17,7 +17,11 @@ class CommunityController extends GetxController {
   final CommunityRepository? _injectedRepository;
 
   CommunityController({CommunityRepository? repository})
-      : _injectedRepository = repository;
+      : _injectedRepository = repository {
+    if (repository != null) {
+      this.repository = repository;
+    }
+  }
 
   final ScrollController scrollController = ScrollController();
 
@@ -115,50 +119,103 @@ class CommunityController extends GetxController {
     EventModel(
       id: 'ev1',
       title: 'Flutter Workshop 2026',
-      subtitle: 'Build Cross-platform Apps with Flutter',
-      organizerName: 'GenLink Cambodia',
+      subtitle: 'Build real-world mobile apps with Flutter from scratch.',
+      organizerName: 'AUB Digital Academy',
       eventType: 'In person',
       location: 'ACLEDA University, Phnom Penh',
       dateString: '25 Jul 2026',
       timeString: '9:00 AM – 4:00 PM',
       description:
-          'Join us for an intensive hands-on workshop where you will learn how to build beautiful and high-performance cross-platform applications using Flutter.\n\nWhether you are a beginner or looking to enhance your skills, this workshop covers clean architecture, state management, and real-world backend API integration.',
+          'Join us for an intensive hands-on workshop where you will learn how to build beautiful and high-performance cross-platform applications using Flutter.\n\nWhether you are a beginner or looking to enhance your skills, this workshop covers clean architecture, reactive state management with GetX, and real-world backend API integration.',
       category: 'Workshop',
       imageUrl:
-          'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800',
+          'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1200&auto=format&fit=crop&q=80',
       attendeesCount: 120,
+      attendeeAvatars: [
+        'assets/images/user_profile.png',
+        'assets/images/heng_chansela_profile.png',
+        'assets/images/ren_makara_profile.png',
+      ],
     ),
     EventModel(
       id: 'ev2',
       title: 'AI in Everyday Life',
-      subtitle: 'Explore how AI is changing the world',
-      organizerName: 'Institute of Technology',
+      subtitle: 'Explore the future of intelligent student & campus applications',
+      organizerName: 'Cambodia Academy of Digital Technology',
       eventType: 'Online',
       onlineLink: 'https://meet.google.com/abc-defg-hij',
       dateString: '26 Jul 2026',
       timeString: '2:00 PM – 5:00 PM',
       description:
-          'Discover how artificial intelligence is transforming daily life. From smart assistants to recommendation systems, explore the technology behind the future.',
+          'Discover how artificial intelligence is transforming daily life, academic research, and engineering. Explore the technology behind modern LLMs, neural networks, and computer vision.',
       category: 'Seminar',
       imageUrl:
-          'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800',
+          'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80',
       attendeesCount: 85,
+      attendeeAvatars: [
+        'assets/images/heng_chansela_profile.png',
+        'assets/images/user_profile.png',
+      ],
     ),
     EventModel(
       id: 'ev3',
       title: 'GenLink Hackathon 2026',
-      subtitle: 'Code. Solve. Impact.',
-      organizerName: 'GenLink Cambodia',
+      subtitle: 'Code, collaborate, and build solutions for community challenges',
+      organizerName: 'GenLink Developer Community',
       eventType: 'In person',
-      location: 'Diamond Island Convention Center',
+      location: 'Diamond Island Convention Center, Phnom Penh',
       dateString: '30 Jul 2026',
       timeString: '8:00 AM – 8:00 PM',
       description:
-          '12 hours. Real problems. Real prizes. Join hundreds of Cambodia\'s brightest minds and build solutions that matter.',
+          '12 hours. Real problems. Real prizes. Join hundreds of Cambodia\'s brightest student developers, designers, and innovators to build products that solve real-world campus problems.',
       category: 'Hackathon',
       imageUrl:
-          'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800',
+          'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1200&auto=format&fit=crop&q=80',
       attendeesCount: 230,
+      attendeeAvatars: [
+        'assets/images/ren_makara_profile.png',
+        'assets/images/user_profile.png',
+        'assets/images/heng_chansela_profile.png',
+      ],
+    ),
+    EventModel(
+      id: 'ev4',
+      title: 'Career Talk Series: Tech in Banking',
+      subtitle: 'Navigating software engineering opportunities in Cambodia\'s leading financial institutions',
+      organizerName: 'ACLEDA Bank Plc.',
+      eventType: 'In person',
+      location: 'ACLEDA University Campus, Phnom Penh',
+      dateString: '2 Aug 2026',
+      timeString: '9:30 AM – 12:00 PM',
+      description:
+          'Meet senior engineering leads, software architects, and product managers from ACLEDA Bank. Learn what it takes to land internships and junior developer roles.',
+      category: 'Career',
+      imageUrl:
+          'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=1200&auto=format&fit=crop&q=80',
+      attendeesCount: 94,
+      attendeeAvatars: [
+        'assets/images/user_profile.png',
+        'assets/images/ren_makara_profile.png',
+      ],
+    ),
+    EventModel(
+      id: 'ev5',
+      title: 'Cloud Architecture & DevOps',
+      subtitle: 'Modern deployment pipelines with Docker and Kubernetes',
+      organizerName: 'CADT Cloud Club',
+      eventType: 'Online',
+      onlineLink: 'https://meet.google.com/devops-mastery-kh',
+      dateString: '8 Aug 2026',
+      timeString: '3:00 PM – 5:30 PM',
+      description:
+          'Master modern containerization, CI/CD pipelines, and cloud native scaling strategies tailored for computer science students.',
+      category: 'Technology',
+      imageUrl:
+          'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
+      attendeesCount: 68,
+      attendeeAvatars: [
+        'assets/images/heng_chansela_profile.png',
+      ],
     ),
   ].obs;
 
@@ -174,6 +231,15 @@ class CommunityController extends GetxController {
     final ev = events[idx];
     ev.isRsvped = !ev.isRsvped;
     ev.attendeesCount += ev.isRsvped ? 1 : -1;
+    events.refresh();
+  }
+
+  /// Toggles bookmark/saved state for the event with [eventId].
+  void toggleEventBookmark(String eventId) {
+    final idx = events.indexWhere((e) => e.id == eventId);
+    if (idx == -1) return;
+    final ev = events[idx];
+    ev.isBookmarked = !ev.isBookmarked;
     events.refresh();
   }
 
@@ -199,17 +265,24 @@ class CommunityController extends GetxController {
   List<EventModel> get filteredEvents {
     return events.where((e) {
       // 1. Category filter
-      if (selectedEventCategories.isNotEmpty &&
-          !selectedEventCategories.contains(e.category)) {
-        return false;
+      if (selectedEventCategories.isNotEmpty) {
+        final catLower = e.category.toLowerCase();
+        final matchesCategory = selectedEventCategories.any((cat) {
+          final filterCatLower = cat.toLowerCase();
+          return catLower.contains(filterCatLower) || filterCatLower.contains(catLower);
+        });
+        if (!matchesCategory) {
+          return false;
+        }
       }
       // 2. Format / Mode filter (In person vs Online)
       if (selectedEventMode.value != 'All') {
         final isOnline = e.eventType.toLowerCase().contains('online');
-        if (selectedEventMode.value == 'Online' && !isOnline) {
+        final filterModeLower = selectedEventMode.value.toLowerCase();
+        if (filterModeLower.contains('online') && !isOnline) {
           return false;
         }
-        if (selectedEventMode.value == 'In person' && isOnline) {
+        if ((filterModeLower.contains('in person') || filterModeLower.contains('campus')) && isOnline) {
           return false;
         }
       }
@@ -257,23 +330,12 @@ class CommunityController extends GetxController {
   }
 
   // ── Forum State ───────────────────────────────────────────────────────────
-  final forumPinnedDiscussions = <ForumTopicModel>[
+  final forumPinnedDiscussions = <ForumTopicModel>[].obs;
+
+  final forumLatestDiscussions = <ForumTopicModel>[
     ForumTopicModel(
-      id: 'pinned_1',
-      title: 'Guidelines for GenLink KH Annual Student Project Showcase 2026',
-      authorName: 'Admin Team',
-      authorAvatar: 'assets/images/user_profile.png',
-      timeAgo: '1d ago',
-      category: 'Technology',
-      content:
-          'Welcome to the 2026 Annual Student Project Showcase! Please review our submission deadlines, presentation criteria, and judging rubric before submitting your entries.',
-      repliesCount: 48,
-      upvotes: 142,
-      isPinned: true,
-      isLiked: false,
-    ),
-    ForumTopicModel(
-      id: 'pinned_2',
+      id: 'latest_1',
+      authorId: 'user_me',
       title: 'Best practices for GetX state management in Flutter Community App',
       authorName: 'Sokny Enat',
       authorAvatar: 'assets/images/user_profile.png',
@@ -283,14 +345,12 @@ class CommunityController extends GetxController {
           'When structuring large Flutter apps with GetX, prefer domain separation, avoid calling Get.put inside build methods, and use bindings for deterministic lifecycle management.',
       repliesCount: 24,
       upvotes: 89,
-      isPinned: true,
       isLiked: false,
+      isOwner: true,
     ),
-  ].obs;
-
-  final forumLatestDiscussions = <ForumTopicModel>[
     ForumTopicModel(
-      id: 'latest_1',
+      id: 'latest_2',
+      authorId: 'u1',
       title: 'How to prepare for junior software engineer interviews in Phnom Penh?',
       authorName: 'Rathana P.',
       authorAvatar: 'assets/images/heng_chansela_profile.png',
@@ -300,11 +360,12 @@ class CommunityController extends GetxController {
           'Preparing for tech interviews at local tech companies and banks? Focus on Data Structures, RESTful APIs, Git workflow, and real portfolio projects.',
       repliesCount: 19,
       upvotes: 45,
-      isPinned: false,
       isLiked: false,
+      isOwner: false,
     ),
     ForumTopicModel(
-      id: 'latest_2',
+      id: 'latest_3',
+      authorId: 'u2',
       title: 'Study group for CADT Data Structures and Algorithms exam next week',
       authorName: 'Heng Chansela',
       authorAvatar: 'assets/images/heng_chansela_profile.png',
@@ -314,11 +375,12 @@ class CommunityController extends GetxController {
           'We are organizing an online and on-campus study session for DSA. Topics include Dynamic Programming, Graph Traversals, and Complexity Analysis.',
       repliesCount: 31,
       upvotes: 67,
-      isPinned: false,
       isLiked: false,
+      isOwner: false,
     ),
     ForumTopicModel(
-      id: 'latest_3',
+      id: 'latest_4',
+      authorId: 'u3',
       title: 'Sharing my AI project built with Python and Flutter Web',
       authorName: 'Ren Makara',
       authorAvatar: 'assets/images/ren_makara_profile.png',
@@ -328,11 +390,12 @@ class CommunityController extends GetxController {
           'Hey everyone! I just published my open-source project combining Flutter frontend with a FastAPI backend. Check out the demo and repo.',
       repliesCount: 14,
       upvotes: 53,
-      isPinned: false,
       isLiked: false,
+      isOwner: false,
     ),
     ForumTopicModel(
-      id: 'latest_4',
+      id: 'latest_5',
+      authorId: 'u4',
       title: 'Campus Hackathon 2026 registration is officially open!',
       authorName: 'Chhaeng Sokuntheara',
       authorAvatar: 'assets/images/sokuntheara_profile.png',
@@ -342,60 +405,187 @@ class CommunityController extends GetxController {
           'Excited to announce GenLink KH Campus Hackathon 2026! Over 50 teams will compete over 48 hours to solve real community challenges.',
       repliesCount: 42,
       upvotes: 110,
-      isPinned: false,
       isLiked: false,
+      isOwner: false,
     ),
   ].obs;
 
-  /// Optimistically toggle like on a forum discussion
+  /// Optimistically toggle like on a forum discussion and synchronize with Feed
   void toggleDiscussionLike(String discussionId) {
-    final pinIdx = forumPinnedDiscussions.indexWhere((d) => d.id == discussionId);
-    if (pinIdx != -1) {
-      final item = forumPinnedDiscussions[pinIdx];
-      item.isLiked = !item.isLiked;
-      item.upvotes += item.isLiked ? 1 : -1;
-      forumPinnedDiscussions[pinIdx] = item.copyWith();
-      forumPinnedDiscussions.refresh();
-      return;
-    }
+    bool? newLikedState;
+    int? newLikesCount;
 
     final latestIdx = forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
     if (latestIdx != -1) {
       final item = forumLatestDiscussions[latestIdx];
       item.isLiked = !item.isLiked;
       item.upvotes += item.isLiked ? 1 : -1;
+      newLikedState = item.isLiked;
+      newLikesCount = item.upvotes;
       forumLatestDiscussions[latestIdx] = item.copyWith();
       forumLatestDiscussions.refresh();
     }
+
+    // Sync with Feed post with same ID
+    final postIdx = posts.indexWhere((p) => p.id == discussionId);
+    if (postIdx != -1) {
+      final post = posts[postIdx];
+      if (newLikedState != null) {
+        post.isLiked = newLikedState;
+        post.likesCount = newLikesCount ?? post.likesCount;
+      } else {
+        post.isLiked = !post.isLiked;
+        post.likesCount += post.isLiked ? 1 : -1;
+      }
+      posts[postIdx] = post.copyWith();
+      posts.refresh();
+    }
+
+    repository.toggleDiscussionLike(discussionId).catchError((_) => false);
   }
 
-  /// Adds a new discussion to the top of latest discussions
-  void addDiscussion({
+  /// Adds a new discussion (with backend sync and Feed sync)
+  Future<ForumTopicModel> addDiscussion({
     required String title,
     required String content,
     required String category,
-  }) {
-    final newDiscussion = ForumTopicModel(
-      id: 'disc_${DateTime.now().millisecondsSinceEpoch}',
-      title: title,
-      authorName: currentUserName,
-      authorAvatar: 'assets/images/user_profile.png',
-      category: category,
-      content: content,
-      timeAgo: 'Just now',
-      upvotes: 0,
-      repliesCount: 0,
-      isLiked: false,
-      isPinned: false,
-    );
-    forumLatestDiscussions.insert(0, newDiscussion);
+  }) async {
+    final uid = currentUserId ?? 'user_me';
+    final uname = currentUserName;
+
+    ForumTopicModel createdTopic;
+    try {
+      createdTopic = await repository.createDiscussion(
+        title: title,
+        content: content,
+        category: category,
+      );
+    } catch (_) {
+      createdTopic = ForumTopicModel(
+        id: 'disc_${DateTime.now().millisecondsSinceEpoch}',
+        authorId: uid,
+        title: title,
+        authorName: uname,
+        authorAvatar: 'assets/images/user_profile.png',
+        category: category,
+        content: content,
+        timeAgo: 'Just now',
+        upvotes: 0,
+        repliesCount: 0,
+        isLiked: false,
+        isPinned: false,
+        isOwner: true,
+      );
+    }
+
+    // Ensure ownership flag
+    if (createdTopic.authorId == null || isOwnUserId(createdTopic.authorId!)) {
+      createdTopic = createdTopic.copyWith(isOwner: true, authorId: uid);
+    }
+
+    forumLatestDiscussions.insert(0, createdTopic);
     forumLatestDiscussions.refresh();
+
+    // Synchronize to Feed
+    final feedPost = CommunityPostModel(
+      id: createdTopic.id,
+      userId: uid,
+      authorName: createdTopic.authorName,
+      authorTag: '@${uname.toLowerCase().replaceAll(' ', '')}',
+      authorAvatar: createdTopic.authorAvatar,
+      isVerified: false,
+      timeAgo: createdTopic.timeAgo,
+      content: createdTopic.content,
+      likesCount: createdTopic.upvotes,
+      commentsCount: createdTopic.repliesCount,
+      sharesCount: 0,
+      isLiked: createdTopic.isLiked,
+      isOwner: true,
+      visibility: 'Public',
+      community: 'All GenLink',
+      postType: 'DISCUSSION',
+      discussionTitle: createdTopic.title,
+      category: createdTopic.category,
+    );
+
+    final existingIdx = posts.indexWhere((p) => p.id == createdTopic.id);
+    if (existingIdx == -1) {
+      posts.insert(0, feedPost);
+    } else {
+      posts[existingIdx] = feedPost;
+    }
+    posts.refresh();
+
+    return createdTopic;
+  }
+
+  /// Updates an existing discussion (with backend sync and Feed sync)
+  Future<bool> updateDiscussion({
+    required String discussionId,
+    required String title,
+    required String content,
+    required String category,
+  }) async {
+    // 1. Update in Forum
+    final forumIdx = forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+    if (forumIdx != -1) {
+      final current = forumLatestDiscussions[forumIdx];
+      forumLatestDiscussions[forumIdx] = current.copyWith(
+        title: title,
+        content: content,
+        category: category,
+      );
+      forumLatestDiscussions.refresh();
+    }
+
+    // 2. Synchronize update to Feed
+    final feedIdx = posts.indexWhere((p) => p.id == discussionId);
+    if (feedIdx != -1) {
+      final currentPost = posts[feedIdx];
+      posts[feedIdx] = currentPost.copyWith(
+        content: content,
+        discussionTitle: title,
+        category: category,
+      );
+      posts.refresh();
+    }
+
+    // 3. Network update
+    try {
+      await repository.updateDiscussion(
+        discussionId,
+        title: title,
+        content: content,
+        category: category,
+      );
+      return true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// Deletes a discussion (with backend sync and Feed sync)
+  Future<bool> deleteDiscussion(String discussionId) async {
+    // 1. Remove from Forum
+    forumLatestDiscussions.removeWhere((d) => d.id == discussionId);
+    forumLatestDiscussions.refresh();
+
+    // 2. Synchronize removal from Feed
+    posts.removeWhere((p) => p.id == discussionId);
+    posts.refresh();
+
+    // 3. Network delete
+    try {
+      await repository.deleteDiscussion(discussionId);
+      return true;
+    } catch (_) {
+      return true;
+    }
   }
 
   /// Retrieves discussion topic by id if present
   ForumTopicModel? getDiscussionById(String id) {
-    return forumPinnedDiscussions.firstWhereOrNull((d) => d.id == id) ??
-        forumLatestDiscussions.firstWhereOrNull((d) => d.id == id);
+    return forumLatestDiscussions.firstWhereOrNull((d) => d.id == id);
   }
 
   @override
@@ -573,6 +763,16 @@ class CommunityController extends GetxController {
       p.likesCount += p.isLiked ? 1 : -1;
       posts[idx] = p.copyWith();
 
+      // Synchronize with Forum discussion if matching ID exists
+      final forumIdx = forumLatestDiscussions.indexWhere((d) => d.id == postId);
+      if (forumIdx != -1) {
+        final forumTopic = forumLatestDiscussions[forumIdx];
+        forumTopic.isLiked = p.isLiked;
+        forumTopic.upvotes = p.likesCount;
+        forumLatestDiscussions[forumIdx] = forumTopic.copyWith();
+        forumLatestDiscussions.refresh();
+      }
+
       repository.toggleLike(postId).catchError((_) {
         // Revert on error
         final currentIdx = posts.indexWhere((item) => item.id == postId);
@@ -581,6 +781,15 @@ class CommunityController extends GetxController {
           item.isLiked = previousState;
           item.likesCount = previousCount;
           posts[currentIdx] = item.copyWith();
+        }
+        final currentForumIdx =
+            forumLatestDiscussions.indexWhere((d) => d.id == postId);
+        if (currentForumIdx != -1) {
+          final item = forumLatestDiscussions[currentForumIdx];
+          item.isLiked = previousState;
+          item.upvotes = previousCount;
+          forumLatestDiscussions[currentForumIdx] = item.copyWith();
+          forumLatestDiscussions.refresh();
         }
         return false;
       });
@@ -877,6 +1086,26 @@ class CommunityController extends GetxController {
       current.add(comment);
       discussionComments[discussionId] = current;
       discussionComments.refresh();
+
+      // Update reply count in forum
+      final forumIdx =
+          forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+      if (forumIdx != -1) {
+        final topic = forumLatestDiscussions[forumIdx];
+        topic.repliesCount += 1;
+        forumLatestDiscussions[forumIdx] = topic.copyWith();
+        forumLatestDiscussions.refresh();
+      }
+
+      // Update comment count in feed
+      final postIdx = posts.indexWhere((p) => p.id == discussionId);
+      if (postIdx != -1) {
+        final post = posts[postIdx];
+        post.commentsCount += 1;
+        posts[postIdx] = post.copyWith();
+        posts.refresh();
+      }
+
       return comment;
     } catch (e) {
       rethrow;
@@ -896,6 +1125,16 @@ class CommunityController extends GetxController {
         final p = posts[idx];
         p.commentsCount += 1;
         posts[idx] = p.copyWith();
+      }
+
+      // Synchronize with Forum discussion if matching ID exists
+      final forumIdx =
+          forumLatestDiscussions.indexWhere((d) => d.id == postId);
+      if (forumIdx != -1) {
+        final topic = forumLatestDiscussions[forumIdx];
+        topic.repliesCount += 1;
+        forumLatestDiscussions[forumIdx] = topic.copyWith();
+        forumLatestDiscussions.refresh();
       }
     } catch (_) {}
   }

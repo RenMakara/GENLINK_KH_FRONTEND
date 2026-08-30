@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../domain/models/community_models.dart';
 import '../../domain/models/community_post_model.dart';
 
 class CommunityRemoteDataSource {
@@ -413,6 +414,254 @@ class CommunityRemoteDataSource {
       timeAgo: 'Just now',
       parentCommentId: parentCommentId,
     );
+  }
+
+  final List<ForumTopicModel> _mockDiscussions = [
+    ForumTopicModel(
+      id: 'latest_1',
+      authorId: 'user_me',
+      title: 'Best practices for GetX state management in Flutter Community App',
+      authorName: 'Sokny Enat',
+      authorAvatar: 'assets/images/user_profile.png',
+      timeAgo: '2h ago',
+      category: 'Technology',
+      content:
+          'When structuring large Flutter apps with GetX, prefer domain separation, avoid calling Get.put inside build methods, and use bindings for deterministic lifecycle management.',
+      repliesCount: 24,
+      upvotes: 89,
+      isLiked: false,
+      isOwner: true,
+    ),
+    ForumTopicModel(
+      id: 'latest_2',
+      authorId: 'u1',
+      title: 'How to prepare for junior software engineer interviews in Phnom Penh?',
+      authorName: 'Rathana P.',
+      authorAvatar: 'assets/images/heng_chansela_profile.png',
+      timeAgo: '3h ago',
+      category: 'Career',
+      content:
+          'Preparing for tech interviews at local tech companies and banks? Focus on Data Structures, RESTful APIs, Git workflow, and real portfolio projects.',
+      repliesCount: 19,
+      upvotes: 45,
+      isLiked: false,
+      isOwner: false,
+    ),
+    ForumTopicModel(
+      id: 'latest_3',
+      authorId: 'u2',
+      title: 'Study group for CADT Data Structures and Algorithms exam next week',
+      authorName: 'Heng Chansela',
+      authorAvatar: 'assets/images/heng_chansela_profile.png',
+      timeAgo: '5h ago',
+      category: 'Study & Education',
+      content:
+          'We are organizing an online and on-campus study session for DSA. Topics include Dynamic Programming, Graph Traversals, and Complexity Analysis.',
+      repliesCount: 31,
+      upvotes: 67,
+      isLiked: false,
+      isOwner: false,
+    ),
+    ForumTopicModel(
+      id: 'latest_4',
+      authorId: 'u3',
+      title: 'Sharing my AI project built with Python and Flutter Web',
+      authorName: 'Ren Makara',
+      authorAvatar: 'assets/images/ren_makara_profile.png',
+      timeAgo: '7h ago',
+      category: 'Projects',
+      content:
+          'Hey everyone! I just published my open-source project combining Flutter frontend with a FastAPI backend. Check out the demo and repo.',
+      repliesCount: 14,
+      upvotes: 53,
+      isLiked: false,
+      isOwner: false,
+    ),
+    ForumTopicModel(
+      id: 'latest_5',
+      authorId: 'u4',
+      title: 'Campus Hackathon 2026 registration is officially open!',
+      authorName: 'Chhaeng Sokuntheara',
+      authorAvatar: 'assets/images/sokuntheara_profile.png',
+      timeAgo: '12h ago',
+      category: 'Events',
+      content:
+          'Excited to announce GenLink KH Campus Hackathon 2026! Over 50 teams will compete over 48 hours to solve real community challenges.',
+      repliesCount: 42,
+      upvotes: 110,
+      isLiked: false,
+      isOwner: false,
+    ),
+  ];
+
+  Future<List<ForumTopicModel>> fetchDiscussions({
+    String? category,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final query = <String, dynamic>{
+        'page': page - 1,
+        'size': limit,
+      };
+      if (category != null && category.isNotEmpty && category != 'All') {
+        query['category'] = category;
+      }
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityDiscussions,
+          queryParameters: query,
+        ),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        dynamic rawData =
+            body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        List<dynamic> content = [];
+        if (rawData is Map<String, dynamic>) {
+          content = (rawData['content'] as List<dynamic>?) ?? [];
+        } else if (rawData is List) {
+          content = rawData;
+        }
+        if (content.isNotEmpty) {
+          return content
+              .map((json) =>
+                  ForumTopicModel.fromJson(json as Map<String, dynamic>))
+              .toList();
+        }
+      }
+    } catch (_) {}
+
+    if (category != null && category.isNotEmpty && category != 'All') {
+      return _mockDiscussions.where((d) => d.category == category).toList();
+    }
+    return _mockDiscussions;
+  }
+
+  Future<ForumTopicModel> createDiscussion({
+    required String title,
+    required String content,
+    required String category,
+    bool anonymous = false,
+  }) async {
+    final newDiscussion = ForumTopicModel(
+      id: 'disc_${DateTime.now().millisecondsSinceEpoch}',
+      authorId: 'user_me',
+      title: title,
+      authorName: 'Sokny Enat',
+      authorAvatar: 'assets/images/user_profile.png',
+      category: category,
+      content: content,
+      timeAgo: 'Just now',
+      upvotes: 0,
+      repliesCount: 0,
+      isLiked: false,
+      isPinned: false,
+      isOwner: true,
+    );
+
+    try {
+      final response = await guardDio(
+        () => dio.post<dynamic>(
+          ApiEndpoints.communityDiscussions,
+          data: {
+            'title': title,
+            'content': content,
+            'category': category,
+            'anonymous': anonymous,
+          },
+        ),
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final body = response.data;
+        final data =
+            body is Map<String, dynamic> ? (body['data'] ?? body) : null;
+        if (data is Map<String, dynamic>) {
+          return ForumTopicModel.fromJson(data);
+        }
+      }
+    } catch (_) {}
+
+    _mockDiscussions.insert(0, newDiscussion);
+    return newDiscussion;
+  }
+
+  Future<ForumTopicModel> updateDiscussion(
+    String discussionId, {
+    required String title,
+    required String content,
+    required String category,
+  }) async {
+    try {
+      final response = await guardDio(
+        () => dio.put<dynamic>(
+          ApiEndpoints.communityDiscussionDetail(discussionId),
+          data: {
+            'title': title,
+            'content': content,
+            'category': category,
+          },
+        ),
+      );
+      if (response.statusCode == 200) {
+        final body = response.data;
+        final data =
+            body is Map<String, dynamic> ? (body['data'] ?? body) : null;
+        if (data is Map<String, dynamic>) {
+          return ForumTopicModel.fromJson(data);
+        }
+      }
+    } catch (_) {}
+
+    final idx = _mockDiscussions.indexWhere((d) => d.id == discussionId);
+    if (idx != -1) {
+      final updated = _mockDiscussions[idx].copyWith(
+        title: title,
+        content: content,
+        category: category,
+      );
+      _mockDiscussions[idx] = updated;
+      return updated;
+    }
+    return ForumTopicModel(
+      id: discussionId,
+      authorId: 'user_me',
+      title: title,
+      authorName: 'Sokny Enat',
+      category: category,
+      content: content,
+      timeAgo: 'Just now',
+      isOwner: true,
+    );
+  }
+
+  Future<bool> deleteDiscussion(String discussionId) async {
+    try {
+      await guardDio(
+        () => dio.delete<dynamic>(
+          ApiEndpoints.communityDiscussionDetail(discussionId),
+        ),
+      );
+    } catch (_) {}
+    _mockDiscussions.removeWhere((d) => d.id == discussionId);
+    return true;
+  }
+
+  Future<bool> toggleDiscussionLike(String discussionId) async {
+    try {
+      await guardDio(
+        () => dio.post<dynamic>(
+          ApiEndpoints.communityDiscussionReact(discussionId),
+        ),
+      );
+    } catch (_) {}
+    final idx = _mockDiscussions.indexWhere((d) => d.id == discussionId);
+    if (idx != -1) {
+      final d = _mockDiscussions[idx];
+      d.isLiked = !d.isLiked;
+      d.upvotes += d.isLiked ? 1 : -1;
+    }
+    return true;
   }
 
   final Set<String> _mockFollowedUserIds = <String>{};

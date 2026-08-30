@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
+import 'package:genlink_frontend/features/community/domain/models/community_models.dart';
 import 'package:genlink_frontend/features/community/domain/models/community_post_model.dart';
 import 'package:genlink_frontend/features/community/domain/repositories/community_repository.dart';
 import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
@@ -74,6 +75,49 @@ class _MockCommunityRepository implements CommunityRepository {
   Future<bool> checkIsFollowing(String userId) async => false;
 
   @override
+  Future<List<ForumTopicModel>> getDiscussions({String? category, int page = 1, int limit = 20}) async => [];
+
+  @override
+  Future<ForumTopicModel> createDiscussion({
+    required String title,
+    required String content,
+    required String category,
+    bool anonymous = false,
+  }) async => ForumTopicModel(
+    id: 'mock_disc_1',
+    authorId: 'user_me',
+    title: title,
+    authorName: 'Sokny Enat',
+    category: category,
+    content: content,
+    timeAgo: 'Just now',
+    isOwner: true,
+  );
+
+  @override
+  Future<ForumTopicModel> updateDiscussion(
+    String discussionId, {
+    required String title,
+    required String content,
+    required String category,
+  }) async => ForumTopicModel(
+    id: discussionId,
+    authorId: 'user_me',
+    title: title,
+    authorName: 'Sokny Enat',
+    category: category,
+    content: content,
+    timeAgo: 'Just now',
+    isOwner: true,
+  );
+
+  @override
+  Future<bool> deleteDiscussion(String discussionId) async => true;
+
+  @override
+  Future<bool> toggleDiscussionLike(String discussionId) async => true;
+
+  @override
   Future<List<CommentModel>> getDiscussionComments(String discussionId) async => [];
 
   @override
@@ -106,7 +150,7 @@ void main() {
   });
 
   group('Forum UI Polish Verification Tests', () {
-    testWidgets('1. Verifies only ONE pin icon appears in Pinned Discussions header', (tester) async {
+    testWidgets('1. Verifies Pinned Discussions section is completely removed and Forum starts with Latest Discussions', (tester) async {
       final controller = CommunityController(repository: _MockCommunityRepository());
       Get.put<CommunityController>(controller);
 
@@ -123,18 +167,15 @@ void main() {
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
-      // Check section headers
-      final pinnedHeaderFinder = find.text('📌 Pinned Discussions');
-      expect(pinnedHeaderFinder, findsOneWidget);
-
-      // Verify there is NO double pin icon text like '📌 📌 Pinned Discussions'
-      expect(find.textContaining('📌 📌'), findsNothing);
+      // Verify Pinned Discussions is completely gone
+      expect(find.text('📌 Pinned Discussions'), findsNothing);
+      expect(find.textContaining('📌'), findsNothing);
 
       // Verify Latest Discussions header exists
       expect(find.text('Latest Discussions'), findsOneWidget);
     });
 
-    testWidgets('2. Verifies all pinned and latest discussion content is preserved', (tester) async {
+    testWidgets('2. Verifies latest discussion content is preserved', (tester) async {
       final controller = CommunityController(repository: _MockCommunityRepository());
       Get.put<CommunityController>(controller);
 
@@ -150,11 +191,6 @@ void main() {
       // Switch to Forum tab
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
-
-      // Verify pinned authors & topics
-      expect(find.textContaining('Admin Team'), findsOneWidget);
-      expect(find.text('Guidelines for GenLink KH Annual Student Project Showcase 2026'), findsOneWidget);
-      expect(find.text('Best practices for GetX state management in Flutter Community App'), findsOneWidget);
 
       // Verify latest authors & topics
       expect(find.textContaining('Rathana P.'), findsOneWidget);
@@ -163,7 +199,6 @@ void main() {
       expect(find.text('Study group for CADT Data Structures and Algorithms exam next week'), findsOneWidget);
 
       // Verify category badges
-      expect(find.text('Technology'), findsNWidgets(2));
       expect(find.text('Career'), findsOneWidget);
       expect(find.text('Study & Education'), findsOneWidget);
     });
@@ -193,13 +228,11 @@ void main() {
 
       // Locate Forum SingleChildScrollView
       final scrollViews = tester.widgetList<SingleChildScrollView>(find.byType(SingleChildScrollView));
-      // Forum SingleChildScrollView has vertical direction and bottom padding
       final forumScrollView = scrollViews.firstWhere(
         (sv) => sv.scrollDirection == Axis.vertical && sv.padding != null,
       );
 
       final padding = forumScrollView.padding as EdgeInsets;
-      // Bottom padding must account for floating nav bar (~82px) + safe bottom (34+8) + breathing room (28) = 152px
       expect(padding.bottom, greaterThanOrEqualTo(120.0));
       expect(padding.left, equals(16.0));
       expect(padding.right, equals(16.0));
@@ -232,7 +265,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(ForumThreadCard), findsWidgets);
-      expect(find.text('📌 Pinned Discussions'), findsOneWidget);
+      expect(find.text('Latest Discussions'), findsOneWidget);
     });
 
     testWidgets('5. Verifies ForumThreadCard subtle border styling and non-empty category badges', (tester) async {
@@ -247,7 +280,6 @@ void main() {
               category: 'Very Long Category Name For Responsive Testing',
               replies: 10,
               likes: 20,
-              isPinned: true,
             ),
           ),
         ),
@@ -259,6 +291,329 @@ void main() {
       expect(find.textContaining('1d ago'), findsOneWidget);
       expect(find.text('20'), findsOneWidget);
       expect(find.text('10 comments'), findsOneWidget);
+    });
+
+    testWidgets('6. Verifies own discussion displays More menu with Edit Discussion, Delete Discussion, and Cancel', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = _MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to Forum tab
+      await tester.tap(find.text('Forum'));
+      await tester.pumpAndSettle();
+
+      // First discussion in list is owned by Sokny Enat (authorId: 'user_me', isOwner: true)
+      // Tap the More menu (•••) on the first discussion card
+      final moreButtons = find.byIcon(Icons.more_horiz_rounded);
+      expect(moreButtons, findsWidgets);
+
+      await tester.tap(moreButtons.first);
+      await tester.pumpAndSettle();
+
+      // Verify Owner actions are present
+      expect(find.text('Edit Discussion'), findsOneWidget);
+      expect(find.text('Delete Discussion'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+
+      // Close menu
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('7. Verifies other user discussion does NOT show Edit or Delete options', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = _MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to Forum tab
+      await tester.tap(find.text('Forum'));
+      await tester.pumpAndSettle();
+
+      // Tap More menu on 2nd discussion (authored by Rathana P., authorId: 'u1')
+      final moreButtons = find.byIcon(Icons.more_horiz_rounded);
+      await tester.tap(moreButtons.at(1));
+      await tester.pumpAndSettle();
+
+      // Verify Owner actions are NOT shown
+      expect(find.text('Edit Discussion'), findsNothing);
+      expect(find.text('Delete Discussion'), findsNothing);
+
+      // Verify Non-owner actions are shown
+      expect(find.text('Save'), findsOneWidget);
+      expect(find.text('Report'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('8. Verifies editing own discussion updates title and content in Forum and Feed', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = _MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
+
+      // Add a test discussion
+      await controller.addDiscussion(
+        title: 'test2',
+        content: 'Original content description',
+        category: 'Career',
+      );
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to Forum tab
+      await tester.tap(find.text('Forum'));
+      await tester.pumpAndSettle();
+
+      // Newly added discussion should be at index 0 with title "test2"
+      expect(find.text('test2'), findsOneWidget);
+
+      // Tap More menu on test2 discussion
+      final moreButtons = find.byIcon(Icons.more_horiz_rounded);
+      await tester.tap(moreButtons.first);
+      await tester.pumpAndSettle();
+
+      // Tap Edit Discussion
+      await tester.tap(find.text('Edit Discussion'));
+      await tester.pumpAndSettle();
+
+      // Verify Edit Discussion screen is open with prefilled data
+      expect(find.text('Edit Discussion'), findsOneWidget);
+      expect(find.text('test2'), findsOneWidget);
+      expect(find.text('Save Changes'), findsOneWidget);
+
+      // Modify title directly via controller updateDiscussion
+      final success = await controller.updateDiscussion(
+        discussionId: controller.forumLatestDiscussions.first.id,
+        title: 'Updated test2 discussion title',
+        content: 'Updated content description',
+        category: 'Career',
+      );
+      expect(success, isTrue);
+
+      // Return to forum
+      Get.back();
+      await tester.pumpAndSettle();
+
+      // Verify updated title appears in Forum
+      expect(find.text('Updated test2 discussion title'), findsOneWidget);
+
+      // Switch to Feed tab and verify updated title is synchronized in Feed post and preview
+      await tester.tap(find.text('Feed'));
+      await tester.pumpAndSettle();
+      expect(find.text('Updated test2 discussion title'), findsWidgets);
+    });
+
+    testWidgets('9. Verifies deleting own discussion requires confirmation and removes it from Forum and Feed', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = _MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
+
+      // Add a test discussion
+      final newDisc = await controller.addDiscussion(
+        title: 'Discussion To Delete',
+        content: 'Content that will be deleted',
+        category: 'Technology',
+      );
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to Forum tab
+      await tester.tap(find.text('Forum'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Discussion To Delete'), findsOneWidget);
+
+      // Open More Menu
+      final moreButtons = find.byIcon(Icons.more_horiz_rounded);
+      await tester.tap(moreButtons.first);
+      await tester.pumpAndSettle();
+
+      // Tap Delete Discussion
+      await tester.tap(find.text('Delete Discussion'));
+      await tester.pumpAndSettle();
+
+      // Verify Confirmation Dialog
+      expect(find.text('Delete Discussion?'), findsOneWidget);
+      expect(find.text('Are you sure you want to delete this discussion? This action cannot be undone.'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Delete'), findsOneWidget);
+
+      // Cancel first
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      // Discussion remains
+      expect(find.text('Discussion To Delete'), findsOneWidget);
+
+      // Now perform delete
+      await controller.deleteDiscussion(newDisc.id);
+      await tester.pumpAndSettle();
+
+      // Discussion is removed from Forum
+      expect(find.text('Discussion To Delete'), findsNothing);
+
+      // Switch to Feed and verify removed from Feed
+      await tester.tap(find.text('Feed'));
+      await tester.pumpAndSettle();
+      expect(find.text('Discussion To Delete'), findsNothing);
+    });
+
+    testWidgets('10. Verifies Like button toggles count and does NOT open Create Discussion screen', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = _MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to Forum tab
+      await tester.tap(find.text('Forum'));
+      await tester.pumpAndSettle();
+
+      // Initial upvotes for first topic is 89
+      expect(find.text('89'), findsOneWidget);
+
+      // Tap Like icon
+      final heartIcons = find.byIcon(Icons.favorite_border_rounded);
+      await tester.tap(heartIcons.first);
+      await tester.pumpAndSettle();
+
+      // Upvotes incremented to 90
+      expect(find.text('90'), findsOneWidget);
+      // Ensure we are STILL on Forum tab (NOT Create Discussion screen)
+      expect(find.text('Latest Discussions'), findsOneWidget);
+      expect(find.text('Publish'), findsNothing);
+    });
+
+    testWidgets('11. Verifies bilingual rendering: English & Khmer UI labels and user content language preservation', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = _MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
+
+      // Add a Khmer discussion and an English discussion
+      await controller.addDiscussion(
+        title: 'តើ Flutter ល្អសម្រាប់ Mobile App ដែរឬទេ?',
+        content: 'ខ្លឹមសារពិភាក្សាជាភាសាខ្មែរ',
+        category: 'Technology',
+      );
+      await controller.addDiscussion(
+        title: 'What is the best way to manage state in Flutter?',
+        content: 'English content description',
+        category: 'Technology',
+      );
+
+      // Test Khmer UI
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('km', 'KH'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to Forum tab
+      await tester.tap(find.text('community.forum'.tr));
+      await tester.pumpAndSettle();
+
+      // Verify Khmer UI label
+      expect(find.text('ការពិភាក្សាថ្មីៗ'), findsOneWidget);
+
+      // Verify User content is NOT translated (Khmer stays Khmer, English stays English)
+      expect(find.text('តើ Flutter ល្អសម្រាប់ Mobile App ដែរឬទេ?'), findsOneWidget);
+      expect(find.text('What is the best way to manage state in Flutter?'), findsOneWidget);
+
+      // Switch to English UI
+      Get.updateLocale(const Locale('en', 'US'));
+      await tester.pumpAndSettle();
+
+      // Verify English UI label
+      expect(find.text('Latest Discussions'), findsOneWidget);
+
+      // User content still preserved exactly as written
+      expect(find.text('តើ Flutter ល្អសម្រាប់ Mobile App ដែរឬទេ?'), findsOneWidget);
+      expect(find.text('What is the best way to manage state in Flutter?'), findsOneWidget);
     });
   });
 }

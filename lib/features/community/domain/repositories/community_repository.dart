@@ -1,3 +1,4 @@
+import '../models/community_models.dart';
 import '../models/community_post_model.dart';
 
 abstract class CommunityRepository {
@@ -35,6 +36,31 @@ abstract class CommunityRepository {
   });
 
   Future<bool> deleteComment(String postId, String commentId);
+
+  // ── Forum / Discussions ───────────────────────────────────────────────
+  Future<List<ForumTopicModel>> getDiscussions({
+    String? category,
+    int page = 1,
+    int limit = 20,
+  });
+
+  Future<ForumTopicModel> createDiscussion({
+    required String title,
+    required String content,
+    required String category,
+    bool anonymous = false,
+  });
+
+  Future<ForumTopicModel> updateDiscussion(
+    String discussionId, {
+    required String title,
+    required String content,
+    required String category,
+  });
+
+  Future<bool> deleteDiscussion(String discussionId);
+
+  Future<bool> toggleDiscussionLike(String discussionId);
 
   Future<List<CommentModel>> getDiscussionComments(String discussionId);
 

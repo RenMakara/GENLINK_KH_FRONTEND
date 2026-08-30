@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../core/network/dio_provider.dart';
@@ -19,6 +20,23 @@ class CommunityController extends GetxController {
       : _injectedRepository = repository;
 
   final ScrollController scrollController = ScrollController();
+
+  /// Resolved current user ID from AuthController if available
+  String? get currentUserId {
+    if (Get.isRegistered<AuthController>()) {
+      return Get.find<AuthController>().currentUser.value?.id;
+    }
+    return null;
+  }
+
+  /// Resolved current user full name from AuthController if available
+  String get currentUserName {
+    if (Get.isRegistered<AuthController>()) {
+      final name = Get.find<AuthController>().currentUser.value?.fullName;
+      if (name != null && name.isNotEmpty) return name;
+    }
+    return 'Sokny Enat';
+  }
 
   final selectedCategory = 'Feed'.obs;
   final selectedForumCategory = 'All'.obs;
@@ -39,6 +57,7 @@ class CommunityController extends GetxController {
   final posts = <CommunityPostModel>[].obs;
   final activeComments = <CommentModel>[].obs;
   final isLoadingComments = false.obs;
+  final followLoadingUserIds = <String>{}.obs;
 
   final stories = <StoryModel>[
     StoryModel(
@@ -47,14 +66,6 @@ class CommunityController extends GetxController {
       avatarText: 'S',
       isUser: true,
       hasActiveStory: false,
-    ),
-    StoryModel(
-      id: 'sambo',
-      name: 'Sum Sambo',
-      avatarText: 'S',
-      hasActiveStory: true,
-      storyImage:
-          'https://i.pinimg.com/736x/ec/31/fb/ec31fb6bb86683cf4d2d1680f79f14cb.jpg',
     ),
     StoryModel(id: '2', name: 'Dary', avatarText: 'D', hasActiveStory: true),
     StoryModel(
@@ -82,13 +93,6 @@ class CommunityController extends GetxController {
   ].obs;
 
   final suggestedUsers = <SuggestedUserModel>[
-    SuggestedUserModel(
-      id: 'u_sambo',
-      name: 'Sum Sambo',
-      role: 'Cybersecurity Student',
-      avatarUrl:
-          'https://i.pinimg.com/736x/ec/31/fb/ec31fb6bb86683cf4d2d1680f79f14cb.jpg',
-    ),
     SuggestedUserModel(
       id: 'u1',
       name: 'Rathana P.',
@@ -173,6 +177,227 @@ class CommunityController extends GetxController {
     events.refresh();
   }
 
+  /// Refreshes the events list
+  Future<void> refreshEvents() async {
+    events.refresh();
+  }
+
+  // ── Event Filter State ──────────────────────────────────────────────────
+  final selectedEventDate = 'All'.obs;
+  final selectedEventCategories = <String>{}.obs;
+  final selectedEventMode = 'All'.obs; // 'All', 'In person', 'Online'
+  final selectedEventPrice = 'All'.obs; // 'All', 'Free', 'Paid'
+
+  /// Whether any non-default filter is currently applied
+  bool get isEventFilterActive =>
+      (selectedEventDate.value != 'All' && selectedEventDate.value.isNotEmpty) ||
+      selectedEventCategories.isNotEmpty ||
+      selectedEventMode.value != 'All' ||
+      selectedEventPrice.value != 'All';
+
+  /// Returns events filtered by the current filter criteria
+  List<EventModel> get filteredEvents {
+    return events.where((e) {
+      // 1. Category filter
+      if (selectedEventCategories.isNotEmpty &&
+          !selectedEventCategories.contains(e.category)) {
+        return false;
+      }
+      // 2. Format / Mode filter (In person vs Online)
+      if (selectedEventMode.value != 'All') {
+        final isOnline = e.eventType.toLowerCase().contains('online');
+        if (selectedEventMode.value == 'Online' && !isOnline) {
+          return false;
+        }
+        if (selectedEventMode.value == 'In person' && isOnline) {
+          return false;
+        }
+      }
+      // 3. Price filter
+      if (selectedEventPrice.value == 'Free' && e.isPaid) {
+        return false;
+      }
+      if (selectedEventPrice.value == 'Paid' && !e.isPaid) {
+        return false;
+      }
+      // 4. Date filter
+      if (selectedEventDate.value != 'All' && selectedEventDate.value.isNotEmpty) {
+        final dateLower = e.dateString.toLowerCase();
+        if (selectedEventDate.value == 'Today') {
+          if (!dateLower.contains('today')) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }).toList();
+  }
+
+  /// Clears all applied event filters
+  void resetEventFilter() {
+    selectedEventDate.value = 'All';
+    selectedEventCategories.clear();
+    selectedEventMode.value = 'All';
+    selectedEventPrice.value = 'All';
+    events.refresh();
+  }
+
+  /// Sets event filter criteria and triggers reactivity
+  void applyEventFilter({
+    String date = 'All',
+    Set<String> categories = const {},
+    String mode = 'All',
+    String price = 'All',
+  }) {
+    selectedEventDate.value = date;
+    selectedEventCategories.assignAll(categories);
+    selectedEventMode.value = mode;
+    selectedEventPrice.value = price;
+    events.refresh();
+  }
+
+  // ── Forum State ───────────────────────────────────────────────────────────
+  final forumPinnedDiscussions = <ForumTopicModel>[
+    ForumTopicModel(
+      id: 'pinned_1',
+      title: 'Guidelines for GenLink KH Annual Student Project Showcase 2026',
+      authorName: 'Admin Team',
+      authorAvatar: 'assets/images/user_profile.png',
+      timeAgo: '1d ago',
+      category: 'Technology',
+      content:
+          'Welcome to the 2026 Annual Student Project Showcase! Please review our submission deadlines, presentation criteria, and judging rubric before submitting your entries.',
+      repliesCount: 48,
+      upvotes: 142,
+      isPinned: true,
+      isLiked: false,
+    ),
+    ForumTopicModel(
+      id: 'pinned_2',
+      title: 'Best practices for GetX state management in Flutter Community App',
+      authorName: 'Sokny Enat',
+      authorAvatar: 'assets/images/user_profile.png',
+      timeAgo: '2h ago',
+      category: 'Technology',
+      content:
+          'When structuring large Flutter apps with GetX, prefer domain separation, avoid calling Get.put inside build methods, and use bindings for deterministic lifecycle management.',
+      repliesCount: 24,
+      upvotes: 89,
+      isPinned: true,
+      isLiked: false,
+    ),
+  ].obs;
+
+  final forumLatestDiscussions = <ForumTopicModel>[
+    ForumTopicModel(
+      id: 'latest_1',
+      title: 'How to prepare for junior software engineer interviews in Phnom Penh?',
+      authorName: 'Rathana P.',
+      authorAvatar: 'assets/images/heng_chansela_profile.png',
+      timeAgo: '3h ago',
+      category: 'Career',
+      content:
+          'Preparing for tech interviews at local tech companies and banks? Focus on Data Structures, RESTful APIs, Git workflow, and real portfolio projects.',
+      repliesCount: 19,
+      upvotes: 45,
+      isPinned: false,
+      isLiked: false,
+    ),
+    ForumTopicModel(
+      id: 'latest_2',
+      title: 'Study group for CADT Data Structures and Algorithms exam next week',
+      authorName: 'Heng Chansela',
+      authorAvatar: 'assets/images/heng_chansela_profile.png',
+      timeAgo: '5h ago',
+      category: 'Study & Education',
+      content:
+          'We are organizing an online and on-campus study session for DSA. Topics include Dynamic Programming, Graph Traversals, and Complexity Analysis.',
+      repliesCount: 31,
+      upvotes: 67,
+      isPinned: false,
+      isLiked: false,
+    ),
+    ForumTopicModel(
+      id: 'latest_3',
+      title: 'Sharing my AI project built with Python and Flutter Web',
+      authorName: 'Ren Makara',
+      authorAvatar: 'assets/images/ren_makara_profile.png',
+      timeAgo: '7h ago',
+      category: 'Projects',
+      content:
+          'Hey everyone! I just published my open-source project combining Flutter frontend with a FastAPI backend. Check out the demo and repo.',
+      repliesCount: 14,
+      upvotes: 53,
+      isPinned: false,
+      isLiked: false,
+    ),
+    ForumTopicModel(
+      id: 'latest_4',
+      title: 'Campus Hackathon 2026 registration is officially open!',
+      authorName: 'Chhaeng Sokuntheara',
+      authorAvatar: 'assets/images/sokuntheara_profile.png',
+      timeAgo: '12h ago',
+      category: 'Events',
+      content:
+          'Excited to announce GenLink KH Campus Hackathon 2026! Over 50 teams will compete over 48 hours to solve real community challenges.',
+      repliesCount: 42,
+      upvotes: 110,
+      isPinned: false,
+      isLiked: false,
+    ),
+  ].obs;
+
+  /// Optimistically toggle like on a forum discussion
+  void toggleDiscussionLike(String discussionId) {
+    final pinIdx = forumPinnedDiscussions.indexWhere((d) => d.id == discussionId);
+    if (pinIdx != -1) {
+      final item = forumPinnedDiscussions[pinIdx];
+      item.isLiked = !item.isLiked;
+      item.upvotes += item.isLiked ? 1 : -1;
+      forumPinnedDiscussions[pinIdx] = item.copyWith();
+      forumPinnedDiscussions.refresh();
+      return;
+    }
+
+    final latestIdx = forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+    if (latestIdx != -1) {
+      final item = forumLatestDiscussions[latestIdx];
+      item.isLiked = !item.isLiked;
+      item.upvotes += item.isLiked ? 1 : -1;
+      forumLatestDiscussions[latestIdx] = item.copyWith();
+      forumLatestDiscussions.refresh();
+    }
+  }
+
+  /// Adds a new discussion to the top of latest discussions
+  void addDiscussion({
+    required String title,
+    required String content,
+    required String category,
+  }) {
+    final newDiscussion = ForumTopicModel(
+      id: 'disc_${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      authorName: currentUserName,
+      authorAvatar: 'assets/images/user_profile.png',
+      category: category,
+      content: content,
+      timeAgo: 'Just now',
+      upvotes: 0,
+      repliesCount: 0,
+      isLiked: false,
+      isPinned: false,
+    );
+    forumLatestDiscussions.insert(0, newDiscussion);
+    forumLatestDiscussions.refresh();
+  }
+
+  /// Retrieves discussion topic by id if present
+  ForumTopicModel? getDiscussionById(String id) {
+    return forumPinnedDiscussions.firstWhereOrNull((d) => d.id == id) ??
+        forumLatestDiscussions.firstWhereOrNull((d) => d.id == id);
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -229,6 +454,7 @@ class CommunityController extends GetxController {
       final fetched = await repository.getPosts(page: 1, limit: 10);
       posts.assignAll(fetched);
       hasMorePosts.value = fetched.length >= 10;
+      _syncFollowStates(fetched);
     } catch (e) {
       hasError.value = true;
       if (e is AppError) {
@@ -251,9 +477,15 @@ class CommunityController extends GetxController {
       final nextPage = currentPage.value + 1;
       final fetched = await repository.getPosts(page: nextPage, limit: 10);
       if (fetched.isNotEmpty) {
-        posts.addAll(fetched);
+        for (final item in fetched) {
+          final existingIdx = posts.indexWhere((p) => p.id == item.id);
+          if (existingIdx == -1) {
+            posts.add(item);
+          }
+        }
         currentPage.value = nextPage;
         hasMorePosts.value = fetched.length >= 10;
+        _syncFollowStates(fetched);
       } else {
         hasMorePosts.value = false;
       }
@@ -502,34 +734,97 @@ class CommunityController extends GetxController {
     attachedEvent: attachedEvent,
   );
 
+  /// Repost another user's post without creating duplicate copies in feed
   void repostPost(String postId, {String? caption}) {
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
       final original = posts[idx];
-      original.sharesCount++;
-      posts[idx] = original.copyWith();
 
-      final repostPost = CommunityPostModel(
-        id: 'repost_${DateTime.now().millisecondsSinceEpoch}',
-        userId: 'user_1',
-        authorName: original.authorName,
-        authorTag: original.authorTag,
-        authorAvatar: original.authorAvatar,
-        isVerified: original.isVerified,
-        timeAgo: 'Just now',
-        content: original.content,
-        imageUrls: List.from(original.imageUrls),
-        likesCount: 0,
-        commentsCount: 0,
-        sharesCount: 0,
-        isOwner: true,
-        repostedBy: 'Sokny Enat',
+      // 1. Current user must NOT repost their own post
+      if (original.checkIsOwner(currentUserId)) {
+        return;
+      }
+
+      // 2. Prevent duplicate reposts of the same original post
+      if (original.isRepostedByMe) {
+        return;
+      }
+
+      // 3. Update the original post in-place as a repost reference
+      final updated = original.copyWith(
+        sharesCount: original.sharesCount + 1,
+        isRepostedByMe: true,
+        repostedBy: currentUserName,
         repostCaption: caption,
-        visibility: original.visibility,
-        community: original.community,
+        reposterId: currentUserId ?? 'user_me',
+        originalPostId: original.id,
       );
-      posts.insert(0, repostPost);
+      posts[idx] = updated;
+
+      repository.repostPost(
+        postId,
+        caption: caption,
+        reposterId: currentUserId ?? 'user_me',
+      ).catchError((_) => false);
     }
+  }
+
+  /// Remove a repost made by the current user
+  void unrepostPost(String postId) {
+    final idx = posts.indexWhere((p) => p.id == postId);
+    if (idx != -1) {
+      final original = posts[idx];
+      if (!original.isRepostedByMe) return;
+
+      final updated = original.copyWith(
+        sharesCount: original.sharesCount > 0 ? original.sharesCount - 1 : 0,
+        clearRepostInfo: true,
+      );
+      posts[idx] = updated;
+
+      repository.unrepostPost(
+        postId,
+        reposterId: currentUserId ?? 'user_me',
+      ).catchError((_) => false);
+    }
+  }
+
+  /// Report a post for moderation review
+  Future<bool> reportPost(
+    String postId, {
+    String reason = 'INAPPROPRIATE_CONTENT',
+  }) async {
+    try {
+      return await repository.reportPost(postId, reason: reason);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Returns posts authored by or reposted by the specified user for Profile viewing
+  List<CommunityPostModel> getUserPosts(String userId, {String? username}) {
+    return posts.where((p) {
+      // 1. Authored by user
+      if (p.userId == userId ||
+          (p.isOwner &&
+              (userId == 'user_me' ||
+                  userId == 'demo_user_1' ||
+                  userId == 'current_user'))) {
+        return true;
+      }
+      // 2. Reposted by user
+      if (p.reposterId == userId ||
+          (p.isRepostedByMe &&
+              (userId == 'user_me' ||
+                  userId == 'demo_user_1' ||
+                  userId == 'current_user')) ||
+          (p.repostedBy != null &&
+              username != null &&
+              p.repostedBy!.trim().toLowerCase() == username.trim().toLowerCase())) {
+        return true;
+      }
+      return false;
+    }).toList();
   }
 
   Future<void> fetchComments(String postId) async {
@@ -540,6 +835,53 @@ class CommunityController extends GetxController {
     } catch (_) {
     } finally {
       isLoadingComments.value = false;
+    }
+  }
+
+  final discussionComments = <String, List<CommentModel>>{}.obs;
+  final isLoadingDiscussionComments = false.obs;
+  final isSendingDiscussionComment = false.obs;
+
+  List<CommentModel> getCommentsForDiscussion(String discussionId) {
+    return discussionComments[discussionId] ?? [];
+  }
+
+  Future<void> fetchDiscussionComments(String discussionId) async {
+    isLoadingDiscussionComments.value = true;
+    try {
+      final comments = await repository.getDiscussionComments(discussionId);
+      discussionComments[discussionId] = comments;
+      discussionComments.refresh();
+    } catch (_) {
+    } finally {
+      isLoadingDiscussionComments.value = false;
+    }
+  }
+
+  Future<CommentModel?> addDiscussionComment(
+    String discussionId,
+    String content,
+  ) async {
+    final trimmed = content.trim();
+    if (trimmed.isEmpty || isSendingDiscussionComment.value) return null;
+
+    isSendingDiscussionComment.value = true;
+    try {
+      final comment = await repository.addDiscussionComment(
+        discussionId,
+        trimmed,
+      );
+      final current = List<CommentModel>.from(
+        discussionComments[discussionId] ?? [],
+      );
+      current.add(comment);
+      discussionComments[discussionId] = current;
+      discussionComments.refresh();
+      return comment;
+    } catch (e) {
+      rethrow;
+    } finally {
+      isSendingDiscussionComment.value = false;
     }
   }
 
@@ -577,13 +919,110 @@ class CommunityController extends GetxController {
     }
   }
 
-  void toggleUserFollow(String userId) {
-    final idx = suggestedUsers.indexWhere((u) => u.id == userId);
-    if (idx != -1) {
-      suggestedUsers[idx].isFollowing = !suggestedUsers[idx].isFollowing;
+  bool isOwnUserId(String userId) {
+    final currentId = currentUserId;
+    if (currentId != null && currentId.isNotEmpty && currentId == userId) {
+      return true;
+    }
+    if (userId == 'user_me' || userId == 'current_user' || userId == 'demo_user_1') {
+      return true;
+    }
+    return false;
+  }
+
+  bool isFollowingUser(String userId) {
+    final post = posts.firstWhereOrNull((p) => p.userId == userId);
+    if (post != null) return post.isFollowing;
+    final suggested = suggestedUsers.firstWhereOrNull((u) => u.id == userId);
+    if (suggested != null) return suggested.isFollowing;
+    return false;
+  }
+
+  void _setFollowStateForUser(String userId, bool isFollowing) {
+    bool postUpdated = false;
+    for (int i = 0; i < posts.length; i++) {
+      if (posts[i].userId == userId && posts[i].isFollowing != isFollowing) {
+        posts[i] = posts[i].copyWith(isFollowing: isFollowing);
+        postUpdated = true;
+      }
+    }
+    if (postUpdated) {
+      posts.refresh();
+    }
+
+    final suggestedIdx = suggestedUsers.indexWhere((u) => u.id == userId);
+    if (suggestedIdx != -1 && suggestedUsers[suggestedIdx].isFollowing != isFollowing) {
+      suggestedUsers[suggestedIdx].isFollowing = isFollowing;
       suggestedUsers.refresh();
     }
   }
+
+  Future<void> _syncFollowStates(List<CommunityPostModel> postList) async {
+    final uniqueAuthorIds = postList
+        .map((p) => p.userId)
+        .where((id) => id.isNotEmpty && !isOwnUserId(id))
+        .toSet();
+
+    for (final authorId in uniqueAuthorIds) {
+      try {
+        final isFollowing = await repository.checkIsFollowing(authorId);
+        _setFollowStateForUser(authorId, isFollowing);
+      } catch (_) {}
+    }
+  }
+
+  Future<bool> toggleFollowUser(String userId) async {
+    if (userId.isEmpty) return false;
+
+    // Current user should never be able to follow themselves
+    if (isOwnUserId(userId)) {
+      return false;
+    }
+
+    // Prevent rapid duplicate requests
+    if (followLoadingUserIds.contains(userId)) {
+      return false;
+    }
+
+    final currentlyFollowing = isFollowingUser(userId);
+    final targetState = !currentlyFollowing;
+
+    followLoadingUserIds.add(userId);
+
+    // Optimistic UI state update
+    _setFollowStateForUser(userId, targetState);
+
+    try {
+      final success = currentlyFollowing
+          ? await repository.unfollowUser(userId)
+          : await repository.followUser(userId);
+
+      if (!success) {
+        throw AppError(
+          message: 'Failed to update follow status',
+          errorCode: 'FOLLOW_FAILED',
+        );
+      }
+      return true;
+    } catch (e) {
+      // Revert state on failure
+      _setFollowStateForUser(userId, currentlyFollowing);
+
+      final errorMsg = e is AppError ? e.message : 'common.error'.tr;
+      Get.snackbar(
+        'community.follow'.tr,
+        errorMsg,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.danger.withValues(alpha: 0.9),
+        colorText: Colors.white,
+      );
+      return false;
+    } finally {
+      followLoadingUserIds.remove(userId);
+    }
+  }
+
+  void toggleUserFollow(String userId) => toggleFollowUser(userId);
 
   void scrollToTop() {
     if (scrollController.hasClients) {
@@ -594,6 +1033,4 @@ class CommunityController extends GetxController {
       );
     }
   }
-
-  void toggleFollowUser(String userId) => toggleUserFollow(userId);
 }

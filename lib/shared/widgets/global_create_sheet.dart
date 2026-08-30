@@ -6,6 +6,7 @@ import '../../features/community/presentation/screens/create_discussion_screen.d
 import '../../features/community/presentation/screens/create_event_screen.dart';
 import '../../features/community/presentation/screens/create_post_screen.dart';
 import '../../features/community/presentation/widgets/community_creation_flow.dart';
+import '../../features/community/presentation/widgets/story_creation_picker_sheet.dart';
 import '../../features/finance/presentation/screens/budget_feature/screens/set_budget_screen.dart';
 import '../../features/finance/presentation/screens/expense_feature/screens/expense_add_screen.dart';
 import '../../features/finance/presentation/screens/learn_feature/screens/investing_quiz.dart';
@@ -16,24 +17,26 @@ import '../../features/productivity/presentation/screens/create_task_screen.dart
 /// Global "Create" Bottom Sheet for GenLink KH.
 ///
 /// Features exclusively the 13 approved features organized into 4 categories:
-/// - COMMUNITY: Post, Story, Event, Discussion
-/// - PRODUCTIVITY: Goal, To-Do, Habit
-/// - FINANCIAL: Expense, Saving Goal, Budget
-/// - ENTERTAINMENT: Quiz, Challenge, Short Content
+/// - COMMUNITY (2x2 grid): Post, Story, Event, Discussion
+/// - PRODUCTIVITY (3-col grid): Goal, To-Do, Habit
+/// - FINANCIAL (3-col grid): Expense, Saving Goal, Budget
+/// - ENTERTAINMENT (3-col grid): Quiz, Challenge, Short Content
 ///
 /// Styled strictly in GenLink KH's Black & White / Dark Charcoal visual design.
 class GlobalCreateSheet extends StatelessWidget {
-  const GlobalCreateSheet({super.key});
+  final bool fromPostComposer;
+
+  const GlobalCreateSheet({super.key, this.fromPostComposer = false});
 
   /// Presents the modal bottom sheet.
-  static Future<void> show(BuildContext context) {
+  static Future<void> show(BuildContext context, {bool fromPostComposer = false}) {
     return showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       enableDrag: true,
       isDismissible: true,
-      builder: (_) => const GlobalCreateSheet(),
+      builder: (_) => GlobalCreateSheet(fromPostComposer: fromPostComposer),
     );
   }
 
@@ -50,7 +53,11 @@ class GlobalCreateSheet extends StatelessWidget {
     Navigator.of(context).pop();
     final currentRoute = Get.currentRoute;
     final modalName = ModalRoute.of(context)?.settings.name;
-    if (currentRoute != '/CreatePostScreen' && modalName != '/CreatePostScreen') {
+    final isAlreadyInPostComposer = fromPostComposer ||
+        currentRoute == '/CreatePostScreen' ||
+        modalName == '/CreatePostScreen';
+
+    if (!isAlreadyInPostComposer) {
       Get.to(
         () => const CreatePostScreen(),
         routeName: '/CreatePostScreen',
@@ -61,7 +68,7 @@ class GlobalCreateSheet extends StatelessWidget {
 
   void _openStoryCreator(BuildContext context) {
     Navigator.of(context).pop();
-    CommunityCreationFlow.openCreateStory();
+    StoryCreationPickerSheet.show(context);
   }
 
   void _showChallengeDialog(
@@ -213,397 +220,401 @@ class GlobalCreateSheet extends StatelessWidget {
     final screenHeight = MediaQuery.sizeOf(context).height;
     final maxSheetHeight = screenHeight * 0.88;
 
-    return Container(
-      constraints: BoxConstraints(maxHeight: maxSheetHeight),
-      decoration: BoxDecoration(
-        color: sheetBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(
-          top: BorderSide(color: border, width: 1),
-          left: BorderSide(color: border, width: 1),
-          right: BorderSide(color: border, width: 1),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Drag Handle ──
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 6),
-              child: Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white24 : Colors.black12,
-                    borderRadius: BorderRadius.circular(2),
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxSheetHeight, maxWidth: 640),
+        child: Container(
+          decoration: BoxDecoration(
+            color: sheetBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(
+              top: BorderSide(color: border, width: 1),
+              left: BorderSide(color: border, width: 1),
+              right: BorderSide(color: border, width: 1),
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Drag Handle ──
+                Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 6),
+                  child: Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.black12,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
 
-            // ── Header (Title, Subtitle, Close Button) ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 16, 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'create.title'.tr.isNotEmpty && 'create.title'.tr != 'create.title'
-                              ? 'create.title'.tr
-                              : 'Create',
-                          style: TextStyle(
-                            color: textPrimary,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.3,
-                          ),
+                // ── Header (Title, Subtitle, Close Button) ──
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 16, 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'create.title'.tr.isNotEmpty && 'create.title'.tr != 'create.title'
+                                  ? 'create.title'.tr
+                                  : 'Create',
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'create.subtitle'.tr.isNotEmpty && 'create.subtitle'.tr != 'create.subtitle'
+                                  ? 'create.subtitle'.tr
+                                  : 'What would you like to create?',
+                              style: TextStyle(
+                                color: textSecondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'create.subtitle'.tr.isNotEmpty && 'create.subtitle'.tr != 'create.subtitle'
-                              ? 'create.subtitle'.tr
-                              : 'What would you like to create?',
-                          style: TextStyle(
-                            color: textSecondary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.close_rounded, color: textSecondary, size: 22),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Divider(height: 1, color: border, thickness: 0.8),
+
+                // ── Scrollable Feature Grid ──
+                Flexible(
+                  child: ListView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
+                    children: [
+                      // ── 1. COMMUNITY (2x2 Grid) ──
+                      _CategoryHeader(
+                        title: 'create.categoryCommunity'.tr.isNotEmpty &&
+                                'create.categoryCommunity'.tr != 'create.categoryCommunity'
+                            ? 'create.categoryCommunity'.tr.toUpperCase()
+                            : 'COMMUNITY',
+                        textColor: textSecondary,
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _CompactCreateCard(
+                              icon: Icons.article_outlined,
+                              title: 'create.actionPost'.tr.isNotEmpty &&
+                                      'create.actionPost'.tr != 'create.actionPost'
+                                  ? 'create.actionPost'.tr
+                                  : 'Post',
+                              surface: itemBg,
+                              border: border,
+                              textPrimary: textPrimary,
+                              iconBg: iconBoxBg,
+                              onTap: () => _openPostCreator(context),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _CompactCreateCard(
+                              icon: Icons.amp_stories_outlined,
+                              title: 'create.actionStory'.tr.isNotEmpty &&
+                                      'create.actionStory'.tr != 'create.actionStory'
+                                  ? 'create.actionStory'.tr
+                                  : 'Story',
+                              surface: itemBg,
+                              border: border,
+                              textPrimary: textPrimary,
+                              iconBg: iconBoxBg,
+                              onTap: () => _openStoryCreator(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _CompactCreateCard(
+                              icon: Icons.event_outlined,
+                              title: 'create.actionEvent'.tr.isNotEmpty &&
+                                      'create.actionEvent'.tr != 'create.actionEvent'
+                                  ? 'create.actionEvent'.tr
+                                  : 'Event',
+                              surface: itemBg,
+                              border: border,
+                              textPrimary: textPrimary,
+                              iconBg: iconBoxBg,
+                              onTap: () => _navigate(
+                                context,
+                                const CreateEventScreen(),
+                                routeName: '/CreateEventScreen',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _CompactCreateCard(
+                              icon: Icons.forum_outlined,
+                              title: 'create.actionDiscussion'.tr.isNotEmpty &&
+                                      'create.actionDiscussion'.tr != 'create.actionDiscussion'
+                                  ? 'create.actionDiscussion'.tr
+                                  : 'Discussion',
+                              surface: itemBg,
+                              border: border,
+                              textPrimary: textPrimary,
+                              iconBg: iconBoxBg,
+                              onTap: () => _navigate(
+                                context,
+                                const CreateDiscussionScreen(),
+                                routeName: '/CreateDiscussionScreen',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      // ── 2. PRODUCTIVITY (3-col Grid) ──
+                      _CategoryHeader(
+                        title: 'create.categoryProductivity'.tr.isNotEmpty &&
+                                'create.categoryProductivity'.tr != 'create.categoryProductivity'
+                            ? 'create.categoryProductivity'.tr.toUpperCase()
+                            : 'PRODUCTIVITY',
+                        textColor: textSecondary,
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _CompactCreateCard(
+                              icon: Icons.flag_outlined,
+                              title: 'create.actionGoal'.tr.isNotEmpty &&
+                                      'create.actionGoal'.tr != 'create.actionGoal'
+                                  ? 'create.actionGoal'.tr
+                                  : 'Goal',
+                              surface: itemBg,
+                              border: border,
+                              textPrimary: textPrimary,
+                              iconBg: iconBoxBg,
+                              onTap: () => _navigate(
+                                context,
+                                const CreateGoalScreen(),
+                                routeName: '/CreateGoalScreen',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _CompactCreateCard(
+                              icon: Icons.check_circle_outline_rounded,
+                              title: 'create.actionTodo'.tr.isNotEmpty &&
+                                      'create.actionTodo'.tr != 'create.actionTodo'
+                                  ? 'create.actionTodo'.tr
+                                  : 'To-Do',
+                              surface: itemBg,
+                              border: border,
+                              textPrimary: textPrimary,
+                              iconBg: iconBoxBg,
+                              onTap: () => _navigate(
+                                context,
+                                const CreateTaskScreen(),
+                                routeName: '/CreateTaskScreen',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _CompactCreateCard(
+                              icon: Icons.local_fire_department_outlined,
+                              title: 'create.actionHabit'.tr.isNotEmpty &&
+                                      'create.actionHabit'.tr != 'create.actionHabit'
+                                  ? 'create.actionHabit'.tr
+                                  : 'Habit',
+                              surface: itemBg,
+                              border: border,
+                              textPrimary: textPrimary,
+                              iconBg: iconBoxBg,
+                              onTap: () => _navigate(
+                                context,
+                                const CreateHabitScreen(),
+                                routeName: '/CreateHabitScreen',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      // ── 3. FINANCIAL (3-col Grid) ──
+                      _CategoryHeader(
+                        title: 'create.categoryFinancial'.tr.isNotEmpty &&
+                                'create.categoryFinancial'.tr != 'create.categoryFinancial'
+                            ? 'create.categoryFinancial'.tr.toUpperCase()
+                            : 'FINANCIAL',
+                        textColor: textSecondary,
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _CompactCreateCard(
+                              icon: Icons.receipt_long_outlined,
+                              title: 'create.actionExpense'.tr.isNotEmpty &&
+                                      'create.actionExpense'.tr != 'create.actionExpense'
+                                  ? 'create.actionExpense'.tr
+                                  : 'Expense',
+                              surface: itemBg,
+                              border: border,
+                              textPrimary: textPrimary,
+                              iconBg: iconBoxBg,
+                              onTap: () => _navigate(
+                                context,
+                                const AddExpenseScreen(),
+                                routeName: '/AddExpenseScreen',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _CompactCreateCard(
+                              icon: Icons.savings_outlined,
+                              title: 'create.actionSavingGoal'.tr.isNotEmpty &&
+                                      'create.actionSavingGoal'.tr != 'create.actionSavingGoal'
+                                  ? 'create.actionSavingGoal'.tr
+                                  : 'Saving Goal',
+                              surface: itemBg,
+                              border: border,
+                              textPrimary: textPrimary,
+                              iconBg: iconBoxBg,
+                              onTap: () => _navigate(
+                                context,
+                                const CreateGoalScreen(),
+                                routeName: '/CreateGoalScreen',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _CompactCreateCard(
+                              icon: Icons.pie_chart_outline_rounded,
+                              title: 'create.actionBudget'.tr.isNotEmpty &&
+                                      'create.actionBudget'.tr != 'create.actionBudget'
+                                  ? 'create.actionBudget'.tr
+                                  : 'Budget',
+                              surface: itemBg,
+                              border: border,
+                              textPrimary: textPrimary,
+                              iconBg: iconBoxBg,
+                              onTap: () => _navigate(
+                                context,
+                                const SetBudgetScreen(),
+                                routeName: '/SetBudgetScreen',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      // ── 4. ENTERTAINMENT (3-col Grid) ──
+                      _CategoryHeader(
+                        title: 'create.categoryEntertainment'.tr.isNotEmpty &&
+                                'create.categoryEntertainment'.tr != 'create.categoryEntertainment'
+                            ? 'create.categoryEntertainment'.tr.toUpperCase()
+                            : 'ENTERTAINMENT',
+                        textColor: textSecondary,
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _CompactCreateCard(
+                              icon: Icons.quiz_outlined,
+                              title: 'create.actionQuiz'.tr.isNotEmpty &&
+                                      'create.actionQuiz'.tr != 'create.actionQuiz'
+                                  ? 'create.actionQuiz'.tr
+                                  : 'Quiz',
+                              surface: itemBg,
+                              border: border,
+                              textPrimary: textPrimary,
+                              iconBg: iconBoxBg,
+                              onTap: () => _navigate(
+                                context,
+                                const InvestingQuizScreen(),
+                                routeName: '/InvestingQuizScreen',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _CompactCreateCard(
+                              icon: Icons.emoji_events_outlined,
+                              title: 'create.actionChallenge'.tr.isNotEmpty &&
+                                      'create.actionChallenge'.tr != 'create.actionChallenge'
+                                  ? 'create.actionChallenge'.tr
+                                  : 'Challenge',
+                              surface: itemBg,
+                              border: border,
+                              textPrimary: textPrimary,
+                              iconBg: iconBoxBg,
+                              onTap: () => _showChallengeDialog(
+                                context,
+                                sheetBg,
+                                textPrimary,
+                                textSecondary,
+                                border,
+                                isDark,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _CompactCreateCard(
+                              icon: Icons.video_library_outlined,
+                              title: 'create.actionShortContent'.tr.isNotEmpty &&
+                                      'create.actionShortContent'.tr != 'create.actionShortContent'
+                                  ? 'create.actionShortContent'.tr
+                                  : 'Short Content',
+                              surface: itemBg,
+                              border: border,
+                              textPrimary: textPrimary,
+                              iconBg: iconBoxBg,
+                              onTap: () => _showShortContentDialog(
+                                context,
+                                sheetBg,
+                                textPrimary,
+                                textSecondary,
+                                border,
+                                isDark,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: Icon(Icons.close_rounded, color: textSecondary, size: 22),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-
-            Divider(height: 1, color: border, thickness: 0.8),
-
-            // ── Scrollable Feature List ──
-            Flexible(
-              child: ListView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
-                children: [
-                  // ── 1. COMMUNITY (4 Items) ──
-                  _CategoryHeader(
-                    title: 'create.categoryCommunity'.tr.isNotEmpty &&
-                            'create.categoryCommunity'.tr != 'create.categoryCommunity'
-                        ? 'create.categoryCommunity'.tr.toUpperCase()
-                        : 'COMMUNITY',
-                    textColor: textSecondary,
-                  ),
-                  _FeatureCard(
-                    icon: Icons.article_outlined,
-                    title: 'create.actionPost'.tr.isNotEmpty && 'create.actionPost'.tr != 'create.actionPost'
-                        ? 'create.actionPost'.tr
-                        : 'Post',
-                    description: 'create.actionPostDesc'.tr.isNotEmpty &&
-                            'create.actionPostDesc'.tr != 'create.actionPostDesc'
-                        ? 'create.actionPostDesc'.tr
-                        : 'Share an update with your network',
-                    surface: itemBg,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    iconBg: iconBoxBg,
-                    onTap: () => _openPostCreator(context),
-                  ),
-                  _FeatureCard(
-                    icon: Icons.amp_stories_outlined,
-                    title: 'create.actionStory'.tr.isNotEmpty && 'create.actionStory'.tr != 'create.actionStory'
-                        ? 'create.actionStory'.tr
-                        : 'Story',
-                    description: 'create.actionStoryDesc'.tr.isNotEmpty &&
-                            'create.actionStoryDesc'.tr != 'create.actionStoryDesc'
-                        ? 'create.actionStoryDesc'.tr
-                        : 'Share a photo or video story',
-                    surface: itemBg,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    iconBg: iconBoxBg,
-                    onTap: () => _openStoryCreator(context),
-                  ),
-                  _FeatureCard(
-                    icon: Icons.event_outlined,
-                    title: 'create.actionEvent'.tr.isNotEmpty && 'create.actionEvent'.tr != 'create.actionEvent'
-                        ? 'create.actionEvent'.tr
-                        : 'Event',
-                    description: 'create.actionEventDesc'.tr.isNotEmpty &&
-                            'create.actionEventDesc'.tr != 'create.actionEventDesc'
-                        ? 'create.actionEventDesc'.tr
-                        : 'Create or host an event',
-                    surface: itemBg,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    iconBg: iconBoxBg,
-                    onTap: () => _navigate(
-                      context,
-                      const CreateEventScreen(),
-                      routeName: '/CreateEventScreen',
-                    ),
-                  ),
-                  _FeatureCard(
-                    icon: Icons.forum_outlined,
-                    title: 'create.actionDiscussion'.tr.isNotEmpty &&
-                            'create.actionDiscussion'.tr != 'create.actionDiscussion'
-                        ? 'create.actionDiscussion'.tr
-                        : 'Discussion',
-                    description: 'create.actionDiscussionDesc'.tr.isNotEmpty &&
-                            'create.actionDiscussionDesc'.tr != 'create.actionDiscussionDesc'
-                        ? 'create.actionDiscussionDesc'.tr
-                        : 'Start a topic in the forum',
-                    surface: itemBg,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    iconBg: iconBoxBg,
-                    onTap: () => _navigate(
-                      context,
-                      const CreateDiscussionScreen(),
-                      routeName: '/CreateDiscussionScreen',
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // ── 2. PRODUCTIVITY (3 Items) ──
-                  _CategoryHeader(
-                    title: 'create.categoryProductivity'.tr.isNotEmpty &&
-                            'create.categoryProductivity'.tr != 'create.categoryProductivity'
-                        ? 'create.categoryProductivity'.tr.toUpperCase()
-                        : 'PRODUCTIVITY',
-                    textColor: textSecondary,
-                  ),
-                  _FeatureCard(
-                    icon: Icons.flag_outlined,
-                    title: 'create.actionGoal'.tr.isNotEmpty && 'create.actionGoal'.tr != 'create.actionGoal'
-                        ? 'create.actionGoal'.tr
-                        : 'Goal',
-                    description: 'create.actionGoalDesc'.tr.isNotEmpty &&
-                            'create.actionGoalDesc'.tr != 'create.actionGoalDesc'
-                        ? 'create.actionGoalDesc'.tr
-                        : 'Set a personal or skill goal',
-                    surface: itemBg,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    iconBg: iconBoxBg,
-                    onTap: () => _navigate(
-                      context,
-                      const CreateGoalScreen(),
-                      routeName: '/CreateGoalScreen',
-                    ),
-                  ),
-                  _FeatureCard(
-                    icon: Icons.check_circle_outline_rounded,
-                    title: 'create.actionTodo'.tr.isNotEmpty && 'create.actionTodo'.tr != 'create.actionTodo'
-                        ? 'create.actionTodo'.tr
-                        : 'To-Do',
-                    description: 'create.actionTodoDesc'.tr.isNotEmpty &&
-                            'create.actionTodoDesc'.tr != 'create.actionTodoDesc'
-                        ? 'create.actionTodoDesc'.tr
-                        : 'Add a task to your daily plan',
-                    surface: itemBg,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    iconBg: iconBoxBg,
-                    onTap: () => _navigate(
-                      context,
-                      const CreateTaskScreen(),
-                      routeName: '/CreateTaskScreen',
-                    ),
-                  ),
-                  _FeatureCard(
-                    icon: Icons.local_fire_department_outlined,
-                    title: 'create.actionHabit'.tr.isNotEmpty && 'create.actionHabit'.tr != 'create.actionHabit'
-                        ? 'create.actionHabit'.tr
-                        : 'Habit',
-                    description: 'create.actionHabitDesc'.tr.isNotEmpty &&
-                            'create.actionHabitDesc'.tr != 'create.actionHabitDesc'
-                        ? 'create.actionHabitDesc'.tr
-                        : 'Build a daily or weekly routine',
-                    surface: itemBg,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    iconBg: iconBoxBg,
-                    onTap: () => _navigate(
-                      context,
-                      const CreateHabitScreen(),
-                      routeName: '/CreateHabitScreen',
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // ── 3. FINANCIAL (3 Items) ──
-                  _CategoryHeader(
-                    title: 'create.categoryFinancial'.tr.isNotEmpty &&
-                            'create.categoryFinancial'.tr != 'create.categoryFinancial'
-                        ? 'create.categoryFinancial'.tr.toUpperCase()
-                        : 'FINANCIAL',
-                    textColor: textSecondary,
-                  ),
-                  _FeatureCard(
-                    icon: Icons.receipt_long_outlined,
-                    title: 'create.actionExpense'.tr.isNotEmpty && 'create.actionExpense'.tr != 'create.actionExpense'
-                        ? 'create.actionExpense'.tr
-                        : 'Expense',
-                    description: 'create.actionExpenseDesc'.tr.isNotEmpty &&
-                            'create.actionExpenseDesc'.tr != 'create.actionExpenseDesc'
-                        ? 'create.actionExpenseDesc'.tr
-                        : 'Log your daily spending',
-                    surface: itemBg,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    iconBg: iconBoxBg,
-                    onTap: () => _navigate(
-                      context,
-                      const AddExpenseScreen(),
-                      routeName: '/AddExpenseScreen',
-                    ),
-                  ),
-                  _FeatureCard(
-                    icon: Icons.savings_outlined,
-                    title: 'create.actionSavingGoal'.tr.isNotEmpty &&
-                            'create.actionSavingGoal'.tr != 'create.actionSavingGoal'
-                        ? 'create.actionSavingGoal'.tr
-                        : 'Saving Goal',
-                    description: 'create.actionSavingGoalDesc'.tr.isNotEmpty &&
-                            'create.actionSavingGoalDesc'.tr != 'create.actionSavingGoalDesc'
-                        ? 'create.actionSavingGoalDesc'.tr
-                        : 'Create a target to save money',
-                    surface: itemBg,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    iconBg: iconBoxBg,
-                    onTap: () => _navigate(
-                      context,
-                      const CreateGoalScreen(),
-                      routeName: '/CreateGoalScreen',
-                    ),
-                  ),
-                  _FeatureCard(
-                    icon: Icons.pie_chart_outline_rounded,
-                    title: 'create.actionBudget'.tr.isNotEmpty && 'create.actionBudget'.tr != 'create.actionBudget'
-                        ? 'create.actionBudget'.tr
-                        : 'Budget',
-                    description: 'create.actionBudgetDesc'.tr.isNotEmpty &&
-                            'create.actionBudgetDesc'.tr != 'create.actionBudgetDesc'
-                        ? 'create.actionBudgetDesc'.tr
-                        : 'Allocate monthly budget limits',
-                    surface: itemBg,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    iconBg: iconBoxBg,
-                    onTap: () => _navigate(
-                      context,
-                      const SetBudgetScreen(),
-                      routeName: '/SetBudgetScreen',
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // ── 4. ENTERTAINMENT (3 Items) ──
-                  _CategoryHeader(
-                    title: 'create.categoryEntertainment'.tr.isNotEmpty &&
-                            'create.categoryEntertainment'.tr != 'create.categoryEntertainment'
-                        ? 'create.categoryEntertainment'.tr.toUpperCase()
-                        : 'ENTERTAINMENT',
-                    textColor: textSecondary,
-                  ),
-                  _FeatureCard(
-                    icon: Icons.quiz_outlined,
-                    title: 'create.actionQuiz'.tr.isNotEmpty && 'create.actionQuiz'.tr != 'create.actionQuiz'
-                        ? 'create.actionQuiz'.tr
-                        : 'Quiz',
-                    description: 'create.actionQuizDesc'.tr.isNotEmpty &&
-                            'create.actionQuizDesc'.tr != 'create.actionQuizDesc'
-                        ? 'create.actionQuizDesc'.tr
-                        : 'Test knowledge and earn XP',
-                    surface: itemBg,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    iconBg: iconBoxBg,
-                    onTap: () => _navigate(
-                      context,
-                      const InvestingQuizScreen(),
-                      routeName: '/InvestingQuizScreen',
-                    ),
-                  ),
-                  _FeatureCard(
-                    icon: Icons.emoji_events_outlined,
-                    title: 'create.actionChallenge'.tr.isNotEmpty &&
-                            'create.actionChallenge'.tr != 'create.actionChallenge'
-                        ? 'create.actionChallenge'.tr
-                        : 'Challenge',
-                    description: 'create.actionChallengeDesc'.tr.isNotEmpty &&
-                            'create.actionChallengeDesc'.tr != 'create.actionChallengeDesc'
-                        ? 'create.actionChallengeDesc'.tr
-                        : 'Join and complete daily challenges',
-                    surface: itemBg,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    iconBg: iconBoxBg,
-                    onTap: () => _showChallengeDialog(
-                      context,
-                      sheetBg,
-                      textPrimary,
-                      textSecondary,
-                      border,
-                      isDark,
-                    ),
-                  ),
-                  _FeatureCard(
-                    icon: Icons.video_library_outlined,
-                    title: 'create.actionShortContent'.tr.isNotEmpty &&
-                            'create.actionShortContent'.tr != 'create.actionShortContent'
-                        ? 'create.actionShortContent'.tr
-                        : 'Short Content',
-                    description: 'create.actionShortContentDesc'.tr.isNotEmpty &&
-                            'create.actionShortContentDesc'.tr != 'create.actionShortContentDesc'
-                        ? 'create.actionShortContentDesc'.tr
-                        : 'Create a short video or clip',
-                    surface: itemBg,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    iconBg: iconBoxBg,
-                    onTap: () => _showShortContentDialog(
-                      context,
-                      sheetBg,
-                      textPrimary,
-                      textSecondary,
-                      border,
-                      isDark,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -637,26 +648,22 @@ class _CategoryHeader extends StatelessWidget {
   }
 }
 
-/// Clean, compact feature item card with icon, title, description, and chevron.
-class _FeatureCard extends StatelessWidget {
+/// Clean, compact grid create option card with icon and title.
+class _CompactCreateCard extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String description;
   final Color surface;
   final Color border;
   final Color textPrimary;
-  final Color textSecondary;
   final Color iconBg;
   final VoidCallback onTap;
 
-  const _FeatureCard({
+  const _CompactCreateCard({
     required this.icon,
     required this.title,
-    required this.description,
     required this.surface,
     required this.border,
     required this.textPrimary,
-    required this.textSecondary,
     required this.iconBg,
     required this.onTap,
   });
@@ -664,7 +671,6 @@ class _FeatureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(14),
@@ -677,60 +683,41 @@ class _FeatureCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(14),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            child: Row(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 38,
-                  height: 38,
+                  width: 36,
+                  height: 36,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: iconBg,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: border.withValues(alpha: 0.6), width: 0.6),
+                    border: Border.all(
+                      color: border.withValues(alpha: 0.6),
+                      width: 0.6,
+                    ),
                   ),
                   child: Icon(
                     icon,
                     color: textPrimary,
-                    size: 19,
+                    size: 20,
                   ),
                 ),
-                const SizedBox(width: 13),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        description,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 8),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
                   ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: textSecondary.withValues(alpha: 0.5),
-                  size: 20,
                 ),
               ],
             ),

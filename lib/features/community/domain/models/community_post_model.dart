@@ -21,15 +21,19 @@ class CommunityPostModel {
   int likesCount;
   int commentsCount;
   int sharesCount;
+  String get authorId => userId;
   int get repostsCount => sharesCount;
   bool isLiked;
   bool isBookmarked;
   bool isFollowing;
+  bool isRepostedByMe;
   final bool isOwner;
   final String visibility;
   final String community;
   final String? repostedBy;
   final String? repostCaption;
+  final String? originalPostId;
+  final String? reposterId;
   final String? location;
   final String? linkUrl;
   final String? linkPreviewTitle;
@@ -58,11 +62,14 @@ class CommunityPostModel {
     this.isLiked = false,
     this.isBookmarked = false,
     this.isFollowing = false,
+    this.isRepostedByMe = false,
     this.isOwner = false,
     this.visibility = 'Public',
     this.community = 'All GenLink',
     this.repostedBy,
     this.repostCaption,
+    this.originalPostId,
+    this.reposterId,
     this.location,
     this.linkUrl,
     this.linkPreviewTitle,
@@ -75,6 +82,22 @@ class CommunityPostModel {
     this.comments = const [],
     this.attachedEvent,
   });
+
+  /// Evaluates whether the given user ID matches this post's author ID.
+  /// Falls back to [isOwner] flag when [currentUserId] is not provided.
+  bool checkIsOwner(String? currentUserId) {
+    if (currentUserId != null && currentUserId.isNotEmpty) {
+      if (userId == currentUserId) return true;
+      if (isOwner &&
+          (userId == 'user_me' ||
+              userId == 'current_user' ||
+              userId == 'demo_user_1')) {
+        return true;
+      }
+      return false;
+    }
+    return isOwner;
+  }
 
   CommunityPostModel copyWith({
     String? id,
@@ -92,11 +115,15 @@ class CommunityPostModel {
     bool? isLiked,
     bool? isBookmarked,
     bool? isFollowing,
+    bool? isRepostedByMe,
     bool? isOwner,
     String? visibility,
     String? community,
     String? repostedBy,
     String? repostCaption,
+    String? originalPostId,
+    String? reposterId,
+    bool clearRepostInfo = false,
     String? location,
     String? linkUrl,
     String? linkPreviewTitle,
@@ -124,11 +151,14 @@ class CommunityPostModel {
       isLiked: isLiked ?? this.isLiked,
       isBookmarked: isBookmarked ?? this.isBookmarked,
       isFollowing: isFollowing ?? this.isFollowing,
+      isRepostedByMe: isRepostedByMe ?? (clearRepostInfo ? false : this.isRepostedByMe),
       isOwner: isOwner ?? this.isOwner,
       visibility: visibility ?? this.visibility,
       community: community ?? this.community,
-      repostedBy: repostedBy ?? this.repostedBy,
-      repostCaption: repostCaption ?? this.repostCaption,
+      repostedBy: clearRepostInfo ? null : (repostedBy ?? this.repostedBy),
+      repostCaption: clearRepostInfo ? null : (repostCaption ?? this.repostCaption),
+      originalPostId: clearRepostInfo ? null : (originalPostId ?? this.originalPostId),
+      reposterId: clearRepostInfo ? null : (reposterId ?? this.reposterId),
       location: location ?? this.location,
       linkUrl: linkUrl ?? this.linkUrl,
       linkPreviewTitle: linkPreviewTitle ?? this.linkPreviewTitle,
@@ -210,9 +240,20 @@ class CommunityPostModel {
       isLiked: json['likedByMe'] as bool? ?? json['isLiked'] as bool? ?? false,
       isBookmarked:
           json['savedByMe'] as bool? ?? json['isBookmarked'] as bool? ?? false,
+      isFollowing:
+          json['isFollowing'] as bool? ??
+          json['following'] as bool? ??
+          (authorObj?['isFollowing'] as bool?) ??
+          (authorObj?['following'] as bool?) ??
+          false,
+      isRepostedByMe: json['isRepostedByMe'] as bool? ?? false,
       isOwner: json['isOwner'] as bool? ?? false,
       visibility: json['visibility'] as String? ?? 'Public',
       community: json['community'] as String? ?? 'All GenLink',
+      repostedBy: json['repostedBy'] as String?,
+      repostCaption: json['repostCaption'] as String?,
+      originalPostId: json['originalPostId'] as String?,
+      reposterId: json['reposterId'] as String?,
       comments:
           (json['commentsList'] as List<dynamic>?)
               ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
@@ -237,9 +278,15 @@ class CommunityPostModel {
       'shares': sharesCount,
       'isLiked': isLiked,
       'isBookmarked': isBookmarked,
+      'isFollowing': isFollowing,
+      'isRepostedByMe': isRepostedByMe,
       'isOwner': isOwner,
       'visibility': visibility,
       'community': community,
+      'repostedBy': repostedBy,
+      'repostCaption': repostCaption,
+      'originalPostId': originalPostId,
+      'reposterId': reposterId,
     };
   }
 }
@@ -270,16 +317,26 @@ class CommentModel {
   });
 
   factory CommentModel.fromJson(Map<String, dynamic> json) {
+    final authorObj = json['author'] as Map<String, dynamic>?;
     return CommentModel(
-      id: json['id'] as String? ?? '',
-      postId: json['postId'] as String? ?? '',
-      userId: json['userId'] as String? ?? '',
-      userName: json['userName'] as String? ?? 'User',
-      userAvatar: json['userAvatar'] as String? ?? '',
-      text: json['text'] as String? ?? '',
+      id: json['commentId'] as String? ?? json['id'] as String? ?? '',
+      postId: json['postId'] as String? ??
+          json['discussionId'] as String? ??
+          '',
+      userId: json['userId'] as String? ??
+          authorObj?['userId'] as String? ??
+          '',
+      userName: json['userName'] as String? ??
+          authorObj?['fullName'] as String? ??
+          authorObj?['username'] as String? ??
+          'User',
+      userAvatar: json['userAvatar'] as String? ??
+          authorObj?['avatarUrl'] as String? ??
+          '',
+      text: json['content'] as String? ?? json['text'] as String? ?? '',
       timeAgo: json['timeAgo'] as String? ?? 'Just now',
-      likesCount: json['likesCount'] as int? ?? 0,
-      isLiked: json['isLiked'] as bool? ?? false,
+      likesCount: json['likeCount'] as int? ?? json['likesCount'] as int? ?? 0,
+      isLiked: json['likedByMe'] as bool? ?? json['isLiked'] as bool? ?? false,
       parentCommentId: json['parentCommentId'] as String?,
     );
   }

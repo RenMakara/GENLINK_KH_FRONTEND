@@ -22,6 +22,9 @@ abstract class CommunityRepository {
   Future<bool> toggleLike(String postId);
 
   Future<bool> toggleBookmark(String postId);
+  Future<bool> repostPost(String postId, {String? caption, String? reposterId});
+  Future<bool> unrepostPost(String postId, {String? reposterId});
+  Future<bool> reportPost(String postId, {String reason = 'INAPPROPRIATE_CONTENT'});
 
   Future<List<CommentModel>> getComments(String postId);
 
@@ -32,4 +35,16 @@ abstract class CommunityRepository {
   });
 
   Future<bool> deleteComment(String postId, String commentId);
+
+  Future<List<CommentModel>> getDiscussionComments(String discussionId);
+
+  Future<CommentModel> addDiscussionComment(
+    String discussionId,
+    String content, {
+    String? parentCommentId,
+  });
+
+  Future<bool> followUser(String userId);
+  Future<bool> unfollowUser(String userId);
+  Future<bool> checkIsFollowing(String userId);
 }

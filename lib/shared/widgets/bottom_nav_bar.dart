@@ -60,96 +60,102 @@ class BottomNavBar extends StatelessWidget {
               final navIconSize = isVeryNarrow ? 22.0 : (isNarrow ? 23.0 : 24.0);
               final navFontSize = isVeryNarrow ? 10.0 : (isNarrow ? 10.5 : 11.0);
 
-              return Padding(
-                padding: EdgeInsets.fromLTRB(
-                  horizontalMargin,
-                  0,
-                  horizontalMargin,
-                  bottomMargin,
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                      child: Container(
-                        height: barHeight,
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.darkSurfaceGlass
-                              : AppColors.lightSurfaceGlass,
-                          borderRadius: BorderRadius.circular(AppRadius.xl),
-                          border: Border.all(
-                            color: isDark
-                                ? AppColors.darkBorderSubtle
-                                : AppColors.lightBorderSubtle,
-                            width: 1.5,
+              return Align(
+                alignment: Alignment.bottomCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 800),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalMargin,
+                      0,
+                      horizontalMargin,
+                      bottomMargin,
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: _NavItem(
-                                icon: CupertinoIcons.house,
-                                activeIcon: CupertinoIcons.house_fill,
-                                label: 'nav.home'.tr,
-                                active: currentIndex == 0,
-                                iconSize: navIconSize,
-                                fontSize: navFontSize,
-                                onTap: () => onTap(0),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                          child: Container(
+                            height: barHeight,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.darkSurfaceGlass
+                                  : AppColors.lightSurfaceGlass,
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.darkBorderSubtle
+                                    : AppColors.lightBorderSubtle,
+                                width: 1.5,
                               ),
                             ),
-                            Expanded(
-                              child: _NavItem(
-                                icon: CupertinoIcons.person_2,
-                                activeIcon: CupertinoIcons.person_2_fill,
-                                label: 'nav.community'.tr,
-                                active: currentIndex == 1,
-                                iconSize: navIconSize,
-                                fontSize: navFontSize,
-                                onTap: () => onTap(1),
-                              ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _NavItem(
+                                    icon: CupertinoIcons.house,
+                                    activeIcon: CupertinoIcons.house_fill,
+                                    label: 'nav.home'.tr,
+                                    active: currentIndex == 0,
+                                    iconSize: navIconSize,
+                                    fontSize: navFontSize,
+                                    onTap: () => onTap(0),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _NavItem(
+                                    icon: CupertinoIcons.person_2,
+                                    activeIcon: CupertinoIcons.person_2_fill,
+                                    label: 'nav.community'.tr,
+                                    active: currentIndex == 1,
+                                    iconSize: navIconSize,
+                                    fontSize: navFontSize,
+                                    onTap: () => onTap(1),
+                                  ),
+                                ),
+                                _CenterButton(
+                                  onTap: onCenterTap,
+                                  size: centerBtnSize,
+                                  iconSize: centerIconSize,
+                                ),
+                                Expanded(
+                                  child: _NavItem(
+                                    icon: CupertinoIcons.money_dollar_circle,
+                                    activeIcon: CupertinoIcons.money_dollar_circle_fill,
+                                    label: 'nav.finance'.tr,
+                                    active: currentIndex == 2,
+                                    iconSize: navIconSize,
+                                    fontSize: navFontSize,
+                                    onTap: () => onTap(2),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _NavItem(
+                                    icon: CupertinoIcons.person_crop_circle,
+                                    activeIcon: CupertinoIcons.person_crop_circle_fill,
+                                    label: 'nav.profile'.tr,
+                                    active: currentIndex == 3,
+                                    iconSize: navIconSize,
+                                    fontSize: navFontSize,
+                                    onTap: () => onTap(3),
+                                    imageUrl: avatarUrl,
+                                    onLongPress: () => _showProfileMenu(context),
+                                  ),
+                                ),
+                              ],
                             ),
-                            _CenterButton(
-                              onTap: onCenterTap,
-                              size: centerBtnSize,
-                              iconSize: centerIconSize,
-                            ),
-                            Expanded(
-                              child: _NavItem(
-                                icon: CupertinoIcons.money_dollar,
-                                activeIcon: CupertinoIcons.money_dollar_circle_fill,
-                                label: 'nav.financial'.tr,
-                                active: currentIndex == 2,
-                                iconSize: navIconSize,
-                                fontSize: navFontSize,
-                                onTap: () => onTap(2),
-                              ),
-                            ),
-                            Expanded(
-                              child: _NavItem(
-                                icon: CupertinoIcons.person_crop_circle,
-                                activeIcon: CupertinoIcons.person_crop_circle_fill,
-                                label: 'nav.profile'.tr,
-                                active: currentIndex == 3,
-                                iconSize: navIconSize,
-                                fontSize: navFontSize,
-                                onTap: () => onTap(3),
-                                imageUrl: avatarUrl,
-                                onLongPress: () => _showProfileMenu(context),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),

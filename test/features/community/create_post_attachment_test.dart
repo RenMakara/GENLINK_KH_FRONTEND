@@ -78,6 +78,15 @@ class MockCommunityRepository implements CommunityRepository {
   Future<bool> toggleBookmark(String postId) async => true;
 
   @override
+  Future<bool> repostPost(String postId, {String? caption, String? reposterId}) async => true;
+
+  @override
+  Future<bool> unrepostPost(String postId, {String? reposterId}) async => true;
+
+  @override
+  Future<bool> reportPost(String postId, {String reason = 'INAPPROPRIATE_CONTENT'}) async => true;
+
+  @override
   Future<List<CommentModel>> getComments(String postId) async => [];
 
   @override
@@ -100,6 +109,28 @@ class MockCommunityRepository implements CommunityRepository {
 
   @override
   Future<bool> deleteComment(String postId, String commentId) async => true;
+
+  final Set<String> followedUsers = {};
+
+  @override
+  Future<bool> followUser(String userId) async {
+    followedUsers.add(userId);
+    return true;
+  }
+
+  @override
+  Future<bool> unfollowUser(String userId) async {
+    followedUsers.remove(userId);
+    return true;
+  }
+
+  @override
+  Future<bool> checkIsFollowing(String userId) async {
+    return followedUsers.contains(userId);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
@@ -290,9 +321,9 @@ void main() {
       await tester.tap(find.text('People'));
       await tester.pumpAndSettle();
 
-      // Select "Sum Sambo"
-      expect(find.text('Sum Sambo'), findsOneWidget);
-      await tester.tap(find.text('Sum Sambo'));
+      // Select "Rathana P."
+      expect(find.text('Rathana P.'), findsOneWidget);
+      await tester.tap(find.text('Rathana P.'));
       await tester.pumpAndSettle();
 
       // Tap Done
@@ -303,7 +334,7 @@ void main() {
       expect(find.text('Study session with friends'), findsOneWidget);
 
       // Verify tagged people preview badge is attached
-      expect(find.text('Sum Sambo'), findsWidgets);
+      expect(find.text('Rathana P.'), findsWidgets);
     });
 
     testWidgets('6. Test multiple attachments together on the same draft and verify Post button', (tester) async {

@@ -36,19 +36,17 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
 
+  String? _titleError;
+  String? _dateError;
+  String? _linkError;
+  String? _locationError;
+
   static const List<String> _categoryKeys = [
     'community.workshop',
     'community.seminar',
     'community.hackathon',
     'community.categoryOther',
   ];
-
-  bool get _canCreate =>
-      _titleController.text.trim().isNotEmpty &&
-      _selectedDate != null &&
-      (_eventType == 'Online'
-          ? _linkController.text.trim().isNotEmpty
-          : _locationController.text.trim().isNotEmpty);
 
   String get _formattedDate {
     if (_selectedDate == null) return '';
@@ -87,9 +85,27 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   @override
   void initState() {
     super.initState();
-    _titleController.addListener(() => setState(() {}));
-    _locationController.addListener(() => setState(() {}));
-    _linkController.addListener(() => setState(() {}));
+    _titleController.addListener(() {
+      if (_titleError != null && _titleController.text.trim().isNotEmpty) {
+        setState(() => _titleError = null);
+      } else {
+        setState(() {});
+      }
+    });
+    _locationController.addListener(() {
+      if (_locationError != null && _locationController.text.trim().isNotEmpty) {
+        setState(() => _locationError = null);
+      } else {
+        setState(() {});
+      }
+    });
+    _linkController.addListener(() {
+      if (_linkError != null && _linkController.text.trim().isNotEmpty) {
+        setState(() => _linkError = null);
+      } else {
+        setState(() {});
+      }
+    });
   }
 
   @override
@@ -206,7 +222,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     );
 
     if (picked != null) {
-      setState(() => _selectedDate = picked);
+      setState(() {
+        _selectedDate = picked;
+        _dateError = null;
+      });
       if (!mounted) return;
 
       final initialTime = _selectedTime ?? const TimeOfDay(hour: 9, minute: 0);
@@ -221,7 +240,56 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   void _submit() async {
-    if (!_canCreate || _isSubmitting) return;
+    if (_isSubmitting) return;
+
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      setState(() => _titleError = 'Event name is required');
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: 'Validation Error',
+        message: 'Event name is required.',
+      );
+      _titleFocus.requestFocus();
+      return;
+    }
+
+    if (_selectedDate == null) {
+      setState(() => _dateError = 'Date & time is required');
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: 'Validation Error',
+        message: 'Date & time is required.',
+      );
+      return;
+    }
+
+    if (_eventType == 'Online') {
+      final link = _linkController.text.trim();
+      if (link.isEmpty) {
+        setState(() => _linkError = 'Online event link is required');
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: 'Validation Error',
+          message: 'Online event link is required.',
+        );
+        _linkFocus.requestFocus();
+        return;
+      }
+    } else {
+      final loc = _locationController.text.trim();
+      if (loc.isEmpty) {
+        setState(() => _locationError = 'Location is required');
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: 'Validation Error',
+          message: 'Location is required.',
+        );
+        _locationFocus.requestFocus();
+        return;
+      }
+    }
+
     setState(() => _isSubmitting = true);
 
     // Short UI feedback delay (local-first, no network)
@@ -231,7 +299,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     // Build an EventModel from the form data
     final newEvent = EventModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: _titleController.text.trim(),
+      title: title,
       subtitle: _descController.text.trim().isNotEmpty
           ? _descController.text.trim().split('\n').first
           : '',
@@ -251,7 +319,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     );
 
     // Register in controller so the Event list updates reactively
-    final controller = Get.find<CommunityController>();
+    final controller = Get.isRegistered<CommunityController>()
+        ? Get.find<CommunityController>()
+        : Get.put(CommunityController());
     controller.createEvent(newEvent);
 
     setState(() => _isSubmitting = false);
@@ -320,7 +390,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             Padding(
               padding: const EdgeInsets.only(right: 12, top: 10, bottom: 10),
               child: ElevatedButton(
-                onPressed: _canCreate && !_isSubmitting ? _submit : null,
+                onPressed: !_isSubmitting ? _submit : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isDark ? Colors.white : Colors.black,
                   foregroundColor: isDark ? Colors.black : Colors.white,
@@ -358,292 +428,295 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         ),
         body: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Banner Image Area ─────────────────────────────────────────
-              Container(
-                width: double.infinity,
-                height: MediaQuery.of(context).size.width * (9 / 16),
-                decoration: BoxDecoration(
-                  color: imagePlaceholderBg,
-                  border: Border(bottom: BorderSide(color: cardBorder)),
-                ),
-                child: Stack(
-                  children: [
-                    if (_coverImage != null)
-                      Positioned.fill(
-                        child: Image.file(_coverImage!, fit: BoxFit.cover),
-                      )
-                    else
-                      GestureDetector(
-                        onTap: _pickCoverImage,
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.add_photo_alternate_outlined,
-                                color: textMuted,
-                                size: 40,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Upload cover image',
-                                style: TextStyle(
-                                  color: textMuted,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Banner Image Area ─────────────────────────────────────────
+                  AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: imagePlaceholderBg,
+                        border: Border(bottom: BorderSide(color: cardBorder)),
                       ),
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Row(
+                      child: Stack(
                         children: [
-                          GestureDetector(
-                            onTap: _pickCoverImage,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: isDark ? Colors.black54 : Colors.white70,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.edit,
-                                color: textPrimary,
-                                size: 18,
+                          if (_coverImage != null)
+                            Positioned.fill(
+                              child: Image.file(_coverImage!, fit: BoxFit.cover),
+                            )
+                          else
+                            GestureDetector(
+                              onTap: _pickCoverImage,
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.add_photo_alternate_outlined,
+                                      color: textMuted,
+                                      size: 40,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Upload cover image',
+                                      style: TextStyle(
+                                        color: textMuted,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          if (_coverImage != null) ...[
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: () => setState(() => _coverImage = null),
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? Colors.black54
-                                      : Colors.white70,
-                                  shape: BoxShape.circle,
+                          Positioned(
+                            top: 12,
+                            right: 12,
+                            child: Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: _pickCoverImage,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.black54 : Colors.white70,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.edit,
+                                      color: textPrimary,
+                                      size: 18,
+                                    ),
+                                  ),
                                 ),
-                                child: Icon(
-                                  Icons.close,
-                                  color: textPrimary,
+                                if (_coverImage != null) ...[
+                                  const SizedBox(width: 8),
+                                  GestureDetector(
+                                    onTap: () => setState(() => _coverImage = null),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.black54
+                                            : Colors.white70,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.close,
+                                        color: textPrimary,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 20,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ── Event Type ──────────────────────────────────────────
+                        _buildLabel('Event type', textMuted),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            _buildRadioButton('Online', textPrimary),
+                            const SizedBox(width: 24),
+                            _buildRadioButton('In person', textPrimary),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+
+                        // ── Event Name ──────────────────────────────────────────
+                        _buildLabel('Event name*', textMuted),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _titleController,
+                          focusNode: _titleFocus,
+                          maxLines: 1,
+                          style: TextStyle(color: textPrimary, fontSize: 16),
+                          decoration: _inputDeco(
+                            cardBorder: cardBorder,
+                            textPrimary: textPrimary,
+                            inputBg: inputBg,
+                            errorText: _titleError,
+                            hintText: 'Event name',
+                            textMuted: textMuted,
+                          ),
+                          textInputAction: TextInputAction.next,
+                          onSubmitted: (_) => _eventType == 'Online'
+                              ? _linkFocus.requestFocus()
+                              : _locationFocus.requestFocus(),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // ── Date and Time ───────────────────────────────────────
+                        _buildLabel('Date & time*', textMuted),
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: _pickDate,
+                          child: IgnorePointer(
+                            child: TextField(
+                              controller: TextEditingController(
+                                text: _formattedDate,
+                              ),
+                              style: TextStyle(color: textPrimary, fontSize: 16),
+                              decoration: _inputDeco(
+                                cardBorder: cardBorder,
+                                textPrimary: textPrimary,
+                                inputBg: inputBg,
+                                errorText: _dateError,
+                                hintText: 'Select date and time',
+                                textMuted: textMuted,
+                                prefixIcon: Icon(
+                                  Icons.calendar_today_outlined,
+                                  color: textMuted,
                                   size: 18,
                                 ),
                               ),
                             ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 20,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Event Type ──────────────────────────────────────────
-                    _buildLabel('Event type', textMuted),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        _buildRadioButton('Online', textPrimary),
-                        const SizedBox(width: 24),
-                        _buildRadioButton('In person', textPrimary),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // ── Event Name ──────────────────────────────────────────
-                    _buildLabel('Event name*', textMuted),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _titleController,
-                      focusNode: _titleFocus,
-                      maxLines: 1,
-                      style: TextStyle(color: textPrimary, fontSize: 16),
-                      decoration: _inputDeco(
-                        cardBorder: cardBorder,
-                        textPrimary: textPrimary,
-                        inputBg: inputBg,
-                      ),
-                      textInputAction: TextInputAction.next,
-                      onSubmitted: (_) => _eventType == 'Online'
-                          ? _linkFocus.requestFocus()
-                          : _locationFocus.requestFocus(),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // ── Date and Time ───────────────────────────────────────
-                    _buildLabel('Date & time*', textMuted),
-                    const SizedBox(height: 8),
-                    InkWell(
-                      onTap: _pickDate,
-                      child: IgnorePointer(
-                        child: TextField(
-                          controller: TextEditingController(
-                            text: _formattedDate,
                           ),
-                          style: TextStyle(color: textPrimary, fontSize: 16),
-                          decoration:
-                              _inputDeco(
-                                cardBorder: cardBorder,
-                                textPrimary: textPrimary,
-                                inputBg: inputBg,
-                              ).copyWith(
-                                hintText: 'Select date and time',
-                                hintStyle: TextStyle(
-                                  color: textMuted,
-                                  fontSize: 16,
-                                ),
-                              ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Your event timezone is set to Local Time',
-                      style: TextStyle(color: textMuted, fontSize: 13),
-                    ),
-                    const SizedBox(height: 24),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Your event timezone is set to Local Time',
+                          style: TextStyle(color: textMuted, fontSize: 13),
+                        ),
+                        const SizedBox(height: 24),
 
-                    // ── Dynamic Field (Location / Link) ─────────────────────
-                    if (_eventType == 'Online') ...[
-                      _buildLabel('Online event link*', textMuted),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _linkController,
-                        focusNode: _linkFocus,
-                        maxLines: 1,
-                        style: TextStyle(color: textPrimary, fontSize: 16),
-                        decoration:
-                            _inputDeco(
+                        // ── Dynamic Field (Location / Link) ─────────────────────
+                        if (_eventType == 'Online') ...[
+                          _buildLabel('Online event link*', textMuted),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _linkController,
+                            focusNode: _linkFocus,
+                            maxLines: 1,
+                            style: TextStyle(color: textPrimary, fontSize: 16),
+                            decoration: _inputDeco(
                               cardBorder: cardBorder,
                               textPrimary: textPrimary,
                               inputBg: inputBg,
-                            ).copyWith(
+                              errorText: _linkError,
                               hintText: 'e.g. https://meet.google.com/...',
-                              hintStyle: TextStyle(
+                              textMuted: textMuted,
+                              prefixIcon: Icon(
+                                Icons.link_rounded,
                                 color: textMuted,
-                                fontSize: 16,
+                                size: 20,
                               ),
                             ),
-                        textInputAction: TextInputAction.next,
-                        onSubmitted: (_) => _descFocus.requestFocus(),
-                      ),
-                    ] else ...[
-                      _buildLabel('Location*', textMuted),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _locationController,
-                        focusNode: _locationFocus,
-                        maxLines: 1,
-                        style: TextStyle(color: textPrimary, fontSize: 16),
-                        decoration:
-                            _inputDeco(
+                            textInputAction: TextInputAction.next,
+                            onSubmitted: (_) => _descFocus.requestFocus(),
+                          ),
+                        ] else ...[
+                          _buildLabel('Location*', textMuted),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _locationController,
+                            focusNode: _locationFocus,
+                            maxLines: 1,
+                            style: TextStyle(color: textPrimary, fontSize: 16),
+                            decoration: _inputDeco(
                               cardBorder: cardBorder,
                               textPrimary: textPrimary,
                               inputBg: inputBg,
-                            ).copyWith(
-                              hintText: 'Add event location',
-                              hintStyle: TextStyle(
-                                color: textMuted,
-                                fontSize: 16,
-                              ),
+                              errorText: _locationError,
+                              hintText: '📍 Enter event location',
+                              textMuted: textMuted,
                             ),
-                        textInputAction: TextInputAction.next,
-                        onSubmitted: (_) => _descFocus.requestFocus(),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
+                            textInputAction: TextInputAction.next,
+                            onSubmitted: (_) => _descFocus.requestFocus(),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
 
-                    // ── Description ─────────────────────────────────────────
-                    _buildLabel('Description', textMuted),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _descController,
-                      focusNode: _descFocus,
-                      minLines: 4,
-                      maxLines: 10,
-                      maxLength: 5000,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 16,
-                        height: 1.5,
-                      ),
-                      decoration:
-                          _inputDeco(
+                        // ── Description ─────────────────────────────────────────
+                        _buildLabel('Description', textMuted),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _descController,
+                          focusNode: _descFocus,
+                          minLines: 4,
+                          maxLines: 10,
+                          maxLength: 5000,
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 16,
+                            height: 1.5,
+                          ),
+                          decoration: _inputDeco(
                             cardBorder: cardBorder,
                             textPrimary: textPrimary,
                             inputBg: inputBg,
-                          ).copyWith(
                             hintText: 'Tell people about your event',
-                            hintStyle: TextStyle(
-                              color: textMuted,
-                              fontSize: 16,
-                            ),
+                            textMuted: textMuted,
                           ),
-                      textInputAction: TextInputAction.done,
-                    ),
+                          textInputAction: TextInputAction.done,
+                        ),
 
-                    const SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
-                    // ── Category (Preserved GenLink Feature) ────────────────
-                    _buildLabel('Category (Optional)', textMuted),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _categoryKeys.map((key) {
-                        final isSelected = _selectedCategory == key;
-                        return GestureDetector(
-                          onTap: () => setState(() {
-                            _selectedCategory = isSelected ? null : key;
-                          }),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected ? textPrimary : inputBg,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: isSelected
-                                    ? Colors.transparent
-                                    : cardBorder,
+                        // ── Category (Preserved GenLink Feature) ────────────────
+                        _buildLabel('Category (Optional)', textMuted),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _categoryKeys.map((key) {
+                            final isSelected = _selectedCategory == key;
+                            return GestureDetector(
+                              onTap: () => setState(() {
+                                _selectedCategory = isSelected ? null : key;
+                              }),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? textPrimary : inputBg,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? Colors.transparent
+                                        : cardBorder,
+                                  ),
+                                ),
+                                child: Text(
+                                  key.tr,
+                                  style: TextStyle(
+                                    color: isSelected ? bg : textPrimary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              key.tr,
-                              style: TextStyle(
-                                color: isSelected ? bg : textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 40),
+                      ],
                     ),
-                    const SizedBox(height: 40),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -660,7 +733,15 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   Widget _buildRadioButton(String title, Color textPrimary) {
     final isSelected = _eventType == title;
     return GestureDetector(
-      onTap: () => setState(() => _eventType = title),
+      onTap: () {
+        if (_eventType != title) {
+          setState(() {
+            _eventType = title;
+            _linkError = null;
+            _locationError = null;
+          });
+        }
+      },
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -686,24 +767,51 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     required Color cardBorder,
     required Color textPrimary,
     required Color inputBg,
+    String? hintText,
+    Color? textMuted,
+    String? errorText,
+    Widget? prefixIcon,
   }) {
     return InputDecoration(
       filled: true,
       fillColor: inputBg,
+      hintText: hintText,
+      hintStyle: textMuted != null
+          ? TextStyle(color: textMuted, fontSize: 16)
+          : null,
+      prefixIcon: prefixIcon,
+      errorText: errorText,
+      errorStyle: const TextStyle(
+        color: Colors.redAccent,
+        fontSize: 12,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
         borderSide: BorderSide(color: cardBorder),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: BorderSide(color: cardBorder),
+        borderSide: BorderSide(
+          color: errorText != null ? Colors.redAccent : cardBorder,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: BorderSide(color: textPrimary, width: 1.5),
+        borderSide: BorderSide(
+          color: errorText != null ? Colors.redAccent : textPrimary,
+          width: 1.5,
+        ),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: const BorderSide(color: Colors.redAccent),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      counterStyle: TextStyle(fontSize: 13), // for maxLength counter
+      counterStyle: const TextStyle(fontSize: 13), // for maxLength counter
     );
   }
 }

@@ -7,6 +7,7 @@ import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
 import '../../domain/models/community_models.dart';
 import '../../domain/models/community_post_model.dart';
 import '../screens/create_post_screen.dart';
@@ -166,6 +167,26 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     );
   }
 
+  bool get _isOwnPost {
+    String? currentUserId;
+    if (Get.isRegistered<AuthController>()) {
+      currentUserId = Get.find<AuthController>().currentUser.value?.id;
+    }
+    currentUserId ??= widget.controller.currentUserId;
+    return widget.post.checkIsOwner(currentUserId) ||
+        (currentUserId != null &&
+            currentUserId.isNotEmpty &&
+            widget.post.userId == currentUserId);
+  }
+
+  bool get _isFollowing {
+    final livePost =
+        widget.controller.posts.firstWhereOrNull((p) => p.id == widget.post.id);
+    if (livePost != null) return livePost.isFollowing;
+    return widget.controller.isFollowingUser(widget.post.userId) ||
+        widget.post.isFollowing;
+  }
+
   void _showMoreMenu(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -184,10 +205,14 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // 1. Bookmark toggle (Always available)
             Material(
               color: Colors.transparent,
               child: ListTile(
-                leading: Icon(Icons.bookmark_border, color: textPrimary),
+                leading: Icon(
+                  widget.post.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border,
+                  color: textPrimary,
+                ),
                 title: Text(
                   widget.post.isBookmarked ? 'community.removeBookmark'.tr : 'community.saveBookmark'.tr,
                   style: theme.textTheme.bodyMedium?.copyWith(color: textPrimary) ??
@@ -207,22 +232,66 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                 },
               ),
             ),
-            Material(
-              color: Colors.transparent,
-              child: ListTile(
-                leading: Icon(Icons.repeat_rounded, color: textPrimary),
-                title: Text(
-                  'community.repost'.tr,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: textPrimary) ??
-                      TextStyle(color: textPrimary),
+
+            // 2. OTHER USER'S POST OPTIONS: Repost / Unrepost, Report Post
+            if (!_isOwnPost) ...[
+              Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  leading: Icon(
+                    Icons.repeat_rounded,
+                    color: widget.post.isRepostedByMe ? AppColors.growthAccent : textPrimary,
+                  ),
+                  title: Text(
+                    widget.post.isRepostedByMe ? 'community.unrepost'.tr : 'community.repost'.tr,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                          color: widget.post.isRepostedByMe ? AppColors.growthAccent : textPrimary,
+                        ) ??
+                        TextStyle(
+                          color: widget.post.isRepostedByMe ? AppColors.growthAccent : textPrimary,
+                        ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    if (widget.post.isRepostedByMe) {
+                      widget.controller.unrepostPost(widget.post.id);
+                      AppNotificationBanner.showInfo(
+                        context: context,
+                        title: 'community.unreposted'.tr,
+                        message: 'community.unrepostedMsg'.tr,
+                        icon: Icons.repeat_rounded,
+                      );
+                    } else {
+                      _showRepostDialog(context);
+                    }
+                  },
                 ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _showRepostDialog(context);
-                },
               ),
-            ),
-            if (widget.post.isOwner) ...[
+              Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  leading: Icon(Icons.flag_outlined, color: textPrimary),
+                  title: Text(
+                    'community.reportPost'.tr,
+                    style: theme.textTheme.bodyMedium?.copyWith(color: textPrimary) ??
+                        TextStyle(color: textPrimary),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    widget.controller.reportPost(widget.post.id);
+                    AppNotificationBanner.showInfo(
+                      context: context,
+                      title: 'community.postReported'.tr,
+                      message: 'community.postReportedMsg'.tr,
+                      icon: Icons.flag_rounded,
+                    );
+                  },
+                ),
+              ),
+            ],
+
+            // 3. OWN POST OPTIONS: Edit Post, Delete Post (NO REPOST)
+            if (_isOwnPost) ...[
               Material(
                 color: Colors.transparent,
                 child: ListTile(
@@ -480,9 +549,9 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
             builder: (context, constraints) {
               final isNarrow = constraints.maxWidth < 360;
               final isVeryNarrow = constraints.maxWidth < 330;
-              final avatarRadius = isVeryNarrow ? 17.0 : (isNarrow ? 19.0 : 21.0);
-              final headerGap = isVeryNarrow ? 6.0 : (isNarrow ? 8.0 : 12.0);
-              final authorFontSize = isVeryNarrow ? 13.5 : (isNarrow ? 14.5 : 15.5);
+              final avatarRadius = isVeryNarrow ? 17.0 : (isNarrow ? 19.0 : 20.0);
+              final headerGap = isVeryNarrow ? 6.0 : (isNarrow ? 8.0 : 10.0);
+              final authorFontSize = isVeryNarrow ? 13.5 : (isNarrow ? 14.5 : 15.0);
 
               return Padding(
                 padding: EdgeInsets.fromLTRB(
@@ -492,6 +561,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                   8,
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     GestureDetector(
                       onTap: () {
@@ -520,6 +590,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Row(
                             children: [
@@ -569,29 +640,20 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                               Text('·', style: TextStyle(color: textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
                               const SizedBox(width: 4),
                               Flexible(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? AppColors.darkSurfacePrimary
-                                        : AppColors.lightBgSecondary,
-                                    borderRadius: BorderRadius.circular(AppRadius.sm + 2),
-                                  ),
-                                  child: Text(
-                                    widget.post.community,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                          color: textSecondary,
-                                          fontSize: isVeryNarrow ? 9.5 : 10.5,
-                                          fontWeight: FontWeight.w600,
-                                        ) ??
-                                        TextStyle(
-                                          color: textSecondary,
-                                          fontSize: isVeryNarrow ? 9.5 : 10.5,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                  ),
+                                child: Text(
+                                  widget.post.community,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                        color: textSecondary,
+                                        fontSize: isVeryNarrow ? 10.0 : 11.0,
+                                        fontWeight: FontWeight.w500,
+                                      ) ??
+                                      TextStyle(
+                                        color: textSecondary,
+                                        fontSize: isVeryNarrow ? 10.0 : 11.0,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                 ),
                               ),
                             ],
@@ -599,46 +661,73 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                         ],
                       ),
                     ),
-                    if (!widget.post.isOwner) ...[
-                      const SizedBox(width: 4),
-                      InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () => widget.controller.toggleFollowUser(widget.post.userId),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          curve: Curves.easeOutCubic,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: widget.post.isFollowing
-                                ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05))
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: widget.post.isFollowing
-                                  ? borderSubtle
-                                  : (isDark ? Colors.white.withValues(alpha: 0.55) : Colors.black.withValues(alpha: 0.35)),
-                              width: 0.9,
+                    if (!_isOwnPost) ...[
+                      const SizedBox(width: 6),
+                      Obx(() {
+                        final isFollowing = _isFollowing;
+                        final isLoading = widget.controller.followLoadingUserIds.contains(widget.post.userId);
+
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          onTap: isLoading ? null : () => widget.controller.toggleFollowUser(widget.post.userId),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeInOut,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                            decoration: BoxDecoration(
+                              color: isFollowing
+                                  ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05))
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              border: Border.all(
+                                color: isFollowing
+                                    ? borderSubtle
+                                    : (isDark ? Colors.white.withValues(alpha: 0.40) : Colors.black.withValues(alpha: 0.35)),
+                                width: 0.9,
+                              ),
+                            ),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 180),
+                              transitionBuilder: (child, animation) =>
+                                  FadeTransition(opacity: animation, child: child),
+                              child: isFollowing
+                                  ? Text(
+                                      'community.following'.tr,
+                                      key: const ValueKey('following'),
+                                      style: TextStyle(
+                                        fontSize: isVeryNarrow ? 10.0 : 11.0,
+                                        fontWeight: FontWeight.w600,
+                                        color: textSecondary,
+                                        letterSpacing: -0.1,
+                                      ),
+                                    )
+                                  : Row(
+                                      key: const ValueKey('follow'),
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.add_rounded,
+                                          size: 13,
+                                          color: textPrimary,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          'community.follow'.tr,
+                                          style: TextStyle(
+                                            fontSize: isVeryNarrow ? 10.0 : 11.0,
+                                            fontWeight: FontWeight.w600,
+                                            color: textPrimary,
+                                            letterSpacing: -0.1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (!widget.post.isFollowing)
-                                Icon(Icons.add_rounded, size: 12, color: textPrimary),
-                              if (!widget.post.isFollowing) const SizedBox(width: 2),
-                              Text(
-                                widget.post.isFollowing ? 'community.following'.tr : 'community.follow'.tr,
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: widget.post.isFollowing ? textSecondary : textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                        );
+                      }),
                     ],
+                    const SizedBox(width: 2),
                     IconButton(
                       icon: Icon(Icons.more_horiz_rounded, color: actionIconColor, size: isVeryNarrow ? 18 : 20),
                       padding: const EdgeInsets.all(4),
@@ -802,22 +891,56 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 
                 // Repost Button
                 InkWell(
-                  onTap: () => _showRepostDialog(context),
+                  onTap: _isOwnPost
+                      ? () {
+                          AppNotificationBanner.showWarning(
+                            context: context,
+                            title: "Cannot Repost",
+                            message: 'community.cannotRepostOwnPost'.tr,
+                          );
+                        }
+                      : () {
+                          if (widget.post.isRepostedByMe) {
+                            widget.controller.unrepostPost(widget.post.id);
+                            AppNotificationBanner.showInfo(
+                              context: context,
+                              title: 'community.unreposted'.tr,
+                              message: 'community.unrepostedMsg'.tr,
+                              icon: Icons.repeat_rounded,
+                            );
+                          } else {
+                            _showRepostDialog(context);
+                          }
+                        },
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     child: Row(
                       children: [
-                        Icon(Icons.repeat_rounded, color: actionIconColor, size: 20),
+                        Icon(
+                          Icons.repeat_rounded,
+                          color: widget.post.isRepostedByMe
+                              ? AppColors.growthAccent
+                              : actionIconColor,
+                          size: 20,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           "${widget.post.repostsCount}",
                           style: theme.textTheme.labelMedium?.copyWith(
-                                color: actionIconColor,
+                                color: widget.post.isRepostedByMe
+                                    ? AppColors.growthAccent
+                                    : actionIconColor,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13,
                               ) ??
-                              TextStyle(color: actionIconColor, fontSize: 13, fontWeight: FontWeight.w600),
+                              TextStyle(
+                                color: widget.post.isRepostedByMe
+                                    ? AppColors.growthAccent
+                                    : actionIconColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                       ],
                     ),

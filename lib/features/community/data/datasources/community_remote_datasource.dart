@@ -32,49 +32,6 @@ class CommunityRemoteDataSource {
       community: 'ACLEDA University of Business',
     ),
     CommunityPostModel(
-      id: 'post_sokuntheara',
-      userId: 'user_sokuntheara',
-      authorName: 'Chhaeng Sokuntheara',
-      authorTag: '@chhaengsokuntheara',
-      authorAvatar: 'assets/images/sokuntheara_profile.png',
-      isVerified: false,
-      timeAgo: '1h ago',
-      content:
-          '✨ Working on a new UI/UX design for CampusLink KH. Every detail matters when creating an app that\'s simple, modern, and enjoyable to use. Looking forward to sharing more updates soon! 🎨📱',
-      imageUrls: ['assets/images/sokuntheara_post.png'],
-      location: 'ACLEDA University of Business',
-      likesCount: 54,
-      commentsCount: 11,
-      sharesCount: 5,
-      isLiked: false,
-      isBookmarked: false,
-      isOwner: false,
-      community: 'ACLEDA University of Business (AUB)',
-    ),
-    CommunityPostModel(
-      id: 'post_sambo',
-      userId: 'user_sambo',
-      authorName: 'Sum Sambo',
-      authorTag: '@sumsambo',
-      authorAvatar:
-          'https://i.pinimg.com/736x/ec/31/fb/ec31fb6bb86683cf4d2d1680f79f14cb.jpg',
-      isVerified: false,
-      timeAgo: '3h ago',
-      content:
-          '🔐 Cybersecurity is not just about protecting systems—it\'s about protecting people. Today I spent time learning about web application security and common vulnerabilities. Every day is a chance to become a better security professional. 💻🛡️',
-      imageUrls: [
-        'https://i.pinimg.com/736x/ec/31/fb/ec31fb6bb86683cf4d2d1680f79f14cb.jpg',
-      ],
-      location: 'ACLEDA University of Business',
-      likesCount: 61,
-      commentsCount: 13,
-      sharesCount: 6,
-      isLiked: false,
-      isBookmarked: false,
-      isOwner: false,
-      community: 'ACLEDA University of Business (AUB)',
-    ),
-    CommunityPostModel(
       id: 'post_chansela',
       userId: 'user_chansela',
       authorName: 'Heng Chansela',
@@ -245,6 +202,68 @@ class CommunityRemoteDataSource {
     return true;
   }
 
+  Future<bool> repostPost(
+    String postId, {
+    String? caption,
+    String? reposterId,
+  }) async {
+    try {
+      await guardDio(
+        () => dio.post<dynamic>(
+          ApiEndpoints.communityPostRepost(postId),
+          data: {'caption': caption},
+        ),
+      );
+    } catch (_) {}
+    final idx = _mockPosts.indexWhere((p) => p.id == postId);
+    if (idx != -1) {
+      final p = _mockPosts[idx];
+      _mockPosts[idx] = p.copyWith(
+        sharesCount: p.sharesCount + 1,
+        isRepostedByMe: true,
+        repostedBy: 'Sokny Enat',
+        repostCaption: caption,
+        reposterId: reposterId ?? 'user_me',
+        originalPostId: p.id,
+      );
+    }
+    return true;
+  }
+
+  Future<bool> unrepostPost(String postId, {String? reposterId}) async {
+    try {
+      await guardDio(
+        () => dio.delete<dynamic>(
+          ApiEndpoints.communityPostRepost(postId),
+        ),
+      );
+    } catch (_) {}
+    final idx = _mockPosts.indexWhere((p) => p.id == postId);
+    if (idx != -1) {
+      final p = _mockPosts[idx];
+      _mockPosts[idx] = p.copyWith(
+        sharesCount: p.sharesCount > 0 ? p.sharesCount - 1 : 0,
+        clearRepostInfo: true,
+      );
+    }
+    return true;
+  }
+
+  Future<bool> reportPost(
+    String postId, {
+    String reason = 'INAPPROPRIATE_CONTENT',
+  }) async {
+    try {
+      await guardDio(
+        () => dio.post<dynamic>(
+          ApiEndpoints.communityPostReport(postId),
+          data: {'reason': reason},
+        ),
+      );
+    } catch (_) {}
+    return true;
+  }
+
   Future<List<CommentModel>> fetchComments(String postId) async {
     try {
       final response = await guardDio(
@@ -319,5 +338,161 @@ class CommunityRemoteDataSource {
       _mockPosts[idx].commentsCount += 1;
     }
     return comment;
+  }
+
+  Future<List<CommentModel>> fetchDiscussionComments(
+    String discussionId,
+  ) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityDiscussionComments(discussionId),
+        ),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        dynamic rawData;
+        if (body is Map<String, dynamic>) {
+          rawData = body['data'] ?? body;
+        } else {
+          rawData = body;
+        }
+
+        List<dynamic> content = [];
+        if (rawData is Map<String, dynamic>) {
+          content = (rawData['content'] as List<dynamic>?) ?? [];
+        } else if (rawData is List) {
+          content = rawData;
+        }
+
+        if (content.isNotEmpty) {
+          return content
+              .map(
+                (json) => CommentModel.fromJson(json as Map<String, dynamic>),
+              )
+              .toList();
+        }
+      }
+    } catch (_) {}
+
+    return [];
+  }
+
+  Future<CommentModel> addDiscussionComment(
+    String discussionId,
+    String content, {
+    String? parentCommentId,
+  }) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityDiscussionComments(discussionId),
+        data: {
+          'content': content,
+          'parentCommentId': ?parentCommentId,
+        },
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      if (body is Map<String, dynamic> &&
+          body['data'] is Map<String, dynamic>) {
+        return CommentModel.fromJson(body['data'] as Map<String, dynamic>);
+      } else if (body is Map<String, dynamic>) {
+        return CommentModel.fromJson(body);
+      }
+    }
+
+    return CommentModel(
+      id: 'dc_${DateTime.now().millisecondsSinceEpoch}',
+      postId: discussionId,
+      userId: 'current_user',
+      userName: 'Sokny Enat',
+      userAvatar: 'assets/images/user_profile.png',
+      text: content,
+      timeAgo: 'Just now',
+      parentCommentId: parentCommentId,
+    );
+  }
+
+  final Set<String> _mockFollowedUserIds = <String>{};
+
+  Future<bool> followUser(String userId) async {
+    try {
+      final response = await guardDio(
+        () => dio.post<dynamic>(ApiEndpoints.communityFollowUser(userId)),
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _mockFollowedUserIds.add(userId);
+        _updateMockPostsFollowStatus(userId, true);
+        return true;
+      }
+    } catch (e) {
+      if (e is AppError && e.errorCode == 'NETWORK_ERROR') {
+        _mockFollowedUserIds.add(userId);
+        _updateMockPostsFollowStatus(userId, true);
+        return true;
+      }
+      rethrow;
+    }
+    _mockFollowedUserIds.add(userId);
+    _updateMockPostsFollowStatus(userId, true);
+    return true;
+  }
+
+  Future<bool> unfollowUser(String userId) async {
+    try {
+      final response = await guardDio(
+        () => dio.delete<dynamic>(ApiEndpoints.communityFollowUser(userId)),
+      );
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        _mockFollowedUserIds.remove(userId);
+        _updateMockPostsFollowStatus(userId, false);
+        return true;
+      }
+    } catch (e) {
+      if (e is AppError && e.errorCode == 'NETWORK_ERROR') {
+        _mockFollowedUserIds.remove(userId);
+        _updateMockPostsFollowStatus(userId, false);
+        return true;
+      }
+      rethrow;
+    }
+    _mockFollowedUserIds.remove(userId);
+    _updateMockPostsFollowStatus(userId, false);
+    return true;
+  }
+
+  Future<bool> checkIsFollowing(String userId) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(ApiEndpoints.communityFollowStats(userId)),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final data = body is Map<String, dynamic> ? body['data'] : null;
+        if (data is Map<String, dynamic>) {
+          final followStatus = data['followStatus'];
+          final isFollowing =
+              followStatus == 'ACCEPTED' || followStatus == 'PENDING';
+          if (isFollowing) {
+            _mockFollowedUserIds.add(userId);
+          } else {
+            _mockFollowedUserIds.remove(userId);
+          }
+          _updateMockPostsFollowStatus(userId, isFollowing);
+          return isFollowing;
+        }
+      }
+    } catch (_) {}
+    return _mockFollowedUserIds.contains(userId);
+  }
+
+  void _updateMockPostsFollowStatus(String userId, bool isFollowing) {
+    for (int i = 0; i < _mockPosts.length; i++) {
+      if (_mockPosts[i].userId == userId) {
+        _mockPosts[i].isFollowing = isFollowing;
+      }
+    }
   }
 }

@@ -137,9 +137,11 @@ class _EventsScreenState extends State<EventsScreen> {
                   );
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                   itemCount: filtered.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     return _EventCard(
                       event: filtered[index],
@@ -182,152 +184,119 @@ class _EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasLocalImage = event.coverImageFile != null;
-    final bool hasNetworkImage = event.imageUrl.isNotEmpty;
+    final isOnline = event.eventType.toLowerCase().contains('online');
+    final String locationDisplay = isOnline
+        ? '🌐 Online Event'
+        : '📍 ${event.location.isNotEmpty ? event.location : "In Person"}';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderSubtle, width: 0.8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. Cover Image (approx 16:9)
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: hasLocalImage
-                  ? Image.file(event.coverImageFile!, fit: BoxFit.cover)
-                  : hasNetworkImage
-                      ? Image.network(
-                          event.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => _imagePlaceholder(),
-                        )
-                      : _imagePlaceholder(),
+    final String dateDisplay = event.timeString.isNotEmpty
+        ? '📅 ${event.dateString} · ${event.timeString}'
+        : (event.dateString.isNotEmpty ? '📅 ${event.dateString}' : '');
+
+    return InkWell(
+      onTap: () => Get.to(() => EventDetailsScreen(event: event)),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderSubtle, width: 0.8),
+        ),
+        child: Row(
+          children: [
+            // Left: 90x90 Square Thumbnail
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                width: 90,
+                height: 90,
+                child: _buildImage(),
+              ),
             ),
-          ),
+            const SizedBox(width: 12),
 
-          // 2. Event Information
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Date, Time, Location
-                Text(
-                  event.timeString.isNotEmpty
-                      ? '${event.dateString} · ${event.timeString} · ${event.location.isNotEmpty ? event.location : "Online"}'
-                      : '${event.dateString} · ${event.location.isNotEmpty ? event.location : "Online"}',
-                  style: TextStyle(
-                    color: textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-
-                // Title
-                Text(
-                  event.title,
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    height: 1.2,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-
-                // Organizer and attendees
-                Obx(() {
-                  final updated = Get.find<CommunityController>()
-                      .events
-                      .firstWhereOrNull((e) => e.id == event.id);
-                  final count = updated?.attendeesCount ?? event.attendeesCount;
-                  
-                  return Text(
-                    '${event.organizerName.isNotEmpty ? event.organizerName : "GenLink Community"} · $count attendees',
+            // Right: Information Lines
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title
+                  Text(
+                    event.title,
                     style: TextStyle(
-                      color: textMuted,
+                      color: textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.5,
+                      height: 1.25,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+
+                  // Date & Time
+                  if (dateDisplay.isNotEmpty) ...[
+                    Text(
+                      dateDisplay,
+                      style: TextStyle(
+                        color: textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                  ],
+
+                  // Location / Online
+                  Text(
+                    locationDisplay,
+                    style: TextStyle(
+                      color: textSecondary,
                       fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                  );
-                }),
-
-                const SizedBox(height: 20),
-
-                // 3. Action Area
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => Get.to(() => EventDetailsScreen(event: event)),
-                        borderRadius: BorderRadius.circular(100),
-                        child: Container(
-                          height: 44,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.white : Colors.black,
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                          child: Text(
-                            'View Event',
-                            style: TextStyle(
-                              color: isDark ? Colors.black : Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    InkWell(
-                      onTap: () {}, // Share logic
-                      borderRadius: BorderRadius.circular(100),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: borderSubtle),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Icon(
-                          Icons.ios_share,
-                          color: textPrimary,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _imagePlaceholder() {
+  Widget _buildImage() {
+    if (event.coverImageFile != null) {
+      return Image.file(
+        event.coverImageFile!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _placeholder(),
+      );
+    }
+    if (event.imageUrl.isNotEmpty) {
+      return Image.network(
+        event.imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _placeholder(),
+      );
+    }
+    return _placeholder();
+  }
+
+  Widget _placeholder() {
     return Container(
-      color: isDark ? const Color(0xFF222222) : const Color(0xFFEEEEEE),
+      color: isDark ? const Color(0xFF1E2228) : const Color(0xFFE9ECF0),
       child: Center(
         child: Icon(
           Icons.event_outlined,
-          size: 40,
-          color: isDark ? Colors.white12 : Colors.black12,
+          color: textMuted.withValues(alpha: 0.6),
+          size: 28,
         ),
       ),
     );

@@ -19,16 +19,10 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
   final List<Map<String, String>> _contacts = [
     {
-      'id': 'user_sokuntheara',
-      'name': 'Chhaeng Sokuntheara',
-      'handle': '@sokuntheara',
-      'avatar': 'assets/images/sokuntheara_profile.png',
-    },
-    {
-      'id': 'user_sambo',
-      'name': 'Sum Sambo',
-      'handle': '@sumsambo',
-      'avatar': 'assets/images/sum_sambo_profile.png',
+      'id': 'user_sokny',
+      'name': 'Sokny Enat',
+      'handle': '@soknyenat',
+      'avatar': 'assets/images/user_profile.png',
     },
     {
       'id': 'user_chansela',

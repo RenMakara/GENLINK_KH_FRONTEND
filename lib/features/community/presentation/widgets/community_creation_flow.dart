@@ -5,7 +5,8 @@ import '../controllers/story_gallery_controller.dart';
 import '../screens/create_event_screen.dart';
 import '../screens/create_post_screen.dart';
 import '../screens/story_gallery_screen.dart';
-import 'community_creation_bottom_sheet.dart';
+import '../../../../shared/widgets/global_create_sheet.dart';
+import 'story_creation_picker_sheet.dart';
 
 /// Centralized creation flow helper for GenLink KH Community.
 ///
@@ -16,33 +17,12 @@ abstract final class CommunityCreationFlow {
   ///
   /// Presents options:
   /// - Create Post -> Navigates to [CreatePostScreen]
-  /// - Create Story -> Navigates to [StoryGalleryScreen]
+  /// - Create Story -> Navigates to [StoryCreationPickerSheet]
   /// - Create Event -> Navigates to [CreateEventScreen]
   static Future<void> openCreateMenu([BuildContext? context]) async {
     final ctx = context ?? Get.context;
     if (ctx == null) return;
-
-    return showModalBottomSheet<void>(
-      context: ctx,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      enableDrag: true,
-      isDismissible: true,
-      builder: (sheetContext) => CommunityCreationBottomSheet(
-        onSelectCreatePost: () {
-          Navigator.of(sheetContext).pop();
-          openCreatePost();
-        },
-        onSelectCreateStory: () {
-          Navigator.of(sheetContext).pop();
-          openCreateStory();
-        },
-        onSelectCreateEvent: () {
-          Navigator.of(sheetContext).pop();
-          openCreateEvent();
-        },
-      ),
-    );
+    return GlobalCreateSheet.show(ctx);
   }
 
   /// Navigates directly to the Create Post composer screen.
@@ -54,8 +34,14 @@ abstract final class CommunityCreationFlow {
     );
   }
 
-  /// Navigates directly to the Story Creator hub screen.
+  /// Opens the Story creation choices (Camera, Gallery, Text Story).
   static Future<T?> openCreateStory<T>([BuildContext? context]) async {
+    final ctx = context ?? Get.context;
+    if (ctx != null) {
+      StoryCreationPickerSheet.show(ctx);
+      return null;
+    }
+
     final galleryCtrl = Get.isRegistered<StoryGalleryController>()
         ? Get.find<StoryGalleryController>()
         : Get.put(StoryGalleryController());

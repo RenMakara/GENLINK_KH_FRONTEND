@@ -12,6 +12,7 @@ import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../chat/presentation/bindings/chat_binding.dart';
 import '../../../chat/presentation/controllers/chat_controller.dart';
+import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/story_model.dart';
 import '../controllers/story_controller.dart';
 import '../widgets/story_template_canvas.dart';
@@ -232,18 +233,13 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
   late AnimationController _progressAnimController;
   bool _isPaused = false;
-  bool _showHeartAnimation = false;
   bool _isClosing = false;
 
   final TextEditingController _replyController = TextEditingController();
 
-  late AnimationController _floatingHeartAnimController;
-  late Animation<double> _floatingHeartScaleAnim;
-  late Animation<double> _floatingHeartOpacityAnim;
-  late Animation<Offset> _floatingHeartTranslateAnim;
-
   bool _isMorePressed = false;
-  bool _isLikeDebouncing = false;
+  bool _isReacting = false;
+  DateTime? _lastLikeTapTime;
 
   StoryGroupModel? get _currentGroup {
     if (_currentGroupIdx < 0 || _currentGroupIdx >= widget.groups.length) {
@@ -260,6 +256,18 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       return null;
     }
     return group.stories[_currentStoryIdx];
+  }
+
+  bool get _isOwnStory {
+    final group = _currentGroup;
+    if (group == null) return false;
+    final currentUserId = CurrentUser.id;
+    if (currentUserId.isNotEmpty) {
+      if (group.userId.isNotEmpty && group.userId == currentUserId) {
+        return true;
+      }
+    }
+    return group.isOwner;
   }
 
   @override
@@ -280,61 +288,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       }
     });
 
-    // Floating Canvas Feedback Heart Animation for Double-Tap (Snappy 360ms pop & fade)
-    _floatingHeartAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 360),
-    );
-
-    _floatingHeartScaleAnim = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 0.7,
-          end: 1.20,
-        ).chain(CurveTween(curve: Curves.easeOutBack)),
-        weight: 50,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.20,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.easeOutCubic)),
-        weight: 50,
-      ),
-    ]).animate(_floatingHeartAnimController);
-
-    _floatingHeartOpacityAnim = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 0.0,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.easeIn)),
-        weight: 25,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.0,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.linear)),
-        weight: 45,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.0,
-          end: 0.0,
-        ).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 30,
-      ),
-    ]).animate(_floatingHeartAnimController);
-
-    _floatingHeartTranslateAnim =
-        Tween<Offset>(begin: Offset.zero, end: const Offset(0, -28.0)).animate(
-          CurvedAnimation(
-            parent: _floatingHeartAnimController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
-
     if (_currentGroup == null || _currentGroup!.stories.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _closeViewer());
     } else {
@@ -350,7 +303,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   void dispose() {
     _progressAnimController.dispose();
     _replyController.dispose();
-    _floatingHeartAnimController.dispose();
     super.dispose();
   }
 
@@ -490,7 +442,15 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     }
   }
 
-  void _toggleLike(StoryItemModel story) {
+  Future<void> _toggleLike(StoryItemModel story) async {
+    debugPrint(
+      '[StoryViewer] Like button tapped | '
+      'Story ID: ${story.id} | '
+      'Story owner ID: ${_currentGroup?.userId} | '
+      'Current user ID: ${CurrentUser.id} | '
+      'Current liked state: ${story.isLiked}',
+    );
+
     if (!story.allowReactions) {
       AppNotificationBanner.showInfo(
         context: context,
@@ -500,24 +460,69 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       return;
     }
 
+    // Safety: Prevent user from liking their own story
+    if (_isOwnStory) {
+      debugPrint('[StoryViewer] Blocked reaction: User owns this story.');
+      return;
+    }
+
+    // Guard against simultaneous in-flight requests
+    if (_isReacting) {
+      debugPrint('[StoryViewer] Ignored reaction: another reaction request is in progress.');
+      return;
+    }
+
     // Debounce: prevent rapid duplicate like/unlike requests
-    if (_isLikeDebouncing) return;
-    _isLikeDebouncing = true;
-    Future.delayed(const Duration(milliseconds: 300), () {
-      _isLikeDebouncing = false;
-    });
+    final now = DateTime.now();
+    if (_lastLikeTapTime != null &&
+        now.difference(_lastLikeTapTime!).inMilliseconds < 250) {
+      debugPrint('[StoryViewer] Ignored reaction: within 250ms debounce window.');
+      return;
+    }
+    _lastLikeTapTime = now;
+    _isReacting = true;
+
+    final targetLiked = !story.isLiked;
+    final targetLikesCount = story.likesCount + (targetLiked ? 1 : -1);
+
+    debugPrint(
+      '[StoryViewer] API request started | '
+      'Story ID: ${story.id} | '
+      'Target liked state: $targetLiked',
+    );
 
     // Sync with backend via controller
     if (Get.isRegistered<StoryController>()) {
       final ctrl = Get.find<StoryController>();
-      ctrl.syncLikeToBackend(story.id);
-    } else {
-      story.isLiked = !story.isLiked;
-      story.likesCount += story.isLiked ? 1 : -1;
+      try {
+        await ctrl.syncLikeToBackend(story.id);
+        debugPrint('[StoryViewer] API response status: SUCCESS for story: ${story.id}');
+      } catch (e) {
+        debugPrint('[StoryViewer] API response status: FAILED ($e). Previous liked state maintained.');
+        if (mounted) {
+          AppNotificationBanner.showDanger(
+            context: context,
+            title: "Error",
+            message: "Failed to update like status.",
+          );
+        }
+        _isReacting = false;
+        return;
+      }
     }
 
-    // Rebuild UI with new state immediately
-    setState(() {});
+    // Update state and trigger animation only upon successful completion
+    story.isLiked = targetLiked;
+    story.likesCount = targetLikesCount;
+    if (mounted) setState(() {});
+
+    debugPrint(
+      '[StoryViewer] Reaction state updated | '
+      'New liked state: ${story.isLiked} | '
+      'New likes count: ${story.likesCount}',
+    );
+
+    _isReacting = false;
 
     // Create activity notification if story is liked
     if (story.isLiked && Get.isRegistered<NotificationController>()) {
@@ -545,15 +550,13 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     final story = _currentStory;
     if (story == null || !story.allowReactions) return;
 
+    // Safety: Prevent user from liking their own story
+    if (_isOwnStory) return;
+
     if (!story.isLiked) {
+      HapticFeedback.lightImpact();
       _toggleLike(story);
     }
-
-    // Trigger center floating heart animation for double tap gesture
-    setState(() => _showHeartAnimation = true);
-    _floatingHeartAnimController.forward(from: 0.0).then((_) {
-      if (mounted) setState(() => _showHeartAnimation = false);
-    });
   }
 
   Widget _buildStoryReplyThumbnail(StoryItemModel story) {
@@ -2367,7 +2370,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 child: Row(
                   children: [
                     Text(
-                      group.isOwner ? "Manage Your Story" : "Story Options",
+                      _isOwnStory ? "Manage Your Story" : "Story Options",
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -2389,7 +2392,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
                   child: Column(
                     children: [
-                      if (group.isOwner) ...[
+                      if (_isOwnStory) ...[
                         // ── MY STORY OPTIONS ──
                         _buildMenuOptionTile(
                           ctx: ctx,
@@ -3299,8 +3302,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             _closeViewer();
           }
         },
-        child: Stack(
-          children: [
+        child: RepaintBoundary(
+          key: _storyContentKey,
+          child: Stack(
+            children: [
             // Full Screen Story Content with Ultra-Comfortable 90ms Anchored Pure Crossfade (Instagram / WhatsApp Comfort Standard)
             Positioned.fill(
               child: AnimatedSwitcher(
@@ -3313,7 +3318,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 child: KeyedSubtree(
                   key: ValueKey("story_${story.id}"),
                   child: RepaintBoundary(
-                    key: _storyContentKey,
                     child: _buildUnifiedStoryPageContent(story, group),
                   ),
                 ),
@@ -3379,47 +3383,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 ],
               ),
             ),
-
-            // Floating Heart Feedback (rises & fades near center on double-tap)
-            if (_showHeartAnimation)
-              Center(
-                child: AnimatedBuilder(
-                  animation: _floatingHeartAnimController,
-                  builder: (context, child) {
-                    return Transform.translate(
-                      offset: _floatingHeartTranslateAnim.value,
-                      child: Transform.scale(
-                        scale: _floatingHeartScaleAnim.value,
-                        child: Opacity(
-                          opacity: _floatingHeartOpacityAnim.value.clamp(
-                            0.0,
-                            1.0,
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.50),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.45),
-                                  blurRadius: 20,
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.favorite_rounded,
-                              color: AppColors.likedAccent,
-                              size: 72,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
 
             // Top Header: Segmented Progress Bar & Clean User Avatar Header Row
             Positioned(
@@ -3611,7 +3574,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      if (group.isOwner) ...[
+                      if (_isOwnStory) ...[
                         // ── Owner Actions: Viewers & Likes Engagement Pill Button ──
                         InkWell(
                           borderRadius: BorderRadius.circular(22),
@@ -3726,11 +3689,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                         else
                           const Spacer(),
 
-                        if (story.allowReactions) ...[
+                        if (story.allowReactions && !_isOwnStory) ...[
                           const SizedBox(width: 10),
 
                           // ── Interactive Like Button (Count hidden for other users' stories) ──
                           StoryInteractiveLikeButton(
+                            key: ValueKey('story_like_${story.id}'),
                             isLiked: story.isLiked,
                             likesCount: story.likesCount,
                             showCount: false,
@@ -3787,6 +3751,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

@@ -93,43 +93,6 @@ class StoryRepositoryImpl implements StoryRepository {
         ),
       ],
     ),
-    StoryGroupModel(
-      userId: 'user_sokuntheara',
-      userName: 'Chhaeng Sokuntheara',
-      userAvatar: 'assets/images/sokuntheara_profile.png',
-      hasUnseen: true,
-      stories: [
-        StoryItemModel(
-          id: 'story_sokuntheara_1',
-          type: StoryType.photo,
-          mediaUrl: 'assets/images/sokuntheara_post.png',
-          textContent: '🎨 Designing something exciting today!',
-          location: 'ACLEDA University of Business',
-          timeAgo: '1h ago',
-          createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-          likesCount: 54,
-        ),
-      ],
-    ),
-    StoryGroupModel(
-      userId: 'user_sambo',
-      userName: 'Sum Sambo',
-      userAvatar: 'assets/images/sum_sambo_profile.png',
-      hasUnseen: true,
-      stories: [
-        StoryItemModel(
-          id: 'story_sambo_1',
-          type: StoryType.photo,
-          mediaUrl:
-              'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800',
-          textContent: '🛡️ Learning something new about cybersecurity today.',
-          location: 'ACLEDA University of Business',
-          timeAgo: '3h ago',
-          createdAt: DateTime.now().subtract(const Duration(hours: 3)),
-          likesCount: 61,
-        ),
-      ],
-    ),
   ];
 
   @override
@@ -266,7 +229,7 @@ class StoryRepositoryImpl implements StoryRepository {
 
     if (_apiClient != null) {
       try {
-        await _apiClient.post(
+        final serverStory = await _apiClient.post(
           ApiEndpoints.stories,
           body: {
             'mediaUrl': mediaUrl ?? '',
@@ -280,6 +243,9 @@ class StoryRepositoryImpl implements StoryRepository {
           },
           parse: (data) => _storyFromJson(ApiClient.asMap(data)),
         );
+        ownerGroup.stories.remove(newStory);
+        ownerGroup.stories.insert(0, serverStory);
+        return serverStory;
       } catch (_) {
         // Local state preserved even if backend fails
       }
@@ -361,8 +327,8 @@ class StoryRepositoryImpl implements StoryRepository {
     return [
       StoryViewerModel(
         id: 'v1',
-        userName: 'Chhaeng Sokuntheara',
-        userAvatar: 'assets/images/sokuntheara_profile.png',
+        userName: 'Ren Makara',
+        userAvatar: 'assets/images/ren_makara_profile.png',
         viewedTimeAgo: '10m ago',
       ),
       StoryViewerModel(
@@ -379,8 +345,8 @@ class StoryRepositoryImpl implements StoryRepository {
       ),
       StoryViewerModel(
         id: 'v4',
-        userName: 'Sum Sambo',
-        userAvatar: 'assets/images/sum_sambo_profile.png',
+        userName: 'Sokny Enat',
+        userAvatar: 'assets/images/user_profile.png',
         viewedTimeAgo: '40m ago',
       ),
     ];
@@ -388,6 +354,17 @@ class StoryRepositoryImpl implements StoryRepository {
 
   @override
   Future<void> toggleLikeStory(String storyId) async {
+    if (_apiClient != null) {
+      try {
+        await _apiClient.post(
+          ApiEndpoints.storyLike(storyId),
+          parse: (_) {},
+        );
+      } catch (_) {
+        // Fallback to local updates
+      }
+    }
+
     for (final group in _mockStoryGroups) {
       for (final story in group.stories) {
         if (story.id == storyId) {

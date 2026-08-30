@@ -37,99 +37,96 @@ class CommunityHeaderWidget extends StatelessWidget
         ? 'community.title'.tr
         : 'Community';
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isNarrow = screenWidth < 360;
+    final isVeryNarrow = screenWidth < 335;
+    final buttonSize = isVeryNarrow ? 32.0 : (isNarrow ? 36.0 : 42.0);
+    final buttonGap = isVeryNarrow
+        ? 2.0
+        : (isNarrow ? 4.0 : AppSpacing.sm);
+    final iconSize = isVeryNarrow ? 18.0 : (isNarrow ? 20.0 : 22.0);
+    final titleFontSize = isVeryNarrow
+        ? 18.0
+        : (isNarrow ? 20.0 : 22.0);
+    final horizontalPadding = isVeryNarrow ? 8.0 : (isNarrow ? 10.0 : AppSpacing.md);
+
     return Container(
       color: bg,
       child: SafeArea(
         bottom: false,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isNarrow = constraints.maxWidth < 360;
-            final isVeryNarrow = constraints.maxWidth < 335;
-            final buttonSize = isVeryNarrow ? 34.0 : (isNarrow ? 38.0 : 42.0);
-            final buttonGap = isVeryNarrow
-                ? 3.0
-                : (isNarrow ? 5.0 : AppSpacing.sm);
-            final iconSize = isVeryNarrow ? 18.0 : (isNarrow ? 20.0 : 22.0);
-            final titleFontSize = isVeryNarrow
-                ? 18.0
-                : (isNarrow ? 20.0 : 22.0);
-            final horizontalPadding = isNarrow ? 10.0 : AppSpacing.md;
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: Container(
+              height: preferredSize.height,
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Row(
+                children: [
+                  // 1. LEFT TITLE - Flexible and non-overflowing
+                  Expanded(
+                    child: Text(
+                      titleText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: titleFontSize,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
 
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: Container(
-                  height: preferredSize.height,
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                  child: Row(
+                  const SizedBox(width: 6),
+
+                  // 2. RIGHT ACTION BUTTONS (Search, Chat, Notification)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // 1. LEFT TITLE - Flexible and non-overflowing
-                      Expanded(
-                        child: Text(
-                          titleText,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: textPrimary,
-                            fontSize: titleFontSize,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.3,
+                      // Search Button
+                      _HeaderActionButton(
+                        icon: Icons.search_rounded,
+                        onTap: () => Get.to(
+                          () => CommunitySearchScreen(
+                            activeTab: activeCategory,
                           ),
                         ),
+                        iconColor: textPrimary,
+                        buttonSize: buttonSize,
+                        iconSize: iconSize,
+                        tooltip: 'community.search'.tr,
                       ),
 
-                      const SizedBox(width: 6),
+                      SizedBox(width: buttonGap),
 
-                      // 2. RIGHT ACTION BUTTONS (Search, Chat, Notification)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Search Button
-                          _HeaderActionButton(
-                            icon: Icons.search_rounded,
-                            onTap: () => Get.to(
-                              () => CommunitySearchScreen(
-                                activeTab: activeCategory,
-                              ),
-                            ),
-                            iconColor: textPrimary,
-                            buttonSize: buttonSize,
-                            iconSize: iconSize,
-                            tooltip: 'community.search'.tr,
-                          ),
+                      // Chat Button - Two overlapping speech bubbles icon
+                      _HeaderActionButton(
+                        icon: Icons.forum_outlined,
+                        onTap: () => Get.to(() => const ChatListScreen()),
+                        iconColor: textPrimary,
+                        buttonSize: buttonSize,
+                        iconSize: iconSize,
+                        tooltip: 'community.chat'.tr,
+                      ),
 
-                          SizedBox(width: buttonGap),
+                      SizedBox(width: buttonGap),
 
-                          // Chat Button - Two overlapping speech bubbles icon
-                          _HeaderActionButton(
-                            icon: Icons.forum_outlined,
-                            onTap: () => Get.to(() => const ChatListScreen()),
-                            iconColor: textPrimary,
-                            buttonSize: buttonSize,
-                            iconSize: iconSize,
-                            tooltip: 'community.chat'.tr,
-                          ),
-
-                          SizedBox(width: buttonGap),
-
-                          // Notification Button
-                          _HeaderActionButton(
-                            icon: Icons.notifications_none_rounded,
-                            onTap: () =>
-                                Get.to(() => const NotificationScreen()),
-                            iconColor: textPrimary,
-                            buttonSize: buttonSize,
-                            iconSize: iconSize,
-                            tooltip: 'community.notifications'.tr,
-                          ),
-                        ],
+                      // Notification Button
+                      _HeaderActionButton(
+                        icon: Icons.notifications_none_rounded,
+                        onTap: () =>
+                            Get.to(() => const NotificationScreen()),
+                        iconColor: textPrimary,
+                        buttonSize: buttonSize,
+                        iconSize: iconSize,
+                        tooltip: 'community.notifications'.tr,
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );

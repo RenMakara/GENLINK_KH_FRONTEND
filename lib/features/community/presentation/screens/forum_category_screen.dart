@@ -91,19 +91,19 @@ class ForumCategoryScreen extends StatelessWidget {
                 final topic = categoryDiscussions[index];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: InkWell(
+                  child: ForumThreadCard(
+                    title: topic.title,
+                    author: topic.authorName,
+                    timeAgo: topic.timeAgo,
+                    category: categoryTitle,
+                    replies: topic.repliesCount,
+                    likes: topic.upvotes,
+                    isPinned: false,
+                    isLiked: topic.isLiked,
                     onTap: () =>
                         Get.to(() => ForumDiscussionScreen(discussion: topic)),
-                    borderRadius: BorderRadius.circular(16),
-                    child: ForumThreadCard(
-                      title: topic.title,
-                      author: topic.authorName,
-                      timeAgo: topic.timeAgo,
-                      category: categoryTitle,
-                      replies: topic.repliesCount,
-                      likes: topic.upvotes,
-                      isPinned: false,
-                    ),
+                    onCommentTap: () =>
+                        Get.to(() => ForumDiscussionScreen(discussion: topic)),
                   ),
                 );
               },

@@ -88,7 +88,7 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
       final sortedGroups = [?ownerGroup, ...otherGroups];
 
       return Container(
-        height: 94,
+        height: 100,
         margin: EdgeInsets.zero,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,

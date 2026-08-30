@@ -103,11 +103,24 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         imageQuality: 95,
       );
       if (captured != null) {
+        final capturedPath = captured.path;
         setState(() {
-          _attachedImages.add(captured.path);
+          _attachedImages.add(capturedPath);
         });
       }
-    } catch (_) {}
+    } catch (e, stack) {
+      debugPrint('[CreatePostScreen] Camera pick error: $e\n$stack');
+      if (mounted) {
+        final String errorMessage = e is StateError
+            ? "Camera is not available on this device."
+            : "Could not access device camera: $e";
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: "Camera Unavailable",
+          message: errorMessage,
+        );
+      }
+    }
   }
 
   void _showMediaPickerSheet() {
@@ -257,7 +270,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ),
               const SizedBox(height: 12),
               ...[
-                {'key': 'Public', 'label': 'community.anyone'.tr.isNotEmpty && 'community.anyone'.tr != 'community.anyone' ? 'community.anyone'.tr : 'Anyone', 'desc': 'Visible to everyone on GenLink', 'icon': Icons.public},
+                {'key': 'Public', 'label': 'community.public'.tr.isNotEmpty && 'community.public'.tr != 'community.public' ? 'community.public'.tr : 'Public', 'desc': 'Visible to everyone on GenLink', 'icon': Icons.public},
                 {'key': 'Friends', 'label': 'community.friendsOnly'.tr.isNotEmpty && 'community.friendsOnly'.tr != 'community.friendsOnly' ? 'community.friendsOnly'.tr : 'Friends Only', 'desc': 'Only your connections can view', 'icon': Icons.group_outlined},
                 {'key': 'Only Me', 'label': 'community.onlyMe'.tr.isNotEmpty && 'community.onlyMe'.tr != 'community.onlyMe' ? 'community.onlyMe'.tr : 'Only Me', 'desc': 'Private to your account only', 'icon': Icons.lock_outline},
               ].map((item) {
@@ -1051,9 +1064,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         const SizedBox(width: 5),
                         Text(
                           _selectedAudience == 'Public'
-                              ? ('community.anyone'.tr.isNotEmpty && 'community.anyone'.tr != 'community.anyone'
-                                  ? 'community.anyone'.tr
-                                  : 'Anyone')
+                              ? ('community.public'.tr.isNotEmpty && 'community.public'.tr != 'community.public'
+                                  ? 'community.public'.tr
+                                  : 'Public')
                               : (_selectedAudience == 'Friends'
                                   ? ('community.friendsOnly'.tr.isNotEmpty && 'community.friendsOnly'.tr != 'community.friendsOnly'
                                       ? 'community.friendsOnly'.tr
@@ -1484,7 +1497,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         color: isDark ? const Color(0xFF1C2028) : const Color(0xFFF0F2F5),
                         borderRadius: BorderRadius.circular(10),
                         child: InkWell(
-                          onTap: () => GlobalCreateSheet.show(context),
+                          onTap: () => GlobalCreateSheet.show(context, fromPostComposer: true),
                           borderRadius: BorderRadius.circular(10),
                           child: Container(
                             width: 38,

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/story_model.dart';
 import '../../domain/repositories/story_repository.dart';
 import '../../data/repositories/story_repository_impl.dart';
 
 class StoryController extends GetxController {
-  final StoryRepository _repository = StoryRepositoryImpl();
+  final StoryRepository _repository;
+
+  StoryController({StoryRepository? repository})
+      : _repository = repository ?? StoryRepositoryImpl();
 
   final RxList<StoryGroupModel> storyGroups = <StoryGroupModel>[].obs;
   final RxBool isLoading = true.obs;
@@ -131,26 +135,53 @@ class StoryController extends GetxController {
     }
   }
 
-  void toggleLike(String storyId) {
+  Future<void> toggleLike(String storyId) async {
     for (final group in storyGroups) {
+      final isOwn = group.isOwner ||
+          (CurrentUser.id.isNotEmpty && group.userId == CurrentUser.id);
       for (final story in group.stories) {
         if (story.id == storyId) {
+          if (isOwn) return; // Prevent liking own story
+          final previousLiked = story.isLiked;
+          final previousCount = story.likesCount;
           story.isLiked = !story.isLiked;
           story.likesCount += story.isLiked ? 1 : -1;
           storyGroups.refresh();
-          _repository.toggleLikeStory(storyId);
+          try {
+            await _repository.toggleLikeStory(storyId);
+          } catch (e) {
+            story.isLiked = previousLiked;
+            story.likesCount = previousCount;
+            storyGroups.refresh();
+            rethrow;
+          }
           return;
         }
       }
     }
+    await _repository.toggleLikeStory(storyId);
   }
 
   /// Sends the like/unlike API call without toggling local state.
   /// Used by StoryViewerScreen which already toggles the local story
   /// object directly (same reference as storyGroups entries).
-  void syncLikeToBackend(String storyId) {
-    _repository.toggleLikeStory(storyId);
-    storyGroups.refresh();
+  Future<void> syncLikeToBackend(String storyId) async {
+    bool foundInGroups = false;
+    for (final group in storyGroups) {
+      final isOwn = group.isOwner ||
+          (CurrentUser.id.isNotEmpty && group.userId == CurrentUser.id);
+      for (final story in group.stories) {
+        if (story.id == storyId) {
+          if (isOwn) return; // Prevent backend API call for own story
+          foundInGroups = true;
+          break;
+        }
+      }
+    }
+    await _repository.toggleLikeStory(storyId);
+    if (foundInGroups) {
+      storyGroups.refresh();
+    }
   }
 
   Future<bool> updateStory(String storyId, StoryItemModel updatedStory) async {

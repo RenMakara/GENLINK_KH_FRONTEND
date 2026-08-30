@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import '../controllers/community_controller.dart';
 import 'widgets/author_row.dart';
 
 /// Create Discussion Screen — Forum tab creation flow.
@@ -61,28 +64,36 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
         _selectedCategory != null;
 
     if (hasContent) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final dialogBg = isDark ? const Color(0xFF1E2228) : Colors.white;
+      final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+      final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E2228),
+          backgroundColor: dialogBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
           title: Text(
             'community.discardDraft'.tr,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: textPrimary,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
           content: Text(
             'community.discardMessage'.tr,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
+            style: TextStyle(color: textSecondary, fontSize: 14),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text(
                 'community.keepEditing'.tr,
-                style: const TextStyle(color: Colors.white60),
+                style: TextStyle(color: textSecondary),
               ),
             ),
             TextButton(
@@ -92,7 +103,10 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
               },
               child: Text(
                 'community.discard'.tr,
-                style: const TextStyle(color: Colors.redAccent),
+                style: const TextStyle(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -114,93 +128,101 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-        decoration: BoxDecoration(
-          color: surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          border: Border.all(color: borderColor, width: 0.8),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white24 : Colors.black12,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Text(
-              'community.discussionCategory'.tr,
-              style: TextStyle(
-                color: textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ..._categoryKeys.map((key) {
-              final isSelected = _selectedCategory == key;
-              return InkWell(
-                onTap: () {
-                  setState(() => _selectedCategory = key);
-                  Navigator.pop(ctx);
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 4,
+      builder: (ctx) => SafeArea(
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.75,
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border.all(color: borderColor, width: 0.8),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isSelected ? textPrimary : textSecondary,
-                            width: isSelected ? 2.0 : 1.5,
+                ),
+                Text(
+                  'community.discussionCategory'.tr,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ..._categoryKeys.map((key) {
+                  final isSelected = _selectedCategory == key;
+                  return InkWell(
+                    onTap: () {
+                      setState(() => _selectedCategory = key);
+                      Navigator.pop(ctx);
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 4,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected ? textPrimary : textSecondary,
+                                width: isSelected ? 2.0 : 1.5,
+                              ),
+                            ),
+                            child: isSelected
+                                ? Center(
+                                    child: Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        color: textPrimary,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  )
+                                : null,
                           ),
-                        ),
-                        child: isSelected
-                            ? Center(
-                                child: Container(
-                                  width: 10,
-                                  height: 10,
-                                  decoration: BoxDecoration(
-                                    color: textPrimary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              )
-                            : null,
+                          const SizedBox(width: 14),
+                          Text(
+                            key.tr,
+                            style: TextStyle(
+                              color: isSelected ? textPrimary : textSecondary,
+                              fontSize: 15,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 14),
-                      Text(
-                        key.tr,
-                        style: TextStyle(
-                          color: isSelected ? textPrimary : textSecondary,
-                          fontSize: 15,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -210,32 +232,63 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
     if (!_canPublish || _isSubmitting) return;
     setState(() => _isSubmitting = true);
 
-    // Simulate network delay (replace with actual repo call when backend is ready)
-    await Future.delayed(const Duration(milliseconds: 600));
+    final title = _titleController.text.trim();
+    final content = _contentController.text.trim();
+    final category = _selectedCategory!;
 
-    if (!mounted) return;
-    setState(() => _isSubmitting = false);
+    try {
+      final commController = Get.isRegistered<CommunityController>()
+          ? Get.find<CommunityController>()
+          : Get.put(CommunityController());
 
-    AppNotificationBanner.showSuccess(
-      context: context,
-      title: 'community.discussionPublished'.tr,
-      message: 'community.discussionPublishedMsg'.tr,
-    );
-    Navigator.pop(context);
+      commController.addDiscussion(
+        title: title,
+        content: content,
+        category: category,
+      );
+
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+
+      AppNotificationBanner.showSuccess(
+        context: context,
+        title: 'community.discussionPublished'.tr.isNotEmpty &&
+                'community.discussionPublished'.tr !=
+                    'community.discussionPublished'
+            ? 'community.discussionPublished'.tr
+            : 'Discussion Published',
+        message: 'community.discussionPublishedMsg'.tr.isNotEmpty &&
+                'community.discussionPublishedMsg'.tr !=
+                    'community.discussionPublishedMsg'
+            ? 'community.discussionPublishedMsg'.tr
+            : 'Your discussion topic is now live.',
+      );
+      Navigator.pop(context);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      Navigator.pop(context);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF0F1115) : Colors.white;
-    final textPrimary = isDark ? Colors.white : Colors.black87;
+    final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
     final textMuted = isDark
-        ? const Color(0xFF8E9297)
-        : const Color(0xFF9E9E9E);
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
     final cardBorder = isDark
-        ? const Color(0xFF2B313A)
-        : const Color(0xFFE2E4E8);
-    final inputBg = isDark ? const Color(0xFF1A1D22) : const Color(0xFFF7F8FA);
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+    final inputBg = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfacePrimary;
 
     final charCount = _contentController.text.length;
     const maxChars = 5000;

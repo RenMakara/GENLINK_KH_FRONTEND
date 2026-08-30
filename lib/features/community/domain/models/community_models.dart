@@ -57,22 +57,56 @@ class ForumTopicModel {
   final String id;
   final String title;
   final String authorName;
+  final String authorAvatar;
   final String category;
   final String content;
-  final int upvotes;
-  final int repliesCount;
+  int upvotes;
+  int repliesCount;
   final String timeAgo;
+  bool isLiked;
+  final bool isPinned;
 
   ForumTopicModel({
     required this.id,
     required this.title,
     required this.authorName,
+    this.authorAvatar = 'assets/images/user_profile.png',
     required this.category,
     required this.content,
     this.upvotes = 0,
     this.repliesCount = 0,
     required this.timeAgo,
+    this.isLiked = false,
+    this.isPinned = false,
   });
+
+  ForumTopicModel copyWith({
+    String? id,
+    String? title,
+    String? authorName,
+    String? authorAvatar,
+    String? category,
+    String? content,
+    int? upvotes,
+    int? repliesCount,
+    String? timeAgo,
+    bool? isLiked,
+    bool? isPinned,
+  }) {
+    return ForumTopicModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      authorName: authorName ?? this.authorName,
+      authorAvatar: authorAvatar ?? this.authorAvatar,
+      category: category ?? this.category,
+      content: content ?? this.content,
+      upvotes: upvotes ?? this.upvotes,
+      repliesCount: repliesCount ?? this.repliesCount,
+      timeAgo: timeAgo ?? this.timeAgo,
+      isLiked: isLiked ?? this.isLiked,
+      isPinned: isPinned ?? this.isPinned,
+    );
+  }
 }
 
 class SkillTutorialModel {

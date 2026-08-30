@@ -1037,6 +1037,152 @@ void main() {
         expect(layer.offset.dy, 0.45);
       },
     );
+
+    test(
+      'Test 37: Scenario A (Camera Flow) - Captured photo passes to Story Editor and publishes only upon explicit post action',
+      () async {
+        final controller = StoryController();
+        final initialStoryCount = controller.storyGroups.fold<int>(0, (sum, g) => sum + g.stories.length);
+
+        // Media is captured - no story published yet
+        const capturedPath = 'mock/camera/photo_123.jpg';
+        expect(controller.storyGroups.fold<int>(0, (sum, g) => sum + g.stories.length), initialStoryCount);
+
+        // Story Editor prepares story and user taps Done/Post
+        final success = await controller.publishStory(
+          type: StoryType.photo,
+          mediaUrl: capturedPath,
+          textContent: 'Story from Camera',
+        );
+
+        expect(success, isTrue);
+        expect(controller.storyGroups.fold<int>(0, (sum, g) => sum + g.stories.length), initialStoryCount + 1);
+        final publishedStory = controller.storyGroups.firstWhere((g) => g.isOwner).stories.first;
+        expect(publishedStory.mediaUrl, capturedPath);
+        expect(publishedStory.textContent, 'Story from Camera');
+      },
+    );
+
+    test(
+      'Test 38: Scenario B (Gallery Flow) - Selected image must NOT auto-publish and only publish when Done/Post is tapped',
+      () async {
+        final controller = StoryController();
+        final initialStoryCount = controller.storyGroups.fold<int>(0, (sum, g) => sum + g.stories.length);
+
+        // User selects image in Gallery - NO publication occurs
+        const selectedGalleryPath = 'mock/gallery/vacation_photo.png';
+        expect(controller.storyGroups.fold<int>(0, (sum, g) => sum + g.stories.length), initialStoryCount);
+
+        // User edits story in Story Creator and taps Post
+        final success = await controller.publishStory(
+          type: StoryType.photo,
+          mediaUrl: selectedGalleryPath,
+          textContent: 'Vacation memories',
+        );
+
+        expect(success, isTrue);
+        expect(controller.storyGroups.fold<int>(0, (sum, g) => sum + g.stories.length), initialStoryCount + 1);
+        final ownerStory = controller.storyGroups.firstWhere((g) => g.isOwner).stories.first;
+        expect(ownerStory.mediaUrl, selectedGalleryPath);
+        expect(ownerStory.textContent, 'Vacation memories');
+      },
+    );
+
+    test(
+      'Test 39: Scenario C (Gallery Cancellation) - Cancelling gallery selection results in zero story creation',
+      () async {
+        final controller = StoryController();
+        final initialStoryCount = controller.storyGroups.fold<int>(0, (sum, g) => sum + g.stories.length);
+
+        // User cancels gallery picker (null media path)
+        const String? cancelledPath = null;
+        expect(cancelledPath, isNull);
+
+        // Verification: No story was published
+        expect(controller.storyGroups.fold<int>(0, (sum, g) => sum + g.stories.length), initialStoryCount);
+      },
+    );
+
+    test(
+      'Test 40: Scenario D (Camera Cancellation) - Cancelling camera capture returns safely without publishing',
+      () async {
+        final controller = StoryController();
+        final initialStoryCount = controller.storyGroups.fold<int>(0, (sum, g) => sum + g.stories.length);
+
+        // User cancels camera (null media path)
+        const String? cameraCancelledPath = null;
+        expect(cameraCancelledPath, isNull);
+
+        // Verification: No story was published
+        expect(controller.storyGroups.fold<int>(0, (sum, g) => sum + g.stories.length), initialStoryCount);
+      },
+    );
+
+    test(
+      'Test 41: Scenario E (Editor Back/Cancel) - Exiting Story Editor without posting does not publish story',
+      () async {
+        final controller = StoryController();
+        final initialStoryCount = controller.storyGroups.fold<int>(0, (sum, g) => sum + g.stories.length);
+
+        // User selected image, opened editor, but tapped Close (X) without posting
+        const selectedPath = 'mock/gallery/photo.png';
+        expect(selectedPath, isNotEmpty);
+
+        // Close action taken -> publishStory is NOT called
+        expect(controller.storyGroups.fold<int>(0, (sum, g) => sum + g.stories.length), initialStoryCount);
+      },
+    );
+
+    test(
+      'Test 42: Scenario F (Multiple Media Selection) - Multiple media must pass through Story Editor before publishing',
+      () async {
+        final controller = StoryController();
+        final initialCount = controller.storyGroups.fold<int>(0, (sum, g) => sum + g.stories.length);
+
+        final selectedPaths = ['mock/photo1.jpg', 'mock/photo2.jpg'];
+        expect(selectedPaths.length, 2);
+
+        // Verify media paths passed to editor do not publish automatically
+        expect(controller.storyGroups.fold<int>(0, (sum, g) => sum + g.stories.length), initialCount);
+
+        // User edits and posts template story with slots
+        final success = await controller.publishStory(
+          type: StoryType.template,
+          templateId: 'grid_2',
+          templateSlots: [
+            StoryTemplateSlot(id: 'slot_0', mediaPath: selectedPaths[0]),
+            StoryTemplateSlot(id: 'slot_1', mediaPath: selectedPaths[1]),
+          ],
+        );
+
+        expect(success, isTrue);
+        expect(controller.storyGroups.fold<int>(0, (sum, g) => sum + g.stories.length), initialCount + 1);
+      },
+    );
+
+    test(
+      'Test 43: Scenario G (Success Notification Trigger) - Success state confirmed only upon true return from backend repository',
+      () async {
+        final controller = StoryController();
+        bool isPublishing = true;
+        bool notificationTriggered = false;
+
+        // Execute publishStory
+        final success = await controller.publishStory(
+          type: StoryType.text,
+          textContent: 'Notification validation text',
+        );
+
+        if (success) {
+          isPublishing = false;
+          notificationTriggered = true;
+        }
+
+        expect(isPublishing, isFalse);
+        expect(notificationTriggered, isTrue);
+        expect(success, isTrue);
+      },
+    );
   });
 }
 

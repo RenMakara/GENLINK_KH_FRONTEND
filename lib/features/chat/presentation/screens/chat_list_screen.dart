@@ -144,11 +144,7 @@ class ChatListScreen extends GetView<ChatController> {
 
   Widget _buildOnlineRow() {
     final onlineList = [
-      {
-        'name': 'Sokuntheara',
-        'avatar': 'assets/images/sokuntheara_profile.png',
-      },
-      {'name': 'Sum Sambo', 'avatar': 'assets/images/sum_sambo_profile.png'},
+      {'name': 'Sokny Enat', 'avatar': 'assets/images/user_profile.png'},
       {'name': 'Chansela', 'avatar': 'assets/images/heng_chansela_profile.png'},
       {'name': 'Ren Makara', 'avatar': 'assets/images/ren_makara_profile.png'},
     ];

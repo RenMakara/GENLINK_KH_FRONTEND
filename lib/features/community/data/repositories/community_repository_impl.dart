@@ -59,6 +59,21 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<bool> repostPost(String postId, {String? caption, String? reposterId}) {
+    return remoteDataSource.repostPost(postId, caption: caption, reposterId: reposterId);
+  }
+
+  @override
+  Future<bool> unrepostPost(String postId, {String? reposterId}) {
+    return remoteDataSource.unrepostPost(postId, reposterId: reposterId);
+  }
+
+  @override
+  Future<bool> reportPost(String postId, {String reason = 'INAPPROPRIATE_CONTENT'}) {
+    return remoteDataSource.reportPost(postId, reason: reason);
+  }
+
+  @override
   Future<List<CommentModel>> getComments(String postId) {
     return remoteDataSource.fetchComments(postId);
   }
@@ -79,5 +94,38 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<bool> deleteComment(String postId, String commentId) async {
     return true;
+  }
+
+  @override
+  Future<List<CommentModel>> getDiscussionComments(String discussionId) {
+    return remoteDataSource.fetchDiscussionComments(discussionId);
+  }
+
+  @override
+  Future<CommentModel> addDiscussionComment(
+    String discussionId,
+    String content, {
+    String? parentCommentId,
+  }) {
+    return remoteDataSource.addDiscussionComment(
+      discussionId,
+      content,
+      parentCommentId: parentCommentId,
+    );
+  }
+
+  @override
+  Future<bool> followUser(String userId) {
+    return remoteDataSource.followUser(userId);
+  }
+
+  @override
+  Future<bool> unfollowUser(String userId) {
+    return remoteDataSource.unfollowUser(userId);
+  }
+
+  @override
+  Future<bool> checkIsFollowing(String userId) {
+    return remoteDataSource.checkIsFollowing(userId);
   }
 }

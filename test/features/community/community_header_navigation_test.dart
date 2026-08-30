@@ -77,6 +77,15 @@ class MockCommunityRepository implements CommunityRepository {
   Future<bool> toggleBookmark(String postId) async => true;
 
   @override
+  Future<bool> repostPost(String postId, {String? caption, String? reposterId}) async => true;
+
+  @override
+  Future<bool> unrepostPost(String postId, {String? reposterId}) async => true;
+
+  @override
+  Future<bool> reportPost(String postId, {String reason = 'INAPPROPRIATE_CONTENT'}) async => true;
+
+  @override
   Future<List<CommentModel>> getComments(String postId) async => [];
 
   @override
@@ -99,6 +108,18 @@ class MockCommunityRepository implements CommunityRepository {
 
   @override
   Future<bool> deleteComment(String postId, String commentId) async => true;
+
+  @override
+  Future<bool> followUser(String userId) async => true;
+
+  @override
+  Future<bool> unfollowUser(String userId) async => true;
+
+  @override
+  Future<bool> checkIsFollowing(String userId) async => false;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {

@@ -625,44 +625,161 @@ class AppTranslations extends Translations {
     'finance.transaction.mobile': 'Mobile',
     'finance.transaction.mall': 'Mall',
 
-    // ── Expense ───────────────────────────────────────────────────────────
+    // ── Expense Screen ────────────────────────────────────────────────────
     'finance.expense.title': 'Expenses',
+
+    // Period
+    'finance.expense.today': 'Today',
+    'finance.expense.week': 'Week',
+    'finance.expense.month': 'Month',
+    'finance.expense.yesterday': 'Yesterday',
+
+    // Summary
+    'finance.expense.totalSpent': 'Total Spent',
+    'finance.expense.onTrack': 'On Track',
+
+    // Category Breakdown
+    'finance.expense.categoryBreakdown': 'Category Breakdown',
+    'finance.expense.foodDrink': 'Food & Drink',
+    'finance.expense.transport': 'Transport',
+    'finance.expense.study': 'Study',
+    'finance.expense.bills': 'Bills',
+
+    // Recent Expenses
+    'finance.expense.recentExpenses': 'Recent Expenses',
+    'finance.expense.seeAll': 'See All',
+
+    // Recent Expense Items
+    'finance.expense.grabFood': 'Grab Food',
+    'finance.expense.busPass': 'Bus Pass',
+    'finance.expense.textbooks': 'Textbooks',
+    'finance.expense.electricity': 'Electricity',
+
+    // ── Add Expense Screen ───────────────────────────────────────────────
     'finance.expense.add': 'Add Expense',
-    'finance.expense.edit': 'Edit Expense',
-    'finance.expense.delete': 'Delete Expense',
-    'finance.expense.details': 'Expense Details',
+
+    // Amount
     'finance.expense.amount': 'Amount',
-    'finance.expense.category': 'Category',
+
+    // Description
     'finance.expense.description': 'Description',
-    'finance.expense.date': 'Date',
-    'finance.expense.time': 'Time',
-    'finance.expense.paymentMethod': 'Payment Method',
+    'finance.expense.titleHint': 'Enter expense description...',
+
+    // Category
+    'finance.expense.category': 'Category',
+    'finance.expense.food': 'Food',
+    'finance.expense.health': 'Health',
+    'finance.expense.other': 'Other',
+
+    // Note
     'finance.expense.note': 'Note',
     'finance.expense.noteHint': 'Add a note...',
+
+    // Date
+    'finance.expense.date': 'Date',
+
+    // Payment Method
+    'finance.expense.paymentMethod': 'Payment Method',
+    'finance.expense.cash': 'Cash',
+    'finance.expense.card': 'Card',
+    'finance.expense.aba': 'ABA',
+
+    // Save
     'finance.expense.save': 'Save Expense',
-    'finance.expense.update': 'Update Expense',
-    'finance.expense.noExpenses': 'No expenses yet',
-    'finance.expense.noExpensesHint':
-        'Your expenses will appear here once you add them.',
+
+    // Validation
+    'finance.expense.validationError': 'Validation Error',
+    'finance.expense.enterAmount': 'Please enter an amount',
+    'finance.expense.enterTitle': 'Please enter a description',
+
+    // ── Expense Detail Screen ────────────────────────────────────────────
+    'finance.expense.details': 'Expense Details',
+    'finance.expense.detail': 'Expense Detail',
+
+    // Actions
+    'finance.expense.edit': 'Edit',
+    'finance.expense.delete': 'Delete',
+
+    // Detail Information
+    'finance.expense.payment': 'Payment',
+
+    // Budget
+    'finance.expense.budgetImpact': 'Budget Impact',
+    'finance.expense.nearLimit': 'Near Limit',
+
+    'finance.expense.foodBudgetUsed':
+        'Food budget: \$252 of \$300 used (84%). Only \$48 remaining.',
+
+    // Detail Note
+    'finance.expense.dinnerNote':
+        'Dinner with friends near Riverside. Ordered Khmer noodles.',
+
+    // Delete Confirmation
+    'finance.expense.deleteConfirmTitle': 'Delete Expense?',
+    'finance.expense.deleteConfirmMessage':
+        'Are you sure you want to delete this expense?',
+
+    // ── Expense History Screen ───────────────────────────────────────────
+    'finance.expense.history': 'Expense History',
+
+    // Search
+    'finance.expense.searchHint': 'Search expenses...',
+
+    // Filters
+    'finance.expense.all': 'All',
+
+    // History Dates
+    'finance.expense.todayDate': 'Today, Jun 28',
+    'finance.expense.yesterdayDate': 'Yesterday, Jun 27',
+
+    // History Items
+    'finance.expense.lunchBox': 'Lunch Box',
+    'finance.expense.abaTransfer': 'ABA Transfer',
+    'finance.expense.netflix': 'Netflix',
+
+    // History Categories
+    'finance.expense.deposit': 'Deposit',
 
     // ── Budget ─────────────────────────────────────────────────────────────
     'finance.budget.title': 'Budget',
     'finance.budget.setBudget': 'Set Budget',
     'finance.budget.editBudget': 'Edit Budget',
+    'finance.budget.adjustBudget': 'Adjust Budget',
+    'finance.budget.saveBudget': 'Save Budget',
     'finance.budget.monthlyBudget': 'Monthly Budget',
     'finance.budget.totalBudget': 'Total Budget',
+    'finance.budget.monthlyTotalBudget': 'Monthly total budget',
     'finance.budget.spent': 'Spent',
     'finance.budget.remaining': 'Remaining',
+    'finance.budget.left': 'Left',
     'finance.budget.limit': 'Limit',
+    'finance.budget.overLimit': 'Over limit',
+    'finance.budget.overBudget': 'Over Budget',
+    'finance.budget.onTrack': 'On Track',
+    'finance.budget.used': 'Used',
     'finance.budget.category': 'Category',
-    'finance.budget.amount': 'Budget Amount',
-    'finance.budget.period': 'Budget Period',
+    'finance.budget.categories': 'Categories',
+    'finance.budget.categoryBudgets': 'Category Budgets',
+    'finance.budget.categoryAllocation': 'Category Allocation',
+    'finance.budget.budgetAmount': 'Budget Amount',
+    'finance.budget.budgetPeriod': 'Budget Period',
+    'finance.budget.expenses': 'Expenses',
+    'finance.budget.nearLimit': 'Near Limit',
+    'finance.budget.nearLimitCategories': 'Near limit on categories',
+    'finance.budget.budgetAlmostExhausted': 'Budget almost exhausted',
+    'finance.budget.remainingForMonth': 'remaining for this month',
+    'finance.budget.considerReducingSpending':
+        'Consider reducing spending for the rest of the month.',
+    'finance.budget.considerReducingDiningOut': 'Consider reducing dining out.',
     'finance.budget.noBudget': 'No budget set yet',
     'finance.budget.noBudgetHint':
         'Create a budget to start tracking your spending.',
-    'finance.budget.overBudget': 'Over Budget',
-    'finance.budget.onTrack': 'On Track',
-    'finance.budget.nearLimit': 'Near Limit',
+    'finance.budget.budgetSaved': 'Budget saved successfully',
+    'finance.budget.invalidAmount': 'Invalid amount',
+    'finance.budget.enterValidAmount': 'Please enter a valid budget amount.',
+    'finance.budget.date': 'Date',
+    'finance.budget.time': 'Time',
+    'finance.budget.editExpense': 'Edit Expense',
 
     // ── Saving Goals ───────────────────────────────────────────────────────
     'finance.goal.title': 'Saving Goals',
@@ -1397,44 +1514,142 @@ class AppTranslations extends Translations {
     'finance.transaction.mobile': 'ទូរស័ព្ទ',
     'finance.transaction.mall': 'ផ្សារទំនើប',
 
-    // ── Expense ───────────────────────────────────────────────────────────
+    // ── Expense Screen ────────────────────────────────────────────────────
     'finance.expense.title': 'ចំណាយ',
+
+    // Period
+    'finance.expense.today': 'ថ្ងៃនេះ',
+    'finance.expense.week': 'សប្ដាហ៍',
+    'finance.expense.month': 'ខែនេះ',
+    'finance.expense.yesterday': 'ម្សិលមិញ',
+
+    // Summary
+    'finance.expense.totalSpent': 'ចំណាយសរុប',
+    'finance.expense.onTrack': 'ស្ថិតក្នុងគម្រោង',
+
+    // Category Breakdown
+    'finance.expense.categoryBreakdown': 'ការបែងចែកចំណាយតាមប្រភេទ',
+    'finance.expense.foodDrink': 'អាហារ និងភេសជ្ជៈ',
+    'finance.expense.transport': 'ការធ្វើដំណើរ',
+    'finance.expense.study': 'ការសិក្សា',
+    'finance.expense.bills': 'វិក្កយបត្រ',
+
+    // Recent Expenses
+    'finance.expense.recentExpenses': 'ចំណាយថ្មីៗ',
+    'finance.expense.seeAll': 'មើលទាំងអស់',
+
+    // Recent Expense Items
+    'finance.expense.grabFood': 'Grab Food',
+    'finance.expense.busPass': 'សំបុត្រឡានក្រុង',
+    'finance.expense.textbooks': 'សៀវភៅសិក្សា',
+    'finance.expense.electricity': 'ថ្លៃអគ្គិសនី',
+
+    // ── Add Expense Screen ───────────────────────────────────────────────
     'finance.expense.add': 'បន្ថែមចំណាយ',
-    'finance.expense.edit': 'កែសម្រួលចំណាយ',
-    'finance.expense.delete': 'លុបចំណាយ',
-    'finance.expense.details': 'ព័ត៌មានលម្អិតចំណាយ',
+
+    // Amount
     'finance.expense.amount': 'ចំនួនទឹកប្រាក់',
-    'finance.expense.category': 'ប្រភេទ',
+
+    // Description
     'finance.expense.description': 'ការពិពណ៌នា',
-    'finance.expense.date': 'កាលបរិច្ឆេទ',
-    'finance.expense.time': 'ម៉ោង',
-    'finance.expense.paymentMethod': 'វិធីបង់ប្រាក់',
+    'finance.expense.titleHint': 'បញ្ចូលការពិពណ៌នាចំណាយ...',
+
+    // Category
+    'finance.expense.category': 'ប្រភេទ',
+    'finance.expense.food': 'អាហារ',
+    'finance.expense.health': 'សុខភាព',
+    'finance.expense.other': 'ផ្សេងៗ',
+
+    // Note
     'finance.expense.note': 'កំណត់ចំណាំ',
     'finance.expense.noteHint': 'បន្ថែមកំណត់ចំណាំ...',
+
+    // Date
+    'finance.expense.date': 'កាលបរិច្ឆេទ',
+
+    // Payment Method
+    'finance.expense.paymentMethod': 'វិធីបង់ប្រាក់',
+    'finance.expense.cash': 'សាច់ប្រាក់',
+    'finance.expense.card': 'កាត',
+    'finance.expense.aba': 'ABA',
+
+    // Save
     'finance.expense.save': 'រក្សាទុកចំណាយ',
-    'finance.expense.update': 'ធ្វើបច្ចុប្បន្នភាពចំណាយ',
-    'finance.expense.noExpenses': 'មិនទាន់មានចំណាយ',
-    'finance.expense.noExpensesHint':
-        'ចំណាយរបស់អ្នកនឹងបង្ហាញនៅទីនេះ បន្ទាប់ពីអ្នកបន្ថែម។',
+
+    // Validation
+    'finance.expense.validationError': 'កំហុសក្នុងការបញ្ចូលទិន្នន័យ',
+    'finance.expense.enterAmount': 'សូមបញ្ចូលចំនួនទឹកប្រាក់',
+    'finance.expense.enterTitle': 'សូមបញ្ចូលការពិពណ៌នា',
+
+    // ── Expense Detail Screen ────────────────────────────────────────────
+    'finance.expense.details': 'ព័ត៌មានលម្អិតចំណាយ',
+    'finance.expense.detail': 'ព័ត៌មានលម្អិតចំណាយ',
+    'finance.expense.edit': 'កែប្រែ',
+    'finance.expense.delete': 'លុប',
+    'finance.expense.payment': 'ការបង់ប្រាក់',
+
+    // Budget
+    'finance.expense.budgetImpact': 'ផលប៉ះពាល់ដល់ថវិកា',
+    'finance.expense.nearLimit': 'ជិតដល់កម្រិត',
+    'finance.expense.foodBudgetUsed':
+        'ថវិកាអាហារ: \$252 ក្នុងចំណោម \$300 ត្រូវបានប្រើប្រាស់ (84%)។ នៅសល់តែ \$48 ប៉ុណ្ណោះ។',
+    'finance.expense.dinnerNote':
+        'ញ៉ាំអាហារពេលល្ងាចជាមួយមិត្តភក្តិនៅជិត Riverside។ បានកម្ម៉ង់គុយទាវខ្មែរ។',
+    'finance.expense.deleteConfirmTitle': 'លុបចំណាយនេះ?',
+    'finance.expense.deleteConfirmMessage':
+        'តើអ្នកប្រាកដថាចង់លុបចំណាយនេះមែនទេ?',
+
+    // ── Expense History Screen ───────────────────────────────────────────
+    'finance.expense.history': 'ប្រវត្តិចំណាយ',
+    'finance.expense.searchHint': 'ស្វែងរកចំណាយ...',
+    'finance.expense.all': 'ទាំងអស់',
+    'finance.expense.todayDate': 'ថ្ងៃនេះ, Jun 28',
+    'finance.expense.yesterdayDate': 'ម្សិលមិញ, Jun 27',
+    'finance.expense.lunchBox': 'ប្រអប់អាហារថ្ងៃត្រង់',
+    'finance.expense.abaTransfer': 'ផ្ទេរប្រាក់ ABA',
+    'finance.expense.netflix': 'Netflix',
+    'finance.expense.deposit': 'ការដាក់ប្រាក់',
 
     // ── Budget ─────────────────────────────────────────────────────────────
-    'finance.budget.title': 'ថវិកា',
+    'finance.budget.title': 'ការកំណត់ថវិកា',
     'finance.budget.setBudget': 'កំណត់ថវិកា',
     'finance.budget.editBudget': 'កែសម្រួលថវិកា',
+    'finance.budget.adjustBudget': 'កែសម្រួលថវិកា',
+    'finance.budget.saveBudget': 'រក្សាទុកថវិកា',
     'finance.budget.monthlyBudget': 'ថវិកាប្រចាំខែ',
     'finance.budget.totalBudget': 'ថវិកាសរុប',
+    'finance.budget.monthlyTotalBudget': 'ថវិកាសរុបប្រចាំខែ',
     'finance.budget.spent': 'បានចំណាយ',
     'finance.budget.remaining': 'នៅសល់',
-    'finance.budget.limit': 'កម្រិត',
-    'finance.budget.category': 'ប្រភេទ',
-    'finance.budget.amount': 'ចំនួនថវិកា',
-    'finance.budget.period': 'រយៈពេលថវិកា',
-    'finance.budget.noBudget': 'មិនទាន់កំណត់ថវិកា',
-    'finance.budget.noBudgetHint':
-        'បង្កើតថវិកា ដើម្បីចាប់ផ្តើមតាមដានការចំណាយរបស់អ្នក',
+    'finance.budget.left': 'នៅសល់',
+    'finance.budget.limit': 'កំណត់',
+    'finance.budget.used': 'បានប្រើប្រាស់',
+    'finance.budget.overLimit': 'លើសកំណត់',
     'finance.budget.overBudget': 'លើសថវិកា',
-    'finance.budget.onTrack': 'ស្ថិតក្នុងផែនការ',
-    'finance.budget.nearLimit': 'ជិតដល់កម្រិត',
+    'finance.budget.onTrack': 'កំពុងស្ថិតក្នុងផែនការ',
+    'finance.budget.category': 'ប្រភេទ',
+    'finance.budget.categories': 'ប្រភេទទាំងអស់',
+    'finance.budget.categoryBudgets': 'ថវិកាតាមប្រភេទ',
+    'finance.budget.categoryAllocation': 'ការបែងចែកថវិកា',
+    'finance.budget.budgetAmount': 'ចំនួនថវិកា',
+    'finance.budget.budgetPeriod': 'រយៈពេលថវិកា',
+    'finance.budget.expenses': 'ការចំណាយ',
+    'finance.budget.nearLimit': 'ជិតដល់កំណត់',
+    'finance.budget.budgetAlmostExhausted': 'ថវិកាជិតអស់',
+    'finance.budget.remainingForMonth': 'នៅសល់សម្រាប់ខែនេះ',
+    'finance.budget.considerReducingSpending':
+        'សូមពិចារណាកាត់បន្ថយការចំណាយសម្រាប់រយៈពេលដែលនៅសល់។',
+    'finance.budget.considerReducingDiningOut':
+        'សូមពិចារណាកាត់បន្ថយការចំណាយលើការញ៉ាំអាហារក្រៅ។',
+    'finance.budget.noBudget': 'មិនទាន់បានកំណត់ថវិកាទេ',
+    'finance.budget.noBudgetHint':
+        'បង្កើតថវិកាដើម្បីចាប់ផ្តើមតាមដានការចំណាយរបស់អ្នក។',
+    'finance.budget.budgetSaved': 'បានរក្សាទុកថវិកាដោយជោគជ័យ',
+    'finance.budget.invalidAmount': 'ចំនួនទឹកប្រាក់មិនត្រឹមត្រូវ',
+    'finance.budget.enterValidAmount': 'សូមបញ្ចូលចំនួនថវិកាដែលត្រឹមត្រូវ។',
+    'finance.budget.date': 'កាលបរិច្ឆេទ',
+    'finance.budget.time': 'ពេលវេលា',
+    'finance.budget.editExpense': 'កែសម្រួលការចំណាយ',
 
     // ── Saving Goals ───────────────────────────────────────────────────────
     'finance.goal.title': 'គោលដៅសន្សំ',

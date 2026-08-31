@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 
 class ExpenseDetailScreen extends StatelessWidget {
   const ExpenseDetailScreen({super.key});
@@ -33,14 +33,28 @@ class ExpenseDetailScreen extends StatelessWidget {
           children: [
             // ── Header ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 12, 0),
+              padding: const EdgeInsets.fromLTRB(8, 8, 12, 0),
               child: Row(
                 children: [
-                  const AppBackButton(),
-                  const SizedBox(width: 12),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: textPrimary,
+                      size: 20,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
+                  ),
+
+                  const SizedBox(width: 4),
+
                   Expanded(
                     child: Text(
-                      'Expense Detail',
+                      'finance.expense.details'.tr,
                       style: TextStyle(
                         color: textPrimary,
                         fontSize: 20,
@@ -49,15 +63,17 @@ class ExpenseDetailScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+
                   IconButton(
                     onPressed: () {},
                     icon: Icon(Icons.edit_outlined, color: textMuted, size: 22),
                   ),
+
                   IconButton(
                     onPressed: () {},
                     icon: Icon(
                       Icons.delete_outline_rounded,
-                      // color: AppColors.error,
+                      color: textMuted,
                       size: 22,
                     ),
                   ),
@@ -81,7 +97,10 @@ class ExpenseDetailScreen extends StatelessWidget {
                         letterSpacing: -0.8,
                       ),
                     ),
+
                     const SizedBox(height: 8),
+
+                    // ── Category ──
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -91,18 +110,21 @@ class ExpenseDetailScreen extends StatelessWidget {
                         color: AppColors.growthAccent.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
-                        'Food & Drink',
-                        style: TextStyle(
+                      child: Text(
+                        'finance.expense.foodDrink'.tr,
+                        style: const TextStyle(
                           color: AppColors.growthAccent,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 6),
+
+                    // ── Expense Title ──
                     Text(
-                      'Grab Food',
+                      'finance.expense.grabFood'.tr,
                       style: TextStyle(
                         color: textPrimary,
                         fontSize: 18,
@@ -124,34 +146,47 @@ class ExpenseDetailScreen extends StatelessWidget {
                       child: Column(
                         children: [
                           _DetailRow(
-                            'Date',
+                            'finance.expense.date'.tr,
                             'Jun 28, 2026 · 12:30 PM',
                             textPrimary,
                             textMuted,
                           ),
+
                           Divider(height: 24, color: border),
-                          _DetailRow('Payment', 'Cash', textPrimary, textMuted),
-                          Divider(height: 24, color: border),
+
                           _DetailRow(
-                            'Category',
-                            'Food & Drink',
+                            'finance.expense.payment'.tr,
+                            'finance.expense.cash'.tr,
                             textPrimary,
                             textMuted,
                           ),
+
                           Divider(height: 24, color: border),
+
+                          _DetailRow(
+                            'finance.expense.category'.tr,
+                            'finance.expense.foodDrink'.tr,
+                            textPrimary,
+                            textMuted,
+                          ),
+
+                          Divider(height: 24, color: border),
+
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Note',
+                                'finance.expense.note'.tr,
                                 style: TextStyle(
                                   color: textMuted,
                                   fontSize: 13,
                                 ),
                               ),
+
                               const SizedBox(height: 6),
+
                               Text(
-                                'Dinner with friends near Riverside. Ordered khmer noodles.',
+                                'finance.expense.dinnerNote'.tr,
                                 style: TextStyle(
                                   color: textPrimary,
                                   fontSize: 14,
@@ -184,13 +219,14 @@ class ExpenseDetailScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Budget Impact',
+                                'finance.expense.budgetImpact'.tr,
                                 style: TextStyle(
                                   color: textPrimary,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
+
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
@@ -202,9 +238,9 @@ class ExpenseDetailScreen extends StatelessWidget {
                                   ),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: const Text(
-                                  'Near limit',
-                                  style: TextStyle(
+                                child: Text(
+                                  'finance.expense.nearLimit'.tr,
+                                  style: const TextStyle(
                                     color: AppColors.growthAccent,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
@@ -213,9 +249,11 @@ class ExpenseDetailScreen extends StatelessWidget {
                               ),
                             ],
                           ),
+
                           const SizedBox(height: 8),
+
                           Text(
-                            'Food budget: \$252 of \$300 used (84%). Only \$48 remaining.',
+                            'finance.expense.foodBudgetUsed'.tr,
                             style: TextStyle(
                               color: textSecondary,
                               fontSize: 13,
@@ -243,9 +281,9 @@ class ExpenseDetailScreen extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              child: const Text(
-                                'Edit',
-                                style: TextStyle(
+                              child: Text(
+                                'finance.expense.edit'.tr,
+                                style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -253,23 +291,24 @@ class ExpenseDetailScreen extends StatelessWidget {
                             ),
                           ),
                         ),
+
                         const SizedBox(width: 12),
+
                         Expanded(
                           child: SizedBox(
                             height: 50,
                             child: ElevatedButton(
                               onPressed: () => Navigator.pop(context),
                               style: ElevatedButton.styleFrom(
-                                // backgroundColor: AppColors.error,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              child: const Text(
-                                'Delete',
-                                style: TextStyle(
+                              child: Text(
+                                'finance.expense.delete'.tr,
+                                style: const TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -306,12 +345,16 @@ class _DetailRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: TextStyle(color: textMuted, fontSize: 13)),
-        Text(
-          value,
-          style: TextStyle(
-            color: textPrimary,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],

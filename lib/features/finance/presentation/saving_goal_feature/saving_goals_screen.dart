@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/Saving%20Goal%20Feature/screens/saving_goals_create.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/Saving%20Goal%20Feature/screens/saving_goals_detail.dart';
+import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_create.dart';
+import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_detail.dart';
 
 class SavingGoalsScreen extends StatelessWidget {
   const SavingGoalsScreen({super.key});
@@ -44,8 +43,20 @@ class SavingGoalsScreen extends StatelessWidget {
               // ── Header ──
               Row(
                 children: [
-                  const AppBackButton(),
-                  const SizedBox(width: 12),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: textPrimary,
+                      size: 20,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
                   Text(
                     'Saving Goals',
                     style: TextStyle(

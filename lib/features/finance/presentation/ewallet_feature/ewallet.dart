@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/e_wallet_feature/screens/ewallet_payment.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/e_wallet_feature/screens/ewallet_transaction.dart';
-import 'package:genlink_frontend/features/finance/presentation/screens/e_wallet_feature/widget/ewallet_widget.dart';
+import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_payment.dart';
+import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_transaction.dart';
+import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/widget/ewallet_widget.dart';
 
 class EWalletScreen extends StatelessWidget {
   const EWalletScreen({super.key});
@@ -83,10 +82,14 @@ class EWalletScreen extends StatelessWidget {
         backgroundColor: bg,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: const Center(
-          child: AppBackButton(),
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 18,
+            color: textPrimary,
+          ),
+          onPressed: () => Navigator.pop(context),
         ),
-        leadingWidth: 74,
         title: Text(
           'E-Wallet',
           style: TextStyle(

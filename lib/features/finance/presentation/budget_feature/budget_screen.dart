@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/features/finance/presentation/budget_feature/set_budget_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_detail_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_set_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/budget_feature/widget/budget_widget.dart';
 
 class BudgetScreen extends StatelessWidget {
   const BudgetScreen({super.key});
@@ -52,22 +54,22 @@ class BudgetScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // =========================================================
+              // ===========================================================
               // HEADER
-              // =========================================================
+              // ===========================================================
               Row(
                 children: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: textPrimary,
-                      size: 20,
-                    ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
                       minWidth: 40,
                       minHeight: 40,
+                    ),
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: textPrimary,
+                      size: 20,
                     ),
                   ),
 
@@ -85,8 +87,9 @@ class BudgetScreen extends StatelessWidget {
                     ),
                   ),
 
-                  GestureDetector(
-                    onTap: () {
+                  // ADD BUDGET
+                  IconButton(
+                    onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -94,56 +97,42 @@ class BudgetScreen extends StatelessWidget {
                         ),
                       );
                     },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: primary,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'finance.budget.setBudget'.tr,
-                        style: TextStyle(
-                          color: inverseText,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: primary,
+                      foregroundColor: inverseText,
+                      minimumSize: const Size(42, 42),
+                      maximumSize: const Size(42, 42),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
+                    icon: const Icon(Icons.add_rounded, size: 24),
                   ),
                 ],
               ),
 
               const SizedBox(height: 20),
 
-              // =========================================================
+              // ===========================================================
               // TOTAL OVERVIEW
-              // =========================================================
+              // ===========================================================
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: surface,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: border),
                 ),
                 child: Row(
                   children: [
-                    // Progress
-                    SizedBox(
-                      width: 72,
-                      height: 72,
-                      child: CircularProgressIndicator(
-                        value: 0.71,
-                        strokeWidth: 7,
-                        backgroundColor: secondarySurface,
-                        valueColor: const AlwaysStoppedAnimation(
-                          AppColors.growthAccent,
-                        ),
-                        strokeCap: StrokeCap.round,
-                      ),
+                    BudgetProgressRing(
+                      progress: 0.71,
+                      percentage: 71,
+                      color: AppColors.growthAccent,
+                      backgroundColor: secondarySurface,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
                     ),
 
                     const SizedBox(width: 18),
@@ -161,7 +150,7 @@ class BudgetScreen extends StatelessWidget {
                             ),
                           ),
 
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 5),
 
                           Text.rich(
                             TextSpan(
@@ -172,14 +161,14 @@ class BudgetScreen extends StatelessWidget {
                                     color: textPrimary,
                                     fontSize: 26,
                                     fontWeight: FontWeight.w800,
-                                    letterSpacing: -0.5,
+                                    letterSpacing: -0.6,
                                   ),
                                 ),
                                 TextSpan(
                                   text: ' of \$900',
                                   style: TextStyle(
                                     color: textMuted,
-                                    fontSize: 15,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -187,25 +176,34 @@ class BudgetScreen extends StatelessWidget {
                             ),
                           ),
 
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 9),
 
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.success.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              '${'finance.budget.onTrack'.tr} · \$258 ${'finance.budget.remaining'.tr.toLowerCase()}',
-                              style: const TextStyle(
-                                color: AppColors.success,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                          Row(
+                            children: [
+                              Container(
+                                width: 7,
+                                height: 7,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.success,
+                                  shape: BoxShape.circle,
+                                ),
                               ),
-                            ),
+
+                              const SizedBox(width: 7),
+
+                              Flexible(
+                                child: Text(
+                                  '${'finance.budget.onTrack'.tr} · \$258 ${'finance.budget.remaining'.tr.toLowerCase()}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppColors.success,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -214,11 +212,11 @@ class BudgetScreen extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 20),
 
-              // =========================================================
-              // CATEGORY BUDGETS
-              // =========================================================
+              // ===========================================================
+              // CATEGORY TITLE
+              // ===========================================================
               Text(
                 'finance.budget.categoryBudgets'.tr,
                 style: TextStyle(
@@ -230,9 +228,12 @@ class BudgetScreen extends StatelessWidget {
 
               const SizedBox(height: 12),
 
+              // ===========================================================
+              // CATEGORY LIST
+              // ===========================================================
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
                 decoration: BoxDecoration(
                   color: surface,
                   borderRadius: BorderRadius.circular(16),
@@ -240,7 +241,8 @@ class BudgetScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _CategoryBudgetRow(
+                    // FOOD
+                    CategoryBudgetRow(
                       title: 'Food & Drink',
                       amount: '\$255 / \$300',
                       percent: '85%',
@@ -250,18 +252,20 @@ class BudgetScreen extends StatelessWidget {
                       textMuted: textMuted,
                       secondarySurface: secondarySurface,
                       onTap: () {
-                        Navigator.push(
+                        _openDetail(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const BudgetDetailScreen(),
-                          ),
+                          category: 'Food & Drink',
+                          spent: 255,
+                          budget: 300,
+                          color: AppColors.growthAccent,
                         );
                       },
                     ),
 
                     Divider(height: 1, color: border),
 
-                    _CategoryBudgetRow(
+                    // TRANSPORT
+                    CategoryBudgetRow(
                       title: 'Transport',
                       amount: '\$138 / \$150',
                       percent: '92%',
@@ -270,12 +274,21 @@ class BudgetScreen extends StatelessWidget {
                       textPrimary: textPrimary,
                       textMuted: textMuted,
                       secondarySurface: secondarySurface,
-                      onTap: () {},
+                      onTap: () {
+                        _openDetail(
+                          context,
+                          category: 'Transport',
+                          spent: 138,
+                          budget: 150,
+                          color: AppColors.brandPrimary,
+                        );
+                      },
                     ),
 
                     Divider(height: 1, color: border),
 
-                    _CategoryBudgetRow(
+                    // STUDY
+                    CategoryBudgetRow(
                       title: 'Study',
                       amount: '\$51 / \$150',
                       percent: '34%',
@@ -284,12 +297,21 @@ class BudgetScreen extends StatelessWidget {
                       textPrimary: textPrimary,
                       textMuted: textMuted,
                       secondarySurface: secondarySurface,
-                      onTap: () {},
+                      onTap: () {
+                        _openDetail(
+                          context,
+                          category: 'Study',
+                          spent: 51,
+                          budget: 150,
+                          color: AppColors.productivityAccent,
+                        );
+                      },
                     ),
 
                     Divider(height: 1, color: border),
 
-                    _CategoryBudgetRow(
+                    // BILLS
+                    CategoryBudgetRow(
                       title: 'Bills',
                       amount: '\$36 / \$300',
                       percent: '12%',
@@ -298,7 +320,15 @@ class BudgetScreen extends StatelessWidget {
                       textPrimary: textPrimary,
                       textMuted: textMuted,
                       secondarySurface: secondarySurface,
-                      onTap: () {},
+                      onTap: () {
+                        _openDetail(
+                          context,
+                          category: 'Bills',
+                          spent: 36,
+                          budget: 300,
+                          color: AppColors.financeAccent,
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -306,9 +336,9 @@ class BudgetScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // =========================================================
+              // ===========================================================
               // NEAR LIMIT NOTICE
-              // =========================================================
+              // ===========================================================
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -360,109 +390,33 @@ class BudgetScreen extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 90),
+              const SizedBox(height: 60),
             ],
           ),
         ),
       ),
     );
   }
-}
 
-// ============================================================================
-// CATEGORY BUDGET ROW
-// ============================================================================
+  // =========================================================================
+  // OPEN DETAIL
+  // =========================================================================
 
-class _CategoryBudgetRow extends StatelessWidget {
-  final String title;
-  final String amount;
-  final String percent;
-  final double progress;
-  final Color color;
-  final Color textPrimary;
-  final Color textMuted;
-  final Color secondarySurface;
-  final VoidCallback onTap;
-
-  const _CategoryBudgetRow({
-    required this.title,
-    required this.amount,
-    required this.percent,
-    required this.progress,
-    required this.color,
-    required this.textPrimary,
-    required this.textMuted,
-    required this.secondarySurface,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-
-                const SizedBox(width: 10),
-
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-
-                Text(
-                  amount,
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-
-                const SizedBox(width: 8),
-
-                Text(
-                  percent,
-                  style: TextStyle(
-                    color: textMuted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 5,
-                backgroundColor: secondarySurface,
-                valueColor: AlwaysStoppedAnimation(color),
-              ),
-            ),
-          ],
+  void _openDetail(
+    BuildContext context, {
+    required String category,
+    required double spent,
+    required double budget,
+    required Color color,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BudgetDetailScreen(
+          category: category,
+          spent: spent,
+          budget: budget,
+          categoryColor: color,
         ),
       ),
     );

@@ -775,6 +775,11 @@ class AppTranslations extends Translations {
     'finance.budget.noBudgetHint':
         'Create a budget to start tracking your spending.',
     'finance.budget.budgetSaved': 'Budget saved successfully',
+    'finance.budget.invalidAmount': 'Invalid amount',
+    'finance.budget.enterValidAmount': 'Please enter a valid budget amount.',
+    'finance.budget.date': 'Date',
+    'finance.budget.time': 'Time',
+    'finance.budget.editExpense': 'Edit Expense',
 
     // ── Saving Goals ───────────────────────────────────────────────────────
     'finance.goal.title': 'Saving Goals',
@@ -1606,51 +1611,45 @@ class AppTranslations extends Translations {
     'finance.expense.deposit': 'ការដាក់ប្រាក់',
 
     // ── Budget ─────────────────────────────────────────────────────────────
-    'finance.budget.title': 'ថវិកា',
+    'finance.budget.title': 'ការកំណត់ថវិកា',
     'finance.budget.setBudget': 'កំណត់ថវិកា',
     'finance.budget.editBudget': 'កែសម្រួលថវិកា',
     'finance.budget.adjustBudget': 'កែសម្រួលថវិកា',
     'finance.budget.saveBudget': 'រក្សាទុកថវិកា',
-
     'finance.budget.monthlyBudget': 'ថវិកាប្រចាំខែ',
     'finance.budget.totalBudget': 'ថវិកាសរុប',
     'finance.budget.monthlyTotalBudget': 'ថវិកាសរុបប្រចាំខែ',
-
     'finance.budget.spent': 'បានចំណាយ',
     'finance.budget.remaining': 'នៅសល់',
     'finance.budget.left': 'នៅសល់',
     'finance.budget.limit': 'កំណត់',
     'finance.budget.used': 'បានប្រើប្រាស់',
-
     'finance.budget.overLimit': 'លើសកំណត់',
     'finance.budget.overBudget': 'លើសថវិកា',
     'finance.budget.onTrack': 'កំពុងស្ថិតក្នុងផែនការ',
-
     'finance.budget.category': 'ប្រភេទ',
     'finance.budget.categories': 'ប្រភេទទាំងអស់',
     'finance.budget.categoryBudgets': 'ថវិកាតាមប្រភេទ',
     'finance.budget.categoryAllocation': 'ការបែងចែកថវិកា',
-
     'finance.budget.budgetAmount': 'ចំនួនថវិកា',
     'finance.budget.budgetPeriod': 'រយៈពេលថវិកា',
-
     'finance.budget.expenses': 'ការចំណាយ',
     'finance.budget.nearLimit': 'ជិតដល់កំណត់',
-
     'finance.budget.budgetAlmostExhausted': 'ថវិកាជិតអស់',
     'finance.budget.remainingForMonth': 'នៅសល់សម្រាប់ខែនេះ',
-
     'finance.budget.considerReducingSpending':
         'សូមពិចារណាកាត់បន្ថយការចំណាយសម្រាប់រយៈពេលដែលនៅសល់។',
-
     'finance.budget.considerReducingDiningOut':
         'សូមពិចារណាកាត់បន្ថយការចំណាយលើការញ៉ាំអាហារក្រៅ។',
-
     'finance.budget.noBudget': 'មិនទាន់បានកំណត់ថវិកាទេ',
     'finance.budget.noBudgetHint':
         'បង្កើតថវិកាដើម្បីចាប់ផ្តើមតាមដានការចំណាយរបស់អ្នក។',
-
     'finance.budget.budgetSaved': 'បានរក្សាទុកថវិកាដោយជោគជ័យ',
+    'finance.budget.invalidAmount': 'ចំនួនទឹកប្រាក់មិនត្រឹមត្រូវ',
+    'finance.budget.enterValidAmount': 'សូមបញ្ចូលចំនួនថវិកាដែលត្រឹមត្រូវ។',
+    'finance.budget.date': 'កាលបរិច្ឆេទ',
+    'finance.budget.time': 'ពេលវេលា',
+    'finance.budget.editExpense': 'កែសម្រួលការចំណាយ',
 
     // ── Saving Goals ───────────────────────────────────────────────────────
     'finance.goal.title': 'គោលដៅសន្សំ',

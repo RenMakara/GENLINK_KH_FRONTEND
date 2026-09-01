@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_create.dart';
 import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_detail.dart';
+import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/widget/saving_goals_widget.dart';
 
 class SavingGoalsScreen extends StatelessWidget {
   const SavingGoalsScreen({super.key});
@@ -10,195 +11,99 @@ class SavingGoalsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // COLORS
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
+
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
+
     final secondarySurface = isDark
         ? AppColors.darkSurfaceSecondary
         : AppColors.lightSurfaceSecondary;
+
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
+
     final textMuted = isDark
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
+
     final textInverse = isDark
         ? AppColors.darkTextInverse
         : AppColors.lightTextInverse;
+
     final border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
+
     final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
+
+    // ==========================================================
+    // SCREEN
+    // ==========================================================
 
     return Scaffold(
       backgroundColor: bg,
+
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
+
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 30),
+
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+
             children: [
-              // ── Header ──
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: textPrimary,
-                      size: 20,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 40,
-                      minHeight: 40,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Saving Goals',
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                ],
+              // ==================================================
+              // HEADER
+              // ==================================================
+              SavingGoalsHeader(
+                title: 'Saving Goals',
+                textPrimary: textPrimary,
+                onBack: () {
+                  Navigator.pop(context);
+                },
               ),
 
               const SizedBox(height: 18),
 
-              // ── Total Saved Card ──
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: primary,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Total Saved',
-                      style: TextStyle(
-                        color: textInverse.withValues(alpha: 0.65),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '\$2,480',
-                      style: TextStyle(
-                        color: textInverse,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.8,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Across 3 active goals',
-                      style: TextStyle(
-                        color: textInverse.withValues(alpha: 0.55),
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: textInverse.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Income',
-                                  style: TextStyle(
-                                    color: textInverse.withValues(alpha: 0.6),
-                                    fontSize: 11,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '+\$6,200',
-                                  style: TextStyle(
-                                    color: textInverse,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: textInverse.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Expenses',
-                                  style: TextStyle(
-                                    color: textInverse.withValues(alpha: 0.6),
-                                    fontSize: 11,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '-\$1,379.50',
-                                  style: TextStyle(
-                                    color: textInverse,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+              // ==================================================
+              // TOTAL SAVED
+              // ==================================================
+              TotalSavedCard(
+                title: 'Total Saved',
+                totalSaved: '\$2,480',
+                subtitle: 'Across 3 active goals',
+
+                incomeTitle: 'Income',
+                incomeValue: '+\$6,200',
+
+                expenseTitle: 'Expenses',
+                expenseValue: '-\$1,379.50',
+
+                primary: primary,
+                textInverse: textInverse,
               ),
 
               const SizedBox(height: 22),
 
-              // ── Active Goals ──
-              Text(
-                'Active Goals',
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                ),
+              // ==================================================
+              // ACTIVE GOALS TITLE
+              // ==================================================
+              SavingGoalsSectionTitle(
+                title: 'Active Goals',
+                textPrimary: textPrimary,
               ),
 
               const SizedBox(height: 12),
 
-              _GoalCard(
+              // ==================================================
+              // GOAL 1
+              // ==================================================
+              SavingGoalCard(
                 title: 'Emergency Fund',
                 progress: '\$1,240 of \$3,000',
                 subtitle: 'Target: Dec 2026',
@@ -212,11 +117,24 @@ class SavingGoalsScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const GoalDetailScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const GoalDetailScreen(
+                        title: 'Emergency Fund',
+                        savedAmount: 1240,
+                        targetAmount: 3000,
+                        targetDate: 'Dec 2026',
+                        progress: 0.41,
+                        color: AppColors.financeAccent,
+                      ),
+                    ),
                   );
                 },
               ),
-              _GoalCard(
+
+              // ==================================================
+              // GOAL 2
+              // ==================================================
+              SavingGoalCard(
                 title: 'Travel — Japan',
                 progress: '\$840 of \$2,000',
                 subtitle: 'Target: Mar 2027',
@@ -227,9 +145,27 @@ class SavingGoalsScreen extends StatelessWidget {
                 border: border,
                 textPrimary: textPrimary,
                 textMuted: textMuted,
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const GoalDetailScreen(
+                        title: 'Travel — Japan',
+                        savedAmount: 840,
+                        targetAmount: 2000,
+                        targetDate: 'Mar 2027',
+                        progress: 0.42,
+                        color: AppColors.brandPrimary,
+                      ),
+                    ),
+                  );
+                },
               ),
-              _GoalCard(
+
+              // ==================================================
+              // GOAL 3
+              // ==================================================
+              SavingGoalCard(
                 title: 'New MacBook',
                 progress: '\$400 of \$1,500',
                 subtitle: 'Target: Dec 2026',
@@ -240,247 +176,85 @@ class SavingGoalsScreen extends StatelessWidget {
                 border: border,
                 textPrimary: textPrimary,
                 textMuted: textMuted,
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const GoalDetailScreen(
+                        title: 'New MacBook',
+                        savedAmount: 400,
+                        targetAmount: 1500,
+                        targetDate: 'Dec 2026',
+                        progress: 0.27,
+                        color: AppColors.growthAccent,
+                      ),
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 22),
 
-              // ── Completed Goals ──
-              Text(
-                'Completed Goals',
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                ),
+              // ==================================================
+              // COMPLETED GOALS TITLE
+              // ==================================================
+              SavingGoalsSectionTitle(
+                title: 'Completed Goals',
+                textPrimary: textPrimary,
               ),
 
               const SizedBox(height: 12),
 
-              _CompletedGoal(
+              // ==================================================
+              // COMPLETED GOAL 1
+              // ==================================================
+              CompletedGoalCard(
                 title: 'Phone Upgrade',
                 amount: '-\$800',
+
                 textPrimary: textPrimary,
                 textMuted: textMuted,
+
                 surface: surface,
                 border: border,
               ),
-              _CompletedGoal(
+
+              // ==================================================
+              // COMPLETED GOAL 2
+              // ==================================================
+              CompletedGoalCard(
                 title: 'Rainy Day Fund',
                 amount: '-\$500',
+
                 textPrimary: textPrimary,
                 textMuted: textMuted,
+
                 surface: surface,
                 border: border,
               ),
 
               const SizedBox(height: 24),
 
-              // ── New Goal Button ──
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const CreateGoalScreen(),
-                      ),
-                    );
-                  },
-                  icon: Icon(Icons.add_rounded, color: textInverse, size: 22),
-                  label: Text(
-                    'New Goal',
-                    style: TextStyle(
-                      color: textInverse,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primary,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                ),
+              // ==================================================
+              // NEW GOAL BUTTON
+              // ==================================================
+              NewGoalButton(
+                title: 'New Goal',
+
+                primary: primary,
+                textInverse: textInverse,
+
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CreateGoalScreen()),
+                  );
+                },
               ),
 
               const SizedBox(height: 90),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GoalCard extends StatelessWidget {
-  final String title;
-  final String progress;
-  final String subtitle;
-  final double percent;
-  final Color color;
-  final Color surface;
-  final Color secondarySurface;
-  final Color border;
-  final Color textPrimary;
-  final Color textMuted;
-  final VoidCallback onTap;
-
-  const _GoalCard({
-    required this.title,
-    required this.progress,
-    required this.subtitle,
-    required this.percent,
-    required this.color,
-    required this.surface,
-    required this.secondarySurface,
-    required this.border,
-    required this.textPrimary,
-    required this.textMuted,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: border),
-          ),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 48,
-                height: 48,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: CircularProgressIndicator(
-                        value: percent,
-                        strokeWidth: 5,
-                        backgroundColor: secondarySurface,
-                        valueColor: AlwaysStoppedAnimation(color),
-                        strokeCap: StrokeCap.round,
-                      ),
-                    ),
-                    Text(
-                      '${(percent * 100).round()}%',
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      progress,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(color: textMuted, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: textMuted, size: 22),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CompletedGoal extends StatelessWidget {
-  final String title;
-  final String amount;
-  final Color textPrimary;
-  final Color textMuted;
-  final Color surface;
-  final Color border;
-
-  const _CompletedGoal({
-    required this.title,
-    required this.amount,
-    required this.textPrimary,
-    required this.textMuted,
-    required this.surface,
-    required this.border,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          color: surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: border),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.check_circle_rounded,
-              color: AppColors.success,
-              size: 22,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Text(
-              amount,
-              style: TextStyle(
-                color: textMuted,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
         ),
       ),
     );

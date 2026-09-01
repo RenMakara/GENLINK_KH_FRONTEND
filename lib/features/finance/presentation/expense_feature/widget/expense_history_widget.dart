@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
-// ============================================================================
 // SEARCH FIELD
-// ============================================================================
-
 class ExpenseSearchField extends StatelessWidget {
   final String hintText;
   final TextEditingController? controller;
@@ -65,10 +62,7 @@ class ExpenseSearchField extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // SLIDING FILTER
-// ============================================================================
-
 class ExpenseFilterBar extends StatelessWidget {
   final List<String> filters;
   final int selectedIndex;
@@ -132,10 +126,7 @@ class ExpenseFilterBar extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // HEADER BUTTON
-// ============================================================================
-
 class ExpenseHeaderButton extends StatelessWidget {
   final IconData icon;
   final Color background;
@@ -174,10 +165,7 @@ class ExpenseHeaderButton extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // DATE HEADER
-// ============================================================================
-
 class ExpenseDateHeader extends StatelessWidget {
   final String text;
   final Color color;
@@ -200,10 +188,7 @@ class ExpenseDateHeader extends StatelessWidget {
   }
 }
 
-// ============================================================================
 // EXPENSE HISTORY CARD
-// ============================================================================
-
 class ExpenseHistoryCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;

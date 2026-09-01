@@ -1531,7 +1531,7 @@ class AppTranslations extends Translations {
     'finance.expense.deleteConfirmTitle': 'លុបចំណាយ?',
     'finance.expense.deleteConfirmMessage':
         'តើអ្នកប្រាកដថាចង់លុបចំណាយនេះមែនទេ?',
-
+    'finance.expense.time': 'ពេលវេលា',
     'finance.expense.history': 'ប្រវត្តិចំណាយ',
     'finance.expense.searchHint': 'ស្វែងរកចំណាយ...',
 

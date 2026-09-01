@@ -27,9 +27,7 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // =========================================================================
     // COLORS
-    // =========================================================================
 
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
 
@@ -60,9 +58,7 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // =================================================================
             // HEADER
-            // =================================================================
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
               child: Row(
@@ -94,9 +90,7 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
 
             const SizedBox(height: 16),
 
-            // =================================================================
             // SEARCH
-            // =================================================================
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ExpenseSearchField(
@@ -111,9 +105,7 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
 
             const SizedBox(height: 14),
 
-            // =================================================================
             // FILTER
-            // =================================================================
             ExpenseFilterBar(
               filters: filters.map((item) => item.tr).toList(),
               selectedIndex: selectedFilter,
@@ -131,25 +123,18 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
 
             const SizedBox(height: 16),
 
-            // =================================================================
             // HISTORY
-            // =================================================================
             Expanded(
               child: ListView(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
                 children: [
-                  // =================================================================
                   // TODAY
-                  // =================================================================
                   ExpenseDateHeader(
                     text: 'finance.expense.todayDate'.tr,
                     color: textMuted,
                   ),
 
-                  // -----------------------------------------------------------------
-                  // GRAB FOOD
-                  // -----------------------------------------------------------------
                   ExpenseHistoryCard(
                     icon: Icons.restaurant_outlined,
                     iconColor: AppColors.growthAccent,
@@ -184,9 +169,7 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                     },
                   ),
 
-                  // -----------------------------------------------------------------
                   // BUS PASS
-                  // -----------------------------------------------------------------
                   ExpenseHistoryCard(
                     icon: Icons.directions_bus_outlined,
                     iconColor: AppColors.brandPrimary,
@@ -222,17 +205,12 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
 
                   const SizedBox(height: 16),
 
-                  // =================================================================
                   // YESTERDAY
-                  // =================================================================
                   ExpenseDateHeader(
                     text: 'finance.expense.yesterdayDate'.tr,
                     color: textMuted,
                   ),
 
-                  // -----------------------------------------------------------------
-                  // TEXTBOOKS
-                  // -----------------------------------------------------------------
                   ExpenseHistoryCard(
                     icon: Icons.menu_book_outlined,
                     iconColor: AppColors.productivityAccent,
@@ -267,9 +245,6 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                     },
                   ),
 
-                  // -----------------------------------------------------------------
-                  // LUNCH BOX
-                  // -----------------------------------------------------------------
                   ExpenseHistoryCard(
                     icon: Icons.lunch_dining_outlined,
                     iconColor: AppColors.growthAccent,
@@ -306,17 +281,12 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
 
                   const SizedBox(height: 16),
 
-                  // =================================================================
                   // JUN 26
-                  // =================================================================
                   ExpenseDateHeader(
                     text: 'finance.expense.jun26'.tr,
                     color: textMuted,
                   ),
 
-                  // -----------------------------------------------------------------
-                  // ABA TRANSFER
-                  // -----------------------------------------------------------------
                   ExpenseHistoryCard(
                     icon: Icons.account_balance_outlined,
                     iconColor: AppColors.financeAccent,
@@ -351,9 +321,6 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                     },
                   ),
 
-                  // -----------------------------------------------------------------
-                  // NETFLIX
-                  // -----------------------------------------------------------------
                   ExpenseHistoryCard(
                     icon: Icons.play_circle_outline_rounded,
                     iconColor: AppColors.financeAccent,
@@ -396,10 +363,7 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
     );
   }
 
-  // ===========================================================================
   // OPEN EXPENSE DETAIL
-  // ===========================================================================
-
   void _openDetail(
     BuildContext context, {
     required IconData icon,

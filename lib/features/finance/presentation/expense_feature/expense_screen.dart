@@ -64,9 +64,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ===============================================================
               // HEADER
-              // ===============================================================
               Row(
                 children: [
                   ExpenseBackButton(
@@ -107,9 +105,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
               const SizedBox(height: 24),
 
-              // ===============================================================
               // PERIOD SELECTOR
-              // ===============================================================
               Container(
                 height: 48,
                 padding: const EdgeInsets.all(4),
@@ -120,9 +116,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                 ),
                 child: Stack(
                   children: [
-                    // =========================================================
                     // SLIDING SELECTED BACKGROUND
-                    // =========================================================
                     AnimatedAlign(
                       duration: const Duration(milliseconds: 250),
                       curve: Curves.easeOutCubic,
@@ -143,9 +137,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       ),
                     ),
 
-                    // =========================================================
                     // BUTTONS
-                    // =========================================================
                     Row(
                       children: [
                         PeriodButton(
@@ -194,9 +186,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
               const SizedBox(height: 18),
 
-              // ===============================================================
               // SPENDING OVERVIEW
-              // ===============================================================
               SurfaceCard(
                 color: surface,
                 borderColor: border,
@@ -300,9 +290,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
               const SizedBox(height: 22),
 
-              // ===============================================================
               // CATEGORY BREAKDOWN
-              // ===============================================================
               ExpenseSectionHeader(
                 title: 'finance.expense.categoryBreakdown'.tr,
                 subtitle: 'finance.expense.thismonth'.tr,
@@ -372,9 +360,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
               const SizedBox(height: 22),
 
-              // ===============================================================
               // RECENT EXPENSES
-              // ===============================================================
               ExpenseSectionHeader(
                 title: 'finance.expense.recentExpenses'.tr,
                 textPrimary: textPrimary,
@@ -392,9 +378,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
               const SizedBox(height: 10),
 
-              // ===============================================================
               // EXPENSE LIST
-              // ===============================================================
               SurfaceCard(
                 color: surface,
                 borderColor: border,
@@ -516,10 +500,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     );
   }
 
-  // ===========================================================================
   // OPEN EXPENSE DETAIL
-  // ===========================================================================
-
   void _openDetail(
     BuildContext context, {
     required String title,

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_detail_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_history_widget.dart';
 
 class ExpenseHistoryScreen extends StatefulWidget {
   const ExpenseHistoryScreen({super.key});
@@ -14,7 +15,7 @@ class ExpenseHistoryScreen extends StatefulWidget {
 class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
   int selectedFilter = 0;
 
-  final filters = [
+  final List<String> filters = [
     'finance.expense.all',
     'finance.expense.food',
     'finance.expense.transport',
@@ -26,15 +27,13 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // COLORS
+
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
 
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
-
-    final secondarySurface = isDark
-        ? AppColors.darkSurfaceSecondary
-        : AppColors.lightSurfaceSecondary;
 
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
@@ -59,239 +58,301 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Header ───────────────────────────────────────────────
+            // HEADER
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: textPrimary,
-                      size: 20,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 40,
-                      minHeight: 40,
-                    ),
+                  ExpenseHeaderButton(
+                    icon: Icons.arrow_back_ios_new_rounded,
+                    background: surface,
+                    iconColor: textPrimary,
+                    borderColor: border,
+                    onTap: () => Navigator.pop(context),
                   ),
 
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 12),
 
-                  Text(
-                    'finance.expense.history'.tr,
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
+                  Expanded(
+                    child: Text(
+                      'finance.expense.history'.tr,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
-            // ── Search ───────────────────────────────────────────────
+            // SEARCH
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'finance.expense.searchHint'.tr,
-                  hintStyle: TextStyle(color: textMuted, fontSize: 14),
-                  prefixIcon: Padding(
-                    padding: const EdgeInsets.only(left: 14, right: 10),
-                    child: Icon(
-                      Icons.search_rounded,
-                      color: textMuted,
-                      size: 20,
-                    ),
-                  ),
-                  prefixIconConstraints: const BoxConstraints(
-                    minWidth: 0,
-                    minHeight: 0,
-                  ),
-                  filled: true,
-                  fillColor: surface,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 14,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: primary, width: 1.2),
-                  ),
-                ),
+              child: ExpenseSearchField(
+                hintText: 'finance.expense.searchHint'.tr,
+                surface: surface,
+                border: border,
+                textPrimary: textPrimary,
+                textMuted: textMuted,
+                primary: primary,
               ),
             ),
 
             const SizedBox(height: 14),
 
-            // ── Filters ──────────────────────────────────────────────
-            SizedBox(
-              height: 38,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: filters.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  final selected = selectedFilter == index;
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedFilter = index;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: selected ? primary : surface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: selected ? null : Border.all(color: border),
-                      ),
-                      child: Text(
-                        filters[index].tr,
-                        style: TextStyle(
-                          color: selected ? inverseText : textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+            // FILTER
+            ExpenseFilterBar(
+              filters: filters.map((item) => item.tr).toList(),
+              selectedIndex: selectedFilter,
+              primary: primary,
+              surface: surface,
+              border: border,
+              textPrimary: textPrimary,
+              inverseText: inverseText,
+              onChanged: (index) {
+                setState(() {
+                  selectedFilter = index;
+                });
+              },
             ),
 
             const SizedBox(height: 16),
 
-            // ── List ─────────────────────────────────────────────────
+            // HISTORY
             Expanded(
               child: ListView(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
                 children: [
-                  // ── Today ──────────────────────────────────────────
-                  _DateHeader('finance.expense.todayDate'.tr, textMuted),
+                  // TODAY
+                  ExpenseDateHeader(
+                    text: 'finance.expense.todayDate'.tr,
+                    color: textMuted,
+                  ),
 
-                  _HistoryCard(
-                    icon: Icons.receipt_long_outlined,
-                    title: 'finance.expense.grabFood'.tr,
-                    subtitle: '12:30 PM · ${'finance.expense.food'.tr}',
+                  ExpenseHistoryCard(
+                    icon: Icons.restaurant_outlined,
+                    iconColor: AppColors.growthAccent,
+                    iconBackground: AppColors.growthAccent.withValues(
+                      alpha: .12,
+                    ),
+                    title: 'Grab Food',
+                    subtitle: '12:30 PM · Food & Drink',
                     amount: '-\$8.50',
                     isPositive: false,
                     surface: surface,
-                    secondarySurface: secondarySurface,
                     border: border,
                     textPrimary: textPrimary,
                     textMuted: textMuted,
                     onTap: () {
-                      Navigator.push(
+                      _openDetail(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const ExpenseDetailScreen(),
+                        icon: Icons.restaurant_outlined,
+                        iconColor: AppColors.growthAccent,
+                        iconBackground: AppColors.growthAccent.withValues(
+                          alpha: .12,
                         ),
+                        title: 'Grab Food',
+                        subtitle: '12:30 PM · Food & Drink',
+                        amount: '-\$8.50',
+                        date: 'Jun 28, 2026',
+                        time: '12:30 PM',
+                        category: 'Food & Drink',
+                        payment: 'Cash',
+                        note: 'Dinner from Grab Food',
                       );
                     },
                   ),
 
-                  _HistoryCard(
+                  // BUS PASS
+                  ExpenseHistoryCard(
                     icon: Icons.directions_bus_outlined,
-                    title: 'finance.expense.busPass'.tr,
-                    subtitle: '8:00 AM · ${'finance.expense.transport'.tr}',
+                    iconColor: AppColors.brandPrimary,
+                    iconBackground: AppColors.brandPrimary.withValues(
+                      alpha: .10,
+                    ),
+                    title: 'Bus Pass',
+                    subtitle: '8:00 AM · Transport',
                     amount: '-\$1.25',
                     isPositive: false,
                     surface: surface,
-                    secondarySurface: secondarySurface,
                     border: border,
                     textPrimary: textPrimary,
                     textMuted: textMuted,
-                    onTap: () {},
+                    onTap: () {
+                      _openDetail(
+                        context,
+                        icon: Icons.directions_bus_outlined,
+                        iconColor: AppColors.brandPrimary,
+                        iconBackground: AppColors.brandPrimary.withValues(
+                          alpha: .10,
+                        ),
+                        title: 'Bus Pass',
+                        subtitle: '8:00 AM · Transport',
+                        amount: '-\$1.25',
+                        date: 'Jun 28, 2026',
+                        time: '8:00 AM',
+                        category: 'Transport',
+                        payment: 'Cash',
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 16),
 
-                  // ── Yesterday ──────────────────────────────────────
-                  _DateHeader('finance.expense.yesterdayDate'.tr, textMuted),
+                  // YESTERDAY
+                  ExpenseDateHeader(
+                    text: 'finance.expense.yesterdayDate'.tr,
+                    color: textMuted,
+                  ),
 
-                  _HistoryCard(
+                  ExpenseHistoryCard(
                     icon: Icons.menu_book_outlined,
-                    title: 'finance.expense.textbooks'.tr,
-                    subtitle: 'finance.expense.study'.tr,
+                    iconColor: AppColors.productivityAccent,
+                    iconBackground: AppColors.productivityAccent.withValues(
+                      alpha: .12,
+                    ),
+                    title: 'Textbooks',
+                    subtitle: 'Study',
                     amount: '-\$45.00',
                     isPositive: false,
                     surface: surface,
-                    secondarySurface: secondarySurface,
                     border: border,
                     textPrimary: textPrimary,
                     textMuted: textMuted,
-                    onTap: () {},
+                    onTap: () {
+                      _openDetail(
+                        context,
+                        icon: Icons.menu_book_outlined,
+                        iconColor: AppColors.productivityAccent,
+                        iconBackground: AppColors.productivityAccent.withValues(
+                          alpha: .12,
+                        ),
+                        title: 'Textbooks',
+                        subtitle: 'Study',
+                        amount: '-\$45.00',
+                        date: 'Jun 27, 2026',
+                        time: '2:15 PM',
+                        category: 'Study',
+                        payment: 'Cash',
+                        note: 'University textbooks',
+                      );
+                    },
                   ),
 
-                  _HistoryCard(
+                  ExpenseHistoryCard(
                     icon: Icons.lunch_dining_outlined,
-                    title: 'finance.expense.lunchBox'.tr,
-                    subtitle: 'finance.expense.food'.tr,
+                    iconColor: AppColors.growthAccent,
+                    iconBackground: AppColors.growthAccent.withValues(
+                      alpha: .12,
+                    ),
+                    title: 'Lunch Box',
+                    subtitle: 'Food & Drink',
                     amount: '-\$4.20',
                     isPositive: false,
                     surface: surface,
-                    secondarySurface: secondarySurface,
                     border: border,
                     textPrimary: textPrimary,
                     textMuted: textMuted,
-                    onTap: () {},
+                    onTap: () {
+                      _openDetail(
+                        context,
+                        icon: Icons.lunch_dining_outlined,
+                        iconColor: AppColors.growthAccent,
+                        iconBackground: AppColors.growthAccent.withValues(
+                          alpha: .12,
+                        ),
+                        title: 'Lunch Box',
+                        subtitle: 'Food & Drink',
+                        amount: '-\$4.20',
+                        date: 'Jun 27, 2026',
+                        time: '12:00 PM',
+                        category: 'Food & Drink',
+                        payment: 'Cash',
+                        note: 'Lunch',
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 16),
 
-                  // ── Jun 26 ─────────────────────────────────────────
-                  _DateHeader('finance.expense.jun26'.tr, textMuted),
+                  // JUN 26
+                  ExpenseDateHeader(
+                    text: 'finance.expense.jun26'.tr,
+                    color: textMuted,
+                  ),
 
-                  _HistoryCard(
+                  ExpenseHistoryCard(
                     icon: Icons.account_balance_outlined,
-                    title: 'finance.expense.abaTransfer'.tr,
-                    subtitle: 'finance.expense.deposit'.tr,
+                    iconColor: AppColors.financeAccent,
+                    iconBackground: AppColors.financeAccent.withValues(
+                      alpha: .12,
+                    ),
+                    title: 'ABA Transfer',
+                    subtitle: 'Deposit',
                     amount: '+\$200.00',
                     isPositive: true,
                     surface: surface,
-                    secondarySurface: secondarySurface,
                     border: border,
                     textPrimary: textPrimary,
                     textMuted: textMuted,
-                    onTap: () {},
+                    onTap: () {
+                      _openDetail(
+                        context,
+                        icon: Icons.account_balance_outlined,
+                        iconColor: AppColors.financeAccent,
+                        iconBackground: AppColors.financeAccent.withValues(
+                          alpha: .12,
+                        ),
+                        title: 'ABA Transfer',
+                        subtitle: 'Deposit',
+                        amount: '+\$200.00',
+                        date: 'Jun 26, 2026',
+                        time: '10:30 AM',
+                        category: 'Deposit',
+                        payment: 'ABA',
+                        note: 'Money received',
+                      );
+                    },
                   ),
 
-                  _HistoryCard(
+                  ExpenseHistoryCard(
                     icon: Icons.play_circle_outline_rounded,
-                    title: 'finance.expense.netflix'.tr,
-                    subtitle: 'finance.expense.bills'.tr,
+                    iconColor: AppColors.financeAccent,
+                    iconBackground: AppColors.financeAccent.withValues(
+                      alpha: .12,
+                    ),
+                    title: 'Netflix',
+                    subtitle: 'Bills',
                     amount: '-\$15.99',
                     isPositive: false,
                     surface: surface,
-                    secondarySurface: secondarySurface,
                     border: border,
                     textPrimary: textPrimary,
                     textMuted: textMuted,
-                    onTap: () {},
+                    onTap: () {
+                      _openDetail(
+                        context,
+                        icon: Icons.play_circle_outline_rounded,
+                        iconColor: AppColors.financeAccent,
+                        iconBackground: AppColors.financeAccent.withValues(
+                          alpha: .12,
+                        ),
+                        title: 'Netflix',
+                        subtitle: 'Bills',
+                        amount: '-\$15.99',
+                        date: 'Jun 26, 2026',
+                        time: '9:00 AM',
+                        category: 'Bills',
+                        payment: 'Card',
+                        note: 'Monthly Netflix subscription',
+                      );
+                    },
                   ),
                 ],
               ),
@@ -301,130 +362,37 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
       ),
     );
   }
-}
 
-// ═══════════════════════════════════════════════════════════════════════
-// DATE HEADER
-// ═══════════════════════════════════════════════════════════════════════
-
-class _DateHeader extends StatelessWidget {
-  final String text;
-  final Color color;
-
-  const _DateHeader(this.text, this.color);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// HISTORY CARD
-// ═══════════════════════════════════════════════════════════════════════
-
-class _HistoryCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String amount;
-  final bool isPositive;
-
-  final Color surface;
-  final Color secondarySurface;
-  final Color border;
-  final Color textPrimary;
-  final Color textMuted;
-
-  final VoidCallback onTap;
-
-  const _HistoryCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.amount,
-    required this.isPositive,
-    required this.surface,
-    required this.secondarySurface,
-    required this.border,
-    required this.textPrimary,
-    required this.textMuted,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            color: surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: border),
-          ),
-          child: Row(
-            children: [
-              // Icon
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: secondarySurface,
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: Icon(icon, size: 20, color: textMuted),
-              ),
-
-              const SizedBox(width: 12),
-
-              // Title + Subtitle
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-
-                    const SizedBox(height: 3),
-
-                    Text(
-                      subtitle,
-                      style: TextStyle(color: textMuted, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Amount
-              Text(
-                amount,
-                style: TextStyle(
-                  color: isPositive ? AppColors.financeAccent : textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
+  // OPEN EXPENSE DETAIL
+  void _openDetail(
+    BuildContext context, {
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBackground,
+    required String title,
+    required String subtitle,
+    required String amount,
+    required String date,
+    required String time,
+    required String category,
+    required String payment,
+    String? note,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ExpenseDetailScreen(
+          icon: icon,
+          iconColor: iconColor,
+          iconBackground: iconBackground,
+          title: title,
+          subtitle: subtitle,
+          amount: amount,
+          date: date,
+          time: time,
+          category: category,
+          payment: payment,
+          note: note,
         ),
       ),
     );

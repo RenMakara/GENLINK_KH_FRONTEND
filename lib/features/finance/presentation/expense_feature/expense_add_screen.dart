@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
+import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_add_widget.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
 class AddExpenseScreen extends StatefulWidget {
@@ -11,18 +11,64 @@ class AddExpenseScreen extends StatefulWidget {
 }
 
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
-  final _titleController = TextEditingController();
-  final _noteController = TextEditingController();
-  final _amountController = TextEditingController(text: '0.00');
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _noteController = TextEditingController();
+
+  final TextEditingController _amountController = TextEditingController(
+    text: '0.00',
+  );
 
   int selectedCategory = 0;
   int selectedPayment = 0;
 
-  final categories = ['food', 'transport', 'study', 'bills', 'health', 'other'];
-
-  final payments = ['cash', 'card', 'aba'];
-
   DateTime selectedDate = DateTime.now();
+
+  // ===========================================================================
+  // CATEGORIES
+  // ===========================================================================
+
+  final List<ExpenseCategoryItem> categories = [
+    ExpenseCategoryItem(
+      name: 'finance.expense.food'.tr,
+      icon: Icons.restaurant_outlined,
+      color: AppColors.growthAccent,
+    ),
+    ExpenseCategoryItem(
+      name: 'finance.expense.transport'.tr,
+      icon: Icons.directions_car_outlined,
+      color: AppColors.brandPrimary,
+    ),
+    ExpenseCategoryItem(
+      name: 'finance.expense.study'.tr,
+      icon: Icons.menu_book_outlined,
+      color: AppColors.productivityAccent,
+    ),
+    ExpenseCategoryItem(
+      name: 'finance.expense.bills'.tr,
+      icon: Icons.receipt_long_outlined,
+      color: AppColors.financeAccent,
+    ),
+    ExpenseCategoryItem(
+      name: 'finance.expense.health'.tr,
+      icon: Icons.favorite_border_rounded,
+      color: AppColors.productivityAccent,
+    ),
+    ExpenseCategoryItem(
+      name: 'finance.expense.other'.tr,
+      icon: Icons.more_horiz_rounded,
+      color: AppColors.success,
+    ),
+  ];
+
+  // ===========================================================================
+  // PAYMENT METHODS
+  // ===========================================================================
+
+  final List<ExpensePaymentItem> payments = const [
+    ExpensePaymentItem(name: 'Cash', icon: Icons.payments_outlined),
+    ExpensePaymentItem(name: 'Card', icon: Icons.credit_card_outlined),
+    ExpensePaymentItem(name: 'ABA', icon: Icons.account_balance_outlined),
+  ];
 
   @override
   void dispose() {
@@ -32,16 +78,19 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     super.dispose();
   }
 
+  // ===========================================================================
   // DATE PICKER
+  // ===========================================================================
+
   Future<void> _selectDate() async {
-    final pickedDate = await showDatePicker(
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: selectedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
       builder: (context, child) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: isDark
@@ -60,7 +109,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     }
   }
 
-  // FORMAT DATE
+  // ===========================================================================
+  // DATE FORMAT
+  // ===========================================================================
+
   String _formatDate(DateTime date) {
     const months = [
       'Jan',
@@ -80,10 +132,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
+  // ===========================================================================
   // SAVE EXPENSE
+  // ===========================================================================
+
   void _saveExpense() {
-    final amount = _amountController.text.trim();
-    final title = _titleController.text.trim();
+    final String amount = _amountController.text.trim();
+    final String title = _titleController.text.trim();
 
     if (amount.isEmpty || amount == '0.00') {
       Get.snackbar(
@@ -108,33 +163,44 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     Navigator.pop(context);
   }
 
+  // ===========================================================================
+  // BUILD
+  // ===========================================================================
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final bool isDark = theme.brightness == Brightness.dark;
 
-    // THEME COLORS
-    final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
+    // =========================================================================
+    // COLORS
+    // =========================================================================
 
-    final surface = isDark
+    final Color bg = isDark
+        ? AppColors.darkBgPrimary
+        : AppColors.lightBgPrimary;
+
+    final Color surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
 
-    final textPrimary = isDark
+    final Color textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
 
-    final textMuted = isDark
+    final Color textMuted = isDark
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
 
-    final border = isDark
+    final Color border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
 
-    final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
+    final Color primary = isDark
+        ? AppColors.darkPrimary
+        : AppColors.lightPrimary;
 
-    final inverseText = isDark
+    final Color inverseText = isDark
         ? AppColors.darkTextInverse
         : AppColors.lightTextInverse;
 
@@ -143,374 +209,262 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // =================================================================
             // HEADER
+            // =================================================================
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: textPrimary,
-                      size: 20,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 40,
-                      minHeight: 40,
-                    ),
+                  ExpenseBackButton(
+                    color: surface,
+                    iconColor: textPrimary,
+                    borderColor: border,
+                    onTap: () => Navigator.pop(context),
                   ),
 
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 13),
 
-                  Text(
-                    'finance.expense.add'.tr,
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'finance.expense.add'.tr,
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+
+                        const SizedBox(height: 3),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
 
+            // =================================================================
             // CONTENT
+            // =================================================================
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 30),
+                padding: const EdgeInsets.fromLTRB(18, 22, 18, 36),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // =========================================================
                     // AMOUNT
-                    Center(
-                      child: Column(
-                        children: [
-                          Text(
-                            '\$',
-                            style: TextStyle(
-                              color: textMuted,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-
-                          const SizedBox(height: 4),
-
-                          TextField(
-                            controller: _amountController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: textPrimary,
-                              fontSize: 42,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -1,
-                            ),
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-
-                          Container(
-                            width: 60,
-                            height: 3,
-                            margin: const EdgeInsets.only(top: 4),
-                            decoration: BoxDecoration(
-                              color: primary.withValues(alpha: 0.35),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ],
-                      ),
+                    // =========================================================
+                    ExpenseAmountSection(
+                      controller: _amountController,
+                      surface: surface,
+                      border: border,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                      primary: primary,
                     ),
 
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 26),
 
-                    // TITLE
-                    _Label('finance.expense.description'.tr, textPrimary),
+                    // =========================================================
+                    // DESCRIPTION
+                    // =========================================================
+                    ExpenseSectionLabel(
+                      title: 'finance.expense.description'.tr,
+                      subtitle: 'finance.expense.descriptionHelper'.tr,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                    ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 9),
 
-                    _InputField(
+                    ExpenseInputField(
                       controller: _titleController,
                       hint: 'finance.expense.titleHint'.tr,
                       surface: surface,
                       border: border,
                       textPrimary: textPrimary,
                       textMuted: textMuted,
+                      prefixIcon: Icons.edit_note_outlined,
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 23),
 
+                    // =========================================================
                     // CATEGORY
-                    _Label('finance.expense.category'.tr, textPrimary),
-
-                    const SizedBox(height: 10),
-
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: List.generate(categories.length, (i) {
-                        final selected = selectedCategory == i;
-
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedCategory = i;
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 9,
-                            ),
-                            decoration: BoxDecoration(
-                              color: selected ? primary : surface,
-                              borderRadius: BorderRadius.circular(20),
-                              border: selected
-                                  ? null
-                                  : Border.all(color: border),
-                            ),
-                            child: Text(
-                              'finance.expense.${categories[i]}'.tr,
-                              style: TextStyle(
-                                color: selected ? inverseText : textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
+                    // =========================================================
+                    ExpenseSectionLabel(
+                      title: 'finance.expense.category'.tr,
+                      subtitle: 'finance.expense.categoryHelper'.tr,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 11),
 
+                    ExpenseCategorySelector(
+                      categories: categories,
+                      selectedCategory: selectedCategory,
+                      surface: surface,
+                      border: border,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                      onChanged: (index) {
+                        setState(() {
+                          selectedCategory = index;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 23),
+
+                    // =========================================================
                     // NOTE
-                    _Label('finance.expense.note'.tr, textPrimary),
+                    // =========================================================
+                    ExpenseSectionLabel(
+                      title: 'finance.expense.note'.tr,
+                      subtitle: 'finance.expense.optional'.tr,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                    ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 9),
 
-                    _InputField(
+                    ExpenseInputField(
                       controller: _noteController,
                       hint: 'finance.expense.noteHint'.tr,
                       surface: surface,
                       border: border,
                       textPrimary: textPrimary,
                       textMuted: textMuted,
-                      maxLines: 3,
+                      prefixIcon: Icons.notes_outlined,
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 23),
 
+                    // =========================================================
                     // DATE
-                    _Label('finance.expense.date'.tr, textPrimary),
+                    // =========================================================
+                    ExpenseSectionLabel(
+                      title: 'finance.expense.date'.tr,
+                      subtitle: 'finance.expense.dateHelper'.tr,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                    ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 9),
 
-                    GestureDetector(
+                    ExpenseDateSelector(
+                      date: _formatDate(selectedDate),
+                      surface: surface,
+                      border: border,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
                       onTap: _selectDate,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 14,
+                    ),
+
+                    const SizedBox(height: 23),
+
+                    // =========================================================
+                    // PAYMENT
+                    // =========================================================
+                    ExpenseSectionLabel(
+                      title: 'finance.expense.paymentMethod'.tr,
+                      subtitle: 'finance.expense.paymentHelper'.tr,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                    ),
+
+                    const SizedBox(height: 11),
+
+                    ExpensePaymentSelector(
+                      payments: payments,
+                      selectedPayment: selectedPayment,
+                      surface: surface,
+                      border: border,
+                      primary: primary,
+                      textPrimary: textPrimary,
+                      onChanged: (index) {
+                        setState(() {
+                          selectedPayment = index;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    // =========================================================
+                    // SAVE
+                    // =========================================================
+                    SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: ElevatedButton.icon(
+                        onPressed: _saveExpense,
+                        icon: const Icon(Icons.check_rounded, size: 19),
+                        label: Text(
+                          'finance.expense.save'.tr,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                        decoration: BoxDecoration(
-                          color: surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: border),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.calendar_today_outlined,
-                              size: 18,
-                              color: textMuted,
-                            ),
-
-                            const SizedBox(width: 10),
-
-                            Expanded(
-                              child: Text(
-                                _formatDate(selectedDate),
-                                style: TextStyle(
-                                  color: textPrimary,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-
-                            Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              color: textMuted,
-                              size: 20,
-                            ),
-                          ],
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primary,
+                          foregroundColor: inverseText,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 8),
 
-                    // PAYMENT METHOD
-                    _Label('finance.expense.paymentMethod'.tr, textPrimary),
-
-                    const SizedBox(height: 10),
-
-                    Row(
-                      children: List.generate(payments.length, (i) {
-                        final selected = selectedPayment == i;
-
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            right: i < payments.length - 1 ? 8 : 0,
-                          ),
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                selectedPayment = i;
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: selected ? primary : surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: selected
-                                    ? null
-                                    : Border.all(color: border),
-                              ),
-                              child: Text(
-                                'finance.expense.${payments[i]}'.tr,
-                                style: TextStyle(
-                                  color: selected ? inverseText : textPrimary,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // SAVE BUTTON
+                    // =========================================================
+                    // CANCEL
+                    // =========================================================
                     SizedBox(
                       width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _saveExpense,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primary,
-                          foregroundColor: inverseText,
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          size: 17,
+                          color: textMuted,
+                        ),
+                        label: Text(
+                          'finance.expense.cancel'.tr,
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: surface,
+                          foregroundColor: textPrimary,
+                          side: BorderSide(color: border, width: 1),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: Text(
-                          'finance.expense.save'.tr,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
                       ),
                     ),
-
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// LABEL
-class _Label extends StatelessWidget {
-  final String text;
-  final Color color;
-
-  const _Label(this.text, this.color);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w600),
-    );
-  }
-}
-
-// INPUT FIELD
-class _InputField extends StatelessWidget {
-  final TextEditingController controller;
-  final String hint;
-  final Color surface;
-  final Color border;
-  final Color textPrimary;
-  final Color textMuted;
-  final int maxLines;
-
-  const _InputField({
-    required this.controller,
-    required this.hint,
-    required this.surface,
-    required this.border,
-    required this.textPrimary,
-    required this.textMuted,
-    this.maxLines = 1,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      style: TextStyle(
-        color: textPrimary,
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(color: textMuted, fontSize: 14),
-        filled: true,
-        fillColor: surface,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 14,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: border),
         ),
       ),
     );

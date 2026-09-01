@@ -627,118 +627,71 @@ class AppTranslations extends Translations {
 
     // ── Expense Screen ────────────────────────────────────────────────────
     'finance.expense.title': 'Expenses',
-
-    // Period
     'finance.expense.today': 'Today',
     'finance.expense.week': 'Week',
     'finance.expense.month': 'Month',
-    'finance.expense.yesterday': 'Yesterday',
-
-    // Summary
     'finance.expense.totalSpent': 'Total Spent',
     'finance.expense.onTrack': 'On Track',
-
-    // Category Breakdown
     'finance.expense.categoryBreakdown': 'Category Breakdown',
-    'finance.expense.foodDrink': 'Food & Drink',
+    'finance.expense.recentExpenses': 'Recent Expenses',
+    'finance.expense.seeAll': 'See All',
+    'finance.expense.thismonth': 'This Month',
+
+    'finance.expense.all': 'All',
+    'finance.expense.food': 'Food & Drinks',
     'finance.expense.transport': 'Transport',
     'finance.expense.study': 'Study',
     'finance.expense.bills': 'Bills',
-
-    // Recent Expenses
-    'finance.expense.recentExpenses': 'Recent Expenses',
-    'finance.expense.seeAll': 'See All',
-
-    // Recent Expense Items
-    'finance.expense.grabFood': 'Grab Food',
-    'finance.expense.busPass': 'Bus Pass',
-    'finance.expense.textbooks': 'Textbooks',
-    'finance.expense.electricity': 'Electricity',
-
-    // ── Add Expense Screen ───────────────────────────────────────────────
-    'finance.expense.add': 'Add Expense',
-
-    // Amount
-    'finance.expense.amount': 'Amount',
-
-    // Description
-    'finance.expense.description': 'Description',
-    'finance.expense.titleHint': 'Enter expense description...',
-
-    // Category
-    'finance.expense.category': 'Category',
-    'finance.expense.food': 'Food',
     'finance.expense.health': 'Health',
     'finance.expense.other': 'Other',
 
-    // Note
+    // ── Add Expense Screen ────────────────────────────────────────────────
+    'finance.expense.add': 'Add Expense',
+    'finance.expense.trackSpending': 'Keep track of your spending',
+
+    'finance.expense.amount': 'Amount',
+
+    'finance.expense.description': 'Description',
+    'finance.expense.descriptionHelper': 'What did you spend on?',
+    'finance.expense.titleHint': 'Enter expense description...',
+
+    'finance.expense.category': 'Category',
+    'finance.expense.categoryHelper': 'Choose a category',
+
     'finance.expense.note': 'Note',
+    'finance.expense.optional': 'Optional',
     'finance.expense.noteHint': 'Add a note...',
 
-    // Date
     'finance.expense.date': 'Date',
+    'finance.expense.dateHelper': 'When did it happen?',
+    'finance.expense.expenseDate': 'Expense date',
 
-    // Payment Method
     'finance.expense.paymentMethod': 'Payment Method',
-    'finance.expense.cash': 'Cash',
-    'finance.expense.card': 'Card',
-    'finance.expense.aba': 'ABA',
+    'finance.expense.paymentHelper': 'How did you pay?',
 
-    // Save
     'finance.expense.save': 'Save Expense',
+    'finance.expense.cancel': 'Cancel',
 
-    // Validation
+    // ── Expense Validation ────────────────────────────────────────────────
     'finance.expense.validationError': 'Validation Error',
     'finance.expense.enterAmount': 'Please enter an amount',
     'finance.expense.enterTitle': 'Please enter a description',
 
-    // ── Expense Detail Screen ────────────────────────────────────────────
+    // ── Expense Detail Screen ─────────────────────────────────────────────
     'finance.expense.details': 'Expense Details',
     'finance.expense.detail': 'Expense Detail',
-
-    // Actions
     'finance.expense.edit': 'Edit',
     'finance.expense.delete': 'Delete',
-
-    // Detail Information
     'finance.expense.payment': 'Payment',
-
-    // Budget
     'finance.expense.budgetImpact': 'Budget Impact',
     'finance.expense.nearLimit': 'Near Limit',
-
-    'finance.expense.foodBudgetUsed':
-        'Food budget: \$252 of \$300 used (84%). Only \$48 remaining.',
-
-    // Detail Note
-    'finance.expense.dinnerNote':
-        'Dinner with friends near Riverside. Ordered Khmer noodles.',
-
-    // Delete Confirmation
+    'finance.expense.close': 'Close',
     'finance.expense.deleteConfirmTitle': 'Delete Expense?',
     'finance.expense.deleteConfirmMessage':
         'Are you sure you want to delete this expense?',
 
-    // ── Expense History Screen ───────────────────────────────────────────
     'finance.expense.history': 'Expense History',
-
-    // Search
     'finance.expense.searchHint': 'Search expenses...',
-
-    // Filters
-    'finance.expense.all': 'All',
-
-    // History Dates
-    'finance.expense.todayDate': 'Today, Jun 28',
-    'finance.expense.yesterdayDate': 'Yesterday, Jun 27',
-
-    // History Items
-    'finance.expense.lunchBox': 'Lunch Box',
-    'finance.expense.abaTransfer': 'ABA Transfer',
-    'finance.expense.netflix': 'Netflix',
-
-    // History Categories
-    'finance.expense.deposit': 'Deposit',
 
     // ── Budget ─────────────────────────────────────────────────────────────
     'finance.budget.title': 'Budget',
@@ -1516,93 +1469,79 @@ class AppTranslations extends Translations {
 
     // ── Expense Screen ────────────────────────────────────────────────────
     'finance.expense.title': 'ចំណាយ',
-
-    // Period
     'finance.expense.today': 'ថ្ងៃនេះ',
     'finance.expense.week': 'សប្ដាហ៍',
-    'finance.expense.month': 'ខែនេះ',
-    'finance.expense.yesterday': 'ម្សិលមិញ',
-
-    // Summary
+    'finance.expense.month': 'ខែ',
     'finance.expense.totalSpent': 'ចំណាយសរុប',
-    'finance.expense.onTrack': 'ស្ថិតក្នុងគម្រោង',
+    'finance.expense.onTrack': 'ស្ថិតក្នុងផែនការ',
+    'finance.expense.categoryBreakdown': 'ការបែងចែកចំណាយ',
+    'finance.expense.recentExpenses': 'ចំណាយថ្មីៗ',
+    'finance.expense.seeAll': 'មើលទាំងអស់',
+    'finance.expense.thismonth': 'ខែនេះ',
 
-    // Category Breakdown
-    'finance.expense.categoryBreakdown': 'ការបែងចែកចំណាយតាមប្រភេទ',
-    'finance.expense.foodDrink': 'អាហារ និងភេសជ្ជៈ',
+    'finance.expense.all': 'ទាំងអស់',
+    'finance.expense.food': 'អាហារ និងភេសជ្ជៈ',
     'finance.expense.transport': 'ការធ្វើដំណើរ',
     'finance.expense.study': 'ការសិក្សា',
     'finance.expense.bills': 'វិក្កយបត្រ',
-
-    // Recent Expenses
-    'finance.expense.recentExpenses': 'ចំណាយថ្មីៗ',
-    'finance.expense.seeAll': 'មើលទាំងអស់',
-
-    // Recent Expense Items
-    'finance.expense.grabFood': 'Grab Food',
-    'finance.expense.busPass': 'សំបុត្រឡានក្រុង',
-    'finance.expense.textbooks': 'សៀវភៅសិក្សា',
-    'finance.expense.electricity': 'ថ្លៃអគ្គិសនី',
-
-    // ── Add Expense Screen ───────────────────────────────────────────────
-    'finance.expense.add': 'បន្ថែមចំណាយ',
-
-    // Amount
-    'finance.expense.amount': 'ចំនួនទឹកប្រាក់',
-
-    // Description
-    'finance.expense.description': 'ការពិពណ៌នា',
-    'finance.expense.titleHint': 'បញ្ចូលការពិពណ៌នាចំណាយ...',
-
-    // Category
-    'finance.expense.category': 'ប្រភេទ',
-    'finance.expense.food': 'អាហារ',
     'finance.expense.health': 'សុខភាព',
     'finance.expense.other': 'ផ្សេងៗ',
 
-    // Note
+    // ── Add Expense Screen ────────────────────────────────────────────────
+    'finance.expense.add': 'បន្ថែមចំណាយ',
+    'finance.expense.trackSpending': 'កត់ត្រាការចំណាយរបស់អ្នក',
+
+    'finance.expense.amount': 'ចំនួនទឹកប្រាក់',
+
+    'finance.expense.description': 'ការពិពណ៌នា',
+    'finance.expense.descriptionHelper': 'តើអ្នកបានចំណាយលើអ្វី?',
+    'finance.expense.titleHint': 'បញ្ចូលការពិពណ៌នាចំណាយ...',
+
+    'finance.expense.category': 'ប្រភេទចំណាយ',
+    'finance.expense.categoryHelper': 'ជ្រើសរើសប្រភេទ',
+
     'finance.expense.note': 'កំណត់ចំណាំ',
+    'finance.expense.optional': 'ជាជម្រើស',
     'finance.expense.noteHint': 'បន្ថែមកំណត់ចំណាំ...',
 
-    // Date
     'finance.expense.date': 'កាលបរិច្ឆេទ',
+    'finance.expense.dateHelper': 'ពេលណាដែលបានចំណាយ?',
+    'finance.expense.expenseDate': 'កាលបរិច្ឆេទចំណាយ',
 
-    // Payment Method
-    'finance.expense.paymentMethod': 'វិធីបង់ប្រាក់',
-    'finance.expense.cash': 'សាច់ប្រាក់',
-    'finance.expense.card': 'កាត',
-    'finance.expense.aba': 'ABA',
+    'finance.expense.paymentMethod': 'វិធីទូទាត់',
+    'finance.expense.paymentHelper': 'តើអ្នកបានទូទាត់ដោយវិធីណា?',
 
-    // Save
     'finance.expense.save': 'រក្សាទុកចំណាយ',
+    'finance.expense.cancel': 'បោះបង់',
 
-    // Validation
-    'finance.expense.validationError': 'កំហុសក្នុងការបញ្ចូលទិន្នន័យ',
+    // ── Expense Validation ────────────────────────────────────────────────
+    'finance.expense.validationError': 'កំហុសក្នុងការបំពេញព័ត៌មាន',
     'finance.expense.enterAmount': 'សូមបញ្ចូលចំនួនទឹកប្រាក់',
     'finance.expense.enterTitle': 'សូមបញ្ចូលការពិពណ៌នា',
 
-    // ── Expense Detail Screen ────────────────────────────────────────────
+    // ── Expense Detail Screen ─────────────────────────────────────────────
     'finance.expense.details': 'ព័ត៌មានលម្អិតចំណាយ',
-    'finance.expense.detail': 'ព័ត៌មានលម្អិតចំណាយ',
+    'finance.expense.detail': 'លម្អិតចំណាយ',
     'finance.expense.edit': 'កែប្រែ',
     'finance.expense.delete': 'លុប',
-    'finance.expense.payment': 'ការបង់ប្រាក់',
+    'finance.expense.payment': 'ការទូទាត់',
+    'finance.expense.budgetImpact': 'ផលប៉ះពាល់លើថវិកា',
+    'finance.expense.nearLimit': 'ជិតដល់កម្រិត',
+    'finance.expense.close': 'បិទ',
+    'finance.expense.deleteConfirmTitle': 'លុបចំណាយ?',
+    'finance.expense.deleteConfirmMessage':
+        'តើអ្នកប្រាកដថាចង់លុបចំណាយនេះមែនទេ?',
+    'finance.expense.time': 'ពេលវេលា',
+    'finance.expense.history': 'ប្រវត្តិចំណាយ',
+    'finance.expense.searchHint': 'ស្វែងរកចំណាយ...',
 
     // Budget
-    'finance.expense.budgetImpact': 'ផលប៉ះពាល់ដល់ថវិកា',
-    'finance.expense.nearLimit': 'ជិតដល់កម្រិត',
     'finance.expense.foodBudgetUsed':
         'ថវិកាអាហារ: \$252 ក្នុងចំណោម \$300 ត្រូវបានប្រើប្រាស់ (84%)។ នៅសល់តែ \$48 ប៉ុណ្ណោះ។',
     'finance.expense.dinnerNote':
         'ញ៉ាំអាហារពេលល្ងាចជាមួយមិត្តភក្តិនៅជិត Riverside។ បានកម្ម៉ង់គុយទាវខ្មែរ។',
-    'finance.expense.deleteConfirmTitle': 'លុបចំណាយនេះ?',
-    'finance.expense.deleteConfirmMessage':
-        'តើអ្នកប្រាកដថាចង់លុបចំណាយនេះមែនទេ?',
 
     // ── Expense History Screen ───────────────────────────────────────────
-    'finance.expense.history': 'ប្រវត្តិចំណាយ',
-    'finance.expense.searchHint': 'ស្វែងរកចំណាយ...',
-    'finance.expense.all': 'ទាំងអស់',
     'finance.expense.todayDate': 'ថ្ងៃនេះ, Jun 28',
     'finance.expense.yesterdayDate': 'ម្សិលមិញ, Jun 27',
     'finance.expense.lunchBox': 'ប្រអប់អាហារថ្ងៃត្រង់',

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/widget/saving_goals_create_widget.dart';
+import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
 class CreateGoalScreen extends StatefulWidget {
@@ -9,18 +11,23 @@ class CreateGoalScreen extends StatefulWidget {
 }
 
 class _CreateGoalScreenState extends State<CreateGoalScreen> {
-  final _titleController = TextEditingController();
-  final _amountController = TextEditingController(text: '3000');
-  int selectedPurpose = 0;
+  // ==========================================================
+  // CONTROLLERS
+  // ==========================================================
 
-  final purposes = [
-    'Emergency',
-    'Travel',
-    'Education',
-    'Tech',
-    'Health',
-    'Personal',
-  ];
+  final TextEditingController _titleController = TextEditingController();
+
+  final TextEditingController _amountController = TextEditingController();
+
+  // ==========================================================
+  // STATE
+  // ==========================================================
+
+  DateTime? selectedDate;
+
+  // ==========================================================
+  // DISPOSE
+  // ==========================================================
 
   @override
   void dispose() {
@@ -29,329 +36,367 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     super.dispose();
   }
 
+  // ==========================================================
+  // SELECT DATE
+  // ==========================================================
+
+  Future<void> _selectDate() async {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final DateTime now = DateTime.now();
+
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now,
+      lastDate: DateTime(now.year + 10),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: isDark
+                ? ColorScheme.dark(primary: AppColors.darkPrimary)
+                : ColorScheme.light(primary: AppColors.lightPrimary),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate == null) return;
+
+    setState(() {
+      selectedDate = pickedDate;
+    });
+  }
+
+  // ==========================================================
+  // FORMAT DATE
+  // ==========================================================
+
+  String _formatDate(DateTime? date) {
+    if (date == null) {
+      return 'finance.savingGoal.selectTargetDate'.tr;
+    }
+
+    const List<String> months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    return '${months[date.month - 1]} '
+        '${date.day}, '
+        '${date.year}';
+  }
+
+  // ==========================================================
+  // MONTHLY SAVING
+  // ==========================================================
+
+  String _monthlySaving() {
+    final double? amount = double.tryParse(
+      _amountController.text.replaceAll(',', ''),
+    );
+
+    if (amount == null || amount <= 0) {
+      return '\$0/month';
+    }
+
+    if (selectedDate == null) {
+      return '\$0/month';
+    }
+
+    final DateTime now = DateTime.now();
+
+    int months =
+        (selectedDate!.year - now.year) * 12 + selectedDate!.month - now.month;
+
+    if (selectedDate!.day < now.day) {
+      months--;
+    }
+
+    if (months < 1) {
+      months = 1;
+    }
+
+    final double monthly = amount / months;
+
+    return '\$${monthly.toStringAsFixed(0)}/month';
+  }
+
+  // ==========================================================
+  // CREATE GOAL
+  // ==========================================================
+
+  void _createGoal() {
+    final String title = _titleController.text.trim();
+
+    final double? amount = double.tryParse(
+      _amountController.text.replaceAll(',', ''),
+    );
+
+    if (title.isEmpty) {
+      _showMessage('finance.savingGoal.enterTitle'.tr);
+      return;
+    }
+
+    if (amount == null || amount <= 0) {
+      _showMessage('finance.savingGoal.enterAmount'.tr);
+      return;
+    }
+
+    if (selectedDate == null) {
+      _showMessage('finance.savingGoal.selectDateError'.tr);
+      return;
+    }
+
+    final Map<String, dynamic> goal = {
+      'title': title,
+      'targetAmount': amount,
+      'targetDate': selectedDate,
+      'savedAmount': 0.0,
+    };
+
+    Navigator.pop(context, goal);
+  }
+
+  // ==========================================================
+  // MESSAGE
+  // ==========================================================
+
+  void _showMessage(String message) {
+    Get.snackbar(
+      'finance.savingGoal.validationError'.tr,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(16),
+    );
+  }
+
+  // ==========================================================
+  // BUILD
+  // ==========================================================
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
 
-    final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-    final surface = isDark
+    // ========================================================
+    // COLORS
+    // ========================================================
+
+    final Color bg = isDark
+        ? AppColors.darkBgPrimary
+        : AppColors.lightBgPrimary;
+
+    final Color surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
-    final textPrimary = isDark
+
+    final Color textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
-    final textSecondary = isDark
+
+    final Color textSecondary = isDark
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
-    final textMuted = isDark
+
+    final Color textMuted = isDark
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
-    final textInverse = isDark
-        ? AppColors.darkTextInverse
-        : AppColors.lightTextInverse;
-    final border = isDark
+
+    final Color border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
-    final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
+
+    final Color primary = isDark
+        ? AppColors.darkPrimary
+        : AppColors.lightPrimary;
+
+    final Color inverseText = isDark
+        ? AppColors.darkTextInverse
+        : AppColors.lightTextInverse;
+
+    // ========================================================
+    // TEXT
+    // ========================================================
+
+    final String screenTitle = 'finance.savingGoal.create'.tr;
+
+    final String goalTitleLabel = 'finance.savingGoal.title'.tr;
+
+    final String goalTitleHint = 'finance.savingGoal.titleHint'.tr;
+
+    final String targetAmountLabel = 'finance.savingGoal.targetAmount'.tr;
+
+    final String targetAmountHint = '0';
+
+    final String currencySymbol = '\$';
+
+    final String targetDateLabel = 'finance.savingGoal.targetDate'.tr;
+
+    final String monthlyPlanTitle = 'finance.savingGoal.monthlyPlan'.tr;
+
+    final String monthlyPlanSubtitle =
+        'finance.savingGoal.recommendedAmount'.tr;
+
+    final String savingTipText =
+        selectedDate == null || _amountController.text.isEmpty
+        ? 'finance.savingGoal.setAmountAndDate'.tr
+        : 'finance.savingGoal.saveApproximately'.tr
+              .replaceFirst('{amount}', _monthlySaving())
+              .replaceFirst('{date}', _formatDate(selectedDate));
+
+    final String createButtonText = 'finance.savingGoal.createButton'.tr;
+
+    // ========================================================
+    // SCREEN
+    // ========================================================
 
     return Scaffold(
       backgroundColor: bg,
+
       body: SafeArea(
         child: Column(
           children: [
-            // ── Header ──
+            // ==================================================
+            // HEADER
+            // ==================================================
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: textPrimary,
-                      size: 20,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 40,
-                      minHeight: 40,
-                    ),
+                  CreateGoalBackButton(
+                    background: surface,
+                    iconColor: textPrimary,
+                    borderColor: border,
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'New Goal',
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
+
+                  const SizedBox(width: 13),
+
+                  Expanded(
+                    child: Text(
+                      screenTitle,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
 
+            // ==================================================
+            // CONTENT
+            // ==================================================
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 30),
+
+                padding: const EdgeInsets.fromLTRB(18, 22, 18, 36),
+
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+
                   children: [
-                    // ── Goal Title ──
-                    Text(
-                      'Goal Title',
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
+                    // ==================================================
+                    // TITLE
+                    // ==================================================
+                    CreateGoalTitleField(
+                      label: goalTitleLabel,
+                      hintText: goalTitleHint,
                       controller: _titleController,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'e.g. Emergency Fund',
-                        hintStyle: TextStyle(color: textMuted, fontSize: 14),
-                        filled: true,
-                        fillColor: surface,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 14,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: border),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: border),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: primary, width: 1.2),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // ── Target Amount ──
-                    Center(
-                      child: Column(
-                        children: [
-                          Text(
-                            'TARGET AMOUNT',
-                            style: TextStyle(
-                              color: textMuted,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.6,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Text(
-                                  '\$',
-                                  style: TextStyle(
-                                    color: textMuted,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              IntrinsicWidth(
-                                child: TextField(
-                                  controller: _amountController,
-                                  keyboardType: TextInputType.number,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: textPrimary,
-                                    fontSize: 40,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: -1,
-                                  ),
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Container(
-                            width: 48,
-                            height: 3,
-                            decoration: BoxDecoration(
-                              color: AppColors.financeAccent,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // ── Target Date ──
-                    Text(
-                      'Target Date',
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: border),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.calendar_today_outlined,
-                            size: 18,
-                            color: textMuted,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Dec 31, 2026',
-                            style: TextStyle(
-                              color: textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // ── Purpose ──
-                    Text(
-                      'Purpose',
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: List.generate(purposes.length, (i) {
-                        final selected = selectedPurpose == i;
-                        return GestureDetector(
-                          onTap: () => setState(() => selectedPurpose = i),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 9,
-                            ),
-                            decoration: BoxDecoration(
-                              color: selected
-                                  ? AppColors.financeAccent
-                                  : surface,
-                              borderRadius: BorderRadius.circular(20),
-                              border: selected
-                                  ? null
-                                  : Border.all(color: border),
-                            ),
-                            child: Text(
-                              purposes[i],
-                              style: TextStyle(
-                                color: selected ? Colors.white : textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // ── Savings Tip ──
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.financeAccent.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: AppColors.financeAccent.withValues(
-                            alpha: 0.25,
-                          ),
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.lightbulb_outline_rounded,
-                            size: 20,
-                            color: AppColors.financeAccent,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Auto-save \$250/month to hit your goal by December. Small, consistent steps build wealth over time.',
-                              style: TextStyle(
-                                color: textSecondary,
-                                fontSize: 12,
-                                height: 1.4,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      textColor: textPrimary,
+                      hintColor: textMuted,
+                      surfaceColor: surface,
+                      borderColor: border,
+                      focusedColor: primary,
                     ),
 
                     const SizedBox(height: 28),
 
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primary,
-                          foregroundColor: textInverse,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text(
-                          'Create Saving Goal',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                    // ==================================================
+                    // AMOUNT
+                    // ==================================================
+                    CreateGoalAmountSection(
+                      label: targetAmountLabel,
+                      hintText: targetAmountHint,
+                      currencySymbol: currencySymbol,
+                      controller: _amountController,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                      onChanged: () {
+                        setState(() {});
+                      },
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    // ==================================================
+                    // DATE
+                    // ==================================================
+                    CreateGoalDateSelector(
+                      label: targetDateLabel,
+                      date: _formatDate(selectedDate),
+                      selected: selectedDate != null,
+                      surface: surface,
+                      border: border,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                      onTap: _selectDate,
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    // ==================================================
+                    // MONTHLY PLAN
+                    // ==================================================
+                    CreateGoalMonthlyPlan(
+                      title: monthlyPlanTitle,
+                      subtitle: monthlyPlanSubtitle,
+                      monthlySaving: _monthlySaving(),
+                      surface: surface,
+                      border: border,
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ==================================================
+                    // TIP
+                    // ==================================================
+                    CreateGoalSavingTip(
+                      message: savingTipText,
+                      textSecondary: textSecondary,
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    // ==================================================
+                    // CREATE BUTTON
+                    // ==================================================
+                    CreateGoalButton(
+                      text: createButtonText,
+                      background: primary,
+                      foreground: inverseText,
+                      onTap: _createGoal,
                     ),
 
                     const SizedBox(height: 40),

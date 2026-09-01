@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_widget.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_add_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_detail_screen.dart';
@@ -16,16 +14,12 @@ class ExpenseScreen extends StatefulWidget {
 }
 
 class _ExpenseScreenState extends State<ExpenseScreen> {
-  int selectedPeriod = 2; // 0 = Today, 1 = Week, 2 = Month
+  int selectedPeriod = 2;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-
-    // =======================================================================
-    // THEME COLORS
-    // =======================================================================
 
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
 
@@ -66,49 +60,39 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 30),
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 36),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // =================================================================
+              // ===============================================================
               // HEADER
-              // =================================================================
+              // ===============================================================
               Row(
                 children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: textPrimary,
-                      size: 20,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 40,
-                      minHeight: 40,
-                    ),
+                  ExpenseBackButton(
+                    background: surface,
+                    iconColor: textPrimary,
+                    borderColor: border,
+                    onTap: () => Navigator.pop(context),
                   ),
 
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
 
                   Expanded(
                     child: Text(
                       'finance.expense.title'.tr,
                       style: TextStyle(
                         color: textPrimary,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.7,
                       ),
                     ),
                   ),
 
-                  // -------------------------------------------------------------
-                  // ADD EXPENSE
-                  // -------------------------------------------------------------
-                  GestureDetector(
+                  ExpenseAddButton(
+                    background: primaryColor,
+                    iconColor: inverseText,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -117,201 +101,225 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                         ),
                       );
                     },
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: primaryColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.add_rounded,
-                        color: inverseText,
-                        size: 23,
-                      ),
-                    ),
                   ),
                 ],
               ),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 24),
 
-              // =================================================================
+              // ===============================================================
               // PERIOD SELECTOR
-              // =================================================================
-              Row(
-                children: [
-                  Expanded(
-                    child: PeriodButton(
-                      title: 'finance.expense.today'.tr,
-                      selected: selectedPeriod == 0,
-                      onTap: () {
-                        setState(() {
-                          selectedPeriod = 0;
-                        });
-                      },
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
-                      selectedColor: primaryColor,
-                      selectedTextColor: inverseText,
-                      borderColor: border,
-                      backgroundColor: surfaceSecondary,
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  Expanded(
-                    child: PeriodButton(
-                      title: 'finance.expense.week'.tr,
-                      selected: selectedPeriod == 1,
-                      onTap: () {
-                        setState(() {
-                          selectedPeriod = 1;
-                        });
-                      },
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
-                      selectedColor: primaryColor,
-                      selectedTextColor: inverseText,
-                      borderColor: border,
-                      backgroundColor: surfaceSecondary,
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  Expanded(
-                    child: PeriodButton(
-                      title: 'finance.expense.month'.tr,
-                      selected: selectedPeriod == 2,
-                      onTap: () {
-                        setState(() {
-                          selectedPeriod = 2;
-                        });
-                      },
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
-                      selectedColor: primaryColor,
-                      selectedTextColor: inverseText,
-                      borderColor: border,
-                      backgroundColor: surfaceSecondary,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // =================================================================
-              // TOTAL SPENT CARD
-              // =================================================================
-              SurfaceCard(
-                color: surface,
-                borderColor: border,
-                padding: const EdgeInsets.all(18),
-                child: Row(
+              // ===============================================================
+              Container(
+                height: 48,
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: surface,
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: border, width: 1),
+                ),
+                child: Stack(
                   children: [
-                    ExpenseDonut(
-                      size: 82,
-                      strokeWidth: 9,
-                      backgroundColor: surfaceSecondary,
-                      segments: const [
-                        DonutSegment(value: .40, color: AppColors.growthAccent),
-                        DonutSegment(value: .25, color: AppColors.brandPrimary),
-                        DonutSegment(
-                          value: .20,
-                          color: AppColors.financeAccent,
+                    // =========================================================
+                    // SLIDING SELECTED BACKGROUND
+                    // =========================================================
+                    AnimatedAlign(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      alignment: selectedPeriod == 0
+                          ? Alignment.centerLeft
+                          : selectedPeriod == 1
+                          ? Alignment.center
+                          : Alignment.centerRight,
+                      child: FractionallySizedBox(
+                        widthFactor: 1 / 3,
+                        heightFactor: 1,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: primaryColor,
+                            borderRadius: BorderRadius.circular(11),
+                          ),
                         ),
-                        DonutSegment(
-                          value: .15,
-                          color: AppColors.profileAccent,
+                      ),
+                    ),
+
+                    // =========================================================
+                    // BUTTONS
+                    // =========================================================
+                    Row(
+                      children: [
+                        PeriodButton(
+                          title: 'finance.expense.today'.tr,
+                          selected: selectedPeriod == 0,
+                          onTap: () {
+                            setState(() {
+                              selectedPeriod = 0;
+                            });
+                          },
+                          textMuted: textMuted,
+                          selectedColor: primaryColor,
+                          selectedTextColor: inverseText,
+                        ),
+
+                        PeriodButton(
+                          title: 'finance.expense.week'.tr,
+                          selected: selectedPeriod == 1,
+                          onTap: () {
+                            setState(() {
+                              selectedPeriod = 1;
+                            });
+                          },
+                          textMuted: textMuted,
+                          selectedColor: primaryColor,
+                          selectedTextColor: inverseText,
+                        ),
+
+                        PeriodButton(
+                          title: 'finance.expense.month'.tr,
+                          selected: selectedPeriod == 2,
+                          onTap: () {
+                            setState(() {
+                              selectedPeriod = 2;
+                            });
+                          },
+                          textMuted: textMuted,
+                          selectedColor: primaryColor,
+                          selectedTextColor: inverseText,
                         ),
                       ],
-                    ),
-
-                    const SizedBox(width: 20),
-
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'finance.expense.totalSpent'.tr,
-                            style: TextStyle(
-                              color: textMuted,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-
-                          const SizedBox(height: 4),
-
-                          Text(
-                            '\$642',
-                            style: TextStyle(
-                              color: textPrimary,
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-
-                          const SizedBox(height: 7),
-
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.success.withValues(alpha: .10),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'finance.expense.onTrack'.tr,
-                              style: const TextStyle(
-                                color: AppColors.success,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 14),
+              const SizedBox(height: 18),
 
-              // =================================================================
-              // CATEGORY BREAKDOWN
-              // =================================================================
+              // ===============================================================
+              // SPENDING OVERVIEW
+              // ===============================================================
               SurfaceCard(
                 color: surface,
                 borderColor: border,
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+                padding: const EdgeInsets.all(18),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'finance.expense.categoryBreakdown'.tr,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        ExpenseDonut(
+                          size: 92,
+                          strokeWidth: 10,
+                          backgroundColor: surfaceSecondary,
+                          segments: const [
+                            DonutSegment(
+                              value: .40,
+                              color: AppColors.growthAccent,
+                            ),
+                            DonutSegment(
+                              value: .25,
+                              color: AppColors.brandPrimary,
+                            ),
+                            DonutSegment(
+                              value: .20,
+                              color: AppColors.financeAccent,
+                            ),
+                            DonutSegment(
+                              value: .15,
+                              color: AppColors.profileAccent,
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(width: 20),
+
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'finance.expense.totalSpent'.tr,
+                                style: TextStyle(
+                                  color: textMuted,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+
+                              const SizedBox(height: 3),
+
+                              Text(
+                                '\$642',
+                                style: TextStyle(
+                                  color: textPrimary,
+                                  fontSize: 31,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -1,
+                                ),
+                              ),
+
+                              const SizedBox(height: 5),
+
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.trending_down_rounded,
+                                    color: AppColors.success,
+                                    size: 15,
+                                  ),
+
+                                  const SizedBox(width: 4),
+
+                                  const Text(
+                                    '8.4% from last month',
+                                    style: TextStyle(
+                                      color: AppColors.success,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
 
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 18),
 
-                    // -----------------------------------------------------------
-                    // FOOD & DRINK
-                    // -----------------------------------------------------------
+                    SpendingStatus(
+                      title: 'finance.expense.onTrack'.tr,
+                      remaining: '\$158 left',
+                      color: AppColors.success,
+                      background: AppColors.success.withValues(alpha: .08),
+                      textMuted: textMuted,
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
+              // ===============================================================
+              // CATEGORY BREAKDOWN
+              // ===============================================================
+              ExpenseSectionHeader(
+                title: 'finance.expense.categoryBreakdown'.tr,
+                subtitle: 'finance.expense.thismonth'.tr,
+                textPrimary: textPrimary,
+                textMuted: textMuted,
+              ),
+
+              const SizedBox(height: 10),
+
+              SurfaceCard(
+                color: surface,
+                borderColor: border,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                child: Column(
+                  children: [
                     CategoryRow(
-                      title: 'finance.expense.foodDrink'.tr,
+                      title: 'finance.expense.food'.tr,
                       amount: '\$255 / \$300',
                       percent: '85%',
                       progress: .85,
@@ -322,9 +330,6 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       backgroundColor: surfaceSecondary,
                     ),
 
-                    // -----------------------------------------------------------
-                    // TRANSPORT
-                    // -----------------------------------------------------------
                     CategoryRow(
                       title: 'finance.expense.transport'.tr,
                       amount: '\$138 / \$150',
@@ -337,9 +342,6 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       backgroundColor: surfaceSecondary,
                     ),
 
-                    // -----------------------------------------------------------
-                    // STUDY
-                    // -----------------------------------------------------------
                     CategoryRow(
                       title: 'finance.expense.study'.tr,
                       amount: '\$51 / \$150',
@@ -352,9 +354,6 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       backgroundColor: surfaceSecondary,
                     ),
 
-                    // -----------------------------------------------------------
-                    // BILLS
-                    // -----------------------------------------------------------
                     CategoryRow(
                       title: 'finance.expense.bills'.tr,
                       amount: '\$36 / \$300',
@@ -371,158 +370,184 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                 ),
               ),
 
-              const SizedBox(height: 14),
+              const SizedBox(height: 22),
 
-              // =================================================================
+              // ===============================================================
               // RECENT EXPENSES
-              // =================================================================
+              // ===============================================================
+              ExpenseSectionHeader(
+                title: 'finance.expense.recentExpenses'.tr,
+                textPrimary: textPrimary,
+                textMuted: textMuted,
+                action: 'finance.expense.seeAll'.tr,
+                onAction: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ExpenseHistoryScreen(),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 10),
+
+              // ===============================================================
+              // EXPENSE LIST
+              // ===============================================================
               SurfaceCard(
                 color: surface,
                 borderColor: border,
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // -----------------------------------------------------------
-                    // TITLE + SEE ALL
-                    // -----------------------------------------------------------
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'finance.expense.recentExpenses'.tr,
-                          style: TextStyle(
-                            color: textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ExpenseHistoryScreen(),
-                              ),
-                            );
-                          },
-                          child: Text(
-                            'finance.expense.seeAll'.tr,
-                            style: TextStyle(
-                              color: textMuted,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // ===========================================================
-                    // GRAB FOOD
-                    // ===========================================================
-                    GestureDetector(
+                    ExpenseItem(
+                      icon: Icons.restaurant_outlined,
+                      iconColor: AppColors.growthAccent,
+                      title: 'Grab Food',
+                      subtitle: 'Today · 12:30 PM · Food & Drink',
+                      amount: '-\$8.50',
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
                       onTap: () {
-                        Navigator.push(
+                        _openDetail(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const ExpenseDetailScreen(),
-                          ),
+                          title: 'Grab Food',
+                          subtitle: 'Today · 12:30 PM · Food & Drink',
+                          amount: '-\$8.50',
+                          category: 'Food & Drink',
+                          date: 'Jun 28, 2026',
+                          time: '12:30 PM',
+                          payment: 'Cash',
+                          note: 'Dinner from Grab Food.',
+                          icon: Icons.restaurant_outlined,
+                          iconColor: AppColors.growthAccent,
                         );
                       },
-                      child: ExpenseItem(
-                        icon: Icons.receipt_long_outlined,
-                        title: 'finance.expense.grabFood'.tr,
-                        subtitle:
-                            '${'finance.expense.today'.tr} · 12:30 PM · ${'finance.expense.foodDrink'.tr}',
-                        amount: '-\$8.50',
-                        iconColor: textMuted,
-                        textPrimary: textPrimary,
-                        textMuted: textMuted,
-                      ),
                     ),
 
-                    // ===========================================================
-                    // BUS PASS
-                    // ===========================================================
-                    GestureDetector(
+                    ExpenseItem(
+                      icon: Icons.directions_bus_outlined,
+                      iconColor: AppColors.brandPrimary,
+                      title: 'Bus Pass',
+                      subtitle: 'Today · 8:00 AM · Transport',
+                      amount: '-\$1.25',
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
                       onTap: () {
-                        Navigator.push(
+                        _openDetail(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const ExpenseDetailScreen(),
-                          ),
+                          title: 'Bus Pass',
+                          subtitle: 'Today · 8:00 AM · Transport',
+                          amount: '-\$1.25',
+                          category: 'Transport',
+                          date: 'Jun 28, 2026',
+                          time: '8:00 AM',
+                          payment: 'Cash',
+                          note: 'Morning bus pass.',
+                          icon: Icons.directions_bus_outlined,
+                          iconColor: AppColors.brandPrimary,
                         );
                       },
-                      child: ExpenseItem(
-                        icon: Icons.directions_bus_outlined,
-                        title: 'finance.expense.busPass'.tr,
-                        subtitle:
-                            '${'finance.expense.today'.tr} · 8:00 AM · ${'finance.expense.transport'.tr}',
-                        amount: '-\$1.25',
-                        iconColor: textMuted,
-                        textPrimary: textPrimary,
-                        textMuted: textMuted,
-                      ),
                     ),
 
-                    // ===========================================================
-                    // TEXTBOOKS
-                    // ===========================================================
-                    GestureDetector(
+                    ExpenseItem(
+                      icon: Icons.menu_book_outlined,
+                      iconColor: AppColors.productivityAccent,
+                      title: 'Textbooks',
+                      subtitle: 'Yesterday · Study',
+                      amount: '-\$45.00',
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
                       onTap: () {
-                        Navigator.push(
+                        _openDetail(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const ExpenseDetailScreen(),
-                          ),
+                          title: 'Textbooks',
+                          subtitle: 'Yesterday · Study',
+                          amount: '-\$45.00',
+                          category: 'Study',
+                          date: 'Jun 27, 2026',
+                          time: '3:20 PM',
+                          payment: 'Cash',
+                          note: 'University textbooks.',
+                          icon: Icons.menu_book_outlined,
+                          iconColor: AppColors.productivityAccent,
                         );
                       },
-                      child: ExpenseItem(
-                        icon: Icons.menu_book_outlined,
-                        title: 'finance.expense.textbooks'.tr,
-                        subtitle:
-                            '${'finance.expense.yesterday'.tr} · ${'finance.expense.study'.tr}',
-                        amount: '-\$45.00',
-                        iconColor: textMuted,
-                        textPrimary: textPrimary,
-                        textMuted: textMuted,
-                      ),
                     ),
 
-                    // ===========================================================
-                    // ELECTRICITY
-                    // ===========================================================
-                    GestureDetector(
+                    ExpenseItem(
+                      icon: Icons.bolt_outlined,
+                      iconColor: AppColors.financeAccent,
+                      title: 'Electricity',
+                      subtitle: 'Jun 1 · Bills',
+                      amount: '-\$36.00',
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                      showDivider: false,
                       onTap: () {
-                        Navigator.push(
+                        _openDetail(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const ExpenseDetailScreen(),
-                          ),
+                          title: 'Electricity',
+                          subtitle: 'Jun 1 · Bills',
+                          amount: '-\$36.00',
+                          category: 'Bills',
+                          date: 'Jun 1, 2026',
+                          time: '9:00 AM',
+                          payment: 'Bank',
+                          note: 'Monthly electricity bill.',
+                          icon: Icons.bolt_outlined,
+                          iconColor: AppColors.financeAccent,
                         );
                       },
-                      child: ExpenseItem(
-                        icon: Icons.bolt_outlined,
-                        title: 'finance.expense.electricity'.tr,
-                        subtitle: 'Jun 1 · ${'finance.expense.bills'.tr}',
-                        amount: '-\$36.00',
-                        iconColor: textMuted,
-                        textPrimary: textPrimary,
-                        textMuted: textMuted,
-                        showDivider: false,
-                      ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 70),
+              const SizedBox(height: 30),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // OPEN EXPENSE DETAIL
+  // ===========================================================================
+
+  void _openDetail(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required String amount,
+    required String category,
+    required String date,
+    required String time,
+    required String payment,
+    required String note,
+    required IconData icon,
+    required Color iconColor,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ExpenseDetailScreen(
+          title: title,
+          subtitle: subtitle,
+          amount: amount,
+          category: category,
+          date: date,
+          time: time,
+          payment: payment,
+          note: note,
+          icon: icon,
+          iconColor: iconColor,
+          iconBackground: iconColor.withValues(alpha: .12),
         ),
       ),
     );

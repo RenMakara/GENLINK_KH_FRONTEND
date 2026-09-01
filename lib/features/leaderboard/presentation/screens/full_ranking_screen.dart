@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../controllers/leaderboard_controller.dart';
 import '../../domain/models/leaderboard_models.dart';
 import '../../../quiz/presentation/quiz_colors.dart';
@@ -15,13 +17,18 @@ class FullRankingScreen extends GetView<LeaderboardController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
-          onPressed: () => Get.back(),
+        leading: const Padding(
+          padding: EdgeInsets.only(left: AppSpacing.md),
+          child: Center(child: AppBackButton()),
         ),
+        leadingWidth: 74,
         title: const Text(
           'Global Ranking',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: QuizColors.heading),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: QuizColors.heading,
+          ),
         ),
       ),
       body: Obx(() {
@@ -83,14 +90,21 @@ class FullRankingScreen extends GetView<LeaderboardController> {
                       if (isMe) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: QuizColors.primary,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Text(
                             'YOU',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ],
@@ -101,13 +115,23 @@ class FullRankingScreen extends GetView<LeaderboardController> {
                     children: [
                       Text(
                         '${user.xp} XP',
-                        style: const TextStyle(fontSize: 12, color: QuizColors.body),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: QuizColors.body,
+                        ),
                       ),
                       const SizedBox(width: 8),
-                      Icon(Icons.star, color: QuizColors.gold.withOpacity(0.7), size: 12),
+                      Icon(
+                        Icons.star,
+                        color: QuizColors.gold.withOpacity(0.7),
+                        size: 12,
+                      ),
                       Text(
                         '${user.badges}',
-                        style: const TextStyle(fontSize: 12, color: QuizColors.body),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: QuizColors.body,
+                        ),
                       ),
                     ],
                   ),
@@ -129,21 +153,37 @@ class FullRankingScreen extends GetView<LeaderboardController> {
     if (rank == 1) {
       bg = const Color(0xFFFFF7E0);
       textColor = const Color(0xFFFFA000);
-      child = const Icon(Icons.emoji_events, size: 18, color: Color(0xFFFFA000));
+      child = const Icon(
+        Icons.emoji_events,
+        size: 18,
+        color: Color(0xFFFFA000),
+      );
     } else if (rank == 2) {
       bg = const Color(0xFFF3F4F6);
       textColor = const Color(0xFF9CA3AF);
-      child = const Icon(Icons.workspace_premium, size: 18, color: Color(0xFF9CA3AF));
+      child = const Icon(
+        Icons.workspace_premium,
+        size: 18,
+        color: Color(0xFF9CA3AF),
+      );
     } else if (rank == 3) {
       bg = const Color(0xFFFFF3E0);
       textColor = const Color(0xFFD97706);
-      child = const Icon(Icons.military_tech, size: 18, color: Color(0xFFD97706));
+      child = const Icon(
+        Icons.military_tech,
+        size: 18,
+        color: Color(0xFFD97706),
+      );
     } else {
       bg = isMe ? QuizColors.primary : QuizColors.border;
       textColor = isMe ? Colors.white : QuizColors.body;
       child = Text(
         '$rank',
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textColor),
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: textColor,
+        ),
       );
     }
 

@@ -9,13 +9,13 @@ class ChatRemoteDataSource {
   ChatRemoteDataSource({required this.dio});
 
   Future<List<ChatConversationModel>> fetchConversations() async {
-    final response = await guardDio(
-      () => dio.get<dynamic>(ApiEndpoints.chats),
-    );
+    final response = await guardDio(() => dio.get<dynamic>(ApiEndpoints.chats));
     final content = _contentOf(response.data);
     return content
-        .map((json) =>
-            ChatConversationModel.fromJson(json.cast<String, dynamic>()))
+        .map(
+          (json) =>
+              ChatConversationModel.fromJson(json.cast<String, dynamic>()),
+        )
         .toList();
   }
 
@@ -25,10 +25,12 @@ class ChatRemoteDataSource {
     );
     final content = _contentOf(response.data);
     return content
-        .map((json) => ChatMessageModel.fromJson(
-              json.cast<String, dynamic>(),
-              conversationId: conversationId,
-            ))
+        .map(
+          (json) => ChatMessageModel.fromJson(
+            json.cast<String, dynamic>(),
+            conversationId: conversationId,
+          ),
+        )
         .toList();
   }
 
@@ -49,10 +51,7 @@ class ChatRemoteDataSource {
       ),
     );
     final data = _dataOf(response.data);
-    return ChatMessageModel.fromJson(
-      data,
-      conversationId: conversationId,
-    );
+    return ChatMessageModel.fromJson(data, conversationId: conversationId);
   }
 
   Future<bool> markConversationRead(String conversationId) async {

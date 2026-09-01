@@ -5,7 +5,8 @@ import '../../domain/entities/media_entity.dart';
 /// Kept separate from the entities so a backend rename never reaches the UI.
 abstract final class MediaMapper {
   static PresignedUpload presignFrom(Map<String, dynamic> json) {
-    final headers = (json['requiredHeaders'] as Map?)?.cast<String, dynamic>() ??
+    final headers =
+        (json['requiredHeaders'] as Map?)?.cast<String, dynamic>() ??
         const <String, dynamic>{};
     return PresignedUpload(
       mediaId: json['mediaId'] as String? ?? '',
@@ -17,14 +18,14 @@ abstract final class MediaMapper {
   }
 
   static MediaEntity mediaFrom(Map<String, dynamic> json) => MediaEntity(
-        mediaId: json['mediaId'] as String? ?? '',
-        url: json['url'] as String? ?? '',
-        contentType: json['contentType'] as String? ?? '',
-        sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
-        checksumSha256: json['checksumSha256'] as String?,
-        width: (json['width'] as num?)?.toInt(),
-        height: (json['height'] as num?)?.toInt(),
-        durationMs: (json['durationMs'] as num?)?.toInt(),
-        uploadedAt: DateTime.tryParse(json['uploadedAt'] as String? ?? ''),
-      );
+    mediaId: json['mediaId'] as String? ?? '',
+    url: json['url'] as String? ?? '',
+    contentType: json['contentType'] as String? ?? '',
+    sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
+    checksumSha256: json['checksumSha256'] as String?,
+    width: (json['width'] as num?)?.toInt(),
+    height: (json['height'] as num?)?.toInt(),
+    durationMs: (json['durationMs'] as num?)?.toInt(),
+    uploadedAt: DateTime.tryParse(json['uploadedAt'] as String? ?? ''),
+  );
 }

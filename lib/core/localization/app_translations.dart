@@ -28,6 +28,8 @@ class AppTranslations extends Translations {
     'common.done': 'Done',
     'common.delete': 'Delete',
     'common.edit': 'Edit',
+    'common.show': 'Show',
+    'common.hide': 'Hide',
     'common.loading': 'Loading…',
     'common.loadingShort': 'Loading',
     'common.error': 'Something went wrong',
@@ -67,6 +69,12 @@ class AppTranslations extends Translations {
 
     // ── Auth ────────────────────────────────────────────────────────────
     'auth.login': 'Log in',
+    'auth.welcomeTo': 'Welcome to',
+    'auth.choiceSubtitle':
+        "Cambodia's digital passport for the next generation of youth.",
+    'auth.continueWithMail': 'Continue with Mail',
+    'auth.encryptedNotice':
+        'Your data is encrypted and never shared without consent.',
     'auth.loginTitle': 'Welcome back',
     'auth.loginSubtitle': 'Log in to continue where you left off.',
     'auth.register': 'Create account',
@@ -91,9 +99,9 @@ class AppTranslations extends Translations {
     'auth.resetPassword': 'Reset password',
     'auth.createAccount': 'Create Account',
     'auth.verifyEmail': 'Verify Email',
-    'auth.fullNameHint': 'Ren Makara',
-    'auth.usernameHint': 'ragangster008',
-    'auth.emailHint': 'makara.it@email.com',
+    'auth.fullNameHint': 'Sok Kha',
+    'auth.usernameHint': 'username123',
+    'auth.emailHint': 'example@email.com',
     'auth.passwordHint': 'Enter password',
     'auth.verifySentTo': 'We sent a 6-digit code to',
     'auth.resendCodeIn': 'Resend code in',
@@ -103,6 +111,11 @@ class AppTranslations extends Translations {
     'auth.verifyTitle': 'Verify your email',
     'auth.verifySubtitle': 'We sent a 6-digit code to @email.',
     'auth.otpCode': 'Verification code',
+    'auth.otpEmptyDigit': 'OTP digit @position, empty',
+    'auth.otpEnteredDigit': 'OTP digit @position: @digit',
+    'auth.otpSymbol': 'Symbol unavailable',
+    'auth.otpHelp':
+        "Didn't receive it? Check your spam folder or try a different email address.",
     'auth.verify': 'Verify',
     'auth.resendCode': 'Resend code',
     'auth.resendIn': 'Resend in @seconds s',
@@ -112,6 +125,7 @@ class AppTranslations extends Translations {
     'auth.noAccount': "Don't have an account?",
     'auth.logout': 'Log out',
     'auth.logoutConfirm': 'Log out of GenLink KH?',
+    'auth.switchAccount': 'Switch account',
     'auth.invalidEmail': 'Enter a valid email address',
     'auth.passwordTooShort': 'Password must be at least 8 characters',
     'auth.passwordsDoNotMatch': 'Passwords do not match',
@@ -123,6 +137,7 @@ class AppTranslations extends Translations {
     // ── Navigation ──────────────────────────────────────────────────────
     'nav.home': 'Home',
     'nav.community': 'Community',
+    'nav.create': 'Create',
     'nav.financial': 'Financial',
     'nav.profile': 'Profile',
 
@@ -237,6 +252,21 @@ class AppTranslations extends Translations {
     'profile.achievements': 'Achievements',
     'profile.coreExpertise': 'Core Expertise',
     'profile.savedContent': 'Saved Content',
+    'profile.viewAll': 'View all',
+    'profile.careerPath': 'Career Path',
+    'profile.currentTrack': 'Current track',
+    'profile.editCareer': 'Edit Career Profile',
+    'profile.noCareerDetails': 'Add your career path',
+    'profile.publicProfile': 'Public profile',
+    'profile.professionalBio': 'Professional Bio',
+    'profile.coreCompetencies': 'Core Competencies',
+    'profile.portfolioPreview': 'Portfolio Preview',
+    'profile.careerInterests': 'Career Interests',
+    'profile.connect': 'Connect',
+    'profile.shareProfile': 'Share Profile',
+    'profile.shareCopied': 'Profile handle copied',
+    'profile.connectUnavailable': 'Connections are not available yet.',
+    'profile.projects': 'Projects',
     'profile.emptySaved': 'Nothing saved yet',
     'profile.savedUnavailable': 'No longer available',
     'profile.displayName': 'Display Name',
@@ -250,6 +280,8 @@ class AppTranslations extends Translations {
     'profile.chooseFromGallery': 'Choose from gallery',
     'profile.takePhoto': 'Take a photo',
     'profile.updated': 'Profile updated',
+    'profile.viewAvatar': 'View profile picture',
+    'profile.changeAvatar': 'Change profile picture',
     'profile.addPortfolio': 'Add item',
     'profile.portfolioTitle': 'Title',
     'profile.portfolioDescription': 'Description',
@@ -310,6 +342,19 @@ class AppTranslations extends Translations {
         'Pick the topics you care about — they personalise your feed and '
         'suggestions.',
     'interests.saveCount': 'Save @count interests',
+    'interests.title': 'My Expertise',
+    'interests.subtitle':
+        'Shape your profile by adding your professional skills and personal interests.',
+    'interests.searchHint': 'Search skills and interests…',
+    'interests.add': 'ADD',
+    'interests.technicalSkills': 'Technical Skills',
+    'interests.selectedCount': '@count SELECTED',
+    'interests.coreInterests': 'Core Interests',
+    'interests.suggested': 'Suggested for you',
+    'interests.selectionProgress': '@count / @max selections made',
+    'interests.saveContinue': 'Save & Continue',
+    'interests.limit': 'Choose up to @max interests.',
+    'interests.noResults': 'No matching interests found.',
     'settings.accountSettings': 'Account Settings',
     'settings.accountSettingsHint': 'Email, username, phone',
     'settings.preferences': 'Preferences',
@@ -343,6 +388,12 @@ class AppTranslations extends Translations {
     'settings.languageKhmer': 'ភាសាខ្មែរ',
     'settings.notifications': 'Notifications',
     'settings.notificationsEnabled': 'Enable notifications',
+    'settings.interface': 'Interface',
+    'settings.interfaceHint': 'Customize your navigation and effects',
+    'settings.glassmorphism': 'Glassmorphism Effects',
+    'settings.glassmorphismHint': 'Enable blur and transparency',
+    'settings.dynamicIslands': 'Dynamic Islands',
+    'settings.dynamicIslandsHint': 'Animated header interactions',
     // ── Notification Screen ──────────────────────────────────────────────
     'notification.title': 'Notifications',
     'notification.markAllRead': 'Mark all read',
@@ -574,44 +625,114 @@ class AppTranslations extends Translations {
     'finance.transaction.mobile': 'Mobile',
     'finance.transaction.mall': 'Mall',
 
-    // ── Expense ───────────────────────────────────────────────────────────
+    // ── Expense Screen ────────────────────────────────────────────────────
     'finance.expense.title': 'Expenses',
+    'finance.expense.today': 'Today',
+    'finance.expense.week': 'Week',
+    'finance.expense.month': 'Month',
+    'finance.expense.totalSpent': 'Total Spent',
+    'finance.expense.onTrack': 'On Track',
+    'finance.expense.categoryBreakdown': 'Category Breakdown',
+    'finance.expense.recentExpenses': 'Recent Expenses',
+    'finance.expense.seeAll': 'See All',
+    'finance.expense.thismonth': 'This Month',
+
+    'finance.expense.all': 'All',
+    'finance.expense.food': 'Food & Drinks',
+    'finance.expense.transport': 'Transport',
+    'finance.expense.study': 'Study',
+    'finance.expense.bills': 'Bills',
+    'finance.expense.health': 'Health',
+    'finance.expense.other': 'Other',
+
+    // ── Add Expense Screen ────────────────────────────────────────────────
     'finance.expense.add': 'Add Expense',
-    'finance.expense.edit': 'Edit Expense',
-    'finance.expense.delete': 'Delete Expense',
-    'finance.expense.details': 'Expense Details',
+    'finance.expense.trackSpending': 'Keep track of your spending',
+
     'finance.expense.amount': 'Amount',
-    'finance.expense.category': 'Category',
+
     'finance.expense.description': 'Description',
-    'finance.expense.date': 'Date',
-    'finance.expense.time': 'Time',
-    'finance.expense.paymentMethod': 'Payment Method',
+    'finance.expense.descriptionHelper': 'What did you spend on?',
+    'finance.expense.titleHint': 'Enter expense description...',
+
+    'finance.expense.category': 'Category',
+    'finance.expense.categoryHelper': 'Choose a category',
+
     'finance.expense.note': 'Note',
+    'finance.expense.optional': 'Optional',
     'finance.expense.noteHint': 'Add a note...',
+
+    'finance.expense.date': 'Date',
+    'finance.expense.dateHelper': 'When did it happen?',
+    'finance.expense.expenseDate': 'Expense date',
+
+    'finance.expense.paymentMethod': 'Payment Method',
+    'finance.expense.paymentHelper': 'How did you pay?',
+
     'finance.expense.save': 'Save Expense',
-    'finance.expense.update': 'Update Expense',
-    'finance.expense.noExpenses': 'No expenses yet',
-    'finance.expense.noExpensesHint':
-        'Your expenses will appear here once you add them.',
+    'finance.expense.cancel': 'Cancel',
+
+    // ── Expense Validation ────────────────────────────────────────────────
+    'finance.expense.validationError': 'Validation Error',
+    'finance.expense.enterAmount': 'Please enter an amount',
+    'finance.expense.enterTitle': 'Please enter a description',
+
+    // ── Expense Detail Screen ─────────────────────────────────────────────
+    'finance.expense.details': 'Expense Details',
+    'finance.expense.detail': 'Expense Detail',
+    'finance.expense.edit': 'Edit',
+    'finance.expense.delete': 'Delete',
+    'finance.expense.payment': 'Payment',
+    'finance.expense.budgetImpact': 'Budget Impact',
+    'finance.expense.nearLimit': 'Near Limit',
+    'finance.expense.close': 'Close',
+    'finance.expense.deleteConfirmTitle': 'Delete Expense?',
+    'finance.expense.deleteConfirmMessage':
+        'Are you sure you want to delete this expense?',
+
+    'finance.expense.history': 'Expense History',
+    'finance.expense.searchHint': 'Search expenses...',
 
     // ── Budget ─────────────────────────────────────────────────────────────
     'finance.budget.title': 'Budget',
     'finance.budget.setBudget': 'Set Budget',
     'finance.budget.editBudget': 'Edit Budget',
+    'finance.budget.adjustBudget': 'Adjust Budget',
+    'finance.budget.saveBudget': 'Save Budget',
     'finance.budget.monthlyBudget': 'Monthly Budget',
     'finance.budget.totalBudget': 'Total Budget',
+    'finance.budget.monthlyTotalBudget': 'Monthly total budget',
     'finance.budget.spent': 'Spent',
     'finance.budget.remaining': 'Remaining',
+    'finance.budget.left': 'Left',
     'finance.budget.limit': 'Limit',
+    'finance.budget.overLimit': 'Over limit',
+    'finance.budget.overBudget': 'Over Budget',
+    'finance.budget.onTrack': 'On Track',
+    'finance.budget.used': 'Used',
     'finance.budget.category': 'Category',
-    'finance.budget.amount': 'Budget Amount',
-    'finance.budget.period': 'Budget Period',
+    'finance.budget.categories': 'Categories',
+    'finance.budget.categoryBudgets': 'Category Budgets',
+    'finance.budget.categoryAllocation': 'Category Allocation',
+    'finance.budget.budgetAmount': 'Budget Amount',
+    'finance.budget.budgetPeriod': 'Budget Period',
+    'finance.budget.expenses': 'Expenses',
+    'finance.budget.nearLimit': 'Near Limit',
+    'finance.budget.nearLimitCategories': 'Near limit on categories',
+    'finance.budget.budgetAlmostExhausted': 'Budget almost exhausted',
+    'finance.budget.remainingForMonth': 'remaining for this month',
+    'finance.budget.considerReducingSpending':
+        'Consider reducing spending for the rest of the month.',
+    'finance.budget.considerReducingDiningOut': 'Consider reducing dining out.',
     'finance.budget.noBudget': 'No budget set yet',
     'finance.budget.noBudgetHint':
         'Create a budget to start tracking your spending.',
-    'finance.budget.overBudget': 'Over Budget',
-    'finance.budget.onTrack': 'On Track',
-    'finance.budget.nearLimit': 'Near Limit',
+    'finance.budget.budgetSaved': 'Budget saved successfully',
+    'finance.budget.invalidAmount': 'Invalid amount',
+    'finance.budget.enterValidAmount': 'Please enter a valid budget amount.',
+    'finance.budget.date': 'Date',
+    'finance.budget.time': 'Time',
+    'finance.budget.editExpense': 'Edit Expense',
 
     // ── Saving Goals ───────────────────────────────────────────────────────
     'finance.goal.title': 'Saving Goals',
@@ -750,6 +871,8 @@ class AppTranslations extends Translations {
     'common.done': 'រួចរាល់',
     'common.delete': 'លុប',
     'common.edit': 'កែសម្រួល',
+    'common.show': 'បង្ហាញ',
+    'common.hide': 'លាក់',
     'common.loading': 'កំពុងផ្ទុក…',
     'common.loadingShort': 'កំពុងផ្ទុក',
     'common.error': 'មានបញ្ហាកើតឡើង',
@@ -789,11 +912,17 @@ class AppTranslations extends Translations {
 
     // ── Auth ────────────────────────────────────────────────────────────
     'auth.login': 'ចូលគណនី',
+    'auth.welcomeTo': 'សូមស្វាគមន៍មកកាន់',
+    'auth.choiceSubtitle':
+        'លិខិតឆ្លងដែនឌីជីថលរបស់កម្ពុជា សម្រាប់យុវជនជំនាន់ក្រោយ។',
+    'auth.continueWithMail': 'បន្តជាមួយអ៊ីមែល',
+    'auth.encryptedNotice':
+        'ទិន្នន័យរបស់អ្នកត្រូវបានអ៊ិនគ្រីប និងមិនចែករំលែកដោយគ្មានការយល់ព្រម។',
     'auth.loginTitle': 'សូមស្វាគមន៍ការត្រឡប់មកវិញ',
-    'auth.loginSubtitle': 'ចូលគណនីដើម្បីបន្តការងាររបស់អ្នក។',
+    'auth.loginSubtitle': 'ចូលគណនីដើម្បីបន្តការងាររបស់អ្នក',
     'auth.register': 'បង្កើតគណនី',
     'auth.registerTitle': 'បង្កើតគណនីរបស់អ្នក',
-    'auth.registerSubtitle': 'ចំណាយពេលតិចជាងមួយនាទី។',
+    'auth.registerSubtitle': 'ចំណាយពេលតិចជាងមួយនាទី',
     'auth.email': 'អ៊ីមែល',
     'auth.password': 'ពាក្យសម្ងាត់',
     'auth.confirmPassword': 'បញ្ជាក់ពាក្យសម្ងាត់',
@@ -813,18 +942,23 @@ class AppTranslations extends Translations {
     'auth.resetPassword': 'កំណត់ពាក្យសម្ងាត់ឡើងវិញ',
     'auth.createAccount': 'បង្កើតគណនី',
     'auth.verifyEmail': 'ផ្ទៀងផ្ទាត់អ៊ីមែល',
-    'auth.fullNameHint': 'រិន មករា',
-    'auth.usernameHint': 'ragangster008',
-    'auth.emailHint': 'makara.it@email.com',
+    'auth.fullNameHint': 'សុខ វិធាវី',
+    'auth.usernameHint': 'username123',
+    'auth.emailHint': 'example@email.com',
     'auth.passwordHint': 'បញ្ចូលពាក្យសម្ងាត់',
     'auth.verifySentTo': 'យើងបានផ្ញើលេខកូដ ៦ ខ្ទង់ទៅ',
     'auth.resendCodeIn': 'ផ្ញើលេខកូដឡើងវិញក្នុង',
     'auth.legalNotice':
         'ការបង្កើតគណនី មានន័យថាអ្នកយល់ព្រមតាមលក្ខខណ្ឌប្រើប្រាស់ '
-        'និងគោលការណ៍ឯកជនភាពរបស់យើង។',
+        'និងគោលការណ៍ឯកជនភាពរបស់យើង',
     'auth.verifyTitle': 'ផ្ទៀងផ្ទាត់អ៊ីមែលរបស់អ្នក',
-    'auth.verifySubtitle': 'យើងបានផ្ញើលេខកូដ ៦ ខ្ទង់ទៅ @email។',
+    'auth.verifySubtitle': 'យើងបានផ្ញើលេខកូដ ៦ ខ្ទង់ទៅ @email',
     'auth.otpCode': 'លេខកូដផ្ទៀងផ្ទាត់',
+    'auth.otpEmptyDigit': 'ខ្ទង់ OTP ទី @position ទទេ',
+    'auth.otpEnteredDigit': 'ខ្ទង់ OTP ទី @position៖ @digit',
+    'auth.otpSymbol': 'មិនអាចប្រើនិមិត្តសញ្ញាបានទេ',
+    'auth.otpHelp':
+        'មិនបានទទួលទេ? សូមពិនិត្យថតសារឥតបានការ ឬសាកល្បងអាសយដ្ឋានអ៊ីមែលផ្សេង',
     'auth.verify': 'ផ្ទៀងផ្ទាត់',
     'auth.resendCode': 'ផ្ញើលេខកូដម្តងទៀត',
     'auth.resendIn': 'ផ្ញើឡើងវិញក្នុង @seconds វិនាទី',
@@ -834,16 +968,18 @@ class AppTranslations extends Translations {
     'auth.noAccount': 'មិនទាន់មានគណនី?',
     'auth.logout': 'ចាកចេញ',
     'auth.logoutConfirm': 'ចាកចេញពី GenLink KH?',
+    'auth.switchAccount': 'ប្តូរគណនី',
     'auth.invalidEmail': 'សូមបញ្ចូលអ៊ីមែលឲ្យបានត្រឹមត្រូវ',
     'auth.passwordTooShort': 'ពាក្យសម្ងាត់ត្រូវមានយ៉ាងតិច ៨ តួ',
     'auth.passwordsDoNotMatch': 'ពាក្យសម្ងាត់មិនដូចគ្នា',
     'auth.usernameTooShort': 'ឈ្មោះអ្នកប្រើប្រាស់ត្រូវមានយ៉ាងតិច ៣ តួ',
     'auth.otpLength': 'សូមបញ្ចូលលេខកូដ ៦ ខ្ទង់',
-    'auth.googleUnavailable': 'Google Sign-In មិនទាន់បានកំណត់ក្នុងកំណែនេះទេ។',
+    'auth.googleUnavailable': 'Google Sign-In មិនទាន់បានកំណត់ក្នុងកំណែនេះទេ',
 
     // ── Navigation ──────────────────────────────────────────────────────
     'nav.home': 'ទំព័រដើម',
     'nav.community': 'សហគមន៍',
+    'nav.create': 'បង្កើត',
     'nav.financial': 'ហិរញ្ញវត្ថុ',
     'nav.profile': 'ប្រវត្តិរូប',
 
@@ -960,6 +1096,21 @@ class AppTranslations extends Translations {
     'profile.achievements': 'សមិទ្ធផល',
     'profile.coreExpertise': 'ជំនាញស្នូល',
     'profile.savedContent': 'ខ្លឹមសារដែលបានរក្សាទុក',
+    'profile.viewAll': 'មើលទាំងអស់',
+    'profile.careerPath': 'ផ្លូវអាជីព',
+    'profile.currentTrack': 'ផ្លូវបច្ចុប្បន្ន',
+    'profile.editCareer': 'កែសម្រួលអាជីព',
+    'profile.noCareerDetails': 'បន្ថែមផ្លូវអាជីពរបស់អ្នក',
+    'profile.publicProfile': 'ប្រវត្តិរូបសាធារណៈ',
+    'profile.professionalBio': 'ប្រវត្តិវិជ្ជាជីវៈ',
+    'profile.coreCompetencies': 'ជំនាញស្នូល',
+    'profile.portfolioPreview': 'ការមើលស្នាដៃជាមុន',
+    'profile.careerInterests': 'ចំណាប់អារម្មណ៍អាជីព',
+    'profile.connect': 'ភ្ជាប់',
+    'profile.shareProfile': 'ចែករំលែកប្រវត្តិរូប',
+    'profile.shareCopied': 'បានចម្លងឈ្មោះប្រវត្តិរូប',
+    'profile.connectUnavailable': 'មុខងារភ្ជាប់មិនទាន់មានទេ។',
+    'profile.projects': 'គម្រោង',
     'profile.emptySaved': 'មិនទាន់មានអ្វីបានរក្សាទុក',
     'profile.savedUnavailable': 'លែងមានទៀតហើយ',
     'profile.displayName': 'ឈ្មោះបង្ហាញ',
@@ -973,6 +1124,8 @@ class AppTranslations extends Translations {
     'profile.chooseFromGallery': 'ជ្រើសរើសពីវិចិត្រសាល',
     'profile.takePhoto': 'ថតរូប',
     'profile.updated': 'បានធ្វើបច្ចុប្បន្នភាពប្រវត្តិរូប',
+    'profile.viewAvatar': 'មើលរូបភាពប្រវត្តិរូប',
+    'profile.changeAvatar': 'ប្តូររូបភាពប្រវត្តិរូប',
     'profile.addPortfolio': 'បន្ថែមស្នាដៃ',
     'profile.portfolioTitle': 'ចំណងជើង',
     'profile.portfolioDescription': 'ការពិពណ៌នា',
@@ -1034,6 +1187,19 @@ class AppTranslations extends Translations {
         'ជ្រើសរើសប្រធានបទដែលអ្នកចាប់អារម្មណ៍ — វានឹងកែសម្រួលមាតិកា '
         'និងការណែនាំរបស់អ្នក។',
     'interests.saveCount': 'រក្សាទុកចំណាប់អារម្មណ៍ @count',
+    'interests.title': 'ជំនាញរបស់ខ្ញុំ',
+    'interests.subtitle':
+        'បំពេញប្រវត្តិរូបដោយបន្ថែមជំនាញវិជ្ជាជីវៈ និងចំណាប់អារម្មណ៍ផ្ទាល់ខ្លួន។',
+    'interests.searchHint': 'ស្វែងរកជំនាញ និងចំណាប់អារម្មណ៍…',
+    'interests.add': 'បន្ថែម',
+    'interests.technicalSkills': 'ជំនាញបច្ចេកទេស',
+    'interests.selectedCount': 'បានជ្រើស @count',
+    'interests.coreInterests': 'ចំណាប់អារម្មណ៍ស្នូល',
+    'interests.suggested': 'ណែនាំសម្រាប់អ្នក',
+    'interests.selectionProgress': 'បានជ្រើស @count / @max',
+    'interests.saveContinue': 'រក្សាទុក និងបន្ត',
+    'interests.limit': 'ជ្រើសរើសបានរហូតដល់ @max ចំណាប់អារម្មណ៍។',
+    'interests.noResults': 'រកមិនឃើញចំណាប់អារម្មណ៍ដែលត្រូវគ្នា។',
     'settings.accountSettings': 'ការកំណត់គណនី',
     'settings.accountSettingsHint': 'អ៊ីមែល ឈ្មោះអ្នកប្រើ ទូរស័ព្ទ',
     'settings.preferences': 'ចំណូលចិត្ត',
@@ -1066,6 +1232,12 @@ class AppTranslations extends Translations {
     'settings.languageKhmer': 'ភាសាខ្មែរ',
     'settings.notifications': 'ការជូនដំណឹង',
     'settings.notificationsEnabled': 'បើកការជូនដំណឹង',
+    'settings.interface': 'ចំណុចប្រទាក់',
+    'settings.interfaceHint': 'កំណត់ការរុករក និងបែបផែនរបស់អ្នក',
+    'settings.glassmorphism': 'បែបផែនកញ្ចក់ (Glassmorphism)',
+    'settings.glassmorphismHint': 'បើកភាពស្រអាប់ និងតម្លាភាព',
+    'settings.dynamicIslands': 'Dynamic Islands',
+    'settings.dynamicIslandsHint': 'ចលនាអន្តរកម្មក្បាលទំព័រ',
     // ── Notification Screen ──────────────────────────────────────────────
     'notification.title': 'ការជូនដំណឹង',
     'notification.markAllRead': 'សម្គាល់ទាំងអស់ថាបានអាន',
@@ -1120,8 +1292,8 @@ class AppTranslations extends Translations {
     'community.recentSearches': 'ការស្វែងរកថ្មីៗ',
     'community.clear': 'សម្អាត',
     'community.trending': '🔥 កំពុងពេញនិយម',
-    'community.noResultsFound': 'រកមិនឃើញលទ្ធផលទេ។',
-    'community.trySearchingAnother': 'ព្យាយាមស្វែងរកពាក្យគន្លឹះផ្សេងទៀត។',
+    'community.noResultsFound': 'រកមិនឃើញលទ្ធផលទេ',
+    'community.trySearchingAnother': 'ព្យាយាមស្វែងរកពាក្យគន្លឹះផ្សេងទៀត',
     'community.filterEvents': 'តម្រងព្រឹត្តិការណ៍',
     'community.category': 'ប្រភេទ',
     'community.all': 'ទាំងអស់',
@@ -1185,9 +1357,9 @@ class AppTranslations extends Translations {
     'community.postUpdated': 'ការបង្ហោះត្រូវបានធ្វើបច្ចុប្បន្ន',
     'community.postUpdatedMsg': 'ការផ្លាស់ប្ដូររបស់អ្នកត្រូវបានរក្សាទុក។',
     'community.postCreated': 'ការបង្ហោះត្រូវបានបង្កើត',
-    'community.postCreatedMsg': 'ការបង្ហោះរបស់អ្នកឥឡូវត្រូវបានបង្ហាញ។',
+    'community.postCreatedMsg': 'ការបង្ហោះរបស់អ្នកឥឡូវត្រូវបានបង្ហាញ',
     'community.postScheduled': 'ការបង្ហោះត្រូវបានកំណត់ពេល',
-    'community.postScheduledAt': 'ការបង្ហោះរបស់អ្នកនឹងបោះពុម្ពនៅ @time។',
+    'community.postScheduledAt': 'ការបង្ហោះរបស់អ្នកនឹងបោះពុម្ពនៅ @time',
     'community.eventAttachment': 'ព្រឹត្តិការណ៍នៅ @date',
     // ── Create Discussion (Forum) ────────────────────────────────────────
     'community.createDiscussion': 'បង្កើតការពិភាក្សា',
@@ -1203,7 +1375,7 @@ class AppTranslations extends Translations {
     'community.categoryOther': 'ផ្សេងៗ',
     'community.discussionPublished': 'ការពិភាក្សាត្រូវបានបោះពុម្ព',
     'community.discussionPublishedMsg':
-        'ការពិភាក្សារបស់អ្នកឥឡូវបង្ហាញក្នុង Forum។',
+        'ការពិភាក្សារបស់អ្នកឥឡូវបង្ហាញក្នុង Forum',
     // ── Create Opportunity (Career) ──────────────────────────────────────
     'community.createOpportunity': 'ប្រកាសសម្រាប់ឱកាស',
     'community.opportunityTitle': 'ឈ្មោះការងារ ឬការហ្វឹកហ្វឺន...',
@@ -1214,7 +1386,7 @@ class AppTranslations extends Translations {
     'community.opportunityInternship': 'ការហ្វឹកហ្វឺន',
     'community.opportunityDesc': 'ពណ៌នាអំពីតួនាទី លក្ខខណ្ឌ និងវិធីដាក់ពាក្យ...',
     'community.opportunityPosted': 'ឱកាសត្រូវបានប្រកាស',
-    'community.opportunityPostedMsg': 'ឱកាសរបស់អ្នកឥឡូវបង្ហាញក្នុង Career។',
+    'community.opportunityPostedMsg': 'ឱកាសរបស់អ្នកឥឡូវបង្ហាញក្នុង Career',
     // ── Create Event ────────────────────────────────────────────────────
     'community.createEvent': 'បង្កើតព្រឹត្តិការណ៍',
     'community.eventTitle': 'ឈ្មោះព្រឹត្តិការណ៍...',
@@ -1222,7 +1394,7 @@ class AppTranslations extends Translations {
     'community.eventDate': 'កាលបរិច្ឆេទ និងម៉ោង',
     'community.eventLocation': 'ទីតាំង',
     'community.eventCreated': 'ព្រឹត្តិការណ៍ត្រូវបានបង្កើត',
-    'community.eventCreatedMsg': 'ព្រឹត្តិការណ៍របស់អ្នកឥឡូវបង្ហាញ។',
+    'community.eventCreatedMsg': 'ព្រឹត្តិការណ៍របស់អ្នកឥឡូវបង្ហាញ',
     'community.selectDate': 'ជ្រើសរើសកាលបរិច្ឆេទ',
 
     // ── Finance ───────────────────────────────────────────────────────────
@@ -1255,8 +1427,8 @@ class AppTranslations extends Translations {
 
     'finance.smartInsight': 'ការយល់ដឹងឆ្លាតវៃ',
     'finance.foodSpendingInsight':
-        'អ្នកបានចំណាយលើអាហារច្រើនជាងមុន @percent% ក្នុងខែនេះ។ '
-        'កំណត់កម្រិត @amount ដើម្បីគ្រប់គ្រងការចំណាយ។',
+        'អ្នកបានចំណាយលើអាហារច្រើនជាងមុន @percent% ក្នុងខែនេះ '
+        'កំណត់កម្រិត @amount ដើម្បីគ្រប់គ្រងការចំណាយ',
 
     'finance.quickActions': 'សកម្មភាពរហ័ស',
     'finance.addExpense': 'បន្ថែមចំណាយ',
@@ -1295,44 +1467,128 @@ class AppTranslations extends Translations {
     'finance.transaction.mobile': 'ទូរស័ព្ទ',
     'finance.transaction.mall': 'ផ្សារទំនើប',
 
-    // ── Expense ───────────────────────────────────────────────────────────
+    // ── Expense Screen ────────────────────────────────────────────────────
     'finance.expense.title': 'ចំណាយ',
+    'finance.expense.today': 'ថ្ងៃនេះ',
+    'finance.expense.week': 'សប្ដាហ៍',
+    'finance.expense.month': 'ខែ',
+    'finance.expense.totalSpent': 'ចំណាយសរុប',
+    'finance.expense.onTrack': 'ស្ថិតក្នុងផែនការ',
+    'finance.expense.categoryBreakdown': 'ការបែងចែកចំណាយ',
+    'finance.expense.recentExpenses': 'ចំណាយថ្មីៗ',
+    'finance.expense.seeAll': 'មើលទាំងអស់',
+    'finance.expense.thismonth': 'ខែនេះ',
+
+    'finance.expense.all': 'ទាំងអស់',
+    'finance.expense.food': 'អាហារ និងភេសជ្ជៈ',
+    'finance.expense.transport': 'ការធ្វើដំណើរ',
+    'finance.expense.study': 'ការសិក្សា',
+    'finance.expense.bills': 'វិក្កយបត្រ',
+    'finance.expense.health': 'សុខភាព',
+    'finance.expense.other': 'ផ្សេងៗ',
+
+    // ── Add Expense Screen ────────────────────────────────────────────────
     'finance.expense.add': 'បន្ថែមចំណាយ',
-    'finance.expense.edit': 'កែសម្រួលចំណាយ',
-    'finance.expense.delete': 'លុបចំណាយ',
-    'finance.expense.details': 'ព័ត៌មានលម្អិតចំណាយ',
+    'finance.expense.trackSpending': 'កត់ត្រាការចំណាយរបស់អ្នក',
+
     'finance.expense.amount': 'ចំនួនទឹកប្រាក់',
-    'finance.expense.category': 'ប្រភេទ',
+
     'finance.expense.description': 'ការពិពណ៌នា',
-    'finance.expense.date': 'កាលបរិច្ឆេទ',
-    'finance.expense.time': 'ម៉ោង',
-    'finance.expense.paymentMethod': 'វិធីបង់ប្រាក់',
+    'finance.expense.descriptionHelper': 'តើអ្នកបានចំណាយលើអ្វី?',
+    'finance.expense.titleHint': 'បញ្ចូលការពិពណ៌នាចំណាយ...',
+
+    'finance.expense.category': 'ប្រភេទចំណាយ',
+    'finance.expense.categoryHelper': 'ជ្រើសរើសប្រភេទ',
+
     'finance.expense.note': 'កំណត់ចំណាំ',
+    'finance.expense.optional': 'ជាជម្រើស',
     'finance.expense.noteHint': 'បន្ថែមកំណត់ចំណាំ...',
+
+    'finance.expense.date': 'កាលបរិច្ឆេទ',
+    'finance.expense.dateHelper': 'ពេលណាដែលបានចំណាយ?',
+    'finance.expense.expenseDate': 'កាលបរិច្ឆេទចំណាយ',
+
+    'finance.expense.paymentMethod': 'វិធីទូទាត់',
+    'finance.expense.paymentHelper': 'តើអ្នកបានទូទាត់ដោយវិធីណា?',
+
     'finance.expense.save': 'រក្សាទុកចំណាយ',
-    'finance.expense.update': 'ធ្វើបច្ចុប្បន្នភាពចំណាយ',
-    'finance.expense.noExpenses': 'មិនទាន់មានចំណាយ',
-    'finance.expense.noExpensesHint':
-        'ចំណាយរបស់អ្នកនឹងបង្ហាញនៅទីនេះ បន្ទាប់ពីអ្នកបន្ថែម។',
+    'finance.expense.cancel': 'បោះបង់',
+
+    // ── Expense Validation ────────────────────────────────────────────────
+    'finance.expense.validationError': 'កំហុសក្នុងការបំពេញព័ត៌មាន',
+    'finance.expense.enterAmount': 'សូមបញ្ចូលចំនួនទឹកប្រាក់',
+    'finance.expense.enterTitle': 'សូមបញ្ចូលការពិពណ៌នា',
+
+    // ── Expense Detail Screen ─────────────────────────────────────────────
+    'finance.expense.details': 'ព័ត៌មានលម្អិតចំណាយ',
+    'finance.expense.detail': 'លម្អិតចំណាយ',
+    'finance.expense.edit': 'កែប្រែ',
+    'finance.expense.delete': 'លុប',
+    'finance.expense.payment': 'ការទូទាត់',
+    'finance.expense.budgetImpact': 'ផលប៉ះពាល់លើថវិកា',
+    'finance.expense.nearLimit': 'ជិតដល់កម្រិត',
+    'finance.expense.close': 'បិទ',
+    'finance.expense.deleteConfirmTitle': 'លុបចំណាយ?',
+    'finance.expense.deleteConfirmMessage':
+        'តើអ្នកប្រាកដថាចង់លុបចំណាយនេះមែនទេ?',
+    'finance.expense.time': 'ពេលវេលា',
+    'finance.expense.history': 'ប្រវត្តិចំណាយ',
+    'finance.expense.searchHint': 'ស្វែងរកចំណាយ...',
+
+    // Budget
+    'finance.expense.foodBudgetUsed':
+        'ថវិកាអាហារ: \$252 ក្នុងចំណោម \$300 ត្រូវបានប្រើប្រាស់ (84%)។ នៅសល់តែ \$48 ប៉ុណ្ណោះ។',
+    'finance.expense.dinnerNote':
+        'ញ៉ាំអាហារពេលល្ងាចជាមួយមិត្តភក្តិនៅជិត Riverside។ បានកម្ម៉ង់គុយទាវខ្មែរ។',
+
+    // ── Expense History Screen ───────────────────────────────────────────
+    'finance.expense.todayDate': 'ថ្ងៃនេះ, Jun 28',
+    'finance.expense.yesterdayDate': 'ម្សិលមិញ, Jun 27',
+    'finance.expense.lunchBox': 'ប្រអប់អាហារថ្ងៃត្រង់',
+    'finance.expense.abaTransfer': 'ផ្ទេរប្រាក់ ABA',
+    'finance.expense.netflix': 'Netflix',
+    'finance.expense.deposit': 'ការដាក់ប្រាក់',
 
     // ── Budget ─────────────────────────────────────────────────────────────
-    'finance.budget.title': 'ថវិកា',
+    'finance.budget.title': 'ការកំណត់ថវិកា',
     'finance.budget.setBudget': 'កំណត់ថវិកា',
     'finance.budget.editBudget': 'កែសម្រួលថវិកា',
+    'finance.budget.adjustBudget': 'កែសម្រួលថវិកា',
+    'finance.budget.saveBudget': 'រក្សាទុកថវិកា',
     'finance.budget.monthlyBudget': 'ថវិកាប្រចាំខែ',
     'finance.budget.totalBudget': 'ថវិកាសរុប',
+    'finance.budget.monthlyTotalBudget': 'ថវិកាសរុបប្រចាំខែ',
     'finance.budget.spent': 'បានចំណាយ',
     'finance.budget.remaining': 'នៅសល់',
-    'finance.budget.limit': 'កម្រិត',
-    'finance.budget.category': 'ប្រភេទ',
-    'finance.budget.amount': 'ចំនួនថវិកា',
-    'finance.budget.period': 'រយៈពេលថវិកា',
-    'finance.budget.noBudget': 'មិនទាន់កំណត់ថវិកា',
-    'finance.budget.noBudgetHint':
-        'បង្កើតថវិកា ដើម្បីចាប់ផ្តើមតាមដានការចំណាយរបស់អ្នក។',
+    'finance.budget.left': 'នៅសល់',
+    'finance.budget.limit': 'កំណត់',
+    'finance.budget.used': 'បានប្រើប្រាស់',
+    'finance.budget.overLimit': 'លើសកំណត់',
     'finance.budget.overBudget': 'លើសថវិកា',
-    'finance.budget.onTrack': 'ស្ថិតក្នុងផែនការ',
-    'finance.budget.nearLimit': 'ជិតដល់កម្រិត',
+    'finance.budget.onTrack': 'កំពុងស្ថិតក្នុងផែនការ',
+    'finance.budget.category': 'ប្រភេទ',
+    'finance.budget.categories': 'ប្រភេទទាំងអស់',
+    'finance.budget.categoryBudgets': 'ថវិកាតាមប្រភេទ',
+    'finance.budget.categoryAllocation': 'ការបែងចែកថវិកា',
+    'finance.budget.budgetAmount': 'ចំនួនថវិកា',
+    'finance.budget.budgetPeriod': 'រយៈពេលថវិកា',
+    'finance.budget.expenses': 'ការចំណាយ',
+    'finance.budget.nearLimit': 'ជិតដល់កំណត់',
+    'finance.budget.budgetAlmostExhausted': 'ថវិកាជិតអស់',
+    'finance.budget.remainingForMonth': 'នៅសល់សម្រាប់ខែនេះ',
+    'finance.budget.considerReducingSpending':
+        'សូមពិចារណាកាត់បន្ថយការចំណាយសម្រាប់រយៈពេលដែលនៅសល់។',
+    'finance.budget.considerReducingDiningOut':
+        'សូមពិចារណាកាត់បន្ថយការចំណាយលើការញ៉ាំអាហារក្រៅ។',
+    'finance.budget.noBudget': 'មិនទាន់បានកំណត់ថវិកាទេ',
+    'finance.budget.noBudgetHint':
+        'បង្កើតថវិកាដើម្បីចាប់ផ្តើមតាមដានការចំណាយរបស់អ្នក។',
+    'finance.budget.budgetSaved': 'បានរក្សាទុកថវិកាដោយជោគជ័យ',
+    'finance.budget.invalidAmount': 'ចំនួនទឹកប្រាក់មិនត្រឹមត្រូវ',
+    'finance.budget.enterValidAmount': 'សូមបញ្ចូលចំនួនថវិកាដែលត្រឹមត្រូវ។',
+    'finance.budget.date': 'កាលបរិច្ឆេទ',
+    'finance.budget.time': 'ពេលវេលា',
+    'finance.budget.editExpense': 'កែសម្រួលការចំណាយ',
 
     // ── Saving Goals ───────────────────────────────────────────────────────
     'finance.goal.title': 'គោលដៅសន្សំ',
@@ -1350,7 +1606,7 @@ class AppTranslations extends Translations {
     'finance.goal.save': 'រក្សាទុកគោលដៅ',
     'finance.goal.noGoals': 'មិនទាន់មានគោលដៅសន្សំ',
     'finance.goal.noGoalsHint':
-        'បង្កើតគោលដៅសន្សំ ហើយចាប់ផ្តើមកសាងអនាគតរបស់អ្នក។',
+        'បង្កើតគោលដៅសន្សំ ហើយចាប់ផ្តើមកសាងអនាគតរបស់អ្នក',
 
     // ── E-Wallet ──────────────────────────────────────────────────────────
     'finance.ewallet.title': 'កាបូបលុយឌីជីថល',
@@ -1366,7 +1622,7 @@ class AppTranslations extends Translations {
     'finance.ewallet.history': 'ប្រវត្តិប្រតិបត្តិការ',
     'finance.ewallet.noWallet': 'មិនទាន់មានកាបូបលុយឌីជីថល',
     'finance.ewallet.noWalletHint':
-        'ភ្ជាប់កាបូបលុយឌីជីថល ដើម្បីគ្រប់គ្រងប្រាក់របស់អ្នកនៅកន្លែងតែមួយ។',
+        'ភ្ជាប់កាបូបលុយឌីជីថល ដើម្បីគ្រប់គ្រងប្រាក់របស់អ្នកនៅកន្លែងតែមួយ',
 
     // ── Finance Categories ─────────────────────────────────────────────────
     'finance.category.food': 'អាហារ',
@@ -1413,7 +1669,7 @@ class AppTranslations extends Translations {
     'tasks.myTasks': 'កិច្ចការរបស់ខ្ញុំ',
     'tasks.bottomTip': 'ចុចលើកិច្ចការ ដើម្បីសម្គាល់ថាបានបញ្ចប់',
     'tasks.empty.title': 'រកមិនឃើញកិច្ចការ',
-    'tasks.empty.message': 'សាកល្បងផ្លាស់ប្តូរការស្វែងរក ឬតម្រង។',
+    'tasks.empty.message': 'សាកល្បងផ្លាស់ប្តូរការស្វែងរក ឬតម្រង',
     'tasks.filter.title': 'តម្រងកិច្ចការ',
     'tasks.filter.subtitle': 'កំណត់បញ្ជីកិច្ចការរបស់អ្នក',
     'tasks.filter.status': 'ស្ថានភាព',
@@ -1429,7 +1685,7 @@ class AppTranslations extends Translations {
     'tasks.filter.low': 'ទាប',
     'tasks.search': 'ស្វែងរកកិច្ចការរបស់អ្នក...',
     'tasks.emptyTitle': 'រកមិនឃើញកិច្ចការ',
-    'tasks.emptyMessage': 'សាកល្បងប្តូរការស្វែងរក ឬតម្រងរបស់អ្នក។',
+    'tasks.emptyMessage': 'សាកល្បងប្តូរការស្វែងរក ឬតម្រងរបស់អ្នក',
     'tasks.active': 'សកម្ម',
     'tasks.priority.high': 'ខ្ពស់',
     'tasks.priority.medium': 'មធ្យម',

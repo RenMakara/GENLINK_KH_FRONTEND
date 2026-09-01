@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
 import 'package:genlink_frontend/core/localization/localization_service.dart';
-import 'package:genlink_frontend/core/storage/local_storage.dart';
 import 'package:genlink_frontend/core/storage/secure_storage.dart';
 import 'package:genlink_frontend/core/theme/theme_controller.dart';
 import 'package:genlink_frontend/design_system/theme/app_theme.dart';
@@ -15,6 +14,7 @@ import 'package:genlink_frontend/features/profile/presentation/controllers/profi
 import 'package:genlink_frontend/features/profile/presentation/screens/achievements_screen.dart';
 import 'package:genlink_frontend/features/profile/presentation/screens/saved_items_screen.dart';
 import 'package:genlink_frontend/features/settings/domain/entities/user_settings_entity.dart';
+import 'package:genlink_frontend/features/settings/domain/repositories/settings_repository.dart';
 import 'package:genlink_frontend/features/settings/presentation/controllers/settings_controller.dart';
 import 'package:genlink_frontend/features/settings/presentation/screens/settings_screen.dart';
 import 'package:get/get.dart';
@@ -22,7 +22,13 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
+class _MockSettingsRepository extends Mock implements SettingsRepository {}
+
 class _MockAuthRepository extends Mock implements AuthRepository {}
+
+class _MockThemeController extends Mock implements ThemeController {}
+
+class _MockLocalizationService extends Mock implements LocalizationService {}
 
 const _user = UserEntity(
   id: 'u1',
@@ -54,11 +60,21 @@ void main() {
   const phone = Size(390, 900);
 
   late _MockProfileRepository profileRepository;
+  late _MockSettingsRepository settingsRepository;
+  late _MockThemeController themeController;
+  late _MockLocalizationService localization;
 
   setUp(() {
     profileRepository = _MockProfileRepository();
-    when(profileRepository.getSettings)
-        .thenAnswer((_) async => const UserSettingsEntity());
+    settingsRepository = _MockSettingsRepository();
+    themeController = _MockThemeController();
+    localization = _MockLocalizationService();
+    when(
+      settingsRepository.getSettings,
+    ).thenAnswer((_) async => const UserSettingsEntity());
+    when(
+      () => themeController.applyBackendTheme(any()),
+    ).thenAnswer((_) async {});
     when(profileRepository.getMyProfile).thenAnswer((_) async => _profile);
     when(profileRepository.getMyInterests).thenAnswer((_) async => []);
     when(profileRepository.getPortfolio).thenAnswer((_) async => []);
@@ -94,11 +110,7 @@ void main() {
       ],
     );
 
-    final localStorage = LocalStorage();
-    final localization = LocalizationService(localStorage: localStorage);
     Get
-      ..put<LocalizationService>(localization)
-      ..put<ThemeController>(ThemeController(localStorage: localStorage))
       ..put<AuthController>(
         AuthController(
           authRepository: _MockAuthRepository(),
@@ -106,13 +118,11 @@ void main() {
           localization: localization,
         )..currentUser.value = _user,
       )
-      ..put<ProfileController>(
-        ProfileController(repository: profileRepository),
-      )
+      ..put<ProfileController>(ProfileController(repository: profileRepository))
       ..put<SettingsController>(
         SettingsController(
-          repository: profileRepository,
-          themeController: Get.find<ThemeController>(),
+          repository: settingsRepository,
+          themeController: themeController,
           localization: localization,
         ),
       );
@@ -121,6 +131,11 @@ void main() {
   tearDown(Get.reset);
 
   Future<void> pumpScreen(WidgetTester tester, Widget child) async {
+    // Flush the controller's eager onInit load before mounting the app. This
+    // prevents its reactive completion from starting a second frame while
+    // pumpWidget is still handling the first one.
+    await tester.pump();
+
     tester.view.physicalSize = phone;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);

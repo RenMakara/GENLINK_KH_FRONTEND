@@ -21,28 +21,34 @@ class ReviewSubmitScreen extends GetView<QuizController> {
         ),
         title: const Text(
           'Review Answers',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: QuizColors.heading),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: QuizColors.heading,
+          ),
         ),
       ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Obx(() => Row(
-                  children: [
-                    _buildStatusChip(
-                      Icons.check_circle_outline,
-                      '${controller.answeredCount} Answered',
-                      QuizColors.correct,
-                    ),
-                    const SizedBox(width: 12),
-                    _buildStatusChip(
-                      Icons.radio_button_unchecked,
-                      '${controller.unansweredCount} Unanswered',
-                      QuizColors.incorrect,
-                    ),
-                  ],
-                )),
+            child: Obx(
+              () => Row(
+                children: [
+                  _buildStatusChip(
+                    Icons.check_circle_outline,
+                    '${controller.answeredCount} Answered',
+                    QuizColors.correct,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildStatusChip(
+                    Icons.radio_button_unchecked,
+                    '${controller.unansweredCount} Unanswered',
+                    QuizColors.incorrect,
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -72,8 +78,14 @@ class ReviewSubmitScreen extends GetView<QuizController> {
         children: [
           Icon(icon, size: 16, color: color),
           const SizedBox(width: 6),
-          Text(label,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
         ],
       ),
     );
@@ -102,7 +114,9 @@ class ReviewSubmitScreen extends GetView<QuizController> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: isAnswered ? const Color(0x2010B981) : const Color(0x20EF4444),
+                  color: isAnswered
+                      ? const Color(0x2010B981)
+                      : const Color(0x20EF4444),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Center(
@@ -111,7 +125,9 @@ class ReviewSubmitScreen extends GetView<QuizController> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: isAnswered ? QuizColors.correct : QuizColors.incorrect,
+                      color: isAnswered
+                          ? QuizColors.correct
+                          : QuizColors.incorrect,
                     ),
                   ),
                 ),
@@ -120,7 +136,11 @@ class ReviewSubmitScreen extends GetView<QuizController> {
               Expanded(
                 child: Text(
                   'Question ${index + 1}',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: QuizColors.heading),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: QuizColors.heading,
+                  ),
                 ),
               ),
               Icon(
@@ -142,7 +162,11 @@ class ReviewSubmitScreen extends GetView<QuizController> {
       decoration: BoxDecoration(
         color: QuizColors.surface,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -4),
+          ),
         ],
       ),
       child: SafeArea(
@@ -157,7 +181,10 @@ class ReviewSubmitScreen extends GetView<QuizController> {
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Text(
                     '$unanswered question${unanswered > 1 ? "s" : ""} unanswered',
-                    style: const TextStyle(fontSize: 13, color: QuizColors.incorrect),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: QuizColors.incorrect,
+                    ),
                   ),
                 ),
               QuizGradientButton(

@@ -1110,7 +1110,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               ? Image.network(
                                   ev.imageUrl,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, _) => Icon(Icons.event, color: textSecondary, size: 28),
+                                  errorBuilder: (context, error, stackTrace) => Icon(Icons.event, color: textSecondary, size: 28),
                                 )
                               : Icon(Icons.event, color: textSecondary, size: 28)),
                     ),

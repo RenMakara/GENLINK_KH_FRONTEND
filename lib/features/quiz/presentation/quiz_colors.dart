@@ -24,11 +24,7 @@ abstract final class QuizColors {
   static const darkOverlay = Color(0xFF1E1B4B);
 
   static const cardShadow = <BoxShadow>[
-    BoxShadow(
-      color: Color(0x0A000000),
-      blurRadius: 12,
-      offset: Offset(0, 4),
-    ),
+    BoxShadow(color: Color(0x0A000000), blurRadius: 12, offset: Offset(0, 4)),
   ];
 
   static const gradient = LinearGradient(

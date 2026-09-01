@@ -44,13 +44,16 @@ class _RewardAnimationScreenState extends State<RewardAnimationScreen>
 
     _scaleController.forward();
 
-    _sparklePoints = List.generate(30, (_) => _SparklePoint(
-          x: _random.nextDouble(),
-          baseY: _random.nextDouble(),
-          radius: _random.nextDouble() * 3 + 1,
-          opacity: 0.15 + _random.nextDouble() * 0.25,
-          phaseOffset: _random.nextDouble() * 2 * pi,
-        ));
+    _sparklePoints = List.generate(
+      30,
+      (_) => _SparklePoint(
+        x: _random.nextDouble(),
+        baseY: _random.nextDouble(),
+        radius: _random.nextDouble() * 3 + 1,
+        opacity: 0.15 + _random.nextDouble() * 0.25,
+        phaseOffset: _random.nextDouble() * 2 * pi,
+      ),
+    );
 
     Timer(const Duration(seconds: 3), () {
       if (mounted) {

@@ -134,10 +134,7 @@ abstract final class ProfileMapper {
     return body;
   }
 
-  static List<T> _list<T>(
-    dynamic raw,
-    T Function(Map<String, dynamic>) item,
-  ) {
+  static List<T> _list<T>(dynamic raw, T Function(Map<String, dynamic>) item) {
     final list = raw as List? ?? const [];
     return list
         .map((e) => item((e as Map).cast<String, dynamic>()))

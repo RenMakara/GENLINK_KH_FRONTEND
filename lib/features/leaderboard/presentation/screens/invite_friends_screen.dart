@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../quiz/presentation/quiz_colors.dart';
 
 class InviteFriendsScreen extends StatelessWidget {
@@ -16,10 +18,11 @@ class InviteFriendsScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
-          onPressed: () => Get.back(),
+        leading: const Padding(
+          padding: EdgeInsets.only(left: AppSpacing.md),
+          child: Center(child: AppBackButton()),
         ),
+        leadingWidth: 74,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -30,13 +33,21 @@ class InviteFriendsScreen extends StatelessWidget {
             const SizedBox(height: 24),
             const Text(
               'Learn together, grow together!',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: QuizColors.heading),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: QuizColors.heading,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
             const Text(
               'Invite your friends and compete on the leaderboard.',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: QuizColors.body),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: QuizColors.body,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 28),
@@ -50,7 +61,11 @@ class InviteFriendsScreen extends StatelessWidget {
               onPressed: () => Get.back(),
               child: const Text(
                 'Maybe Later',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: QuizColors.body),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: QuizColors.body,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -67,7 +82,7 @@ class InviteFriendsScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: QuizColors.primaryLight,
         borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: QuizColors.primary.withOpacity(0.15)),
+        border: Border.all(color: QuizColors.primary.withValues(alpha: 0.15)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -92,7 +107,7 @@ class InviteFriendsScreen extends StatelessWidget {
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         shape: BoxShape.circle,
       ),
       child: Icon(Icons.person, color: color, size: 28),
@@ -160,7 +175,11 @@ class InviteFriendsScreen extends StatelessWidget {
           padding: EdgeInsets.only(left: 4, bottom: 12),
           child: Text(
             'Share via',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: QuizColors.heading),
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: QuizColors.heading,
+            ),
           ),
         ),
         Row(
@@ -185,7 +204,11 @@ class InviteFriendsScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   p.label,
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: QuizColors.body),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: QuizColors.body,
+                  ),
                 ),
               ],
             );
@@ -217,7 +240,11 @@ class InviteFriendsScreen extends StatelessWidget {
                   SizedBox(width: 8),
                   Text(
                     'Invite via Link',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                 ],
               ),

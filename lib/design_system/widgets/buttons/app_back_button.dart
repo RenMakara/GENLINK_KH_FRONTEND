@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
 
-/// The app's back control: a raised pill with a left arrow, floating over
-/// the page rather than sitting in an app bar.
-///
-/// Wider than it is tall (the design's stadium shape), with a soft shadow
-/// that lifts it off the neutral background.
 class AppBackButton extends StatelessWidget {
   const AppBackButton({super.key, this.onPressed, this.tooltip});
 
   final VoidCallback? onPressed;
   final String? tooltip;
 
-  static const _height = 44.0;
-  static const _width = 58.0;
+  static const _height = 40.0;
+  static const _width = 40.0;
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +18,7 @@ class AppBackButton extends StatelessWidget {
       height: _height,
       width: _width,
       child: Material(
-        color: isDark
-            ? theme.colorScheme.surface
-            : theme.colorScheme.surface,
+        color: isDark ? theme.colorScheme.surface : theme.colorScheme.surface,
         shape: const StadiumBorder(),
         elevation: 0,
         child: InkWell(
@@ -51,7 +44,7 @@ class AppBackButton extends StatelessWidget {
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.07),
             blurRadius: 18,
-            offset: const Offset(0, 6),
+            offset: const Offset(0, 4),
           ),
         ],
       ),

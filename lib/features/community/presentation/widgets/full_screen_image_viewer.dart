@@ -57,11 +57,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
 
   Widget _buildImageWidget(String url) {
     if (url.startsWith('assets/')) {
-      return Image.asset(
-        url,
-        fit: BoxFit.contain,
-        alignment: Alignment.center,
-      );
+      return Image.asset(url, fit: BoxFit.contain, alignment: Alignment.center);
     }
     if (url.startsWith('http')) {
       return Image.network(
@@ -82,7 +78,11 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
           );
         },
         errorBuilder: (context, error, stackTrace) => const Center(
-          child: Icon(Icons.broken_image_rounded, color: Colors.white38, size: 64),
+          child: Icon(
+            Icons.broken_image_rounded,
+            color: Colors.white38,
+            size: 64,
+          ),
         ),
       );
     }
@@ -99,7 +99,8 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
       backgroundColor: Colors.black,
       body: GestureDetector(
         onVerticalDragEnd: (details) {
-          if (details.primaryVelocity != null && details.primaryVelocity! > 250) {
+          if (details.primaryVelocity != null &&
+              details.primaryVelocity! > 250) {
             Navigator.of(context).pop();
           }
         },
@@ -135,13 +136,20 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
             // Top Control Bar: Close (✕) Button & Counter Indicator
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Close Button
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                       onPressed: () => Navigator.of(context).pop(),
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.black45,
@@ -152,7 +160,10 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
                     // Page Indicator Badge (e.g., "2 / 5")
                     if (widget.images.length > 1)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black54,
                           borderRadius: BorderRadius.circular(16),

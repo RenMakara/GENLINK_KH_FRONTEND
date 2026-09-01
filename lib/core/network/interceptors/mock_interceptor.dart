@@ -9,9 +9,13 @@ class MockInterceptor extends Interceptor {
   final SecureStorage storage;
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     final token = await storage.readAccessToken();
-    final isDemoToken = token == 'demo_access_token' ||
+    final isDemoToken =
+        token == 'demo_access_token' ||
         token == 'mock_access_token_123' ||
         token == 'mock_google_token';
 
@@ -65,11 +69,7 @@ class MockInterceptor extends Interceptor {
         'totalXp': 1200,
       };
     } else if (path.contains('/community/posts')) {
-      data = {
-        'content': [],
-        'totalPages': 0,
-        'totalElements': 0,
-      };
+      data = {'content': [], 'totalPages': 0, 'totalElements': 0};
     } else if (path.contains('/community')) {
       data = []; // Some community endpoints expect lists
     } else {
@@ -84,7 +84,8 @@ class MockInterceptor extends Interceptor {
         data: {
           'success': true,
           'data': data,
-          if (path.contains('/posts') && data is Map) ...data, // Some paginated responses use root
+          if (path.contains('/posts') && data is Map)
+            ...data, // Some paginated responses use root
         },
       ),
     );

@@ -9,6 +9,7 @@ import '../../../../design_system/widgets/borders/dashed_border.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/inputs/app_input.dart';
 import '../../../../design_system/widgets/loaders/app_loader.dart';
+import '../../../auth/presentation/widgets/animated_auth_background.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../controllers/profile_setup_controller.dart';
 
@@ -23,31 +24,33 @@ class ProfileSetupScreen extends GetView<ProfileSetupController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Obx(() {
-          final step = controller.currentStep.value;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                  AppSpacing.lg,
-                  0,
+      body: AuthBackgroundShell(
+        child: SafeArea(
+          child: Obx(() {
+            final step = controller.currentStep.value;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    0,
+                  ),
+                  child: _StepHeader(step: step),
                 ),
-                child: _StepHeader(step: step),
-              ),
-              Expanded(
-                child: switch (step) {
-                  1 => const _StepOne(),
-                  2 => const _StepTwo(),
-                  _ => const _StepThree(),
-                },
-              ),
-            ],
-          );
-        }),
+                Expanded(
+                  child: switch (step) {
+                    1 => const _StepOne(),
+                    2 => const _StepTwo(),
+                    _ => const _StepThree(),
+                  },
+                ),
+              ],
+            );
+          }),
+        ),
       ),
     );
   }
@@ -470,11 +473,13 @@ class _StepThree extends StatelessWidget {
     return Obx(
       () => _StepBody(
         title: 'profileSetup.step3Title'.tr,
-        subtitle: 'profileSetup.step3Subtitle'
-            .trParams({'count': '${ProfileSetupController.minInterests}'}),
+        subtitle: 'profileSetup.step3Subtitle'.trParams({
+          'count': '${ProfileSetupController.minInterests}',
+        }),
         continueLabel: 'profileSetup.finish'.tr,
-        onContinue:
-            controller.hasEnoughInterests ? controller.submitStep3 : null,
+        onContinue: controller.hasEnoughInterests
+            ? controller.submitStep3
+            : null,
         children: [
           if (controller.isLoadingCatalog.value)
             const Padding(
@@ -491,8 +496,9 @@ class _StepThree extends StatelessWidget {
                   .map(
                     (interest) => _InterestChip(
                       interest: interest,
-                      selected: controller.selectedInterestIds
-                          .contains(interest.interestId),
+                      selected: controller.selectedInterestIds.contains(
+                        interest.interestId,
+                      ),
                       onTap: () =>
                           controller.toggleInterest(interest.interestId),
                     ),
@@ -501,8 +507,9 @@ class _StepThree extends StatelessWidget {
             ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            'profileSetup.selectedCount'
-                .trParams({'count': '${controller.selectedInterestIds.length}'}),
+            'profileSetup.selectedCount'.trParams({
+              'count': '${controller.selectedInterestIds.length}',
+            }),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),

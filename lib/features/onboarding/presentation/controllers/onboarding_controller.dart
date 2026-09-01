@@ -43,7 +43,7 @@ class OnboardingSlide {
 /// Drives the onboarding pager and records that it has been seen.
 class OnboardingController extends GetxController {
   OnboardingController({required LocalStorage localStorage})
-      : _storage = localStorage;
+    : _storage = localStorage;
 
   final LocalStorage _storage;
 
@@ -129,6 +129,6 @@ class OnboardingController extends GetxController {
   /// decision either way and should not be shown it again.
   Future<void> finish() async {
     await _storage.markOnboardingSeen();
-    Get.offAllNamed<void>(AppRoutes.login);
+    Get.offAllNamed<void>(AppRoutes.authChoice);
   }
 }

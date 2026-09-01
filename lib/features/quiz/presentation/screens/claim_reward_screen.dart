@@ -35,7 +35,11 @@ class ClaimRewardScreen extends GetView<QuizController> {
               const SizedBox(height: 24),
               const Text(
                 'Your Reward',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: QuizColors.heading),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: QuizColors.heading,
+                ),
               ),
               const SizedBox(height: 6),
               const Text(
@@ -54,11 +58,19 @@ class ClaimRewardScreen extends GetView<QuizController> {
               ),
               const SizedBox(height: 14),
               TextButton(
-                onPressed: () => Get.until((route) =>
-                    route.settings.name == '/quiz/dashboard' ||
-                    route.settings.name == '/home'),
-                child: const Text('Maybe Later',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: QuizColors.body)),
+                onPressed: () => Get.until(
+                  (route) =>
+                      route.settings.name == '/quiz/dashboard' ||
+                      route.settings.name == '/home',
+                ),
+                child: const Text(
+                  'Maybe Later',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: QuizColors.body,
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
             ],
@@ -81,12 +93,20 @@ class ClaimRewardScreen extends GetView<QuizController> {
               color: QuizColors.primaryLight,
               borderRadius: BorderRadius.circular(24),
             ),
-            child: const Icon(Icons.card_giftcard, color: QuizColors.primary, size: 52),
+            child: const Icon(
+              Icons.card_giftcard,
+              color: QuizColors.primary,
+              size: 52,
+            ),
           ),
           const SizedBox(height: 14),
           const Text(
             'Rewards Unlocked',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: QuizColors.heading),
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: QuizColors.heading,
+            ),
           ),
           const SizedBox(height: 4),
           const Text(
@@ -138,7 +158,13 @@ class ClaimRewardScreen extends GetView<QuizController> {
     );
   }
 
-  Widget _buildRewardRow(IconData icon, String value, String label, Color color, Color bgColor) {
+  Widget _buildRewardRow(
+    IconData icon,
+    String value,
+    String label,
+    Color color,
+    Color bgColor,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
@@ -163,11 +189,19 @@ class ClaimRewardScreen extends GetView<QuizController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(value,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: color)),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(label,
-                    style: const TextStyle(fontSize: 12, color: QuizColors.body)),
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 12, color: QuizColors.body),
+                ),
               ],
             ),
           ),

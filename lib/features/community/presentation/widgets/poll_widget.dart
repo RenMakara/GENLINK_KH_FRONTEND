@@ -32,25 +32,31 @@ class _PollWidgetState extends State<PollWidget> {
     final bool showResults = !widget.hideResultsUntilVote || hasVoted;
 
     int totalVotes = widget.options.fold(0, (sum, opt) => sum + opt.votes);
-    
+
     // Formatting plural for vote count dynamically as requested
     final String voteText = totalVotes == 1 ? "1 vote" : "$totalVotes votes";
-    final String durationText = widget.duration != null ? "Ends ${widget.duration}" : "Ended";
-    
+    final String durationText = widget.duration != null
+        ? "Ends ${widget.duration}"
+        : "Ended";
+
     // Check expiration based on duration string (e.g. if we map it visually to Ended)
     // We treat "Ended" as a state that blocks voting.
     final bool isEnded = widget.duration?.toLowerCase() == 'ended';
     final bool canVote = !hasVoted && !isEnded;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 12,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Question Title
           Text(
             widget.question,
-            style: theme.textTheme.titleMedium?.copyWith(
+            style:
+                theme.textTheme.titleMedium?.copyWith(
                   color: textPrimary,
                   fontWeight: FontWeight.w600,
                   fontSize: 18,
@@ -67,7 +73,9 @@ class _PollWidgetState extends State<PollWidget> {
 
           // 2. Poll Option Progress Cards
           ...widget.options.map((opt) {
-            final double pctRatio = totalVotes > 0 ? (opt.votes / totalVotes).clamp(0.0, 1.0) : 0.0;
+            final double pctRatio = totalVotes > 0
+                ? (opt.votes / totalVotes).clamp(0.0, 1.0)
+                : 0.0;
             final int pctValue = (pctRatio * 100).round();
 
             return Padding(
@@ -95,7 +103,8 @@ class _PollWidgetState extends State<PollWidget> {
           // 3. Footer Subtitle
           Text(
             "$voteText • $durationText",
-            style: theme.textTheme.bodySmall?.copyWith(
+            style:
+                theme.textTheme.bodySmall?.copyWith(
                   color: textSecondary,
                   fontWeight: FontWeight.w500,
                 ) ??
@@ -133,7 +142,8 @@ class PollOptionWidget extends StatefulWidget {
   State<PollOptionWidget> createState() => _PollOptionWidgetState();
 }
 
-class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerProviderStateMixin {
+class _PollOptionWidgetState extends State<PollOptionWidget>
+    with SingleTickerProviderStateMixin {
   late AnimationController _scaleController;
   late Animation<double> _scaleAnimation;
 
@@ -145,8 +155,20 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
       duration: const Duration(milliseconds: 150),
     );
     _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 1.02).chain(CurveTween(curve: Curves.easeOut)), weight: 50),
-      TweenSequenceItem(tween: Tween<double>(begin: 1.02, end: 1.0).chain(CurveTween(curve: Curves.easeIn)), weight: 50),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.02,
+        ).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.02,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
+        weight: 50,
+      ),
     ]).animate(_scaleController);
   }
 
@@ -167,18 +189,28 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isVoted = widget.option.isVoted;
-    
+
     // Strict Monochrome Styling
-    final Color unselectedBg = widget.isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF3F4F6);
-    final Color selectedBg = widget.isDark ? Colors.white : const Color(0xFFF3F4F6);
-    
-    final Color unselectedBorder = widget.isDark ? Colors.white12 : Colors.black12;
-    final Color selectedBorder = widget.isDark ? Colors.transparent : Colors.black12;
+    final Color unselectedBg = widget.isDark
+        ? const Color(0xFF1E1E1E)
+        : const Color(0xFFF3F4F6);
+    final Color selectedBg = widget.isDark
+        ? Colors.white
+        : const Color(0xFFF3F4F6);
+
+    final Color unselectedBorder = widget.isDark
+        ? Colors.white12
+        : Colors.black12;
+    final Color selectedBorder = widget.isDark
+        ? Colors.transparent
+        : Colors.black12;
 
     final Color unselectedText = widget.isDark ? Colors.white : Colors.black87;
     final Color selectedText = Colors.black;
 
-    final Color unselectedFill = widget.isDark ? Colors.white12 : Colors.black12;
+    final Color unselectedFill = widget.isDark
+        ? Colors.white12
+        : Colors.black12;
     final Color selectedFill = Colors.black12;
 
     return GestureDetector(
@@ -186,7 +218,7 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Semantics(
-          label: isVoted 
+          label: isVoted
               ? "Selected poll option ${widget.option.text}, ${widget.pctValue} percent"
               : "Poll option ${widget.option.text}, ${widget.pctValue} percent",
           button: true,
@@ -217,7 +249,9 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
                         child: Container(
                           decoration: BoxDecoration(
                             color: isVoted ? selectedFill : unselectedFill,
-                            borderRadius: BorderRadius.circular(13), // 1px less than 14 for border inset
+                            borderRadius: BorderRadius.circular(
+                              13,
+                            ), // 1px less than 14 for border inset
                           ),
                         ),
                       ),
@@ -234,7 +268,11 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
                         child: Row(
                           children: [
                             if (isVoted) ...[
-                              const Icon(Icons.check, color: Colors.black, size: 18),
+                              const Icon(
+                                Icons.check,
+                                color: Colors.black,
+                                size: 18,
+                              ),
                               const SizedBox(width: 8),
                             ],
                             Expanded(
@@ -242,13 +280,22 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
                                 widget.option.text,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: isVoted ? selectedText : unselectedText,
-                                      fontWeight: isVoted ? FontWeight.w600 : FontWeight.w500,
+                                style:
+                                    theme.textTheme.bodyMedium?.copyWith(
+                                      color: isVoted
+                                          ? selectedText
+                                          : unselectedText,
+                                      fontWeight: isVoted
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
                                     ) ??
                                     TextStyle(
-                                      color: isVoted ? selectedText : unselectedText,
-                                      fontWeight: isVoted ? FontWeight.w600 : FontWeight.w500,
+                                      color: isVoted
+                                          ? selectedText
+                                          : unselectedText,
+                                      fontWeight: isVoted
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
                                       fontSize: 14,
                                     ),
                               ),
@@ -261,12 +308,17 @@ class _PollOptionWidgetState extends State<PollOptionWidget> with SingleTickerPr
                           padding: const EdgeInsets.only(left: 8),
                           child: Text(
                             "${widget.pctValue}%",
-                            style: theme.textTheme.labelMedium?.copyWith(
-                                  color: isVoted ? selectedText : unselectedText,
+                            style:
+                                theme.textTheme.labelMedium?.copyWith(
+                                  color: isVoted
+                                      ? selectedText
+                                      : unselectedText,
                                   fontWeight: FontWeight.w600,
                                 ) ??
                                 TextStyle(
-                                  color: isVoted ? selectedText : unselectedText,
+                                  color: isVoted
+                                      ? selectedText
+                                      : unselectedText,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
                                 ),

@@ -15,11 +15,17 @@ class StoryController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchStories();
+    if (!Get.testMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        fetchStories();
+      });
+    }
   }
 
   Future<void> fetchStories() async {
-    isLoading.value = true;
+    if (!isLoading.value) {
+      isLoading.value = true;
+    }
     try {
       final data = await _repository.getStories();
       storyGroups.assignAll(data);
@@ -43,6 +49,8 @@ class StoryController extends GetxController {
     double bgScale = 1.0,
     dynamic bgOffset,
     double bgRotation = 0.0,
+    String? templateId,
+    List<StoryTemplateSlot>? templateSlots,
   }) async {
     if (isUploading.value) return false;
     isUploading.value = true;
@@ -70,6 +78,8 @@ class StoryController extends GetxController {
         bgScale: bgScale,
         bgOffset: bgOffset,
         bgRotation: bgRotation,
+        templateId: templateId,
+        templateSlots: templateSlots,
       );
 
       // Update owner story group in reactive tray list (preventing duplicates)
@@ -159,6 +169,66 @@ class StoryController extends GetxController {
   void syncLikeToBackend(String storyId) {
     _repository.toggleLikeStory(storyId);
     storyGroups.refresh();
+  }
+
+  Future<bool> updateStory(String storyId, StoryItemModel updatedStory) async {
+    if (isUploading.value) return false;
+    isUploading.value = true;
+    try {
+      // 1. Backend API call
+      await _repository.updateStory(storyId, updatedStory);
+
+      // 2. Local state update
+      final ownerGroup = storyGroups.firstWhere((g) => g.isOwner);
+      final index = ownerGroup.stories.indexWhere((s) => s.id == storyId);
+      if (index != -1) {
+        ownerGroup.stories[index] = updatedStory;
+        storyGroups.refresh();
+      }
+      return true;
+    } catch (e) {
+      return false;
+    } finally {
+      isUploading.value = false;
+    }
+  }
+
+  void updateStoryPrivacy(String storyId, String newPrivacy) {
+    final ownerGroup = storyGroups.firstWhere((g) => g.isOwner);
+    final index = ownerGroup.stories.indexWhere((s) => s.id == storyId);
+    if (index != -1) {
+      final oldStory = ownerGroup.stories[index];
+      final newSettings = StorySettings(
+        visibility: newPrivacy == 'Public' ? StoryPrivacy.public : (newPrivacy == 'Only Me' ? StoryPrivacy.onlyMe : StoryPrivacy.friends),
+        replyPermission: oldStory.settings.replyPermission,
+        allowReactions: oldStory.settings.allowReactions,
+      );
+      final updatedStory = StoryItemModel(
+        id: oldStory.id,
+        type: oldStory.type,
+        mediaUrl: oldStory.mediaUrl,
+        textContent: oldStory.textContent,
+        bgGradientStart: oldStory.bgGradientStart,
+        bgGradientEnd: oldStory.bgGradientEnd,
+        location: oldStory.location,
+        timeAgo: oldStory.timeAgo,
+        createdAt: oldStory.createdAt,
+        settings: newSettings,
+        layers: oldStory.layers,
+        bgScale: oldStory.bgScale,
+        bgOffset: oldStory.bgOffset,
+        bgRotation: oldStory.bgRotation,
+      );
+      updatedStory.likesCount = oldStory.likesCount;
+      updatedStory.isLiked = oldStory.isLiked;
+      updatedStory.isViewed = oldStory.isViewed;
+      updatedStory.viewersCount = oldStory.viewersCount;
+      updatedStory.viewers.addAll(oldStory.viewers);
+
+      ownerGroup.stories[index] = updatedStory;
+      storyGroups.refresh();
+      _repository.updateStory(storyId, updatedStory);
+    }
   }
 
   void deleteStory(String storyId) {

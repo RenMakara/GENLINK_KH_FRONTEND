@@ -1,12 +1,4 @@
-enum NotificationType {
-  like,
-  comment,
-  mention,
-  follow,
-  group,
-  event,
-  system,
-}
+enum NotificationType { like, comment, mention, follow, group, event, system }
 
 class NotificationModel {
   final String id;

@@ -129,7 +129,10 @@ class LocalizationService extends GetxController with WidgetsBindingObserver {
   /// fetch — updates the UI without recording an explicit choice, so a
   /// user who never picked a language keeps following their device.
   void syncFromAccount(String backendLanguage) {
-    language.value = backendLanguage == khmer ? khmer : english;
+    final target = backendLanguage == khmer ? khmer : english;
+    if (language.value == target) return;
+
+    language.value = target;
     _applyLocale();
   }
 

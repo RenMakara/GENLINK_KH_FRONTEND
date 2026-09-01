@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/branding/app_logo.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/buttons/google_sign_in_button.dart';
 import '../../../../design_system/widgets/inputs/app_input.dart';
@@ -59,17 +60,16 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
-      showBack: false,
-      title: 'auth.loginTitle'.tr,
-      subtitle: 'auth.loginSubtitle'.tr,
       // Wrap, not Row: the prompt + link overflows on narrow screens and
       // in Khmer, where the phrase is longer.
       footer: Wrap(
         alignment: WrapAlignment.center,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Text('auth.noAccount'.tr,
-              style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            'auth.noAccount'.tr,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
           AppButton.text(
             label: 'auth.register'.tr,
             onPressed: () => Get.toNamed<void>(AppRoutes.register),
@@ -77,6 +77,22 @@ class _LoginScreenState extends State<LoginScreen> {
         ],
       ),
       children: [
+        const AuthBrandLockup(),
+        const SizedBox(height: AppSpacing.xl),
+        Text(
+          'auth.loginTitle'.tr,
+          style: Theme.of(context).textTheme.displayMedium,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'auth.loginSubtitle'.tr,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.62),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
         Form(
           key: _formKey,
           child: Column(
@@ -87,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 label: 'auth.email'.tr,
                 hint: 'auth.emailHint'.tr,
                 controller: _email,
-                autofocus: true,
+                autofocus: false,
                 validator: Validators.email,
               ),
               const SizedBox(height: AppSpacing.md),
@@ -102,8 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 alignment: Alignment.centerRight,
                 child: AppButton.text(
                   label: 'auth.forgotPassword'.tr,
-                  onPressed: () =>
-                      Get.toNamed<void>(AppRoutes.forgotPassword),
+                  onPressed: () => Get.toNamed<void>(AppRoutes.forgotPassword),
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -133,4 +148,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

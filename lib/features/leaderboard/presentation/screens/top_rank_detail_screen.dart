@@ -50,12 +50,16 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
           child: SingleChildScrollView(
             child: Column(
               children: [
-                if (isFirst) _buildHeroHeader(user) else _buildStandardHeader(user),
+                if (isFirst)
+                  _buildHeroHeader(user)
+                else
+                  _buildStandardHeader(user),
                 _buildMetricCards(user),
                 const SizedBox(height: 16),
                 if (isFirst && user.quote != null) _buildAboutSection(user),
                 if (user.topSubjects.isNotEmpty) _buildTopSubjects(user),
-                if (isFirst && user.achievements.isNotEmpty) _buildRecentAchievements(user),
+                if (isFirst && user.achievements.isNotEmpty)
+                  _buildRecentAchievements(user),
                 if (!isFirst) ...[
                   const SizedBox(height: 16),
                   _buildAchievementsSection(user),
@@ -67,7 +71,11 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
                   onPressed: () => Get.back(),
                   child: const Text(
                     'Back to Leaderboard',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: QuizColors.body),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: QuizColors.body,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -95,7 +103,7 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
                   ),
             boxShadow: [
               BoxShadow(
-                color: QuizColors.primary.withOpacity(0.2),
+                color: QuizColors.primary.withValues(alpha: 0.2),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -106,7 +114,11 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
         const SizedBox(height: 14),
         Text(
           user.name,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: QuizColors.heading),
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: QuizColors.heading,
+          ),
         ),
         const SizedBox(height: 6),
         Container(
@@ -117,7 +129,11 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
           ),
           child: Text(
             'Global Rank #${user.rank}  ·  ${user.countryFlag} ${user.country}',
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: QuizColors.primary),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: QuizColors.primary,
+            ),
           ),
         ),
         const SizedBox(height: 20),
@@ -160,7 +176,7 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFFC107).withOpacity(0.35),
+                      color: const Color(0xFFFFC107).withValues(alpha: 0.35),
                       blurRadius: 30,
                       offset: const Offset(0, 10),
                     ),
@@ -171,7 +187,10 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
               Positioned(
                 bottom: -6,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFFFFC107), Color(0xFFFFA000)],
@@ -179,7 +198,7 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFFC107).withOpacity(0.3),
+                        color: const Color(0xFFFFC107).withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -192,7 +211,11 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
                       SizedBox(width: 4),
                       Text(
                         'Global Rank #1',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
                     ],
                   ),
@@ -203,7 +226,11 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
           const SizedBox(height: 16),
           Text(
             user.name,
-            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: QuizColors.heading),
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: QuizColors.heading,
+            ),
           ),
           const SizedBox(height: 4),
           Row(
@@ -213,7 +240,11 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
               const SizedBox(width: 6),
               Text(
                 '${user.xp} XP  ·  Lv.${user.level}',
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: QuizColors.body),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: QuizColors.body,
+                ),
               ),
             ],
           ),
@@ -227,7 +258,11 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          _buildMetricItem('${user.totalQuizzes}', 'Quizzes', QuizColors.primary),
+          _buildMetricItem(
+            '${user.totalQuizzes}',
+            'Quizzes',
+            QuizColors.primary,
+          ),
           const SizedBox(width: 10),
           _buildMetricItem('${user.xp} XP', 'Experience', QuizColors.gold),
           const SizedBox(width: 10),
@@ -249,9 +284,23 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
         ),
         child: Column(
           children: [
-            Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: QuizColors.body)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: QuizColors.body,
+              ),
+            ),
           ],
         ),
       ),
@@ -276,12 +325,20 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
           children: [
             const Text(
               'About',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: QuizColors.heading),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: QuizColors.heading,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               user.quote!,
-              style: const TextStyle(fontSize: 14, color: QuizColors.body, height: 1.4),
+              style: const TextStyle(
+                fontSize: 14,
+                color: QuizColors.body,
+                height: 1.4,
+              ),
             ),
           ],
         ),
@@ -299,7 +356,11 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
             padding: const EdgeInsets.only(left: 4, bottom: 10),
             child: const Text(
               'Top Subjects',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: QuizColors.heading),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: QuizColors.heading,
+              ),
             ),
           ),
           Wrap(
@@ -307,15 +368,24 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
             runSpacing: 8,
             children: user.topSubjects.map((s) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: QuizColors.primaryLight,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: QuizColors.primary.withOpacity(0.15)),
+                  border: Border.all(
+                    color: QuizColors.primary.withValues(alpha: 0.15),
+                  ),
                 ),
                 child: Text(
                   s,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: QuizColors.primary),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: QuizColors.primary,
+                  ),
                 ),
               );
             }).toList(),
@@ -345,14 +415,20 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
             padding: const EdgeInsets.only(left: 4, bottom: 10),
             child: const Text(
               'Recent Achievements',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: QuizColors.heading),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: QuizColors.heading,
+              ),
             ),
           ),
           Row(
             children: List.generate(achievements.length, (i) {
               return Expanded(
                 child: Container(
-                  margin: EdgeInsets.only(right: i < achievements.length - 1 ? 10 : 0),
+                  margin: EdgeInsets.only(
+                    right: i < achievements.length - 1 ? 10 : 0,
+                  ),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: QuizColors.surface,
@@ -366,7 +442,9 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: iconColors[i % iconColors.length].withOpacity(0.12),
+                          color: iconColors[i % iconColors.length].withValues(
+                            alpha: 0.12,
+                          ),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
@@ -379,7 +457,11 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
                       Text(
                         achievements[i].title,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: QuizColors.body),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: QuizColors.body,
+                        ),
                       ),
                     ],
                   ),
@@ -419,7 +501,11 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
           children: [
             const Text(
               'Achievements',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: QuizColors.heading),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: QuizColors.heading,
+              ),
             ),
             const SizedBox(height: 12),
             Row(
@@ -427,10 +513,12 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
                 final i = achievements.indexOf(a) % colors.length;
                 return Expanded(
                   child: Container(
-                    margin: EdgeInsets.only(right: i < achievements.length - 1 ? 8 : 0),
+                    margin: EdgeInsets.only(
+                      right: i < achievements.length - 1 ? 8 : 0,
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
-                      color: colors[i].withOpacity(0.08),
+                      color: colors[i].withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Column(
@@ -440,7 +528,11 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
                         Text(
                           a.title,
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: colors[i]),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: colors[i],
+                          ),
                         ),
                       ],
                     ),
@@ -479,14 +571,24 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      isFirst ? Icons.bolt : (isFriend ? Icons.message_outlined : Icons.person_add),
+                      isFirst
+                          ? Icons.bolt
+                          : (isFriend
+                                ? Icons.message_outlined
+                                : Icons.person_add),
                       color: Colors.white,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isFirst ? 'Challenge Emma' : (isFriend ? 'Message' : 'Add Friend'),
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+                      isFirst
+                          ? 'Challenge Emma'
+                          : (isFriend ? 'Message' : 'Add Friend'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),

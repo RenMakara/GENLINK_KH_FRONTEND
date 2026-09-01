@@ -15,12 +15,14 @@ class RingedAvatar extends StatelessWidget {
     this.name,
     this.size = 108,
     this.onEdit,
+    this.onTap,
   });
 
   final String? imageUrl;
   final String? name;
   final double size;
   final VoidCallback? onEdit;
+  final VoidCallback? onTap;
 
   static const _ringWidth = 3.0;
 
@@ -33,30 +35,33 @@ class RingedAvatar extends StatelessWidget {
       width: size,
       child: Stack(
         children: [
-          Container(
-            height: size,
-            width: size,
-            padding: const EdgeInsets.all(_ringWidth),
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: SweepGradient(
-                colors: [
-                  AppColors.accentPremium,
-                  AppColors.growthAccent,
-                  AppColors.accentPremium,
-                ],
-              ),
-            ),
+          GestureDetector(
+            onTap: onTap,
             child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
+              height: size,
+              width: size,
+              padding: const EdgeInsets.all(_ringWidth),
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: scheme.surface,
+                gradient: SweepGradient(
+                  colors: [
+                    AppColors.accentPremium,
+                    AppColors.growthAccent,
+                    AppColors.accentPremium,
+                  ],
+                ),
               ),
-              child: AppAvatar(
-                imageUrl: imageUrl,
-                name: name,
-                size: size - (_ringWidth + 2) * 2,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: scheme.surface,
+                ),
+                child: AppAvatar(
+                  imageUrl: imageUrl,
+                  name: name,
+                  size: size - (_ringWidth + 2) * 2,
+                ),
               ),
             ),
           ),
@@ -72,11 +77,7 @@ class RingedAvatar extends StatelessWidget {
                   onTap: onEdit,
                   child: Padding(
                     padding: const EdgeInsets.all(6),
-                    child: Icon(
-                      Icons.edit,
-                      size: 13,
-                      color: scheme.onPrimary,
-                    ),
+                    child: Icon(Icons.edit, size: 13, color: scheme.onPrimary),
                   ),
                 ),
               ),
@@ -129,11 +130,7 @@ class StatusChip extends StatelessWidget {
 
 /// Progress bar that fades from the text colour into the premium accent.
 class GradientProgressBar extends StatelessWidget {
-  const GradientProgressBar({
-    super.key,
-    required this.value,
-    this.height = 8,
-  });
+  const GradientProgressBar({super.key, required this.value, this.height = 8});
 
   final double value;
   final double height;
@@ -152,11 +149,11 @@ class GradientProgressBar extends StatelessWidget {
               Container(
                 height: height,
                 width: constraints.maxWidth * value.clamp(0.0, 1.0),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.lightPrimary,
-                      AppColors.accentPremium,
+                      scheme.primary,
+                      scheme.secondary,
                       AppColors.growthAccent,
                     ],
                   ),
@@ -303,9 +300,7 @@ class ExpertiseChip extends StatelessWidget {
         vertical: AppSpacing.sm + 2,
       ),
       decoration: BoxDecoration(
-        color: emphasised
-            ? scheme.primary
-            : scheme.surface,
+        color: emphasised ? scheme.primary : scheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(
           color: emphasised ? Colors.transparent : scheme.outlineVariant,
@@ -332,9 +327,7 @@ class AddChipButton extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Material(
       color: scheme.surface,
-      shape: CircleBorder(
-        side: BorderSide(color: scheme.outlineVariant),
-      ),
+      shape: CircleBorder(side: BorderSide(color: scheme.outlineVariant)),
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onPressed,
@@ -397,12 +390,15 @@ class SavedItemCard extends StatelessWidget {
             else
               ColoredBox(color: scheme.surfaceContainerHighest),
             // Scrim so the label stays readable over any cover.
-            const DecoratedBox(
+            DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.center,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black87],
+                  colors: [
+                    Colors.transparent,
+                    AppColors.darkBgPrimary.withValues(alpha: 0.88),
+                  ],
                 ),
               ),
             ),
@@ -415,7 +411,7 @@ class SavedItemCard extends StatelessWidget {
                   Text(
                     item.itemType.replaceAll('_', ' '),
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.white70,
+                      color: AppColors.darkTextSecondary,
                       letterSpacing: 0.6,
                     ),
                   ),
@@ -424,8 +420,9 @@ class SavedItemCard extends StatelessWidget {
                     item.title ?? '',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall
-                        ?.copyWith(color: Colors.white),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: AppColors.darkTextPrimary,
+                    ),
                   ),
                 ],
               ),

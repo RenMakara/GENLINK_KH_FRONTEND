@@ -5,11 +5,17 @@ import 'package:genlink_frontend/core/localization/localization_service.dart';
 import 'package:genlink_frontend/core/storage/local_storage.dart';
 import 'package:genlink_frontend/core/storage/secure_storage.dart';
 import 'package:genlink_frontend/design_system/theme/app_theme.dart';
+import 'package:genlink_frontend/design_system/widgets/branding/app_logo.dart';
 import 'package:genlink_frontend/features/auth/domain/repositories/auth_repository.dart';
 import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:genlink_frontend/features/auth/presentation/screens/auth_choice_screen.dart';
+import 'package:genlink_frontend/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:genlink_frontend/features/auth/presentation/screens/login_screen.dart';
 import 'package:genlink_frontend/features/auth/presentation/screens/register_screen.dart';
+import 'package:genlink_frontend/features/auth/presentation/screens/reset_otp_screen.dart';
+import 'package:genlink_frontend/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:genlink_frontend/features/auth/presentation/screens/verify_otp_screen.dart';
+import 'package:genlink_frontend/features/auth/presentation/widgets/animated_auth_background.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -19,6 +25,9 @@ class _MockAuthRepository extends Mock implements AuthRepository {}
 /// against the design. Regenerate with `flutter test --update-goldens`.
 void main() {
   const phone = Size(390, 844);
+
+  setUpAll(() => EditableText.debugDeterministicCursor = true);
+  tearDownAll(() => EditableText.debugDeterministicCursor = false);
 
   setUp(() {
     Get
@@ -48,6 +57,10 @@ void main() {
 
     await tester.pumpWidget(
       GetMaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child!,
+        ),
         translations: AppTranslations(),
         locale: LocalizationService.englishLocale,
         fallbackLocale: LocalizationService.englishLocale,
@@ -58,6 +71,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(find.byType(AnimatedAuthBackground), findsOneWidget);
   }
 
   testWidgets('login', (tester) async {
@@ -65,6 +79,33 @@ void main() {
     await expectLater(
       find.byType(LoginScreen),
       matchesGoldenFile('goldens/login.png'),
+    );
+  });
+
+  testWidgets('auth choice', (tester) async {
+    await pumpScreen(tester, const AuthChoiceScreen());
+    await expectLater(
+      find.byType(AuthChoiceScreen),
+      matchesGoldenFile('goldens/auth_choice.png'),
+    );
+  });
+
+  testWidgets('auth choice (dark)', (tester) async {
+    await pumpScreen(
+      tester,
+      const AuthChoiceScreen(),
+      brightness: Brightness.dark,
+    );
+    final mark = tester.widget<Image>(
+      find.descendant(
+        of: find.byType(AppLogoMark),
+        matching: find.byType(Image),
+      ),
+    );
+    expect((mark.image as AssetImage).assetName, AppLogoAssets.markDark);
+    await expectLater(
+      find.byType(AuthChoiceScreen),
+      matchesGoldenFile('goldens/auth_choice_dark.png'),
     );
   });
 
@@ -99,6 +140,35 @@ void main() {
     await expectLater(
       find.byType(VerifyOtpScreen),
       matchesGoldenFile('goldens/verify_otp.png'),
+    );
+  });
+
+  testWidgets('reset otp', (tester) async {
+    Get.find<AuthController>()
+      ..pendingEmail.value = 'makara.it@email.com'
+      ..resendCooldown.value = 47;
+
+    await pumpScreen(tester, const ResetOtpScreen());
+    await expectLater(
+      find.byType(ResetOtpScreen),
+      matchesGoldenFile('goldens/reset_otp.png'),
+    );
+  });
+
+  testWidgets('forgot password', (tester) async {
+    await pumpScreen(tester, const ForgotPasswordScreen());
+    await expectLater(
+      find.byType(ForgotPasswordScreen),
+      matchesGoldenFile('goldens/forgot_password.png'),
+    );
+  });
+
+  testWidgets('reset password', (tester) async {
+    Get.find<AuthController>().pendingEmail.value = 'makara.it@email.com';
+    await pumpScreen(tester, const ResetPasswordScreen());
+    await expectLater(
+      find.byType(ResetPasswordScreen),
+      matchesGoldenFile('goldens/reset_password.png'),
     );
   });
 }

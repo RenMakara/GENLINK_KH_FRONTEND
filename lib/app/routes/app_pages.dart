@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../features/auth/presentation/middleware/auth_middleware.dart';
+import '../../features/auth/presentation/screens/auth_choice_screen.dart';
 import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
@@ -18,11 +19,11 @@ import '../../features/profile/presentation/screens/portfolio_screen.dart';
 import '../../features/profile/presentation/screens/profile_setup_screen.dart';
 import '../../features/profile/presentation/screens/saved_items_screen.dart';
 import '../../features/settings/presentation/screens/account_settings_screen.dart';
+import '../../features/settings/presentation/bindings/settings_binding.dart';
 import '../../features/settings/presentation/screens/appearance_settings_screen.dart';
 import '../../features/settings/presentation/screens/language_settings_screen.dart';
 import '../../features/settings/presentation/screens/privacy_settings_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
-import '../../features/community/presentation/bindings/community_binding.dart';
 import '../../features/chat/chat_feature.dart';
 import '../../features/notification/notification_feature.dart';
 import '../../features/quiz/presentation/bindings/quiz_binding.dart';
@@ -41,12 +42,15 @@ import '../../features/quiz/presentation/screens/top_rank_detail_screen.dart';
 import '../../features/leaderboard/presentation/bindings/leaderboard_binding.dart';
 import '../../features/leaderboard/presentation/screens/leaderboard_home_screen.dart';
 import '../../features/leaderboard/presentation/screens/full_ranking_screen.dart';
-import '../../features/leaderboard/presentation/screens/top_rank_detail_screen.dart' as lb_detail;
-import '../../features/leaderboard/presentation/screens/achievements_screen.dart' as lb_achievements;
+import '../../features/leaderboard/presentation/screens/top_rank_detail_screen.dart'
+    as lb_detail;
+import '../../features/leaderboard/presentation/screens/achievements_screen.dart'
+    as lb_achievements;
 import '../../features/leaderboard/presentation/screens/invite_friends_screen.dart';
 import '../../features/splash/presentation/bindings/splash_binding.dart';
 import '../../features/splash/presentation/screens/splash_screen.dart';
 import '../../main_screen.dart';
+import '../bindings/main_binding.dart';
 import 'app_routes.dart';
 
 /// Central GetX page registry.
@@ -77,9 +81,10 @@ abstract final class AppPages {
 
     // ── Auth ────────────────────────────────────────────────────────────
     GetPage<dynamic>(
-      name: AppRoutes.login,
-      page: () => const LoginScreen(),
+      name: AppRoutes.authChoice,
+      page: () => const AuthChoiceScreen(),
     ),
+    GetPage<dynamic>(name: AppRoutes.login, page: () => const LoginScreen()),
     GetPage<dynamic>(
       name: AppRoutes.register,
       page: () => const RegisterScreen(),
@@ -105,7 +110,7 @@ abstract final class AppPages {
     GetPage<dynamic>(
       name: AppRoutes.home,
       page: () => const MainScreen(),
-      binding: CommunityBinding(),
+      binding: MainBinding(),
       middlewares: [AuthMiddleware()],
     ),
     GetPage<dynamic>(
@@ -126,7 +131,6 @@ abstract final class AppPages {
       binding: ChatBinding(),
       middlewares: [AuthMiddleware()],
     ),
-
 
     // ── Quiz ─────────────────────────────────────────────────────────────────
     GetPage<dynamic>(
@@ -243,7 +247,7 @@ abstract final class AppPages {
     ),
     GetPage<dynamic>(
       name: AppRoutes.profile,
-      page: () => const ProfileScreen(),
+      page: () => ProfileScreen(viewingUsername: Get.parameters['username']),
       binding: ProfileBinding(),
       middlewares: [AuthMiddleware()],
     ),

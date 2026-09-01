@@ -11,36 +11,15 @@ abstract final class AppRoutes {
   static const onboarding = '/onboarding';
 
   // ── Auth ──────────────────────────────────────────────────────────────
+  static const authChoice = '/auth';
   static const login = '/login';
   static const register = '/register';
   static const verifyEmail = '/verify-email';
   static const forgotPassword = '/forgot-password';
+
   /// Code entry for the password reset, between forgot and reset.
   static const resetOtp = '/reset-otp';
   static const resetPassword = '/reset-password';
-
-  /// Routes an already-authenticated user should be redirected away from.
-  static const authRoutes = <String>{
-    login,
-    register,
-    verifyEmail,
-    forgotPassword,
-    resetOtp,
-    resetPassword,
-  };
-
-  /// Routes reachable without a session.
-  static const publicRoutes = <String>{
-    splash,
-    languageSelect,
-    onboarding,
-    login,
-    register,
-    verifyEmail,
-    forgotPassword,
-    resetOtp,
-    resetPassword,
-  };
 
   // ── Main ──────────────────────────────────────────────────────────────
   static const home = '/home';
@@ -85,4 +64,3 @@ abstract final class AppRoutes {
   static const settingsPrivacy = '/settings/privacy';
   static const settingsAccount = '/settings/account';
 }
-

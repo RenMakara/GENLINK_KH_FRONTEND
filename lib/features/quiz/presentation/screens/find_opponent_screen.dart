@@ -22,7 +22,11 @@ class FindOpponentScreen extends GetView<QuizController> {
         ),
         title: const Text(
           'Find Opponent',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: QuizColors.heading),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: QuizColors.heading,
+          ),
         ),
       ),
       body: Column(
@@ -59,7 +63,11 @@ class FindOpponentScreen extends GetView<QuizController> {
                 shape: BoxShape.circle,
                 gradient: QuizColors.gradient,
                 boxShadow: [
-                  BoxShadow(color: Color(0x408B5CF6), blurRadius: 20, offset: Offset(0, 8)),
+                  BoxShadow(
+                    color: Color(0x408B5CF6),
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
+                  ),
                 ],
               ),
               child: const Icon(Icons.person, color: Colors.white, size: 40),
@@ -113,12 +121,19 @@ class FindOpponentScreen extends GetView<QuizController> {
           children: [
             const Text(
               'Opponent Found!',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: QuizColors.correct),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: QuizColors.correct,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Preparing match...',
-              style: TextStyle(fontSize: 15, color: QuizColors.body.withOpacity(0.8)),
+              style: TextStyle(
+                fontSize: 15,
+                color: QuizColors.body.withOpacity(0.8),
+              ),
             ),
           ],
         );
@@ -127,24 +142,35 @@ class FindOpponentScreen extends GetView<QuizController> {
         children: [
           const Text(
             'Finding Opponent...',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: QuizColors.heading),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: QuizColors.heading,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Searching for players near your level',
-            style: TextStyle(fontSize: 14, color: QuizColors.body.withOpacity(0.8)),
+            style: TextStyle(
+              fontSize: 14,
+              color: QuizColors.body.withOpacity(0.8),
+            ),
           ),
           const SizedBox(height: 20),
           SizedBox(
             width: 200,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(4),
-              child: Obx(() => LinearProgressIndicator(
-                    value: controller.opponentSearchProgress.value,
-                    backgroundColor: QuizColors.border,
-                    valueColor: const AlwaysStoppedAnimation<Color>(QuizColors.primary),
-                    minHeight: 6,
-                  )),
+              child: Obx(
+                () => LinearProgressIndicator(
+                  value: controller.opponentSearchProgress.value,
+                  backgroundColor: QuizColors.border,
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    QuizColors.primary,
+                  ),
+                  minHeight: 6,
+                ),
+              ),
             ),
           ),
         ],
@@ -154,7 +180,8 @@ class FindOpponentScreen extends GetView<QuizController> {
 
   Widget _buildCancelButton() {
     return Obx(() {
-      if (controller.opponentSearchProgress.value >= 1.0) return const SizedBox.shrink();
+      if (controller.opponentSearchProgress.value >= 1.0)
+        return const SizedBox.shrink();
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40),
         child: OutlinedButton(
@@ -165,10 +192,15 @@ class FindOpponentScreen extends GetView<QuizController> {
           style: OutlinedButton.styleFrom(
             foregroundColor: QuizColors.body,
             side: const BorderSide(color: QuizColors.border),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             minimumSize: const Size(double.infinity, 48),
           ),
-          child: const Text('Cancel', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          ),
         ),
       );
     });
@@ -188,13 +220,21 @@ class FindOpponentScreen extends GetView<QuizController> {
                 color: const Color(0x40FFC107),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.lightbulb_outline, color: QuizColors.gold, size: 22),
+              child: const Icon(
+                Icons.lightbulb_outline,
+                color: QuizColors.gold,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 12),
             const Expanded(
               child: Text(
                 'Answer correctly to earn XP and climb the leaderboard!',
-                style: TextStyle(fontSize: 13, color: QuizColors.body, height: 1.4),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: QuizColors.body,
+                  height: 1.4,
+                ),
               ),
             ),
           ],

@@ -150,11 +150,7 @@ class CommunitySuggestion {
 }
 
 class MotivationCard {
-  const MotivationCard({
-    required this.motivationId,
-    this.title,
-    this.content,
-  });
+  const MotivationCard({required this.motivationId, this.title, this.content});
 
   final String motivationId;
   final String? title;

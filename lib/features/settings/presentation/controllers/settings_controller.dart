@@ -4,8 +4,8 @@ import '../../../../core/errors/app_error.dart';
 import '../../../../core/localization/localization_service.dart';
 import '../../../../core/theme/theme_controller.dart';
 import '../../../../design_system/widgets/dialogs/app_dialog.dart';
-import '../../../profile/domain/repositories/profile_repository.dart';
 import '../../domain/entities/user_settings_entity.dart';
+import '../../domain/repositories/settings_repository.dart';
 
 /// Owns `/api/v1/profile/settings`.
 ///
@@ -17,16 +17,20 @@ class SettingsController extends GetxController {
     required this._repository,
     required ThemeController themeController,
     required this._localization,
-  })  : _theme = themeController;
+  }) : _theme = themeController;
 
-  final ProfileRepository _repository;
+  final SettingsRepository _repository;
   final ThemeController _theme;
   final LocalizationService _localization;
 
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
-  final settings = UserSettingsEntity().obs;
+
+  late final settings = UserSettingsEntity(
+    theme: _theme.backendTheme,
+    language: _localization.language.value,
+  ).obs;
 
   @override
   void onInit() {
@@ -35,16 +39,34 @@ class SettingsController extends GetxController {
   }
 
   Future<void> load() async {
+    if (isLoading.value) return;
     isLoading.value = true;
     errorMessage.value = null;
     try {
       final loaded = await _repository.getSettings();
-      settings.value = loaded;
-      // The server is authoritative for a signed-in user. Language is a
-      // sync (not an explicit choice) so device-following stays alive for
-      // users who never picked one themselves.
-      await _theme.applyBackendTheme(loaded.theme);
-      _localization.syncFromAccount(loaded.language);
+      final current = settings.value;
+
+      // Merge: prefer backend if it's NOT the default, otherwise stay with 
+      // current local state. This prevents backend defaults from 
+      // clobbering a user's manual choice when opening the settings page.
+      final merged = loaded.copyWith(
+        theme: loaded.theme == UserSettingsEntity.themeSystem
+            ? current.theme
+            : loaded.theme,
+        language: loaded.language == UserSettingsEntity.languageEnglish
+            ? current.language
+            : loaded.language,
+      );
+
+      settings.value = merged;
+
+      // Only apply to the app if it actually changed from current local state.
+      if (merged.theme != current.theme) {
+        await _theme.applyBackendTheme(merged.theme);
+      }
+      if (merged.language != current.language) {
+        _localization.syncFromAccount(merged.language);
+      }
     } on AppError catch (e) {
       errorMessage.value = e.message;
     } catch (_) {
@@ -57,46 +79,57 @@ class SettingsController extends GetxController {
   // ── Appearance ────────────────────────────────────────────────────────
 
   Future<void> setTheme(String theme) async {
-    final previous = settings.value.theme;
-    if (previous == theme) return;
+    final previous = settings.value;
+    if (previous.theme == theme) return;
 
-    settings.value = settings.value.copyWith(theme: theme);
+    settings.value = previous.copyWith(theme: theme);
     await _theme.applyBackendTheme(theme);
 
-    await _patch(theme: theme);
+    if (!await _patch(theme: theme)) {
+      settings.value = previous;
+      await _theme.applyBackendTheme(previous.theme);
+    }
   }
 
   Future<void> setLanguage(String language) async {
-    final previous = settings.value.language;
-    if (previous == language) return;
+    final previous = settings.value;
+    if (previous.language == language) return;
 
-    settings.value = settings.value.copyWith(language: language);
+    settings.value = previous.copyWith(language: language);
     await _localization.setLanguage(language);
 
-    await _patch(language: language);
+    if (!await _patch(language: language)) {
+      settings.value = previous;
+      await _localization.setLanguage(previous.language);
+    }
   }
 
   // ── Toggles ───────────────────────────────────────────────────────────
 
-  Future<void> setNotificationEnabled(bool value) =>
-      _toggle((s) => s.copyWith(notificationEnabled: value),
-          () => _patch(notificationEnabled: value));
+  Future<void> setNotificationEnabled(bool value) => _toggle(
+    (s) => s.copyWith(notificationEnabled: value),
+    () => _patch(notificationEnabled: value),
+  );
 
   Future<void> setAllowMessages(bool value) => _toggle(
-      (s) => s.copyWith(allowMessages: value),
-      () => _patch(allowMessages: value));
+    (s) => s.copyWith(allowMessages: value),
+    () => _patch(allowMessages: value),
+  );
 
   Future<void> setAllowFollowRequest(bool value) => _toggle(
-      (s) => s.copyWith(allowFollowRequest: value),
-      () => _patch(allowFollowRequest: value));
+    (s) => s.copyWith(allowFollowRequest: value),
+    () => _patch(allowFollowRequest: value),
+  );
 
   Future<void> setBiometricEnabled(bool value) => _toggle(
-      (s) => s.copyWith(biometricEnabled: value),
-      () => _patch(biometricEnabled: value));
+    (s) => s.copyWith(biometricEnabled: value),
+    () => _patch(biometricEnabled: value),
+  );
 
   Future<void> setPrivacyProfile(String value) => _toggle(
-      (s) => s.copyWith(privacyProfile: value),
-      () => _patch(privacyProfile: value));
+    (s) => s.copyWith(privacyProfile: value),
+    () => _patch(privacyProfile: value),
+  );
 
   // ── Helpers ───────────────────────────────────────────────────────────
 
@@ -122,7 +155,20 @@ class SettingsController extends GetxController {
     isSaving.value = true;
     errorMessage.value = null;
     try {
-      settings.value = await _repository.updateSettings(
+      final updated = await _repository.updateSettings(
+        language: language,
+        theme: theme,
+        notificationEnabled: notificationEnabled,
+        privacyProfile: privacyProfile,
+        allowMessages: allowMessages,
+        allowFollowRequest: allowFollowRequest,
+        biometricEnabled: biometricEnabled,
+      );
+
+      // If the backend returns defaults for fields we just tried to set,
+      // keep our local value for now to avoid the UI "flickering" or
+      // ticking the wrong box while the backend catches up.
+      settings.value = updated.copyWith(
         language: language,
         theme: theme,
         notificationEnabled: notificationEnabled,

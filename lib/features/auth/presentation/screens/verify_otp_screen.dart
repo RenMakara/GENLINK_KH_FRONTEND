@@ -4,11 +4,12 @@ import 'package:get/get.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/branding/app_logo.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/dialogs/app_dialog.dart';
-import '../../../../design_system/widgets/inputs/otp_input.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/auth_scaffold.dart';
+import '../widgets/otp_keypad.dart';
 
 /// Email verification via the 6-digit OTP.
 ///
@@ -34,10 +35,18 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
 
   bool get _isComplete => _otp.length == Validators.otpLength;
 
+  void _appendDigit(String digit) {
+    if (_otp.length >= Validators.otpLength) return;
+    setState(() => _otp += digit);
+  }
+
+  void _deleteDigit() {
+    if (_otp.isEmpty) return;
+    setState(() => _otp = _otp.substring(0, _otp.length - 1));
+  }
+
   Future<void> _submit() async {
     if (!_isComplete) return;
-    FocusScope.of(context).unfocus();
-
     final success = await _auth.verifyEmail(email: _email, otp: _otp);
     // Verification returns a session, so the account is live from here.
     // New accounts go through profile setup first; it is skippable.
@@ -56,10 +65,11 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     // No `title`: this screen renders its own header so the email address
     // can be emphasised inside the subtitle line.
     return AuthScaffold(
+      backBottomSpacing: AppSpacing.md,
       children: [
-        const AuthBadgeIcon(icon: Icons.lock_outline),
-        const SizedBox(height: AppSpacing.lg),
-        Text('auth.verifyTitle'.tr, style: theme.textTheme.displayLarge),
+        const AuthBrandLockup(),
+        const SizedBox(height: AppSpacing.xl),
+        Text('auth.verifyTitle'.tr, style: theme.textTheme.displayMedium),
         const SizedBox(height: AppSpacing.sm),
         Text.rich(
           TextSpan(
@@ -78,17 +88,15 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.xl),
+        const SizedBox(height: AppSpacing.lg),
         Obx(
-          () => OtpInput(
+          () => OtpCodeDisplay(
+            code: _otp,
             length: Validators.otpLength,
             errorText: _auth.errorMessage.value,
-            onChanged: (value) => setState(() => _otp = value),
-            // Submitting straight from the last digit saves a tap.
-            onCompleted: (_) => _submit(),
           ),
         ),
-        const SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.md),
         Obx(() {
           final remaining = _auth.resendCooldown.value;
           if (remaining > 0) {
@@ -118,12 +126,30 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
             ),
           );
         }),
-        const SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.md),
         Obx(
           () => AppButton(
+            key: const ValueKey('verify-email-button'),
             label: 'auth.verifyEmail'.tr,
             loading: _auth.isLoading.value,
             onPressed: _isComplete ? _submit : null,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        OtpNumericKeypad(
+          onDigitPressed: _appendDigit,
+          onBackspacePressed: _deleteDigit,
+          // Verification codes are numeric. The design keeps the symbol key
+          // visible, while a null callback makes its disabled state explicit.
+          onSymbolPressed: null,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          'auth.otpHelp'.tr,
+          key: const ValueKey('otp-help-text'),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
           ),
         ),
       ],

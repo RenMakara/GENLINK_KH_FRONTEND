@@ -16,14 +16,11 @@ enum AppButtonVariant {
 
   /// Filled with the error colour — destructive actions.
   danger,
+
+  /// Inverse filled action for use on a primary-colour surface.
+  inverse,
 }
 
-/// The app's button. Backgrounds are rendered in Flutter, never exported
-/// from Figma.
-///
-/// While [loading] is true the label is swapped for a spinner and taps are
-/// ignored, so callers can bind straight to a controller's `isLoading`
-/// without also having to null out `onPressed`.
 class AppButton extends StatelessWidget {
   const AppButton({
     super.key,
@@ -34,6 +31,8 @@ class AppButton extends StatelessWidget {
     this.expanded = true,
     this.icon,
     this.muted = false,
+    this.height = 60,
+    this.radius,
   });
 
   const AppButton.secondary({
@@ -43,8 +42,22 @@ class AppButton extends StatelessWidget {
     this.loading = false,
     this.expanded = true,
     this.icon,
-  })  : variant = AppButtonVariant.secondary,
-        muted = false;
+    this.height = 60,
+    this.radius,
+  }) : variant = AppButtonVariant.secondary,
+       muted = false;
+
+  const AppButton.inverse({
+    super.key,
+    required this.label,
+    this.onPressed,
+    this.loading = false,
+    this.expanded = true,
+    this.icon,
+    this.height = 60,
+    this.radius,
+  }) : variant = AppButtonVariant.inverse,
+       muted = false;
 
   const AppButton.text({
     super.key,
@@ -54,6 +67,8 @@ class AppButton extends StatelessWidget {
     this.expanded = false,
     this.icon,
     this.muted = false,
+    this.height = 44,
+    this.radius,
   }) : variant = AppButtonVariant.text;
 
   final String label;
@@ -62,12 +77,10 @@ class AppButton extends StatelessWidget {
   final bool loading;
   final bool expanded;
   final IconData? icon;
+  final double height;
+  final double? radius;
 
-  /// Text buttons only: renders in the muted colour used by "Skip for now",
-  /// versus the strong colour used by inline links like "Log in".
   final bool muted;
-
-  static const _height = 60.0;
 
   @override
   Widget build(BuildContext context) {
@@ -101,70 +114,83 @@ class AppButton extends StatelessWidget {
           );
 
     final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(AppRadius.pill),
+      borderRadius: BorderRadius.circular(radius ?? AppRadius.pill),
     );
     const padding = EdgeInsets.symmetric(horizontal: AppSpacing.lg);
 
     final button = switch (variant) {
       AppButtonVariant.primary => FilledButton(
-          onPressed: effectiveOnPressed,
-          style: FilledButton.styleFrom(
-            backgroundColor: scheme.primary,
-            foregroundColor: scheme.onPrimary,
-            textStyle: textStyle,
-            minimumSize: const Size(0, _height),
-            padding: padding,
-            shape: shape,
-          ),
-          child: child,
+        onPressed: effectiveOnPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: scheme.primary,
+          foregroundColor: scheme.onPrimary,
+          textStyle: textStyle,
+          minimumSize: Size(0, height),
+          padding: padding,
+          shape: shape,
         ),
+        child: child,
+      ),
       AppButtonVariant.danger => FilledButton(
-          onPressed: effectiveOnPressed,
-          style: FilledButton.styleFrom(
-            backgroundColor: scheme.error,
-            foregroundColor: scheme.onError,
-            textStyle: textStyle,
-            minimumSize: const Size(0, _height),
-            padding: padding,
-            shape: shape,
-          ),
-          child: child,
+        onPressed: effectiveOnPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: scheme.error,
+          foregroundColor: scheme.onError,
+          textStyle: textStyle,
+          minimumSize: Size(0, height),
+          padding: padding,
+          shape: shape,
         ),
+        child: child,
+      ),
       AppButtonVariant.secondary => OutlinedButton(
-          onPressed: effectiveOnPressed,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: scheme.onSurface,
-            textStyle: textStyle,
-            side: BorderSide(color: scheme.outline),
-            minimumSize: const Size(0, _height),
-            padding: padding,
-            shape: shape,
-          ),
-          child: child,
+        onPressed: effectiveOnPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: scheme.onSurface,
+          textStyle: textStyle,
+          side: BorderSide(color: scheme.outline),
+          minimumSize: Size(0, height),
+          padding: padding,
+          shape: shape,
         ),
+        child: child,
+      ),
       AppButtonVariant.text => TextButton(
-          onPressed: effectiveOnPressed,
-          style: TextButton.styleFrom(
-            foregroundColor: muted
-                ? scheme.onSurface.withValues(alpha: 0.55)
-                : scheme.onSurface,
-            textStyle: textStyle,
-            minimumSize: const Size(0, 44),
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-            shape: shape,
-          ),
-          child: child,
+        onPressed: effectiveOnPressed,
+        style: TextButton.styleFrom(
+          foregroundColor: muted
+              ? scheme.onSurface.withValues(alpha: 0.55)
+              : scheme.onSurface,
+          textStyle: textStyle,
+          minimumSize: Size(0, height),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          shape: shape,
         ),
+        child: child,
+      ),
+      AppButtonVariant.inverse => FilledButton(
+        onPressed: effectiveOnPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: scheme.onPrimary,
+          foregroundColor: scheme.primary,
+          textStyle: textStyle,
+          minimumSize: Size(0, height),
+          padding: padding,
+          shape: shape,
+        ),
+        child: child,
+      ),
     };
 
     return expanded ? SizedBox(width: double.infinity, child: button) : button;
   }
 
   Color _foregroundOf(ColorScheme scheme) => switch (variant) {
-        AppButtonVariant.primary => scheme.onPrimary,
-        AppButtonVariant.danger => scheme.onError,
-        _ => scheme.onSurface,
-      };
+    AppButtonVariant.primary => scheme.onPrimary,
+    AppButtonVariant.danger => scheme.onError,
+    AppButtonVariant.inverse => scheme.primary,
+    _ => scheme.onSurface,
+  };
 }
 
 class _Label extends StatelessWidget {

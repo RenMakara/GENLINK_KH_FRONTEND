@@ -11,7 +11,7 @@ import '../storage/local_storage.dart';
 /// the choice across restarts and before the profile call returns.
 class ThemeController extends GetxController {
   ThemeController({required LocalStorage localStorage})
-      : _storage = localStorage;
+    : _storage = localStorage;
 
   final LocalStorage _storage;
 
@@ -23,10 +23,10 @@ class ThemeController extends GetxController {
 
   /// The current mode as the backend `Theme` enum value.
   String get backendTheme => switch (themeMode.value) {
-        ThemeMode.light => themeLight,
-        ThemeMode.dark => themeDark,
-        ThemeMode.system => themeSystem,
-      };
+    ThemeMode.light => themeLight,
+    ThemeMode.dark => themeDark,
+    ThemeMode.system => themeSystem,
+  };
 
   bool get isDark => themeMode.value == ThemeMode.dark;
 
@@ -36,8 +36,6 @@ class ThemeController extends GetxController {
       final stored = await _storage.readThemeMode();
       if (stored != null) {
         themeMode.value = _toThemeMode(stored);
-        Get.changeThemeMode(themeMode.value);
-        Get.forceAppUpdate();
       }
     } catch (_) {
       // Keep the default ThemeMode.system.
@@ -51,8 +49,6 @@ class ThemeController extends GetxController {
 
   Future<void> setThemeMode(ThemeMode mode) async {
     themeMode.value = mode;
-    Get.changeThemeMode(mode);
-    Get.forceAppUpdate();
     await _storage.saveThemeMode(backendTheme);
   }
 
@@ -69,8 +65,8 @@ class ThemeController extends GetxController {
   }
 
   static ThemeMode _toThemeMode(String backendValue) => switch (backendValue) {
-        themeLight => ThemeMode.light,
-        themeDark => ThemeMode.dark,
-        _ => ThemeMode.system,
-      };
+    themeLight => ThemeMode.light,
+    themeDark => ThemeMode.dark,
+    _ => ThemeMode.system,
+  };
 }

@@ -949,7 +949,7 @@ class AppTranslations extends Translations {
     'onboarding.growTitle': 'បង្កើនលុយ ការផ្តោតអារម្មណ៍\nនិងអនាគតរបស់អ្នក',
     'onboarding.growBody':
         'តាមដានគោលដៅ រៀនហិរញ្ញវត្ថុ បំពេញបញ្ហាប្រឈម '
-        'និងកសាងប្រវត្តិរូបរបស់អ្នក — មួយថ្ងៃម្តងៗ។',
+        'និងកសាងប្រវត្តិរូបរបស់អ្នក — មួយថ្ងៃម្តងៗ',
     'onboarding.rowFinance': 'ហិរញ្ញវត្ថុ',
     'onboarding.rowFinanceDetail': 'សន្សំបាន \$1,240',
     'onboarding.rowFocus': 'ពិន្ទុផ្តោតអារម្មណ៍',

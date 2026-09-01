@@ -23,10 +23,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   DateTime selectedDate = DateTime.now();
 
-  // ===========================================================================
   // CATEGORIES
-  // ===========================================================================
-
   final List<ExpenseCategoryItem> categories = [
     ExpenseCategoryItem(
       name: 'finance.expense.food'.tr,
@@ -60,10 +57,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     ),
   ];
 
-  // ===========================================================================
   // PAYMENT METHODS
-  // ===========================================================================
-
   final List<ExpensePaymentItem> payments = const [
     ExpensePaymentItem(name: 'Cash', icon: Icons.payments_outlined),
     ExpensePaymentItem(name: 'Card', icon: Icons.credit_card_outlined),
@@ -78,10 +72,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     super.dispose();
   }
 
-  // ===========================================================================
   // DATE PICKER
-  // ===========================================================================
-
   Future<void> _selectDate() async {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -109,10 +100,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     }
   }
 
-  // ===========================================================================
   // DATE FORMAT
-  // ===========================================================================
-
   String _formatDate(DateTime date) {
     const months = [
       'Jan',
@@ -132,10 +120,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
-  // ===========================================================================
   // SAVE EXPENSE
-  // ===========================================================================
-
   void _saveExpense() {
     final String amount = _amountController.text.trim();
     final String title = _titleController.text.trim();
@@ -163,19 +148,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     Navigator.pop(context);
   }
 
-  // ===========================================================================
   // BUILD
-  // ===========================================================================
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
 
-    // =========================================================================
     // COLORS
-    // =========================================================================
-
     final Color bg = isDark
         ? AppColors.darkBgPrimary
         : AppColors.lightBgPrimary;
@@ -209,9 +188,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // =================================================================
             // HEADER
-            // =================================================================
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
               child: Row(
@@ -247,9 +224,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               ),
             ),
 
-            // =================================================================
             // CONTENT
-            // =================================================================
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -257,9 +232,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // =========================================================
                     // AMOUNT
-                    // =========================================================
                     ExpenseAmountSection(
                       controller: _amountController,
                       surface: surface,
@@ -271,9 +244,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
                     const SizedBox(height: 26),
 
-                    // =========================================================
                     // DESCRIPTION
-                    // =========================================================
                     ExpenseSectionLabel(
                       title: 'finance.expense.description'.tr,
                       subtitle: 'finance.expense.descriptionHelper'.tr,
@@ -295,9 +266,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
                     const SizedBox(height: 23),
 
-                    // =========================================================
                     // CATEGORY
-                    // =========================================================
                     ExpenseSectionLabel(
                       title: 'finance.expense.category'.tr,
                       subtitle: 'finance.expense.categoryHelper'.tr,
@@ -323,9 +292,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
                     const SizedBox(height: 23),
 
-                    // =========================================================
                     // NOTE
-                    // =========================================================
                     ExpenseSectionLabel(
                       title: 'finance.expense.note'.tr,
                       subtitle: 'finance.expense.optional'.tr,
@@ -347,9 +314,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
                     const SizedBox(height: 23),
 
-                    // =========================================================
                     // DATE
-                    // =========================================================
                     ExpenseSectionLabel(
                       title: 'finance.expense.date'.tr,
                       subtitle: 'finance.expense.dateHelper'.tr,
@@ -370,9 +335,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
                     const SizedBox(height: 23),
 
-                    // =========================================================
                     // PAYMENT
-                    // =========================================================
                     ExpenseSectionLabel(
                       title: 'finance.expense.paymentMethod'.tr,
                       subtitle: 'finance.expense.paymentHelper'.tr,
@@ -398,9 +361,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
                     const SizedBox(height: 30),
 
-                    // =========================================================
                     // SAVE
-                    // =========================================================
                     SizedBox(
                       width: double.infinity,
                       height: 54,
@@ -428,9 +389,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
                     const SizedBox(height: 8),
 
-                    // =========================================================
                     // CANCEL
-                    // =========================================================
                     SizedBox(
                       width: double.infinity,
                       height: 48,

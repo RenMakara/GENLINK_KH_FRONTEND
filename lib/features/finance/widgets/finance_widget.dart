@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
 // TRANSACTION
@@ -372,11 +373,15 @@ class AppCard extends StatelessWidget {
 class BalanceCard extends StatelessWidget {
   final bool isDark;
   final Color surfaceSecondary;
+  final String periodLabel;
+  final String balance;
 
   const BalanceCard({
     super.key,
     required this.isDark,
     required this.surfaceSecondary,
+    required this.periodLabel,
+    required this.balance,
   });
 
   @override
@@ -393,7 +398,7 @@ class BalanceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Net Balance · June 2026',
+            '${'finance.balance'.tr} · $periodLabel',
             style: TextStyle(
               color: Colors.white.withValues(alpha: .65),
               fontSize: 12,
@@ -402,8 +407,8 @@ class BalanceCard extends StatelessWidget {
 
           const SizedBox(height: 5),
 
-          const Text(
-            '\$4,820.50',
+          Text(
+            balance,
             style: TextStyle(
               color: Colors.white,
               fontSize: 32,
@@ -414,74 +419,19 @@ class BalanceCard extends StatelessWidget {
 
           const SizedBox(height: 18),
 
-          Row(
-            children: [
-              Expanded(
-                child: _BalanceItem(
-                  title: 'Income',
-                  amount: '+\$6,200',
-                  amountColor: AppColors.financeAccent,
-                ),
-              ),
-
-              const SizedBox(width: 10),
-
-              Expanded(
-                child: _BalanceItem(
-                  title: 'Expenses',
-                  amount: '-\$1,379.50',
-                  amountColor: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// BALANCE ITEM
-class _BalanceItem extends StatelessWidget {
-  final String title;
-  final String amount;
-  final Color amountColor;
-
-  const _BalanceItem({
-    required this.title,
-    required this.amount,
-    required this.amountColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .08),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: .55),
-              fontSize: 11,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: .08),
+              borderRadius: BorderRadius.circular(12),
             ),
-          ),
-
-          const SizedBox(height: 4),
-
-          Text(
-            amount,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: amountColor,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
+            child: Text(
+              'finance.availableBalance'.tr,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: .65),
+                fontSize: 11,
+              ),
             ),
           ),
         ],

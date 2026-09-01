@@ -1,34 +1,53 @@
 import 'package:flutter/material.dart';
-import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/features/finance/presentation/learn_finance_feature/investing_quiz.dart';
+import 'package:get/get.dart';
 
-class InvestingBasicsScreen extends StatelessWidget {
-  const InvestingBasicsScreen({super.key});
+import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
+import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
+import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
+import 'package:genlink_frontend/features/finance/presentation/controllers/finance_learning_controller.dart';
+import 'investing_quiz.dart';
+
+/// Detail screen for one backend financial-literacy lesson.
+///
+/// The class name is retained for route compatibility with the original
+/// prototype; the content is now entirely supplied by the API.
+class InvestingBasicsScreen extends StatefulWidget {
+  const InvestingBasicsScreen({
+    super.key,
+    required this.lessonId,
+    this.initialLesson,
+  });
+
+  final String lessonId;
+  final FinanceLearningLessonSummaryEntity? initialLesson;
+
+  @override
+  State<InvestingBasicsScreen> createState() => _InvestingBasicsScreenState();
+}
+
+class _InvestingBasicsScreenState extends State<InvestingBasicsScreen> {
+  FinanceLearningController get controller =>
+      Get.find<FinanceLearningController>();
+
+  @override
+  void initState() {
+    super.initState();
+    controller.loadLesson(widget.lessonId);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
-    final surfaceSecondary = isDark
-        ? AppColors.darkSurfaceSecondary
-        : AppColors.lightSurfaceSecondary;
-    final textPrimary = isDark
+    final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final text = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
-    final textMuted = isDark
-        ? AppColors.darkTextMuted
-        : AppColors.lightTextMuted;
-    final textInverse = isDark
-        ? AppColors.darkTextInverse
-        : AppColors.lightTextInverse;
     final border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
@@ -36,382 +55,185 @@ class InvestingBasicsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: bg,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: AppBar(
+        backgroundColor: bg,
+        foregroundColor: text,
+        elevation: 0,
+        title: Obx(
+          () => Text(
+            controller.selectedLesson.value?.title ??
+                widget.initialLesson?.title ??
+                'finance.learning.lesson'.tr,
+          ),
+        ),
+      ),
+      body: Obx(() {
+        final lesson = controller.selectedLesson.value;
+        final error = controller.detailErrorMessage.value;
+        if (controller.isDetailLoading.value && lesson == null) {
+          return const AppLoader();
+        }
+        if (error != null && lesson == null) {
+          return _DetailError(message: error, onRetry: _reload);
+        }
+        if (lesson == null) {
+          return _DetailError(
+            message: 'finance.learning.noLesson'.tr,
+            onRetry: _reload,
+          );
+        }
+        return RefreshIndicator(
+          onRefresh: _reload,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 32),
             children: [
-              // HEADER
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: border),
-                      ),
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 18,
-                        color: textPrimary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Text(
-                    'Investing Basics',
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ],
+              _MetaRow(lesson: lesson, muted: muted, primary: primary),
+              const SizedBox(height: 18),
+              Text(
+                lesson.title,
+                style: TextStyle(
+                  color: text,
+                  fontSize: 24,
+                  height: 1.2,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-
-              const SizedBox(height: 22),
-
-              // LESSON HERO
+              const SizedBox(height: 16),
               Container(
-                width: double.infinity,
-                height: 160,
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: surfaceSecondary,
+                  color: surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: border),
                 ),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: CustomPaint(painter: _GridPainter(isDark: isDark)),
-                    ),
-                    Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.auto_graph_rounded,
-                            color: textPrimary.withValues(alpha: 0.75),
-                            size: 36,
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            '6 min read',
-                            style: TextStyle(
-                              color: textMuted,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
+                child: SelectableText(
+                  lesson.content,
+                  style: TextStyle(color: text, fontSize: 15, height: 1.55),
+                ),
+              ),
+              if (lesson.mediaUrl != null && lesson.mediaUrl!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  lesson.mediaUrl!,
+                  style: TextStyle(color: muted, fontSize: 12),
+                ),
+              ],
+              const SizedBox(height: 20),
+              if (controller.mutationErrorMessage.value != null)
+                Text(
+                  controller.mutationErrorMessage.value!,
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+              AppButton(
+                label: lesson.completed
+                    ? 'finance.learning.completed'.tr
+                    : 'finance.learning.markComplete'.tr,
+                icon: lesson.completed
+                    ? Icons.check_circle_outline_rounded
+                    : Icons.done_rounded,
+                loading: controller.isCompleteSubmitting.value,
+                onPressed: lesson.completed
+                    ? null
+                    : () async {
+                        final success = await controller.completeLesson(
+                          widget.lessonId,
+                        );
+                        if (success && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'finance.learning.completeSuccess'.tr,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                          );
+                        }
+                      },
               ),
-
-              const SizedBox(height: 16),
-
-              // ─────────────────────────────────────────
-              // TAGS
-              // ─────────────────────────────────────────
-              Row(
-                children: [
-                  _Tag(
-                    title: 'Finance',
-                    background: primary,
-                    foreground: textInverse,
-                  ),
-                  const SizedBox(width: 8),
-                  _Tag(
-                    title: 'Beginner',
-                    background: surface,
-                    foreground: textMuted,
-                    border: border,
-                  ),
-                  const SizedBox(width: 8),
-                  _Tag(
-                    title: '+100 XP',
-                    background: surface,
-                    foreground: textMuted,
-                    border: border,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // ─────────────────────────────────────────
-              // TITLE + DESCRIPTION
-              // ─────────────────────────────────────────
-              Text(
-                'Investing Basics: Build Wealth Over Time',
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 20,
-                  height: 1.25,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              Text(
-                'Learn how to make your money work for you. '
-                'This lesson covers the fundamentals of investing '
-                'for beginners in Cambodia and Southeast Asia.',
-                style: TextStyle(
-                  color: textSecondary,
-                  fontSize: 14,
-                  height: 1.45,
-                ),
-              ),
-
-              const SizedBox(height: 22),
-
-              // ─────────────────────────────────────────
-              // KEY POINTS
-              // ─────────────────────────────────────────
-              Text(
-                'Key Points',
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              _KeyPoint(
-                number: '1',
-                text: 'Understand risk vs. return in investments',
-                background: surfaceSecondary,
-                textPrimary: textPrimary,
-              ),
-              _KeyPoint(
-                number: '2',
-                text: 'Start with index funds for diversification',
-                background: surfaceSecondary,
-                textPrimary: textPrimary,
-              ),
-              _KeyPoint(
-                number: '3',
-                text: 'The power of compound interest over time',
-                background: surfaceSecondary,
-                textPrimary: textPrimary,
-              ),
-              _KeyPoint(
-                number: '4',
-                text: 'Set realistic investment goals for your income',
-                background: surfaceSecondary,
-                textPrimary: textPrimary,
-              ),
-              _KeyPoint(
-                number: '5',
-                text: 'Avoid common investing mistakes as a beginner',
-                background: surfaceSecondary,
-                textPrimary: textPrimary,
-              ),
-
-              const SizedBox(height: 16),
-
-              Divider(color: border, height: 1),
-
-              const SizedBox(height: 16),
-
-              // ─────────────────────────────────────────
-              // QUIZ SECTION
-              // ─────────────────────────────────────────
-              Text(
-                'Quiz',
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-
-              const SizedBox(height: 6),
-
-              Text(
-                'Test your knowledge and track your progress.',
-                style: TextStyle(color: textMuted, fontSize: 13),
-              ),
-
-              const SizedBox(height: 16),
-
-              // ─────────────────────────────────────────
-              // START QUIZ BUTTON
-              // ─────────────────────────────────────────
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const InvestingQuizScreen(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primary,
-                    foregroundColor: textInverse,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+              if (lesson.questionCount > 0) ...[
+                const SizedBox(height: 12),
+                AppButton.secondary(
+                  label: 'finance.learning.startQuiz'.tr,
+                  icon: Icons.quiz_outlined,
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          InvestingQuizScreen(lessonId: widget.lessonId),
                     ),
                   ),
-                  child: const Text(
-                    'Start Quiz →',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                  ),
                 ),
-              ),
-
-              const SizedBox(height: 40),
+              ],
             ],
           ),
+        );
+      }),
+    );
+  }
+
+  Future<void> _reload() => controller.loadLesson(widget.lessonId);
+}
+
+class _MetaRow extends StatelessWidget {
+  const _MetaRow({
+    required this.lesson,
+    required this.muted,
+    required this.primary,
+  });
+
+  final FinanceLearningLessonDetailEntity lesson;
+  final Color muted;
+  final Color primary;
+
+  @override
+  Widget build(BuildContext context) {
+    final values = <String>[
+      lesson.topic,
+      lesson.contentType,
+      if (lesson.estimatedTime != null) '${lesson.estimatedTime} min',
+      '${lesson.xpReward} XP',
+      if (lesson.quizPassed) 'finance.learning.quizPassed'.tr,
+    ];
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: values
+          .map(
+            (value) => Chip(
+              label: Text(value),
+              avatar: value == lesson.topic
+                  ? Icon(Icons.topic_outlined, color: primary, size: 16)
+                  : null,
+              labelStyle: TextStyle(color: muted, fontSize: 12),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+class _DetailError extends StatelessWidget {
+  const _DetailError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            TextButton(onPressed: onRetry, child: Text('common.retry'.tr)),
+          ],
         ),
       ),
     );
   }
-}
-
-// ─────────────────────────────────────────────────────────────
-// TAG
-// ─────────────────────────────────────────────────────────────
-
-class _Tag extends StatelessWidget {
-  final String title;
-  final Color background;
-  final Color foreground;
-  final Color? border;
-
-  const _Tag({
-    required this.title,
-    required this.background,
-    required this.foreground,
-    this.border,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(20),
-        border: border != null ? Border.all(color: border!) : null,
-      ),
-      child: Text(
-        title,
-        style: TextStyle(
-          color: foreground,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// KEY POINT
-// ─────────────────────────────────────────────────────────────
-
-class _KeyPoint extends StatelessWidget {
-  final String number;
-  final String text;
-  final Color background;
-  final Color textPrimary;
-
-  const _KeyPoint({
-    required this.number,
-    required this.text,
-    required this.background,
-    required this.textPrimary,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: background,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              number,
-              style: TextStyle(
-                color: textPrimary,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                height: 1.3,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// BACKGROUND GRID
-// ─────────────────────────────────────────────────────────────
-
-class _GridPainter extends CustomPainter {
-  final bool isDark;
-
-  _GridPainter({required this.isDark});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = isDark
-          ? Colors.white.withValues(alpha: 0.025)
-          : Colors.black.withValues(alpha: 0.025)
-      ..strokeWidth = 0.5;
-
-    const spacing = 14.0;
-
-    for (double x = 0; x <= size.width; x += spacing) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-
-    for (double y = 0; y <= size.height; y += spacing) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

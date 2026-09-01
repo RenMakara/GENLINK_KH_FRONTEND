@@ -1,56 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_widget.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
+import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
+import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
+import 'package:genlink_frontend/features/finance/presentation/controllers/expense_controller.dart';
+import 'package:genlink_frontend/features/finance/presentation/controllers/finance_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_add_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_detail_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_history_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_widget.dart';
+import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
 
-class ExpenseScreen extends StatefulWidget {
+/// Expense overview backed by the Finance dashboard and Expense list APIs.
+class ExpenseScreen extends GetView<ExpenseController> {
   const ExpenseScreen({super.key});
 
-  @override
-  State<ExpenseScreen> createState() => _ExpenseScreenState();
-}
-
-class _ExpenseScreenState extends State<ExpenseScreen> {
-  int selectedPeriod = 2;
+  FinanceController get financeController => Get.find<FinanceController>();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
-
     final surfaceSecondary = isDark
         ? AppColors.darkSurfaceSecondary
         : AppColors.lightSurfaceSecondary;
-
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
-
     final textSecondary = isDark
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
-
     final textMuted = isDark
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
-
     final border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
-
-    final primaryColor = isDark
-        ? AppColors.darkPrimary
-        : AppColors.lightPrimary;
-
+    final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
     final inverseText = isDark
         ? AppColors.darkTextInverse
         : AppColors.lightTextInverse;
@@ -58,170 +49,110 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     return Scaffold(
       backgroundColor: bg,
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 36),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // HEADER
-              Row(
-                children: [
-                  ExpenseBackButton(
-                    background: surface,
-                    iconColor: textPrimary,
-                    borderColor: border,
-                    onTap: () => Navigator.pop(context),
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  Expanded(
-                    child: Text(
-                      'finance.expense.title'.tr,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.7,
+        child: Obx(() {
+          final dashboard = financeController.dashboard.value;
+          final currency = controller.selectedCurrency.value;
+          final expenses = controller.expenses.toList(growable: false);
+          final month = dashboard?.month;
+          final categories = dashboard?.topCategories ?? const [];
+          return RefreshIndicator(
+            onRefresh: () async {
+              await Future.wait<void>([
+                controller.refresh(),
+                financeController.reload(),
+              ]);
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 36),
+              children: [
+                Row(
+                  children: [
+                    ExpenseBackButton(
+                      background: surface,
+                      iconColor: textPrimary,
+                      borderColor: border,
+                      onTap: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'finance.expense.title'.tr,
+                        style: TextStyle(
+                          color: textPrimary,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                  ),
-
-                  ExpenseAddButton(
-                    background: primaryColor,
-                    iconColor: inverseText,
-                    onTap: () {
-                      Navigator.push(
+                    ExpenseAddButton(
+                      background: primary,
+                      iconColor: inverseText,
+                      onTap: () => Navigator.push<void>(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const AddExpenseScreen(),
                         ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // PERIOD SELECTOR
-              Container(
-                height: 48,
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: surface,
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: border, width: 1),
-                ),
-                child: Stack(
-                  children: [
-                    // SLIDING SELECTED BACKGROUND
-                    AnimatedAlign(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOutCubic,
-                      alignment: selectedPeriod == 0
-                          ? Alignment.centerLeft
-                          : selectedPeriod == 1
-                          ? Alignment.center
-                          : Alignment.centerRight,
-                      child: FractionallySizedBox(
-                        widthFactor: 1 / 3,
-                        heightFactor: 1,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: primaryColor,
-                            borderRadius: BorderRadius.circular(11),
-                          ),
-                        ),
                       ),
-                    ),
-
-                    // BUTTONS
-                    Row(
-                      children: [
-                        PeriodButton(
-                          title: 'finance.expense.today'.tr,
-                          selected: selectedPeriod == 0,
-                          onTap: () {
-                            setState(() {
-                              selectedPeriod = 0;
-                            });
-                          },
-                          textMuted: textMuted,
-                          selectedColor: primaryColor,
-                          selectedTextColor: inverseText,
-                        ),
-
-                        PeriodButton(
-                          title: 'finance.expense.week'.tr,
-                          selected: selectedPeriod == 1,
-                          onTap: () {
-                            setState(() {
-                              selectedPeriod = 1;
-                            });
-                          },
-                          textMuted: textMuted,
-                          selectedColor: primaryColor,
-                          selectedTextColor: inverseText,
-                        ),
-
-                        PeriodButton(
-                          title: 'finance.expense.month'.tr,
-                          selected: selectedPeriod == 2,
-                          onTap: () {
-                            setState(() {
-                              selectedPeriod = 2;
-                            });
-                          },
-                          textMuted: textMuted,
-                          selectedColor: primaryColor,
-                          selectedTextColor: inverseText,
-                        ),
-                      ],
                     ),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 18),
-
-              // SPENDING OVERVIEW
-              SurfaceCard(
-                color: surface,
-                borderColor: border,
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                const SizedBox(height: 18),
+                _CurrencyBar(
+                  currency: currency,
+                  onChanged: controller.selectCurrency,
+                  surface: surface,
+                  border: border,
+                  primary: primary,
+                  textPrimary: textPrimary,
+                ),
+                const SizedBox(height: 16),
+                if (controller.isInitialLoading.value && dashboard == null)
+                  const SizedBox(height: 260, child: AppLoader())
+                else if (controller.listErrorMessage.value != null &&
+                    expenses.isEmpty)
+                  SizedBox(
+                    height: 260,
+                    child: AppEmptyState(
+                      message: controller.listErrorMessage.value!,
+                      icon: Icons.cloud_off_outlined,
+                      action: AppButton.secondary(
+                        label: 'common.retry'.tr,
+                        expanded: false,
+                        onPressed: controller.loadInitial,
+                      ),
+                    ),
+                  )
+                else ...[
+                  SurfaceCard(
+                    color: surface,
+                    borderColor: border,
+                    padding: const EdgeInsets.all(18),
+                    child: Row(
                       children: [
                         ExpenseDonut(
                           size: 92,
                           strokeWidth: 10,
                           backgroundColor: surfaceSecondary,
-                          segments: const [
-                            DonutSegment(
-                              value: .40,
-                              color: AppColors.growthAccent,
-                            ),
-                            DonutSegment(
-                              value: .25,
-                              color: AppColors.brandPrimary,
-                            ),
-                            DonutSegment(
-                              value: .20,
-                              color: AppColors.financeAccent,
-                            ),
-                            DonutSegment(
-                              value: .15,
-                              color: AppColors.profileAccent,
-                            ),
-                          ],
+                          segments: categories.isEmpty
+                              ? const []
+                              : categories.take(4).map((category) {
+                                  final total = month?.spent ?? 0;
+                                  final ratio = total <= 0
+                                      ? 0.0
+                                      : (category.amount / total).clamp(
+                                          0.0,
+                                          1.0,
+                                        );
+                                  return DonutSegment(
+                                    value: ratio,
+                                    color: _categoryColor(category.category),
+                                  );
+                                }).toList(),
                         ),
-
                         const SizedBox(width: 20),
-
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,303 +165,247 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-
-                              const SizedBox(height: 3),
-
+                              const SizedBox(height: 4),
                               Text(
-                                '\$642',
+                                month == null
+                                    ? '—'
+                                    : FinanceMoneyFormatter.format(
+                                        month.spent,
+                                        currency,
+                                      ),
                                 style: TextStyle(
                                   color: textPrimary,
-                                  fontSize: 31,
+                                  fontSize: 28,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: -1,
                                 ),
                               ),
-
-                              const SizedBox(height: 5),
-
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.trending_down_rounded,
-                                    color: AppColors.success,
-                                    size: 15,
-                                  ),
-
-                                  const SizedBox(width: 4),
-
-                                  const Text(
-                                    '8.4% from last month',
-                                    style: TextStyle(
-                                      color: AppColors.success,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
+                              const SizedBox(height: 4),
+                              Text(
+                                month == null
+                                    ? 'Loading dashboard…'
+                                    : '${month.month}/${month.year} · ${currency.apiValue}',
+                                style: TextStyle(
+                                  color: textSecondary,
+                                  fontSize: 12,
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ],
                     ),
-
-                    const SizedBox(height: 18),
-
-                    SpendingStatus(
-                      title: 'finance.expense.onTrack'.tr,
-                      remaining: '\$158 left',
-                      color: AppColors.success,
-                      background: AppColors.success.withValues(alpha: .08),
-                      textMuted: textMuted,
+                  ),
+                  const SizedBox(height: 16),
+                  if (categories.isNotEmpty) ...[
+                    Text(
+                      'finance.expense.categoryBreakdown'.tr,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
+                    const SizedBox(height: 10),
+                    SurfaceCard(
+                      color: surface,
+                      borderColor: border,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Column(
+                        children: categories.take(5).map((category) {
+                          final total = month?.spent ?? 0;
+                          final ratio = total <= 0
+                              ? 0.0
+                              : (category.amount / total).clamp(0.0, 1.0);
+                          return CategoryRow(
+                            title: category.category,
+                            amount: FinanceMoneyFormatter.format(
+                              category.amount,
+                              currency,
+                            ),
+                            percent: '${(ratio * 100).round()}%',
+                            progress: ratio,
+                            color: _categoryColor(category.category),
+                            textPrimary: textPrimary,
+                            textSecondary: textSecondary,
+                            textMuted: textMuted,
+                            backgroundColor: surfaceSecondary,
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                   ],
-                ),
-              ),
-
-              const SizedBox(height: 22),
-
-              // CATEGORY BREAKDOWN
-              ExpenseSectionHeader(
-                title: 'finance.expense.categoryBreakdown'.tr,
-                subtitle: 'finance.expense.thismonth'.tr,
-                textPrimary: textPrimary,
-                textMuted: textMuted,
-              ),
-
-              const SizedBox(height: 10),
-
-              SurfaceCard(
-                color: surface,
-                borderColor: border,
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                child: Column(
-                  children: [
-                    CategoryRow(
-                      title: 'finance.expense.food'.tr,
-                      amount: '\$255 / \$300',
-                      percent: '85%',
-                      progress: .85,
-                      color: AppColors.growthAccent,
-                      textPrimary: textPrimary,
-                      textSecondary: textSecondary,
-                      textMuted: textMuted,
-                      backgroundColor: surfaceSecondary,
-                    ),
-
-                    CategoryRow(
-                      title: 'finance.expense.transport'.tr,
-                      amount: '\$138 / \$150',
-                      percent: '92%',
-                      progress: .92,
-                      color: AppColors.brandPrimary,
-                      textPrimary: textPrimary,
-                      textSecondary: textSecondary,
-                      textMuted: textMuted,
-                      backgroundColor: surfaceSecondary,
-                    ),
-
-                    CategoryRow(
-                      title: 'finance.expense.study'.tr,
-                      amount: '\$51 / \$150',
-                      percent: '34%',
-                      progress: .34,
-                      color: AppColors.productivityAccent,
-                      textPrimary: textPrimary,
-                      textSecondary: textSecondary,
-                      textMuted: textMuted,
-                      backgroundColor: surfaceSecondary,
-                    ),
-
-                    CategoryRow(
-                      title: 'finance.expense.bills'.tr,
-                      amount: '\$36 / \$300',
-                      percent: '12%',
-                      progress: .12,
-                      color: AppColors.financeAccent,
-                      textPrimary: textPrimary,
-                      textSecondary: textSecondary,
-                      textMuted: textMuted,
-                      backgroundColor: surfaceSecondary,
-                      showDivider: false,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 22),
-
-              // RECENT EXPENSES
-              ExpenseSectionHeader(
-                title: 'finance.expense.recentExpenses'.tr,
-                textPrimary: textPrimary,
-                textMuted: textMuted,
-                action: 'finance.expense.seeAll'.tr,
-                onAction: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ExpenseHistoryScreen(),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 10),
-
-              // EXPENSE LIST
-              SurfaceCard(
-                color: surface,
-                borderColor: border,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
-                child: Column(
-                  children: [
-                    ExpenseItem(
-                      icon: Icons.restaurant_outlined,
-                      iconColor: AppColors.growthAccent,
-                      title: 'Grab Food',
-                      subtitle: 'Today · 12:30 PM · Food & Drink',
-                      amount: '-\$8.50',
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
-                      onTap: () {
-                        _openDetail(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'finance.expense.recentExpenses'.tr,
+                        style: TextStyle(
+                          color: textPrimary,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.push<void>(
                           context,
-                          title: 'Grab Food',
-                          subtitle: 'Today · 12:30 PM · Food & Drink',
-                          amount: '-\$8.50',
-                          category: 'Food & Drink',
-                          date: 'Jun 28, 2026',
-                          time: '12:30 PM',
-                          payment: 'Cash',
-                          note: 'Dinner from Grab Food.',
-                          icon: Icons.restaurant_outlined,
-                          iconColor: AppColors.growthAccent,
-                        );
-                      },
-                    ),
-
-                    ExpenseItem(
-                      icon: Icons.directions_bus_outlined,
-                      iconColor: AppColors.brandPrimary,
-                      title: 'Bus Pass',
-                      subtitle: 'Today · 8:00 AM · Transport',
-                      amount: '-\$1.25',
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
-                      onTap: () {
-                        _openDetail(
+                          MaterialPageRoute(
+                            builder: (_) => const ExpenseHistoryScreen(),
+                          ),
+                        ),
+                        child: Text('finance.seeAll'.tr),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (expenses.isEmpty)
+                    SurfaceCard(
+                      color: surface,
+                      borderColor: border,
+                      child: AppEmptyState(
+                        message: 'finance.noRecentExpenses'.tr,
+                        icon: Icons.receipt_long_outlined,
+                      ),
+                    )
+                  else
+                    ...expenses.take(5).map((expense) {
+                      final accent = _categoryColor(expense.category);
+                      return ExpenseItem(
+                        icon: _categoryIcon(expense.category),
+                        iconColor: accent,
+                        title: expense.title,
+                        subtitle: [
+                          expense.expenseDate,
+                          if (expense.category?.trim().isNotEmpty == true)
+                            expense.category!,
+                        ].join(' · '),
+                        amount: FinanceMoneyFormatter.signed(
+                          expense.amount,
+                          expense.currency,
+                          debit: true,
+                        ),
+                        textPrimary: textPrimary,
+                        textMuted: textMuted,
+                        onTap: () => Navigator.push<void>(
                           context,
-                          title: 'Bus Pass',
-                          subtitle: 'Today · 8:00 AM · Transport',
-                          amount: '-\$1.25',
-                          category: 'Transport',
-                          date: 'Jun 28, 2026',
-                          time: '8:00 AM',
-                          payment: 'Cash',
-                          note: 'Morning bus pass.',
-                          icon: Icons.directions_bus_outlined,
-                          iconColor: AppColors.brandPrimary,
-                        );
-                      },
-                    ),
-
-                    ExpenseItem(
-                      icon: Icons.menu_book_outlined,
-                      iconColor: AppColors.productivityAccent,
-                      title: 'Textbooks',
-                      subtitle: 'Yesterday · Study',
-                      amount: '-\$45.00',
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
-                      onTap: () {
-                        _openDetail(
-                          context,
-                          title: 'Textbooks',
-                          subtitle: 'Yesterday · Study',
-                          amount: '-\$45.00',
-                          category: 'Study',
-                          date: 'Jun 27, 2026',
-                          time: '3:20 PM',
-                          payment: 'Cash',
-                          note: 'University textbooks.',
-                          icon: Icons.menu_book_outlined,
-                          iconColor: AppColors.productivityAccent,
-                        );
-                      },
-                    ),
-
-                    ExpenseItem(
-                      icon: Icons.bolt_outlined,
-                      iconColor: AppColors.financeAccent,
-                      title: 'Electricity',
-                      subtitle: 'Jun 1 · Bills',
-                      amount: '-\$36.00',
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
-                      showDivider: false,
-                      onTap: () {
-                        _openDetail(
-                          context,
-                          title: 'Electricity',
-                          subtitle: 'Jun 1 · Bills',
-                          amount: '-\$36.00',
-                          category: 'Bills',
-                          date: 'Jun 1, 2026',
-                          time: '9:00 AM',
-                          payment: 'Bank',
-                          note: 'Monthly electricity bill.',
-                          icon: Icons.bolt_outlined,
-                          iconColor: AppColors.financeAccent,
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
-            ],
-          ),
-        ),
+                          MaterialPageRoute(
+                            builder: (_) => ExpenseDetailScreen.fromEntity(
+                              expense,
+                              onEdit: () => Navigator.push<void>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      AddExpenseScreen(expense: expense),
+                                ),
+                              ),
+                              onDeleted: () =>
+                                  controller.deleteExpense(expense.expenseId),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                ],
+              ],
+            ),
+          );
+        }),
       ),
     );
   }
+}
 
-  // OPEN EXPENSE DETAIL
-  void _openDetail(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required String amount,
-    required String category,
-    required String date,
-    required String time,
-    required String payment,
-    required String note,
-    required IconData icon,
-    required Color iconColor,
-  }) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ExpenseDetailScreen(
-          title: title,
-          subtitle: subtitle,
-          amount: amount,
-          category: category,
-          date: date,
-          time: time,
-          payment: payment,
-          note: note,
-          icon: icon,
-          iconColor: iconColor,
-          iconBackground: iconColor.withValues(alpha: .12),
-        ),
-      ),
+class _CurrencyBar extends StatelessWidget {
+  const _CurrencyBar({
+    required this.currency,
+    required this.onChanged,
+    required this.surface,
+    required this.border,
+    required this.primary,
+    required this.textPrimary,
+  });
+
+  final FinanceCurrency currency;
+  final ValueChanged<FinanceCurrency> onChanged;
+  final Color surface;
+  final Color border;
+  final Color primary;
+  final Color textPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: FinanceCurrency.values.map((item) {
+        final selected = item == currency;
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+              right: item == FinanceCurrency.usd ? 8 : 0,
+            ),
+            child: InkWell(
+              onTap: () => onChanged(item),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected ? primary : surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: selected ? primary : border),
+                ),
+                child: Text(
+                  item.apiValue,
+                  style: TextStyle(
+                    color: selected ? Colors.white : textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
+  }
+}
+
+IconData _categoryIcon(String? category) {
+  switch (category?.toUpperCase()) {
+    case 'FOOD':
+      return Icons.restaurant_outlined;
+    case 'TRANSPORT':
+      return Icons.directions_car_outlined;
+    case 'STUDY':
+      return Icons.menu_book_outlined;
+    case 'BILLS':
+    case 'UTILITIES':
+      return Icons.bolt_outlined;
+    case 'HEALTH':
+      return Icons.favorite_border_rounded;
+    case 'SHOPPING':
+      return Icons.shopping_bag_outlined;
+    case 'ENTERTAINMENT':
+      return Icons.play_circle_outline_rounded;
+    default:
+      return Icons.receipt_long_outlined;
+  }
+}
+
+Color _categoryColor(String? category) {
+  switch (category?.toUpperCase()) {
+    case 'FOOD':
+      return AppColors.growthAccent;
+    case 'TRANSPORT':
+      return AppColors.brandPrimary;
+    case 'STUDY':
+      return AppColors.productivityAccent;
+    case 'BILLS':
+    case 'UTILITIES':
+      return AppColors.financeAccent;
+    default:
+      return AppColors.financeAccent;
   }
 }

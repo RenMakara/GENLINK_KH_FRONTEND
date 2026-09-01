@@ -1,15 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_transaction.dart';
+import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
 
 class PaymentSuccessScreen extends StatelessWidget {
-  const PaymentSuccessScreen({super.key});
+  const PaymentSuccessScreen({
+    super.key,
+    this.amount,
+    this.merchant,
+    this.currency,
+  });
+
+  final double? amount;
+  final String? merchant;
+  final FinanceCurrency? currency;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
     final surface = isDark
         ? AppColors.darkSurfacePrimary
@@ -36,8 +48,6 @@ class PaymentSuccessScreen extends StatelessWidget {
           child: Column(
             children: [
               const Spacer(flex: 2),
-
-              // ── Success Icon ──
               Container(
                 width: 72,
                 height: 72,
@@ -51,11 +61,9 @@ class PaymentSuccessScreen extends StatelessWidget {
                   color: AppColors.financeAccent,
                 ),
               ),
-
               const SizedBox(height: 20),
-
               Text(
-                'Payment Successful!',
+                'finance.ewallet.paymentSuccessTitle'.tr,
                 style: TextStyle(
                   color: textPrimary,
                   fontSize: 22,
@@ -63,18 +71,13 @@ class PaymentSuccessScreen extends StatelessWidget {
                   letterSpacing: -0.3,
                 ),
               ),
-
               const SizedBox(height: 8),
-
               Text(
-                'Your Demo payment has been processed.',
+                'finance.ewallet.paymentSuccessBody'.tr,
                 style: TextStyle(color: textMuted, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
-
               const SizedBox(height: 28),
-
-              // ── Details Card ──
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
@@ -86,54 +89,51 @@ class PaymentSuccessScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     _DetailRow(
-                      label: 'Amount',
-                      value: '\$15.00',
+                      label: 'finance.ewallet.amount'.tr,
+                      value: amount == null || currency == null
+                          ? '—'
+                          : FinanceMoneyFormatter.format(amount!, currency!),
                       textPrimary: textPrimary,
                       textMuted: textMuted,
                       valueBold: true,
                     ),
                     const SizedBox(height: 14),
                     _DetailRow(
-                      label: 'Merchant',
-                      value: 'ShopABC · KHQR',
+                      label: 'finance.ewallet.merchant'.tr,
+                      value: merchant ?? '—',
                       textPrimary: textPrimary,
                       textMuted: textMuted,
                     ),
                     const SizedBox(height: 14),
                     _DetailRow(
-                      label: 'Status',
-                      value: 'Successful',
+                      label: 'finance.ewallet.currency'.tr,
+                      value: currency?.apiValue ?? '—',
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                    ),
+                    const SizedBox(height: 14),
+                    _DetailRow(
+                      label: 'finance.ewallet.status'.tr,
+                      value: 'finance.ewallet.successful'.tr,
                       textPrimary: textPrimary,
                       textMuted: textMuted,
                       valueColor: AppColors.financeAccent,
                     ),
-                    const SizedBox(height: 14),
-                    _DetailRow(
-                      label: 'Date',
-                      value: 'Jun 03, 2026 · 2:14 PM',
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
-                    ),
                   ],
                 ),
               ),
-
               const Spacer(flex: 3),
-
-              // ── View History ──
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const TransactionsScreen(),
-                      ),
-                      (route) => route.isFirst,
-                    );
-                  },
+                  onPressed: () => Navigator.pushAndRemoveUntil<void>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const TransactionsScreen(),
+                    ),
+                    (route) => route.isFirst,
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primary,
                     foregroundColor: textInverse,
@@ -142,23 +142,19 @@ class PaymentSuccessScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    'View Transaction History',
+                  child: Text(
+                    'finance.ewallet.viewHistory'.tr,
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
-
               const SizedBox(height: 12),
-
-              // ── Back to Wallet ──
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.popUntil(context, (route) => route.isFirst);
-                  },
+                  onPressed: () =>
+                      Navigator.popUntil(context, (route) => route.isFirst),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: textPrimary,
                     side: BorderSide(color: border),
@@ -166,13 +162,12 @@ class PaymentSuccessScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    'Back to Wallet',
+                  child: Text(
+                    'finance.ewallet.backToWallet'.tr,
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
-
               const SizedBox(height: 20),
             ],
           ),
@@ -183,13 +178,6 @@ class PaymentSuccessScreen extends StatelessWidget {
 }
 
 class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color textPrimary;
-  final Color textMuted;
-  final bool valueBold;
-  final Color? valueColor;
-
   const _DetailRow({
     required this.label,
     required this.value,
@@ -199,18 +187,28 @@ class _DetailRow extends StatelessWidget {
     this.valueColor,
   });
 
+  final String label;
+  final String value;
+  final Color textPrimary;
+  final Color textMuted;
+  final bool valueBold;
+  final Color? valueColor;
+
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: TextStyle(color: textMuted, fontSize: 13)),
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor ?? textPrimary,
-            fontSize: 14,
-            fontWeight: valueBold ? FontWeight.w700 : FontWeight.w500,
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: valueColor ?? textPrimary,
+              fontSize: 14,
+              fontWeight: valueBold ? FontWeight.w700 : FontWeight.w500,
+            ),
           ),
         ),
       ],

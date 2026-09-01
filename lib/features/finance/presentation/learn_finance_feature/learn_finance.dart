@@ -1,331 +1,112 @@
 import 'package:flutter/material.dart';
-import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/features/finance/presentation/learn_finance_feature/investing_basics.dart';
+import 'package:get/get.dart';
 
-class LearnFinanceScreen extends StatelessWidget {
+import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
+import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
+import 'package:genlink_frontend/features/finance/presentation/controllers/finance_learning_controller.dart';
+import 'investing_basics.dart';
+
+/// Finance Learning index backed by the financial-literacy API.
+class LearnFinanceScreen extends GetView<FinanceLearningController> {
   const LearnFinanceScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
-
-    final surfaceSecondary = isDark
-        ? AppColors.darkSurfaceSecondary
-        : AppColors.lightSurfaceSecondary;
-
-    final textPrimary = isDark
+    final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final text = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
-
-    final textMuted = isDark
-        ? AppColors.darkTextMuted
-        : AppColors.lightTextMuted;
-
     final border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
-
     final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
+    final inverse = isDark
+        ? AppColors.darkTextInverse
+        : AppColors.lightTextInverse;
 
     return Scaffold(
       backgroundColor: bg,
-
       appBar: AppBar(
         backgroundColor: bg,
+        foregroundColor: text,
         elevation: 0,
-        scrolledUnderElevation: 0,
-        automaticallyImplyLeading: false,
-
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: textPrimary,
-            size: 20,
-          ),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-        ),
-
-        titleSpacing: 0,
-
-        title: Text(
-          'Learn Finance',
-          style: TextStyle(
-            color: textPrimary,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.3,
-          ),
-        ),
+        title: Text('finance.learning.title'.tr),
       ),
-
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 30),
-
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: Obx(
+        () => RefreshIndicator(
+          onRefresh: controller.refresh,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
-              // =================================================
-              // PROGRESS CARD
-              // =================================================
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-
-                decoration: BoxDecoration(
-                  color: surface,
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: border),
-                ),
-
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Your Progress',
-                                style: TextStyle(
-                                  color: textPrimary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-
-                              const SizedBox(height: 3),
-
-                              Text(
-                                '2 of 4 topics completed',
-                                style: TextStyle(color: textMuted, fontSize: 9),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        Text(
-                          '50%',
-                          style: TextStyle(
-                            color: textPrimary,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: LinearProgressIndicator(
-                        value: .50,
-                        minHeight: 5,
-                        backgroundColor: surfaceSecondary,
-                        valueColor: AlwaysStoppedAnimation(primary),
-                      ),
-                    ),
-                  ],
-                ),
+              _DashboardCard(
+                dashboard: controller.dashboard.value,
+                loading: controller.isDashboardLoading.value,
+                error: controller.dashboardErrorMessage.value,
+                surface: surface,
+                border: border,
+                text: text,
+                muted: muted,
+                primary: primary,
+                onRetry: controller.loadDashboard,
               ),
-
-              const SizedBox(height: 16),
-
-              // =================================================
-              // TOPICS
-              // =================================================
+              const SizedBox(height: 18),
               Text(
-                'Topics',
+                'finance.learning.topics'.tr,
                 style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+                  color: text,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-
-              const SizedBox(height: 9),
-
-              GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 2.35,
-
-                children: [
-                  _TopicCard(
-                    title: 'Budgeting 101',
-                    icon: Icons.account_balance_wallet_outlined,
-                    completed: true,
-                    background: primary,
-                    textPrimary: textInverse(isDark),
-                  ),
-
-                  _TopicCard(
-                    title: 'Saving Habits',
-                    icon: Icons.savings_outlined,
-                    completed: true,
-                    background: primary,
-                    textPrimary: textInverse(isDark),
-                  ),
-
-                  _TopicCard(
-                    title: 'Understanding Credit',
-                    icon: Icons.credit_card_outlined,
-                    completed: true,
-                    background: primary,
-                    textPrimary: textInverse(isDark),
-                  ),
-
-                  _TopicCard(
-                    title: 'Investing Basics',
-                    icon: Icons.show_chart_rounded,
-                    completed: false,
-                    background: surface,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textMuted: textMuted,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const InvestingBasicsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-
-                  _TopicCard(
-                    title: 'Loans & Debt',
-                    icon: Icons.account_balance_outlined,
-                    completed: false,
-                    background: surface,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textMuted: textMuted,
-                  ),
-
-                  _TopicCard(
-                    title: 'Tax Planning',
-                    icon: Icons.receipt_long_outlined,
-                    completed: false,
-                    background: surface,
-                    border: border,
-                    textPrimary: textPrimary,
-                    textMuted: textMuted,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // =================================================
-              // NEXT LESSON
-              // =================================================
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-
-                decoration: BoxDecoration(
-                  color: surface,
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: border),
-                ),
-
-                child: Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-
-                      decoration: BoxDecoration(
-                        color: primary,
-                        borderRadius: BorderRadius.circular(11),
-                      ),
-
-                      child: Icon(
-                        Icons.auto_graph_rounded,
-                        color: textInverse(isDark),
-                        size: 20,
-                      ),
-                    ),
-
-                    const SizedBox(width: 10),
-
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Next: Investing Basics',
-                            style: TextStyle(
-                              color: textPrimary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-
-                          const SizedBox(height: 3),
-
-                          Text(
-                            '6 min read · +100 XP',
-                            style: TextStyle(color: textMuted, fontSize: 8),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
               const SizedBox(height: 10),
-
-              // =================================================
-              // START LEARNING
-              // =================================================
-              SizedBox(
-                width: double.infinity,
-                height: 44,
-
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const InvestingBasicsScreen(),
-                      ),
-                    );
-                  },
-
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primary,
-                    foregroundColor: textInverse(isDark),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+              _TopicFilter(
+                topics: controller.dashboard.value?.topics ?? const [],
+                selectedTopic: controller.selectedTopic.value,
+                surface: surface,
+                border: border,
+                text: text,
+                muted: muted,
+                primary: primary,
+                inverse: inverse,
+                onSelected: controller.selectTopic,
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'finance.learning.lessons'.tr,
+                style: TextStyle(
+                  color: text,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _LessonList(
+                lessons: controller.lessons,
+                loading: controller.isLessonsLoading.value,
+                error: controller.lessonsErrorMessage.value,
+                surface: surface,
+                border: border,
+                text: text,
+                muted: muted,
+                primary: primary,
+                onRetry: () => controller.loadLessons(),
+                onLessonTap: (lesson) => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => InvestingBasicsScreen(
+                      lessonId: lesson.lessonId,
+                      initialLesson: lesson,
                     ),
-                  ),
-
-                  child: const Text(
-                    'Start Learning →',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -335,92 +116,318 @@ class LearnFinanceScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  Color textInverse(bool isDark) {
-    return isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse;
+class _DashboardCard extends StatelessWidget {
+  const _DashboardCard({
+    required this.dashboard,
+    required this.loading,
+    required this.error,
+    required this.surface,
+    required this.border,
+    required this.text,
+    required this.muted,
+    required this.primary,
+    required this.onRetry,
+  });
+
+  final FinanceLearningDashboardEntity? dashboard;
+  final bool loading;
+  final String? error;
+  final Color surface;
+  final Color border;
+  final Color text;
+  final Color muted;
+  final Color primary;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading && dashboard == null) {
+      return const SizedBox(height: 120, child: AppLoader());
+    }
+    if (error != null && dashboard == null) {
+      return _ErrorCard(message: error!, onRetry: onRetry);
+    }
+    final value = dashboard;
+    if (value == null) return const SizedBox.shrink();
+    final total = value.totalLessons < 0 ? 0 : value.totalLessons;
+    final completed = value.completedLessons.clamp(0, total);
+    final progress = total == 0 ? 0.0 : completed / total;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'finance.learning.progress'.tr,
+                  style: TextStyle(
+                    color: text,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Text(
+                '$completed/$total',
+                style: TextStyle(color: text, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'finance.learning.lessonsCompleted'.trParams({
+              'completed': '$completed',
+              'total': '$total',
+            }),
+            style: TextStyle(color: muted, fontSize: 12),
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: border,
+              valueColor: AlwaysStoppedAnimation(primary),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '${'finance.learning.xp'.tr}: ${value.literacyXp}',
+            style: TextStyle(color: muted, fontSize: 12),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-// =============================================================
-// TOPIC CARD
-// =============================================================
-
-class _TopicCard extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final bool completed;
-
-  final Color background;
-  final Color? border;
-  final Color textPrimary;
-  final Color? textMuted;
-
-  final VoidCallback? onTap;
-
-  const _TopicCard({
-    required this.title,
-    required this.icon,
-    required this.completed,
-    required this.background,
-    required this.textPrimary,
-    this.border,
-    this.textMuted,
-    this.onTap,
+class _TopicFilter extends StatelessWidget {
+  const _TopicFilter({
+    required this.topics,
+    required this.selectedTopic,
+    required this.surface,
+    required this.border,
+    required this.text,
+    required this.muted,
+    required this.primary,
+    required this.inverse,
+    required this.onSelected,
   });
+
+  final List<FinanceLearningTopicProgressEntity> topics;
+  final String? selectedTopic;
+  final Color surface;
+  final Color border;
+  final Color text;
+  final Color muted;
+  final Color primary;
+  final Color inverse;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (topics.isEmpty) {
+      return Text(
+        'finance.learning.noTopics'.tr,
+        style: TextStyle(color: muted, fontSize: 13),
+      );
+    }
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        ChoiceChip(
+          label: Text('finance.learning.allTopics'.tr),
+          selected: selectedTopic == null,
+          onSelected: (_) => onSelected(null),
+          selectedColor: primary,
+          backgroundColor: surface,
+          side: BorderSide(color: border),
+          labelStyle: TextStyle(
+            color: selectedTopic == null ? inverse : text,
+            fontSize: 12,
+          ),
+        ),
+        ...topics.map((topic) {
+          final selected = selectedTopic == topic.topic;
+          return ChoiceChip(
+            label: Text(_topicLabel(topic.topic)),
+            selected: selected,
+            onSelected: (_) => onSelected(topic.topic),
+            selectedColor: primary,
+            backgroundColor: surface,
+            side: BorderSide(color: border),
+            labelStyle: TextStyle(
+              color: selected ? inverse : text,
+              fontSize: 12,
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  String _topicLabel(String topic) {
+    final key = 'finance.learning.topic.$topic';
+    final translated = key.tr;
+    return translated == key ? topic : translated;
+  }
+}
+
+class _LessonList extends StatelessWidget {
+  const _LessonList({
+    required this.lessons,
+    required this.loading,
+    required this.error,
+    required this.surface,
+    required this.border,
+    required this.text,
+    required this.muted,
+    required this.primary,
+    required this.onRetry,
+    required this.onLessonTap,
+  });
+
+  final List<FinanceLearningLessonSummaryEntity> lessons;
+  final bool loading;
+  final String? error;
+  final Color surface;
+  final Color border;
+  final Color text;
+  final Color muted;
+  final Color primary;
+  final VoidCallback onRetry;
+  final ValueChanged<FinanceLearningLessonSummaryEntity> onLessonTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading && lessons.isEmpty) {
+      return const SizedBox(height: 140, child: AppLoader());
+    }
+    if (error != null && lessons.isEmpty) {
+      return _ErrorCard(message: error!, onRetry: onRetry);
+    }
+    if (lessons.isEmpty) {
+      return AppEmptyState(
+        message: 'finance.learning.noLessons'.tr,
+        icon: Icons.menu_book_outlined,
+      );
+    }
+    return Column(
+      children: lessons
+          .map(
+            (lesson) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _LessonCard(
+                lesson: lesson,
+                surface: surface,
+                border: border,
+                text: text,
+                muted: muted,
+                primary: primary,
+                onTap: () => onLessonTap(lesson),
+              ),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+class _LessonCard extends StatelessWidget {
+  const _LessonCard({
+    required this.lesson,
+    required this.surface,
+    required this.border,
+    required this.text,
+    required this.muted,
+    required this.primary,
+    required this.onTap,
+  });
+
+  final FinanceLearningLessonSummaryEntity lesson;
+  final Color surface;
+  final Color border;
+  final Color text;
+  final Color muted;
+  final Color primary;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
-
+      color: surface,
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(11),
-
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.all(10),
-
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: background,
-            borderRadius: BorderRadius.circular(11),
-            border: border != null ? Border.all(color: border!) : null,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: border),
           ),
-
           child: Row(
             children: [
               Icon(
-                icon,
-                size: 14,
-                color: completed
-                    ? textPrimary.withValues(alpha: .75)
-                    : textMuted,
+                lesson.completed
+                    ? Icons.check_circle_rounded
+                    : Icons.menu_book_outlined,
+                color: lesson.completed ? primary : muted,
               ),
-
-              const SizedBox(width: 6),
-
+              const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      lesson.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: text,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${lesson.contentType} · ${lesson.xpReward} XP',
+                      style: TextStyle(color: muted, fontSize: 12),
+                    ),
+                  ],
                 ),
               ),
-
-              if (completed)
-                Icon(
-                  Icons.check_circle_rounded,
-                  size: 11,
-                  color: textPrimary.withValues(alpha: .70),
-                ),
+              const Icon(Icons.chevron_right_rounded),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppEmptyState(
+      message: message,
+      icon: Icons.error_outline_rounded,
+      action: TextButton(onPressed: onRetry, child: Text('common.retry'.tr)),
     );
   }
 }

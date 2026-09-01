@@ -1,974 +1,567 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_update.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
+import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
+import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
+import 'package:genlink_frontend/features/finance/presentation/controllers/saving_goal_controller.dart';
+import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
+import 'saving_goals_update.dart';
 
+/// Backend-backed Saving Goal detail, contribution, and history view.
 class GoalDetailScreen extends StatefulWidget {
-  final String title;
-  final double savedAmount;
-  final double targetAmount;
-  final String targetDate;
-  final double progress;
-  final Color color;
+  const GoalDetailScreen({super.key, required this.goal});
 
-  const GoalDetailScreen({
-    super.key,
-    required this.title,
-    required this.savedAmount,
-    required this.targetAmount,
-    required this.targetDate,
-    required this.progress,
-    required this.color,
-  });
+  final FinanceSavingGoalEntity goal;
 
   @override
   State<GoalDetailScreen> createState() => _GoalDetailScreenState();
 }
 
-// ============================================================
-// DEPOSIT HISTORY MODEL
-// ============================================================
-
-class DepositHistory {
-  final String title;
-  final DateTime date;
-  final double amount;
-
-  DepositHistory({
-    required this.title,
-    required this.date,
-    required this.amount,
-  });
-}
-
-// ============================================================
-// GOAL DETAIL STATE
-// ============================================================
-
 class _GoalDetailScreenState extends State<GoalDetailScreen> {
-  late double savedAmount;
-  late double progress;
-
-  final TextEditingController _depositController = TextEditingController();
-
-  final TextEditingController _noteController = TextEditingController();
-
-  // ============================================================
-  // DEMO DEPOSIT HISTORY
-  // ============================================================
-
-  final List<DepositHistory> _depositHistory = [
-    DepositHistory(
-      title: 'Monthly Deposit',
-      date: DateTime(2026, 6, 1),
-      amount: 250,
-    ),
-    DepositHistory(
-      title: 'Monthly Deposit',
-      date: DateTime(2026, 5, 1),
-      amount: 250,
-    ),
-    DepositHistory(
-      title: 'Bonus Savings',
-      date: DateTime(2026, 4, 15),
-      amount: 100,
-    ),
-  ];
+  SavingGoalController get controller => Get.find<SavingGoalController>();
 
   @override
   void initState() {
     super.initState();
-
-    savedAmount = widget.savedAmount;
-    progress = widget.progress;
+    controller.loadGoal(widget.goal.savingGoalId);
+    controller.loadDeposits(widget.goal.savingGoalId);
   }
-
-  @override
-  void dispose() {
-    _depositController.dispose();
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  // ============================================================
-  // FORMAT AMOUNT
-  // ============================================================
-
-  String _formatAmount(double amount) {
-    if (amount == amount.roundToDouble()) {
-      return amount.toStringAsFixed(0);
-    }
-
-    return amount.toStringAsFixed(2);
-  }
-
-  // ============================================================
-  // FORMAT DATE
-  // ============================================================
-
-  String _formatDate(DateTime date) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
-  }
-
-  // ============================================================
-  // DEPOSIT DIALOG
-  // ============================================================
-
-  void _showDepositDialog() {
-    _depositController.clear();
-    _noteController.clear();
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final surface = isDark
-        ? AppColors.darkSurfacePrimary
-        : AppColors.lightSurfacePrimary;
-
-    final secondarySurface = isDark
-        ? AppColors.darkSurfaceSecondary
-        : AppColors.lightSurfaceSecondary;
-
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-
-    final textMuted = isDark
-        ? AppColors.darkTextMuted
-        : AppColors.lightTextMuted;
-
-    final border = isDark
-        ? AppColors.darkBorderSubtle
-        : AppColors.lightBorderSubtle;
-
-    final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
-
-    final textInverse = isDark
-        ? AppColors.darkTextInverse
-        : AppColors.lightTextInverse;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.45),
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ==================================================
-                  // DRAG HANDLE
-                  // ==================================================
-                  Center(
-                    child: Container(
-                      width: 42,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: textMuted.withValues(alpha: 0.35),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 22),
-
-                  // ==================================================
-                  // TITLE
-                  // ==================================================
-                  Text(
-                    'Deposit Money',
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-
-                  const SizedBox(height: 5),
-
-                  Text(
-                    'Add money to ${widget.title}',
-                    style: TextStyle(color: textMuted, fontSize: 13),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // ==================================================
-                  // CURRENT BALANCE
-                  // ==================================================
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: secondarySurface,
-                      borderRadius: BorderRadius.circular(13),
-                      border: Border.all(color: border),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.savings_outlined,
-                          color: widget.color,
-                          size: 20,
-                        ),
-
-                        const SizedBox(width: 10),
-
-                        Expanded(
-                          child: Text(
-                            'Current Saved',
-                            style: TextStyle(color: textMuted, fontSize: 13),
-                          ),
-                        ),
-
-                        Text(
-                          '\$${_formatAmount(savedAmount)}',
-                          style: TextStyle(
-                            color: textPrimary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // ==================================================
-                  // NOTE
-                  // ==================================================
-                  Text(
-                    'Note',
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  TextField(
-                    controller: _noteController,
-                    textCapitalization: TextCapitalization.sentences,
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'e.g. Monthly Deposit, Bonus Savings',
-                      hintStyle: TextStyle(
-                        color: textMuted.withValues(alpha: 0.45),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      prefixIcon: Icon(
-                        Icons.edit_note_rounded,
-                        color: widget.color,
-                      ),
-                      filled: true,
-                      fillColor: secondarySurface,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 15,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(13),
-                        borderSide: BorderSide(color: border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(13),
-                        borderSide: BorderSide(color: border),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(13),
-                        borderSide: BorderSide(color: widget.color, width: 1.4),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // ==================================================
-                  // AMOUNT
-                  // ==================================================
-                  Text(
-                    'Deposit Amount',
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  TextField(
-                    controller: _depositController,
-                    autofocus: true,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
-                    decoration: InputDecoration(
-                      prefixText: '\$ ',
-                      prefixStyle: TextStyle(
-                        color: widget.color,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
-                      hintText: '0.00',
-                      hintStyle: TextStyle(
-                        color: textMuted.withValues(alpha: 0.45),
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      filled: true,
-                      fillColor: secondarySurface,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 16,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(13),
-                        borderSide: BorderSide(color: border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(13),
-                        borderSide: BorderSide(color: border),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(13),
-                        borderSide: BorderSide(color: widget.color, width: 1.4),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 22),
-
-                  // ==================================================
-                  // BUTTONS
-                  // ==================================================
-                  Row(
-                    children: [
-                      // =================================================
-                      // CANCEL
-                      // =================================================
-                      Expanded(
-                        child: SizedBox(
-                          height: 50,
-                          child: OutlinedButton(
-                            onPressed: () {
-                              Navigator.pop(sheetContext);
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: textPrimary,
-                              side: BorderSide(color: border),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(13),
-                              ),
-                            ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 12),
-
-                      // =================================================
-                      // DEPOSIT
-                      // =================================================
-                      Expanded(
-                        child: SizedBox(
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              final amount = double.tryParse(
-                                _depositController.text.trim(),
-                              );
-
-                              final note = _noteController.text.trim();
-
-                              // -----------------------------------------
-                              // VALIDATE AMOUNT
-                              // -----------------------------------------
-
-                              if (amount == null || amount <= 0) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Please enter a valid amount.',
-                                    ),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-
-                                return;
-                              }
-
-                              // -----------------------------------------
-                              // VALIDATE NOTE
-                              // -----------------------------------------
-
-                              if (note.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Please enter a note.'),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-
-                                return;
-                              }
-
-                              // -----------------------------------------
-                              // UPDATE
-                              // -----------------------------------------
-
-                              setState(() {
-                                savedAmount += amount;
-
-                                progress = (savedAmount / widget.targetAmount)
-                                    .clamp(0.0, 1.0);
-
-                                // Add new history
-                                _depositHistory.insert(
-                                  0,
-                                  DepositHistory(
-                                    title: note,
-                                    date: DateTime.now(),
-                                    amount: amount,
-                                  ),
-                                );
-                              });
-
-                              // Close sheet
-                              Navigator.pop(sheetContext);
-
-                              // -----------------------------------------
-                              // SUCCESS
-                              // -----------------------------------------
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    '\$${_formatAmount(amount)} '
-                                    'added as "$note".',
-                                  ),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primary,
-                              foregroundColor: textInverse,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(13),
-                              ),
-                            ),
-                            child: const Text(
-                              'Deposit',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // ============================================================
-  // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
-
-    final secondarySurface = isDark
-        ? AppColors.darkSurfaceSecondary
-        : AppColors.lightSurfaceSecondary;
-
-    final textPrimary = isDark
+    final text = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
-
-    final textMuted = isDark
-        ? AppColors.darkTextMuted
-        : AppColors.lightTextMuted;
-
-    final textInverse = isDark
-        ? AppColors.darkTextInverse
-        : AppColors.lightTextInverse;
-
+    final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
-
     final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
-
     return Scaffold(
       backgroundColor: bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ======================================================
-            // HEADER
-            // ======================================================
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: textPrimary,
-                      size: 20,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 40,
-                      minHeight: 40,
-                    ),
-                  ),
-
-                  const SizedBox(width: 4),
-
-                  Expanded(
-                    child: Text(
-                      widget.title,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                  ),
-
-                  IconButton(
-                    onPressed: () async {
-                      final result = await Navigator.push(
+      appBar: AppBar(
+        backgroundColor: bg,
+        foregroundColor: text,
+        elevation: 0,
+        title: Obx(() => Text(_effectiveGoal().title)),
+        actions: [
+          Obx(
+            () => IconButton(
+              onPressed: controller.isUpdateSubmitting.value
+                  ? null
+                  : () async {
+                      await Navigator.push<void>(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => UpdateGoalScreen(
-                            title: widget.title,
-                            savedAmount: savedAmount,
-                            targetAmount: widget.targetAmount,
-                            targetDate: widget.targetDate,
-                            color: widget.color,
-                          ),
+                          builder: (_) =>
+                              UpdateGoalScreen(goal: _effectiveGoal()),
                         ),
                       );
-
-                      if (result != null) {
-                        debugPrint('Updated Goal: $result');
-                      }
+                      await controller.loadGoal(widget.goal.savingGoalId);
                     },
-                    icon: Icon(Icons.edit_outlined, color: textMuted, size: 22),
-                  ),
-
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(
-                      Icons.delete_outline_rounded,
-                      color: Colors.redAccent,
-                      size: 22,
-                    ),
-                  ),
-                ],
-              ),
+              icon: const Icon(Icons.edit_outlined),
             ),
-
-            // ======================================================
-            // CONTENT
-            // ======================================================
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 30),
-                child: Column(
-                  children: [
-                    // =================================================
-                    // CIRCULAR PROGRESS
-                    // =================================================
-                    SizedBox(
-                      width: 100,
-                      height: 100,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          SizedBox(
-                            width: 100,
-                            height: 100,
-                            child: CircularProgressIndicator(
-                              value: progress,
-                              strokeWidth: 8,
-                              backgroundColor: secondarySurface,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                widget.color,
-                              ),
-                              strokeCap: StrokeCap.round,
-                            ),
-                          ),
-
-                          Text(
-                            '${(progress * 100).toStringAsFixed(0)}%',
-                            style: TextStyle(
-                              color: textPrimary,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // =================================================
-                    // AMOUNT
-                    // =================================================
-                    Text(
-                      '\$${_formatAmount(savedAmount)} '
-                      'of \$${_formatAmount(widget.targetAmount)} '
-                      '· Target: ${widget.targetDate}',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: textMuted, fontSize: 13),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // =================================================
-                    // STATUS
-                    // =================================================
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        progress >= 1.0 ? 'Completed' : 'On track',
-                        style: const TextStyle(
-                          color: AppColors.success,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    // =================================================
-                    // LINEAR PROGRESS
-                    // =================================================
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 6,
-                        backgroundColor: secondarySurface,
-                        valueColor: AlwaysStoppedAnimation<Color>(widget.color),
-                      ),
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    // =================================================
-                    // HISTORY TITLE
-                    // =================================================
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Deposit History',
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // =================================================
-                    // HISTORY
-                    // =================================================
-                    if (_depositHistory.isEmpty)
-                      _EmptyHistory(
-                        textPrimary: textPrimary,
-                        textMuted: textMuted,
-                        surface: surface,
-                        border: border,
-                      )
-                    else
-                      ..._depositHistory.map(
-                        (deposit) => _DepositRow(
-                          title: deposit.title,
-                          subtitle: _formatDate(deposit.date),
-                          amount: '+\$${_formatAmount(deposit.amount)}',
-                          surface: surface,
-                          border: border,
-                          textPrimary: textPrimary,
-                          textMuted: textMuted,
-                          color: widget.color,
-                        ),
-                      ),
-
-                    const SizedBox(height: 28),
-
-                    // =================================================
-                    // DEPOSIT BUTTON
-                    // =================================================
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _showDepositDialog,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primary,
-                          foregroundColor: textInverse,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text(
-                          '+ Deposit Now',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-                  ],
+          ),
+          Obx(
+            () => IconButton(
+              onPressed: controller.isDeleteSubmitting.value ? null : _delete,
+              icon: const Icon(Icons.delete_outline_rounded),
+              color: theme.colorScheme.error,
+            ),
+          ),
+        ],
+      ),
+      body: Obx(() {
+        final goal = _effectiveGoal();
+        final detailError = controller.detailErrorMessage.value;
+        final loading = controller.isDetailLoading.value;
+        final scopeMatches = goal.currency == controller.selectedCurrency.value;
+        return RefreshIndicator(
+          onRefresh: () async {
+            await Future.wait<void>([
+              controller.loadGoal(widget.goal.savingGoalId),
+              controller.loadDeposits(widget.goal.savingGoalId),
+            ]);
+          },
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 34),
+            children: [
+              if (loading && controller.selectedGoal.value == null)
+                const SizedBox(height: 80, child: AppLoader())
+              else if (detailError != null)
+                _ErrorBanner(message: detailError),
+              if (!scopeMatches)
+                _ErrorBanner(message: 'finance.goal.currencyMismatch'.tr)
+              else ...[
+                _ProgressCard(
+                  goal: goal,
+                  surface: surface,
+                  border: border,
+                  text: text,
+                  muted: muted,
+                  primary: primary,
+                ),
+                const SizedBox(height: 14),
+                AppButton(
+                  label: 'finance.goal.contribute'.tr,
+                  icon: Icons.add_rounded,
+                  onPressed:
+                      goal.status == 'CANCELLED' ||
+                          controller.isContributionSubmitting.value
+                      ? null
+                      : () => _showContributionSheet(goal),
+                  loading: controller.isContributionSubmitting.value,
+                ),
+              ],
+              const SizedBox(height: 24),
+              Text(
+                'finance.goal.depositHistory'.tr,
+                style: TextStyle(
+                  color: text,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 10),
+              if (scopeMatches)
+                _DepositHistory(
+                  controller: controller,
+                  savingGoalId: goal.savingGoalId,
+                  surface: surface,
+                  border: border,
+                  text: text,
+                  muted: muted,
+                  currency: goal.currency,
+                ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  FinanceSavingGoalEntity _effectiveGoal() {
+    final selected = controller.selectedGoal.value;
+    return selected?.savingGoalId == widget.goal.savingGoalId
+        ? selected!
+        : widget.goal;
+  }
+
+  Future<void> _delete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('finance.goal.delete'.tr),
+        content: Text('finance.goal.deleteHint'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('common.cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text('finance.goal.delete'.tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final success = await controller.deleteGoal(widget.goal.savingGoalId);
+    if (success && mounted) {
+      Get.snackbar('finance.goal.title'.tr, 'finance.goal.deleteSuccess'.tr);
+      Navigator.pop(context, true);
+    }
+  }
+
+  Future<void> _showContributionSheet(FinanceSavingGoalEntity goal) async {
+    final amountController = TextEditingController();
+    final noteController = TextEditingController();
+    var fromWallet = false;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheetState) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            18,
+            18,
+            18,
+            MediaQuery.of(sheetContext).viewInsets.bottom + 24,
+          ),
+          child: Obx(() {
+            final submitting = controller.isContributionSubmitting.value;
+            final error = controller.mutationErrorMessage.value;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'finance.goal.contribute'.tr,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: amountController,
+                  enabled: !submitting,
+                  autofocus: true,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'finance.goal.depositAmount'.tr,
+                    prefixText: goal.currency == FinanceCurrency.usd
+                        ? r'$ '
+                        : '៛ ',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: noteController,
+                  enabled: !submitting,
+                  maxLength: 500,
+                  decoration: InputDecoration(
+                    labelText: 'finance.goal.depositNote'.tr,
+                  ),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: fromWallet,
+                  onChanged: submitting
+                      ? null
+                      : (value) => setSheetState(() => fromWallet = value),
+                  title: Text('finance.goal.fromWallet'.tr),
+                  subtitle: Text('finance.goal.fromWalletHint'.tr),
+                ),
+                if (error != null) ...[
+                  _ErrorBanner(message: error),
+                  const SizedBox(height: 10),
+                ],
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppButton.secondary(
+                        label: 'common.cancel'.tr,
+                        onPressed: submitting
+                            ? null
+                            : () => Navigator.pop(sheetContext),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: AppButton(
+                        label: 'finance.goal.contribute'.tr,
+                        loading: submitting,
+                        onPressed: submitting
+                            ? null
+                            : () async {
+                                final amount = double.tryParse(
+                                  amountController.text
+                                      .replaceAll(',', '')
+                                      .trim(),
+                                );
+                                final success = await controller.contribute(
+                                  goal: goal,
+                                  amount: amount ?? double.nan,
+                                  note: noteController.text,
+                                  fromWallet: fromWallet,
+                                );
+                                if (success && sheetContext.mounted) {
+                                  Navigator.pop(sheetContext);
+                                }
+                              },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          }),
         ),
       ),
     );
+    amountController.dispose();
+    noteController.dispose();
   }
 }
 
-// ============================================================
-// DEPOSIT ROW
-// ============================================================
-
-class _DepositRow extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final String amount;
-
-  final Color surface;
-  final Color border;
-  final Color textPrimary;
-  final Color textMuted;
-  final Color color;
-
-  const _DepositRow({
-    required this.title,
-    required this.subtitle,
-    required this.amount,
+class _ProgressCard extends StatelessWidget {
+  const _ProgressCard({
+    required this.goal,
     required this.surface,
     required this.border,
-    required this.textPrimary,
-    required this.textMuted,
-    required this.color,
+    required this.text,
+    required this.muted,
+    required this.primary,
   });
+
+  final FinanceSavingGoalEntity goal;
+  final Color surface;
+  final Color border;
+  final Color text;
+  final Color muted;
+  final Color primary;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = (goal.progressPercent / 100).clamp(0.0, 1.0);
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  goal.title,
+                  style: TextStyle(
+                    color: text,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Text(
+                '${goal.progressPercent}%',
+                style: TextStyle(color: primary, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 10,
+              backgroundColor: primary.withValues(alpha: 0.12),
+              color: primary,
+            ),
+          ),
+          const SizedBox(height: 14),
+          _AmountLine(
+            label: 'finance.goal.current'.tr,
+            amount: goal.currentAmount,
+            goal: goal,
+            text: text,
+            muted: muted,
+          ),
+          _AmountLine(
+            label: 'finance.goal.targetAmount'.tr,
+            amount: goal.targetAmount,
+            goal: goal,
+            text: text,
+            muted: muted,
+          ),
+          _AmountLine(
+            label: 'finance.goal.remaining'.tr,
+            amount: goal.remainingAmount,
+            goal: goal,
+            text: text,
+            muted: muted,
+          ),
+          if (goal.targetDate != null)
+            _AmountLine(
+              label: 'finance.goal.deadline'.tr,
+              value: goal.targetDate!,
+              text: text,
+              muted: muted,
+            ),
+          _AmountLine(
+            label: 'finance.goal.status'.tr,
+            value: _statusLabel(goal.status),
+            text: text,
+            muted: muted,
+          ),
+          _AmountLine(
+            label: 'finance.goal.currency'.tr,
+            value: goal.currency.apiValue,
+            text: text,
+            muted: muted,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _statusLabel(String raw) {
+    switch (raw) {
+      case 'IN_PROGRESS':
+        return 'finance.goal.inProgress'.tr;
+      case 'COMPLETED':
+        return 'finance.goal.completed'.tr;
+      case 'CANCELLED':
+        return 'finance.goal.cancelled'.tr;
+      default:
+        return raw;
+    }
+  }
+}
+
+class _AmountLine extends StatelessWidget {
+  const _AmountLine({
+    required this.label,
+    required this.text,
+    required this.muted,
+    this.amount,
+    this.goal,
+    this.value,
+  });
+
+  final String label;
+  final double? amount;
+  final FinanceSavingGoalEntity? goal;
+  final String? value;
+  final Color text;
+  final Color muted;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          color: surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: border),
-        ),
-        child: Row(
-          children: [
-            // ======================================================
-            // ICON
-            // ======================================================
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: Icon(Icons.arrow_downward_rounded, size: 20, color: color),
-            ),
-
-            const SizedBox(width: 12),
-
-            // ======================================================
-            // TITLE + DATE
-            // ======================================================
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-
-                  const SizedBox(height: 3),
-
-                  Text(
-                    subtitle,
-                    style: TextStyle(color: textMuted, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-
-            // ======================================================
-            // AMOUNT
-            // ======================================================
-            Text(
-              amount,
-              style: TextStyle(
-                color: color,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: TextStyle(color: muted)),
+          ),
+          Text(
+            value ?? FinanceMoneyFormatter.format(amount ?? 0, goal!.currency),
+            style: TextStyle(color: text, fontWeight: FontWeight.w700),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ============================================================
-// EMPTY HISTORY
-// ============================================================
-
-class _EmptyHistory extends StatelessWidget {
-  final Color textPrimary;
-  final Color textMuted;
-  final Color surface;
-  final Color border;
-
-  const _EmptyHistory({
-    required this.textPrimary,
-    required this.textMuted,
+class _DepositHistory extends StatelessWidget {
+  const _DepositHistory({
+    required this.controller,
+    required this.savingGoalId,
     required this.surface,
     required this.border,
+    required this.text,
+    required this.muted,
+    required this.currency,
   });
+
+  final SavingGoalController controller;
+  final String savingGoalId;
+  final Color surface;
+  final Color border;
+  final Color text;
+  final Color muted;
+  final FinanceCurrency currency;
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller.isDepositsLoading.value && controller.deposits.isEmpty) {
+      return const SizedBox(height: 90, child: AppLoader());
+    }
+    final error = controller.depositsErrorMessage.value;
+    if (error != null && controller.deposits.isEmpty) {
+      return AppEmptyState(
+        message: error,
+        icon: Icons.cloud_off_outlined,
+        action: AppButton.secondary(
+          label: 'common.retry'.tr,
+          expanded: false,
+          onPressed: () => controller.loadDeposits(savingGoalId),
+        ),
+      );
+    }
+    if (controller.deposits.isEmpty) {
+      return AppEmptyState(
+        message: 'finance.goal.noDeposits'.tr,
+        icon: Icons.history,
+      );
+    }
+    return Column(
+      children: controller.deposits
+          .map(
+            (deposit) => Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: border),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.arrow_downward_rounded, color: Colors.green),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          deposit.note?.isNotEmpty == true
+                              ? deposit.note!
+                              : 'finance.goal.contribute'.tr,
+                          style: TextStyle(
+                            color: text,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          deposit.depositDate,
+                          style: TextStyle(color: muted, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    FinanceMoneyFormatter.format(deposit.amount, currency),
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class _ErrorBanner extends StatelessWidget {
+  const _ErrorBanner({required this.message});
+
+  final String message;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: border),
+        color: Theme.of(context).colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        children: [
-          Icon(Icons.receipt_long_outlined, size: 34, color: textMuted),
-
-          const SizedBox(height: 10),
-
-          Text(
-            'No deposits yet',
-            style: TextStyle(
-              color: textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-
-          const SizedBox(height: 4),
-
-          Text(
-            'Start saving by making your first deposit.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: textMuted, fontSize: 12),
-          ),
-        ],
+      child: Text(
+        message,
+        style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
       ),
     );
   }

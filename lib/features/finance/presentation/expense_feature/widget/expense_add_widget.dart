@@ -67,6 +67,11 @@ class ExpenseBackButton extends StatelessWidget {
 class ExpenseAmountSection extends StatelessWidget {
   final TextEditingController controller;
 
+  /// The API supports separate USD/KHR balances.  Keep the amount field's
+  /// affordance aligned with the selected currency instead of always showing
+  /// a dollar sign.  USD remains the default for existing callers.
+  final String currencySymbol;
+
   final Color surface;
   final Color border;
   final Color textPrimary;
@@ -81,6 +86,7 @@ class ExpenseAmountSection extends StatelessWidget {
     required this.textPrimary,
     required this.textMuted,
     required this.primary,
+    this.currencySymbol = '\$',
   });
 
   @override
@@ -121,7 +127,7 @@ class ExpenseAmountSection extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    '\$',
+                    currencySymbol,
                     style: TextStyle(
                       color: primary,
                       fontSize: 21,

@@ -185,116 +185,152 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
   }
 
   Future<void> _showContributionSheet(FinanceSavingGoalEntity goal) async {
-    final amountController = TextEditingController();
-    final noteController = TextEditingController();
-    var fromWallet = false;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (sheetContext, setSheetState) => Padding(
-          padding: EdgeInsets.fromLTRB(
-            18,
-            18,
-            18,
-            MediaQuery.of(sheetContext).viewInsets.bottom + 24,
-          ),
-          child: Obx(() {
-            final submitting = controller.isContributionSubmitting.value;
-            final error = controller.mutationErrorMessage.value;
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'finance.goal.contribute'.tr,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: amountController,
-                  enabled: !submitting,
-                  autofocus: true,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'finance.goal.depositAmount'.tr,
-                    prefixText: goal.currency == FinanceCurrency.usd
-                        ? r'$ '
-                        : '៛ ',
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: noteController,
-                  enabled: !submitting,
-                  maxLength: 500,
-                  decoration: InputDecoration(
-                    labelText: 'finance.goal.depositNote'.tr,
-                  ),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: fromWallet,
-                  onChanged: submitting
-                      ? null
-                      : (value) => setSheetState(() => fromWallet = value),
-                  title: Text('finance.goal.fromWallet'.tr),
-                  subtitle: Text('finance.goal.fromWalletHint'.tr),
-                ),
-                if (error != null) ...[
-                  _ErrorBanner(message: error),
-                  const SizedBox(height: 10),
-                ],
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppButton.secondary(
-                        label: 'common.cancel'.tr,
-                        onPressed: submitting
-                            ? null
-                            : () => Navigator.pop(sheetContext),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: AppButton(
-                        label: 'finance.goal.contribute'.tr,
-                        loading: submitting,
-                        onPressed: submitting
-                            ? null
-                            : () async {
-                                final amount = double.tryParse(
-                                  amountController.text
-                                      .replaceAll(',', '')
-                                      .trim(),
-                                );
-                                final success = await controller.contribute(
-                                  goal: goal,
-                                  amount: amount ?? double.nan,
-                                  note: noteController.text,
-                                  fromWallet: fromWallet,
-                                );
-                                if (success && sheetContext.mounted) {
-                                  Navigator.pop(sheetContext);
-                                }
-                              },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          }),
+      builder: (_) => _ContributionSheet(controller: controller, goal: goal),
+    );
+  }
+}
+
+/// Owns contribution form controllers for the lifetime of the bottom-sheet
+/// route. The route future may complete before its reverse animation finishes,
+/// so disposing these controllers in the parent after `showModalBottomSheet`
+/// returns can race with a final rebuild of the sheet.
+class _ContributionSheet extends StatefulWidget {
+  const _ContributionSheet({required this.controller, required this.goal});
+
+  final SavingGoalController controller;
+  final FinanceSavingGoalEntity goal;
+
+  @override
+  State<_ContributionSheet> createState() => _ContributionSheetState();
+}
+
+class _ContributionSheetState extends State<_ContributionSheet> {
+  late final TextEditingController _amountController;
+  late final TextEditingController _noteController;
+  var _fromWallet = false;
+
+  SavingGoalController get controller => widget.controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _amountController = TextEditingController();
+    _noteController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          18,
+          18,
+          18,
+          MediaQuery.of(context).viewInsets.bottom + 24,
         ),
+        child: Obx(() {
+          final submitting = controller.isContributionSubmitting.value;
+          final error = controller.mutationErrorMessage.value;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'finance.goal.contribute'.tr,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _amountController,
+                enabled: !submitting,
+                autofocus: true,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'finance.goal.depositAmount'.tr,
+                  prefixText: widget.goal.currency == FinanceCurrency.usd
+                      ? r'$ '
+                      : '៛ ',
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _noteController,
+                enabled: !submitting,
+                maxLength: 500,
+                decoration: InputDecoration(
+                  labelText: 'finance.goal.depositNote'.tr,
+                ),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _fromWallet,
+                onChanged: submitting
+                    ? null
+                    : (value) => setState(() => _fromWallet = value),
+                title: Text('finance.goal.fromWallet'.tr),
+                subtitle: Text('finance.goal.fromWalletHint'.tr),
+              ),
+              if (error != null) ...[
+                _ErrorBanner(message: error),
+                const SizedBox(height: 10),
+              ],
+              Row(
+                children: [
+                  Expanded(
+                    child: AppButton.secondary(
+                      label: 'common.cancel'.tr,
+                      onPressed: submitting
+                          ? null
+                          : () => Navigator.pop(context),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: AppButton(
+                      label: 'finance.goal.contribute'.tr,
+                      loading: submitting,
+                      onPressed: submitting
+                          ? null
+                          : () async {
+                              final amount = double.tryParse(
+                                _amountController.text
+                                    .replaceAll(',', '')
+                                    .trim(),
+                              );
+                              final success = await controller.contribute(
+                                goal: widget.goal,
+                                amount: amount ?? double.nan,
+                                note: _noteController.text,
+                                fromWallet: _fromWallet,
+                              );
+                              if (success && context.mounted) {
+                                Navigator.pop(context);
+                              }
+                            },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        }),
       ),
     );
-    amountController.dispose();
-    noteController.dispose();
   }
 }
 

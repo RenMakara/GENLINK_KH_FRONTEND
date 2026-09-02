@@ -163,7 +163,18 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text('finance.goal.delete'.tr),
-        content: Text('finance.goal.deleteHint'.tr),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('finance.goal.deleteHint'.tr),
+            const SizedBox(height: 10),
+            Text(
+              'finance.goal.deleteNoRefund'.tr,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),

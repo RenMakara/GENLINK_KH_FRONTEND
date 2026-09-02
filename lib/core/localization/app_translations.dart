@@ -870,11 +870,15 @@ class AppTranslations extends Translations {
     'finance.goal.depositAmount': 'Contribution amount',
     'finance.goal.depositNote': 'Note (optional)',
     'finance.goal.fromWallet': 'Pay from wallet',
-    'finance.goal.fromWalletHint': 'Debits the matching currency wallet',
+    'finance.goal.fromWalletHint':
+        'Debits the matching currency wallet and is not refunded if the goal is deleted',
     'finance.goal.depositHistory': 'Contribution history',
     'finance.goal.noDeposits': 'No contributions yet',
     'finance.goal.deleteHint': 'Delete this saving goal?',
-    'finance.goal.deleteSuccess': 'Saving goal deleted',
+    'finance.goal.deleteNoRefund':
+        'Wallet-funded contributions will not be returned to your wallet when this goal is deleted.',
+    'finance.goal.deleteSuccess':
+        'Saving goal deleted. Wallet balance was not changed.',
     'finance.goal.savedSuccess': 'Saving goal created',
     'finance.goal.updatedSuccess': 'Saving goal updated',
     'finance.goal.invalidStatus': 'Invalid saving goal status.',
@@ -1907,11 +1911,15 @@ class AppTranslations extends Translations {
     'finance.goal.depositAmount': 'ចំនួនប្រាក់បន្ថែម',
     'finance.goal.depositNote': 'កំណត់ចំណាំ (ជាជម្រើស)',
     'finance.goal.fromWallet': 'ទូទាត់ពីកាបូបលុយ',
-    'finance.goal.fromWalletHint': 'ដកពីកាបូបលុយដែលមានរូបិយប័ណ្ណដូចគ្នា',
+    'finance.goal.fromWalletHint':
+        'ដកពីកាបូបលុយដែលមានរូបិយប័ណ្ណដូចគ្នា ហើយមិនបង្វិលត្រឡប់វិញទេ ប្រសិនបើលុបគោលដៅ',
     'finance.goal.depositHistory': 'ប្រវត្តិការបន្ថែមប្រាក់',
     'finance.goal.noDeposits': 'មិនទាន់មានការបន្ថែមប្រាក់ទេ',
     'finance.goal.deleteHint': 'លុបគោលដៅសន្សំនេះ?',
-    'finance.goal.deleteSuccess': 'បានលុបគោលដៅសន្សំ',
+    'finance.goal.deleteNoRefund':
+        'ប្រាក់ដែលបានដកពីកាបូបលុយ នឹងមិនត្រឡប់ទៅកាបូបលុយវិញទេ នៅពេលលុបគោលដៅនេះ។',
+    'finance.goal.deleteSuccess':
+        'បានលុបគោលដៅសន្សំ។ សមតុល្យកាបូបលុយមិនត្រូវបានផ្លាស់ប្តូរទេ។',
     'finance.goal.savedSuccess': 'បានបង្កើតគោលដៅសន្សំ',
     'finance.goal.updatedSuccess': 'បានកែសម្រួលគោលដៅសន្សំ',
     'finance.goal.invalidStatus': 'ស្ថានភាពគោលដៅសន្សំមិនត្រឹមត្រូវ។',

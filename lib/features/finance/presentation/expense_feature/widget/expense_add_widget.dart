@@ -17,9 +17,9 @@ class ExpenseCategoryItem {
 // PAYMENT MODEL
 class ExpensePaymentItem {
   final String name;
-  final IconData icon;
+  final IconData? icon;
 
-  const ExpensePaymentItem({required this.name, required this.icon});
+  const ExpensePaymentItem({required this.name, this.icon});
 }
 
 // BACK BUTTON
@@ -537,14 +537,20 @@ class ExpensePaymentSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: List.generate(payments.length, (index) {
-        final item = payments[index];
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      reverse: false,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: List.generate(payments.length, (index) {
+          final item = payments[index];
+          final bool selected = selectedPayment == index;
 
-        final bool selected = selectedPayment == index;
+          // Index 0 = Optional
+          final bool isOptional = index == 0 && item.name == 'Optional';
 
-        return Expanded(
-          child: Padding(
+          return Padding(
             padding: EdgeInsets.only(
               right: index < payments.length - 1 ? 8 : 0,
             ),
@@ -554,6 +560,7 @@ class ExpensePaymentSelector extends StatelessWidget {
                 duration: const Duration(milliseconds: 160),
                 curve: Curves.easeOut,
                 height: 50,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
                   color: selected ? primary.withValues(alpha: 0.10) : surface,
                   borderRadius: BorderRadius.circular(14),
@@ -563,18 +570,20 @@ class ExpensePaymentSelector extends StatelessWidget {
                   ),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      item.icon,
-                      size: 17,
-                      color: selected ? primary : textPrimary,
-                    ),
-
-                    const SizedBox(width: 6),
-
+                    if (!isOptional) ...[
+                      Icon(
+                        item.icon,
+                        size: 17,
+                        color: selected ? primary : textPrimary,
+                      ),
+                      const SizedBox(width: 7),
+                    ],
                     Text(
                       item.name,
+                      maxLines: 1,
                       style: TextStyle(
                         color: selected ? primary : textPrimary,
                         fontSize: 11,
@@ -587,9 +596,9 @@ class ExpensePaymentSelector extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 }

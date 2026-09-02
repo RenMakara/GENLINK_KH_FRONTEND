@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -28,7 +29,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     'STUDY',
     'BILLS',
     'HEALTH',
-    'OTHER',
   ];
   final _paymentValues = <String>['CASH', 'CARD', 'ABA'];
 
@@ -205,12 +205,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
               child: Row(
                 children: [
-                  ExpenseBackButton(
-                    color: surface,
-                    iconColor: textPrimary,
-                    borderColor: border,
-                    onTap: () => Navigator.pop(context),
-                  ),
+                  AppBackButton(),
                   const SizedBox(width: 13),
                   Expanded(
                     child: Text(
@@ -407,15 +402,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                         ],
                       );
                     }),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text('finance.expense.cancel'.tr),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -433,7 +419,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     'STUDY' => 'finance.expense.study'.tr,
     'BILLS' => 'finance.expense.bills'.tr,
     'HEALTH' => 'finance.expense.health'.tr,
-    'OTHER' => 'finance.expense.other'.tr,
     _ => value,
   };
 
@@ -463,10 +448,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     _ => AppColors.success,
   };
 
-  IconData _paymentIcon(String value) => switch (value) {
+  IconData? _paymentIcon(String value) => switch (value) {
+    'CASH' => Icons.payments_outlined,
     'CARD' => Icons.credit_card_outlined,
     'ABA' => Icons.account_balance_outlined,
-    _ => Icons.payments_outlined,
+    '' => null,
+    _ => null,
   };
 
   String? _optional(String value) {

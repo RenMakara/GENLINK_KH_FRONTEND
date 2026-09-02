@@ -612,8 +612,8 @@ class AppTranslations extends Translations {
     // ── Income Screen ───────────────────────────────────────────────────
     'finance.income.title': 'Income',
     'finance.income.add': 'Add Income',
-    'finance.income.edit': 'Edit Income',
-    'finance.income.delete': 'Delete Income',
+    'finance.income.edit': 'Edit',
+    'finance.income.delete': 'Delete',
     'finance.income.details': 'Income Details',
     'finance.income.detail': 'Income Detail',
     'finance.income.titleField': 'Title',
@@ -1642,7 +1642,7 @@ class AppTranslations extends Translations {
     // ── Income Screen ───────────────────────────────────────────────────
     'finance.income.title': 'ចំណូល',
     'finance.income.add': 'បន្ថែមចំណូល',
-    'finance.income.edit': 'កែសម្រួលចំណូល',
+    'finance.income.edit': 'កែសម្រួល',
     'finance.income.delete': 'លុបចំណូល',
     'finance.income.details': 'ព័ត៌មានលម្អិតចំណូល',
     'finance.income.detail': 'លម្អិតចំណូល',

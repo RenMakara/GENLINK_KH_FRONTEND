@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -104,79 +105,133 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
         widget.goal?.currency ?? controller.selectedCurrency.value;
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        foregroundColor: text,
-        elevation: 0,
-        title: Text(
-          (widget.isEditing ? 'finance.goal.edit' : 'finance.goal.create').tr,
-        ),
-      ),
-      body: Obx(() {
-        final submitting = widget.isEditing
-            ? controller.isUpdateSubmitting.value
-            : controller.isCreateSubmitting.value;
-        final error = controller.mutationErrorMessage.value;
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 30),
-          children: [
-            if (error != null) ...[
-              _ErrorBanner(message: error),
-              const SizedBox(height: 14),
+      body: SafeArea(
+        child: Obx(() {
+          final submitting = widget.isEditing
+              ? controller.isUpdateSubmitting.value
+              : controller.isCreateSubmitting.value;
+
+          final error = controller.mutationErrorMessage.value;
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 30),
+            children: [
+              // ============================================================
+              // HEADER
+              // ============================================================
+              Row(
+                children: [
+                  AppBackButton(),
+                  const SizedBox(width: 13),
+
+                  Expanded(
+                    child: Text(
+                      (widget.isEditing
+                              ? 'finance.goal.edit'
+                              : 'finance.goal.create')
+                          .tr,
+                      style: TextStyle(
+                        color: text,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // ============================================================
+              // ERROR
+              // ============================================================
+              if (error != null) ...[
+                _ErrorBanner(message: error),
+                const SizedBox(height: 14),
+              ],
+
+              // ============================================================
+              // GOAL NAME
+              // ============================================================
+              TextField(
+                controller: _titleController,
+                enabled: !submitting,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(
+                  labelText: 'finance.goal.name'.tr,
+                  hintText: 'finance.goal.nameHint'.tr,
+                  prefixIcon: const Icon(Icons.flag_outlined),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ============================================================
+              // TARGET AMOUNT
+              // ============================================================
+              TextField(
+                controller: _amountController,
+                enabled: !submitting,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'finance.goal.targetAmount'.tr,
+                  prefixText: formCurrency == FinanceCurrency.usd
+                      ? r'$ '
+                      : '៛ ',
+                  prefixIcon: const Icon(Icons.payments_outlined),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ============================================================
+              // DEADLINE
+              // ============================================================
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                enabled: !submitting,
+                leading: const Icon(Icons.event_outlined),
+                title: Text('finance.goal.deadline'.tr),
+                subtitle: Text(
+                  _targetDate == null ? '—' : _dateText(_targetDate!),
+                  style: TextStyle(color: muted),
+                ),
+                trailing: const Icon(Icons.calendar_month_outlined),
+                onTap: _pickDate,
+              ),
+
+              const SizedBox(height: 12),
+
+              // ============================================================
+              // CURRENCY
+              // ============================================================
+              Text(
+                '${'finance.goal.currency'.tr}: ${formCurrency.apiValue}',
+                style: TextStyle(color: muted, fontWeight: FontWeight.w600),
+              ),
+
+              const SizedBox(height: 28),
+
+              // ============================================================
+              // SAVE / UPDATE
+              // ============================================================
+              AppButton(
+                label:
+                    (widget.isEditing
+                            ? 'finance.goal.edit'
+                            : 'finance.goal.save')
+                        .tr,
+                loading: submitting,
+                onPressed: submitting ? null : _submit,
+                icon: Icons.check_rounded,
+              ),
             ],
-            TextField(
-              controller: _titleController,
-              enabled: !submitting,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                labelText: 'finance.goal.name'.tr,
-                hintText: 'finance.goal.nameHint'.tr,
-                prefixIcon: const Icon(Icons.flag_outlined),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _amountController,
-              enabled: !submitting,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: InputDecoration(
-                labelText: 'finance.goal.targetAmount'.tr,
-                prefixText: formCurrency == FinanceCurrency.usd ? r'$ ' : '៛ ',
-                prefixIcon: const Icon(Icons.payments_outlined),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              enabled: !submitting,
-              leading: const Icon(Icons.event_outlined),
-              title: Text('finance.goal.deadline'.tr),
-              subtitle: Text(
-                _targetDate == null ? '—' : _dateText(_targetDate!),
-                style: TextStyle(color: muted),
-              ),
-              trailing: const Icon(Icons.calendar_month_outlined),
-              onTap: _pickDate,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '${'finance.goal.currency'.tr}: ${formCurrency.apiValue}',
-              style: TextStyle(color: muted, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 28),
-            AppButton(
-              label:
-                  (widget.isEditing ? 'finance.goal.edit' : 'finance.goal.save')
-                      .tr,
-              loading: submitting,
-              onPressed: submitting ? null : _submit,
-              icon: Icons.check_rounded,
-            ),
-          ],
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 

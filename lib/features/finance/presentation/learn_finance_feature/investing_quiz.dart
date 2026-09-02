@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -50,95 +51,133 @@ class _InvestingQuizScreenState extends State<InvestingQuizScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        foregroundColor: text,
-        elevation: 0,
-        title: Text('finance.learning.quiz'.tr),
-      ),
-      body: Obx(() {
-        final error = controller.quizErrorMessage.value;
-        if (controller.isQuizLoading.value &&
-            controller.quizQuestions.isEmpty) {
-          return const AppLoader();
-        }
-        if (error != null && controller.quizQuestions.isEmpty) {
-          return _QuizError(message: error, onRetry: _reload);
-        }
-        if (controller.quizQuestions.isEmpty) {
-          return _QuizError(
-            message: 'finance.learning.noQuiz'.tr,
-            onRetry: _reload,
-          );
-        }
-        final questions = controller.quizQuestions.toList(growable: false);
-        return RefreshIndicator(
-          onRefresh: _reload,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 32),
+      body: SafeArea(
+        child: Obx(() {
+          final error = controller.quizErrorMessage.value;
+
+          if (controller.isQuizLoading.value &&
+              controller.quizQuestions.isEmpty) {
+            return const AppLoader();
+          }
+
+          if (error != null && controller.quizQuestions.isEmpty) {
+            return _QuizError(message: error, onRetry: _reload);
+          }
+
+          if (controller.quizQuestions.isEmpty) {
+            return _QuizError(
+              message: 'finance.learning.noQuiz'.tr,
+              onRetry: _reload,
+            );
+          }
+
+          final questions = controller.quizQuestions.toList(growable: false);
+
+          return Column(
             children: [
-              Text(
-                'finance.learning.quizQuestions'.trParams({
-                  'count': '${questions.length}',
-                }),
-                style: TextStyle(color: muted, fontSize: 13),
-              ),
-              const SizedBox(height: 14),
-              ...questions.asMap().entries.map(
-                (entry) => _QuestionCard(
-                  number: entry.key + 1,
-                  question: entry.value,
-                  selectedOption: _selectedAnswers[entry.value.questionId],
-                  surface: surface,
-                  border: border,
-                  text: text,
-                  muted: muted,
-                  primary: primary,
-                  onSelected: (option) => setState(() {
-                    _selectedAnswers[entry.value.questionId] = option;
-                    _validationMessage = null;
-                  }),
+              // HEADER
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    AppBackButton(),
+                    const SizedBox(width: 13),
+                    Expanded(
+                      child: Text(
+                        'finance.learning.quiz'.tr,
+                        style: TextStyle(
+                          color: text,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              if (_validationMessage != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  _validationMessage!,
-                  style: TextStyle(color: theme.colorScheme.error),
+
+              // QUIZ CONTENT
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _reload,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(18, 12, 18, 32),
+                    children: [
+                      Text(
+                        'finance.learning.quizQuestions'.trParams({
+                          'count': '${questions.length}',
+                        }),
+                        style: TextStyle(color: muted, fontSize: 13),
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      ...questions.asMap().entries.map(
+                        (entry) => _QuestionCard(
+                          number: entry.key + 1,
+                          question: entry.value,
+                          selectedOption:
+                              _selectedAnswers[entry.value.questionId],
+                          surface: surface,
+                          border: border,
+                          text: text,
+                          muted: muted,
+                          primary: primary,
+                          onSelected: (option) => setState(() {
+                            _selectedAnswers[entry.value.questionId] = option;
+                            _validationMessage = null;
+                          }),
+                        ),
+                      ),
+
+                      if (_validationMessage != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _validationMessage!,
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                      ],
+
+                      if (controller.mutationErrorMessage.value != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          controller.mutationErrorMessage.value!,
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                      ],
+
+                      const SizedBox(height: 14),
+
+                      AppButton(
+                        label: 'finance.learning.quizSubmit'.tr,
+                        loading: controller.isQuizSubmitting.value,
+                        icon: Icons.send_rounded,
+                        onPressed: _submit,
+                      ),
+
+                      if (controller.quizResult.value != null) ...[
+                        const SizedBox(height: 18),
+                        _ResultCard(
+                          result: controller.quizResult.value!,
+                          surface: surface,
+                          border: border,
+                          text: text,
+                          muted: muted,
+                          primary: primary,
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ],
-              if (controller.mutationErrorMessage.value != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  controller.mutationErrorMessage.value!,
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
-              ],
-              const SizedBox(height: 14),
-              AppButton(
-                label: 'finance.learning.quizSubmit'.tr,
-                loading: controller.isQuizSubmitting.value,
-                icon: Icons.send_rounded,
-                onPressed: _submit,
               ),
-              if (controller.quizResult.value != null) ...[
-                const SizedBox(height: 18),
-                _ResultCard(
-                  result: controller.quizResult.value!,
-                  surface: surface,
-                  border: border,
-                  text: text,
-                  muted: muted,
-                  primary: primary,
-                ),
-              ],
             ],
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 

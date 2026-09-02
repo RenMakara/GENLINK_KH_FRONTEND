@@ -438,7 +438,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     'BILLS' => Icons.receipt_long_outlined,
     'HEALTH' => Icons.favorite_border_rounded,
     'OTHER' => null,
-    _ => Icons.more_horiz_rounded,
+    _ => null,
   };
 
   Color _categoryColor(String value) => switch (value) {
@@ -447,6 +447,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     'STUDY' => AppColors.productivityAccent,
     'BILLS' => AppColors.financeAccent,
     'HEALTH' => AppColors.productivityAccent,
+    'OTHER' => AppColors.growthAccent,
     _ => AppColors.success,
   };
 

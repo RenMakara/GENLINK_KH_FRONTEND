@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -39,83 +40,126 @@ class BudgetDetailScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        foregroundColor: text,
-        elevation: 0,
-        title: Text(
-          'finance.budget.title'.tr,
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () => _edit(context),
-            icon: Icon(Icons.edit_outlined, color: primary),
-            tooltip: 'finance.budget.editBudget'.tr,
-          ),
-          IconButton(
-            onPressed: () => _delete(context),
-            icon: const Icon(
-              Icons.delete_outline_rounded,
-              color: AppColors.danger,
-            ),
-            tooltip: 'finance.budget.deleteBudget'.tr,
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 30),
-        children: [
-          _SummaryCard(
-            budget: budget,
-            surface: surface,
-            secondary: secondary,
-            text: text,
-            muted: muted,
-            border: border,
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'finance.budget.categoryBudgets'.tr,
-            style: TextStyle(
-              color: text,
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: border),
-            ),
-            child: budget.categories.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.all(18),
-                    child: Text(
-                      'finance.budget.noCategories'.tr,
-                      style: TextStyle(color: muted),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 30),
+          children: [
+            // Header
+            Row(
+              children: [
+                AppBackButton(),
+                Expanded(
+                  child: Text(
+                    'finance.budget.title'.tr,
+                    style: TextStyle(
+                      color: text,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
                     ),
-                  )
-                : Column(
-                    children: [
-                      for (var i = 0; i < budget.categories.length; i++) ...[
-                        _CategoryDetail(
-                          category: budget.categories[i],
-                          currency: budget.currency,
-                          text: text,
-                          muted: muted,
-                          secondary: secondary,
-                          color: _categoryColor(i),
-                        ),
-                        if (i != budget.categories.length - 1)
-                          Divider(height: 1, color: border),
-                      ],
-                    ],
                   ),
-          ),
-        ],
+                ),
+
+                // Edit
+                InkWell(
+                  onTap: () => _edit(context),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: border),
+                    ),
+                    child: Icon(Icons.edit_outlined, size: 19, color: primary),
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                // Delete
+                InkWell(
+                  onTap: () => _delete(context),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.danger.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: AppColors.danger.withValues(alpha: 0.18),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.delete_outline_rounded,
+                      size: 19,
+                      color: AppColors.danger,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            _SummaryCard(
+              budget: budget,
+              surface: surface,
+              secondary: secondary,
+              text: text,
+              muted: muted,
+              border: border,
+            ),
+
+            const SizedBox(height: 20),
+
+            Text(
+              'finance.budget.categoryBudgets'.tr,
+              style: TextStyle(
+                color: text,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            Container(
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: border),
+              ),
+              child: budget.categories.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Text(
+                        'finance.budget.noCategories'.tr,
+                        style: TextStyle(color: muted),
+                      ),
+                    )
+                  : Column(
+                      children: [
+                        for (var i = 0; i < budget.categories.length; i++) ...[
+                          _CategoryDetail(
+                            category: budget.categories[i],
+                            currency: budget.currency,
+                            text: text,
+                            muted: muted,
+                            secondary: secondary,
+                            color: _categoryColor(i),
+                          ),
+                          if (i != budget.categories.length - 1)
+                            Divider(height: 1, color: border),
+                        ],
+                      ],
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -143,12 +144,8 @@ class _IncomeAddScreenState extends State<IncomeAddScreen> {
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                    color: textPrimary,
-                  ),
-                  const SizedBox(width: 4),
+                  AppBackButton(),
+                  const SizedBox(width: 13),
                   Expanded(
                     child: Text(
                       isEditing
@@ -301,15 +298,6 @@ class _IncomeAddScreenState extends State<IncomeAddScreen> {
                         ],
                       );
                     }),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text('finance.income.cancel'.tr),
-                      ),
-                    ),
                   ],
                 ),
               ),

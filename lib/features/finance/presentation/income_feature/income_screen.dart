@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -7,7 +8,6 @@ import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/finance_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/income_controller.dart';
-import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_detail_widget.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_history_widget.dart'
     hide ExpenseHeaderButton;
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
@@ -47,7 +47,9 @@ class _IncomeScreenState extends State<IncomeScreen> {
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
+
     final position = _scrollController.position;
+
     if (position.pixels >= position.maxScrollExtent - 280) {
       controller.loadNextPage();
     }
@@ -60,22 +62,33 @@ class _IncomeScreenState extends State<IncomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // Same colors as BudgetScreen
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
+
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
-    final textPrimary = isDark
+
+    final secondary = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfaceSecondary;
+
+    final text = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
-    final textMuted = isDark
-        ? AppColors.darkTextMuted
-        : AppColors.lightTextMuted;
+
+    final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+
     final border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
+
     final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
-    final inverseText = isDark
+
+    final inverse = isDark
         ? AppColors.darkTextInverse
         : AppColors.lightTextInverse;
 
@@ -86,7 +99,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
           final incomes = controller.incomes.toList(growable: false);
           final loading = controller.isInitialLoading.value;
           final error = controller.listErrorMessage.value;
-          final currency = controller.selectedCurrency.value;
+
           return RefreshIndicator(
             onRefresh: controller.refresh,
             child: ListView(
@@ -96,26 +109,22 @@ class _IncomeScreenState extends State<IncomeScreen> {
               ),
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 36),
               children: [
+                // HEADER
                 Row(
                   children: [
-                    ExpenseHeaderButton(
-                      icon: Icons.arrow_back_ios_new_rounded,
-                      background: surface,
-                      iconColor: textPrimary,
-                      borderColor: border,
-                      onTap: () => Navigator.pop(context),
-                    ),
-                    const SizedBox(width: 12),
+                    AppBackButton(),
+                    const SizedBox(width: 13),
                     Expanded(
                       child: Text(
                         'finance.income.title'.tr,
                         style: TextStyle(
-                          color: textPrimary,
+                          color: text,
                           fontSize: 24,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
+
                     IconButton(
                       tooltip: 'finance.cashFlow.title'.tr,
                       onPressed: () => Navigator.push<void>(
@@ -124,30 +133,48 @@ class _IncomeScreenState extends State<IncomeScreen> {
                           builder: (_) => const CashFlowScreen(),
                         ),
                       ),
-                      icon: Icon(Icons.compare_arrows_rounded, color: primary),
+                      icon: Icon(Icons.compare_arrows_rounded, color: text),
                     ),
-                    _AddIncomeButton(
-                      background: primary,
-                      iconColor: inverseText,
-                      onTap: () => Navigator.push<void>(
+
+                    IconButton(
+                      tooltip: 'finance.income.add'.tr,
+                      onPressed: () => Navigator.push<void>(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const IncomeAddScreen(),
                         ),
                       ),
+                      style: IconButton.styleFrom(
+                        backgroundColor: primary,
+                        foregroundColor: inverse,
+                        minimumSize: const Size(42, 42),
+                        maximumSize: const Size(42, 42),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.add_rounded, size: 24),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+
+                const SizedBox(height: 14),
+
+                // CURRENCY BAR
+                // Same color setup as BudgetScreen
                 _CurrencyBar(
-                  currency: currency,
+                  value: controller.selectedCurrency.value,
                   onChanged: controller.selectCurrency,
-                  surface: surface,
+                  text: text,
+                  muted: muted,
+                  secondary: secondary,
                   border: border,
                   primary: primary,
-                  textPrimary: textPrimary,
                 ),
+
                 const SizedBox(height: 14),
+
+                // SOURCE FILTER
                 Row(
                   children: [
                     Expanded(
@@ -156,21 +183,31 @@ class _IncomeScreenState extends State<IncomeScreen> {
                         hintText: 'finance.income.sourceFilterHint'.tr,
                         surface: surface,
                         border: border,
-                        textPrimary: textPrimary,
-                        textMuted: textMuted,
+                        textPrimary: text,
+                        textMuted: muted,
                         primary: primary,
                       ),
                     ),
                     const SizedBox(width: 8),
+
                     SizedBox(
                       height: 48,
-                      child: FilledButton(
+                      child: OutlinedButton(
                         onPressed: _applySource,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: text,
+                          backgroundColor: surface,
+                          side: BorderSide(color: border),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                         child: Text('finance.income.apply'.tr),
                       ),
                     ),
                   ],
                 ),
+
                 if (controller.selectedSource.value != null) ...[
                   Align(
                     alignment: Alignment.centerLeft,
@@ -184,7 +221,10 @@ class _IncomeScreenState extends State<IncomeScreen> {
                     ),
                   ),
                 ],
+
                 const SizedBox(height: 8),
+
+                // CONTENT
                 if (loading && incomes.isEmpty)
                   const SizedBox(height: 280, child: AppLoader())
                 else if (error != null && incomes.isEmpty)
@@ -230,21 +270,23 @@ class _IncomeScreenState extends State<IncomeScreen> {
                       isPositive: true,
                       surface: surface,
                       border: border,
-                      textPrimary: textPrimary,
-                      textMuted: textMuted,
+                      textPrimary: text,
+                      textMuted: muted,
                       onTap: () => _openDetail(income),
                     ),
                   ),
+
                   if (controller.isLoadingMore.value)
                     const Padding(
                       padding: EdgeInsets.all(14),
                       child: AppLoader(size: 22),
                     ),
+
                   if (controller.paginationErrorMessage.value != null)
                     _PaginationError(
                       message: controller.paginationErrorMessage.value!,
                       onRetry: controller.loadNextPage,
-                      textMuted: textMuted,
+                      textMuted: muted,
                     ),
                 ],
               ],
@@ -261,9 +303,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
       MaterialPageRoute(
         builder: (_) => IncomeDetailScreen.fromEntity(
           income,
-          // Close the payload-backed detail route before editing.  The
-          // controller refreshes the authoritative list after PUT, so the
-          // user returns to the refreshed list instead of a stale detail card.
           onEdit: () {
             Navigator.pop(context);
             Navigator.push<void>(
@@ -280,88 +319,98 @@ class _IncomeScreenState extends State<IncomeScreen> {
   }
 }
 
-class _AddIncomeButton extends StatelessWidget {
-  const _AddIncomeButton({
-    required this.background,
-    required this.iconColor,
-    required this.onTap,
+// CURRENCY BAR
+class _CurrencyBar extends StatelessWidget {
+  const _CurrencyBar({
+    required this.value,
+    required this.onChanged,
+    required this.text,
+    required this.muted,
+    required this.secondary,
+    required this.border,
+    required this.primary,
   });
 
-  final Color background;
-  final Color iconColor;
-  final VoidCallback onTap;
+  final FinanceCurrency value;
+  final ValueChanged<FinanceCurrency> onChanged;
+  final Color text;
+  final Color muted;
+  final Color secondary;
+  final Color border;
+  final Color primary;
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      tooltip: 'finance.income.add'.tr,
-      onPressed: onTap,
-      icon: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(Icons.add_rounded, color: iconColor),
+    final currencies = FinanceCurrency.values;
+    final selectedIndex = currencies.indexOf(value);
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: secondary,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: border),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final itemWidth = constraints.maxWidth / currencies.length;
+
+          return SizedBox(
+            height: 40,
+            child: Stack(
+              children: [
+                // SLIDING SELECTED BACKGROUND
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  left: selectedIndex * itemWidth,
+                  top: 0,
+                  bottom: 0,
+                  width: itemWidth,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: primary,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                  ),
+                ),
+
+                // CURRENCY OPTIONS
+                Row(
+                  children: currencies.map((currency) {
+                    final selected = currency == value;
+
+                    return Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onChanged(currency),
+                        child: Center(
+                          child: Text(
+                            currency.apiValue,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: selected
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : muted,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 }
 
-class _CurrencyBar extends StatelessWidget {
-  const _CurrencyBar({
-    required this.currency,
-    required this.onChanged,
-    required this.surface,
-    required this.border,
-    required this.primary,
-    required this.textPrimary,
-  });
-
-  final FinanceCurrency currency;
-  final ValueChanged<FinanceCurrency> onChanged;
-  final Color surface;
-  final Color border;
-  final Color primary;
-  final Color textPrimary;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: FinanceCurrency.values.map((item) {
-        final selected = item == currency;
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(
-              right: item == FinanceCurrency.usd ? 8 : 0,
-            ),
-            child: InkWell(
-              onTap: () => onChanged(item),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                height: 42,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: selected ? primary : surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: selected ? primary : border),
-                ),
-                child: Text(
-                  item.apiValue,
-                  style: TextStyle(
-                    color: selected ? Colors.white : textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
+// PAGINATION ERROR
 
 class _PaginationError extends StatelessWidget {
   const _PaginationError({
@@ -392,8 +441,7 @@ class _PaginationError extends StatelessWidget {
   }
 }
 
+// INCOME ICON
 IconData _sourceIcon() {
-  // The backend treats source as free text rather than a closed enum.  Keep a
-  // neutral icon so an unknown/future source never requires a guessed mapping.
   return Icons.trending_up_rounded;
 }

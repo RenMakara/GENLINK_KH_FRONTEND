@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -33,80 +34,113 @@ class LearnFinanceScreen extends GetView<FinanceLearningController> {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        foregroundColor: text,
-        elevation: 0,
-        title: Text('finance.learning.title'.tr),
-      ),
-      body: Obx(
-        () => RefreshIndicator(
-          onRefresh: controller.refresh,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      body: SafeArea(
+        child: Obx(
+          () => Column(
             children: [
-              _DashboardCard(
-                dashboard: controller.dashboard.value,
-                loading: controller.isDashboardLoading.value,
-                error: controller.dashboardErrorMessage.value,
-                surface: surface,
-                border: border,
-                text: text,
-                muted: muted,
-                primary: primary,
-                onRetry: controller.loadDashboard,
-              ),
-              const SizedBox(height: 18),
-              Text(
-                'finance.learning.topics'.tr,
-                style: TextStyle(
-                  color: text,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 10),
-              _TopicFilter(
-                topics: controller.dashboard.value?.topics ?? const [],
-                selectedTopic: controller.selectedTopic.value,
-                surface: surface,
-                border: border,
-                text: text,
-                muted: muted,
-                primary: primary,
-                inverse: inverse,
-                onSelected: controller.selectTopic,
-              ),
-              const SizedBox(height: 18),
-              Text(
-                'finance.learning.lessons'.tr,
-                style: TextStyle(
-                  color: text,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 10),
-              _LessonList(
-                lessons: controller.lessons,
-                loading: controller.isLessonsLoading.value,
-                error: controller.lessonsErrorMessage.value,
-                surface: surface,
-                border: border,
-                text: text,
-                muted: muted,
-                primary: primary,
-                onRetry: () => controller.loadLessons(),
-                onLessonTap: (lesson) => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => InvestingBasicsScreen(
-                      lessonId: lesson.lessonId,
-                      initialLesson: lesson,
+              // HEADER
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    AppBackButton(),
+                    const SizedBox(width: 13),
+                    Expanded(
+                      child: Text(
+                        'finance.learning.title'.tr,
+                        style: TextStyle(
+                          color: text,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
                     ),
+                  ],
+                ),
+              ),
+
+              // CONTENT
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: controller.refresh,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                    children: [
+                      _DashboardCard(
+                        dashboard: controller.dashboard.value,
+                        loading: controller.isDashboardLoading.value,
+                        error: controller.dashboardErrorMessage.value,
+                        surface: surface,
+                        border: border,
+                        text: text,
+                        muted: muted,
+                        primary: primary,
+                        onRetry: controller.loadDashboard,
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      Text(
+                        'finance.learning.topics'.tr,
+                        style: TextStyle(
+                          color: text,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      _TopicFilter(
+                        topics: controller.dashboard.value?.topics ?? const [],
+                        selectedTopic: controller.selectedTopic.value,
+                        surface: surface,
+                        border: border,
+                        text: text,
+                        muted: muted,
+                        primary: primary,
+                        inverse: inverse,
+                        onSelected: controller.selectTopic,
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      Text(
+                        'finance.learning.lessons'.tr,
+                        style: TextStyle(
+                          color: text,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      _LessonList(
+                        lessons: controller.lessons,
+                        loading: controller.isLessonsLoading.value,
+                        error: controller.lessonsErrorMessage.value,
+                        surface: surface,
+                        border: border,
+                        text: text,
+                        muted: muted,
+                        primary: primary,
+                        onRetry: () => controller.loadLessons(),
+                        onLessonTap: (lesson) => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => InvestingBasicsScreen(
+                              lessonId: lesson.lessonId,
+                              initialLesson: lesson,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

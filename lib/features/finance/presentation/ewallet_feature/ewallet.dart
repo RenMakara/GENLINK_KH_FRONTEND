@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -36,41 +37,6 @@ class EWalletScreen extends GetView<EWalletController> {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 18,
-            color: textPrimary,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'finance.ewallet.title'.tr,
-          style: TextStyle(
-            color: textPrimary,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.3,
-          ),
-        ),
-        actions: [
-          Container(
-            width: 40,
-            height: 40,
-            margin: const EdgeInsets.only(right: 16),
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: border),
-            ),
-            child: Icon(Icons.more_horiz_rounded, color: textPrimary, size: 21),
-          ),
-        ],
-      ),
       body: Obx(() {
         if (controller.isInitialLoading.value &&
             controller.wallet.value == null) {
@@ -78,6 +44,7 @@ class EWalletScreen extends GetView<EWalletController> {
         }
 
         final walletError = controller.walletErrorMessage.value;
+
         if (controller.wallet.value == null && walletError != null) {
           return AppEmptyState(
             message: walletError,
@@ -89,13 +56,85 @@ class EWalletScreen extends GetView<EWalletController> {
           );
         }
 
-        return RefreshIndicator(
-          onRefresh: controller.refresh,
-          child: _WalletContent(
-            controller: controller,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-          ),
+        return Scaffold(
+          backgroundColor: bg,
+          body: Obx(() {
+            if (controller.isInitialLoading.value &&
+                controller.wallet.value == null) {
+              return const AppLoader();
+            }
+
+            final walletError = controller.walletErrorMessage.value;
+
+            if (controller.wallet.value == null && walletError != null) {
+              return AppEmptyState(
+                message: walletError,
+                icon: Icons.account_balance_wallet_outlined,
+                action: AppButton.secondary(
+                  label: 'common.retry'.tr,
+                  onPressed: controller.loadInitial,
+                ),
+              );
+            }
+
+            return SafeArea(
+              child: Column(
+                children: [
+                  // HEADER
+                  Container(
+                    color: bg,
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: Row(
+                      children: [
+                        AppBackButton(),
+
+                        const SizedBox(width: 13),
+
+                        Expanded(
+                          child: Text(
+                            'finance.ewallet.title'.tr,
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ),
+
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: border),
+                          ),
+                          child: Icon(
+                            Icons.more_horiz_rounded,
+                            color: textPrimary,
+                            size: 21,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // WALLET CONTENT
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: controller.refresh,
+                      child: _WalletContent(
+                        controller: controller,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         );
       }),
     );

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
 import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
@@ -321,6 +320,15 @@ class _FinanceDashboardContent extends StatelessWidget {
           balance: balance,
         ),
         const SizedBox(height: 16),
+
+        _QuickActions(
+          quickActions: dashboard.quickActions,
+          surface: surface,
+          border: border,
+          textPrimary: textPrimary,
+        ),
+        const SizedBox(height: 16),
+
         _MonthlySpendingCard(
           dashboard: dashboard,
           surface: surface,
@@ -330,6 +338,7 @@ class _FinanceDashboardContent extends StatelessWidget {
           border: border,
         ),
         const SizedBox(height: 16),
+
         _SavingsCard(
           saving: dashboard.saving,
           currency: dashboard.currency,
@@ -339,21 +348,16 @@ class _FinanceDashboardContent extends StatelessWidget {
           textMuted: textMuted,
           border: border,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 22),
+
         _InsightCard(
           tip: dashboard.financialTip,
           isDark: isDark,
           textPrimary: textPrimary,
           textSecondary: textSecondary,
         ),
-        const SizedBox(height: 22),
-        _QuickActions(
-          quickActions: dashboard.quickActions,
-          surface: surface,
-          border: border,
-          textPrimary: textPrimary,
-        ),
         const SizedBox(height: 24),
+
         _RecentExpenses(
           expenses: dashboard.recentExpenses,
           currency: dashboard.currency,
@@ -363,6 +367,7 @@ class _FinanceDashboardContent extends StatelessWidget {
           textMuted: textMuted,
         ),
         const SizedBox(height: 16),
+
         _LearnFinanceCard(
           surface: surface,
           textPrimary: textPrimary,
@@ -757,7 +762,7 @@ class _QuickActions extends StatelessWidget {
         case 'ADD_EXPENSE':
           actions.add((
             Icons.add_rounded,
-            'finance.addExpense'.tr,
+            'finance.Expense'.tr,
             () => Navigator.push<void>(
               context,
               MaterialPageRoute(builder: (_) => const ExpenseScreen()),
@@ -767,7 +772,7 @@ class _QuickActions extends StatelessWidget {
         case 'SET_BUDGET':
           actions.add((
             Icons.bar_chart_rounded,
-            'finance.setBudget'.tr,
+            'finance.Budget'.tr,
             () => Navigator.push<void>(
               context,
               MaterialPageRoute(builder: (_) => const BudgetScreen()),
@@ -801,7 +806,7 @@ class _QuickActions extends StatelessWidget {
     // quickActions response; keep its existing entry until that API phase.
     actions.add((
       Icons.trending_up_rounded,
-      'finance.addIncome'.tr,
+      'finance.Income'.tr,
       () => Navigator.push<void>(
         context,
         MaterialPageRoute(builder: (_) => const IncomeScreen()),

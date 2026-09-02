@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
+import '../../../media/domain/entities/media_entity.dart';
+import '../../../media/domain/media_upload_service.dart';
 import '../../domain/models/chat_models.dart';
 import '../controllers/chat_controller.dart';
 
@@ -295,14 +298,49 @@ class ChatDetailScreen extends GetView<ChatController> {
                     ),
                   ],
 
-                  Text(
-                    msg.content,
-                    style: TextStyle(
-                      color: isMine ? Colors.black : Colors.white,
-                      fontSize: 14,
-                      height: 1.3,
+                  // ── Image Attachment Preview inside DM Bubble ──
+                  if (msg.messageType == 'image' && msg.mediaUrl != null && msg.mediaUrl!.isNotEmpty) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        constraints: const BoxConstraints(maxHeight: 220, maxWidth: 280),
+                        margin: const EdgeInsets.only(bottom: 6),
+                        child: msg.mediaUrl!.startsWith('http')
+                            ? Image.network(
+                                msg.mediaUrl!,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (ctx, child, progress) {
+                                  if (progress == null) return child;
+                                  return Container(
+                                    height: 140,
+                                    color: Colors.black26,
+                                    child: const Center(
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  height: 100,
+                                  color: Colors.black26,
+                                  child: const Center(
+                                    child: Icon(Icons.broken_image_rounded, color: Colors.white54),
+                                  ),
+                                ),
+                              )
+                            : Image.asset(msg.mediaUrl!, fit: BoxFit.cover),
+                      ),
                     ),
-                  ),
+                  ],
+
+                  if (msg.content.isNotEmpty)
+                    Text(
+                      msg.content,
+                      style: TextStyle(
+                        color: isMine ? Colors.black : Colors.white,
+                        fontSize: 14,
+                        height: 1.3,
+                      ),
+                    ),
                   const SizedBox(height: 4),
                   Text(
                     msg.timeAgo,
@@ -342,14 +380,37 @@ class ChatDetailScreen extends GetView<ChatController> {
               Icons.add_photo_alternate_rounded,
               color: AppColors.communityAccent,
             ),
-            onPressed: () {
-              Get.snackbar(
-                "Attachment",
-                "Select image or file from library.",
-                snackPosition: SnackPosition.TOP,
-                backgroundColor: AppColors.darkSurfaceSecondary,
-                colorText: Colors.white,
-              );
+            onPressed: () async {
+              try {
+                final picker = ImagePicker();
+                final XFile? file = await picker.pickImage(
+                  source: ImageSource.gallery,
+                  imageQuality: 85,
+                );
+                if (file != null) {
+                  String mediaUrl = file.path;
+                  if (Get.isRegistered<MediaUploadService>()) {
+                    final uploadService = Get.find<MediaUploadService>();
+                    try {
+                      final bytes = await file.readAsBytes();
+                      final uploaded = await uploadService.upload(
+                        bytes: bytes,
+                        contentType: 'image/jpeg',
+                        purpose: MediaPurpose.post,
+                      );
+                      if (uploaded.url.isNotEmpty) {
+                        mediaUrl = uploaded.url;
+                      }
+                    } catch (_) {
+                      // fallback to local path
+                    }
+                  }
+                  await controller.sendMessage(
+                    type: 'image',
+                    mediaUrl: mediaUrl,
+                  );
+                }
+              } catch (_) {}
             },
           ),
           const SizedBox(width: 4),

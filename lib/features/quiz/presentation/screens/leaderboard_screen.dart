@@ -111,11 +111,11 @@ class LeaderboardScreen extends GetView<QuizController> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
-                  colors: [crownColor.withOpacity(0.8), crownColor],
+                  colors: [crownColor.withValues(alpha: 0.8), crownColor],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: crownColor.withOpacity(0.3),
+                    color: crownColor.withValues(alpha: 0.3),
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),

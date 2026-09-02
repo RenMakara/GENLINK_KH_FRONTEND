@@ -1026,63 +1026,70 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         appBar: AppBar(
           backgroundColor: isDark ? const Color(0xFF0C0E12) : Colors.white,
           elevation: 0,
-          leadingWidth: 44,
+          leadingWidth: 38,
           leading: IconButton(
-            padding: const EdgeInsets.only(left: 12),
-            icon: Icon(Icons.close_rounded, color: textPrimary, size: 24),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            icon: Icon(Icons.close_rounded, color: textPrimary, size: 22),
             onPressed: _onBackPress,
           ),
-          titleSpacing: 4,
+          titleSpacing: 2,
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildUserAvatar(isDark),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               // "Anyone" Dropdown Capsule Selector
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _showAudiencePickerSheet,
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1C2028) : const Color(0xFFF0F2F5),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: cardBorder, width: 0.8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _selectedAudience == 'Public'
-                              ? Icons.public
-                              : (_selectedAudience == 'Friends' ? Icons.group_outlined : Icons.lock_outline),
-                          color: textSecondary,
-                          size: 13,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          _selectedAudience == 'Public'
-                              ? ('community.public'.tr.isNotEmpty && 'community.public'.tr != 'community.public'
-                                  ? 'community.public'.tr
-                                  : 'Public')
-                              : (_selectedAudience == 'Friends'
-                                  ? ('community.friendsOnly'.tr.isNotEmpty && 'community.friendsOnly'.tr != 'community.friendsOnly'
-                                      ? 'community.friendsOnly'.tr
-                                      : 'Friends')
-                                  : ('community.onlyMe'.tr.isNotEmpty && 'community.onlyMe'.tr != 'community.onlyMe'
-                                      ? 'community.onlyMe'.tr
-                                      : 'Only Me')),
-                          style: TextStyle(
-                            color: textPrimary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+              Flexible(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _showAudiencePickerSheet,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1C2028) : const Color(0xFFF0F2F5),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: cardBorder, width: 0.8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _selectedAudience == 'Public'
+                                ? Icons.public
+                                : (_selectedAudience == 'Friends' ? Icons.group_outlined : Icons.lock_outline),
+                            color: textSecondary,
+                            size: 12,
                           ),
-                        ),
-                        const SizedBox(width: 3),
-                        Icon(Icons.expand_more_rounded, color: textSecondary, size: 14),
-                      ],
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              _selectedAudience == 'Public'
+                                  ? ('community.public'.tr.isNotEmpty && 'community.public'.tr != 'community.public'
+                                      ? 'community.public'.tr
+                                      : 'Public')
+                                  : (_selectedAudience == 'Friends'
+                                      ? ('community.friendsOnly'.tr.isNotEmpty && 'community.friendsOnly'.tr != 'community.friendsOnly'
+                                          ? 'community.friendsOnly'.tr
+                                          : 'Friends')
+                                      : ('community.onlyMe'.tr.isNotEmpty && 'community.onlyMe'.tr != 'community.onlyMe'
+                                          ? 'community.onlyMe'.tr
+                                          : 'Only Me')),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(Icons.expand_more_rounded, color: textSecondary, size: 13),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -1092,13 +1099,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           actions: [
             // Clock / Schedule Icon
             IconButton(
-              icon: Icon(Icons.schedule_outlined, color: textSecondary, size: 22),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+              icon: Icon(Icons.schedule_outlined, color: textSecondary, size: 20),
               tooltip: 'Schedule Post',
               onPressed: _showScheduleDialog,
             ),
             // Header "Post" Button
             Padding(
-              padding: const EdgeInsets.only(right: 14, top: 10, bottom: 10, left: 2),
+              padding: const EdgeInsets.only(right: 8, top: 10, bottom: 10, left: 2),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeInOut,
@@ -1115,7 +1124,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     onTap: _canPost && !_isSubmitting ? _submitPost : null,
                     borderRadius: BorderRadius.circular(20),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                       child: _isSubmitting
                           ? SizedBox(
                               width: 14,
@@ -1180,7 +1189,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           fontWeight: FontWeight.w400,
                         ),
                         decoration: InputDecoration(
-                          hintText: "What do you want to talk about?",
+                          hintText: 'community.whatsOnYourMind'.tr.isNotEmpty &&
+                                  'community.whatsOnYourMind'.tr != 'community.whatsOnYourMind'
+                              ? 'community.whatsOnYourMind'.tr
+                              : "What's on your mind?",
                           hintStyle: TextStyle(
                             color: isDark ? const Color(0xFF6B7280) : const Color(0xFF9CA3AF),
                             fontSize: 18,

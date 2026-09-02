@@ -144,7 +144,7 @@ void main() {
   });
 
   group('CreatePostScreen and Global Create Interaction Comprehensive Tests', () {
-    testWidgets('1. Test opening Create Post: renders header, quick chips, schedule icon, and toolbar', (tester) async {
+    testWidgets('1. Test opening Create Post: renders header, schedule icon, and toolbar', (tester) async {
       final repo = MockCommunityRepository();
       final controller = CommunityController(repository: repo);
       Get.put<CommunityController>(controller);
@@ -161,23 +161,28 @@ void main() {
       // Verify composer hint
       expect(find.text("What's on your mind?"), findsOneWidget);
 
-      // Verify top quick chips exist
-      expect(find.text('People'), findsOneWidget);
-      expect(find.text('Location'), findsOneWidget);
-      expect(find.text('Feeling / Activity'), findsOneWidget);
-      expect(find.text('Event'), findsWidgets);
+      // Verify audience selector exists
+      expect(find.text('Public'), findsOneWidget);
 
       // Verify "+" button is present in the toolbar
       expect(find.byTooltip('Create'), findsOneWidget);
 
       // Verify toolbar buttons
-      expect(find.byTooltip('Photo / Video'), findsOneWidget);
+      expect(find.byTooltip('Media / Image'), findsOneWidget);
+      expect(find.byTooltip('GIF'), findsOneWidget);
+      expect(find.byTooltip('Feeling / Activity'), findsOneWidget);
       expect(find.byTooltip('Event'), findsWidgets);
-      expect(find.byTooltip('Feeling / Activity'), findsWidgets);
-      expect(find.byTooltip('Video'), findsOneWidget);
+      expect(find.byTooltip('Location'), findsOneWidget);
     });
 
     testWidgets('2. Test "+" inside New Post opens Create sheet with Community, Productivity, Financial, and Entertainment categories', (tester) async {
+      tester.view.physicalSize = const Size(600, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       final repo = MockCommunityRepository();
       final controller = CommunityController(repository: repo);
       Get.put<CommunityController>(controller);
@@ -243,8 +248,8 @@ void main() {
       await tester.pump();
       expect(find.text('Had a great day at university!'), findsOneWidget);
 
-      // Tap Location quick chip
-      await tester.tap(find.text('Location').first);
+      // Tap Location toolbar button
+      await tester.tap(find.byTooltip('Location'));
       await tester.pumpAndSettle();
 
       // Pick a location
@@ -296,7 +301,7 @@ void main() {
       expect(find.text('😊 Happy'), findsWidgets);
     });
 
-    testWidgets('5. Test Tag People attachment option: tags people and preserves draft text', (tester) async {
+    testWidgets('5. Test Audience selector: selects Friends and updates header capsule', (tester) async {
       final repo = MockCommunityRepository();
       final controller = CommunityController(repository: repo);
       Get.put<CommunityController>(controller);
@@ -317,24 +322,20 @@ void main() {
       );
       await tester.pump();
 
-      // Tap People quick chip
-      await tester.tap(find.text('People'));
+      // Tap Audience selector capsule
+      await tester.tap(find.text('Public'));
       await tester.pumpAndSettle();
 
-      // Select "Rathana P."
-      expect(find.text('Rathana P.'), findsOneWidget);
-      await tester.tap(find.text('Rathana P.'));
-      await tester.pumpAndSettle();
-
-      // Tap Done
-      await tester.tap(find.text('Done'));
+      // Select "Friends only"
+      expect(find.text('Friends only'), findsOneWidget);
+      await tester.tap(find.text('Friends only'));
       await tester.pumpAndSettle();
 
       // Verify text is preserved
       expect(find.text('Study session with friends'), findsOneWidget);
 
-      // Verify tagged people preview badge is attached
-      expect(find.text('Rathana P.'), findsWidgets);
+      // Verify capsule shows Friends only
+      expect(find.text('Friends only'), findsOneWidget);
     });
 
     testWidgets('6. Test multiple attachments together on the same draft and verify Post button', (tester) async {
@@ -359,7 +360,7 @@ void main() {
       await tester.pump();
 
       // 1. Attach Location
-      await tester.tap(find.text('Location').first);
+      await tester.tap(find.byTooltip('Location'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('RUPP Campus 1, Phnom Penh'));
       await tester.pumpAndSettle();

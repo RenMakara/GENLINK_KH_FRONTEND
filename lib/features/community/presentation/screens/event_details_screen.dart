@@ -467,35 +467,39 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         (e) => e.id == event.id,
                       );
                       final isRsvped = ev?.isRsvped ?? event.isRsvped;
+                      final isOrganizer =
+                          (ev?.organizerName ?? event.organizerName).toLowerCase() == 'me';
                       return _buildRsvpButton(
                         context: context,
                         isRsvped: isRsvped,
+                        isOrganizer: isOrganizer,
                         isDark: isDark,
                         onTap: () {
-                          if (isRsvped) {
-                            controller.toggleRsvp(event.id);
-                          } else {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    EventRegisterScreen(event: event),
-                              ),
-                            );
-                          }
+                          if (isOrganizer || isRsvped) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  EventRegisterScreen(event: ev ?? event),
+                            ),
+                          );
                         },
                       );
                     })
                   : _buildRsvpButton(
                       context: context,
                       isRsvped: event.isRsvped,
+                      isOrganizer: event.organizerName.toLowerCase() == 'me',
                       isDark: isDark,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => EventRegisterScreen(event: event),
-                        ),
-                      ),
+                      onTap: () {
+                        if (event.organizerName.toLowerCase() == 'me' || event.isRsvped) return;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EventRegisterScreen(event: event),
+                          ),
+                        );
+                      },
                     ),
             ),
           ),
@@ -507,24 +511,60 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   Widget _buildRsvpButton({
     required BuildContext context,
     required bool isRsvped,
+    required bool isOrganizer,
     required bool isDark,
     required VoidCallback onTap,
   }) {
+    final String label;
+    final IconData? icon;
+    final Color? iconColor;
+
+    if (isOrganizer) {
+      label = 'community.youAreOrganizer'.tr.isNotEmpty &&
+              'community.youAreOrganizer'.tr != 'community.youAreOrganizer'
+          ? 'community.youAreOrganizer'.tr
+          : "You're the Organizer";
+      icon = Icons.stars_rounded;
+      iconColor = AppColors.communityAccent;
+    } else if (isRsvped) {
+      label = 'community.youAreRegistered'.tr.isNotEmpty &&
+              'community.youAreRegistered'.tr != 'community.youAreRegistered'
+          ? 'community.youAreRegistered'.tr
+          : "✓ You're Registered";
+      icon = Icons.check_circle_rounded;
+      iconColor = AppColors.success;
+    } else {
+      label = 'community.registerNow'.tr.isNotEmpty &&
+              'community.registerNow'.tr != 'community.registerNow'
+          ? 'community.registerNow'.tr
+          : 'Register Now';
+      icon = null;
+      iconColor = null;
+    }
+
+    final bool isInactive = isOrganizer || isRsvped;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOutCubic,
       height: 52,
       child: ElevatedButton(
-        onPressed: onTap,
+        onPressed: isInactive ? null : onTap,
         style: ElevatedButton.styleFrom(
-          backgroundColor: isRsvped
-              ? (isDark ? const Color(0xFF282828) : const Color(0xFFEEEEEE))
-              : (isDark ? Colors.white : Colors.black),
+          disabledBackgroundColor: isDark
+              ? AppColors.darkSurfaceSecondary
+              : AppColors.lightSurfaceSecondary,
+          disabledForegroundColor: isDark
+              ? AppColors.darkTextPrimary
+              : AppColors.lightTextPrimary,
+          backgroundColor: isDark ? Colors.white : Colors.black,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
-            side: isRsvped
+            side: isInactive
                 ? BorderSide(
-                    color: isDark ? const Color(0xFF3E3E3E) : const Color(0xFFD5D5D5),
+                    color: isDark
+                        ? AppColors.darkBorderSubtle
+                        : AppColors.lightBorderSubtle,
                     width: 1.0,
                   )
                 : BorderSide.none,
@@ -538,28 +578,21 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             child: ScaleTransition(scale: anim, child: child),
           ),
           child: Row(
-            key: ValueKey<bool>(isRsvped),
+            key: ValueKey<String>('$isOrganizer-$isRsvped'),
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (isRsvped) ...[
-                const Icon(
-                  Icons.check_circle_rounded,
-                  color: AppColors.success,
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  color: iconColor,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
               ],
               Text(
-                isRsvped
-                    ? ('community.going'.tr.isNotEmpty && 'community.going'.tr != 'community.going'
-                        ? 'community.going'.tr
-                        : 'Going')
-                    : ('community.registerNow'.tr.isNotEmpty &&
-                            'community.registerNow'.tr != 'community.registerNow'
-                        ? 'community.registerNow'.tr
-                        : 'Register Now'),
+                label,
                 style: TextStyle(
-                  color: isRsvped
+                  color: isInactive
                       ? (isDark ? Colors.white : Colors.black87)
                       : (isDark ? Colors.black : Colors.white),
                   fontWeight: FontWeight.bold,

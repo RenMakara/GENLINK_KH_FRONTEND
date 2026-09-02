@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'package:genlink_frontend/app/routes/app_routes.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
 import 'package:genlink_frontend/features/finance/presentation/screens/budget_feature/screens/budget_screen.dart';
@@ -222,18 +223,21 @@ class FinanceScreen extends StatelessWidget {
 
               Row(
                 children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: border),
-                    ),
-                    child: Icon(
-                      Icons.notifications_none_rounded,
-                      size: 22,
-                      color: textPrimary,
+                  GestureDetector(
+                    onTap: () => Get.toNamed(AppRoutes.notifications),
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: border),
+                      ),
+                      child: Icon(
+                        Icons.notifications_none_rounded,
+                        size: 22,
+                        color: textPrimary,
+                      ),
                     ),
                   ),
 

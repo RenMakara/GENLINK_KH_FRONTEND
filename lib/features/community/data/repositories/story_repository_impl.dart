@@ -1,171 +1,154 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../shared/utils/current_user.dart';
+import '../../../media/data/datasources/media_remote_datasource.dart';
+import '../../../media/data/repositories/media_repository_impl.dart';
+import '../../../media/domain/entities/media_entity.dart';
+import '../../../media/domain/media_upload_service.dart';
 import '../../domain/models/story_model.dart';
 import '../../domain/repositories/story_repository.dart';
 
 class StoryRepositoryImpl implements StoryRepository {
   final ApiClient? _apiClient;
+  final MediaUploadService? _mediaUploadService;
 
-  StoryRepositoryImpl({ApiClient? apiClient})
-      : _apiClient = apiClient ??
-            (Get.isRegistered<ApiClient>() ? Get.find<ApiClient>() : null);
+  StoryRepositoryImpl({
+    ApiClient? apiClient,
+    MediaUploadService? mediaUploadService,
+  })  : _apiClient = apiClient ??
+            (Get.isRegistered<ApiClient>() ? Get.find<ApiClient>() : null),
+        _mediaUploadService = mediaUploadService ??
+            (Get.isRegistered<MediaUploadService>()
+                ? Get.find<MediaUploadService>()
+                : null);
 
-  final List<StoryGroupModel> _mockStoryGroups = [
-    StoryGroupModel(
-      userId: 'user_me',
-      userName: 'Sokny Enat',
-      userAvatar: 'assets/images/user_profile.png',
-      isOwner: true,
-      hasUnseen: false,
-      stories: [],
-    ),
-    StoryGroupModel(
-      userId: 'user_chansela',
-      userName: 'Heng Chansela',
-      userAvatar: 'assets/images/heng_chansela_profile.png',
-      hasUnseen: true,
-      stories: [
-        StoryItemModel(
-          id: 'story_chansela_1',
-          type: StoryType.photo,
-          mediaUrl: 'assets/images/heng_chansela_post.png',
-          textContent: '❤️ Coffee after class.',
-          location: 'ACLEDA University of Business',
-          timeAgo: '2h ago',
-          createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-          likesCount: 42,
-        ),
-      ],
-    ),
-    StoryGroupModel(
-      userId: 'user_amnot',
-      userName: 'អំណត់',
-      userAvatar: 'assets/images/amnot_profile.jpg',
-      hasUnseen: true,
-      stories: [
-        StoryItemModel(
-          id: 'story_chansela_km_1',
-          type: StoryType.photo,
-          mediaUrl: 'assets/images/heng_chansela_km_post.jpg',
-          textContent: '⚡ Flutter Community Cambodia',
-          location: 'ACLEDA University of Business',
-          timeAgo: '1h ago',
-          createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-          likesCount: 88,
-        ),
-      ],
-    ),
-    StoryGroupModel(
-      userId: 'user_meimei',
-      userName: 'មហាពង្សសួស្តី សិរីឥន្រ្ទះទេវីនារីស្មោះស្នេហ៌ហៅកាត់មុីមុី',
-      userAvatar: 'assets/images/meimei_profile.png',
-      hasUnseen: true,
-      stories: [
-        StoryItemModel(
-          id: 'story_meimei_1',
-          type: StoryType.photo,
-          mediaUrl: 'assets/images/meimei_profile.png',
-          textContent: '🌸 Hello GenLink KH Community!',
-          location: 'Phnom Penh, Cambodia',
-          timeAgo: '30m ago',
-          createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
-          likesCount: 99,
-        ),
-      ],
-    ),
-    StoryGroupModel(
-      userId: 'user_makara',
-      userName: 'Ren Makara',
-      userAvatar: 'assets/images/ren_makara_profile.png',
-      hasUnseen: true,
-      stories: [
-        StoryItemModel(
-          id: 'story_makara_1',
-          type: StoryType.photo,
-          mediaUrl: 'assets/images/authgate_project.png',
-          textContent: '🚀 AuthGate Microservices System!',
-          location: 'ACLEDA University of Business',
-          timeAgo: '5h ago',
-          createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-          likesCount: 65,
-        ),
-      ],
-    ),
-  ];
+  ApiClient? get _client =>
+      _apiClient ??
+      (Get.isRegistered<ApiClient>() ? Get.find<ApiClient>() : null);
+
+  MediaUploadService? get _uploadService {
+    if (_mediaUploadService != null) return _mediaUploadService;
+    if (Get.isRegistered<MediaUploadService>()) {
+      return Get.find<MediaUploadService>();
+    }
+    final client = _client;
+    if (client != null) {
+      return MediaUploadService(
+        MediaRepositoryImpl(MediaRemoteDatasource(client)),
+      );
+    }
+    return null;
+  }
 
   @override
   Future<List<StoryGroupModel>> getStories() async {
-    if (_apiClient != null) {
-      try {
-        final remoteGroups = await _apiClient.get(
-          ApiEndpoints.stories,
-          parse: (data) => ApiClient.asList(data, (json) {
-            final author = json['author'] is Map<String, dynamic>
-                ? json['author'] as Map<String, dynamic>
-                : const <String, dynamic>{};
-            final stories = json['stories'] as List? ?? const [];
-            final userId = author['userId']?.toString() ?? '';
-            final isOwner = json['isOwner'] as bool? ?? (userId == 'user_me');
-            return StoryGroupModel(
-              userId: userId,
-              userName: (author['fullName'] as String?) ??
-                  (author['username'] as String?) ??
-                  'User',
-              userAvatar: author['avatarUrl'] as String? ??
-                  'assets/images/user_profile.png',
-              isOwner: isOwner,
-              hasUnseen: json['hasUnseen'] as bool? ?? false,
-              stories: stories
-                  .map((s) =>
-                      _storyFromJson((s as Map).cast<String, dynamic>()))
-                  .toList(),
-            );
-          }),
-        );
-        if (remoteGroups.isNotEmpty) {
-          // Ensure owner group exists
-          if (!remoteGroups.any((g) => g.isOwner)) {
-            final ownerGroup = _mockStoryGroups.firstWhere(
-              (g) => g.isOwner,
-              orElse: () => StoryGroupModel(
-                userId: 'user_me',
-                userName: 'Sokny Enat',
-                userAvatar: 'assets/images/user_profile.png',
-                isOwner: true,
-                stories: [],
-              ),
-            );
-            return [ownerGroup, ...remoteGroups];
-          }
-          return remoteGroups;
-        }
-      } catch (_) {
-        // Fallback to local mock data on network error
-      }
+    final client = _client;
+    if (client == null) {
+      return _buildFallbackOwnerOnlyList();
     }
 
-    await Future.delayed(const Duration(milliseconds: 200));
-    // Filter stories based on privacy rules:
-    // If a story is 'Only Me', only the owner group (isOwner == true) contains it
-    return _mockStoryGroups
-        .map((group) {
-          if (group.isOwner) return group;
-          final visibleStories = group.stories
-              .where((s) => s.storyPrivacy != StoryPrivacy.onlyMe)
+    try {
+      final currentUserId = CurrentUser.id;
+      final currentUserAvatar = CurrentUser.avatarUrl;
+      final currentUserName = CurrentUser.name;
+
+      final remoteGroups = await client.get(
+        ApiEndpoints.stories,
+        parse: (data) => ApiClient.asList(data, (json) {
+          final author = json['author'] is Map<String, dynamic>
+              ? json['author'] as Map<String, dynamic>
+              : const <String, dynamic>{};
+          final stories = json['stories'] as List? ?? const [];
+          final userId = author['userId']?.toString() ?? '';
+          final isOwner = currentUserId.isNotEmpty
+              ? (userId == currentUserId)
+              : (json['isOwner'] as bool? ?? false);
+          final hasUnseen = json['hasUnseen'] as bool? ?? false;
+
+          final parsedStories = stories
+              .map((s) => _storyFromJson((s as Map).cast<String, dynamic>()))
               .toList();
+
           return StoryGroupModel(
-            userId: group.userId,
-            userName: group.userName,
-            userAvatar: group.userAvatar,
-            isOwner: group.isOwner,
-            hasUnseen: group.hasUnseen,
-            stories: visibleStories,
+            userId: userId,
+            userName: (author['fullName'] as String?) ??
+                (author['username'] as String?) ??
+                'User',
+            userAvatar: (author['avatarUrl'] as String?) ?? '',
+            isOwner: isOwner,
+            hasUnseen: hasUnseen,
+            stories: parsedStories,
           );
-        })
-        .where((group) => group.isOwner || group.stories.isNotEmpty)
-        .toList();
+        }),
+      );
+
+      // Ensure the owner's group is present at index 0 (so the user can always tap + to add a story)
+      final ownerGroupIdx = remoteGroups.indexWhere((g) =>
+          g.isOwner || (currentUserId.isNotEmpty && g.userId == currentUserId));
+
+      if (ownerGroupIdx == -1) {
+        final ownerGroup = StoryGroupModel(
+          userId: currentUserId.isNotEmpty ? currentUserId : 'user_me',
+          userName: currentUserName.isNotEmpty && currentUserName != 'Guest'
+              ? currentUserName
+              : 'Sokny Enat',
+          userAvatar: currentUserAvatar?.isNotEmpty == true
+              ? currentUserAvatar!
+              : 'assets/images/user_profile.png',
+          isOwner: true,
+          hasUnseen: false,
+          stories: [],
+        );
+        return [ownerGroup, ...remoteGroups];
+      } else {
+        final ownerGroup = remoteGroups[ownerGroupIdx];
+        final updatedOwnerGroup = StoryGroupModel(
+          userId: ownerGroup.userId,
+          userName: ownerGroup.userName,
+          userAvatar: ownerGroup.userAvatar.isNotEmpty
+              ? ownerGroup.userAvatar
+              : (currentUserAvatar?.isNotEmpty == true
+                  ? currentUserAvatar!
+                  : 'assets/images/user_profile.png'),
+          isOwner: true,
+          hasUnseen: ownerGroup.hasUnseen,
+          stories: ownerGroup.stories,
+        );
+
+        final otherGroups = List<StoryGroupModel>.from(remoteGroups)
+          ..removeAt(ownerGroupIdx);
+
+        return [updatedOwnerGroup, ...otherGroups];
+      }
+    } catch (e) {
+      debugPrint('[StoryRepository] getStories error: $e');
+      return _buildFallbackOwnerOnlyList();
+    }
+  }
+
+  List<StoryGroupModel> _buildFallbackOwnerOnlyList() {
+    final currentUserId = CurrentUser.id;
+    final currentUserAvatar = CurrentUser.avatarUrl;
+    final currentUserName = CurrentUser.name;
+    return [
+      StoryGroupModel(
+        userId: currentUserId.isNotEmpty ? currentUserId : 'user_me',
+        userName: currentUserName.isNotEmpty && currentUserName != 'Guest'
+            ? currentUserName
+            : 'Sokny Enat',
+        userAvatar: currentUserAvatar?.isNotEmpty == true
+            ? currentUserAvatar!
+            : 'assets/images/user_profile.png',
+        isOwner: true,
+        hasUnseen: false,
+        stories: [],
+      ),
+    ];
   }
 
   @override
@@ -187,6 +170,9 @@ class StoryRepositoryImpl implements StoryRepository {
     String? templateId,
     List<StoryTemplateSlot>? templateSlots,
   }) async {
+    final client = _client;
+    final uploadService = _uploadService;
+
     final resolvedSettings = settings ??
         StorySettings(
           visibility: StoryPrivacy.fromString(visibility),
@@ -194,10 +180,99 @@ class StoryRepositoryImpl implements StoryRepository {
           allowReactions: allowReactions,
         );
 
-    final newStory = StoryItemModel(
+    String finalMediaUrl = mediaUrl ?? '';
+    bool isVideo = type == StoryType.video || (finalMediaUrl.isNotEmpty && _isVideoPath(finalMediaUrl));
+    debugPrint('[StoryUpload] Starting Story creation (type: $type, initial mediaUrl: $finalMediaUrl, isVideo: $isVideo)');
+
+    // 1. If local file exists, upload to S3 first
+    if (finalMediaUrl.isNotEmpty &&
+        !finalMediaUrl.startsWith('http://') &&
+        !finalMediaUrl.startsWith('https://')) {
+      final cleanPath = finalMediaUrl.replaceAll(RegExp(r'^file://'), '');
+      final file = File(cleanPath);
+
+      if (file.existsSync() && uploadService != null) {
+        debugPrint('[StoryUpload] Uploading local media file: $cleanPath');
+        final bytes = await file.readAsBytes();
+        final contentType = _detectContentType(cleanPath, isVideo);
+
+        final mediaEntity = await uploadService.upload(
+          bytes: bytes,
+          contentType: contentType,
+          purpose: MediaPurpose.story,
+        );
+        finalMediaUrl = mediaEntity.url;
+        debugPrint('[StoryUpload] Upload completed. CDN media URL: $finalMediaUrl');
+      }
+    } else if (finalMediaUrl.isEmpty && (type == StoryType.text || layers?.isNotEmpty == true)) {
+      // 2. Text story with canvas / gradient — render in-memory PNG canvas and upload
+      if (uploadService != null) {
+        try {
+          debugPrint('[StoryUpload] Rendering text story canvas to PNG and uploading...');
+          final startColor = _parseColor(bgGradientStart, const Color(0xFF0F172A));
+          final endColor = _parseColor(bgGradientEnd, const Color(0xFF1E293B));
+          final pngBytes = await _renderCanvasToPng(
+            textContent: textContent ?? '',
+            startColor: startColor,
+            endColor: endColor,
+            layers: layers ?? const [],
+          );
+
+          final mediaEntity = await uploadService.upload(
+            bytes: pngBytes,
+            contentType: 'image/png',
+            purpose: MediaPurpose.story,
+          );
+          finalMediaUrl = mediaEntity.url;
+          isVideo = false;
+          debugPrint('[StoryUpload] Text story canvas uploaded. CDN media URL: $finalMediaUrl');
+        } catch (e) {
+          debugPrint('[StoryRepository] Canvas rendering upload fallback: $e');
+        }
+      }
+    }
+
+    // 3. Post story to real backend API if client available
+    if (client != null && finalMediaUrl.isNotEmpty) {
+      debugPrint('[StoryUpload] Posting Story to ${ApiEndpoints.stories} with mediaUrl: $finalMediaUrl');
+      final serverStory = await client.post(
+        ApiEndpoints.stories,
+        body: {
+          'mediaUrl': finalMediaUrl,
+          'mediaType': isVideo ? 'VIDEO' : 'IMAGE',
+          'caption': textContent,
+        },
+        parse: (data) => _storyFromJson(ApiClient.asMap(data)),
+      );
+      debugPrint('[StoryUpload] Story successfully posted to backend, storyId: ${serverStory.id}');
+
+      // Adapt backend data to rich frontend models:
+      // Merge server-assigned metadata (id, createdAt, server mediaUrl) with full frontend properties
+      return StoryItemModel(
+        id: serverStory.id.isNotEmpty ? serverStory.id : 'story_${DateTime.now().millisecondsSinceEpoch}',
+        type: type, // Preserves exact StoryType (template, text, photo, video)
+        mediaUrl: serverStory.mediaUrl ?? (finalMediaUrl.isNotEmpty ? finalMediaUrl : null),
+        textContent: textContent ?? serverStory.textContent,
+        location: location,
+        settings: resolvedSettings,
+        bgGradientStart: bgGradientStart ?? '0xFF0F172A',
+        bgGradientEnd: bgGradientEnd ?? '0xFF1E293B',
+        layers: layers ?? const [],
+        bgScale: bgScale,
+        bgOffset: bgOffset ?? Offset.zero,
+        bgRotation: bgRotation,
+        templateId: templateId,
+        templateSlots: templateSlots ?? const [],
+        timeAgo: serverStory.timeAgo,
+        createdAt: serverStory.createdAt,
+      );
+    }
+
+    // Fallback local representation if offline or client is null (e.g. testing)
+    return StoryItemModel(
       id: 'story_${DateTime.now().millisecondsSinceEpoch}',
-      type: type,
-      mediaUrl: mediaUrl,
+      type: type, // Preserves exact StoryType (template, text, photo, video)
+      mediaUrl: (finalMediaUrl.isNotEmpty ? finalMediaUrl : (mediaUrl != null && mediaUrl.isNotEmpty ? mediaUrl : null)),
       textContent: textContent,
       location: location,
       settings: resolvedSettings,
@@ -212,123 +287,68 @@ class StoryRepositoryImpl implements StoryRepository {
       timeAgo: 'Just now',
       createdAt: DateTime.now(),
     );
-
-    // Insert into owner group
-    final ownerGroup = _mockStoryGroups.firstWhere(
-      (g) => g.isOwner,
-      orElse: () => StoryGroupModel(
-        userId: 'user_me',
-        userName: 'Sokny Enat',
-        userAvatar: 'assets/images/user_profile.png',
-        isOwner: true,
-        stories: [],
-      ),
-    );
-
-    ownerGroup.stories.insert(0, newStory);
-
-    if (_apiClient != null) {
-      try {
-        final serverStory = await _apiClient.post(
-          ApiEndpoints.stories,
-          body: {
-            'mediaUrl': mediaUrl ?? '',
-            'mediaType': type == StoryType.video ? 'VIDEO' : 'IMAGE',
-            'caption': textContent,
-            'location': location,
-            'visibility': settings?.visibilityLabel ?? visibility,
-            'replyPrivacy': settings?.replyPermissionLabel ?? replyPrivacy,
-            'allowReactions': settings?.allowReactions ?? allowReactions,
-            'templateId': templateId,
-          },
-          parse: (data) => _storyFromJson(ApiClient.asMap(data)),
-        );
-        ownerGroup.stories.remove(newStory);
-        ownerGroup.stories.insert(0, serverStory);
-        return serverStory;
-      } catch (_) {
-        // Local state preserved even if backend fails
-      }
-    }
-
-    return newStory;
   }
 
   @override
   Future<void> updateStory(String storyId, StoryItemModel updatedStory) async {
-    final ownerGroup = _mockStoryGroups.firstWhere((g) => g.isOwner,
-        orElse: () => _mockStoryGroups.first);
-    final index = ownerGroup.stories.indexWhere((s) => s.id == storyId);
-    if (index != -1) {
-      ownerGroup.stories[index] = updatedStory;
-    }
-
-    if (_apiClient != null) {
-      try {
-        await _apiClient.put(
-          ApiEndpoints.storyItem(storyId),
-          body: {
-            'caption': updatedStory.textContent,
-            'visibility': updatedStory.visibility,
-            'replyPrivacy': updatedStory.replyPrivacy,
-            'allowReactions': updatedStory.allowReactions,
-          },
-          parse: (_) {},
-        );
-      } catch (_) {}
-    }
+    // Backend has no story update endpoint (stories are immutable 24h posts)
   }
 
   @override
   Future<void> deleteStory(String storyId) async {
-    final ownerGroup = _mockStoryGroups.firstWhere((g) => g.isOwner,
-        orElse: () => _mockStoryGroups.first);
-    ownerGroup.stories.removeWhere((s) => s.id == storyId);
-
-    if (_apiClient != null) {
+    final client = _client;
+    if (client != null) {
       try {
-        await _apiClient.delete(ApiEndpoints.storyItem(storyId));
-      } catch (_) {}
+        await client.delete(ApiEndpoints.storyItem(storyId));
+      } catch (e) {
+        debugPrint('[StoryRepository] deleteStory error: $e');
+        rethrow;
+      }
     }
   }
 
   @override
   Future<void> markViewed(String storyId) async {
-    if (_apiClient != null) {
+    final client = _client;
+    if (client != null) {
       try {
-        await _apiClient.post(ApiEndpoints.storyView(storyId), parse: (_) {});
-      } catch (_) {}
+        await client.post(ApiEndpoints.storyView(storyId), parse: (_) {});
+      } catch (e) {
+        debugPrint('[StoryRepository] markViewed error: $e');
+      }
     }
   }
 
   @override
   Future<List<StoryViewerModel>> getStoryViewers(String storyId) async {
-    if (_apiClient != null) {
+    final client = _client;
+    if (client != null) {
       try {
-        return await _apiClient.get(
+        return await client.get(
           ApiEndpoints.storyViewers(storyId),
           parse: (data) => ApiClient.asList(data, (json) {
+            final viewedAtStr = json['viewedAt']?.toString();
+            final viewedAt = viewedAtStr != null ? DateTime.tryParse(viewedAtStr) : null;
             return StoryViewerModel(
               id: json['userId']?.toString() ?? '',
               userName: (json['fullName'] as String?) ??
                   (json['username'] as String?) ??
                   'User',
-              userAvatar: json['avatarUrl'] as String? ??
-                  'assets/images/user_profile.png',
-              viewedTimeAgo: _timeAgo(
-                DateTime.tryParse(json['viewedAt']?.toString() ?? ''),
-              ),
+              userAvatar: json['avatarUrl'] as String? ?? '',
+              viewedTimeAgo: _timeAgo(viewedAt),
             );
           }),
         );
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('[StoryRepository] getStoryViewers error: $e');
+        return [];
+      }
     }
-
     return [
       StoryViewerModel(
         id: 'v1',
-        userName: 'Ren Makara',
-        userAvatar: 'assets/images/ren_makara_profile.png',
+        userName: 'Chhaeng Sokuntheara',
+        userAvatar: 'assets/images/sokuntheara_profile.png',
         viewedTimeAgo: '10m ago',
       ),
       StoryViewerModel(
@@ -345,8 +365,8 @@ class StoryRepositoryImpl implements StoryRepository {
       ),
       StoryViewerModel(
         id: 'v4',
-        userName: 'Sokny Enat',
-        userAvatar: 'assets/images/user_profile.png',
+        userName: 'Sum Sambo',
+        userAvatar: 'assets/images/sum_sambo_profile.png',
         viewedTimeAgo: '40m ago',
       ),
     ];
@@ -354,55 +374,32 @@ class StoryRepositoryImpl implements StoryRepository {
 
   @override
   Future<void> toggleLikeStory(String storyId) async {
-    if (_apiClient != null) {
-      try {
-        await _apiClient.post(
-          ApiEndpoints.storyLike(storyId),
-          parse: (_) {},
-        );
-      } catch (_) {
-        // Fallback to local updates
-      }
-    }
-
-    for (final group in _mockStoryGroups) {
-      for (final story in group.stories) {
-        if (story.id == storyId) {
-          if (!story.allowReactions) return;
-          story.isLiked = !story.isLiked;
-          story.likesCount += story.isLiked ? 1 : -1;
-          return;
-        }
-      }
-    }
+    // Stories are viewed/reacted via Chat in backend; no separate story like endpoint
   }
 
   @override
   Future<void> replyToStory(String storyId, String message) async {
-    for (final group in _mockStoryGroups) {
-      for (final story in group.stories) {
-        if (story.id == storyId) {
-          if (story.storyReplyPermission == StoryReplyPermission.off) {
-            throw Exception('Replies are disabled for this story.');
-          }
-          return;
-        }
-      }
-    }
+    // Story replies are dispatched via ChatController
   }
 
   StoryItemModel _storyFromJson(Map<String, dynamic> json) {
     final createdAt =
         DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
             DateTime.now();
-    final mediaType = (json['mediaType'] as String?) ?? 'IMAGE';
+    final mediaType = (json['mediaType'] as String?)?.toUpperCase() ?? 'IMAGE';
+    final storyId = json['storyId']?.toString() ?? json['id']?.toString() ?? '';
+    final mediaUrl = json['mediaUrl'] as String?;
+    final caption = json['caption'] as String? ?? json['textContent'] as String?;
+    final seen = json['seen'] as bool? ?? false;
+
     return StoryItemModel(
-      id: json['storyId']?.toString() ?? json['id']?.toString() ?? '',
+      id: storyId,
       type: mediaType == 'VIDEO' ? StoryType.video : StoryType.photo,
-      mediaUrl: json['mediaUrl'] as String?,
-      textContent: json['caption'] as String? ?? json['textContent'] as String?,
+      mediaUrl: mediaUrl,
+      textContent: caption,
       timeAgo: _timeAgo(createdAt),
       createdAt: createdAt,
+      isViewed: seen,
       visibility: json['visibility'] as String? ?? 'Public',
       replyPrivacy: json['replyPrivacy'] as String? ?? 'Everyone',
       allowReactions: json['allowReactions'] as bool? ?? true,
@@ -418,5 +415,101 @@ class StoryRepositoryImpl implements StoryRepository {
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     return '${diff.inDays}d ago';
+  }
+
+  bool _isVideoPath(String path) {
+    final p = path.toLowerCase();
+    return p.endsWith('.mp4') ||
+        p.endsWith('.mov') ||
+        p.endsWith('.m4v') ||
+        p.endsWith('.webm') ||
+        p.endsWith('.avi') ||
+        p.endsWith('.mkv');
+  }
+
+  String _detectContentType(String path, bool isVideo) {
+    final p = path.toLowerCase();
+    if (isVideo) {
+      if (p.endsWith('.mov')) return 'video/quicktime';
+      if (p.endsWith('.webm')) return 'video/webm';
+      return 'video/mp4';
+    }
+    if (p.endsWith('.png')) return 'image/png';
+    if (p.endsWith('.webp')) return 'image/webp';
+    if (p.endsWith('.gif')) return 'image/gif';
+    return 'image/jpeg';
+  }
+
+  Color _parseColor(String? hex, Color fallback) {
+    if (hex == null || hex.isEmpty) return fallback;
+    try {
+      final clean = hex.replaceAll('#', '').replaceAll('0x', '');
+      if (clean.length == 6) {
+        return Color(int.parse('FF$clean', radix: 16));
+      }
+      if (clean.length == 8) {
+        return Color(int.parse(clean, radix: 16));
+      }
+    } catch (_) {}
+    return fallback;
+  }
+
+  Future<Uint8List> _renderCanvasToPng({
+    required String textContent,
+    required Color startColor,
+    required Color endColor,
+    required List<MovableStoryLayer> layers,
+    int width = 720,
+    int height = 1280,
+  }) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(
+      recorder,
+      Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+    );
+
+    // 1. Background gradient
+    final bgPaint = Paint()
+      ..shader = ui.Gradient.linear(
+        Offset.zero,
+        Offset(width.toDouble(), height.toDouble()),
+        [startColor, endColor],
+      );
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+      bgPaint,
+    );
+
+    // 2. Primary text content if provided
+    final textToDraw = textContent.trim().isNotEmpty
+        ? textContent.trim()
+        : layers.where((l) => l.type == LayerType.text).map((l) => l.text).join('\n');
+
+    if (textToDraw.trim().isNotEmpty) {
+      final pb = ui.ParagraphBuilder(
+        ui.ParagraphStyle(
+          textAlign: TextAlign.center,
+          fontSize: 34,
+          fontWeight: FontWeight.bold,
+          maxLines: 12,
+        ),
+      )
+        ..pushStyle(ui.TextStyle(color: Colors.white))
+        ..addText(textToDraw.trim());
+
+      final paragraph = pb.build()
+        ..layout(ui.ParagraphConstraints(width: width.toDouble() - 80));
+
+      final textOffset = Offset(
+        40,
+        (height.toDouble() - paragraph.height) / 2,
+      );
+      canvas.drawParagraph(paragraph, textOffset);
+    }
+
+    final picture = recorder.endRecording();
+    final img = await picture.toImage(width, height);
+    final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
   }
 }

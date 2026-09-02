@@ -132,7 +132,7 @@ class ResultScreen extends GetView<QuizController> {
                   controller: scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: questions.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
                   itemBuilder: (_, i) => _buildAnswerReviewItem(
                     i,
                     questions[i],

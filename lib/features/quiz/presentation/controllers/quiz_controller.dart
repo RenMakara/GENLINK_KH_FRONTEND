@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../../domain/models/quiz_models.dart';
@@ -195,7 +196,7 @@ class QuizController extends GetxController {
         questions.value = quizDetails;
       }
     } catch (e) {
-      print('Error fetching quiz: $e');
+      debugPrint('Error fetching quiz: $e');
     }
   }
 
@@ -215,7 +216,7 @@ class QuizController extends GetxController {
       isQuizSubmitted.value = false;
       _startQuestionTimer();
     } catch (e) {
-      print('Error starting quiz: $e');
+      debugPrint('Error starting quiz: $e');
     }
   }
 
@@ -301,7 +302,7 @@ class QuizController extends GetxController {
       );
       isQuizSubmitted.value = true;
     } catch (e) {
-      print('Failed to submit quiz: $e');
+      debugPrint('Failed to submit quiz: $e');
     } finally {
       isSubmitting.value = false;
     }

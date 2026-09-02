@@ -105,10 +105,10 @@ class FindOpponentScreen extends GetView<QuizController> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
-            color: QuizColors.primary.withOpacity(0.15 * opacity),
+            color: QuizColors.primary.withValues(alpha: 0.15 * opacity),
             width: 1.5,
           ),
-          color: QuizColors.primary.withOpacity(0.04 * opacity),
+          color: QuizColors.primary.withValues(alpha: 0.04 * opacity),
         ),
       );
     });
@@ -132,7 +132,7 @@ class FindOpponentScreen extends GetView<QuizController> {
               'Preparing match...',
               style: TextStyle(
                 fontSize: 15,
-                color: QuizColors.body.withOpacity(0.8),
+                color: QuizColors.body.withValues(alpha: 0.8),
               ),
             ),
           ],
@@ -153,7 +153,7 @@ class FindOpponentScreen extends GetView<QuizController> {
             'Searching for players near your level',
             style: TextStyle(
               fontSize: 14,
-              color: QuizColors.body.withOpacity(0.8),
+              color: QuizColors.body.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 20),
@@ -180,8 +180,9 @@ class FindOpponentScreen extends GetView<QuizController> {
 
   Widget _buildCancelButton() {
     return Obx(() {
-      if (controller.opponentSearchProgress.value >= 1.0)
+      if (controller.opponentSearchProgress.value >= 1.0) {
         return const SizedBox.shrink();
+      }
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40),
         child: OutlinedButton(

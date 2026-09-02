@@ -238,6 +238,7 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                       onTap: widget.onAuthorTap,
                       child: CircleAvatar(
                         radius: 15,
+                        onBackgroundImageError: (exception, stackTrace) {},
                         backgroundImage: (widget.avatarUrl != null &&
                                 widget.avatarUrl!.isNotEmpty)
                             ? (widget.avatarUrl!.startsWith('assets/')

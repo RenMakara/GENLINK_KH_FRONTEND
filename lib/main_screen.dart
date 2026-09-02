@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'features/community/presentation/screens/community_screen.dart';
-import 'features/community/presentation/screens/create_post_screen.dart';
 import 'features/finance/presentation/screens/finance_home/screens/finance_screen.dart';
+import 'features/growth/presentation/screens/growth_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
 import 'features/profile/presentation/screens/profile_screen.dart';
 import 'main_controller.dart';
 import 'shared/widgets/bottom_nav_bar.dart';
+import 'shared/widgets/global_create_sheet.dart';
 
 /// Signed-in shell. The tab order here must match [BottomNavBar]:
-/// Home (0), Community (1), Financial (2), Profile (3).
+/// Home (0), Growth (1), Financial (2), Profile (3).
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -24,7 +24,7 @@ class _MainScreenState extends State<MainScreen> {
 
   late final List<Widget> pages = [
     HomeScreen(onNavigateTab: (index) => controller.changeIndex(index)),
-    const CommunityScreen(),
+    GrowthScreen(onNavigateTab: (index) => controller.changeIndex(index)),
     const FinanceScreen(),
     const ProfileScreen(),
   ];
@@ -36,13 +36,9 @@ class _MainScreenState extends State<MainScreen> {
     _lastIndex = controller.currentIndex.value;
   }
 
-  /// Center '+' action in bottom navigation: opens Post Composer screen.
+  /// Center '+' action in bottom navigation: opens the centralized Create bottom sheet.
   void _onCenterTap() {
-    Get.to(
-      () => const CreatePostScreen(),
-      routeName: '/CreatePostScreen',
-      transition: Transition.cupertino,
-    );
+    GlobalCreateSheet.show(context);
   }
 
   @override

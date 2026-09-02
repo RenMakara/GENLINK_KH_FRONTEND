@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
 import '../../domain/models/quiz_models.dart';
@@ -40,7 +41,7 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
 
       if (result.isNotEmpty) return result;
     } catch (e) {
-      print('API Error getting quizzes: $e, using fallback data.');
+      debugPrint('API Error getting quizzes: $e, using fallback data.');
     }
 
     // Fallback Mock Data
@@ -87,7 +88,7 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
 
       if (result.isNotEmpty) return result;
     } catch (e) {
-      print('API Error getting quiz details: $e, using fallback data.');
+      debugPrint('API Error getting quiz details: $e, using fallback data.');
     }
 
     return _getMockQuestions();

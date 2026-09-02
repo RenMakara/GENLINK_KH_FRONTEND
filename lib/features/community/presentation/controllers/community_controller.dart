@@ -11,6 +11,7 @@ import '../../data/repositories/community_repository_impl.dart';
 import '../../domain/models/community_post_model.dart';
 import '../../domain/models/community_models.dart';
 import '../../domain/repositories/community_repository.dart';
+import 'story_controller.dart';
 
 class CommunityController extends GetxController {
   late CommunityRepository repository;
@@ -752,6 +753,9 @@ class CommunityController extends GetxController {
 
   /// Pull-to-refresh handler
   Future<void> refreshFeed() async {
+    if (Get.isRegistered<StoryController>()) {
+      Get.find<StoryController>().fetchStories();
+    }
     await fetchPosts(isRefresh: true);
   }
 
@@ -795,6 +799,7 @@ class CommunityController extends GetxController {
         pollDuration: pollDuration,
         allowMultipleAnswers: allowMultipleAnswers,
         attachedEvent: attachedEvent,
+        postType: attachedEvent != null ? 'event' : createdPost.postType,
       );
 
       posts.insert(0, richPost);
@@ -867,6 +872,7 @@ class CommunityController extends GetxController {
       final p = posts[idx];
       p.isBookmarked = !p.isBookmarked;
       posts[idx] = p.copyWith();
+      posts.refresh();
       repository.toggleBookmark(postId);
     }
   }
@@ -942,6 +948,7 @@ class CommunityController extends GetxController {
         pollDuration: pollDuration,
         allowMultipleAnswers: allowMultipleAnswers,
         attachedEvent: attachedEvent,
+        postType: attachedEvent != null ? 'event' : posts[idx].postType,
       );
       await repository.updatePost(postId, content: content);
     }
@@ -1244,7 +1251,7 @@ class CommunityController extends GetxController {
   void _setFollowStateForUser(String userId, bool isFollowing) {
     bool postUpdated = false;
     for (int i = 0; i < posts.length; i++) {
-      if (posts[i].userId == userId && posts[i].isFollowing != isFollowing) {
+      if (posts[i].userId == userId) {
         posts[i] = posts[i].copyWith(isFollowing: isFollowing);
         postUpdated = true;
       }
@@ -1254,7 +1261,7 @@ class CommunityController extends GetxController {
     }
 
     final suggestedIdx = suggestedUsers.indexWhere((u) => u.id == userId);
-    if (suggestedIdx != -1 && suggestedUsers[suggestedIdx].isFollowing != isFollowing) {
+    if (suggestedIdx != -1) {
       suggestedUsers[suggestedIdx].isFollowing = isFollowing;
       suggestedUsers.refresh();
     }

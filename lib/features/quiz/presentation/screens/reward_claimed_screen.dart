@@ -170,7 +170,7 @@ class RewardClaimedScreen extends GetView<QuizController> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.06),
+          color: color.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(

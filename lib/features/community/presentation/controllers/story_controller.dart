@@ -9,7 +9,10 @@ class StoryController extends GetxController {
   final StoryRepository _repository;
 
   StoryController({StoryRepository? repository})
-      : _repository = repository ?? StoryRepositoryImpl();
+      : _repository = repository ??
+            (Get.isRegistered<StoryRepository>()
+                ? Get.find<StoryRepository>()
+                : StoryRepositoryImpl());
 
   final RxList<StoryGroupModel> storyGroups = <StoryGroupModel>[].obs;
   final RxBool isLoading = true.obs;
@@ -86,7 +89,8 @@ class StoryController extends GetxController {
       );
 
       // Update owner story group in reactive tray list (preventing duplicates)
-      final ownerGroupIdx = storyGroups.indexWhere((g) => g.isOwner);
+      final ownerGroupIdx = storyGroups.indexWhere((g) =>
+          g.isOwner || (CurrentUser.id.isNotEmpty && g.userId == CurrentUser.id));
       if (ownerGroupIdx != -1) {
         final group = storyGroups[ownerGroupIdx];
         if (!group.stories.any((s) => s.id == newStory.id)) {
@@ -104,9 +108,13 @@ class StoryController extends GetxController {
         storyGroups.insert(
           0,
           StoryGroupModel(
-            userId: 'user_me',
-            userName: 'Sokny Enat',
-            userAvatar: 'assets/images/user_profile.png',
+            userId: CurrentUser.id.isNotEmpty ? CurrentUser.id : 'user_me',
+            userName: CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
+                ? CurrentUser.name
+                : 'Sokny Enat',
+            userAvatar: CurrentUser.avatarUrl?.isNotEmpty == true
+                ? CurrentUser.avatarUrl!
+                : 'assets/images/user_profile.png',
             isOwner: true,
             hasUnseen: false,
             stories: [newStory],

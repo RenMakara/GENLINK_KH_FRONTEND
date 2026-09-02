@@ -10,8 +10,8 @@ import 'widgets/author_row.dart';
 
 /// Create / Edit Discussion Screen — Forum tab creation & editing flow.
 ///
-/// Fields: Category selector, Title, Content.
-/// Localized with GetX. Black/white design — zero cyan/blue.
+/// Production-ready, theme-aware, Khmer/English typography friendly.
+/// Fields: Author identity, Category selector, Title, Auto-expanding Content, Character counter.
 class CreateDiscussionScreen extends StatefulWidget {
   final ForumTopicModel? initialDiscussion;
 
@@ -49,6 +49,22 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
       _titleController.text.trim().isNotEmpty &&
       _contentController.text.trim().isNotEmpty;
 
+  bool get _hasUnsavedChanges {
+    final currentTitle = _titleController.text.trim();
+    final currentContent = _contentController.text.trim();
+    if (widget.isEdit) {
+      final initialTitle = widget.initialDiscussion?.title.trim() ?? '';
+      final initialContent = widget.initialDiscussion?.content.trim() ?? '';
+      final initialCat = widget.initialDiscussion?.category;
+      return currentTitle != initialTitle ||
+          currentContent != initialContent ||
+          _selectedCategory != initialCat;
+    }
+    return currentTitle.isNotEmpty ||
+        currentContent.isNotEmpty ||
+        _selectedCategory != null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -71,16 +87,13 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
   }
 
   void _onBackPress() {
-    final hasContent =
-        _titleController.text.trim().isNotEmpty ||
-        _contentController.text.trim().isNotEmpty ||
-        _selectedCategory != null;
-
-    if (hasContent) {
+    if (_hasUnsavedChanges) {
       final isDark = Theme.of(context).brightness == Brightness.dark;
       final dialogBg = isDark ? const Color(0xFF1E2228) : Colors.white;
-      final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-      final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+      final textPrimary =
+          isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+      final textSecondary =
+          isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
 
       showDialog(
         context: context,
@@ -90,7 +103,13 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
             borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           title: Text(
-            'community.discardDraft'.tr,
+            'community.discardChanges'.tr.isNotEmpty &&
+                    'community.discardChanges'.tr != 'community.discardChanges'
+                ? 'community.discardChanges'.tr
+                : ('community.discardDraft'.tr.isNotEmpty &&
+                        'community.discardDraft'.tr != 'community.discardDraft'
+                    ? 'community.discardDraft'.tr
+                    : 'Discard changes?'),
             style: TextStyle(
               color: textPrimary,
               fontSize: 16,
@@ -98,15 +117,29 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
             ),
           ),
           content: Text(
-            'community.discardMessage'.tr,
-            style: TextStyle(color: textSecondary, fontSize: 14),
+            'community.discardChangesMsg'.tr.isNotEmpty &&
+                    'community.discardChangesMsg'.tr !=
+                        'community.discardChangesMsg'
+                ? 'community.discardChangesMsg'.tr
+                : ('community.discardMessage'.tr.isNotEmpty &&
+                        'community.discardMessage'.tr !=
+                            'community.discardMessage'
+                    ? 'community.discardMessage'.tr
+                    : 'Your discussion has not been published yet.'),
+            style: TextStyle(color: textSecondary, fontSize: 14, height: 1.4),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text(
-                'community.keepEditing'.tr,
-                style: TextStyle(color: textSecondary),
+                'community.keepEditing'.tr.isNotEmpty &&
+                        'community.keepEditing'.tr != 'community.keepEditing'
+                    ? 'community.keepEditing'.tr
+                    : 'Keep Editing',
+                style: TextStyle(
+                  color: textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             TextButton(
@@ -115,7 +148,10 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                 Navigator.pop(context);
               },
               child: Text(
-                'community.discard'.tr,
+                'community.discard'.tr.isNotEmpty &&
+                        'community.discard'.tr != 'community.discard'
+                    ? 'community.discard'.tr
+                    : 'Discard',
                 style: const TextStyle(
                   color: Colors.redAccent,
                   fontWeight: FontWeight.bold,
@@ -132,12 +168,13 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
 
   void _showCategorySheet() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? const Color(0xFF161616) : Colors.white;
-    final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textSecondary = isDark ? Colors.white60 : Colors.black54;
-    final borderColor = isDark
-        ? const Color(0xFF2B313A)
-        : const Color(0xFFE0E0E0);
+    final surface = isDark ? const Color(0xFF161B22) : Colors.white;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final borderColor =
+        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 
     showModalBottomSheet(
       context: context,
@@ -146,9 +183,9 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
       builder: (ctx) => SafeArea(
         child: Container(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.75,
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
           ),
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
           decoration: BoxDecoration(
             color: surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -161,7 +198,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
               children: [
                 Center(
                   child: Container(
-                    width: 36,
+                    width: 40,
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
@@ -171,14 +208,18 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                   ),
                 ),
                 Text(
-                  'community.discussionCategory'.tr,
+                  'community.discussionCategory'.tr.isNotEmpty &&
+                          'community.discussionCategory'.tr !=
+                              'community.discussionCategory'
+                      ? 'community.discussionCategory'.tr
+                      : 'Category',
                   style: TextStyle(
                     color: textPrimary,
-                    fontSize: 16,
+                    fontSize: 17,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 ..._categoryKeys.map((key) {
                   final isSelected = _selectedCategory == key;
                   return InkWell(
@@ -218,14 +259,16 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                                 : null,
                           ),
                           const SizedBox(width: 14),
-                          Text(
-                            key.tr,
-                            style: TextStyle(
-                              color: isSelected ? textPrimary : textSecondary,
-                              fontSize: 15,
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.normal,
+                          Expanded(
+                            child: Text(
+                              key.tr,
+                              style: TextStyle(
+                                color: isSelected ? textPrimary : textSecondary,
+                                fontSize: 15,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
                             ),
                           ),
                         ],
@@ -242,11 +285,50 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
   }
 
   void _submit() async {
-    if (!_canPublish || _isSubmitting) return;
-    setState(() => _isSubmitting = true);
+    if (_isSubmitting) return;
+
+    if (_selectedCategory == null) {
+      AppNotificationBanner.showError(
+        context: context,
+        title: 'community.discussionCategory'.tr,
+        message: 'community.selectCategoryPrompt'.tr.isNotEmpty &&
+                'community.selectCategoryPrompt'.tr !=
+                    'community.selectCategoryPrompt'
+            ? 'community.selectCategoryPrompt'.tr
+            : 'Please select a category.',
+      );
+      return;
+    }
 
     final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      AppNotificationBanner.showError(
+        context: context,
+        title: 'community.discussionTitle'.tr,
+        message: 'community.enterTitlePrompt'.tr.isNotEmpty &&
+                'community.enterTitlePrompt'.tr !=
+                    'community.enterTitlePrompt'
+            ? 'community.enterTitlePrompt'.tr
+            : 'Please enter a title.',
+      );
+      return;
+    }
+
     final content = _contentController.text.trim();
+    if (content.isEmpty) {
+      AppNotificationBanner.showError(
+        context: context,
+        title: 'community.discussionContent'.tr,
+        message: 'community.enterContentPrompt'.tr.isNotEmpty &&
+                'community.enterContentPrompt'.tr !=
+                    'community.enterContentPrompt'
+            ? 'community.enterContentPrompt'.tr
+            : 'Please enter discussion content.',
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
     final category = _selectedCategory!;
 
     try {
@@ -288,7 +370,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                     'community.couldNotUpdateDiscussion'.tr !=
                         'community.couldNotUpdateDiscussion'
                 ? 'community.couldNotUpdateDiscussion'.tr
-                : 'Couldn\'t update discussion. Please try again.',
+                : "Couldn't update your discussion. Please check your connection and try again.",
           );
         }
       } else {
@@ -327,12 +409,12 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                     'community.couldNotUpdateDiscussion'.tr !=
                         'community.couldNotUpdateDiscussion'
                 ? 'community.couldNotUpdateDiscussion'.tr
-                : 'Couldn\'t update discussion. Please try again.')
+                : "Couldn't update your discussion. Please check your connection and try again.")
             : ('community.couldNotPublishDiscussion'.tr.isNotEmpty &&
                     'community.couldNotPublishDiscussion'.tr !=
                         'community.couldNotPublishDiscussion'
                 ? 'community.couldNotPublishDiscussion'.tr
-                : 'Couldn\'t publish discussion. Please try again.'),
+                : "Couldn't publish your discussion. Please check your connection and try again."),
       );
     }
   }
@@ -341,18 +423,14 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-    final textMuted = isDark
-        ? AppColors.darkTextMuted
-        : AppColors.lightTextMuted;
-    final cardBorder = isDark
-        ? AppColors.darkBorderSubtle
-        : AppColors.lightBorderSubtle;
-    final inputBg = isDark
-        ? AppColors.darkSurfaceSecondary
-        : AppColors.lightSurfacePrimary;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted =
+        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final cardBorder =
+        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final inputBg =
+        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
 
     final charCount = _contentController.text.length;
     const maxChars = 5000;
@@ -389,13 +467,14 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
         appBar: AppBar(
           backgroundColor: bg,
           elevation: 0,
-          leadingWidth: 44,
+          scrolledUnderElevation: 0,
+          leadingWidth: 52,
           leading: IconButton(
-            padding: const EdgeInsets.only(left: 12),
             icon: Icon(Icons.close, color: textPrimary, size: 24),
+            tooltip: 'common.back'.tr,
             onPressed: _onBackPress,
           ),
-          titleSpacing: 8,
+          titleSpacing: 0,
           title: Text(
             screenTitle,
             style: TextStyle(
@@ -407,10 +486,9 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
           actions: [
             Padding(
               padding: const EdgeInsets.only(
-                right: 12,
+                right: 14,
                 top: 10,
                 bottom: 10,
-                left: 4,
               ),
               child: ElevatedButton(
                 onPressed: _canPublish && !_isSubmitting ? _submit : null,
@@ -419,20 +497,20 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                       ? (isDark ? Colors.white : Colors.black87)
                       : (isDark
                             ? const Color(0xFF222222)
-                            : const Color(0xFFE0E0E0)),
+                            : const Color(0xFFE2E8F0)),
                   disabledBackgroundColor: isDark
                       ? const Color(0xFF222222)
-                      : const Color(0xFFE0E0E0),
+                      : const Color(0xFFE2E8F0),
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
                 child: _isSubmitting
                     ? SizedBox(
-                        width: 14,
-                        height: 14,
+                        width: 16,
+                        height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: isDark ? Colors.black : Colors.white,
@@ -458,7 +536,12 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
         ),
         body: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            MediaQuery.of(context).padding.bottom + 32,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -472,12 +555,16 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
 
               // ── Category Selector ──────────────────────────────────────
               Text(
-                'community.discussionCategory'.tr,
+                'community.discussionCategory'.tr.isNotEmpty &&
+                        'community.discussionCategory'.tr !=
+                            'community.discussionCategory'
+                    ? 'community.discussionCategory'.tr
+                    : 'Category',
                 style: TextStyle(
                   color: textMuted,
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: 0.6,
+                  letterSpacing: 0.4,
                 ),
               ),
               const SizedBox(height: 8),
@@ -500,14 +587,18 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                         child: Text(
                           _selectedCategory != null
                               ? _selectedCategory!.tr
-                              : 'community.selectCategory'.tr,
+                              : ('community.selectCategory'.tr.isNotEmpty &&
+                                      'community.selectCategory'.tr !=
+                                          'community.selectCategory'
+                                  ? 'community.selectCategory'.tr
+                                  : 'Select a category'),
                           style: TextStyle(
                             color: _selectedCategory != null
                                 ? textPrimary
                                 : textMuted,
                             fontSize: 15,
                             fontWeight: _selectedCategory != null
-                                ? FontWeight.w600
+                                ? FontWeight.w500
                                 : FontWeight.normal,
                           ),
                         ),
@@ -522,22 +613,24 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
 
               // ── Title ──────────────────────────────────────────────────
               Text(
-                'community.discussionTitle'.tr.isEmpty
-                    ? 'Title'
-                    : 'community.discussionTitle'.tr.replaceAll('...', ''),
+                'community.discussionTitle'.tr.isNotEmpty &&
+                        'community.discussionTitle'.tr !=
+                            'community.discussionTitle'
+                    ? 'community.discussionTitle'.tr
+                    : 'Title',
                 style: TextStyle(
                   color: textMuted,
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: 0.6,
+                  letterSpacing: 0.4,
                 ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _titleController,
                 focusNode: _titleFocus,
-                maxLines: 2,
                 minLines: 1,
+                maxLines: 3,
                 maxLength: 150,
                 buildCounter:
                     (
@@ -548,17 +641,21 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                     }) => null,
                 style: TextStyle(
                   color: textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  height: 1.3,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  height: 1.35,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'community.discussionTitle'.tr,
+                  hintText: 'community.discussionTitleHint'.tr.isNotEmpty &&
+                          'community.discussionTitleHint'.tr !=
+                              'community.discussionTitleHint'
+                      ? 'community.discussionTitleHint'.tr
+                      : 'What do you want to talk about?',
                   hintStyle: TextStyle(
                     color: textMuted,
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.w400,
-                    height: 1.3,
+                    height: 1.35,
                   ),
                   filled: true,
                   fillColor: inputBg,
@@ -572,7 +669,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: textPrimary, width: 1.5),
+                    borderSide: BorderSide(color: textPrimary, width: 1.4),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 14,
@@ -587,21 +684,27 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
 
               // ── Content ────────────────────────────────────────────────
               Text(
-                'Content',
+                'community.discussionContent'.tr.isNotEmpty &&
+                        'community.discussionContent'.tr !=
+                            'community.discussionContent'
+                    ? 'community.discussionContent'.tr
+                    : 'Content',
                 style: TextStyle(
                   color: textMuted,
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: 0.6,
+                  letterSpacing: 0.4,
                 ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _contentController,
                 focusNode: _contentFocus,
-                minLines: 6,
+                minLines: 4,
                 maxLines: null,
                 maxLength: maxChars,
+                keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.newline,
                 buildCounter:
                     (
                       _, {
@@ -609,9 +712,18 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                       required isFocused,
                       maxLength,
                     }) => null,
-                style: TextStyle(color: textPrimary, fontSize: 15, height: 1.5),
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
+                  height: 1.5,
+                ),
                 decoration: InputDecoration(
-                  hintText: 'community.discussionContent'.tr,
+                  hintText: 'community.discussionContentHint'.tr.isNotEmpty &&
+                          'community.discussionContentHint'.tr !=
+                              'community.discussionContentHint'
+                      ? 'community.discussionContentHint'.tr
+                      : 'Share your thoughts, question, or idea...',
                   hintStyle: TextStyle(
                     color: textMuted,
                     fontSize: 15,
@@ -630,7 +742,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: textPrimary, width: 1.5),
+                    borderSide: BorderSide(color: textPrimary, width: 1.4),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 14,
@@ -639,7 +751,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                 ),
               ),
 
-              // Character counter
+              // ── Character counter ──────────────────────────────────────
               Align(
                 alignment: Alignment.centerRight,
                 child: Padding(
@@ -647,7 +759,11 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                   child: Text(
                     '$charCount / $maxChars',
                     style: TextStyle(
-                      color: textMuted,
+                      color: charCount >= maxChars
+                          ? Colors.redAccent
+                          : (charCount >= 4800
+                              ? Colors.orangeAccent
+                              : textMuted),
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
@@ -663,3 +779,4 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
     );
   }
 }
+

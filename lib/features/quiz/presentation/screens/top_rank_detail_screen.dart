@@ -99,7 +99,7 @@ class TopRankDetailScreen extends GetView<QuizController> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFFC107).withOpacity(0.3),
+                      color: const Color(0xFFFFC107).withValues(alpha: 0.3),
                       blurRadius: 30,
                       offset: const Offset(0, 10),
                     ),
@@ -119,7 +119,7 @@ class TopRankDetailScreen extends GetView<QuizController> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: QuizColors.primary.withOpacity(0.3),
+                        color: QuizColors.primary.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -214,7 +214,7 @@ class TopRankDetailScreen extends GetView<QuizController> {
                 ];
                 return Container(
                   decoration: BoxDecoration(
-                    color: colors[i].withOpacity(0.12),
+                    color: colors[i].withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(icons[i], color: colors[i], size: 28),

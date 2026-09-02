@@ -37,11 +37,16 @@ void main() {
     repository = _MockSettingsRepository();
     themeController = _MockThemeController();
     localization = _MockLocalizationService();
+    when(() => themeController.backendTheme).thenReturn(UserSettingsEntity.themeLight);
+    when(() => localization.language).thenReturn(RxString(UserSettingsEntity.languageEnglish));
     controller = SettingsController(
       repository: repository,
       themeController: themeController,
       localization: localization,
     )..settings.value = _initialSettings;
+    clearInteractions(themeController);
+    clearInteractions(localization);
+    clearInteractions(repository);
   });
 
   tearDown(Get.reset);
@@ -99,7 +104,7 @@ void main() {
 
     await controller.setTheme(UserSettingsEntity.themeDark);
 
-    expect(controller.settings.value, same(saved));
+    expect(controller.settings.value, saved);
     verify(
       () => themeController.applyBackendTheme(UserSettingsEntity.themeDark),
     ).called(1);

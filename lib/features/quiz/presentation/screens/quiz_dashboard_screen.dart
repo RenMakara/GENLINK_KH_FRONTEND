@@ -283,7 +283,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(icon, color: color, size: 24),
@@ -398,7 +398,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: controller.categories.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            separatorBuilder: (context, index) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final cat = controller.categories[index];
               final bgColor = QuizColors.categoryColors[cat.colorIndex];
@@ -478,7 +478,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: QuizColors.gold.withOpacity(0.2),
+                color: QuizColors.gold.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: const Icon(
@@ -512,7 +512,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(

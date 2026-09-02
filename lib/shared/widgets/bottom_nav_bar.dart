@@ -22,6 +22,11 @@ class BottomNavBar extends StatelessWidget {
     this.onCenterTap,
   });
 
+  static String _label(String key, String fallback) {
+    final tr = key.tr;
+    return (tr.isNotEmpty && tr != key) ? tr : fallback;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -106,7 +111,7 @@ class BottomNavBar extends StatelessWidget {
                                   child: _NavItem(
                                     icon: CupertinoIcons.house,
                                     activeIcon: CupertinoIcons.house_fill,
-                                    label: 'nav.home'.tr,
+                                    label: _label('nav.home', 'Home'),
                                     active: currentIndex == 0,
                                     iconSize: navIconSize,
                                     fontSize: navFontSize,
@@ -115,9 +120,9 @@ class BottomNavBar extends StatelessWidget {
                                 ),
                                 Expanded(
                                   child: _NavItem(
-                                    icon: CupertinoIcons.person_2,
-                                    activeIcon: CupertinoIcons.person_2_fill,
-                                    label: 'nav.community'.tr,
+                                    icon: CupertinoIcons.flame,
+                                    activeIcon: CupertinoIcons.flame_fill,
+                                    label: _label('nav.levelUp', 'LevelUp'),
                                     active: currentIndex == 1,
                                     iconSize: navIconSize,
                                     fontSize: navFontSize,
@@ -133,7 +138,7 @@ class BottomNavBar extends StatelessWidget {
                                   child: _NavItem(
                                     icon: CupertinoIcons.money_dollar_circle,
                                     activeIcon: CupertinoIcons.money_dollar_circle_fill,
-                                    label: 'nav.finance'.tr,
+                                    label: _label('nav.finance', 'Finance'),
                                     active: currentIndex == 2,
                                     iconSize: navIconSize,
                                     fontSize: navFontSize,
@@ -144,7 +149,7 @@ class BottomNavBar extends StatelessWidget {
                                   child: _NavItem(
                                     icon: CupertinoIcons.person_crop_circle,
                                     activeIcon: CupertinoIcons.person_crop_circle_fill,
-                                    label: 'nav.profile'.tr,
+                                    label: _label('nav.profile', 'Profile'),
                                     active: currentIndex == 3,
                                     iconSize: navIconSize,
                                     fontSize: navFontSize,

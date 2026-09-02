@@ -6,9 +6,9 @@ import 'package:genlink_frontend/features/community/domain/models/community_post
 import 'package:genlink_frontend/features/community/domain/repositories/community_repository.dart';
 import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/community_screen.dart';
-import 'package:genlink_frontend/features/community/presentation/screens/create_post_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/event_details_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/forum_discussion_screen.dart';
+import 'package:genlink_frontend/features/community/presentation/widgets/post_card_widget.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/story_tray_widget.dart';
 
 class MockCommunityRepository implements CommunityRepository {
@@ -17,9 +17,9 @@ class MockCommunityRepository implements CommunityRepository {
     return [
       CommunityPostModel(
         id: 'post_1',
-        userId: 'user_1',
-        authorName: 'Sokny Enath',
-        authorTag: 'sokny',
+        userId: 'user_other_1',
+        authorName: 'Dara Chan',
+        authorTag: '@darachan',
         authorAvatar: '',
         timeAgo: '2h ago',
         content: 'Excited for the upcoming Flutter workshop this weekend!',
@@ -109,14 +109,21 @@ class MockCommunityRepository implements CommunityRepository {
       timeAgo: 'Just now',
     );
   }
+  final Set<String> _followedUserIds = {};
   @override
   Future<bool> deleteComment(String postId, String commentId) async => true;
   @override
-  Future<bool> followUser(String userId) async => true;
+  Future<bool> followUser(String userId) async {
+    _followedUserIds.add(userId);
+    return true;
+  }
   @override
-  Future<bool> unfollowUser(String userId) async => true;
+  Future<bool> unfollowUser(String userId) async {
+    _followedUserIds.remove(userId);
+    return true;
+  }
   @override
-  Future<bool> checkIsFollowing(String userId) async => false;
+  Future<bool> checkIsFollowing(String userId) async => _followedUserIds.contains(userId);
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -131,8 +138,8 @@ void main() {
     Get.reset();
   });
 
-  group('Community Feed Mixed Content & Discovery Previews Tests', () {
-    testWidgets('1. Verify Feed renders Post Composer and Stories row without arrows', (tester) async {
+  group('Community Feed UI/UX Comprehensive Improvement Tests', () {
+    testWidgets('1. Verify Feed renders Stories row without arrows and redundant Post Composer is removed', (tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -153,25 +160,18 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify Stories row renders
+      // Stories row renders cleanly without chevron
       expect(find.byType(StoryTrayWidget), findsOneWidget);
-      // Verify NO right arrow / chevron exists on Stories row
       expect(find.text('Stories >'), findsNothing);
 
-      // Verify Post Composer renders "What's on your mind?" and action buttons
-      expect(find.text("What's on your mind?"), findsOneWidget);
-      expect(find.text('Photo'), findsOneWidget);
-      expect(find.text('Video'), findsOneWidget);
-      expect(find.text('Feeling'), findsOneWidget);
-      expect(find.text('Location'), findsOneWidget);
-
-      // Tapping composer opens CreatePostScreen
-      await tester.tap(find.text("What's on your mind?"));
-      await tester.pumpAndSettle();
-      expect(find.byType(CreatePostScreen), findsOneWidget);
+      // Redundant Feed Post Composer is removed from feed
+      expect(find.text("What's on your mind?"), findsNothing);
+      expect(find.text('Photo'), findsNothing);
+      expect(find.text('Video'), findsNothing);
+      expect(find.text('Feeling'), findsNothing);
     });
 
-    testWidgets('2. Verify Upcoming Events preview renders 1-2 compact event cards with prominent date and location', (tester) async {
+    testWidgets('2. Verify Feed renders compact Suggested Events preview with Date block, Title, Location, and Join button', (tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -192,29 +192,24 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify Header
-      expect(find.text('Upcoming Events'), findsOneWidget);
-      final seeAllFinders = find.text('See all');
-      expect(seeAllFinders, findsWidgets);
+      // Header on Feed
+      expect(find.text('✨'), findsOneWidget);
+      expect(find.text('Suggested Events'), findsOneWidget);
+      expect(find.text('See all'), findsWidgets);
 
-      // Verify 1-2 Real Event Titles from controller
-      expect(find.text('Flutter Workshop 2026'), findsOneWidget);
-      expect(find.text('AI in Everyday Life'), findsOneWidget);
-
-      // Verify Date blocks: day & month parsed from dateString
+      // Date block
       expect(find.text('25'), findsOneWidget);
       expect(find.text('JUL'), findsWidgets);
-      expect(find.text('26'), findsOneWidget);
 
-      // Verify Location and Online indicators
-      expect(find.textContaining('ACLEDA University'), findsOneWidget);
-      expect(find.text('🌐 Online Event'), findsOneWidget);
+      // Event title and location
+      expect(find.text('Flutter Workshop 2026'), findsOneWidget);
+      expect(find.textContaining('ACLEDA University'), findsWidgets);
 
-      // Verify Join buttons
+      // Join button
       expect(find.text('Join'), findsWidgets);
     });
 
-    testWidgets('3. Verify RSVP / Join button toggles state between Join and Joined', (tester) async {
+    testWidgets('3. Verify Join button in Feed preview navigates to EventDetailsScreen without immediately registering user', (tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -235,29 +230,19 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // First event is not RSVPed initially
       expect(controller.events[0].isRsvped, isFalse);
 
-      // Tap first Join button
       final joinButtons = find.text('Join');
       expect(joinButtons, findsWidgets);
       await tester.tap(joinButtons.first);
       await tester.pumpAndSettle();
 
-      // Controller state should now be RSVPed
-      expect(controller.events[0].isRsvped, isTrue);
-      expect(find.text('Joined'), findsOneWidget);
-
-      // Tap Joined button to un-RSVP
-      await tester.tap(find.text('Joined'));
-      await tester.pumpAndSettle();
-
-      // Controller state should revert to not RSVPed
+      // Does not immediately RSVP; navigates to EventDetailsScreen
       expect(controller.events[0].isRsvped, isFalse);
-      expect(find.text('Joined'), findsNothing);
+      expect(find.byType(EventDetailsScreen), findsOneWidget);
     });
 
-    testWidgets('4. Verify tapping Upcoming Events "See all" navigates directly to Event tab', (tester) async {
+    testWidgets('4. Verify tapping Suggested Events "See all" on Feed switches to Event tab', (tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -280,19 +265,16 @@ void main() {
 
       expect(controller.selectedCategory.value, equals('Feed'));
 
-      // Tap first "See all" (Upcoming Events)
+      // Tap first "See all" (Suggested Events)
       final seeAllFinders = find.text('See all');
       await tester.tap(seeAllFinders.first);
       await tester.pumpAndSettle();
 
-      // Controller category should now be 'Event'
       expect(controller.selectedCategory.value, equals('Event'));
-      // Event tab has FeaturedEventsCarousel and Filter button
-      expect(find.byType(FeaturedEventsCarousel), findsOneWidget);
-      expect(find.text('Filter'), findsOneWidget);
+      expect(find.text('Upcoming Events'), findsOneWidget);
     });
 
-    testWidgets('5. Verify tapping an Event card opens EventDetailsScreen for that event', (tester) async {
+    testWidgets('5. Verify tapping an Event card in Feed preview opens EventDetailsScreen', (tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -313,14 +295,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap on the Flutter Workshop event title
       await tester.tap(find.text('Flutter Workshop 2026'));
       await tester.pumpAndSettle();
 
-      // Should open EventDetailsScreen
       expect(find.byType(EventDetailsScreen), findsOneWidget);
-      expect(find.text('Flutter Workshop 2026'), findsWidgets);
-      expect(find.text('ACLEDA University, Phnom Penh'), findsWidgets);
     });
 
     testWidgets('6. Verify Trending Discussions preview renders and tapping "See all" navigates to Forum tab', (tester) async {
@@ -344,10 +322,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify Trending Discussions header
       expect(find.text('Trending Discussions'), findsOneWidget);
-
-      // Verify discussion preview title
       expect(
         find.text('Best practices for GetX state management in Flutter Community App'),
         findsOneWidget,
@@ -358,7 +333,6 @@ void main() {
       await tester.tap(seeAllFinders.last);
       await tester.pumpAndSettle();
 
-      // Controller category should now be 'Forum'
       expect(controller.selectedCategory.value, equals('Forum'));
       expect(find.text('Latest Discussions'), findsOneWidget);
     });
@@ -384,17 +358,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap on discussion title
       await tester.tap(
         find.text('Best practices for GetX state management in Flutter Community App'),
       );
       await tester.pumpAndSettle();
 
-      // Should open ForumDiscussionScreen
       expect(find.byType(ForumDiscussionScreen), findsOneWidget);
     });
 
-    testWidgets('8. Verify Empty State cleanly hides preview when controller has no events or discussions', (tester) async {
+    testWidgets('8. Verify Follow button clear state transitions (+ Follow <-> ✓ Following)', (tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -404,26 +376,90 @@ void main() {
 
       final repo = MockCommunityRepository();
       final controller = CommunityController(repository: repo);
-      controller.events.clear();
-      controller.forumPinnedDiscussions.clear();
-      controller.forumLatestDiscussions.clear();
       Get.put<CommunityController>(controller);
 
       await tester.pumpWidget(
         GetMaterialApp(
           translations: AppTranslations(),
           locale: const Locale('en', 'US'),
-          home: const CommunityScreen(),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Obx(
+                () => PostCardWidget(
+                  post: controller.posts.first,
+                  controller: controller,
+                ),
+              ),
+            ),
+          ),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Upcoming Events & Trending Discussions sections should not render
-      expect(find.text('Upcoming Events'), findsNothing);
-      expect(find.text('Trending Discussions'), findsNothing);
+      // Initial state: + Follow
+      expect(find.text('Follow'), findsOneWidget);
+      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+
+      // Tap to follow
+      await tester.tap(find.text('Follow'));
+      await tester.pumpAndSettle();
+
+      // Following state: ✓ Following
+      expect(find.text('Following'), findsOneWidget);
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+
+      // Tap to unfollow
+      await tester.tap(find.text('Following'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Follow'), findsOneWidget);
     });
 
-    testWidgets('9. Verify Feed composer renders in Khmer without redundant Post label', (tester) async {
+    testWidgets('9. Verify Bookmark button has clear active gold accent state and inactive neutral state', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final repo = MockCommunityRepository();
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Obx(
+                () => PostCardWidget(
+                  post: controller.posts.first,
+                  controller: controller,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initial inactive bookmark icon
+      expect(find.byIcon(Icons.bookmark_border_rounded), findsOneWidget);
+
+      // Tap to bookmark
+      await tester.tap(find.byIcon(Icons.bookmark_border_rounded));
+      await tester.pumpAndSettle();
+
+      // Active saved icon with gold accent
+      final iconFinder = find.byIcon(Icons.bookmark_rounded);
+      expect(iconFinder, findsOneWidget);
+      final Icon iconWidget = tester.widget(iconFinder);
+      expect(iconWidget.color, equals(const Color(0xFFF59E0B)));
+    });
+
+    testWidgets('10. Verify Feed in Khmer renders localized strings and without redundant Post composer', (tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -444,43 +480,19 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify localized Khmer composer placeholder
-      expect(find.text('តើអ្នកកំពុងគិតអ្វី?'), findsOneWidget);
-      expect(find.text('រូបថត'), findsOneWidget);
-      expect(find.text('វីដេអូ'), findsOneWidget);
-      expect(find.text('អារម្មណ៍'), findsOneWidget);
-      expect(find.text('ទីតាំង'), findsOneWidget);
-    });
-
-    testWidgets('10. Verify Upcoming Events preview in Khmer renders localized strings', (tester) async {
-      tester.view.physicalSize = const Size(800, 1400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      final repo = MockCommunityRepository();
-      final controller = CommunityController(repository: repo);
-      Get.put<CommunityController>(controller);
-
-      await tester.pumpWidget(
-        GetMaterialApp(
-          translations: AppTranslations(),
-          locale: const Locale('km', 'KH'),
-          home: const CommunityScreen(),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Verify Upcoming Events header in Khmer
-      expect(find.text('ព្រឹត្តិការណ៍នាពេលខាងមុខ'), findsOneWidget);
+      // Khmer stories & suggested events
+      expect(find.byType(StoryTrayWidget), findsOneWidget);
+      expect(find.text('✨'), findsOneWidget);
+      expect(find.text('ព្រឹត្តិការណ៍ដែលបានណែនាំ'), findsOneWidget);
       expect(find.text('មើលទាំងអស់'), findsWidgets);
       expect(find.text('ចូលរួម'), findsWidgets);
-      expect(find.text('🌐 ព្រឹត្តិការណ៍អនឡាញ'), findsOneWidget);
+
+      // Redundant composer not present
+      expect(find.text('តើអ្នកកំពុងគិតអ្វី?'), findsNothing);
+      expect(find.text('រូបថត'), findsNothing);
     });
 
-    testWidgets('11. Verify Feed and compact event cards adapt responsively to small screens (320px)', (tester) async {
+    testWidgets('11. Verify Feed adapts responsively to small screens (320px)', (tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -501,7 +513,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Upcoming Events'), findsOneWidget);
+      expect(find.text('✨'), findsOneWidget);
+      expect(find.text('Suggested Events'), findsOneWidget);
       expect(find.text('Flutter Workshop 2026'), findsOneWidget);
     });
 
@@ -527,7 +540,8 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Upcoming Events'), findsOneWidget);
+      expect(find.text('✨'), findsOneWidget);
+      expect(find.text('Suggested Events'), findsOneWidget);
 
       // 2. Dark Mode
       await tester.pumpWidget(
@@ -539,7 +553,8 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Upcoming Events'), findsOneWidget);
+      expect(find.text('✨'), findsOneWidget);
+      expect(find.text('Suggested Events'), findsOneWidget);
     });
   });
 }

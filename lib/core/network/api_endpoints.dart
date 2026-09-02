@@ -84,6 +84,11 @@ abstract final class ApiEndpoints {
   static const mobileProductivityDashboard =
       '$_base/mobile/productivity-dashboard';
 
+  // ── Productivity ──────────────────────────────────────────────────────
+  static const habits = '$_base/productivity/habits';
+  static String habitCheckIn(String habitId) =>
+      '$_base/productivity/habits/$habitId/check-in';
+
   // ── Community ─────────────────────────────────────────────────────────
   static const communityFeed = '$_base/community/posts/feed';
   static const communityPosts = '$_base/community/posts';

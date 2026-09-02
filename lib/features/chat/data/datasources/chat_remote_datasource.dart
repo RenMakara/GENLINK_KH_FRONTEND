@@ -19,12 +19,37 @@ class ChatRemoteDataSource {
         .toList();
   }
 
+  Future<ChatConversationModel> openPrivateChat(String userId) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>('${ApiEndpoints.chats}/private/$userId'),
+    );
+    final data = _dataOf(response.data);
+    return ChatConversationModel.fromRoomResponse(data);
+  }
+
+  Future<ChatConversationModel> createGroup(
+    String name,
+    List<String> memberUserIds,
+  ) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        '${ApiEndpoints.chats}/groups',
+        data: {
+          'name': name,
+          'memberUserIds': memberUserIds,
+        },
+      ),
+    );
+    final data = _dataOf(response.data);
+    return ChatConversationModel.fromRoomResponse(data);
+  }
+
   Future<List<ChatMessageModel>> fetchMessages(String conversationId) async {
     final response = await guardDio(
       () => dio.get<dynamic>('${ApiEndpoints.chats}/$conversationId/messages'),
     );
     final content = _contentOf(response.data);
-    return content
+    final messages = content
         .map(
           (json) => ChatMessageModel.fromJson(
             json.cast<String, dynamic>(),
@@ -32,6 +57,9 @@ class ChatRemoteDataSource {
           ),
         )
         .toList();
+    // Sort chronologically (oldest first, newest last) for UI display
+    messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    return messages;
   }
 
   Future<ChatMessageModel> sendMessage(
@@ -61,6 +89,23 @@ class ChatRemoteDataSource {
     return true;
   }
 
+  Future<bool> deleteMessage(String conversationId, String messageId) async {
+    await guardDio(
+      () => dio.delete<dynamic>(
+        '${ApiEndpoints.chats}/$conversationId/messages/$messageId',
+      ),
+    );
+    return true;
+  }
+
+  Future<int> getUnreadCount() async {
+    final response = await guardDio(
+      () => dio.get<dynamic>('${ApiEndpoints.chats}/unread-count'),
+    );
+    final data = _dataOf(response.data);
+    return (data['unreadCount'] as num?)?.toInt() ?? 0;
+  }
+
   /// Backend pagination lives inside the ApiResponse envelope as
   /// `data.content`; a plain list is also tolerated for robustness.
   List<dynamic> _contentOf(dynamic body) {
@@ -81,9 +126,10 @@ class ChatRemoteDataSource {
   }
 
   String _toBackendType(String messageType) {
-    return switch (messageType) {
+    return switch (messageType.toLowerCase()) {
       'image' => 'IMAGE',
       'voice' => 'VOICE',
+      'system' => 'SYSTEM',
       _ => 'TEXT',
     };
   }

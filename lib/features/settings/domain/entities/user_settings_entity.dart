@@ -61,4 +61,30 @@ class UserSettingsEntity {
       biometricEnabled: biometricEnabled ?? this.biometricEnabled,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UserSettingsEntity &&
+          runtimeType == other.runtimeType &&
+          settingsId == other.settingsId &&
+          language == other.language &&
+          theme == other.theme &&
+          notificationEnabled == other.notificationEnabled &&
+          privacyProfile == other.privacyProfile &&
+          allowMessages == other.allowMessages &&
+          allowFollowRequest == other.allowFollowRequest &&
+          biometricEnabled == other.biometricEnabled;
+
+  @override
+  int get hashCode => Object.hash(
+        settingsId,
+        language,
+        theme,
+        notificationEnabled,
+        privacyProfile,
+        allowMessages,
+        allowFollowRequest,
+        biometricEnabled,
+      );
 }

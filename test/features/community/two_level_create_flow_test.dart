@@ -203,7 +203,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify hint and close button
-      expect(find.text("What do you want to talk about?"), findsOneWidget);
+      expect(find.text("What's on your mind?"), findsOneWidget);
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
       expect(find.text('Public'), findsOneWidget);
       expect(find.byIcon(Icons.schedule_outlined), findsOneWidget);

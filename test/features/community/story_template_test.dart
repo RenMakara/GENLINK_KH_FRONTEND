@@ -516,7 +516,7 @@ void main() {
       // Verify instruction banner and counter
       expect(find.text('3 Columns'), findsOneWidget);
       expect(find.text('0/3 selected'), findsOneWidget);
-      expect(find.text('Select 3 Photos (0/3)'), findsOneWidget);
+      expect(find.text('Select 3 photos for 3 Columns.'), findsOneWidget);
     });
 
     // ── 12. Single Photo Template in Story Creator auto-applies active image with NO extra picker ──

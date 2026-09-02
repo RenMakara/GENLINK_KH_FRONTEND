@@ -11,6 +11,7 @@ import '../controllers/story_gallery_controller.dart';
 import '../widgets/story_template_canvas.dart';
 import '../widgets/story_template_picker_sheet.dart';
 import 'story_gallery_screen.dart';
+import '../../../../core/errors/app_error.dart';
 
 class StoryTemplateModel {
   final String id;
@@ -3222,7 +3223,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         AppNotificationBanner.showDanger(
           context: context,
           title: "Couldn't post story",
-          message: "Please try again.",
+          message: e is AppError ? e.message : (e.toString().isNotEmpty ? e.toString() : "Please try again."),
         );
       }
     } finally {
@@ -7687,60 +7688,66 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                 },
                               ),
                               if (widget.type == StoryType.template || _isTemplateApplied) ...[
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  onTap: _openTemplatePickerSheet,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: Colors.white24,
-                                        width: 0.8,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          _selectedTemplate.icon,
-                                          color: Colors.white,
-                                          size: 16,
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Center(
+                                    child: GestureDetector(
+                                      onTap: _openTemplatePickerSheet,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 6,
                                         ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          _selectedTemplate.name,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12.5,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(
+                                            color: Colors.white24,
+                                            width: 0.8,
                                           ),
                                         ),
-                                        const SizedBox(width: 2),
-                                        const Icon(
-                                          Icons.keyboard_arrow_down_rounded,
-                                          color: Colors.white70,
-                                          size: 18,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              _selectedTemplate.icon,
+                                              color: Colors.white,
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Flexible(
+                                              child: Text(
+                                                _selectedTemplate.name,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12.0,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 2),
+                                            const Icon(
+                                              Icons.keyboard_arrow_down_rounded,
+                                              color: Colors.white70,
+                                              size: 16,
+                                            ),
+                                          ],
                                         ),
-                                      ],
+                                      ),
                                     ),
                                   ),
                                 ),
+                                const SizedBox(width: 4),
                               ],
-                              const Spacer(),
 
                               // RIGHT ACTION BUTTONS: [ @ ] [ Emoji ] [ Audio ] [ Done ]
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  // 1. @ Mention Button
-                                  Tooltip(
-                                    message: 'Mention',
-                                    child: GestureDetector(
+                                  if (!(widget.type == StoryType.template || _isTemplateApplied)) ...[
+                                    // 1. @ Mention Button
+                                    GestureDetector(
                                       onTap: _showMentionSheet,
                                       behavior: HitTestBehavior.opaque,
                                       child: Container(
@@ -7761,13 +7768,10 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
+                                    const SizedBox(width: 8),
 
-                                  // 2. Emoji / Sticker Button
-                                  Tooltip(
-                                    message: 'Stickers',
-                                    child: GestureDetector(
+                                    // 2. Emoji / Sticker Button
+                                    GestureDetector(
                                       onTap: _openEmojiPicker,
                                       behavior: HitTestBehavior.opaque,
                                       child: Container(
@@ -7788,13 +7792,10 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
+                                    const SizedBox(width: 8),
 
-                                  // 3. Audio / Music Button
-                                  Tooltip(
-                                    message: 'Music',
-                                    child: GestureDetector(
+                                    // 3. Audio / Music Button
+                                    GestureDetector(
                                       onTap: _showMusicSheet,
                                       behavior: HitTestBehavior.opaque,
                                       child: Container(
@@ -7815,8 +7816,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 10),
+                                    const SizedBox(width: 10),
+                                  ],
 
                                   // 4. Done Button (Posts story directly from canvas)
                                   Tooltip(
@@ -8010,6 +8011,15 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                       tooltip: "Template",
                                       onTap: _openTemplatePickerSheet,
                                     ),
+
+                                    // 1.5 Template Slot Reorder (Template Mode)
+                                    if (widget.type == StoryType.template || _isTemplateApplied)
+                                      _buildHorizontalToolItem(
+                                        icon: Icons.swap_horiz_rounded,
+                                        label: "Reorder",
+                                        tooltip: "Reorder",
+                                        onTap: _showTemplateReorderSheet,
+                                      ),
 
                                     // 2. Add Text Overlay
                                     _buildHorizontalToolItem(

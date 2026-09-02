@@ -3,8 +3,10 @@ import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/radius/app_radius.dart';
 import 'package:genlink_frontend/design_system/spacing/app_spacing.dart';
+import '../../domain/models/story_model.dart';
 import '../controllers/story_controller.dart';
 import '../screens/story_viewer_screen.dart';
+import 'demo_stories_data.dart';
 import 'story_creation_picker_sheet.dart';
 
 class StoryTrayWidget extends StatefulWidget {
@@ -46,7 +48,7 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
         : AppColors.lightBgSecondary;
 
     return Obx(() {
-      if (controller.isLoading.value) {
+      if (controller.isLoading.value && controller.storyGroups.isEmpty) {
         return SizedBox(
           height: 100,
           child: ListView.builder(
@@ -76,7 +78,14 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
 
       final allGroups = controller.storyGroups;
       // Smart sorting: Owner story first, then unseen groups, then viewed groups
-      final ownerGroup = allGroups.firstWhereOrNull((g) => g.isOwner);
+      final ownerGroup = allGroups.firstWhereOrNull((g) => g.isOwner) ??
+          StoryGroupModel(
+            userId: 'current_user',
+            userName: 'community.yourStory'.tr,
+            userAvatar: 'assets/images/user_profile.png',
+            isOwner: true,
+            stories: [],
+          );
       final otherGroups = allGroups.where((g) => !g.isOwner).toList();
 
       otherGroups.sort((a, b) {
@@ -85,7 +94,9 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
         return 0;
       });
 
-      final sortedGroups = [?ownerGroup, ...otherGroups];
+      // Combine owner group, demo groups, and real backend groups
+      final demoGroups = getDemoStoryGroups();
+      final displayGroups = [ownerGroup, ...demoGroups, ...otherGroups];
 
       return SizedBox(
         height: 100,
@@ -93,13 +104,13 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          itemCount: sortedGroups.length,
+          itemCount: displayGroups.length,
           itemBuilder: (context, idx) {
-            final group = sortedGroups[idx];
+            final group = displayGroups[idx];
             return _StoryTrayItem(
               group: group,
               index: idx,
-              allGroups: sortedGroups,
+              allGroups: displayGroups,
               controller: controller,
               isDark: isDark,
               bgPrimary: bgPrimary,
@@ -186,7 +197,9 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
           );
         },
       ),
-    );
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   bool _containsKhmer(String text) {
@@ -234,10 +247,15 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                         tag: 'story_avatar_${group.userId}',
                         child: CircleAvatar(
                           radius: 26,
-                          backgroundImage:
-                              group.userAvatar.startsWith('assets/')
-                              ? AssetImage(group.userAvatar) as ImageProvider
-                              : NetworkImage(group.userAvatar),
+                          backgroundImage: (group.userAvatar != null &&
+                                  (group.userAvatar as String).isNotEmpty)
+                              ? ((group.userAvatar as String).startsWith('assets/')
+                                  ? AssetImage(group.userAvatar as String)
+                                      as ImageProvider
+                                  : NetworkImage(group.userAvatar as String))
+                              : const AssetImage(
+                                  'assets/images/user_profile.png',
+                                ) as ImageProvider,
                         ),
                       ),
                     ),
@@ -339,9 +357,15 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                       tag: 'story_avatar_${group.userId}',
                       child: CircleAvatar(
                         radius: 26,
-                        backgroundImage: group.userAvatar.startsWith('assets/')
-                            ? AssetImage(group.userAvatar) as ImageProvider
-                            : NetworkImage(group.userAvatar),
+                        backgroundImage: (group.userAvatar != null &&
+                                (group.userAvatar as String).isNotEmpty)
+                            ? ((group.userAvatar as String).startsWith('assets/')
+                                ? AssetImage(group.userAvatar as String)
+                                    as ImageProvider
+                                : NetworkImage(group.userAvatar as String))
+                            : const AssetImage(
+                                'assets/images/user_profile.png',
+                              ) as ImageProvider,
                       ),
                     ),
                   ),
@@ -374,7 +398,7 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                             : null,
                         fontFamilyFallback: const ['KantumruyPro', 'Sora'],
                       ),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                 ),

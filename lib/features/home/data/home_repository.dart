@@ -5,12 +5,11 @@ import '../domain/entities/home_entity.dart';
 /// Contract for the home dashboard data.
 abstract class HomeRepository {
   Future<HomeEntity> getHome();
+  Future<List<HabitItemEntity>> getHabits();
+  Future<HabitItemEntity> checkInHabit(String habitId, bool completed);
 }
 
-/// Fetches and maps `GET /api/v1/mobile/home`.
-///
-/// Kept as a single file (contract + impl + mapper) because home is a
-/// read-only aggregate: there is exactly one call and no domain logic.
+/// Fetches and maps `GET /api/v1/mobile/home` and productivity habits.
 class HomeRepositoryImpl implements HomeRepository {
   const HomeRepositoryImpl(this._client);
 
@@ -18,50 +17,31 @@ class HomeRepositoryImpl implements HomeRepository {
 
   @override
   Future<HomeEntity> getHome() async {
+    return await _client.get(
+      ApiEndpoints.mobileHome,
+      parse: (data) => _mapHome(ApiClient.asMap(data)),
+    );
+  }
+
+  @override
+  Future<List<HabitItemEntity>> getHabits() async {
     try {
       return await _client.get(
-        ApiEndpoints.mobileHome,
-        parse: (data) => _mapHome(ApiClient.asMap(data)),
+        ApiEndpoints.habits,
+        parse: (data) => ApiClient.asList(data, _mapHabit),
       );
     } catch (_) {
-      // Offline fallback mock data when backend API is offline
-      return const HomeEntity(
-        user: HomeUser(
-          userId: 'user_1',
-          fullName: 'Enat',
-          avatarUrl: 'https://i.pravatar.cc/150?img=32',
-          level: 3,
-          totalXp: 150,
-        ),
-        todayProgress: TodayProgress(
-          habitsCompletedToday: 3,
-          habitsTotal: 5,
-          tasksCompleted: 2,
-          tasksTotal: 4,
-        ),
-        dailyChallenge: ChallengePreview(
-          challengeId: 'c1',
-          title: 'Complete a financial lesson',
-          description: 'Earn 20 bonus XP today!',
-          xpReward: 20,
-        ),
-        financeSnapshot: FinanceSnapshot(
-          totalBudget: 1240.50,
-          spentAmount: 1240.50,
-          remainingAmount: 3579.50,
-          savingTarget: 5000.0,
-          savingCurrent: 4820.0,
-        ),
-        upcomingEvent: UpcomingEvent(
-          eventId: 'e1',
-          title: 'AI for Everyone Workshop',
-          dateTime: '25 July 2026 (Sat) 10:00 AM',
-          locationName: 'ACLEDA Uni, Phnom Penh',
-          coverImageUrl:
-              'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=600',
-        ),
-      );
+      return const [];
     }
+  }
+
+  @override
+  Future<HabitItemEntity> checkInHabit(String habitId, bool completed) async {
+    return await _client.post(
+      ApiEndpoints.habitCheckIn(habitId),
+      body: {'completed': completed},
+      parse: (data) => _mapHabit(ApiClient.asMap(data)),
+    );
   }
 
   static HomeEntity _mapHome(Map<String, dynamic> json) {
@@ -103,6 +83,16 @@ class HomeRepositoryImpl implements HomeRepository {
     tasksTotal: (json['tasksTotal'] as num?)?.toInt() ?? 0,
   );
 
+  static HabitItemEntity _mapHabit(Map<String, dynamic> json) =>
+      HabitItemEntity(
+        habitId: json['habitId'] as String? ?? json['id'] as String? ?? '',
+        title: json['title'] as String? ?? '',
+        category: json['category'] as String?,
+        frequency: json['frequency'] as String?,
+        streakCount: (json['streakCount'] as num?)?.toInt() ?? 0,
+        checkedInToday: json['checkedInToday'] as bool? ?? false,
+      );
+
   static ChallengePreview _mapChallenge(Map<String, dynamic> json) =>
       ChallengePreview(
         challengeId: json['challengeId'] as String? ?? '',
@@ -123,11 +113,15 @@ class HomeRepositoryImpl implements HomeRepository {
       );
 
   static UpcomingEvent _mapEvent(Map<String, dynamic> json) => UpcomingEvent(
-    eventId: json['eventId'] as String? ?? '',
+    eventId: json['eventId'] as String? ?? json['id'] as String? ?? '',
     title: json['title'] as String? ?? '',
     dateTime: json['dateTime'] as String?,
     locationName: json['locationName'] as String?,
     coverImageUrl: json['coverImageUrl'] as String?,
+    description: json['description'] as String?,
+    category: json['category'] as String?,
+    participantCount: (json['participantCount'] as num?)?.toInt() ??
+        (json['attendeesCount'] as num?)?.toInt(),
   );
 
   static CommunitySuggestion _mapCommunity(Map<String, dynamic> json) =>
@@ -154,6 +148,9 @@ class HomeRepositoryImpl implements HomeRepository {
     contentText: json['contentText'] as String?,
     imageUrl: json['imageUrl'] as String?,
     likeCount: (json['likeCount'] as num?)?.toInt(),
+    commentCount: (json['commentCount'] as num?)?.toInt() ??
+        (json['commentsCount'] as num?)?.toInt(),
+    communityName: json['communityName'] as String? ?? json['community'] as String?,
     createdAt: json['createdAt'] as String?,
   );
 

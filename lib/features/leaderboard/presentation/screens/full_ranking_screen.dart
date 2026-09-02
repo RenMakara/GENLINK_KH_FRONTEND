@@ -36,7 +36,7 @@ class FullRankingScreen extends GetView<LeaderboardController> {
         return ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           itemCount: users.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 1),
+          separatorBuilder: (context, index) => const SizedBox(height: 1),
           itemBuilder: (_, i) => _buildRankRow(users[i]),
         );
       }),
@@ -123,7 +123,7 @@ class FullRankingScreen extends GetView<LeaderboardController> {
                       const SizedBox(width: 8),
                       Icon(
                         Icons.star,
-                        color: QuizColors.gold.withOpacity(0.7),
+                        color: QuizColors.gold.withValues(alpha: 0.7),
                         size: 12,
                       ),
                       Text(

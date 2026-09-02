@@ -14,9 +14,12 @@ import '../../../chat/presentation/bindings/chat_binding.dart';
 import '../../../chat/presentation/controllers/chat_controller.dart';
 import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/story_model.dart';
+import '../../domain/repositories/story_repository.dart';
+import '../../data/repositories/story_repository_impl.dart';
 import '../controllers/story_controller.dart';
 import '../widgets/story_template_canvas.dart';
 import '../widgets/story_interactive_like_button.dart';
+import '../widgets/demo_stories_data.dart';
 import '../../../notification/presentation/controllers/notification_controller.dart';
 import '../../../notification/domain/models/notification_model.dart';
 
@@ -309,8 +312,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     final story = _currentStory;
     if (story != null) {
       story.isViewed = true;
-      if (Get.isRegistered<StoryController>()) {
-        Get.find<StoryController>().markStoryAsViewed(story.id);
+      if (story.id.startsWith('demo_')) {
+        markDemoStoryViewed(story.id);
+      } else if (Get.isRegistered<StoryController>()) {
+        final ctrl = Get.find<StoryController>();
+        ctrl.markStoryAsViewed(story.id);
+        ctrl.markStoryViewed(story.id);
       }
     }
   }
@@ -495,6 +502,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       'New liked state: ${story.isLiked} | '
       'New likes count: ${story.likesCount}',
     );
+
+    // For demo stories, update local demo state and skip backend API call
+    final isDemo = story.id.startsWith('demo_') ||
+        (_currentGroup?.userId.startsWith('demo_') ?? false);
+    if (isDemo) {
+      updateDemoStoryLike(story.id, targetLiked, targetLikesCount);
+      return;
+    }
 
     // 2. Sync with backend in background with rollback on error
     if (Get.isRegistered<StoryController>()) {
@@ -1708,6 +1723,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     if (story == null) return;
 
     _pauseStory();
+    final storyRepo = Get.isRegistered<StoryRepository>()
+        ? Get.find<StoryRepository>()
+        : StoryRepositoryImpl();
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1717,90 +1736,123 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           color: AppColors.darkSurfacePrimary,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: FutureBuilder<List<StoryViewerModel>>(
+          future: storyRepo.getStoryViewers(story.id),
+          builder: (context, snapshot) {
+            final isLoading =
+                snapshot.connectionState == ConnectionState.waiting;
+            final viewers = snapshot.data ?? story.viewers;
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      "Story Insights",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "${story.viewersCount} Viewers",
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const Text("  •  ", style: TextStyle(color: Colors.white38)),
-                        const Icon(
-                          Icons.favorite_rounded,
-                          color: AppColors.likedAccent,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          "${story.likesCount} Reactions",
-                          style: const TextStyle(
+                        const Text(
+                          "Story Insights",
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
+                        ),
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Text(
+                              "${isLoading ? '...' : viewers.length} Viewers",
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const Text(
+                              "  •  ",
+                              style: TextStyle(color: Colors.white38),
+                            ),
+                            const Icon(
+                              Icons.favorite_rounded,
+                              color: AppColors.likedAccent,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "${story.likesCount} Reactions",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white54),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
                   ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white54),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (story.viewers.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(20),
-                child: Center(
-                  child: Text(
-                    "No insights available yet.",
-                    style: TextStyle(color: Colors.white38),
-                  ),
-                ),
-              )
-            else
-              ...story.viewers.map(
-                (v) => ListTile(
-                  leading: CircleAvatar(
-                    backgroundImage: NetworkImage(v.userAvatar),
-                  ),
-                  title: Text(
-                    v.userName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
+                const SizedBox(height: 12),
+                if (isLoading)
+                  const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                else if (viewers.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Center(
+                      child: Text(
+                        "No insights available yet.",
+                        style: TextStyle(color: Colors.white38),
+                      ),
+                    ),
+                  )
+                else
+                  ...viewers.map(
+                    (v) => ListTile(
+                      leading: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Colors.white12,
+                        backgroundImage: v.userAvatar.isNotEmpty
+                            ? (v.userAvatar.startsWith('assets/')
+                                  ? AssetImage(v.userAvatar) as ImageProvider
+                                  : NetworkImage(v.userAvatar))
+                            : const AssetImage(
+                                'assets/images/user_profile.png',
+                              ) as ImageProvider,
+                      ),
+                      title: Text(
+                        v.userName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        v.viewedTimeAgo,
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
-                  subtitle: Text(
-                    v.viewedTimeAgo,
-                    style: const TextStyle(color: Colors.white38, fontSize: 12),
-                  ),
-                ),
-              ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     ).then((_) => _resumeStory());

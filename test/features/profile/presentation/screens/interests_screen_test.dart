@@ -72,12 +72,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.byKey(const ValueKey('expertise-search')),
-      'FinTech',
-    );
-    await tester.tap(find.byKey(const ValueKey('expertise-add')));
-    await tester.pump();
+    await tester.tap(find.text('FinTech').first);
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const ValueKey('expertise-save')));
     await tester.pumpAndSettle();

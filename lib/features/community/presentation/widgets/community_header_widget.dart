@@ -4,18 +4,24 @@ import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
+import '../../../notification/presentation/controllers/notification_controller.dart';
 import '../../../notification/presentation/screens/notification_screen.dart';
 import '../screens/community_search_screen.dart';
 
 /// GenLink KH Community Header Widget
 ///
-/// Refactored to strictly match the design system tokens, layout, typography,
-/// and component architecture of the Finance header.
+/// Displays "Home" in Home mode, or "Community" in Community mode, alongside
+/// standard Search, Chat, and Notification action buttons.
 class CommunityHeaderWidget extends StatelessWidget
     implements PreferredSizeWidget {
   final String activeCategory;
+  final bool isHomeScreen;
 
-  const CommunityHeaderWidget({super.key, required this.activeCategory});
+  const CommunityHeaderWidget({
+    super.key,
+    required this.activeCategory,
+    this.isHomeScreen = false,
+  });
 
   @override
   Size get preferredSize => const Size.fromHeight(64.0);
@@ -31,11 +37,14 @@ class CommunityHeaderWidget extends StatelessWidget
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
 
-    final titleText =
-        'community.title'.tr.isNotEmpty &&
-            'community.title'.tr != 'community.title'
-        ? 'community.title'.tr
-        : 'Community';
+    final titleText = isHomeScreen
+        ? ('nav.home'.tr.isNotEmpty && 'nav.home'.tr != 'nav.home'
+            ? 'nav.home'.tr
+            : 'Home')
+        : ('community.title'.tr.isNotEmpty &&
+                'community.title'.tr != 'community.title'
+            ? 'community.title'.tr
+            : 'Community');
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isNarrow = screenWidth < 360;
@@ -62,7 +71,7 @@ class CommunityHeaderWidget extends StatelessWidget
               padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: Row(
                 children: [
-                  // 1. LEFT TITLE - Flexible and non-overflowing
+                  // 1. LEFT TITLE
                   Expanded(
                     child: Text(
                       titleText,
@@ -111,16 +120,37 @@ class CommunityHeaderWidget extends StatelessWidget
 
                       SizedBox(width: buttonGap),
 
-                      // Notification Button
-                      _HeaderActionButton(
-                        icon: Icons.notifications_none_rounded,
-                        onTap: () =>
-                            Get.to(() => const NotificationScreen()),
-                        iconColor: textPrimary,
-                        buttonSize: buttonSize,
-                        iconSize: iconSize,
-                        tooltip: 'community.notifications'.tr,
-                      ),
+                      // Notification Button with reactive unread badge
+                      Builder(builder: (context) {
+                        if (!Get.isRegistered<NotificationController>()) {
+                          return _HeaderActionButton(
+                            icon: Icons.notifications_none_rounded,
+                            onTap: () =>
+                                Get.to(() => const NotificationScreen()),
+                            iconColor: textPrimary,
+                            buttonSize: buttonSize,
+                            iconSize: iconSize,
+                            tooltip: 'community.notifications'.tr,
+                          );
+                        }
+                        final notifController =
+                            Get.find<NotificationController>();
+                        return Obx(() {
+                          final unread = notifController.unreadCount;
+                          return _HeaderActionButton(
+                            icon: unread > 0
+                                ? Icons.notifications_active_outlined
+                                : Icons.notifications_none_rounded,
+                            onTap: () =>
+                                Get.to(() => const NotificationScreen()),
+                            iconColor: textPrimary,
+                            buttonSize: buttonSize,
+                            iconSize: iconSize,
+                            hasBadge: unread > 0,
+                            tooltip: 'community.notifications'.tr,
+                          );
+                        });
+                      }),
                     ],
                   ),
                 ],
@@ -134,7 +164,7 @@ class CommunityHeaderWidget extends StatelessWidget
 }
 
 /// Reusable Header Action Button component with standardized touch target,
-/// 24px icon size, and no backgrounds or badges.
+/// 24px icon size, and badge support.
 class _HeaderActionButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -142,6 +172,7 @@ class _HeaderActionButton extends StatelessWidget {
   final double buttonSize;
   final double iconSize;
   final String tooltip;
+  final bool hasBadge;
 
   const _HeaderActionButton({
     required this.icon,
@@ -150,6 +181,7 @@ class _HeaderActionButton extends StatelessWidget {
     this.buttonSize = 44.0,
     this.iconSize = 24.0,
     required this.tooltip,
+    this.hasBadge = false,
   });
 
   @override
@@ -165,7 +197,26 @@ class _HeaderActionButton extends StatelessWidget {
             width: buttonSize,
             height: buttonSize,
             child: Center(
-              child: Icon(icon, size: iconSize, color: iconColor),
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(icon, size: iconSize, color: iconColor),
+                  if (hasBadge)
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xFFF97316),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

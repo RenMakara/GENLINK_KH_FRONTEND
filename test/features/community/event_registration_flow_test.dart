@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
 import 'package:genlink_frontend/features/community/domain/models/community_models.dart';
-import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/event_register_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/event_success_screen.dart';
 
@@ -48,7 +47,7 @@ void main() {
     );
   }
 
-  testWidgets('1. CRITICAL: Full Name field MUST start EMPTY and not pre-filled', (tester) async {
+  testWidgets('1. CRITICAL: Personal information fields MUST start EMPTY and not pre-filled', (tester) async {
     final event = sampleEvent();
     await tester.pumpWidget(createTestWidget(event: event));
     await tester.pumpAndSettle();
@@ -62,11 +61,19 @@ void main() {
     final textFields = find.byType(TextField);
     expect(textFields, findsAtLeastNWidgets(3)); // Name, Email, Phone
 
-    // First text field is Full Name - verify its controller has empty text
-    final nameField = tester.widget<TextField>(textFields.first);
+    // All fields start EMPTY
+    final nameField = tester.widget<TextField>(textFields.at(0));
+    final emailField = tester.widget<TextField>(textFields.at(1));
+    final phoneField = tester.widget<TextField>(textFields.at(2));
+
     expect(nameField.controller?.text, isEmpty);
-    expect(nameField.controller?.text, isNot(contains('Enat')));
-    expect(nameField.controller?.text, isNot(contains('Sokny')));
+    expect(emailField.controller?.text, isEmpty);
+    expect(phoneField.controller?.text, isEmpty);
+
+    // Placeholders are visible
+    expect(find.text('Select your university'), findsOneWidget);
+    expect(find.text('Select your faculty'), findsOneWidget);
+    expect(find.text('Select your year'), findsOneWidget);
   });
 
   testWidgets('2. Validation: Submitting empty form displays required error messages', (tester) async {
@@ -81,16 +88,16 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify required error texts appear
-    expect(find.text('Full name is required.'), findsOneWidget);
-    expect(find.text('University is required.'), findsOneWidget);
-    expect(find.text('Faculty is required.'), findsOneWidget);
-    expect(find.text('Year of study is required.'), findsOneWidget);
-    expect(find.text('Email is required.'), findsOneWidget);
-    expect(find.text('Phone number is required.'), findsOneWidget);
-    expect(find.text('You must agree to the Terms & Conditions.'), findsOneWidget);
+    expect(find.text('Please enter your full name.'), findsOneWidget);
+    expect(find.text('Please select your university.'), findsOneWidget);
+    expect(find.text('Please select your faculty.'), findsOneWidget);
+    expect(find.text('Please select your year of study.'), findsOneWidget);
+    expect(find.text('Please enter your email address.'), findsOneWidget);
+    expect(find.text('Please enter your phone number.'), findsOneWidget);
+    expect(find.text('You must agree to the Event Terms & Conditions.'), findsOneWidget);
   });
 
-  testWidgets('3. Selectors: University and Year selector bottom sheets open and pick values', (tester) async {
+  testWidgets('3. Selectors & Search: University bottom sheet search, filter, and selection works', (tester) async {
     final event = sampleEvent();
     await tester.pumpWidget(createTestWidget(event: event));
     await tester.pumpAndSettle();
@@ -101,34 +108,81 @@ void main() {
     await tester.tap(uniFinder);
     await tester.pumpAndSettle();
 
-    // Verify bottom sheet opened with university list
+    // Verify bottom sheet opened with university list & search bar
     expect(find.text('Institute of Technology of Cambodia (ITC)'), findsOneWidget);
-    await tester.tap(find.text('Institute of Technology of Cambodia (ITC)'));
+
+    // Test Search filter in bottom sheet
+    final searchField = find.byType(TextField).last;
+    await tester.enterText(searchField, 'CADT');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cambodia Academy of Digital Technology (CADT)'), findsOneWidget);
+    expect(find.text('Institute of Technology of Cambodia (ITC)'), findsNothing);
+
+    // Test Empty Search result
+    await tester.enterText(searchField, 'NonExistentUniversityXYZ');
+    await tester.pumpAndSettle();
+    expect(find.text('No university found'), findsOneWidget);
+
+    // Clear search and pick CADT
+    await tester.enterText(searchField, 'CADT');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cambodia Academy of Digital Technology (CADT)'));
     await tester.pumpAndSettle();
 
     // Verify university is updated on form
-    expect(find.text('Institute of Technology of Cambodia (ITC)'), findsOneWidget);
+    expect(find.text('Cambodia Academy of Digital Technology (CADT)'), findsOneWidget);
+  });
+
+  testWidgets('4. Year of Study bottom sheet displays correct options and selects Year 3', (tester) async {
+    final event = sampleEvent();
+    await tester.pumpWidget(createTestWidget(event: event));
+    await tester.pumpAndSettle();
 
     // Tap Year selector
-    final yearFinder = find.text('Select year');
+    final yearFinder = find.text('Select your year');
     await tester.ensureVisible(yearFinder);
     await tester.tap(yearFinder);
     await tester.pumpAndSettle();
 
-    // Verify year options and pick Year 3
-    expect(find.text('Year 3 (Junior)'), findsOneWidget);
-    await tester.tap(find.text('Year 3 (Junior)'));
+    // Verify year options
+    expect(find.text('Select Year of Study'), findsOneWidget);
+    expect(find.text('Year 1'), findsOneWidget);
+    expect(find.text('Year 2'), findsOneWidget);
+    expect(find.text('Year 3'), findsOneWidget);
+    expect(find.text('Year 4'), findsOneWidget);
+    expect(find.text('Year 5'), findsOneWidget);
+    expect(find.text("Postgraduate / Master's"), findsOneWidget);
+
+    // Pick Year 3
+    await tester.tap(find.text('Year 3'));
     await tester.pumpAndSettle();
 
     // Verify Year is selected on form
-    expect(find.text('Year 3 (Junior)'), findsOneWidget);
+    expect(find.text('Year 3'), findsOneWidget);
   });
 
-  testWidgets('4. Full Registration flow: Fill all fields -> Submit -> Navigates to EventSuccessScreen', (tester) async {
-    final controller = CommunityController();
+  testWidgets('5. Phone number input: Accepts digits only and limits to 10 digits', (tester) async {
     final event = sampleEvent();
-    controller.events.add(event);
-    Get.put<CommunityController>(controller);
+    await tester.pumpWidget(createTestWidget(event: event));
+    await tester.pumpAndSettle();
+
+    final textFields = find.byType(TextField);
+    final phoneField = textFields.at(2);
+    await tester.ensureVisible(phoneField);
+
+    // Enter phone with mixed characters
+    await tester.enterText(phoneField, '01234567890123');
+    await tester.pumpAndSettle();
+
+    // Length limit 10 digits
+    final updatedField = tester.widget<TextField>(phoneField);
+    expect(updatedField.controller?.text.length, lessThanOrEqualTo(10));
+    expect(updatedField.controller?.text, '0123456789');
+  });
+
+  testWidgets('6. Full Registration flow: Fill all fields -> Submit -> Navigates to EventSuccessScreen', (tester) async {
+    final event = sampleEvent();
 
     await tester.pumpWidget(createTestWidget(event: event));
     await tester.pumpAndSettle();
@@ -154,11 +208,11 @@ void main() {
     await tester.pumpAndSettle();
 
     // Select Year
-    final yearFinder = find.text('Select year');
+    final yearFinder = find.text('Select your year');
     await tester.ensureVisible(yearFinder);
     await tester.tap(yearFinder);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Year 2 (Sophomore)'));
+    await tester.tap(find.text('Year 2'));
     await tester.pumpAndSettle();
 
     // Enter Email and Phone
@@ -168,7 +222,7 @@ void main() {
 
     final phoneField = textFields.at(2);
     await tester.ensureVisible(phoneField);
-    await tester.enterText(phoneField, '+855 12 999 888');
+    await tester.enterText(phoneField, '012999888');
 
     // Toggle Terms checkbox
     final checkbox = find.byType(Checkbox);
@@ -182,7 +236,7 @@ void main() {
     await tester.pump(); // Start loading state
 
     // Verify loading label
-    expect(find.text('Creating registration...'), findsOneWidget);
+    expect(find.text('Registering...'), findsOneWidget);
 
     // Fast-forward simulated network delay
     await tester.pump(const Duration(milliseconds: 700));
@@ -191,13 +245,13 @@ void main() {
     // Verify navigated to EventSuccessScreen
     expect(find.byType(EventSuccessScreen), findsOneWidget);
     expect(find.text('Registration Successful!'), findsOneWidget);
-    expect(find.text('View Ticket'), findsOneWidget);
+    expect(find.text('View Event'), findsOneWidget);
 
-    // Verify RSVP state updated in controller
-    expect(controller.events.firstWhere((e) => e.id == event.id).isRsvped, isTrue);
+    // Verify RSVP state updated on event
+    expect(event.isRsvped, isTrue);
   });
 
-  testWidgets('5. Already Registered event displays registered banner and disables re-registration', (tester) async {
+  testWidgets('7. Already Registered event displays registered banner and disables re-registration', (tester) async {
     final event = sampleEvent(isRsvped: true);
     await tester.pumpWidget(createTestWidget(event: event));
     await tester.pumpAndSettle();
@@ -207,7 +261,7 @@ void main() {
     expect(find.text('You have already secured your spot for this event.'), findsOneWidget);
   });
 
-  testWidgets('6. Khmer localization: Screen renders correctly in Khmer without text overflow', (tester) async {
+  testWidgets('8. Khmer localization: Screen renders correctly in Khmer without text overflow', (tester) async {
     final event = sampleEvent();
     await tester.pumpWidget(createTestWidget(
       event: event,

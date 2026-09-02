@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -58,20 +59,8 @@ class BudgetScreen extends GetView<BudgetController> {
               children: [
                 Row(
                   children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: text,
-                        size: 20,
-                      ),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 40,
-                        minHeight: 40,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
+                    AppBackButton(),
+                    const SizedBox(width: 13),
                     Expanded(
                       child: Text(
                         'finance.budget.title'.tr,
@@ -145,16 +134,6 @@ class BudgetScreen extends GetView<BudgetController> {
                     child: AppEmptyState(
                       message: 'finance.budget.noBudget'.tr,
                       icon: Icons.account_balance_wallet_outlined,
-                      action: AppButton(
-                        label: 'finance.budget.setBudget'.tr,
-                        onPressed: () => Navigator.push<void>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SetBudgetScreen(),
-                          ),
-                        ),
-                        height: 46,
-                      ),
                     ),
                   )
                 else
@@ -203,6 +182,9 @@ class _CurrencyBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currencies = FinanceCurrency.values;
+    final selectedIndex = currencies.indexOf(value);
+
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -210,34 +192,60 @@ class _CurrencyBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: border),
       ),
-      child: Row(
-        children: FinanceCurrency.values.map((currency) {
-          final selected = currency == value;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onChanged(currency),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: selected ? primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Text(
-                  currency.apiValue,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: selected
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : muted,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final itemWidth = constraints.maxWidth / currencies.length;
+
+          return SizedBox(
+            height: 40,
+            child: Stack(
+              children: [
+                // Sliding selected background
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  left: selectedIndex * itemWidth,
+                  top: 0,
+                  bottom: 0,
+                  width: itemWidth,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: primary,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
                   ),
                 ),
-              ),
+
+                // Currency buttons
+                Row(
+                  children: currencies.map((currency) {
+                    final selected = currency == value;
+
+                    return Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onChanged(currency),
+                        child: Center(
+                          child: Text(
+                            currency.apiValue,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: selected
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : muted,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
           );
-        }).toList(),
+        },
       ),
     );
   }

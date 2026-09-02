@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -106,147 +107,241 @@ class _SetBudgetScreenState extends State<SetBudgetScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        foregroundColor: text,
-        elevation: 0,
-        title: Text(
-          (isEditing ? 'finance.budget.editBudget' : 'finance.budget.setBudget')
-              .tr,
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Obx(() {
-          final submitting =
-              controller.isCreateSubmitting.value ||
-              controller.isUpdateSubmitting.value;
-          final error = controller.mutationErrorMessage.value;
-          return Container(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-            decoration: BoxDecoration(
-              color: surface,
-              border: Border(top: BorderSide(color: border)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+              child: Row(
+                children: [
+                  const AppBackButton(),
+                  const SizedBox(width: 13),
+                  Expanded(
                     child: Text(
-                      error,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: AppColors.danger),
-                    ),
-                  ),
-                SizedBox(
-                  height: 50,
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: submitting ? null : _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primary,
-                      foregroundColor: inverse,
-                      disabledBackgroundColor: secondary,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      (isEditing
+                              ? 'finance.budget.editBudget'
+                              : 'finance.budget.setBudget')
+                          .tr,
+                      style: TextStyle(
+                        color: text,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    child: submitting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text('finance.budget.saveBudget'.tr),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          );
-        }),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 30),
-        children: [
-          _FieldLabel(label: 'finance.budget.currency'.tr, color: muted),
-          const SizedBox(height: 6),
-          _ReadOnlyField(
-            text: formCurrency.apiValue,
-            color: text,
-            muted: muted,
-            surface: secondary,
-            border: border,
-          ),
-          const SizedBox(height: 16),
-          _FieldLabel(label: 'finance.budget.budgetPeriod'.tr, color: muted),
-          const SizedBox(height: 6),
-          InkWell(
-            onTap: _pickPeriod,
-            borderRadius: BorderRadius.circular(12),
-            child: _ReadOnlyField(
-              text: periodLabel,
-              color: text,
-              muted: muted,
-              surface: surface,
-              border: border,
-              icon: Icons.calendar_month_outlined,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _FieldLabel(label: 'finance.budget.totalBudget'.tr, color: muted),
-          const SizedBox(height: 6),
-          _InputField(
-            controller: totalController,
-            hint: '0.00',
-            color: text,
-            muted: muted,
-            surface: surface,
-            border: border,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          ),
-          const SizedBox(height: 22),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'finance.budget.categoryBudgets'.tr,
-                  style: TextStyle(
+
+            // Body
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 30),
+                children: [
+                  _FieldLabel(
+                    label: 'finance.budget.currency'.tr,
+                    color: muted,
+                  ),
+                  const SizedBox(height: 6),
+
+                  _ReadOnlyField(
+                    text: formCurrency.apiValue,
                     color: text,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
+                    muted: muted,
+                    surface: secondary,
+                    border: border,
                   ),
-                ),
-              ),
-              TextButton.icon(
-                onPressed: _addCategory,
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: Text('finance.budget.addCategory'.tr),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (categories.isEmpty)
-            Text(
-              'finance.budget.noCategories'.tr,
-              style: TextStyle(color: muted),
-            )
-          else
-            ...categories.asMap().entries.map(
-              (entry) => _CategoryEditor(
-                draft: entry.value,
-                index: entry.key,
-                text: text,
-                muted: muted,
-                surface: surface,
-                border: border,
-                currency: formCurrency,
-                onDelete: () => _removeCategory(entry.key),
+
+                  const SizedBox(height: 16),
+
+                  _FieldLabel(
+                    label: 'finance.budget.budgetPeriod'.tr,
+                    color: muted,
+                  ),
+                  const SizedBox(height: 6),
+
+                  InkWell(
+                    onTap: _pickPeriod,
+                    borderRadius: BorderRadius.circular(12),
+                    child: _ReadOnlyField(
+                      text: periodLabel,
+                      color: text,
+                      muted: muted,
+                      surface: surface,
+                      border: border,
+                      icon: Icons.calendar_month_outlined,
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  _FieldLabel(
+                    label: 'finance.budget.totalBudget'.tr,
+                    color: muted,
+                  ),
+                  const SizedBox(height: 6),
+
+                  _InputField(
+                    controller: totalController,
+                    hint: '0.00',
+                    color: text,
+                    muted: muted,
+                    surface: surface,
+                    border: border,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'finance.budget.categoryBudgets'.tr,
+                          style: TextStyle(
+                            color: text,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+
+                      InkWell(
+                        onTap: _addCategory,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 11,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: primary.withValues(alpha: 0.18),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add_rounded, size: 17, color: primary),
+                              const SizedBox(width: 4),
+                              Text(
+                                'finance.budget.addCategory'.tr,
+                                style: TextStyle(
+                                  color: primary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  if (categories.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 24,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: surface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: border),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(Icons.category_outlined, size: 30, color: muted),
+                          const SizedBox(height: 8),
+                          Text(
+                            'finance.budget.noCategories'.tr,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: muted,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ...categories.asMap().entries.map(
+                      (entry) => _CategoryEditor(
+                        draft: entry.value,
+                        index: entry.key,
+                        text: text,
+                        muted: muted,
+                        surface: surface,
+                        border: border,
+                        currency: formCurrency,
+                        onDelete: () => _removeCategory(entry.key),
+                      ),
+                    ),
+
+                  const SizedBox(height: 20),
+
+                  // Save button
+                  Obx(() {
+                    final submitting =
+                        controller.isCreateSubmitting.value ||
+                        controller.isUpdateSubmitting.value;
+
+                    final error = controller.mutationErrorMessage.value;
+
+                    return Column(
+                      children: [
+                        if (error != null) ...[
+                          Text(
+                            error,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: AppColors.danger),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+
+                        SizedBox(
+                          height: 50,
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: submitting ? null : _save,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primary,
+                              foregroundColor: inverse,
+                              disabledBackgroundColor: secondary,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: submitting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text('finance.budget.saveBudget'.tr),
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ],
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }

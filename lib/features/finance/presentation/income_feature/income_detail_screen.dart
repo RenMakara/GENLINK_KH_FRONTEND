@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -94,14 +95,8 @@ class IncomeDetailScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
               child: Row(
                 children: [
-                  ExpenseHeaderButton(
-                    icon: Icons.arrow_back_ios_new_rounded,
-                    background: surface,
-                    iconColor: textPrimary,
-                    borderColor: border,
-                    onTap: () => Navigator.pop(context),
-                  ),
-                  const SizedBox(width: 12),
+                  AppBackButton(),
+                  const SizedBox(width: 13),
                   Expanded(
                     child: Text(
                       'finance.income.details'.tr,
@@ -201,6 +196,15 @@ class IncomeDetailScreen extends StatelessWidget {
                             onPressed: onEdit ?? () => Navigator.pop(context),
                             icon: const Icon(Icons.edit_outlined, size: 17),
                             label: Text('finance.income.edit'.tr),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: textPrimary,
+                              backgroundColor: surface,
+                              side: BorderSide(color: border),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              minimumSize: const Size.fromHeight(44),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -209,16 +213,29 @@ class IncomeDetailScreen extends StatelessWidget {
                             onPressed: onDeleted == null
                                 ? null
                                 : () => _showDeleteDialog(context),
-                            icon: const Icon(Icons.delete_outline_rounded),
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              size: 18,
+                            ),
                             label: Text('finance.income.delete'.tr),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFB00020),
+                              foregroundColor: AppColors.danger,
+                              backgroundColor: surface,
+                              side: BorderSide(
+                                color: AppColors.danger.withValues(alpha: 0.35),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              minimumSize: const Size.fromHeight(44),
                             ),
                           ),
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 12),
+
                     ExpenseCloseButton(
                       text: 'finance.income.close'.tr,
                       background: surface,

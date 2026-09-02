@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -106,13 +107,7 @@ class ExpenseDetailScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
               child: Row(
                 children: [
-                  ExpenseHeaderButton(
-                    icon: Icons.arrow_back_ios_new_rounded,
-                    background: surface,
-                    iconColor: textPrimary,
-                    borderColor: border,
-                    onTap: () => Navigator.pop(context),
-                  ),
+                  AppBackButton(),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -228,6 +223,15 @@ class ExpenseDetailScreen extends StatelessWidget {
                             onPressed: onEdit ?? () => Navigator.pop(context),
                             icon: const Icon(Icons.edit_outlined, size: 17),
                             label: Text('finance.expense.edit'.tr),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: textPrimary,
+                              backgroundColor: surface,
+                              side: BorderSide(color: border),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              minimumSize: const Size.fromHeight(44),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -240,6 +244,12 @@ class ExpenseDetailScreen extends StatelessWidget {
                             label: Text('finance.expense.delete'.tr),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFFB00020),
+                              backgroundColor: surface,
+                              side: BorderSide(color: border),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              minimumSize: const Size.fromHeight(44),
                             ),
                           ),
                         ),

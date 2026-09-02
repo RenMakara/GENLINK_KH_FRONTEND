@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -115,13 +116,7 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                     child: Row(
                       children: [
-                        ExpenseHeaderButton(
-                          icon: Icons.arrow_back_ios_new_rounded,
-                          background: surface,
-                          iconColor: textPrimary,
-                          borderColor: border,
-                          onTap: () => Navigator.pop(context),
-                        ),
+                        AppBackButton(),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(

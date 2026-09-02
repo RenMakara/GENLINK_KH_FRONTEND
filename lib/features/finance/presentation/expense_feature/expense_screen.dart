@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -70,12 +71,7 @@ class ExpenseScreen extends GetView<ExpenseController> {
               children: [
                 Row(
                   children: [
-                    ExpenseBackButton(
-                      background: surface,
-                      iconColor: textPrimary,
-                      borderColor: border,
-                      onTap: () => Navigator.pop(context),
-                    ),
+                    AppBackButton(),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -337,9 +333,12 @@ class _CurrencyBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Row(
       children: FinanceCurrency.values.map((item) {
         final selected = item == currency;
+
         return Expanded(
           child: Padding(
             padding: EdgeInsets.only(
@@ -352,9 +351,19 @@ class _CurrencyBar extends StatelessWidget {
                 height: 42,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: selected ? primary : surface,
+                  color: selected
+                      ? (isDark
+                            ? AppColors.darkPrimarySoft
+                            : AppColors.lightPrimary)
+                      : surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: selected ? primary : border),
+                  border: Border.all(
+                    color: selected
+                        ? (isDark
+                              ? AppColors.darkBorderStrong
+                              : AppColors.lightPrimary)
+                        : border,
+                  ),
                 ),
                 child: Text(
                   item.apiValue,

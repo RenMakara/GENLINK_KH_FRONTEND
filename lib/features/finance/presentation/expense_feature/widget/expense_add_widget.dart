@@ -4,12 +4,12 @@ import 'package:get/get.dart';
 // CATEGORY MODEL
 class ExpenseCategoryItem {
   final String name;
-  final IconData icon;
+  final IconData? icon;
   final Color color;
 
   const ExpenseCategoryItem({
     required this.name,
-    required this.icon,
+    this.icon,
     required this.color,
   });
 }
@@ -374,7 +374,6 @@ class ExpenseCategorySelector extends StatelessWidget {
       ),
       itemBuilder: (context, index) {
         final item = categories[index];
-
         final bool selected = selectedCategory == index;
 
         return GestureDetector(
@@ -393,19 +392,21 @@ class ExpenseCategorySelector extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  item.icon,
-                  size: 17,
-                  color: selected ? item.color : textMuted,
-                ),
-
-                const SizedBox(width: 6),
+                if (item.icon != null) ...[
+                  Icon(
+                    item.icon,
+                    size: 17,
+                    color: selected ? item.color : textMuted,
+                  ),
+                  const SizedBox(width: 6),
+                ],
 
                 Flexible(
                   child: Text(
                     item.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       color: selected ? item.color : textPrimary,
                       fontSize: 11,

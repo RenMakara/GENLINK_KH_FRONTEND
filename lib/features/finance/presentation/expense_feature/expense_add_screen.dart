@@ -29,6 +29,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     'STUDY',
     'BILLS',
     'HEALTH',
+    'OTHER',
   ];
   final _paymentValues = <String>['CASH', 'CARD', 'ABA'];
 
@@ -430,12 +431,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     _ => value,
   };
 
-  IconData _categoryIcon(String value) => switch (value) {
+  IconData? _categoryIcon(String value) => switch (value) {
     'FOOD' => Icons.restaurant_outlined,
     'TRANSPORT' => Icons.directions_car_outlined,
     'STUDY' => Icons.menu_book_outlined,
     'BILLS' => Icons.receipt_long_outlined,
     'HEALTH' => Icons.favorite_border_rounded,
+    'OTHER' => null,
     _ => Icons.more_horiz_rounded,
   };
 

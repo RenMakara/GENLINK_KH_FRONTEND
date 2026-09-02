@@ -77,7 +77,8 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
     final textSecondary = isDark
         ? Colors.white70
@@ -85,46 +86,39 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
     final textMuted = isDark
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark
-        ? AppColors.darkSurfaceSecondary
-        : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark
-        ? AppColors.darkBorderSubtle
-        : AppColors.lightBorderSubtle;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: const Center(child: AppBackButton()),
         leadingWidth: 72,
         titleSpacing: 0,
         title: Padding(
-          padding: const EdgeInsets.only(right: 12),
+          padding: const EdgeInsets.only(right: 16),
           child: SizedBox(
-            height: 42,
+            height: 46,
             child: TextField(
               controller: _searchController,
               focusNode: _focusNode,
-              style: TextStyle(color: textPrimary, fontSize: 14),
+              style: theme.textTheme.bodyLarge?.copyWith(fontSize: 14),
               onChanged: _onQueryChanged,
               onSubmitted: (val) => _addToRecentSearches(val),
               decoration: InputDecoration(
                 hintText: 'community.searchHint'.tr,
-                hintStyle: TextStyle(color: textMuted, fontSize: 13),
                 prefixIcon: Icon(
                   Icons.search_rounded,
                   color: textMuted,
-                  size: 19,
+                  size: 20,
                 ),
                 suffixIcon: _query.isNotEmpty
                     ? IconButton(
                         icon: Icon(
                           Icons.close_rounded,
                           color: textSecondary,
-                          size: 16,
+                          size: 18,
                         ),
                         onPressed: () {
                           _searchController.clear();
@@ -132,30 +126,11 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                         },
                       )
                     : null,
-                filled: true,
-                fillColor: surfaceSecondary,
                 contentPadding: const EdgeInsets.symmetric(
                   vertical: 0,
-                  horizontal: 12,
+                  horizontal: 16,
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: borderSubtle, width: 1.0),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: borderSubtle, width: 1.0),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.35)
-                        : AppColors.lightBorderStrong,
-                    width: 1.2,
-                  ),
-                ),
-              ),
+              ).applyDefaults(theme.inputDecorationTheme),
             ),
           ),
         ),

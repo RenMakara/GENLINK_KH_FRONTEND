@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -114,24 +115,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 children: [
                   Row(
                     children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: border),
-                          ),
-                          child: Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            size: 18,
-                            color: textPrimary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
+                      AppBackButton(),
+                      const SizedBox(width: 13),
                       Expanded(
                         child: Text(
                           'finance.ewallet.transactionTitle'.trParams({

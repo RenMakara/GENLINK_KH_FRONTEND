@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -47,107 +48,153 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        foregroundColor: text,
-        elevation: 0,
-        title: Obx(() => Text(_effectiveGoal().title)),
-        actions: [
-          Obx(
-            () => IconButton(
-              onPressed: controller.isUpdateSubmitting.value
-                  ? null
-                  : () async {
-                      await Navigator.push<void>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              UpdateGoalScreen(goal: _effectiveGoal()),
-                        ),
-                      );
-                      await controller.loadGoal(widget.goal.savingGoalId);
-                    },
-              icon: const Icon(Icons.edit_outlined),
-            ),
-          ),
-          Obx(
-            () => IconButton(
-              onPressed: controller.isDeleteSubmitting.value ? null : _delete,
-              icon: const Icon(Icons.delete_outline_rounded),
-              color: theme.colorScheme.error,
-            ),
-          ),
-        ],
-      ),
-      body: Obx(() {
-        final goal = _effectiveGoal();
-        final detailError = controller.detailErrorMessage.value;
-        final loading = controller.isDetailLoading.value;
-        final scopeMatches = goal.currency == controller.selectedCurrency.value;
-        return RefreshIndicator(
-          onRefresh: () async {
-            await Future.wait<void>([
-              controller.loadGoal(widget.goal.savingGoalId),
-              controller.loadDeposits(widget.goal.savingGoalId),
-            ]);
-          },
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 34),
+      body: SafeArea(
+        child: Obx(() {
+          final goal = _effectiveGoal();
+          final detailError = controller.detailErrorMessage.value;
+          final loading = controller.isDetailLoading.value;
+          final scopeMatches =
+              goal.currency == controller.selectedCurrency.value;
+
+          return Column(
             children: [
-              if (loading && controller.selectedGoal.value == null)
-                const SizedBox(height: 80, child: AppLoader())
-              else if (detailError != null)
-                _ErrorBanner(message: detailError),
-              if (!scopeMatches)
-                _ErrorBanner(message: 'finance.goal.currencyMismatch'.tr)
-              else ...[
-                _ProgressCard(
-                  goal: goal,
-                  surface: surface,
-                  border: border,
-                  text: text,
-                  muted: muted,
-                  primary: primary,
-                ),
-                const SizedBox(height: 14),
-                AppButton(
-                  label: 'finance.goal.contribute'.tr,
-                  icon: Icons.add_rounded,
-                  onPressed:
-                      goal.status == 'CANCELLED' ||
-                          controller.isContributionSubmitting.value
-                      ? null
-                      : () => _showContributionSheet(goal),
-                  loading: controller.isContributionSubmitting.value,
-                ),
-              ],
-              const SizedBox(height: 24),
-              Text(
-                'finance.goal.depositHistory'.tr,
-                style: TextStyle(
-                  color: text,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
+              // HEADER
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    AppBackButton(),
+                    const SizedBox(width: 13),
+                    Expanded(
+                      child: Text(
+                        goal.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: text,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ),
+
+                    // Edit
+                    Obx(
+                      () => IconButton(
+                        onPressed: controller.isUpdateSubmitting.value
+                            ? null
+                            : () async {
+                                await Navigator.push<void>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => UpdateGoalScreen(
+                                      goal: _effectiveGoal(),
+                                    ),
+                                  ),
+                                );
+
+                                await controller.loadGoal(
+                                  widget.goal.savingGoalId,
+                                );
+                              },
+                        icon: Icon(Icons.edit_outlined, color: text),
+                      ),
+                    ),
+
+                    // Delete
+                    Obx(
+                      () => IconButton(
+                        onPressed: controller.isDeleteSubmitting.value
+                            ? null
+                            : _delete,
+                        icon: const Icon(Icons.delete_outline_rounded),
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 10),
-              if (scopeMatches)
-                _DepositHistory(
-                  controller: controller,
-                  savingGoalId: goal.savingGoalId,
-                  surface: surface,
-                  border: border,
-                  text: text,
-                  muted: muted,
-                  currency: goal.currency,
+
+              // CONTENT
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    await Future.wait<void>([
+                      controller.loadGoal(widget.goal.savingGoalId),
+                      controller.loadDeposits(widget.goal.savingGoalId),
+                    ]);
+                  },
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(18, 14, 18, 34),
+                    children: [
+                      if (loading && controller.selectedGoal.value == null)
+                        const SizedBox(height: 80, child: AppLoader())
+                      else if (detailError != null)
+                        _ErrorBanner(message: detailError),
+
+                      if (!scopeMatches)
+                        _ErrorBanner(
+                          message: 'finance.goal.currencyMismatch'.tr,
+                        )
+                      else ...[
+                        _ProgressCard(
+                          goal: goal,
+                          surface: surface,
+                          border: border,
+                          text: text,
+                          muted: muted,
+                          primary: primary,
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        AppButton(
+                          label: 'finance.goal.contribute'.tr,
+                          icon: Icons.add_rounded,
+                          onPressed:
+                              goal.status == 'CANCELLED' ||
+                                  controller.isContributionSubmitting.value
+                              ? null
+                              : () => _showContributionSheet(goal),
+                          loading: controller.isContributionSubmitting.value,
+                        ),
+                      ],
+
+                      const SizedBox(height: 24),
+
+                      Text(
+                        'finance.goal.depositHistory'.tr,
+                        style: TextStyle(
+                          color: text,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      if (scopeMatches)
+                        _DepositHistory(
+                          controller: controller,
+                          savingGoalId: goal.savingGoalId,
+                          surface: surface,
+                          border: border,
+                          text: text,
+                          muted: muted,
+                          currency: goal.currency,
+                        ),
+                    ],
+                  ),
                 ),
+              ),
             ],
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 

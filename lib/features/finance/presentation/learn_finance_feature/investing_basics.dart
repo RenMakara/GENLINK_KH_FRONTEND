@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -55,121 +56,164 @@ class _InvestingBasicsScreenState extends State<InvestingBasicsScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg,
-        foregroundColor: text,
-        elevation: 0,
-        title: Obx(
-          () => Text(
-            controller.selectedLesson.value?.title ??
-                widget.initialLesson?.title ??
-                'finance.learning.lesson'.tr,
-          ),
-        ),
-      ),
-      body: Obx(() {
-        final lesson = controller.selectedLesson.value;
-        final error = controller.detailErrorMessage.value;
-        if (controller.isDetailLoading.value && lesson == null) {
-          return const AppLoader();
-        }
-        if (error != null && lesson == null) {
-          return _DetailError(message: error, onRetry: _reload);
-        }
-        if (lesson == null) {
-          return _DetailError(
-            message: 'finance.learning.noLesson'.tr,
-            onRetry: _reload,
-          );
-        }
-        return RefreshIndicator(
-          onRefresh: _reload,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 32),
+      body: SafeArea(
+        child: Obx(() {
+          final lesson = controller.selectedLesson.value;
+          final error = controller.detailErrorMessage.value;
+
+          if (controller.isDetailLoading.value && lesson == null) {
+            return const AppLoader();
+          }
+
+          if (error != null && lesson == null) {
+            return _DetailError(message: error, onRetry: _reload);
+          }
+
+          if (lesson == null) {
+            return _DetailError(
+              message: 'finance.learning.noLesson'.tr,
+              onRetry: _reload,
+            );
+          }
+
+          return Column(
             children: [
-              _MetaRow(lesson: lesson, muted: muted, primary: primary),
-              const SizedBox(height: 18),
-              Text(
-                lesson.title,
-                style: TextStyle(
-                  color: text,
-                  fontSize: 24,
-                  height: 1.2,
-                  fontWeight: FontWeight.w800,
+              // HEADER
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    AppBackButton(),
+                    const SizedBox(width: 13),
+                    Expanded(
+                      child: Text(
+                        lesson.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: text,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: border),
-                ),
-                child: SelectableText(
-                  lesson.content,
-                  style: TextStyle(color: text, fontSize: 15, height: 1.55),
-                ),
-              ),
-              if (lesson.mediaUrl != null && lesson.mediaUrl!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  lesson.mediaUrl!,
-                  style: TextStyle(color: muted, fontSize: 12),
-                ),
-              ],
-              const SizedBox(height: 20),
-              if (controller.mutationErrorMessage.value != null)
-                Text(
-                  controller.mutationErrorMessage.value!,
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
-              AppButton(
-                label: lesson.completed
-                    ? 'finance.learning.completed'.tr
-                    : 'finance.learning.markComplete'.tr,
-                icon: lesson.completed
-                    ? Icons.check_circle_outline_rounded
-                    : Icons.done_rounded,
-                loading: controller.isCompleteSubmitting.value,
-                onPressed: lesson.completed
-                    ? null
-                    : () async {
-                        final success = await controller.completeLesson(
-                          widget.lessonId,
-                        );
-                        if (success && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'finance.learning.completeSuccess'.tr,
+
+              // CONTENT
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _reload,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(18, 12, 18, 32),
+                    children: [
+                      _MetaRow(lesson: lesson, muted: muted, primary: primary),
+
+                      const SizedBox(height: 18),
+
+                      Text(
+                        lesson.title,
+                        style: TextStyle(
+                          color: text,
+                          fontSize: 24,
+                          height: 1.2,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: border),
+                        ),
+                        child: SelectableText(
+                          lesson.content,
+                          style: TextStyle(
+                            color: text,
+                            fontSize: 15,
+                            height: 1.55,
+                          ),
+                        ),
+                      ),
+
+                      if (lesson.mediaUrl != null &&
+                          lesson.mediaUrl!.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+
+                        Text(
+                          lesson.mediaUrl!,
+                          style: TextStyle(color: muted, fontSize: 12),
+                        ),
+                      ],
+
+                      const SizedBox(height: 20),
+
+                      if (controller.mutationErrorMessage.value != null)
+                        Text(
+                          controller.mutationErrorMessage.value!,
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+
+                      AppButton(
+                        label: lesson.completed
+                            ? 'finance.learning.completed'.tr
+                            : 'finance.learning.markComplete'.tr,
+                        icon: lesson.completed
+                            ? Icons.check_circle_outline_rounded
+                            : Icons.done_rounded,
+                        loading: controller.isCompleteSubmitting.value,
+                        onPressed: lesson.completed
+                            ? null
+                            : () async {
+                                final success = await controller.completeLesson(
+                                  widget.lessonId,
+                                );
+
+                                if (success && context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'finance.learning.completeSuccess'.tr,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                      ),
+
+                      if (lesson.questionCount > 0) ...[
+                        const SizedBox(height: 12),
+
+                        AppButton.secondary(
+                          label: 'finance.learning.startQuiz'.tr,
+                          icon: Icons.quiz_outlined,
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => InvestingQuizScreen(
+                                lessonId: widget.lessonId,
                               ),
                             ),
-                          );
-                        }
-                      },
-              ),
-              if (lesson.questionCount > 0) ...[
-                const SizedBox(height: 12),
-                AppButton.secondary(
-                  label: 'finance.learning.startQuiz'.tr,
-                  icon: Icons.quiz_outlined,
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          InvestingQuizScreen(lessonId: widget.lessonId),
-                    ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-              ],
+              ),
             ],
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 

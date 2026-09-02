@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -49,10 +50,8 @@ class SavingGoalsScreen extends GetView<SavingGoalController> {
               children: [
                 Row(
                   children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Icon(Icons.arrow_back_ios_new_rounded, color: text),
-                    ),
+                    AppBackButton(),
+                    const SizedBox(width: 13),
                     Expanded(
                       child: Text(
                         'finance.goal.title'.tr,

@@ -20,15 +20,26 @@ class ResultScreen extends GetView<QuizController> {
           child: Obx(() {
             final result = controller.quizResult.value;
             if (result == null) {
-              return const Padding(
-                padding: EdgeInsets.only(top: 80),
+              return Padding(
+                padding: const EdgeInsets.only(top: 80),
                 child: Column(
                   children: [
+<<<<<<< Updated upstream
                     CircularProgressIndicator(color: QuizColors.primary),
                     SizedBox(height: 20),
                     Text(
                       'Loading results...',
                       style: TextStyle(fontSize: 15, color: QuizColors.body),
+=======
+                    const CircularProgressIndicator(color: QuizColors.primary),
+                    const SizedBox(height: 20),
+                    Text(
+                      'quiz.loadingResults'.tr,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: QuizColors.body,
+                      ),
+>>>>>>> Stashed changes
                     ),
                   ],
                 ),
@@ -45,14 +56,14 @@ class ResultScreen extends GetView<QuizController> {
                 _buildSummaryGrid(result),
                 const SizedBox(height: 28),
                 QuizGradientButton(
-                  label: 'Review Answers',
+                  label: 'quiz.reviewAnswers'.tr,
                   icon: Icons.visibility_outlined,
                   isOutlined: true,
                   onPressed: () => _showAnswerBreakdown(context),
                 ),
                 const SizedBox(height: 14),
                 QuizGradientButton(
-                  label: 'Claim Reward',
+                  label: 'quiz.claimReward'.tr,
                   icon: Icons.card_giftcard,
                   onPressed: () {
                     Get.offAndToNamed('/quiz/claim-reward');
@@ -68,9 +79,15 @@ class ResultScreen extends GetView<QuizController> {
                           route.settings.name == '/home',
                     );
                   },
+<<<<<<< Updated upstream
                   child: const Text(
                     'Back to Dashboard',
                     style: TextStyle(
+=======
+                  child: Text(
+                    'quiz.backToDashboard'.tr,
+                    style: const TextStyle(
+>>>>>>> Stashed changes
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: QuizColors.body,
@@ -116,11 +133,16 @@ class ResultScreen extends GetView<QuizController> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.only(bottom: 12),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
+<<<<<<< Updated upstream
                   'Answer Breakdown',
                   style: TextStyle(
+=======
+                  'quiz.answerBreakdown'.tr,
+                  style: const TextStyle(
+>>>>>>> Stashed changes
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: QuizColors.heading,
@@ -132,7 +154,7 @@ class ResultScreen extends GetView<QuizController> {
                   controller: scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: questions.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (_, i) => _buildAnswerReviewItem(
                     i,
                     questions[i],
@@ -158,7 +180,7 @@ class ResultScreen extends GetView<QuizController> {
     final selectedIdx = selectedAnswers[index];
     final qResult = results.firstWhereOrNull((r) => r.questionId == q.id);
 
-    final correctIndex = qResult != null
+    final int? correctIndex = qResult != null
         ? q.options.indexWhere((o) => o.id == qResult.correctOptionId)
         : q.correctIndex;
     final selectedIndex = qResult != null
@@ -166,7 +188,9 @@ class ResultScreen extends GetView<QuizController> {
         : selectedIdx;
     final isCorrect = qResult != null
         ? (selectedIndex ?? -1) >= 0 && selectedIndex == correctIndex
-        : selectedIdx != null && selectedIdx == q.correctIndex;
+        : selectedIdx != null &&
+              q.correctIndex != null &&
+              selectedIdx == q.correctIndex;
     final wasAnswered = qResult != null
         ? (selectedIndex ?? -1) >= 0
         : selectedIdx != null;
@@ -227,7 +251,13 @@ class ResultScreen extends GetView<QuizController> {
               ),
               const Spacer(),
               Text(
+<<<<<<< Updated upstream
                 wasAnswered ? (isCorrect ? 'Correct' : 'Incorrect') : 'Skipped',
+=======
+                wasAnswered
+                    ? (isCorrect ? 'quiz.correct'.tr : 'quiz.incorrect'.tr)
+                    : 'quiz.skipped'.tr,
+>>>>>>> Stashed changes
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -251,7 +281,7 @@ class ResultScreen extends GetView<QuizController> {
           ...List.generate(q.options.length, (oi) {
             final optionLabel = String.fromCharCode(65 + oi);
             final isSelected = selectedIndex == oi;
-            final isCorrectOption = correctIndex == oi;
+            final isCorrectOption = correctIndex != null && correctIndex == oi;
 
             Color bgColor;
             Color textColor;
@@ -382,7 +412,11 @@ class ResultScreen extends GetView<QuizController> {
           ),
           const SizedBox(height: 12),
           Text(
+<<<<<<< Updated upstream
             isHigh ? 'Excellent Work!' : 'Quiz Complete!',
+=======
+            isHigh ? 'quiz.excellentWork'.tr : 'quiz.quizComplete'.tr,
+>>>>>>> Stashed changes
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -391,7 +425,7 @@ class ResultScreen extends GetView<QuizController> {
           ),
           const SizedBox(height: 4),
           Text(
-            isHigh ? 'You crushed it!' : 'Keep practicing!',
+            isHigh ? 'quiz.youCrushedIt'.tr : 'quiz.keepPracticing'.tr,
             style: const TextStyle(fontSize: 14, color: QuizColors.body),
           ),
         ],
@@ -434,7 +468,10 @@ class ResultScreen extends GetView<QuizController> {
                   ),
                 ),
                 Text(
-                  '$correct/$total Correct',
+                  'quiz.correctRatio'.trParams({
+                    'correct': '$correct',
+                    'total': '$total',
+                  }),
                   style: const TextStyle(fontSize: 13, color: QuizColors.body),
                 ),
               ],
@@ -459,38 +496,66 @@ class ResultScreen extends GetView<QuizController> {
       children: [
         _buildSummaryTile(
           Icons.check_circle,
+<<<<<<< Updated upstream
           'Correct',
+=======
+          'quiz.correct'.tr,
+>>>>>>> Stashed changes
           '$correct',
           QuizColors.correct,
         ),
         _buildSummaryTile(
           Icons.cancel,
+<<<<<<< Updated upstream
           'Wrong',
+=======
+          'quiz.wrong'.tr,
+>>>>>>> Stashed changes
           '$wrong',
           QuizColors.incorrect,
         ),
         _buildSummaryTile(
           Icons.timer_outlined,
+<<<<<<< Updated upstream
           'Time Taken',
           '${result.timeTakenSeconds}s',
+=======
+          'quiz.timeTaken'.tr,
+          'quiz.secondsShort'.trParams({
+            'seconds': '${result.timeTakenSeconds}',
+          }),
+>>>>>>> Stashed changes
           const Color(0xFF6366F1),
         ),
         _buildSummaryTile(
           Icons.star,
+<<<<<<< Updated upstream
           'XP Earned',
+=======
+          'quiz.xpEarned'.tr,
+>>>>>>> Stashed changes
           '+${result.xpEarned}',
           QuizColors.primary,
         ),
         _buildSummaryTile(
           Icons.monetization_on,
+<<<<<<< Updated upstream
           'Coins Earned',
+=======
+          'quiz.coinsEarned'.tr,
+>>>>>>> Stashed changes
           '+${result.coinsEarned}',
           QuizColors.gold,
         ),
         _buildSummaryTile(
           Icons.military_tech,
+<<<<<<< Updated upstream
           'Badges',
           _accuracy(result) >= 80 ? '+1' : '0',
+=======
+          'quiz.badges'.tr,
+          '0',
+>>>>>>> Stashed changes
           const Color(0xFFF59E0B),
         ),
       ],

@@ -99,7 +99,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Hi, ${stats.name} 👋',
+                        'quiz.dashboardGreeting'.trParams({'name': stats.name}),
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -117,7 +117,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          'Level ${stats.level}',
+                          'quiz.level'.trParams({'level': '${stats.level}'}),
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -177,16 +177,26 @@ class QuizDashboardScreen extends GetView<QuizController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
+<<<<<<< Updated upstream
                         '${stats.streak} Days',
+=======
+                        'quiz.days'.trParams({'count': '${stats.streak}'}),
+>>>>>>> Stashed changes
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
                       ),
+<<<<<<< Updated upstream
                       const Text(
                         'Active Streak',
                         style: TextStyle(
+=======
+                      Text(
+                        'quiz.activeStreak'.tr,
+                        style: const TextStyle(
+>>>>>>> Stashed changes
                           fontSize: 11,
                           color: Color(0xFF9CA3AF),
                         ),
@@ -218,9 +228,15 @@ class QuizDashboardScreen extends GetView<QuizController> {
                           color: Colors.white,
                         ),
                       ),
+<<<<<<< Updated upstream
                       const Text(
                         'Coins',
                         style: TextStyle(
+=======
+                      Text(
+                        'quiz.coins'.tr,
+                        style: const TextStyle(
+>>>>>>> Stashed changes
                           fontSize: 11,
                           color: Color(0xFF9CA3AF),
                         ),
@@ -242,8 +258,8 @@ class QuizDashboardScreen extends GetView<QuizController> {
         Expanded(
           child: _buildQuizTypeCard(
             Icons.person_outline,
-            'Single Quiz',
-            'Play alone',
+            'quiz.singleQuiz'.tr,
+            'quiz.playAlone'.tr,
             QuizColors.correct,
             QuizType.single,
           ),
@@ -252,8 +268,8 @@ class QuizDashboardScreen extends GetView<QuizController> {
         Expanded(
           child: _buildQuizTypeCard(
             Icons.group_outlined,
-            'Random Quiz',
-            'Find opponent',
+            'quiz.randomQuiz'.tr,
+            'quiz.findOpponent'.tr,
             QuizColors.primary,
             QuizType.random,
           ),
@@ -283,7 +299,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(icon, color: color, size: 24),
@@ -331,9 +347,15 @@ class QuizDashboardScreen extends GetView<QuizController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+<<<<<<< Updated upstream
                 const Text(
                   'Learning Progress',
                   style: TextStyle(
+=======
+                Text(
+                  'quiz.learningProgress'.tr,
+                  style: const TextStyle(
+>>>>>>> Stashed changes
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: QuizColors.heading,
@@ -352,9 +374,15 @@ class QuizDashboardScreen extends GetView<QuizController> {
                   ),
                 ),
                 const SizedBox(height: 4),
+<<<<<<< Updated upstream
                 const Text(
                   '72% Complete',
                   style: TextStyle(fontSize: 12, color: QuizColors.body),
+=======
+                Text(
+                  'quiz.percentComplete'.trParams({'percent': '72'}),
+                  style: const TextStyle(fontSize: 12, color: QuizColors.body),
+>>>>>>> Stashed changes
                 ),
               ],
             ),
@@ -365,6 +393,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
   }
 
   Widget _buildCategoriesPreview() {
+<<<<<<< Updated upstream
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -446,14 +475,143 @@ class QuizDashboardScreen extends GetView<QuizController> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
+=======
+    return Obx(() {
+      if (controller.isQuizListLoading.value && controller.quizzes.isEmpty) {
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: CircularProgressIndicator(color: QuizColors.primary),
+          ),
+        );
+      }
+
+      if (controller.quizListError.value != null &&
+          controller.quizzes.isEmpty) {
+        return QuizCustomCard(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'quiz.couldNotLoadQuizzes'.tr,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: QuizColors.heading,
+>>>>>>> Stashed changes
                   ),
                 ),
-              );
-            },
+              ),
+              TextButton(
+                onPressed: () => controller.loadQuizzes(),
+                child: Text('common.retry'.tr),
+              ),
+            ],
           ),
-        ),
-      ],
-    );
+        );
+      }
+
+      if (controller.quizzes.isEmpty) {
+        return QuizCustomCard(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            'quiz.noQuizzesAvailable'.tr,
+            style: const TextStyle(fontSize: 14, color: QuizColors.body),
+          ),
+        );
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'quiz.categories'.tr,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: QuizColors.heading,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => Get.toNamed('/quiz/categories'),
+                child: Text(
+                  'quiz.seeAll'.tr,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: QuizColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 100,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: controller.categories.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final cat = controller.categories[index];
+                final bgColor = QuizColors.categoryColors[cat.colorIndex];
+                final iconColor = QuizColors.categoryIconColors[cat.colorIndex];
+                return GestureDetector(
+                  onTap: () {
+                    controller.selectCategory(cat);
+                    if (controller.quizType.value == QuizType.single) {
+                      controller.startQuiz();
+                      Get.toNamed('/quiz/in-progress');
+                    } else {
+                      controller.startMatchmaking();
+                      Get.toNamed('/quiz/matchmaking');
+                    }
+                  },
+                  child: Container(
+                    width: 130,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: QuizColors.surface,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: QuizColors.border),
+                      boxShadow: QuizColors.cardShadow,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: bgColor,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(Icons.star, color: iconColor, size: 20),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          cat.name,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: QuizColors.heading,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    });
   }
 
   Widget _buildLeaderboardCard() {
@@ -478,7 +636,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: QuizColors.gold.withOpacity(0.2),
+                color: QuizColors.gold.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: const Icon(
@@ -488,22 +646,30 @@ class QuizDashboardScreen extends GetView<QuizController> {
               ),
             ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
+<<<<<<< Updated upstream
                     'View Leaderboard',
                     style: TextStyle(
+=======
+                    'quiz.viewLeaderboard'.tr,
+                    style: const TextStyle(
+>>>>>>> Stashed changes
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
-                    'See how you rank globally',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+                    'quiz.rankGlobally'.tr,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF9CA3AF),
+                    ),
                   ),
                 ],
               ),
@@ -512,7 +678,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
@@ -529,7 +695,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
 
   Widget _buildBottomAction() {
     return QuizGradientButton(
-      label: 'Start New Quiz',
+      label: 'quiz.startNewQuiz'.tr,
       icon: Icons.play_arrow_rounded,
       onPressed: () => Get.toNamed('/quiz/categories'),
     );

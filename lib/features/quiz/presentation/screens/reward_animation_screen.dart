@@ -94,29 +94,25 @@ class _RewardAnimationScreenState extends State<RewardAnimationScreen>
                         const SizedBox(height: 28),
                         if (result != null) ...[
                           _buildRewardCard(
-                            '+${result.xpEarned} XP',
+                            'quiz.xpValue'.trParams({
+                              'xp': '${result.xpEarned}',
+                            }),
                             Icons.star,
                             QuizColors.primary,
                           ),
                           const SizedBox(height: 14),
                           _buildRewardCard(
-                            '+${result.coinsEarned} Coins',
+                            'quiz.coinsValue'.trParams({
+                              'coins': '${result.coinsEarned}',
+                            }),
                             Icons.monetization_on,
                             QuizColors.gold,
                           ),
-                          if (result.accuracyPercent >= 80) ...[
-                            const SizedBox(height: 14),
-                            _buildRewardCard(
-                              'Badge New',
-                              Icons.military_tech,
-                              const Color(0xFFF59E0B),
-                            ),
-                          ],
                         ],
                         const SizedBox(height: 32),
-                        const Text(
-                          'Rewards Earned!',
-                          style: TextStyle(
+                        Text(
+                          'quiz.rewardsEarned'.tr,
+                          style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
@@ -145,7 +141,7 @@ class _RewardAnimationScreenState extends State<RewardAnimationScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFFC107).withOpacity(0.4),
+            color: const Color(0xFFFFC107).withValues(alpha: 0.4),
             blurRadius: 40,
             offset: const Offset(0, 10),
           ),
@@ -159,9 +155,9 @@ class _RewardAnimationScreenState extends State<RewardAnimationScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
+        color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -226,7 +222,7 @@ class _SparklePainter extends CustomPainter {
     for (final p in points) {
       final x = p.x * size.width;
       final y = (p.baseY * size.height) + sin(time * 2 + p.phaseOffset) * 20;
-      paint.color = Colors.white.withOpacity(p.opacity);
+      paint.color = Colors.white.withValues(alpha: p.opacity);
       canvas.drawCircle(Offset(x, y), p.radius, paint);
     }
   }

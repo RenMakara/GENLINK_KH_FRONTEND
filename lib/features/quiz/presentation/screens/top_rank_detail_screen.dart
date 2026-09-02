@@ -26,7 +26,7 @@ class TopRankDetailScreen extends GetView<QuizController> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: QuizGradientButton(
-                  label: 'Challenge',
+                  label: 'quiz.challenge'.tr,
                   icon: Icons.bolt,
                   onPressed: () {
                     Get.offAndToNamed('/quiz/categories');
@@ -40,9 +40,15 @@ class TopRankDetailScreen extends GetView<QuizController> {
                       route.settings.name == '/quiz/dashboard' ||
                       route.settings.name == '/home',
                 ),
+<<<<<<< Updated upstream
                 child: const Text(
                   'Back to Dashboard',
                   style: TextStyle(
+=======
+                child: Text(
+                  'quiz.backToDashboard'.tr,
+                  style: const TextStyle(
+>>>>>>> Stashed changes
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: QuizColors.body,
@@ -99,7 +105,7 @@ class TopRankDetailScreen extends GetView<QuizController> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFFC107).withOpacity(0.3),
+                      color: const Color(0xFFFFC107).withValues(alpha: 0.3),
                       blurRadius: 30,
                       offset: const Offset(0, 10),
                     ),
@@ -119,15 +125,25 @@ class TopRankDetailScreen extends GetView<QuizController> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
+<<<<<<< Updated upstream
                         color: QuizColors.primary.withOpacity(0.3),
+=======
+                        color: QuizColors.primary.withValues(alpha: 0.3),
+>>>>>>> Stashed changes
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
+<<<<<<< Updated upstream
                   child: const Text(
                     'Global Rank #1',
                     style: TextStyle(
+=======
+                  child: Text(
+                    'quiz.globalRank'.trParams({'rank': '1'}),
+                    style: const TextStyle(
+>>>>>>> Stashed changes
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -175,9 +191,15 @@ class TopRankDetailScreen extends GetView<QuizController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+<<<<<<< Updated upstream
             const Text(
               'Achievements',
               style: TextStyle(
+=======
+            Text(
+              'quiz.achievements'.tr,
+              style: const TextStyle(
+>>>>>>> Stashed changes
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
                 color: QuizColors.heading,
@@ -214,7 +236,7 @@ class TopRankDetailScreen extends GetView<QuizController> {
                 ];
                 return Container(
                   decoration: BoxDecoration(
-                    color: colors[i].withOpacity(0.12),
+                    color: colors[i].withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(icons[i], color: colors[i], size: 28),
@@ -232,12 +254,22 @@ class TopRankDetailScreen extends GetView<QuizController> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          Expanded(child: _buildStatItem('148', 'Quizzes', QuizColors.primary)),
+          Expanded(
+            child: _buildStatItem('148', 'quiz.quizzes'.tr, QuizColors.primary),
+          ),
           const SizedBox(width: 10),
           Expanded(child: _buildStatItem('12,450', 'XP', QuizColors.gold)),
           const SizedBox(width: 10),
           Expanded(
+<<<<<<< Updated upstream
             child: _buildStatItem('8', 'Badges', const Color(0xFFF59E0B)),
+=======
+            child: _buildStatItem(
+              '8',
+              'quiz.badges'.tr,
+              const Color(0xFFF59E0B),
+            ),
+>>>>>>> Stashed changes
           ),
         ],
       ),

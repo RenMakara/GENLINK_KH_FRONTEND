@@ -116,7 +116,7 @@ class QuizOptionTile extends StatelessWidget {
                 ),
               ),
             ),
-            if (suffixIcon != null) suffixIcon,
+            ?suffixIcon,
           ],
         ),
       ),

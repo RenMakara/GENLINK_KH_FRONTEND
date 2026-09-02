@@ -65,13 +65,19 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
                   _buildAchievementsSection(user),
                 ],
                 const SizedBox(height: 28),
-                if (!isMe) _buildActionButton(isFirst, isFriend),
+                if (!isMe) _buildActionButton(user, isFirst, isFriend),
                 const SizedBox(height: 14),
                 TextButton(
                   onPressed: () => Get.back(),
+<<<<<<< Updated upstream
                   child: const Text(
                     'Back to Leaderboard',
                     style: TextStyle(
+=======
+                  child: Text(
+                    'leaderboard.backToLeaderboard'.tr,
+                    style: const TextStyle(
+>>>>>>> Stashed changes
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: QuizColors.body,
@@ -128,7 +134,15 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
+<<<<<<< Updated upstream
             'Global Rank #${user.rank}  ·  ${user.countryFlag} ${user.country}',
+=======
+            'leaderboard.globalRankWithCountry'.trParams({
+              'rank': '${user.rank}',
+              'flag': user.countryFlag,
+              'country': user.country,
+            }),
+>>>>>>> Stashed changes
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -206,12 +220,21 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.emoji_events, color: Colors.white, size: 14),
-                      SizedBox(width: 4),
+                    children: [
+                      const Icon(
+                        Icons.emoji_events,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
                       Text(
+<<<<<<< Updated upstream
                         'Global Rank #1',
                         style: TextStyle(
+=======
+                        'quiz.globalRank'.trParams({'rank': '1'}),
+                        style: const TextStyle(
+>>>>>>> Stashed changes
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -239,7 +262,11 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
               const Icon(Icons.star, color: QuizColors.gold, size: 16),
               const SizedBox(width: 6),
               Text(
+<<<<<<< Updated upstream
                 '${user.xp} XP  ·  Lv.${user.level}',
+=======
+                '${user.xp} XP  ·  ${'leaderboard.levelValue'.trParams({'level': '${user.level}'})}',
+>>>>>>> Stashed changes
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -260,13 +287,25 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
         children: [
           _buildMetricItem(
             '${user.totalQuizzes}',
+<<<<<<< Updated upstream
             'Quizzes',
+=======
+            'quiz.quizzes'.tr,
+>>>>>>> Stashed changes
             QuizColors.primary,
           ),
           const SizedBox(width: 10),
-          _buildMetricItem('${user.xp} XP', 'Experience', QuizColors.gold),
+          _buildMetricItem(
+            '${user.xp} XP',
+            'leaderboard.experience'.tr,
+            QuizColors.gold,
+          ),
           const SizedBox(width: 10),
-          _buildMetricItem('${user.badges}', 'Badges', const Color(0xFFF59E0B)),
+          _buildMetricItem(
+            '${user.badges}',
+            'quiz.badges'.tr,
+            const Color(0xFFF59E0B),
+          ),
         ],
       ),
     );
@@ -323,9 +362,15 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+<<<<<<< Updated upstream
             const Text(
               'About',
               style: TextStyle(
+=======
+            Text(
+              'leaderboard.about'.tr,
+              style: const TextStyle(
+>>>>>>> Stashed changes
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: QuizColors.heading,
@@ -354,9 +399,15 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 10),
+<<<<<<< Updated upstream
             child: const Text(
               'Top Subjects',
               style: TextStyle(
+=======
+            child: Text(
+              'leaderboard.topSubjects'.tr,
+              style: const TextStyle(
+>>>>>>> Stashed changes
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: QuizColors.heading,
@@ -413,9 +464,15 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 10),
+<<<<<<< Updated upstream
             child: const Text(
               'Recent Achievements',
               style: TextStyle(
+=======
+            child: Text(
+              'leaderboard.recentAchievements'.tr,
+              style: const TextStyle(
+>>>>>>> Stashed changes
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: QuizColors.heading,
@@ -499,9 +556,15 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+<<<<<<< Updated upstream
             const Text(
               'Achievements',
               style: TextStyle(
+=======
+            Text(
+              'quiz.achievements'.tr,
+              style: const TextStyle(
+>>>>>>> Stashed changes
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: QuizColors.heading,
@@ -546,7 +609,7 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
     );
   }
 
-  Widget _buildActionButton(bool isFirst, bool isFriend) {
+  Widget _buildActionButton(LeaderboardUser user, bool isFirst, bool isFriend) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: SizedBox(
@@ -582,8 +645,17 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
                     const SizedBox(width: 8),
                     Text(
                       isFirst
+<<<<<<< Updated upstream
                           ? 'Challenge Emma'
                           : (isFriend ? 'Message' : 'Add Friend'),
+=======
+                          ? 'leaderboard.challengeUser'.trParams({
+                              'name': user.name,
+                            })
+                          : (isFriend
+                                ? 'leaderboard.message'.tr
+                                : 'leaderboard.addFriend'.tr),
+>>>>>>> Stashed changes
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,

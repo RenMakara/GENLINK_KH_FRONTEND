@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../../../../app/routes/app_routes.dart';
@@ -24,7 +25,10 @@ class AuthController extends GetxController {
     required SecureStorage secureStorage,
     required this._localization,
     GoogleAuthService googleAuthService = const UnconfiguredGoogleAuthService(),
+<<<<<<< Updated upstream
     this.onSessionCleared,
+=======
+>>>>>>> Stashed changes
   }) : _storage = secureStorage,
        _google = googleAuthService;
 
@@ -75,6 +79,10 @@ class AuthController extends GetxController {
       // splash screen never reaches its navigation call.
       final token = await _storage.readAccessToken();
       if (token == null || token.isEmpty) return false;
+      if (_isDemoToken(token)) {
+        await _clearSession();
+        return false;
+      }
 
       final user = await _authRepository.getCurrentUser();
       if (!user.isActive) {
@@ -114,31 +122,6 @@ class AuthController extends GetxController {
       await _persistSession(session);
       return true;
     });
-  }
-
-  /// Instant demo login for testing without a backend account.
-  Future<void> demoLogin() async {
-    const demoSession = AuthSession(
-      accessToken: 'demo_access_token',
-      refreshToken: 'demo_refresh_token',
-      tokenType: 'Bearer',
-      user: UserEntity(
-        id: 'demo_user_1',
-        fullName: 'Sokny Enat',
-        username: 'sokny_enat',
-        email: 'sokny@genlink.kh',
-        avatarUrl: 'https://i.pravatar.cc/150?img=32',
-        universityName: 'ACLEDA University of Business',
-        active: true,
-        emailVerified: true,
-        accountStatus: 'ACTIVE',
-        preferredLanguage: 'en',
-        role: 'USER',
-        totalXp: 250,
-        level: 5,
-      ),
-    );
-    await _persistSession(demoSession);
   }
 
   // ── Register ──────────────────────────────────────────────────────────
@@ -196,12 +179,27 @@ class AuthController extends GetxController {
       lastErrorCode.value = e.errorCode;
       return false;
     } catch (_) {
+<<<<<<< Updated upstream
       errorMessage.value = 'common.error'.tr;
       lastErrorCode.value = 'UNKNOWN';
       return false;
     } finally {
       isLoading.value = false;
     }
+=======
+      // A provider failure is handled as an unavailable sign-in attempt;
+      // there is no local or demo-token fallback.
+    } finally {
+      isLoading.value = false;
+    }
+
+    if (idToken == null || idToken.isEmpty) {
+      errorMessage.value = 'auth.googleUnavailable'.tr;
+      lastErrorCode.value = 'GOOGLE_UNAVAILABLE';
+      return false;
+    }
+    return googleLogin(idToken: idToken);
+>>>>>>> Stashed changes
   }
 
   /// Exchanges an existing Google ID token for a GenLink session.
@@ -338,10 +336,38 @@ class AuthController extends GetxController {
   }
 
   Future<void> _persistSession(AuthSession session) async {
+    final accessToken = session.accessToken.trim();
+    if (accessToken.isEmpty) {
+      throw const AppError(
+        message: 'Login response did not include an access token.',
+        errorCode: 'AUTH_TOKEN_MISSING',
+      );
+    }
+
     await _storage.saveTokenPair(
-      accessToken: session.accessToken,
-      refreshToken: session.refreshToken,
+      accessToken: accessToken,
+      refreshToken: session.refreshToken.trim(),
     );
+
+    // Read back the value so a successful HTTP response cannot be mistaken
+    // for an authenticated session when persistence silently fails.
+    final savedAccessToken = await _storage.readAccessToken();
+    final tokenSaved = savedAccessToken == accessToken;
+    if (kDebugMode) {
+      debugPrint(
+        '[AUTH]\n'
+        'Login successful: true\n'
+        'Access token received: true\n'
+        'Access token saved: $tokenSaved',
+      );
+    }
+    if (!tokenSaved) {
+      throw const AppError(
+        message: 'Unable to save the login session.',
+        errorCode: 'AUTH_TOKEN_NOT_SAVED',
+      );
+    }
+
     await _storage.saveUserEmail(session.user.email);
     await _storage.saveUserId(session.user.id);
     currentUser.value = session.user;
@@ -359,4 +385,9 @@ class AuthController extends GetxController {
     isAuthenticated.value = false;
     onSessionCleared?.call();
   }
+
+  bool _isDemoToken(String token) =>
+      token == 'demo_access_token' ||
+      token == 'mock_access_token_123' ||
+      token == 'mock_google_token';
 }

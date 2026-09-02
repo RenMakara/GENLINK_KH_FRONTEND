@@ -31,7 +31,7 @@ class OpponentFoundScreen extends GetView<QuizController> {
             _buildGameInfoCard(),
             const SizedBox(height: 28),
             QuizGradientButton(
-              label: 'Start Quiz',
+              label: 'quiz.startQuiz'.tr,
               icon: Icons.play_arrow_rounded,
               onPressed: () {
                 controller.startQuiz();
@@ -39,10 +39,10 @@ class OpponentFoundScreen extends GetView<QuizController> {
               },
             ),
             const SizedBox(height: 14),
-            const Center(
+            Center(
               child: Text(
-                'You can quit anytime during the quiz',
-                style: TextStyle(fontSize: 12, color: QuizColors.body),
+                'quiz.quitAnytime'.tr,
+                style: const TextStyle(fontSize: 12, color: QuizColors.body),
               ),
             ),
             const SizedBox(height: 20),
@@ -66,8 +66,13 @@ class OpponentFoundScreen extends GetView<QuizController> {
               children: [
                 _buildPlayerColumn(
                   user.name,
+<<<<<<< Updated upstream
                   'Lv. ${user.level}',
                   '${user.streak} Streak',
+=======
+                  'quiz.levelShort'.trParams({'level': '${user.level}'}),
+                  'quiz.streakShort'.trParams({'count': '${user.streak}'}),
+>>>>>>> Stashed changes
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -90,8 +95,13 @@ class OpponentFoundScreen extends GetView<QuizController> {
                 ),
                 _buildPlayerColumn(
                   opp.name,
+<<<<<<< Updated upstream
                   'Lv. ${opp.level}',
                   '${opp.winRate}% Win',
+=======
+                  'quiz.levelShort'.trParams({'level': '${opp.level}'}),
+                  'quiz.winRate'.trParams({'percent': '${opp.winRate}'}),
+>>>>>>> Stashed changes
                 ),
               ],
             ),
@@ -115,9 +125,15 @@ class OpponentFoundScreen extends GetView<QuizController> {
               ),
             ),
             const SizedBox(height: 6),
+<<<<<<< Updated upstream
             const Text(
               'Fair Match',
               style: TextStyle(
+=======
+            Text(
+              'quiz.fairMatch'.tr,
+              style: const TextStyle(
+>>>>>>> Stashed changes
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: QuizColors.correct,
@@ -178,25 +194,41 @@ class OpponentFoundScreen extends GetView<QuizController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+<<<<<<< Updated upstream
           const Text(
             'Game Rules',
             style: TextStyle(
+=======
+          Text(
+            'quiz.gameRules'.tr,
+            style: const TextStyle(
+>>>>>>> Stashed changes
               fontSize: 17,
               fontWeight: FontWeight.w700,
               color: QuizColors.heading,
             ),
           ),
           const SizedBox(height: 14),
-          _buildRuleRow(Icons.quiz_outlined, '10 Questions'),
+          _buildRuleRow(
+            Icons.quiz_outlined,
+            'quiz.ruleQuestions'.trParams({'count': '10'}),
+          ),
           const SizedBox(height: 10),
-          _buildRuleRow(Icons.timer_outlined, '30 Seconds per question'),
+          _buildRuleRow(
+            Icons.timer_outlined,
+            'quiz.ruleSecondsPerQuestion'.trParams({'seconds': '30'}),
+          ),
           const SizedBox(height: 10),
+<<<<<<< Updated upstream
           _buildRuleRow(
             Icons.emoji_events_outlined,
             'Earn XP & Coins for correct answers',
           ),
+=======
+          _buildRuleRow(Icons.emoji_events_outlined, 'quiz.ruleEarnRewards'.tr),
+>>>>>>> Stashed changes
           const SizedBox(height: 10),
-          _buildRuleRow(Icons.skip_next_outlined, 'Skip questions anytime'),
+          _buildRuleRow(Icons.skip_next_outlined, 'quiz.ruleSkipAnytime'.tr),
         ],
       ),
     );

@@ -243,14 +243,14 @@ class LeaderboardController extends GetxController {
 
   String get rankPercent {
     final pct = ((currentUser.rank / totalGlobalUsers) * 100).round();
-    return 'Top $pct%';
+    return 'leaderboard.topPercent'.trParams({'percent': '$pct'});
   }
 
   String get countryRankPercent {
     final total = 15;
     final countryRank = 3;
     final pct = ((countryRank / total) * 100).round();
-    return 'Top $pct%';
+    return 'leaderboard.topPercent'.trParams({'percent': '$pct'});
   }
 
   List<Achievement> get allAchievements => [

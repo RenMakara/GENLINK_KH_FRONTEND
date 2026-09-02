@@ -31,9 +31,15 @@ class InviteFriendsScreen extends StatelessWidget {
             const SizedBox(height: 20),
             _buildHeaderIllustration(),
             const SizedBox(height: 24),
+<<<<<<< Updated upstream
             const Text(
               'Learn together, grow together!',
               style: TextStyle(
+=======
+            Text(
+              'leaderboard.inviteTitle'.tr,
+              style: const TextStyle(
+>>>>>>> Stashed changes
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
                 color: QuizColors.heading,
@@ -41,9 +47,15 @@ class InviteFriendsScreen extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
+<<<<<<< Updated upstream
             const Text(
               'Invite your friends and compete on the leaderboard.',
               style: TextStyle(
+=======
+            Text(
+              'leaderboard.inviteSubtitle'.tr,
+              style: const TextStyle(
+>>>>>>> Stashed changes
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: QuizColors.body,
@@ -59,9 +71,15 @@ class InviteFriendsScreen extends StatelessWidget {
             const SizedBox(height: 14),
             TextButton(
               onPressed: () => Get.back(),
+<<<<<<< Updated upstream
               child: const Text(
                 'Maybe Later',
                 style: TextStyle(
+=======
+              child: Text(
+                'quiz.maybeLater'.tr,
+                style: const TextStyle(
+>>>>>>> Stashed changes
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: QuizColors.body,
@@ -141,8 +159,8 @@ class InviteFriendsScreen extends StatelessWidget {
             onPressed: () {
               Clipboard.setData(const ClipboardData(text: _referralCode));
               Get.snackbar(
-                'Copied!',
-                'Referral code copied to clipboard',
+                'leaderboard.copied'.tr,
+                'leaderboard.referralCopied'.tr,
                 snackPosition: SnackPosition.BOTTOM,
                 backgroundColor: QuizColors.primary,
                 colorText: Colors.white,
@@ -152,7 +170,7 @@ class InviteFriendsScreen extends StatelessWidget {
               );
             },
             icon: const Icon(Icons.copy, color: QuizColors.primary, size: 22),
-            tooltip: 'Copy referral code',
+            tooltip: 'leaderboard.copyReferralCode'.tr,
           ),
           const SizedBox(width: 4),
         ],
@@ -165,17 +183,26 @@ class InviteFriendsScreen extends StatelessWidget {
       _PlatformIcon(Icons.chat, 'WhatsApp', const Color(0xFF25D366)),
       _PlatformIcon(Icons.send, 'Telegram', const Color(0xFF0088CC)),
       _PlatformIcon(Icons.facebook, 'Messenger', const Color(0xFF006AFF)),
-      _PlatformIcon(Icons.more_horiz, 'More', QuizColors.primary),
+      _PlatformIcon(
+        Icons.more_horiz,
+        'leaderboard.more'.tr,
+        QuizColors.primary,
+      ),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 12),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
           child: Text(
+<<<<<<< Updated upstream
             'Share via',
             style: TextStyle(
+=======
+            'leaderboard.shareVia'.tr,
+            style: const TextStyle(
+>>>>>>> Stashed changes
               fontSize: 15,
               fontWeight: FontWeight.w700,
               color: QuizColors.heading,
@@ -232,15 +259,20 @@ class InviteFriendsScreen extends StatelessWidget {
           child: InkWell(
             onTap: () {},
             borderRadius: BorderRadius.circular(16),
-            child: const Center(
+            child: Center(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.link, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
+                  const Icon(Icons.link, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
                   Text(
+<<<<<<< Updated upstream
                     'Invite via Link',
                     style: TextStyle(
+=======
+                    'leaderboard.inviteViaLink'.tr,
+                    style: const TextStyle(
+>>>>>>> Stashed changes
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,

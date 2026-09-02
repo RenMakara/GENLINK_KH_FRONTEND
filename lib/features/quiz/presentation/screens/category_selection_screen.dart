@@ -19,30 +19,37 @@ class CategorySelectionScreen extends GetView<QuizController> {
   }
 
   Future<void> _chooseQuizAndStart() async {
-    final categoryName = controller.selectedCategory.value?.name ?? '';
-    List<Map<String, dynamic>> options;
+    final category = controller.selectedCategory.value;
+    final categoryName = category?.name ?? '';
+    final categoryValue = category?.id ?? '';
+    List<QuizSummary> options;
     try {
-      options = await controller.loadQuizOptions(categoryName);
+      options = await controller.loadQuizOptions(categoryValue);
     } catch (_) {
       options = const [];
     }
 
     if (options.isEmpty) {
       Get.snackbar(
+<<<<<<< Updated upstream
         'No quizzes',
         'No quizzes found for $categoryName yet.',
+=======
+        'quiz.noQuizzes'.tr,
+        'quiz.noQuizzesForCategory'.trParams({'category': categoryName}),
+>>>>>>> Stashed changes
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
     }
 
     if (options.length == 1) {
-      controller.startSelectedQuiz(options.first['quizId'] as String);
+      controller.startSelectedQuiz(options.first.quizId);
       Get.toNamed('/quiz/in-progress');
       return;
     }
 
-    final selected = await showModalBottomSheet<Map<String, dynamic>>(
+    final selected = await showModalBottomSheet<QuizSummary>(
       context: Get.context!,
       backgroundColor: QuizColors.surface,
       shape: const RoundedRectangleBorder(
@@ -62,11 +69,11 @@ class CategorySelectionScreen extends GetView<QuizController> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.only(bottom: 12),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
-                  'Choose a Quiz',
-                  style: TextStyle(
+                  'quiz.chooseQuiz'.tr,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: QuizColors.heading,
@@ -85,7 +92,11 @@ class CategorySelectionScreen extends GetView<QuizController> {
                         color: QuizColors.primary,
                       ),
                       title: Text(
-                        (quiz['title'] as String?) ?? 'Quiz ${index + 1}',
+                        quiz.title.isEmpty
+                            ? 'quiz.quizFallbackTitle'.trParams({
+                                'number': '${index + 1}',
+                              })
+                            : quiz.title,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -93,7 +104,11 @@ class CategorySelectionScreen extends GetView<QuizController> {
                         ),
                       ),
                       subtitle: Text(
+<<<<<<< Updated upstream
                         (quiz['difficulty'] as String?) ?? '',
+=======
+                        _difficultyLabel(quiz.difficulty),
+>>>>>>> Stashed changes
                         style: const TextStyle(
                           fontSize: 12,
                           color: QuizColors.body,
@@ -112,7 +127,7 @@ class CategorySelectionScreen extends GetView<QuizController> {
     );
 
     if (selected == null) return;
-    controller.startSelectedQuiz(selected['quizId'] as String);
+    controller.startSelectedQuiz(selected.quizId);
     Get.toNamed('/quiz/in-progress');
   }
 
@@ -127,37 +142,99 @@ class CategorySelectionScreen extends GetView<QuizController> {
           icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
           onPressed: () => Get.back(),
         ),
-        title: const Text(
-          'Choose Quiz Category',
-          style: TextStyle(
+        title: Text(
+          'quiz.chooseQuizCategory'.tr,
+          style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: QuizColors.heading,
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+      body: Obx(() {
+        if (controller.isQuizListLoading.value && controller.quizzes.isEmpty) {
+          return const Center(
+            child: CircularProgressIndicator(color: QuizColors.primary),
+          );
+        }
+
+        if (controller.quizListError.value != null &&
+            controller.quizzes.isEmpty) {
+          return _buildRetryState(
+            'quiz.couldNotLoadQuizzes'.tr,
+            () => controller.loadQuizzes(),
+          );
+        }
+
+        if (controller.quizzes.isEmpty) {
+          return _buildRetryState(
+            'quiz.noQuizzesAvailable'.tr,
+            () => controller.loadQuizzes(),
+          );
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildCategoryGrid(),
+              const SizedBox(height: 24),
+              Text(
+                'quiz.recentlyPlayed'.tr,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: QuizColors.heading,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildRecentList(),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildRetryState(String message, VoidCallback onRetry) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildCategoryGrid(),
-            const SizedBox(height: 24),
-            const Text(
-              'Recently Played',
-              style: TextStyle(
+            const Icon(Icons.quiz_outlined, size: 48, color: QuizColors.border),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 color: QuizColors.heading,
               ),
             ),
-            const SizedBox(height: 12),
-            _buildRecentList(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            TextButton(onPressed: onRetry, child: Text('common.retry'.tr)),
           ],
         ),
       ),
     );
+  }
+
+  String _difficultyLabel(String difficulty) {
+    switch (difficulty.toUpperCase()) {
+      case 'EASY':
+        return 'quiz.difficultyEasy'.tr;
+      case 'MEDIUM':
+        return 'quiz.difficultyMedium'.tr;
+      case 'HARD':
+        return 'quiz.difficultyHard'.tr;
+      default:
+        return difficulty;
+    }
   }
 
   Widget _buildCategoryGrid() {
@@ -206,7 +283,13 @@ class CategorySelectionScreen extends GetView<QuizController> {
                 ),
                 const SizedBox(height: 4),
                 Text(
+<<<<<<< Updated upstream
                   '${cat.questionCount} Questions',
+=======
+                  'quiz.questionsCount'.trParams({
+                    'count': '${cat.questionCount}',
+                  }),
+>>>>>>> Stashed changes
                   style: const TextStyle(fontSize: 13, color: QuizColors.body),
                 ),
               ],
@@ -281,9 +364,9 @@ class CategorySelectionScreen extends GetView<QuizController> {
                         gradient: QuizColors.gradient,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text(
-                        'Continue',
-                        style: TextStyle(
+                      child: Text(
+                        'common.continue'.tr,
+                        style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,

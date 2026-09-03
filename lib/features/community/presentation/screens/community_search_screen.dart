@@ -79,7 +79,6 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
     final textSecondary = isDark
         ? Colors.white70
         : AppColors.lightTextSecondary;

@@ -31,13 +31,8 @@ class CategorySelectionScreen extends GetView<QuizController> {
 
     if (options.isEmpty) {
       Get.snackbar(
-<<<<<<< Updated upstream
-        'No quizzes',
-        'No quizzes found for $categoryName yet.',
-=======
         'quiz.noQuizzes'.tr,
         'quiz.noQuizzesForCategory'.trParams({'category': categoryName}),
->>>>>>> Stashed changes
         snackPosition: SnackPosition.BOTTOM,
       );
       return;
@@ -104,11 +99,7 @@ class CategorySelectionScreen extends GetView<QuizController> {
                         ),
                       ),
                       subtitle: Text(
-<<<<<<< Updated upstream
-                        (quiz['difficulty'] as String?) ?? '',
-=======
                         _difficultyLabel(quiz.difficulty),
->>>>>>> Stashed changes
                         style: const TextStyle(
                           fontSize: 12,
                           color: QuizColors.body,
@@ -283,13 +274,9 @@ class CategorySelectionScreen extends GetView<QuizController> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-<<<<<<< Updated upstream
-                  '${cat.questionCount} Questions',
-=======
                   'quiz.questionsCount'.trParams({
                     'count': '${cat.questionCount}',
                   }),
->>>>>>> Stashed changes
                   style: const TextStyle(fontSize: 13, color: QuizColors.body),
                 ),
               ],

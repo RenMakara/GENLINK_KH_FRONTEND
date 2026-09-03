@@ -21,16 +21,9 @@ class AchievementsScreen extends GetView<LeaderboardController> {
           padding: EdgeInsets.only(left: AppSpacing.md),
           child: Center(child: AppBackButton()),
         ),
-<<<<<<< Updated upstream
-        leadingWidth: 74,
-        title: const Text(
-          'All Achievements',
-          style: TextStyle(
-=======
         title: Text(
           'leaderboard.allAchievements'.tr,
           style: const TextStyle(
->>>>>>> Stashed changes
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: QuizColors.heading,
@@ -71,13 +64,8 @@ class AchievementsScreen extends GetView<LeaderboardController> {
                       borderRadius: BorderRadius.circular(16),
                       child: Center(
                         child: Text(
-<<<<<<< Updated upstream
-                          'Back to Leaderboard',
-                          style: TextStyle(
-=======
                           'leaderboard.backToLeaderboard'.tr,
                           style: const TextStyle(
->>>>>>> Stashed changes
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -151,15 +139,9 @@ class AchievementsScreen extends GetView<LeaderboardController> {
                 color: const Color(0xFFF3F4F6),
                 borderRadius: BorderRadius.circular(8),
               ),
-<<<<<<< Updated upstream
-              child: const Text(
-                'Locked',
-                style: TextStyle(
-=======
               child: Text(
                 'leaderboard.locked'.tr,
                 style: const TextStyle(
->>>>>>> Stashed changes
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFFD1D5DB),

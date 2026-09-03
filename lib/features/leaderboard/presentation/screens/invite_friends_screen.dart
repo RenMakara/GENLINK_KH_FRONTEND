@@ -31,15 +31,9 @@ class InviteFriendsScreen extends StatelessWidget {
             const SizedBox(height: 20),
             _buildHeaderIllustration(),
             const SizedBox(height: 24),
-<<<<<<< Updated upstream
-            const Text(
-              'Learn together, grow together!',
-              style: TextStyle(
-=======
             Text(
               'leaderboard.inviteTitle'.tr,
               style: const TextStyle(
->>>>>>> Stashed changes
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
                 color: QuizColors.heading,
@@ -47,15 +41,9 @@ class InviteFriendsScreen extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
-<<<<<<< Updated upstream
-            const Text(
-              'Invite your friends and compete on the leaderboard.',
-              style: TextStyle(
-=======
             Text(
               'leaderboard.inviteSubtitle'.tr,
               style: const TextStyle(
->>>>>>> Stashed changes
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: QuizColors.body,
@@ -71,15 +59,9 @@ class InviteFriendsScreen extends StatelessWidget {
             const SizedBox(height: 14),
             TextButton(
               onPressed: () => Get.back(),
-<<<<<<< Updated upstream
-              child: const Text(
-                'Maybe Later',
-                style: TextStyle(
-=======
               child: Text(
                 'quiz.maybeLater'.tr,
                 style: const TextStyle(
->>>>>>> Stashed changes
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: QuizColors.body,
@@ -196,13 +178,8 @@ class InviteFriendsScreen extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 12),
           child: Text(
-<<<<<<< Updated upstream
-            'Share via',
-            style: TextStyle(
-=======
             'leaderboard.shareVia'.tr,
             style: const TextStyle(
->>>>>>> Stashed changes
               fontSize: 15,
               fontWeight: FontWeight.w700,
               color: QuizColors.heading,
@@ -266,13 +243,8 @@ class InviteFriendsScreen extends StatelessWidget {
                   const Icon(Icons.link, color: Colors.white, size: 20),
                   const SizedBox(width: 8),
                   Text(
-<<<<<<< Updated upstream
-                    'Invite via Link',
-                    style: TextStyle(
-=======
                     'leaderboard.inviteViaLink'.tr,
                     style: const TextStyle(
->>>>>>> Stashed changes
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,

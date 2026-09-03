@@ -21,15 +21,9 @@ class RewardClaimedScreen extends GetView<QuizController> {
               const SizedBox(height: 40),
               _buildSuccessBadge(),
               const SizedBox(height: 20),
-<<<<<<< Updated upstream
-              const Text(
-                'Reward Claimed!',
-                style: TextStyle(
-=======
               Text(
                 'quiz.rewardClaimed'.tr,
                 style: const TextStyle(
->>>>>>> Stashed changes
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
                   color: QuizColors.heading,
@@ -46,11 +40,7 @@ class RewardClaimedScreen extends GetView<QuizController> {
               const SizedBox(height: 32),
               Obx(
                 () => QuizGradientButton(
-<<<<<<< Updated upstream
-                  label: 'Continue',
-=======
                   label: 'common.continue'.tr,
->>>>>>> Stashed changes
                   icon: Icons.arrow_forward,
                   isLoading: controller.isRewardClaimed.value,
                   onPressed: controller.isRewardClaimed.value
@@ -77,15 +67,9 @@ class RewardClaimedScreen extends GetView<QuizController> {
                         route.settings.name == '/home',
                   );
                 },
-<<<<<<< Updated upstream
-                child: const Text(
-                  'Back to Dashboard',
-                  style: TextStyle(
-=======
                 child: Text(
                   'quiz.backToDashboard'.tr,
                   style: const TextStyle(
->>>>>>> Stashed changes
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: QuizColors.body,
@@ -121,15 +105,9 @@ class RewardClaimedScreen extends GetView<QuizController> {
             ),
           ),
           const SizedBox(height: 14),
-<<<<<<< Updated upstream
-          const Text(
-            'Congratulations!',
-            style: TextStyle(
-=======
           Text(
             'quiz.congratulations'.tr,
             style: const TextStyle(
->>>>>>> Stashed changes
               fontSize: 20,
               fontWeight: FontWeight.w700,
               color: QuizColors.heading,
@@ -157,45 +135,27 @@ class RewardClaimedScreen extends GetView<QuizController> {
               'XP',
               '${stats.xp}',
               QuizColors.primary,
-<<<<<<< Updated upstream
-              '+${controller.quizResult.value?.xpEarned ?? 0}',
-=======
               'quiz.xpValue'.trParams({
                 'xp': '${controller.quizResult.value?.xpEarned ?? 0}',
               }),
->>>>>>> Stashed changes
             ),
             const SizedBox(width: 10),
             _buildBalancePill(
               Icons.monetization_on,
-<<<<<<< Updated upstream
-              'Coins',
-              '${stats.coins}',
-              QuizColors.gold,
-              '+${controller.quizResult.value?.coinsEarned ?? 0}',
-=======
               'quiz.coins'.tr,
               '${stats.coins}',
               QuizColors.gold,
               'quiz.coinsValue'.trParams({
                 'coins': '${controller.quizResult.value?.coinsEarned ?? 0}',
               }),
->>>>>>> Stashed changes
             ),
             const SizedBox(width: 10),
             _buildBalancePill(
               Icons.military_tech,
-<<<<<<< Updated upstream
-              'Badges',
-              '${stats.badges}',
-              const Color(0xFFF59E0B),
-              '+1',
-=======
               'quiz.badges'.tr,
               '${stats.badges}',
               const Color(0xFFF59E0B),
               '+0',
->>>>>>> Stashed changes
             ),
           ],
         ),

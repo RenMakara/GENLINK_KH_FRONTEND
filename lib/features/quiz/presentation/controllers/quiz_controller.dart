@@ -21,73 +21,6 @@ class QuizController extends GetxController {
     totalQuizzes: 48,
   ).obs;
 
-<<<<<<< Updated upstream
-  final categories = <QuizCategory>[
-    const QuizCategory(
-      id: '1',
-      name: 'Science',
-      icon: 'biotech',
-      questionCount: 120,
-      colorIndex: 0,
-    ),
-    const QuizCategory(
-      id: '2',
-      name: 'History',
-      icon: 'museum',
-      questionCount: 95,
-      colorIndex: 1,
-    ),
-    const QuizCategory(
-      id: '3',
-      name: 'Technology',
-      icon: 'devices',
-      questionCount: 150,
-      colorIndex: 2,
-    ),
-    const QuizCategory(
-      id: '4',
-      name: 'Geography',
-      icon: 'public',
-      questionCount: 80,
-      colorIndex: 3,
-    ),
-    const QuizCategory(
-      id: '5',
-      name: 'Mathematics',
-      icon: 'functions',
-      questionCount: 200,
-      colorIndex: 0,
-    ),
-    const QuizCategory(
-      id: '6',
-      name: 'Literature',
-      icon: 'menu_book',
-      questionCount: 110,
-      colorIndex: 1,
-    ),
-  ];
-
-  final recentCategories = <QuizCategory>[
-    const QuizCategory(
-      id: '1',
-      name: 'Science',
-      icon: 'biotech',
-      questionCount: 120,
-      colorIndex: 0,
-    ),
-    const QuizCategory(
-      id: '3',
-      name: 'Technology',
-      icon: 'devices',
-      questionCount: 150,
-      colorIndex: 2,
-    ),
-  ].obs;
-
-  final quizType = QuizType.random.obs;
-  final selectedCategory = Rxn<QuizCategory>();
-
-=======
   final quizzes = <QuizSummary>[].obs;
   final quizHistory = <QuizAttemptSummary>[].obs;
   final categories = <QuizCategory>[].obs;
@@ -101,7 +34,6 @@ class QuizController extends GetxController {
 
   final quizType = QuizType.random.obs;
   final selectedCategory = Rxn<QuizCategory>();
->>>>>>> Stashed changes
   final currentQuizId = RxnString();
 
   final opponent = Opponent(
@@ -210,13 +142,7 @@ class QuizController extends GetxController {
     _matchmakingCancelled = false;
     isFindingOpponent.value = true;
     opponentSearchProgress.value = 0.0;
-<<<<<<< Updated upstream
-
-    // Fetch a real quiz while matchmaking!
-    _fetchRandomQuiz();
-=======
     _fetchFirstQuizForSelectedCategory();
->>>>>>> Stashed changes
 
     _matchmakingTimer?.cancel();
     _matchmakingTimer = Timer.periodic(const Duration(milliseconds: 80), (
@@ -237,21 +163,6 @@ class QuizController extends GetxController {
       }
     });
   }
-<<<<<<< Updated upstream
-
-  Future<void> _fetchRandomQuiz() async {
-    try {
-      // First get all quizzes for category
-      final categoryName = selectedCategory.value?.name;
-      final quizzesList = await _quizRepository.getQuizzes(
-        category: categoryName,
-      );
-      if (quizzesList.isNotEmpty) {
-        final pick = quizzesList[Random().nextInt(quizzesList.length)];
-        final qId = pick['quizId'] as String;
-        currentQuizId.value = qId;
-=======
->>>>>>> Stashed changes
 
   Future<void> _fetchFirstQuizForSelectedCategory() async {
     try {

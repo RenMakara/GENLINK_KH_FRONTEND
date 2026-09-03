@@ -20,15 +20,9 @@ class LeaderboardScreen extends GetView<QuizController> {
           icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
           onPressed: () => Get.back(),
         ),
-<<<<<<< Updated upstream
-        title: const Text(
-          'Leaderboard',
-          style: TextStyle(
-=======
         title: Text(
           'quiz.leaderboard'.tr,
           style: const TextStyle(
->>>>>>> Stashed changes
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: QuizColors.heading,
@@ -57,15 +51,9 @@ class LeaderboardScreen extends GetView<QuizController> {
                     route.settings.name == '/quiz/dashboard' ||
                     route.settings.name == '/home',
               ),
-<<<<<<< Updated upstream
-              child: const Text(
-                'Back to Dashboard',
-                style: TextStyle(
-=======
               child: Text(
                 'quiz.backToDashboard'.tr,
                 style: const TextStyle(
->>>>>>> Stashed changes
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: QuizColors.body,
@@ -127,11 +115,7 @@ class LeaderboardScreen extends GetView<QuizController> {
                 ),
                 boxShadow: [
                   BoxShadow(
-<<<<<<< Updated upstream
-                    color: crownColor.withOpacity(0.3),
-=======
                     color: crownColor.withValues(alpha: 0.3),
->>>>>>> Stashed changes
                     blurRadius: 16,
                     offset: const Offset(0, 6),
                   ),
@@ -251,15 +235,9 @@ class LeaderboardScreen extends GetView<QuizController> {
                       color: QuizColors.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
-<<<<<<< Updated upstream
-                    child: const Text(
-                      'YOU',
-                      style: TextStyle(
-=======
                     child: Text(
                       'quiz.you'.tr,
                       style: const TextStyle(
->>>>>>> Stashed changes
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,

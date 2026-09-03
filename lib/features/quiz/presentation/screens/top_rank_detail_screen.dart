@@ -40,15 +40,9 @@ class TopRankDetailScreen extends GetView<QuizController> {
                       route.settings.name == '/quiz/dashboard' ||
                       route.settings.name == '/home',
                 ),
-<<<<<<< Updated upstream
-                child: const Text(
-                  'Back to Dashboard',
-                  style: TextStyle(
-=======
                 child: Text(
                   'quiz.backToDashboard'.tr,
                   style: const TextStyle(
->>>>>>> Stashed changes
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: QuizColors.body,
@@ -125,25 +119,15 @@ class TopRankDetailScreen extends GetView<QuizController> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-<<<<<<< Updated upstream
-                        color: QuizColors.primary.withOpacity(0.3),
-=======
                         color: QuizColors.primary.withValues(alpha: 0.3),
->>>>>>> Stashed changes
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-<<<<<<< Updated upstream
-                  child: const Text(
-                    'Global Rank #1',
-                    style: TextStyle(
-=======
                   child: Text(
                     'quiz.globalRank'.trParams({'rank': '1'}),
                     style: const TextStyle(
->>>>>>> Stashed changes
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -191,15 +175,9 @@ class TopRankDetailScreen extends GetView<QuizController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-<<<<<<< Updated upstream
-            const Text(
-              'Achievements',
-              style: TextStyle(
-=======
             Text(
               'quiz.achievements'.tr,
               style: const TextStyle(
->>>>>>> Stashed changes
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
                 color: QuizColors.heading,
@@ -261,15 +239,11 @@ class TopRankDetailScreen extends GetView<QuizController> {
           Expanded(child: _buildStatItem('12,450', 'XP', QuizColors.gold)),
           const SizedBox(width: 10),
           Expanded(
-<<<<<<< Updated upstream
-            child: _buildStatItem('8', 'Badges', const Color(0xFFF59E0B)),
-=======
             child: _buildStatItem(
               '8',
               'quiz.badges'.tr,
               const Color(0xFFF59E0B),
             ),
->>>>>>> Stashed changes
           ),
         ],
       ),

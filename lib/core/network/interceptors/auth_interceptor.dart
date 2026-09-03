@@ -10,13 +10,8 @@ import '../../../features/auth/domain/repositories/auth_repository.dart';
 /// Interceptor that injects the Bearer token and handles refresh-token retry.
 ///
 /// Behavior:
-<<<<<<< Updated upstream
-/// 1. Attaches `Authorization: Bearer <token>` to every request.
-/// 2. On 401, refreshes once using the stored refresh token.
-=======
 /// 1. Attaches `Authorization: Bearer <token>` to every protected request.
-/// 2. On 401/403, refreshes once using the stored refresh token.
->>>>>>> Stashed changes
+/// 2. On 401, refreshes once using the stored refresh token.
 /// 3. Retries the original request through the *configured* Dio instance.
 /// 4. If refresh fails, clears the session and invokes [onSessionExpired]
 ///    so the app can route to login; the error still propagates.
@@ -117,12 +112,8 @@ class AuthInterceptor extends Interceptor {
     final statusCode = err.response?.statusCode;
     final options = err.requestOptions;
 
-<<<<<<< Updated upstream
     final token = await _storage.readAccessToken();
-    final isDemoToken =
-        token == 'demo_access_token' ||
-        token == 'mock_access_token_123' ||
-        token == 'mock_google_token';
+    final isDemoToken = token != null && _isDemoToken(token);
 
     if (isDemoToken) {
       // Demo session: backend API failures must not wipe demo state or bounce to login.
@@ -135,10 +126,6 @@ class AuthInterceptor extends Interceptor {
     // into a logout. Only a 401 is a token-authentication failure.
     final shouldRefresh =
         statusCode == 401 &&
-=======
-    final shouldRefresh =
-        (statusCode == 401 || statusCode == 403) &&
->>>>>>> Stashed changes
         !_isAuthEndpoint(options.path) &&
         options.extra[_retriedFlag] != true &&
         options.extra[_missingSessionFlag] != true;

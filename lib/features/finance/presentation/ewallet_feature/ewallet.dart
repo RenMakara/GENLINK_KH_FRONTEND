@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
+import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_scanner_screen.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -7,7 +8,6 @@ import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
 import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/ewallet_controller.dart';
-import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_payment.dart';
 import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_top_up.dart';
 import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_transaction.dart';
 import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/widget/ewallet_widget.dart';
@@ -273,7 +273,7 @@ class _WalletContent extends StatelessWidget {
                           onTap: () => Navigator.push<void>(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const PayWithKHQRScreen(),
+                              builder: (_) => const QRScannerScreen(),
                             ),
                           ),
                         ),

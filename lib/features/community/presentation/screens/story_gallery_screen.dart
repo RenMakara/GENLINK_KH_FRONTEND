@@ -5,8 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 import '../controllers/story_gallery_controller.dart';
-import 'story_creator_screen.dart';
 import 'in_app_camera_screen.dart';
+import 'story_creator_screen.dart';
 import '../../domain/models/story_model.dart';
 
 class StoryGalleryScreen extends StatefulWidget {
@@ -93,7 +93,6 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                 children: [_buildMainContent(), _buildDraftOverlay()],
               ),
             ),
-            _buildBottomActionArea(),
           ],
         ),
       ),
@@ -152,15 +151,7 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                     color: Colors.white,
                     size: 24,
                   ),
-                  onPressed: () async {
-                    final result = await Get.to(
-                      () => const InAppCameraScreen(initialIsVideoMode: false),
-                      routeName: '/InAppCameraScreen',
-                    );
-                    if (result == true && mounted) {
-                      Get.back(result: true);
-                    }
-                  },
+                  onPressed: _openDeviceCamera,
                 ),
                 IconButton(
                   tooltip: "System Gallery",
@@ -214,10 +205,10 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
             Expanded(
               child: Text(
                 isComplete
-                    ? "All $req photos selected! Tap Next to continue."
+                    ? "All $req photos selected!"
                     : (widget.replaceSlotIndex != null
                         ? "Select 1 photo to replace slot ${widget.replaceSlotIndex! + 1}."
-                        : "Select $req photos for ${tmpl?.name ?? 'this template'}."),
+                        : "Select $req Photos ($selectedCount/$req)"),
                 style: TextStyle(
                   color: isComplete ? const Color(0xFF4ADE80) : Colors.white70,
                   fontSize: 12.5,
@@ -246,6 +237,19 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
         ),
       );
     });
+  }
+
+  Future<void> _openDeviceCamera() async {
+    final result = await Get.to(
+      () => const InAppCameraScreen(initialIsVideoMode: false),
+      routeName: '/InAppCameraScreen',
+      transition: Transition.fadeIn,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+    );
+    if (result == true && mounted) {
+      Get.back(result: true);
+    }
   }
 
   Future<void> _pickFromSystemPicker() async {
@@ -793,15 +797,7 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
             ),
             const SizedBox(height: 24),
             GestureDetector(
-              onTap: () async {
-                final result = await Get.to(
-                  () => const InAppCameraScreen(initialIsVideoMode: false),
-                  routeName: '/InAppCameraScreen',
-                );
-                if (result == true && mounted) {
-                  Get.back(result: true);
-                }
-              },
+              onTap: _openDeviceCamera,
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -863,7 +859,7 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
       final isMulti = controller.isMultiSelectMode.value;
 
       return GestureDetector(
-        onTap: () => controller.selectAsset(asset),
+        onTap: () => _handleAssetTap(asset),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -884,6 +880,41 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.white, width: 2.5),
                   color: Colors.black.withValues(alpha: 0.28),
+                ),
+              ),
+
+            // Video Duration / Camera Badge
+            if (asset.type == AssetType.video)
+              Positioned(
+                bottom: 6,
+                right: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.65),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.videocam_rounded,
+                        color: Colors.white,
+                        size: 13,
+                      ),
+                      if (asset.videoDuration.inSeconds > 0) ...[
+                        const SizedBox(width: 3),
+                        Text(
+                          _formatDuration(asset.videoDuration),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
 
@@ -927,6 +958,23 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
         ),
       );
     });
+  }
+
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes;
+    final seconds = d.inSeconds.remainder(60);
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  bool _isVideoFile(String path) {
+    final p = path.toLowerCase();
+    return p.endsWith('.mp4') ||
+        p.endsWith('.mov') ||
+        p.endsWith('.m4v') ||
+        p.endsWith('.webm') ||
+        p.endsWith('.avi') ||
+        p.endsWith('.mkv') ||
+        p.endsWith('.flv');
   }
 
   // ── 8. Draft Overlay Card ──
@@ -1023,129 +1071,75 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
     });
   }
 
-  // ── 9. Bottom Next Action Button with Validation ──
-  Widget _buildBottomActionArea() {
-    return Obx(() {
-      final reqCount = controller.requiredPhotosCount.value;
-      final selectedCount = controller.selectedAssets.length;
-
-      // In Template mode: strictly validate selection count against required photos
-      final bool isEnabled;
-      final String buttonLabel;
-
-      if (_isTemplateMode) {
-        isEnabled = (selectedCount == reqCount);
-        if (isEnabled) {
-          buttonLabel = "Next ($selectedCount/$reqCount)";
-        } else {
-          buttonLabel = "Select $reqCount ${reqCount == 1 ? 'Photo' : 'Photos'} ($selectedCount/$reqCount)";
-        }
-      } else {
-        isEnabled = selectedCount > 0;
-        buttonLabel = selectedCount > 1 ? "Next ($selectedCount)" : "Next";
+  Future<void> _handleAssetTap(AssetEntity asset) async {
+    if (widget.replaceSlotIndex != null) {
+      final file = await asset.file;
+      if (file != null && mounted) {
+        Get.back(result: file.path);
       }
+      return;
+    }
 
-      return Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-        decoration: const BoxDecoration(
-          color: Colors.black,
-          border: Border(top: BorderSide(color: Color(0xFF1E1E22))),
-        ),
-        child: SafeArea(
-          top: false,
-          child: GestureDetector(
-            onTap: isEnabled
-                ? () async {
-                    final List<String> paths = [];
-                    for (var asset in controller.selectedAssets) {
-                      final file = await asset.file;
-                      if (file != null) {
-                        paths.add(file.path);
-                      }
-                    }
-                    if (paths.isEmpty) return;
+    if (widget.onPhotosSelected != null) {
+      final file = await asset.file;
+      if (file != null && mounted) {
+        widget.onPhotosSelected!([file.path]);
+        Get.back(result: [file.path]);
+      }
+      return;
+    }
 
-                    if (widget.replaceSlotIndex != null) {
-                      Get.back(result: paths.first);
-                      return;
-                    }
-
-                    if (widget.onPhotosSelected != null) {
-                      widget.onPhotosSelected!(paths);
-                      Get.back(result: paths);
-                      return;
-                    }
-
-                    if (_isTemplateMode && widget.targetTemplate != null) {
-                      Get.back(result: paths);
-                      return;
-                    } else {
-                      final result = await Get.to(
-                        () => StoryCreatorScreen(
-                          type: StoryType.photo,
-                          mediaPaths: paths,
-                        ),
-                        routeName: '/StoryCreatorScreen',
-                        transition: Transition.fadeIn,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutCubic,
-                      );
-                      if (result == true && mounted) {
-                        Get.back(result: true);
-                      }
-                    }
-                  }
-                : null,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              height: 52,
-              decoration: BoxDecoration(
-                color: isEnabled ? Colors.white : const Color(0xFF1E1E22),
-                borderRadius: BorderRadius.circular(26),
-                boxShadow: isEnabled
-                    ? [
-                        BoxShadow(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          blurRadius: 12,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          buttonLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: isEnabled ? Colors.black : Colors.white38,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        color: isEnabled ? Colors.black : Colors.white38,
-                        size: 18,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+    if (_isTemplateMode) {
+      controller.selectAsset(asset);
+      final tmpl = controller.selectedTemplate.value ?? widget.targetTemplate;
+      final req = widget.requiredPhotos ?? tmpl?.slotCount ?? controller.requiredPhotosCount.value;
+      if (req > 0 && controller.selectedAssets.length == req) {
+        final List<String> paths = [];
+        for (var a in controller.selectedAssets) {
+          final f = await a.file;
+          if (f != null) paths.add(f.path);
+        }
+        if (paths.length == req && mounted) {
+          if (widget.targetTemplate != null) {
+            Get.back(result: paths);
+            return;
+          }
+          final result = await Get.to(
+            () => StoryCreatorScreen(
+              type: StoryType.template,
+              templateId: tmpl?.id,
+              mediaPaths: paths,
             ),
-          ),
+            routeName: '/StoryCreatorScreen',
+            transition: Transition.fadeIn,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+          );
+          if (result == true && mounted) {
+            Get.back(result: true);
+          }
+        }
+      }
+      return;
+    }
+
+    // Single photo/video selection -> open Story Creator directly
+    final file = await asset.file;
+    if (file != null && mounted) {
+      final bool isVideo = asset.type == AssetType.video || _isVideoFile(file.path);
+      final result = await Get.to(
+        () => StoryCreatorScreen(
+          type: isVideo ? StoryType.video : StoryType.photo,
+          mediaPaths: [file.path],
         ),
+        routeName: '/StoryCreatorScreen',
+        transition: Transition.fadeIn,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
       );
-    });
+      if (result == true && mounted) {
+        Get.back(result: true);
+      }
+    }
   }
 }

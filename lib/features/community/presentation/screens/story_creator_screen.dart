@@ -11,6 +11,7 @@ import '../controllers/story_gallery_controller.dart';
 import '../widgets/story_template_canvas.dart';
 import '../widgets/story_template_picker_sheet.dart';
 import 'story_gallery_screen.dart';
+import '../../../../core/errors/app_error.dart';
 
 class StoryTemplateModel {
   final String id;
@@ -47,25 +48,20 @@ class StoryTemplateModel {
 }
 
 class _NotebookLinesPainter extends CustomPainter {
-  final bool isPreview;
-  _NotebookLinesPainter({this.isPreview = false});
-
   @override
   void paint(Canvas canvas, Size size) {
     final linePaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.08)
-      ..strokeWidth = isPreview ? 0.5 : 1.0;
+      ..strokeWidth = 1.0;
 
     final marginPaint = Paint()
       ..color = const Color(0xFFEF4444).withValues(alpha: 0.3)
-      ..strokeWidth = isPreview ? 0.5 : 1.5;
+      ..strokeWidth = 1.5;
 
-    final marginX = isPreview ? 14.0 : 48.0;
-    canvas.drawLine(Offset(marginX, 0), Offset(marginX, size.height), marginPaint);
+    canvas.drawLine(const Offset(48, 0), Offset(48, size.height), marginPaint);
 
-    final double lineSpacing = isPreview ? 12.0 : 32.0;
-    final double startY = isPreview ? 24.0 : 80.0;
-    for (double y = startY; y < size.height - (isPreview ? 24.0 : 100.0); y += lineSpacing) {
+    const double lineSpacing = 32.0;
+    for (double y = 80; y < size.height - 100; y += lineSpacing) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
     }
   }
@@ -75,20 +71,16 @@ class _NotebookLinesPainter extends CustomPainter {
 }
 
 class _DotGridPainter extends CustomPainter {
-  final bool isPreview;
-  _DotGridPainter({this.isPreview = false});
-
   @override
   void paint(Canvas canvas, Size size) {
     final dotPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.15)
       ..style = PaintingStyle.fill;
 
-    final double spacing = isPreview ? 10.0 : 28.0;
-    final double radius = isPreview ? 0.5 : 1.2;
-    for (double x = isPreview ? 6.0 : 20.0; x < size.width; x += spacing) {
-      for (double y = isPreview ? 12.0 : 100.0; y < size.height - (isPreview ? 12.0 : 120.0); y += spacing) {
-        canvas.drawCircle(Offset(x, y), radius, dotPaint);
+    const double spacing = 28.0;
+    for (double x = 20; x < size.width; x += spacing) {
+      for (double y = 100; y < size.height - 120; y += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.2, dotPaint);
       }
     }
   }
@@ -701,16 +693,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     '@SoknyEnat',
     '@RenMakara',
     '@HengChansela',
-    '@ChhaengSok',
     '@AUBClass2026',
   ];
-  bool _isTemplateSelectionMode = false;
-  bool _isPreviewMode = false;
 
   @override
   void initState() {
     super.initState();
-    _isTemplateSelectionMode = widget.type == StoryType.text;
 
     // ── 1. Initialize Story Template Mode ──
     _isTemplateApplied = widget.type == StoryType.template || (widget.existingStory?.templateId != null);
@@ -788,6 +776,13 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       }
     }
     _fullScreenTextController.addListener(_onTextChanged);
+    if (widget.type == StoryType.text) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _openFloatingTextEditor();
+        }
+      });
+    }
   }
 
   // ── Template Slot Operations ──
@@ -2524,7 +2519,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         return Stack(
           alignment: Alignment.center,
           children: [
-            Positioned.fill(child: CustomPaint(painter: _DotGridPainter(isPreview: true))),
+            Positioned.fill(child: CustomPaint(painter: _DotGridPainter())),
             Center(
               child: Container(width: 26, height: 1.5, color: Colors.white70),
             ),
@@ -2535,7 +2530,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         return Stack(
           children: [
             Positioned.fill(
-              child: CustomPaint(painter: _NotebookLinesPainter(isPreview: true)),
+              child: CustomPaint(painter: _NotebookLinesPainter()),
             ),
             Positioned(
               left: 10,
@@ -2554,11 +2549,11 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           child: Stack(
             children: [
               Container(
-                width: 32,
-                height: 38,
+                width: 44,
+                height: 50,
                 decoration: BoxDecoration(
                   color: const Color(0xFFFEF08A),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(6),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.25),
@@ -2570,9 +2565,9 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               ),
               Positioned(
                 top: 0,
-                left: 8,
-                right: 8,
-                child: Container(height: 3, color: Colors.amber.shade300),
+                left: 12,
+                right: 12,
+                child: Container(height: 4, color: Colors.amber.shade300),
               ),
             ],
           ),
@@ -2793,72 +2788,82 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   }
 
   Widget _buildMiniTemplatePreview(StoryTemplateModel tpl, bool isSel) {
-    final double cardHeight = isSel ? 140.0 : 120.0;
-    final double cardWidth = cardHeight * (9 / 16);
-
     return Column(
       mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        AnimatedContainer(
+        AnimatedScale(
+          scale: isSel ? 1.05 : 1.0,
           duration: const Duration(milliseconds: 200),
-          width: cardWidth,
-          height: cardHeight,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSel ? Colors.white : Colors.transparent,
-              width: isSel ? 2.5 : 0,
-            ),
-            boxShadow: isSel
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  ]
-                : null,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(9.5), // Inner radius to match outer border
+          curve: Curves.easeOutCubic,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 200),
+            opacity: isSel ? 1.0 : 0.65,
             child: Stack(
+              clipBehavior: Clip.none,
               children: [
-                // Background Gradient
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: tpl.backgroundColors,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 64,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: tpl.backgroundColors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: isSel
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.12),
+                      width: isSel ? 2.0 : 1.0,
+                    ),
+                    boxShadow: isSel
+                        ? [
+                            BoxShadow(
+                              color: tpl.backgroundColors.first.withValues(
+                                alpha: 0.35,
+                              ),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ]
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(17),
+                    child: _buildUniqueTemplateThumbnail(tpl),
                   ),
                 ),
 
-                // Specific template elements
-                Positioned.fill(
-                  child: _buildUniqueTemplateThumbnail(tpl),
-                ),
-
-                // Selected Checkmark Badge
+                // Small Top-Right Checkmark Badge for Selected Card
                 if (isSel)
                   Positioned(
-                    top: 6,
-                    right: 6,
+                    top: -3,
+                    right: -3,
                     child: Container(
-                      padding: const EdgeInsets.all(3),
+                      width: 15,
+                      height: 15,
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
                         boxShadow: [
-                          BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 3,
+                            offset: Offset(0, 1),
+                          ),
                         ],
                       ),
                       child: const Icon(
                         Icons.check_rounded,
-                        size: 12,
+                        size: 9,
                         color: Colors.black,
                       ),
                     ),
@@ -2867,13 +2872,16 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 10),
+
+        const SizedBox(height: 6),
+
+        // Smaller & Lighter Template Label
         Text(
           tpl.name,
           style: TextStyle(
-            color: isSel ? Colors.white : Colors.white60,
-            fontSize: isSel ? 13 : 12,
-            fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+            color: isSel ? Colors.white : Colors.white.withValues(alpha: 0.50),
+            fontSize: 10.5,
+            fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
             letterSpacing: 0.2,
           ),
         ),
@@ -2883,7 +2891,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   Widget _buildStoryTemplateSelectorStrip() {
     return SizedBox(
-      height: 180,
+      height: 124,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -3101,7 +3109,11 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       }
 
       bool success = false;
-      final effectiveType = isTemplateStory ? StoryType.template : widget.type;
+      final effectiveType = isTemplateStory
+          ? StoryType.template
+          : ((_activeMediaPath != null && _isVideoFile(_activeMediaPath!))
+              ? StoryType.video
+              : widget.type);
       final effectiveMediaUrl = isTemplateStory
           ? (_templateSlots.firstWhereOrNull((s) => s.mediaPath != null && s.mediaPath!.isNotEmpty)?.mediaPath ?? _activeMediaPath)
           : _activeMediaPath;
@@ -3158,25 +3170,24 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       }
 
       if (mounted) {
-        setState(() => _isPublishing = false);
         if (success) {
-          final bannerContext = Get.context ?? Get.overlayContext ?? context;
-          if (bannerContext.mounted) {
-            AppNotificationBanner.showSuccess(
-              context: bannerContext,
-              title: "Success",
-              message: "Story posted successfully",
-              icon: Icons.check_circle_rounded,
-              duration: const Duration(seconds: 3),
-            );
-          }
+          // 1. Show notification banner immediately
+          AppNotificationBanner.showSuccess(
+            context: context,
+            title: "Story posted successfully!",
+            message: "Your story is now live.",
+            icon: Icons.check_circle_rounded,
+            duration: const Duration(seconds: 3),
+          );
 
+          // 2. Clear gallery draft
           if (Get.isRegistered<StoryGalleryController>()) {
             try {
               Get.find<StoryGalleryController>().clearDraft();
             } catch (_) {}
           }
 
+          // 3. Return to Community screen smoothly
           if (widget.existingStory != null) {
             Get.back(result: true);
           } else {
@@ -3196,10 +3207,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             });
           }
         } else {
+          setState(() => _isPublishing = false);
           AppNotificationBanner.showDanger(
             context: context,
-            title: "Upload Failed",
-            message: "Couldn't post story. Please try again.",
+            title: "Couldn't post story",
+            message: "Please try again.",
+            icon: Icons.error_outline_rounded,
           );
         }
       }
@@ -3209,8 +3222,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         setState(() => _isPublishing = false);
         AppNotificationBanner.showDanger(
           context: context,
-          title: "Upload Failed",
-          message: "Couldn't post story. Please try again.",
+          title: "Couldn't post story",
+          message: e is AppError ? e.message : (e.toString().isNotEmpty ? e.toString() : "Please try again."),
         );
       }
     } finally {
@@ -5990,7 +6003,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   Widget _buildContextualControlBar() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
       decoration: BoxDecoration(
         color: const Color(0xF2161618),
         borderRadius: BorderRadius.circular(20),
@@ -6025,7 +6038,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
-                  fontSize: 14,
+                  fontSize: 13.5,
                   letterSpacing: 0.2,
                 ),
               ),
@@ -6034,8 +6047,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                     setState(() => _activeContextTool = ActiveContextTool.none),
                 behavior: HitTestBehavior.opaque,
                 child: Container(
-                  width: 26,
-                  height: 26,
+                  width: 24,
+                  height: 24,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
@@ -6043,13 +6056,13 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   child: const Icon(
                     Icons.close_rounded,
                     color: Colors.white70,
-                    size: 15,
+                    size: 14,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
 
           // Contextual Body
           if (_activeContextTool == ActiveContextTool.color)
@@ -6105,15 +6118,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         : Colors.white.withValues(alpha: 0.25),
                     width: isSel ? 2.5 : 1.0,
                   ),
-                  boxShadow: isSel
-                      ? [
-                          BoxShadow(
-                            color: c.withValues(alpha: 0.60),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                          ),
-                        ]
-                      : null,
                 ),
                 child: isSel
                     ? Icon(Icons.check_rounded, size: 16, color: checkColor)
@@ -6174,7 +6178,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 child: Text(
                   label,
                   style: previewStyle.copyWith(
-                    fontSize: 13,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
                     color: isSel ? Colors.black : Colors.white,
                   ),
                 ),
@@ -6219,7 +6224,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   _selectedLayer!.type == LayerType.text) {
                 _selectedLayer!.effect = eff;
               }
-              // IMPORTANT: Does NOT modify font style, background color, or text color!
             }),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
@@ -6236,15 +6240,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       : Colors.white.withValues(alpha: 0.15),
                   width: isSel ? 2.0 : 1.0,
                 ),
-                boxShadow: isSel
-                    ? [
-                        BoxShadow(
-                          color: Colors.white.withValues(alpha: 0.25),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -6305,12 +6300,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             color: lum > 0.5 ? Colors.black54 : Colors.white,
             width: 1.5,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: _selectedSolidBgColor!.withValues(alpha: 0.5),
-              blurRadius: 6,
-            ),
-          ],
         ),
       );
     }
@@ -6327,12 +6316,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         ),
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: preset.colors.first.withValues(alpha: 0.5),
-            blurRadius: 6,
-          ),
-        ],
       ),
     );
   }
@@ -6361,14 +6344,14 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
     if (_selectedBgCategory == 'Solid') {
       contentWidget = SizedBox(
-        height: 52,
+        height: 42,
         child: ListView.separated(
           key: const ValueKey('solid_bg_list'),
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
           itemCount: _solidBgColors.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 10),
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
           itemBuilder: (_, i) {
             final color = _solidBgColors[i];
             final isSel =
@@ -6386,8 +6369,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               behavior: HitTestBehavior.opaque,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 160),
-                width: 50,
-                height: 50,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: color,
                   shape: BoxShape.circle,
@@ -6395,20 +6378,11 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                     color: isSel
                         ? (lum > 0.5 ? Colors.black : Colors.white)
                         : Colors.white.withValues(alpha: 0.22),
-                    width: isSel ? 2.5 : 1.0,
+                    width: isSel ? 2.2 : 1.0,
                   ),
-                  boxShadow: isSel
-                      ? [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.45),
-                            blurRadius: 8,
-                            spreadRadius: 0,
-                          ),
-                        ]
-                      : null,
                 ),
                 child: isSel
-                    ? Icon(Icons.check_rounded, size: 20, color: checkColor)
+                    ? Icon(Icons.check_rounded, size: 16, color: checkColor)
                     : null,
               ),
             );
@@ -6422,14 +6396,14 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           : _bgPresets.where((p) => p.category == _selectedBgCategory).toList();
 
       contentWidget = SizedBox(
-        height: 76,
+        height: 52,
         child: ListView.separated(
           key: ValueKey('gradient_bg_list_$_selectedBgCategory'),
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
           itemCount: filteredPresets.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 10),
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
           itemBuilder: (_, i) {
             final preset = filteredPresets[i];
             final actualIndex = _bgPresets.indexOf(preset);
@@ -6447,11 +6421,11 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               behavior: HitTestBehavior.opaque,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 160),
-                width: 84,
-                height: 76,
+                width: 66,
+                height: 50,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 6,
+                  horizontal: 4,
+                  vertical: 3,
                 ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -6459,72 +6433,65 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                     begin: preset.begin,
                     end: preset.end,
                   ),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isSel
                         ? Colors.white
                         : Colors.white.withValues(alpha: 0.18),
-                    width: isSel ? 2.5 : 1.0,
+                    width: isSel ? 2.0 : 1.0,
                   ),
-                  boxShadow: isSel
-                      ? [
-                          BoxShadow(
-                            color: preset.colors.first.withValues(
-                              alpha: 0.45,
-                            ),
-                            blurRadius: 8,
-                            spreadRadius: 0,
-                          ),
-                        ]
-                      : null,
                 ),
                 child: Stack(
                   children: [
                     Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            preset.emoji,
-                            style: const TextStyle(fontSize: 18),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            preset.name,
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black87,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 10,
-                              shadows: isDark
-                                  ? const [
-                                      Shadow(
-                                        blurRadius: 4,
-                                        color: Colors.black54,
-                                      ),
-                                    ]
-                                  : null,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              preset.emoji,
+                              style: const TextStyle(fontSize: 14),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 2),
+                            Text(
+                              preset.name,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black87,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 9.5,
+                                shadows: isDark
+                                    ? const [
+                                        Shadow(
+                                          blurRadius: 4,
+                                          color: Colors.black54,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     if (isSel)
                       Positioned(
-                        top: 2,
-                        right: 2,
+                        top: 1,
+                        right: 1,
                         child: Container(
-                          width: 18,
-                          height: 18,
+                          width: 14,
+                          height: 14,
                           decoration: BoxDecoration(
                             color: isDark ? Colors.white : Colors.black,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             Icons.check_rounded,
-                            size: 12,
+                            size: 10,
                             color: isDark ? Colors.black : Colors.white,
                           ),
                         ),
@@ -6542,14 +6509,14 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Category Filter Tabs (Single horizontal scrollable row with guaranteed 0 overflow)
+        // Category Filter Tabs
         SizedBox(
-          height: 36,
+          height: 28,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             itemCount: categories.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            separatorBuilder: (_, _) => const SizedBox(width: 6),
             itemBuilder: (context, i) {
               final cat = categories[i];
               final isCatSel = _selectedBgCategory == cat;
@@ -6559,14 +6526,14 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 160),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 7,
+                    horizontal: 11,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: isCatSel
                         ? Colors.white
                         : Colors.white.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isCatSel
                           ? Colors.white
@@ -6582,7 +6549,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         fontWeight: isCatSel
                             ? FontWeight.bold
                             : FontWeight.w600,
-                        fontSize: 12,
+                        fontSize: 11.5,
                       ),
                     ),
                   ),
@@ -6591,7 +6558,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             },
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
 
         // Content Swatches (Solid / Gradients)
         contentWidget,
@@ -7623,15 +7590,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (!didPop) {
-          if (_isFullScreenTextEditing) {
-            _closeFullScreenTextEditor(save: true);
-            return;
-          }
-          if (_isPreviewMode) {
-            setState(() => _isPreviewMode = false);
-            return;
-          }
-
           final shouldPop = await _confirmDiscardDraft();
           if (shouldPop) {
             Get.back();
@@ -7711,98 +7669,203 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Row 1: Header (Close X button / Back + Title + Template picker)
+                          // Row 1: Header (Close X button)
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               IconButton(
-                                icon: Icon(
-                                  _isPreviewMode
-                                      ? Icons.arrow_back_rounded
-                                      : Icons.close_rounded,
+                                icon: const Icon(
+                                  Icons.close_rounded,
                                   color: Colors.white,
                                   size: 28,
                                 ),
                                 onPressed: () async {
-                                  if (_isPreviewMode) {
-                                    setState(() => _isPreviewMode = false);
-                                  } else {
-                                    final shouldPop =
-                                        await _confirmDiscardDraft();
-                                    if (shouldPop) {
-                                      Get.back();
-                                    }
+                                  final shouldPop =
+                                      await _confirmDiscardDraft();
+                                  if (shouldPop) {
+                                    Get.back();
                                   }
                                 },
                               ),
-                              if (widget.type == StoryType.template ||
-                                  _isTemplateApplied)
-                                GestureDetector(
-                                  onTap: _openTemplatePickerSheet,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.12,
-                                      ),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: Colors.white24,
-                                        width: 0.8,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          _selectedTemplate.icon,
-                                          color: Colors.white,
-                                          size: 16,
+                              if (widget.type == StoryType.template || _isTemplateApplied) ...[
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Center(
+                                    child: GestureDetector(
+                                      onTap: _openTemplatePickerSheet,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 6,
                                         ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          _selectedTemplate.name,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12.5,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(
+                                            color: Colors.white24,
+                                            width: 0.8,
                                           ),
                                         ),
-                                        const SizedBox(width: 2),
-                                        const Icon(
-                                          Icons.keyboard_arrow_down_rounded,
-                                          color: Colors.white70,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              _selectedTemplate.icon,
+                                              color: Colors.white,
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Flexible(
+                                              child: Text(
+                                                _selectedTemplate.name,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12.0,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 2),
+                                            const Icon(
+                                              Icons.keyboard_arrow_down_rounded,
+                                              color: Colors.white70,
+                                              size: 16,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+
+                              // RIGHT ACTION BUTTONS: [ @ ] [ Emoji ] [ Audio ] [ Done ]
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (!(widget.type == StoryType.template || _isTemplateApplied)) ...[
+                                    // 1. @ Mention Button
+                                    GestureDetector(
+                                      onTap: _showMentionSheet,
+                                      behavior: HitTestBehavior.opaque,
+                                      child: Container(
+                                        width: 36,
+                                        height: 36,
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(alpha: 0.45),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white24,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.alternate_email_rounded,
+                                          color: Colors.white,
                                           size: 18,
                                         ),
-                                      ],
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              Expanded(
-                                child: Center(
-                                  child: Text(
-                                    _isPreviewMode
-                                        ? "Preview"
-                                        : (widget.type == StoryType.text
-                                            ? "Create Story"
-                                            : "Edit Story"),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black54,
-                                          blurRadius: 8,
+                                    const SizedBox(width: 8),
+
+                                    // 2. Emoji / Sticker Button
+                                    GestureDetector(
+                                      onTap: _openEmojiPicker,
+                                      behavior: HitTestBehavior.opaque,
+                                      child: Container(
+                                        width: 36,
+                                        height: 36,
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(alpha: 0.45),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white24,
+                                            width: 1,
+                                          ),
                                         ),
-                                      ],
+                                        child: const Icon(
+                                          Icons.sentiment_satisfied_alt_outlined,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+
+                                    // 3. Audio / Music Button
+                                    GestureDetector(
+                                      onTap: _showMusicSheet,
+                                      behavior: HitTestBehavior.opaque,
+                                      child: Container(
+                                        width: 36,
+                                        height: 36,
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(alpha: 0.45),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white24,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.graphic_eq_rounded,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                  ],
+
+                                  // 4. Done Button (Posts story directly from canvas)
+                                  Tooltip(
+                                    message: 'Done',
+                                    child: GestureDetector(
+                                      onTap: _isPublishing ? null : _publishStory,
+                                      behavior: HitTestBehavior.opaque,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 7,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(20),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(alpha: 0.3),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: _isPublishing
+                                            ? const SizedBox(
+                                                width: 14,
+                                                height: 14,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2.0,
+                                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                                    Colors.black,
+                                                  ),
+                                                ),
+                                              )
+                                            : const Text(
+                                                'Done',
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 13.5,
+                                                  letterSpacing: 0.2,
+                                                ),
+                                              ),
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
-                              const SizedBox(width: 44),
                             ],
                           ),
 
@@ -7889,7 +7952,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                     bottom: MediaQuery.of(context).viewInsets.bottom,
                   ),
                   child: Container(
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
                           Colors.transparent,
@@ -7908,219 +7971,141 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Horizontally Scrollable Story Templates Strip (Text Story Mode ONLY)
-                            if (_isTemplateSelectionMode &&
-                                widget.type == StoryType.text) ...[
-                              _buildStoryTemplateSelectorStrip(),
-                              const SizedBox(height: 16),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 52,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _isTemplateSelectionMode = false;
-                                    });
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white,
-                                    foregroundColor: Colors.black,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(26),
-                                    ),
-                                    elevation: 4,
-                                  ),
-                                  child: const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        "Continue",
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      SizedBox(width: 8),
-                                      Icon(Icons.arrow_forward_rounded, size: 20),
-                                    ],
-                                  ),
-                                ),
+                            // Contextual Control Panel (if active)
+                            if (_activeContextTool !=
+                                ActiveContextTool.none) ...[
+                              _buildContextualControlBar(),
+                              const SizedBox(height: 6),
+                            ],
+
+                            // Unified Glassmorphic Toolbar Capsule (Icon Buttons with 44px Touch Targets)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
                               ),
-                            ] else if (_isPreviewMode) ...[
-                              const SizedBox(height: 8),
-                              _buildStoryPrivacyBar(),
-                              const SizedBox(height: 8),
-                              _AnimatedPostStoryButton(
-                                isPublishing: _isPublishing,
-                                label: "Publish Story",
-                                icon: Icons.send_rounded,
-                                onPost: _publishStory,
-                              ),
-                            ] else ...[
-                              // Contextual Control Panel (if active)
-                              if (_activeContextTool !=
-                                  ActiveContextTool.none) ...[
-                                _buildContextualControlBar(),
-                                const SizedBox(height: 6),
-                              ],
-
-                              // Unified Glassmorphic Toolbar Capsule (Icon Buttons with 44px Touch Targets)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
+                              decoration: BoxDecoration(
+                                color: const Color(0xF2161618),
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                  width: 1.0,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xF2161618),
-                                  borderRadius: BorderRadius.circular(30),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.12),
-                                    width: 1.0,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.4),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 6),
-                                    ),
-                                  ],
-                                ),
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  physics: const BouncingScrollPhysics(),
-                                  child: Row(
-                                    children: [
-                                      // 1. Template Layout Switcher
-                                      _buildHorizontalToolItem(
-                                        icon: Icons.dashboard_customize_outlined,
-                                        label: "Template",
-                                        tooltip: "Template",
-                                        onTap: _openTemplatePickerSheet,
-                                      ),
-
-                                      // 2. Add Text Overlay
-                                      _buildHorizontalToolItem(
-                                        icon: Icons.title_rounded,
-                                        label: "Text",
-                                        tooltip: "Text",
-                                        onTap: () => _openFloatingTextEditor(),
-                                      ),
-
-                                      // 3. Stickers & Emojis
-                                      _buildHorizontalToolItem(
-                                        icon: Icons.sentiment_satisfied_alt_outlined,
-                                        label: "Stickers",
-                                        tooltip: "Stickers",
-                                        onTap: _openEmojiPicker,
-                                      ),
-
-                                      // 4. Location Tag
-                                      _buildHorizontalToolItem(
-                                        icon: Icons.location_on_outlined,
-                                        label: "Location",
-                                        tooltip: "Location",
-                                        onTap: _openLocationPicker,
-                                      ),
-
-                                      // 5. Mention Tag (@)
-                                      _buildHorizontalToolItem(
-                                        icon: Icons.alternate_email_rounded,
-                                        label: "Mention",
-                                        tooltip: "Mention",
-                                        onTap: _showMentionSheet,
-                                      ),
-
-                                      // 6. Add Photo / Gallery (For Image / Video / Template Stories)
-                                      if (widget.type != StoryType.text)
-                                        _buildHorizontalToolItem(
-                                          icon: Icons.photo_library_outlined,
-                                          label: "Photo",
-                                          tooltip: "Photo",
-                                          onTap: (widget.type == StoryType.template || _isTemplateApplied)
-                                              ? () {
-                                                  final firstEmptyIdx = _templateSlots.indexWhere((s) => s.mediaPath == null || s.mediaPath!.isEmpty);
-                                                  _onTapTemplateSlot(firstEmptyIdx != -1 ? firstEmptyIdx : 0);
-                                                }
-                                              : _showAddImagePicker,
-                                        ),
-
-                                      // 7. Rotate (Image/Video Stories only)
-                                      if (widget.type == StoryType.photo || widget.type == StoryType.video)
-                                        _buildHorizontalToolItem(
-                                          icon: Icons.rotate_right_rounded,
-                                          label: "Rotate",
-                                          tooltip: "Rotate",
-                                          onTap: _rotateImage,
-                                        ),
-
-                                      // 8. Music
-                                      _buildHorizontalToolItem(
-                                        icon: Icons.music_note_rounded,
-                                        label: "Music",
-                                        tooltip: "Music",
-                                        onTap: _showMusicSheet,
-                                      ),
-
-                                      // 9. Reorder Photos (Template Story Mode)
-                                      if (widget.type == StoryType.template || _isTemplateApplied)
-                                        _buildHorizontalToolItem(
-                                          icon: Icons.swap_horiz_rounded,
-                                          label: "Reorder",
-                                          tooltip: "Reorder",
-                                          onTap: _showTemplateReorderSheet,
-                                        ),
-
-                                      // 10. Dedicated Canvas Background Control (Text & Template Story Modes)
-                                      if (widget.type == StoryType.text || widget.type == StoryType.template || _isTemplateApplied)
-                                        _buildHorizontalToolItem(
-                                          icon: Icons.palette_outlined,
-                                          label: "Background",
-                                          tooltip: "Background",
-                                          customIconWidget:
-                                              _buildCurrentBgIndicatorWidget(),
-                                          onTap: () => setState(() {
-                                            _activeContextTool =
-                                                _activeContextTool ==
-                                                    ActiveContextTool.background
-                                                ? ActiveContextTool.none
-                                                : ActiveContextTool.background;
-                                          }),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 8),
-
-                              // 2. Story Privacy Indicator & Settings Entry Bar
-                              _buildStoryPrivacyBar(),
-
-                              const SizedBox(height: 8),
-
-                              // 3. Action Buttons (Preview and Post Story)
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _AnimatedPostStoryButton(
-                                      isPublishing: false,
-                                      label: "Preview",
-                                      icon: Icons.visibility_rounded,
-                                      onPost: () => setState(() => _isPreviewMode = true),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _AnimatedPostStoryButton(
-                                      isPublishing: _isPublishing,
-                                      label: "Post Story",
-                                      icon: Icons.arrow_forward_rounded,
-                                      onPost: _publishStory,
-                                    ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.4),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
                                   ),
                                 ],
                               ),
-                            ],
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                child: Row(
+                                  children: [
+                                    // 1. Template Layout Switcher
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.dashboard_customize_outlined,
+                                      label: "Template",
+                                      tooltip: "Template",
+                                      onTap: _openTemplatePickerSheet,
+                                    ),
+
+                                    // 1.5 Template Slot Reorder (Template Mode)
+                                    if (widget.type == StoryType.template || _isTemplateApplied)
+                                      _buildHorizontalToolItem(
+                                        icon: Icons.swap_horiz_rounded,
+                                        label: "Reorder",
+                                        tooltip: "Reorder",
+                                        onTap: _showTemplateReorderSheet,
+                                      ),
+
+                                    // 2. Add Text Overlay
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.title_rounded,
+                                      label: "Text",
+                                      tooltip: "Text",
+                                      onTap: () => _openFloatingTextEditor(),
+                                    ),
+
+                                    // 3. Stickers & Emojis (Unified single action)
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.sentiment_satisfied_alt_outlined,
+                                      label: "Stickers",
+                                      tooltip: "Stickers",
+                                      onTap: _openEmojiPicker,
+                                    ),
+
+                                    // 4. Location Tag
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.location_on_outlined,
+                                      label: "Location",
+                                      tooltip: "Location",
+                                      onTap: _openLocationPicker,
+                                    ),
+
+                                    // 5. Mention Tag (@)
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.alternate_email_rounded,
+                                      label: "Mention",
+                                      tooltip: "Mention",
+                                      onTap: _showMentionSheet,
+                                    ),
+
+                                    // 6. Add Photo / Gallery (For Image / Video / Template Stories)
+                                    if (widget.type != StoryType.text)
+                                      _buildHorizontalToolItem(
+                                        icon: Icons.photo_library_outlined,
+                                        label: "Photo",
+                                        tooltip: "Photo",
+                                        onTap: (widget.type == StoryType.template || _isTemplateApplied)
+                                            ? () {
+                                                final firstEmptyIdx = _templateSlots.indexWhere((s) => s.mediaPath == null || s.mediaPath!.isEmpty);
+                                                _onTapTemplateSlot(firstEmptyIdx != -1 ? firstEmptyIdx : 0);
+                                              }
+                                            : _showAddImagePicker,
+                                      ),
+
+                                    // 7. Music
+                                    _buildHorizontalToolItem(
+                                      icon: Icons.music_note_rounded,
+                                      label: "Music",
+                                      tooltip: "Music",
+                                      onTap: _showMusicSheet,
+                                    ),
+
+                                    // 8. Dedicated Canvas Background Control (Text & Template Story Modes)
+                                    if (widget.type == StoryType.text || widget.type == StoryType.template || _isTemplateApplied)
+                                      _buildHorizontalToolItem(
+                                        icon: Icons.palette_outlined,
+                                        label: "Background",
+                                        tooltip: "Background",
+                                        customIconWidget:
+                                            _buildCurrentBgIndicatorWidget(),
+                                        onTap: () => setState(() {
+                                          _activeContextTool =
+                                              _activeContextTool ==
+                                                  ActiveContextTool.background
+                                              ? ActiveContextTool.none
+                                              : ActiveContextTool.background;
+                                        }),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 8),
+
+                            // 2. Story Privacy Indicator & Settings Entry Bar
+                            _buildStoryPrivacyBar(),
+
+                            // 3. Interactive Apple-Grade "Post Story" Call-To-Action Pill Button
+                            _AnimatedPostStoryButton(
+                              isPublishing: _isPublishing,
+                              onPost: _publishStory,
+                            ),
                           ],
                         ),
                       ),
@@ -8138,14 +8123,10 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 class _AnimatedPostStoryButton extends StatefulWidget {
   final bool isPublishing;
   final VoidCallback onPost;
-  final String label;
-  final IconData icon;
 
   const _AnimatedPostStoryButton({
     required this.isPublishing,
     required this.onPost,
-    this.label = "Post Story",
-    this.icon = Icons.arrow_forward_rounded,
   });
 
   @override
@@ -8191,25 +8172,14 @@ class _AnimatedPostStoryButtonState extends State<_AnimatedPostStoryButton> {
                       strokeWidth: 2.5,
                     ),
                   )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        widget.label,
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        widget.icon,
-                        color: Colors.black,
-                        size: 18,
-                      ),
-                    ],
+                : const Text(
+                    "Post Story",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      letterSpacing: 0.2,
+                    ),
                   ),
           ),
         ),

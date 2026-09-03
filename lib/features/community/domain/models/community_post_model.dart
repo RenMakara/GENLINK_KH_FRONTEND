@@ -21,15 +21,19 @@ class CommunityPostModel {
   int likesCount;
   int commentsCount;
   int sharesCount;
+  String get authorId => userId;
   int get repostsCount => sharesCount;
   bool isLiked;
   bool isBookmarked;
   bool isFollowing;
+  bool isRepostedByMe;
   final bool isOwner;
   final String visibility;
   final String community;
   final String? repostedBy;
   final String? repostCaption;
+  final String? originalPostId;
+  final String? reposterId;
   final String? location;
   final String? linkUrl;
   final String? linkPreviewTitle;
@@ -41,6 +45,9 @@ class CommunityPostModel {
   final bool hideResultsUntilVote;
   final List<CommentModel> comments;
   final EventModel? attachedEvent;
+  final String? postType;
+  final String? discussionTitle;
+  final String? category;
 
   CommunityPostModel({
     required this.id,
@@ -58,11 +65,14 @@ class CommunityPostModel {
     this.isLiked = false,
     this.isBookmarked = false,
     this.isFollowing = false,
+    this.isRepostedByMe = false,
     this.isOwner = false,
     this.visibility = 'Public',
     this.community = 'All GenLink',
     this.repostedBy,
     this.repostCaption,
+    this.originalPostId,
+    this.reposterId,
     this.location,
     this.linkUrl,
     this.linkPreviewTitle,
@@ -74,7 +84,26 @@ class CommunityPostModel {
     this.hideResultsUntilVote = true,
     this.comments = const [],
     this.attachedEvent,
+    this.postType,
+    this.discussionTitle,
+    this.category,
   });
+
+  /// Evaluates whether the given user ID matches this post's author ID.
+  /// Falls back to [isOwner] flag when [currentUserId] is not provided.
+  bool checkIsOwner(String? currentUserId) {
+    if (currentUserId != null && currentUserId.isNotEmpty) {
+      if (userId == currentUserId) return true;
+      if (isOwner &&
+          (userId == 'user_me' ||
+              userId == 'current_user' ||
+              userId == 'demo_user_1')) {
+        return true;
+      }
+      return false;
+    }
+    return isOwner;
+  }
 
   CommunityPostModel copyWith({
     String? id,
@@ -92,11 +121,15 @@ class CommunityPostModel {
     bool? isLiked,
     bool? isBookmarked,
     bool? isFollowing,
+    bool? isRepostedByMe,
     bool? isOwner,
     String? visibility,
     String? community,
     String? repostedBy,
     String? repostCaption,
+    String? originalPostId,
+    String? reposterId,
+    bool clearRepostInfo = false,
     String? location,
     String? linkUrl,
     String? linkPreviewTitle,
@@ -107,6 +140,9 @@ class CommunityPostModel {
     bool? allowMultipleAnswers,
     List<CommentModel>? comments,
     EventModel? attachedEvent,
+    String? postType,
+    String? discussionTitle,
+    String? category,
   }) {
     return CommunityPostModel(
       id: id ?? this.id,
@@ -124,11 +160,14 @@ class CommunityPostModel {
       isLiked: isLiked ?? this.isLiked,
       isBookmarked: isBookmarked ?? this.isBookmarked,
       isFollowing: isFollowing ?? this.isFollowing,
+      isRepostedByMe: isRepostedByMe ?? (clearRepostInfo ? false : this.isRepostedByMe),
       isOwner: isOwner ?? this.isOwner,
       visibility: visibility ?? this.visibility,
       community: community ?? this.community,
-      repostedBy: repostedBy ?? this.repostedBy,
-      repostCaption: repostCaption ?? this.repostCaption,
+      repostedBy: clearRepostInfo ? null : (repostedBy ?? this.repostedBy),
+      repostCaption: clearRepostInfo ? null : (repostCaption ?? this.repostCaption),
+      originalPostId: clearRepostInfo ? null : (originalPostId ?? this.originalPostId),
+      reposterId: clearRepostInfo ? null : (reposterId ?? this.reposterId),
       location: location ?? this.location,
       linkUrl: linkUrl ?? this.linkUrl,
       linkPreviewTitle: linkPreviewTitle ?? this.linkPreviewTitle,
@@ -139,23 +178,10 @@ class CommunityPostModel {
       allowMultipleAnswers: allowMultipleAnswers ?? this.allowMultipleAnswers,
       comments: comments ?? this.comments,
       attachedEvent: attachedEvent ?? this.attachedEvent,
+      postType: postType ?? this.postType,
+      discussionTitle: discussionTitle ?? this.discussionTitle,
+      category: category ?? this.category,
     );
-  }
-
-  static String _formatTimeAgo(String? dateStr) {
-    if (dateStr == null || dateStr.isEmpty) return 'Just now';
-    try {
-      final date = DateTime.parse(dateStr);
-      final diff = DateTime.now().difference(date);
-      if (diff.inDays > 365) return '${(diff.inDays / 365).floor()}y ago';
-      if (diff.inDays > 30) return '${(diff.inDays / 30).floor()}mo ago';
-      if (diff.inDays > 0) return '${diff.inDays}d ago';
-      if (diff.inHours > 0) return '${diff.inHours}h ago';
-      if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
-      return 'Just now';
-    } catch (_) {
-      return dateStr;
-    }
   }
 
   factory CommunityPostModel.fromJson(Map<String, dynamic> json) {
@@ -195,16 +221,17 @@ class CommunityPostModel {
     }
 
     return CommunityPostModel(
-      id: json['postId'] as String? ?? json['id'] as String? ?? '',
+      id: json['postId'] as String? ?? json['id'] as String? ?? json['discussionId'] as String? ?? '',
       userId: userId,
       authorName: authorName,
       authorTag: authorTag,
       authorAvatar: authorAvatar,
       isVerified:
           json['isVerified'] as bool? ?? json['verified'] as bool? ?? false,
-      timeAgo: _formatTimeAgo(
-        json['createdAt'] as String? ?? json['timeAgo'] as String?,
-      ),
+      timeAgo:
+          json['timeAgo'] as String? ??
+          json['createdAt'] as String? ??
+          'Just now',
       content:
           json['contentText'] as String? ??
           json['content'] as String? ??
@@ -215,6 +242,7 @@ class CommunityPostModel {
           json['likeCount'] as int? ??
           json['likesCount'] as int? ??
           json['likes'] as int? ??
+          json['reactionCount'] as int? ??
           0,
       commentsCount:
           json['commentCount'] as int? ??
@@ -222,12 +250,26 @@ class CommunityPostModel {
           json['comments'] as int? ??
           0,
       sharesCount: json['sharesCount'] as int? ?? json['shares'] as int? ?? 0,
-      isLiked: json['likedByMe'] as bool? ?? json['isLiked'] as bool? ?? false,
+      isLiked: json['likedByMe'] as bool? ?? json['isLiked'] as bool? ?? json['reactedByMe'] as bool? ?? false,
       isBookmarked:
           json['savedByMe'] as bool? ?? json['isBookmarked'] as bool? ?? false,
-      isOwner: json['isOwner'] as bool? ?? false,
+      isFollowing:
+          json['isFollowing'] as bool? ??
+          json['following'] as bool? ??
+          (authorObj?['isFollowing'] as bool?) ??
+          (authorObj?['following'] as bool?) ??
+          false,
+      isRepostedByMe: json['isRepostedByMe'] as bool? ?? false,
+      isOwner: json['isOwner'] as bool? ?? json['mine'] as bool? ?? false,
       visibility: json['visibility'] as String? ?? 'Public',
       community: json['community'] as String? ?? 'All GenLink',
+      repostedBy: json['repostedBy'] as String?,
+      repostCaption: json['repostCaption'] as String?,
+      originalPostId: json['originalPostId'] as String?,
+      reposterId: json['reposterId'] as String?,
+      postType: json['postType'] as String?,
+      discussionTitle: json['discussionTitle'] as String? ?? json['title'] as String?,
+      category: json['category'] as String?,
       comments:
           (json['commentsList'] as List<dynamic>?)
               ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
@@ -252,9 +294,18 @@ class CommunityPostModel {
       'shares': sharesCount,
       'isLiked': isLiked,
       'isBookmarked': isBookmarked,
+      'isFollowing': isFollowing,
+      'isRepostedByMe': isRepostedByMe,
       'isOwner': isOwner,
       'visibility': visibility,
       'community': community,
+      'repostedBy': repostedBy,
+      'repostCaption': repostCaption,
+      'originalPostId': originalPostId,
+      'reposterId': reposterId,
+      'postType': postType,
+      'discussionTitle': discussionTitle,
+      'category': category,
     };
   }
 }
@@ -285,16 +336,26 @@ class CommentModel {
   });
 
   factory CommentModel.fromJson(Map<String, dynamic> json) {
+    final authorObj = json['author'] as Map<String, dynamic>?;
     return CommentModel(
-      id: json['id'] as String? ?? '',
-      postId: json['postId'] as String? ?? '',
-      userId: json['userId'] as String? ?? '',
-      userName: json['userName'] as String? ?? 'User',
-      userAvatar: json['userAvatar'] as String? ?? '',
-      text: json['text'] as String? ?? '',
+      id: json['commentId'] as String? ?? json['id'] as String? ?? '',
+      postId: json['postId'] as String? ??
+          json['discussionId'] as String? ??
+          '',
+      userId: json['userId'] as String? ??
+          authorObj?['userId'] as String? ??
+          '',
+      userName: json['userName'] as String? ??
+          authorObj?['fullName'] as String? ??
+          authorObj?['username'] as String? ??
+          'User',
+      userAvatar: json['userAvatar'] as String? ??
+          authorObj?['avatarUrl'] as String? ??
+          '',
+      text: json['content'] as String? ?? json['text'] as String? ?? '',
       timeAgo: json['timeAgo'] as String? ?? 'Just now',
-      likesCount: json['likesCount'] as int? ?? 0,
-      isLiked: json['isLiked'] as bool? ?? false,
+      likesCount: json['likeCount'] as int? ?? json['likesCount'] as int? ?? 0,
+      isLiked: json['likedByMe'] as bool? ?? json['isLiked'] as bool? ?? false,
       parentCommentId: json['parentCommentId'] as String?,
     );
   }

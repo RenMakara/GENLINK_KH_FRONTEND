@@ -260,6 +260,40 @@ class StoryItemModel {
   bool get isExpired => DateTime.now().difference(createdAt).inHours >= 24;
 }
 
+class StoryAuthor {
+  final String id;
+  final String name;
+  final String avatarUrl;
+  final String? handle;
+  final String? university;
+
+  const StoryAuthor({
+    required this.id,
+    required this.name,
+    required this.avatarUrl,
+    this.handle,
+    this.university,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'avatarUrl': avatarUrl,
+        if (handle != null) 'handle': handle,
+        if (university != null) 'university': university,
+      };
+
+  factory StoryAuthor.fromJson(Map<String, dynamic> json) {
+    return StoryAuthor(
+      id: json['id'] as String? ?? json['userId'] as String? ?? '',
+      name: json['name'] as String? ?? json['fullName'] as String? ?? '',
+      avatarUrl: json['avatarUrl'] as String? ?? '',
+      handle: json['handle'] as String? ?? json['authorTag'] as String?,
+      university: json['university'] as String? ?? json['community'] as String?,
+    );
+  }
+}
+
 class StoryGroupModel {
   final String userId;
   final String userName;
@@ -275,6 +309,12 @@ class StoryGroupModel {
     bool hasUnseen = true,
     required this.stories,
   });
+
+  StoryAuthor get author => StoryAuthor(
+        id: userId,
+        name: userName,
+        avatarUrl: userAvatar,
+      );
 
   bool get hasUnseen => stories.any((s) => !s.isViewed);
 }

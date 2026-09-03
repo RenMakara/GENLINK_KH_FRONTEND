@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../../../shared/utils/current_user.dart';
 
 /// Shared author identity row for Community creation screens.
@@ -23,6 +24,11 @@ class AuthorRow extends StatelessWidget {
     final bool hasNetwork = avatarUrl != null && avatarUrl.isNotEmpty;
     final String name = CurrentUser.name;
 
+    final String publicLabel = 'community.public'.tr.isNotEmpty &&
+            'community.public'.tr != 'community.public'
+        ? 'community.public'.tr
+        : 'Public';
+
     return Row(
       children: [
         CircleAvatar(
@@ -33,27 +39,36 @@ class AuthorRow extends StatelessWidget {
           backgroundImage: hasNetwork
               ? NetworkImage(avatarUrl) as ImageProvider
               : const AssetImage('assets/images/user_profile.png'),
+          onBackgroundImageError: hasNetwork ? (e, s) {} : null,
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               name,
               style: TextStyle(
                 color: textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                height: 1.25,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.public, color: textMuted, size: 12),
+                Icon(Icons.public, color: textMuted, size: 13),
                 const SizedBox(width: 4),
                 Text(
-                  'Public',
-                  style: TextStyle(color: textMuted, fontSize: 12),
+                  publicLabel,
+                  style: TextStyle(
+                    color: textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    height: 1.2,
+                  ),
                 ),
               ],
             ),

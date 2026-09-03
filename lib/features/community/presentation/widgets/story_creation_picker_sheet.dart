@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../domain/models/story_model.dart';
 import '../controllers/story_gallery_controller.dart';
-import '../screens/story_creator_screen.dart';
 import '../screens/in_app_camera_screen.dart';
+import '../screens/story_creator_screen.dart';
 import '../screens/story_gallery_screen.dart';
 
 class StoryCreationPickerSheet extends StatelessWidget {
@@ -23,7 +22,7 @@ class StoryCreationPickerSheet extends StatelessWidget {
   }
 
   void _pickFromGallery(BuildContext context) {
-    Get.back();
+    Navigator.of(context).pop();
     final galleryCtrl = Get.isRegistered<StoryGalleryController>()
         ? Get.find<StoryGalleryController>()
         : Get.put(StoryGalleryController());
@@ -44,28 +43,18 @@ class StoryCreationPickerSheet extends StatelessWidget {
   }
 
   void _openCamera(BuildContext context) {
-    Get.back();
-    try {
-      Get.to(
-        () => const InAppCameraScreen(initialIsVideoMode: false),
-        routeName: '/InAppCameraScreen',
-        transition: Transition.fadeIn,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-      );
-    } catch (e) {
-      if (context.mounted) {
-        AppNotificationBanner.showDanger(
-          context: context,
-          title: "Camera Error",
-          message: "Could not open camera screen: $e",
-        );
-      }
-    }
+    Navigator.of(context).pop();
+    Get.to(
+      () => const InAppCameraScreen(initialIsVideoMode: false),
+      routeName: '/InAppCameraScreen',
+      transition: Transition.fadeIn,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   void _openTextStory(BuildContext context) {
-    Get.back();
+    Navigator.of(context).pop();
     Get.to(
       () => const StoryCreatorScreen(type: StoryType.text),
       routeName: '/StoryCreatorScreen',

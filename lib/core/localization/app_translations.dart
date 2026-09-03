@@ -137,7 +137,10 @@ class AppTranslations extends Translations {
     // ── Navigation ──────────────────────────────────────────────────────
     'nav.home': 'Home',
     'nav.community': 'Community',
+    'nav.growth': 'Growth',
+    'nav.levelUp': 'LevelUp',
     'nav.create': 'Create',
+    'nav.finance': 'Finance',
     'nav.financial': 'Financial',
     'nav.profile': 'Profile',
 
@@ -1308,7 +1311,10 @@ class AppTranslations extends Translations {
     // ── Navigation ──────────────────────────────────────────────────────
     'nav.home': 'ទំព័រដើម',
     'nav.community': 'សហគមន៍',
+    'nav.growth': 'ការរីកចម្រើន',
+    'nav.levelUp': 'ឡើងកម្រិត',
     'nav.create': 'បង្កើត',
+    'nav.finance': 'ហិរញ្ញវត្ថុ',
     'nav.financial': 'ហិរញ្ញវត្ថុ',
     'nav.profile': 'ប្រវត្តិរូប',
 

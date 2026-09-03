@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../../../design_system/colors/app_colors.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
-import 'create_event_screen.dart';
+import '../widgets/community_creation_flow.dart';
 import 'event_details_screen.dart';
 
 class EventsScreen extends StatefulWidget {
@@ -59,7 +61,10 @@ class _EventsScreenState extends State<EventsScreen> {
                       controller: _searchController,
                       style: TextStyle(color: textPrimary, fontSize: 15),
                       decoration: InputDecoration(
-                        hintText: 'Search events...',
+                        hintText: 'community.searchEvents'.tr.isNotEmpty &&
+                                'community.searchEvents'.tr != 'community.searchEvents'
+                            ? 'community.searchEvents'.tr
+                            : 'Search events...',
                         hintStyle: TextStyle(color: textMuted, fontSize: 15),
                         prefixIcon: Icon(Icons.search, color: textMuted, size: 20),
                         filled: true,
@@ -75,7 +80,7 @@ class _EventsScreenState extends State<EventsScreen> {
                   const SizedBox(width: 10),
                   // Create Event shortcut button
                   GestureDetector(
-                    onTap: () => Get.to(() => const CreateEventScreen()),
+                    onTap: () => CommunityCreationFlow.openCreateEvent(context),
                     child: Container(
                       height: 46,
                       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -88,7 +93,10 @@ class _EventsScreenState extends State<EventsScreen> {
                           Icon(Icons.add, color: bg, size: 18),
                           const SizedBox(width: 6),
                           Text(
-                            'Create',
+                            'community.create'.tr.isNotEmpty &&
+                                    'community.create'.tr != 'community.create'
+                                ? 'community.create'.tr
+                                : 'Create',
                             style: TextStyle(
                               color: bg,
                               fontWeight: FontWeight.w600,
@@ -123,26 +131,50 @@ class _EventsScreenState extends State<EventsScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.event_outlined, size: 56, color: textMuted),
-                        const SizedBox(height: 12),
+                        Icon(Icons.calendar_today_outlined, size: 48, color: textMuted),
+                        const SizedBox(height: 14),
                         Text(
                           _searchQuery.isEmpty
-                              ? 'No events yet.\nTap Create to add one!'
+                              ? ('community.noUpcomingEvents'.tr.isNotEmpty &&
+                                      'community.noUpcomingEvents'.tr !=
+                                          'community.noUpcomingEvents'
+                                  ? 'community.noUpcomingEvents'.tr
+                                  : 'No upcoming events')
                               : 'No events match your search.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: textSecondary, fontSize: 15),
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
+                        if (_searchQuery.isEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'community.newEventsAppearHere'.tr.isNotEmpty &&
+                                    'community.newEventsAppearHere'.tr !=
+                                        'community.newEventsAppearHere'
+                                ? 'community.newEventsAppearHere'.tr
+                                : 'New events will appear here.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: textSecondary, fontSize: 13.5),
+                          ),
+                        ],
                       ],
                     ),
                   );
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                   itemCount: filtered.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     return _EventCard(
                       event: filtered[index],
+                      controller: _controller,
+                      index: index,
                       isDark: isDark,
                       textPrimary: textPrimary,
                       textSecondary: textSecondary,
@@ -163,6 +195,8 @@ class _EventsScreenState extends State<EventsScreen> {
 
 class _EventCard extends StatelessWidget {
   final EventModel event;
+  final CommunityController controller;
+  final int index;
   final bool isDark;
   final Color textPrimary;
   final Color textSecondary;
@@ -172,6 +206,8 @@ class _EventCard extends StatelessWidget {
 
   const _EventCard({
     required this.event,
+    required this.controller,
+    this.index = 0,
     required this.isDark,
     required this.textPrimary,
     required this.textSecondary,
@@ -182,152 +218,260 @@ class _EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasLocalImage = event.coverImageFile != null;
-    final bool hasNetworkImage = event.imageUrl.isNotEmpty;
+    final isOnline = event.eventType.toLowerCase().contains('online');
+    final String onlineLabel = 'community.onlineEvent'.tr.isNotEmpty &&
+            'community.onlineEvent'.tr != 'community.onlineEvent'
+        ? 'community.onlineEvent'.tr
+        : 'Online Event';
+    final String inPersonLabel = 'community.inPerson'.tr.isNotEmpty &&
+            'community.inPerson'.tr != 'community.inPerson'
+        ? 'community.inPerson'.tr
+        : 'In Person';
+    final String locationDisplay = isOnline
+        ? '🌐 $onlineLabel'
+        : '📍 ${event.location.isNotEmpty ? event.location : inPersonLabel}';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderSubtle, width: 0.8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. Cover Image (approx 16:9)
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: hasLocalImage
-                  ? Image.file(event.coverImageFile!, fit: BoxFit.cover)
-                  : hasNetworkImage
-                      ? Image.network(
-                          event.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => _imagePlaceholder(),
-                        )
-                      : _imagePlaceholder(),
+    final String dateDisplay = event.timeString.isNotEmpty
+        ? '📅 ${event.dateString} · ${event.timeString}'
+        : (event.dateString.isNotEmpty ? '📅 ${event.dateString}' : '');
+
+    final String rawCat = event.category.isNotEmpty ? event.category : 'Event';
+    final String catKey = 'community.${rawCat.toLowerCase()}';
+    final String categoryDisplay = catKey.tr.isNotEmpty && catKey.tr != catKey
+        ? catKey.tr
+        : rawCat;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 240 + (index.clamp(0, 5) * 30)),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 10 * (1.0 - value)),
+            child: child,
+          ),
+        );
+      },
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => Get.to(
+            () => EventDetailsScreen(
+              event: event,
+              heroTag: 'event-image-${event.id}-standalone',
             ),
           ),
-
-          // 2. Event Information
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: borderSubtle, width: 0.8),
+            ),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Date, Time, Location
-                Text(
-                  event.timeString.isNotEmpty
-                      ? '${event.dateString} · ${event.timeString} · ${event.location.isNotEmpty ? event.location : "Online"}'
-                      : '${event.dateString} · ${event.location.isNotEmpty ? event.location : "Online"}',
-                  style: TextStyle(
-                    color: textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-
-                // Title
-                Text(
-                  event.title,
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    height: 1.2,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-
-                // Organizer and attendees
-                Obx(() {
-                  final updated = Get.find<CommunityController>()
-                      .events
-                      .firstWhereOrNull((e) => e.id == event.id);
-                  final count = updated?.attendeesCount ?? event.attendeesCount;
-                  
-                  return Text(
-                    '${event.organizerName.isNotEmpty ? event.organizerName : "GenLink Community"} · $count attendees',
-                    style: TextStyle(
-                      color: textMuted,
-                      fontSize: 12,
+                // Left: 92x92 Square Thumbnail
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 92,
+                    height: 92,
+                    child: Hero(
+                      tag: 'event-image-${event.id}-standalone',
+                      child: _buildImage(),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  );
-                }),
+                  ),
+                ),
+                const SizedBox(width: 12),
 
-                const SizedBox(height: 20),
-
-                // 3. Action Area
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => Get.to(() => EventDetailsScreen(event: event)),
-                        borderRadius: BorderRadius.circular(100),
-                        child: Container(
-                          height: 44,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.white : Colors.black,
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                          child: Text(
-                            'View Event',
-                            style: TextStyle(
-                              color: isDark ? Colors.black : Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                // Right: Information Lines
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Top Row: Category Badge + Paid Badge + Bookmark Button
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.08)
+                                  : Colors.black.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: borderSubtle.withValues(alpha: 0.6),
+                                width: 0.6,
+                              ),
+                            ),
+                            child: Text(
+                              categoryDisplay,
+                              style: TextStyle(
+                                color: isDark ? Colors.white70 : textSecondary,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.2,
+                              ),
                             ),
                           ),
-                        ),
+                          if (event.isPaid) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.communityAccent
+                                    .withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'community.paid'.tr.isNotEmpty &&
+                                        'community.paid'.tr != 'community.paid'
+                                    ? 'community.paid'.tr.toUpperCase()
+                                    : 'PAID',
+                                style: const TextStyle(
+                                  color: AppColors.communityAccent,
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const Spacer(),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                controller.toggleEventBookmark(event.id);
+                              },
+                              borderRadius: BorderRadius.circular(14),
+                              child: Padding(
+                                padding: const EdgeInsets.all(4),
+                                child: AnimatedScale(
+                                  scale: event.isBookmarked ? 1.15 : 1.0,
+                                  duration: const Duration(milliseconds: 180),
+                                  curve: Curves.easeOutBack,
+                                  child: Icon(
+                                    event.isBookmarked
+                                        ? Icons.bookmark_rounded
+                                        : Icons.bookmark_border_rounded,
+                                    color: event.isBookmarked
+                                        ? AppColors.communityAccent
+                                        : textMuted,
+                                    size: 19,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    InkWell(
-                      onTap: () {}, // Share logic
-                      borderRadius: BorderRadius.circular(100),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: borderSubtle),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Icon(
-                          Icons.ios_share,
+                      const SizedBox(height: 5),
+
+                      // Title
+                      Text(
+                        event.title,
+                        style: TextStyle(
                           color: textPrimary,
-                          size: 20,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14.5,
+                          height: 1.25,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 5),
+
+                      // Date & Time
+                      if (dateDisplay.isNotEmpty) ...[
+                        Text(
+                          dateDisplay,
+                          style: TextStyle(
+                            color: textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                      ],
+
+                      // Location / Online
+                      Text(
+                        locationDisplay,
+                        style: TextStyle(
+                          color: textMuted,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _imagePlaceholder() {
+  Widget _buildImage() {
+    if (event.coverImageFile != null) {
+      return Image.file(
+        event.coverImageFile!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _placeholder(),
+      );
+    }
+    if (event.imageUrl.isNotEmpty) {
+      return Image.network(
+        event.imageUrl,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: isDark ? const Color(0xFF1E2228) : const Color(0xFFE9ECF0),
+            child: Center(
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.0,
+                  color: isDark ? Colors.white24 : Colors.black12,
+                ),
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => _placeholder(),
+      );
+    }
+    return _placeholder();
+  }
+
+  Widget _placeholder() {
     return Container(
-      color: isDark ? const Color(0xFF222222) : const Color(0xFFEEEEEE),
+      color: isDark ? const Color(0xFF1E2228) : const Color(0xFFE9ECF0),
       child: Center(
         child: Icon(
           Icons.event_outlined,
-          size: 40,
-          color: isDark ? Colors.white12 : Colors.black12,
+          color: textMuted.withValues(alpha: 0.6),
+          size: 28,
         ),
       ),
     );

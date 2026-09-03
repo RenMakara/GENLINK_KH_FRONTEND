@@ -3,8 +3,11 @@ import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/radius/app_radius.dart';
 import 'package:genlink_frontend/design_system/spacing/app_spacing.dart';
+import '../../domain/models/story_model.dart';
+import '../../../../shared/utils/current_user.dart';
 import '../controllers/story_controller.dart';
 import '../screens/story_viewer_screen.dart';
+import 'demo_stories_data.dart';
 import 'story_creation_picker_sheet.dart';
 
 class StoryTrayWidget extends StatefulWidget {
@@ -46,7 +49,7 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
         : AppColors.lightBgSecondary;
 
     return Obx(() {
-      if (controller.isLoading.value) {
+      if (controller.isLoading.value && controller.storyGroups.isEmpty) {
         return SizedBox(
           height: 100,
           child: ListView.builder(
@@ -57,13 +60,10 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
               padding: const EdgeInsets.only(right: 14),
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: skeletonColor,
-                  ),
-                  const SizedBox(height: 4),
+                  CircleAvatar(radius: 32, backgroundColor: skeletonColor),
+                  const SizedBox(height: 6),
                   Container(
-                    width: 60,
+                    width: 48,
                     height: 10,
                     decoration: BoxDecoration(
                       color: skeletonColor,
@@ -78,8 +78,30 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
       }
 
       final allGroups = controller.storyGroups;
-      // Smart sorting: Owner story first, then unseen groups, then viewed groups
-      final ownerGroup = allGroups.firstWhereOrNull((g) => g.isOwner);
+      final currentUserId = CurrentUser.id;
+      final currentUserAvatar = CurrentUser.avatarUrl;
+      final rawOwnerGroup = allGroups.firstWhereOrNull((g) => g.isOwner);
+      final ownerGroup = rawOwnerGroup != null
+          ? StoryGroupModel(
+              userId: rawOwnerGroup.userId,
+              userName: rawOwnerGroup.userName,
+              userAvatar: rawOwnerGroup.userAvatar.isNotEmpty
+                  ? rawOwnerGroup.userAvatar
+                  : (currentUserAvatar != null && currentUserAvatar.isNotEmpty
+                      ? currentUserAvatar
+                      : 'assets/images/user_profile.png'),
+              isOwner: true,
+              stories: rawOwnerGroup.stories,
+            )
+          : StoryGroupModel(
+              userId: currentUserId.isNotEmpty ? currentUserId : 'current_user',
+              userName: 'community.yourStory'.tr,
+              userAvatar: (currentUserAvatar != null && currentUserAvatar.isNotEmpty)
+                  ? currentUserAvatar
+                  : 'assets/images/user_profile.png',
+              isOwner: true,
+              stories: [],
+            );
       final otherGroups = allGroups.where((g) => !g.isOwner).toList();
 
       otherGroups.sort((a, b) {
@@ -88,21 +110,23 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
         return 0;
       });
 
-      final sortedGroups = [?ownerGroup, ...otherGroups];
+      // Combine owner group, demo groups, and real backend groups
+      final demoGroups = getDemoStoryGroups();
+      final displayGroups = [ownerGroup, ...demoGroups, ...otherGroups];
 
-      return Container(
-        height: 110,
-        margin: EdgeInsets.zero,
+      return SizedBox(
+        height: 100,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          itemCount: sortedGroups.length,
+          itemCount: displayGroups.length,
           itemBuilder: (context, idx) {
-            final group = sortedGroups[idx];
+            final group = displayGroups[idx];
             return _StoryTrayItem(
               group: group,
               index: idx,
-              allGroups: sortedGroups,
+              allGroups: displayGroups,
               controller: controller,
               isDark: isDark,
               bgPrimary: bgPrimary,
@@ -159,8 +183,8 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
-        transitionDuration: const Duration(milliseconds: 300),
-        reverseTransitionDuration: const Duration(milliseconds: 200),
+        transitionDuration: const Duration(milliseconds: 200),
+        reverseTransitionDuration: const Duration(milliseconds: 180),
         pageBuilder: (context, animation, secondaryAnimation) {
           return StoryViewerScreen(
             initialGroupIndex: widget.index,
@@ -178,8 +202,8 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
 
           final fadeAnimation = CurvedAnimation(
             parent: animation,
-            curve: Curves.easeOutQuad,
-            reverseCurve: Curves.easeOutQuad,
+            curve: Curves.easeOut,
+            reverseCurve: Curves.easeIn,
           );
 
           return ScaleTransition(
@@ -189,7 +213,9 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
           );
         },
       ),
-    );
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   bool _containsKhmer(String text) {
@@ -230,58 +256,64 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                           color: group.stories.isNotEmpty
                               ? AppColors.communityAccent
                               : Colors.transparent,
-                          width: 2.0,
+                          width: 1.5,
                         ),
                       ),
                       child: Hero(
                         tag: 'story_avatar_${group.userId}',
                         child: CircleAvatar(
-                          radius: 28,
-                          backgroundImage:
-                              group.userAvatar.startsWith('assets/')
-                                  ? AssetImage(group.userAvatar) as ImageProvider
-                                  : NetworkImage(group.userAvatar),
+                          radius: 26,
+                          backgroundImage: (group.userAvatar != null &&
+                                  (group.userAvatar as String).isNotEmpty)
+                              ? ((group.userAvatar as String).startsWith('assets/')
+                                  ? AssetImage(group.userAvatar as String)
+                                      as ImageProvider
+                                  : NetworkImage(group.userAvatar as String))
+                              : const AssetImage(
+                                  'assets/images/user_profile.png',
+                                ) as ImageProvider,
                         ),
                       ),
                     ),
                     Positioned(
-                      right: 0,
-                      bottom: 0,
+                      right: 2,
+                      bottom: 2,
                       child: GestureDetector(
                         onTap: () => StoryCreationPickerSheet.show(context),
                         child: Container(
-                          padding: const EdgeInsets.all(2),
+                          padding: const EdgeInsets.all(2.5),
                           decoration: BoxDecoration(
                             color: AppColors.communityAccent,
                             shape: BoxShape.circle,
-                            border: Border.all(color: bgPrimary, width: 2.0),
+                            border: Border.all(color: bgPrimary, width: 1.5),
                           ),
                           child: Icon(
                             Icons.add,
                             color: isDark
                                 ? AppColors.darkTextInverse
                                 : AppColors.lightTextInverse,
-                            size: 14,
+                            size: 12,
                           ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 SizedBox(
-                  width: 74,
+                  width: 78,
                   child: Text(
                     'community.yourStory'.tr,
-                    style: theme.textTheme.labelSmall?.copyWith(
+                    style:
+                        theme.textTheme.labelSmall?.copyWith(
+                          fontSize: 10.5,
                           color: textPrimary,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ) ??
                         TextStyle(
                           color: textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
                         ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -325,7 +357,7 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                         )
                       : null,
                   border: !group.hasUnseen
-                      ? Border.all(color: border, width: 2.0)
+                      ? Border.all(color: border, width: 1.5)
                       : null,
                 ),
                 child: Container(
@@ -340,26 +372,32 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                     child: Hero(
                       tag: 'story_avatar_${group.userId}',
                       child: CircleAvatar(
-                        radius: 28,
-                        backgroundImage: group.userAvatar.startsWith('assets/')
-                            ? AssetImage(group.userAvatar) as ImageProvider
-                            : NetworkImage(group.userAvatar),
+                        radius: 26,
+                        backgroundImage: (group.userAvatar != null &&
+                                (group.userAvatar as String).isNotEmpty)
+                            ? ((group.userAvatar as String).startsWith('assets/')
+                                ? AssetImage(group.userAvatar as String)
+                                    as ImageProvider
+                                : NetworkImage(group.userAvatar as String))
+                            : const AssetImage(
+                                'assets/images/user_profile.png',
+                              ) as ImageProvider,
                       ),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               SizedBox(
-                width: 74,
+                width: 78,
                 child: Text(
                   group.userName,
                   style:
                       theme.textTheme.labelSmall?.copyWith(
                         color: group.hasUnseen ? textPrimary : textMuted,
-                        fontSize: 13.5,
-                        fontWeight:
-                            group.hasUnseen ? FontWeight.bold : FontWeight.w500,
+                        fontWeight: group.hasUnseen
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                         fontFamily: _containsKhmer(group.userName)
                             ? 'KantumruyPro'
                             : null,
@@ -367,9 +405,10 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                       ) ??
                       TextStyle(
                         color: group.hasUnseen ? textPrimary : textMuted,
-                        fontSize: 13.5,
-                        fontWeight:
-                            group.hasUnseen ? FontWeight.bold : FontWeight.w500,
+                        fontSize: 11,
+                        fontWeight: group.hasUnseen
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                         fontFamily: _containsKhmer(group.userName)
                             ? 'KantumruyPro'
                             : null,

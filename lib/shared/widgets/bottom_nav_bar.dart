@@ -22,24 +22,23 @@ class BottomNavBar extends StatelessWidget {
     this.onCenterTap,
   });
 
+  static String _label(String key, String fallback) {
+    final tr = key.tr;
+    return (tr.isNotEmpty && tr != key) ? tr : fallback;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    // The app composition root registers both controllers. Keeping a local
-    // fallback makes this presentational widget safe to render in isolation
-    // (for example in golden/widget tests) without changing app behavior.
     final mainController = Get.isRegistered<MainController>()
         ? Get.find<MainController>()
-        : MainController();
+        : null;
     final authController = Get.isRegistered<AuthController>()
         ? Get.find<AuthController>()
         : null;
 
-    return Obx(() {
-      final isVisible = mainController.isNavBarVisible.value;
-      final user = authController?.currentUser.value;
-
+    Widget buildBar(bool isVisible, String? avatarUrl) {
       return AnimatedSlide(
         offset: isVisible ? Offset.zero : const Offset(0, 1.0),
         duration: const Duration(milliseconds: 300),
@@ -74,100 +73,104 @@ class BottomNavBar extends StatelessWidget {
                   ? 10.0
                   : (isNarrow ? 10.5 : 11.0);
 
-              return Padding(
-                padding: EdgeInsets.fromLTRB(
-                  horizontalMargin,
-                  0,
-                  horizontalMargin,
-                  bottomMargin,
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: isDark ? 0.35 : 0.08,
-                        ),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                      child: Container(
-                        height: barHeight,
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.darkSurfaceGlass
-                              : AppColors.lightSurfaceGlass,
-                          borderRadius: BorderRadius.circular(AppRadius.xl),
-                          border: Border.all(
-                            color: isDark
-                                ? AppColors.darkBorderSubtle
-                                : AppColors.lightBorderSubtle,
-                            width: 1.5,
+              return Align(
+                alignment: Alignment.bottomCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 800),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalMargin,
+                      0,
+                      horizontalMargin,
+                      bottomMargin,
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(
+                              alpha: isDark ? 0.35 : 0.08,
+                            ),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: _NavItem(
-                                icon: CupertinoIcons.house,
-                                activeIcon: CupertinoIcons.house_fill,
-                                label: 'nav.home'.tr,
-                                active: currentIndex == 0,
-                                iconSize: navIconSize,
-                                fontSize: navFontSize,
-                                onTap: () => onTap(0),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                          child: Container(
+                            height: barHeight,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.darkSurfaceGlass
+                                  : AppColors.lightSurfaceGlass,
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.darkBorderSubtle
+                                    : AppColors.lightBorderSubtle,
+                                width: 1.5,
                               ),
                             ),
-                            Expanded(
-                              child: _NavItem(
-                                icon: CupertinoIcons.person_2,
-                                activeIcon: CupertinoIcons.person_2_fill,
-                                label: 'nav.community'.tr,
-                                active: currentIndex == 1,
-                                iconSize: navIconSize,
-                                fontSize: navFontSize,
-                                onTap: () => onTap(1),
-                              ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _NavItem(
+                                    icon: CupertinoIcons.house,
+                                    activeIcon: CupertinoIcons.house_fill,
+                                    label: _label('nav.home', 'Home'),
+                                    active: currentIndex == 0,
+                                    iconSize: navIconSize,
+                                    fontSize: navFontSize,
+                                    onTap: () => onTap(0),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _NavItem(
+                                    icon: CupertinoIcons.flame,
+                                    activeIcon: CupertinoIcons.flame_fill,
+                                    label: _label('nav.levelUp', 'LevelUp'),
+                                    active: currentIndex == 1,
+                                    iconSize: navIconSize,
+                                    fontSize: navFontSize,
+                                    onTap: () => onTap(1),
+                                  ),
+                                ),
+                                _CenterButton(
+                                  onTap: onCenterTap,
+                                  size: centerBtnSize,
+                                  iconSize: centerIconSize,
+                                ),
+                                Expanded(
+                                  child: _NavItem(
+                                    icon: CupertinoIcons.money_dollar_circle,
+                                    activeIcon: CupertinoIcons.money_dollar_circle_fill,
+                                    label: _label('nav.finance', 'Finance'),
+                                    active: currentIndex == 2,
+                                    iconSize: navIconSize,
+                                    fontSize: navFontSize,
+                                    onTap: () => onTap(2),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _NavItem(
+                                    icon: CupertinoIcons.person_crop_circle,
+                                    activeIcon: CupertinoIcons.person_crop_circle_fill,
+                                    label: _label('nav.profile', 'Profile'),
+                                    active: currentIndex == 3,
+                                    iconSize: navIconSize,
+                                    fontSize: navFontSize,
+                                    onTap: () => onTap(3),
+                                    imageUrl: avatarUrl,
+                                    onLongPress: () => _showProfileMenu(context),
+                                  ),
+                                ),
+                              ],
                             ),
-                            _CenterButton(
-                              onTap: onCenterTap,
-                              size: centerBtnSize,
-                              iconSize: centerIconSize,
-                            ),
-                            Expanded(
-                              child: _NavItem(
-                                icon: CupertinoIcons.money_dollar,
-                                activeIcon:
-                                    CupertinoIcons.money_dollar_circle_fill,
-                                label: 'nav.financial'.tr,
-                                active: currentIndex == 2,
-                                iconSize: navIconSize,
-                                fontSize: navFontSize,
-                                onTap: () => onTap(2),
-                              ),
-                            ),
-                            Expanded(
-                              child: _NavItem(
-                                icon: CupertinoIcons.person_crop_circle,
-                                activeIcon:
-                                    CupertinoIcons.person_crop_circle_fill,
-                                label: 'nav.profile'.tr,
-                                active: currentIndex == 3,
-                                iconSize: navIconSize,
-                                fontSize: navFontSize,
-                                onTap: () => onTap(3),
-                                imageUrl: user?.avatarUrl,
-                                onLongPress: () => _showProfileMenu(context),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
@@ -178,6 +181,16 @@ class BottomNavBar extends StatelessWidget {
           ),
         ),
       );
+    }
+
+    if (mainController == null && authController == null) {
+      return buildBar(true, null);
+    }
+
+    return Obx(() {
+      final isVisible = mainController?.isNavBarVisible.value ?? true;
+      final user = authController?.currentUser.value;
+      return buildBar(isVisible, user?.avatarUrl);
     });
   }
 

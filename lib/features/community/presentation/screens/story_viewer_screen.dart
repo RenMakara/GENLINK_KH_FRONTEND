@@ -7,15 +7,19 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:get/get.dart';
-import 'story_creator_screen.dart';
 import '../../../../app/routes/app_routes.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../chat/presentation/bindings/chat_binding.dart';
 import '../../../chat/presentation/controllers/chat_controller.dart';
+import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/story_model.dart';
+import '../../domain/repositories/story_repository.dart';
+import '../../data/repositories/story_repository_impl.dart';
 import '../controllers/story_controller.dart';
 import '../widgets/story_template_canvas.dart';
+import '../widgets/story_interactive_like_button.dart';
+import '../widgets/demo_stories_data.dart';
 import '../../../notification/presentation/controllers/notification_controller.dart';
 import '../../../notification/domain/models/notification_model.dart';
 
@@ -232,21 +236,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
   late AnimationController _progressAnimController;
   bool _isPaused = false;
-  bool _showHeartAnimation = false;
   bool _isClosing = false;
 
   final TextEditingController _replyController = TextEditingController();
 
-  late AnimationController _likeBtnAnimController;
-  late Animation<double> _likeBtnScaleAnim;
-
-  late AnimationController _floatingHeartAnimController;
-  late Animation<double> _floatingHeartScaleAnim;
-  late Animation<double> _floatingHeartOpacityAnim;
-  late Animation<Offset> _floatingHeartTranslateAnim;
-
   bool _isMorePressed = false;
-  bool _isLikeDebouncing = false;
+  DateTime? _lastLikeTapTime;
 
   StoryGroupModel? get _currentGroup {
     if (_currentGroupIdx < 0 || _currentGroupIdx >= widget.groups.length) {
@@ -263,6 +258,18 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       return null;
     }
     return group.stories[_currentStoryIdx];
+  }
+
+  bool get _isOwnStory {
+    final group = _currentGroup;
+    if (group == null) return false;
+    final currentUserId = CurrentUser.id;
+    if (currentUserId.isNotEmpty) {
+      if (group.userId.isNotEmpty && group.userId == currentUserId) {
+        return true;
+      }
+    }
+    return group.isOwner;
   }
 
   @override
@@ -283,91 +290,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       }
     });
 
-    // Dedicated sequence animation for Like/Unlike icon button (scale 1.0 -> 1.12 -> 1.0 over 200ms)
-    _likeBtnAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-
-    _likeBtnScaleAnim = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.0,
-          end: 1.12,
-        ).chain(CurveTween(curve: Curves.easeOutCubic)),
-        weight: 50,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.12,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.easeInCubic)),
-        weight: 50,
-      ),
-    ]).animate(_likeBtnAnimController);
-
-    // Floating Canvas Feedback Heart Animation for Double-Tap (0.5 -> 1.2 -> 1.0, 650ms)
-    _floatingHeartAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 650),
-    );
-
-    _floatingHeartScaleAnim = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 0.5,
-          end: 1.2,
-        ).chain(CurveTween(curve: Curves.easeOutBack)),
-        weight: 40,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.2,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 25,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.0,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.linear)),
-        weight: 35,
-      ),
-    ]).animate(_floatingHeartAnimController);
-
-    _floatingHeartOpacityAnim = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 0.0,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.easeIn)),
-        weight: 20,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.0,
-          end: 1.0,
-        ).chain(CurveTween(curve: Curves.linear)),
-        weight: 45,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 1.0,
-          end: 0.0,
-        ).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 35,
-      ),
-    ]).animate(_floatingHeartAnimController);
-
-    _floatingHeartTranslateAnim =
-        Tween<Offset>(begin: Offset.zero, end: const Offset(0, -28.0)).animate(
-          CurvedAnimation(
-            parent: _floatingHeartAnimController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
-
     if (_currentGroup == null || _currentGroup!.stories.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _closeViewer());
     } else {
@@ -383,8 +305,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   void dispose() {
     _progressAnimController.dispose();
     _replyController.dispose();
-    _likeBtnAnimController.dispose();
-    _floatingHeartAnimController.dispose();
     super.dispose();
   }
 
@@ -392,8 +312,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     final story = _currentStory;
     if (story != null) {
       story.isViewed = true;
-      if (Get.isRegistered<StoryController>()) {
-        Get.find<StoryController>().markStoryAsViewed(story.id);
+      if (story.id.startsWith('demo_')) {
+        markDemoStoryViewed(story.id);
+      } else if (Get.isRegistered<StoryController>()) {
+        final ctrl = Get.find<StoryController>();
+        ctrl.markStoryAsViewed(story.id);
+        ctrl.markStoryViewed(story.id);
       }
     }
   }
@@ -524,7 +448,15 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     }
   }
 
-  void _toggleLike(StoryItemModel story) {
+  Future<void> _toggleLike(StoryItemModel story) async {
+    debugPrint(
+      '[StoryViewer] Like button tapped | '
+      'Story ID: ${story.id} | '
+      'Story owner ID: ${_currentGroup?.userId} | '
+      'Current user ID: ${CurrentUser.id} | '
+      'Current liked state: ${story.isLiked}',
+    );
+
     if (!story.allowReactions) {
       AppNotificationBanner.showInfo(
         context: context,
@@ -534,27 +466,72 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       return;
     }
 
-    // Debounce: prevent rapid duplicate like/unlike requests
-    if (_isLikeDebouncing) return;
-    _isLikeDebouncing = true;
-    Future.delayed(const Duration(milliseconds: 300), () {
-      _isLikeDebouncing = false;
-    });
-
-    // Sync with backend via controller
-    if (Get.isRegistered<StoryController>()) {
-      final ctrl = Get.find<StoryController>();
-      ctrl.syncLikeToBackend(story.id);
-    } else {
-      story.isLiked = !story.isLiked;
-      story.likesCount += story.isLiked ? 1 : -1;
+    // Safety: Prevent user from liking their own story
+    if (_isOwnStory) {
+      debugPrint('[StoryViewer] Blocked reaction: User owns this story.');
+      return;
     }
 
-    // Rebuild UI with new state immediately
-    setState(() {});
+    // Debounce: prevent rapid multi-touch hardware jitter (<120ms)
+    final now = DateTime.now();
+    if (_lastLikeTapTime != null &&
+        now.difference(_lastLikeTapTime!).inMilliseconds < 120) {
+      debugPrint('[StoryViewer] Ignored reaction: within 120ms jitter window.');
+      return;
+    }
+    _lastLikeTapTime = now;
 
-    // Animate button heart icon (scale 1.0 -> 1.18 -> 1.0)
-    _likeBtnAnimController.forward(from: 0.0);
+    final previousLiked = story.isLiked;
+    final previousLikesCount = story.likesCount;
+    final targetLiked = !story.isLiked;
+    final targetLikesCount = story.likesCount + (targetLiked ? 1 : -1);
+
+    debugPrint(
+      '[StoryViewer] Reaction triggered immediately | '
+      'Story ID: ${story.id} | '
+      'Target liked state: $targetLiked',
+    );
+
+    // 1. Immediate optimistic UI update (0ms latency for smooth micro-interaction)
+    story.isLiked = targetLiked;
+    story.likesCount = targetLikesCount;
+    if (mounted) setState(() {});
+
+    debugPrint(
+      '[StoryViewer] Reaction state updated | '
+      'New liked state: ${story.isLiked} | '
+      'New likes count: ${story.likesCount}',
+    );
+
+    // For demo stories, update local demo state and skip backend API call
+    final isDemo = story.id.startsWith('demo_') ||
+        (_currentGroup?.userId.startsWith('demo_') ?? false);
+    if (isDemo) {
+      updateDemoStoryLike(story.id, targetLiked, targetLikesCount);
+      return;
+    }
+
+    // 2. Sync with backend in background with rollback on error
+    if (Get.isRegistered<StoryController>()) {
+      final ctrl = Get.find<StoryController>();
+      try {
+        await ctrl.syncLikeToBackend(story.id);
+        debugPrint('[StoryViewer] API response status: SUCCESS for story: ${story.id}');
+      } catch (e) {
+        debugPrint('[StoryViewer] API response status: FAILED ($e). Rolling back liked state.');
+        if (mounted) {
+          story.isLiked = previousLiked;
+          story.likesCount = previousLikesCount;
+          setState(() {});
+          AppNotificationBanner.showDanger(
+            context: context,
+            title: "Error",
+            message: "Failed to update like status.",
+          );
+        }
+        return;
+      }
+    }
 
     // Create activity notification if story is liked
     if (story.isLiked && Get.isRegistered<NotificationController>()) {
@@ -582,17 +559,13 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     final story = _currentStory;
     if (story == null || !story.allowReactions) return;
 
-    if (!story.isLiked) {
-      _toggleLike(story);
-    } else {
-      _likeBtnAnimController.forward(from: 0.0);
-    }
+    // Safety: Prevent user from liking their own story
+    if (_isOwnStory) return;
 
-    // Trigger center floating heart animation for double tap gesture
-    setState(() => _showHeartAnimation = true);
-    _floatingHeartAnimController.forward(from: 0.0).then((_) {
-      if (mounted) setState(() => _showHeartAnimation = false);
-    });
+    if (!story.isLiked) {
+      HapticFeedback.lightImpact();
+      _toggleLike(story);
+    }
   }
 
   Widget _buildStoryReplyThumbnail(StoryItemModel story) {
@@ -961,7 +934,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                                     }
                                   },
                                   decoration: const InputDecoration(
-                                    hintText: "Reply to story...",
+                                    hintText: "Send a message...",
                                     hintStyle: TextStyle(
                                       color: Colors.white54,
                                       fontSize: 15.5,
@@ -1101,6 +1074,36 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     StoryItemModel story,
     String message,
   ) async {
+    final isDemo = story.id.startsWith('demo_') ||
+        group.userId.startsWith('demo_');
+
+    if (isDemo) {
+      if (Get.isRegistered<NotificationController>()) {
+        final notifCtrl = Get.find<NotificationController>();
+        notifCtrl.addActivityNotification(
+          NotificationModel(
+            id: 'notif_reply_${story.id}_${DateTime.now().millisecondsSinceEpoch}',
+            type: NotificationType.comment,
+            title: 'Story Reply',
+            body: '${group.userName} replied: "$message"',
+            senderName: group.userName,
+            senderAvatar: group.userAvatar,
+            timeAgo: 'Just now',
+            timestamp: DateTime.now(),
+            isRead: false,
+            targetId: story.id,
+            targetType: 'story',
+          ),
+        );
+      }
+
+      if (mounted) {
+        _showCompactReplyToast(context, group.userName, group.userAvatar);
+        _resumeStory();
+      }
+      return;
+    }
+
     try {
       if (!Get.isRegistered<ChatController>()) {
         ChatBinding().dependencies();
@@ -1647,30 +1650,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             const SizedBox(height: 16),
 
             // 1. Copy Story Link
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.link_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              title: const Text(
-                "Copy Story Link",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              subtitle: const Text(
-                "Copy direct link to share anywhere",
-                style: TextStyle(color: Colors.white54, fontSize: 12),
-              ),
+            _StoryMenuActionTile(
+              icon: Icons.link_rounded,
+              title: "Copy Story Link",
+              subtitle: "Copy direct link to share anywhere",
               onTap: () {
                 Navigator.pop(ctx);
                 Clipboard.setData(
@@ -1686,30 +1669,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             ),
 
             // 2. Share to Campus Group
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.groups_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              title: const Text(
-                "Share to Campus Group",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              subtitle: const Text(
-                "Select a group to post story preview",
-                style: TextStyle(color: Colors.white54, fontSize: 12),
-              ),
+            _StoryMenuActionTile(
+              icon: Icons.groups_rounded,
+              title: "Share to Campus Group",
+              subtitle: "Select a group to post story preview",
               onTap: () {
                 Navigator.pop(ctx);
                 _openCampusGroupSelectionSheet(group, story);
@@ -1767,8 +1730,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       if (mounted) {
         AppNotificationBanner.showSuccess(
           context: context,
-          title: "Saved!",
-          message: "Story successfully saved to your gallery.",
+          title: "Story saved to your device.",
+          message: "",
           icon: Icons.check_circle_rounded,
         );
       }
@@ -1776,8 +1739,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       if (mounted) {
         AppNotificationBanner.showDanger(
           context: context,
-          title: "Save Error",
-          message: "An error occurred while saving.",
+          title: "Couldn't save story.",
+          message: "Please try again.",
         );
       }
     } finally {
@@ -1790,6 +1753,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     if (story == null) return;
 
     _pauseStory();
+    final storyRepo = Get.isRegistered<StoryRepository>()
+        ? Get.find<StoryRepository>()
+        : StoryRepositoryImpl();
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1799,58 +1766,123 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           color: AppColors.darkSurfacePrimary,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: FutureBuilder<List<StoryViewerModel>>(
+          future: storyRepo.getStoryViewers(story.id),
+          builder: (context, snapshot) {
+            final isLoading =
+                snapshot.connectionState == ConnectionState.waiting;
+            final viewers = snapshot.data ?? story.viewers;
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "Story Viewers (${story.viewersCount})",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Story Insights",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Text(
+                              "${isLoading ? '...' : viewers.length} Viewers",
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const Text(
+                              "  •  ",
+                              style: TextStyle(color: Colors.white38),
+                            ),
+                            const Icon(
+                              Icons.favorite_rounded,
+                              color: AppColors.likedAccent,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "${story.likesCount} Reactions",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white54),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white54),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (story.viewers.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(20),
-                child: Center(
-                  child: Text(
-                    "No insights available yet.",
-                    style: TextStyle(color: Colors.white38),
-                  ),
-                ),
-              )
-            else
-              ...story.viewers.map(
-                (v) => ListTile(
-                  leading: CircleAvatar(
-                    backgroundImage: NetworkImage(v.userAvatar),
-                  ),
-                  title: Text(
-                    v.userName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
+                const SizedBox(height: 12),
+                if (isLoading)
+                  const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                else if (viewers.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Center(
+                      child: Text(
+                        "No insights available yet.",
+                        style: TextStyle(color: Colors.white38),
+                      ),
+                    ),
+                  )
+                else
+                  ...viewers.map(
+                    (v) => ListTile(
+                      leading: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Colors.white12,
+                        backgroundImage: v.userAvatar.isNotEmpty
+                            ? (v.userAvatar.startsWith('assets/')
+                                  ? AssetImage(v.userAvatar) as ImageProvider
+                                  : NetworkImage(v.userAvatar))
+                            : const AssetImage(
+                                'assets/images/user_profile.png',
+                              ) as ImageProvider,
+                      ),
+                      title: Text(
+                        v.userName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        v.viewedTimeAgo,
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
-                  subtitle: Text(
-                    v.viewedTimeAgo,
-                    style: const TextStyle(color: Colors.white38, fontSize: 12),
-                  ),
-                ),
-              ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     ).then((_) => _resumeStory());
@@ -2175,13 +2207,168 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     });
   }
 
-  void _showMoreMenu() {
+  void _openBlockConfirmationDialog(StoryGroupModel group) {
+    _pauseStory();
+    showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: Text(
+          "Block ${group.userName}?",
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+          ),
+        ),
+        content: const Text(
+          "They won't be able to see your stories or posts.",
+          style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: const Text(
+              "Cancel",
+              style: TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 10,
+              ),
+            ),
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: const Text(
+              "Block",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ).then((confirmed) {
+      if (confirmed == true && mounted) {
+        _closeViewer();
+        AppNotificationBanner.showSuccess(
+          context: context,
+          title: "User Blocked",
+          message: "You will no longer see stories from ${group.userName}.",
+          icon: Icons.block_rounded,
+        );
+      } else {
+        _resumeStory();
+      }
+    });
+  }
+
+  Future<void> _showDeleteStoryDialog(StoryItemModel story) async {
+    _pauseStory();
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: const Text(
+          "Delete Story?",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+          ),
+        ),
+        content: const Text(
+          "Are you sure you want to permanently delete this story?",
+          style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: const Text(
+              "Cancel",
+              style: TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 10,
+              ),
+            ),
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: const Text(
+              "Delete",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final controller = Get.isRegistered<StoryController>()
+          ? Get.find<StoryController>()
+          : null;
+      final success = await controller?.deleteStory(story.id) ?? true;
+      if (success) {
+        _closeViewer();
+        final bannerCtx = Get.context ?? Get.overlayContext ?? context;
+        if (bannerCtx.mounted) {
+          AppNotificationBanner.showSuccess(
+            context: bannerCtx,
+            title: "Story deleted successfully.",
+            message: "",
+            icon: Icons.check_circle_rounded,
+          );
+        }
+      } else {
+        final bannerCtx = Get.context ?? Get.overlayContext ?? context;
+        if (bannerCtx.mounted) {
+          AppNotificationBanner.showDanger(
+            context: bannerCtx,
+            title: "Couldn't delete story. Please try again.",
+            message: "",
+          );
+        }
+        _resumeStory();
+      }
+    } else {
+      _resumeStory();
+    }
+  }
+
+  Future<void> _showMoreMenu() async {
     final group = _currentGroup;
     final story = _currentStory;
     if (group == null || story == null) return;
 
     _pauseStory();
-    showModalBottomSheet(
+    final action = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -2219,7 +2406,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 child: Row(
                   children: [
                     Text(
-                      group.isOwner ? "Manage Your Story" : "Story Options",
+                      _isOwnStory ? "Manage Your Story" : "Story Options",
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -2241,55 +2428,24 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
                   child: Column(
                     children: [
-                      if (group.isOwner) ...[
+                      if (_isOwnStory) ...[
                         // ── MY STORY OPTIONS ──
-                        _buildMenuOptionTile(
-                          ctx: ctx,
-                          icon: Icons.edit_outlined,
-                          title: "Edit Story",
-                          subtitle: "Modify story text, layers, or background",
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            _pauseStory();
-                            Get.to(
-                              () => StoryCreatorScreen(
-                                type: _currentStory!.type,
-                                existingStory: _currentStory,
-                              ),
-                              routeName: '/StoryCreatorScreen',
-                              transition: Transition.fadeIn,
-                              duration: const Duration(milliseconds: 200),
-                              curve: Curves.easeOutCubic,
-                            )?.then((_) => _resumeStory());
-                          },
-                        ),
                         _buildMenuOptionTile(
                           ctx: ctx,
                           icon: Icons.lock_outline_rounded,
                           title: "Story Privacy",
-                          subtitle: "Who can see your story (${_currentStory?.settings.visibility == StoryPrivacy.public ? 'Public' : (_currentStory?.settings.visibility == StoryPrivacy.onlyMe ? 'Only Me' : 'Friends')})",
+                          subtitle: "Who can see your story",
                           onTap: () {
-                            Navigator.pop(ctx);
-                            _showPrivacySheet();
-                          },
-                        ),
-                        _buildMenuOptionTile(
-                          ctx: ctx,
-                          icon: Icons.bar_chart_rounded,
-                          title: "Story Insights",
-                          subtitle: "See viewers, likes, and story analytics",
-                          onTap: () {
-                            _showViewersSheet();
+                            Navigator.pop(ctx, 'privacy');
                           },
                         ),
                         _buildMenuOptionTile(
                           ctx: ctx,
                           icon: Icons.download_rounded,
                           title: "Save to Device",
-                          subtitle: "Save story photo/video to phone gallery",
+                          subtitle: "Save story photo/video to your phone gallery",
                           onTap: () {
-                            Navigator.pop(ctx);
-                            _saveStoryToDevice();
+                            Navigator.pop(ctx, 'save');
                           },
                         ),
                         _buildMenuOptionTile(
@@ -2298,79 +2454,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           title: "Delete Story",
                           subtitle: "Permanently remove this story",
                           isDanger: true,
-                          onTap: () async {
-                            final bool? confirmed = await showDialog<bool>(
-                              context: context,
-                              builder: (dialogCtx) => AlertDialog(
-                                backgroundColor: const Color(0xFF1E1E1E),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(22),
-                                ),
-                                title: const Text(
-                                  "Delete Story?",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 17,
-                                  ),
-                                ),
-                                content: const Text(
-                                  "This story will be permanently deleted.",
-                                  style: TextStyle(
-                                    color: Color(0xFFAAAAAA),
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(dialogCtx, false),
-                                    child: const Text(
-                                      "Cancel",
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.danger,
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 10,
-                                      ),
-                                    ),
-                                    onPressed: () =>
-                                        Navigator.pop(dialogCtx, true),
-                                    child: const Text(
-                                      "Delete",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-
-                            if (confirmed == true && mounted) {
-                              final controller = Get.find<StoryController>();
-                              controller.deleteStory(story.id);
-                              _closeViewer();
-                              AppNotificationBanner.showSuccess(
-                                context: context,
-                                title: "✓ Story Deleted",
-                                message:
-                                    "Your story has been permanently deleted.",
-                                icon: Icons.check_circle_rounded,
-                              );
-                            }
+                          onTap: () {
+                            Navigator.pop(ctx, 'delete');
                           },
                         ),
                       ] else ...[
@@ -2381,7 +2466,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           title: "Share Story",
                           subtitle: "Share to Campus Group or friends",
                           onTap: () {
-                            _openStoryShareSheet(group, story);
+                            Navigator.pop(ctx, 'share');
                           },
                         ),
                         _buildMenuOptionTile(
@@ -2390,17 +2475,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           title: "Copy Story Link",
                           subtitle: "Copy direct link to share anywhere",
                           onTap: () {
-                            Clipboard.setData(
-                              ClipboardData(
-                                text: "https://genlink.app/story/${story.id}",
-                              ),
-                            );
-                            AppNotificationBanner.showSuccess(
-                              context: context,
-                              title: "Link Copied",
-                              message: "Story link copied to clipboard!",
-                              icon: Icons.copy_rounded,
-                            );
+                            Navigator.pop(ctx, 'copy_link');
                           },
                         ),
                         _buildMenuOptionTile(
@@ -2409,7 +2484,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           title: "Report Story",
                           subtitle: "Report inappropriate content or spam",
                           onTap: () {
-                            _openReportStorySheet(group, story);
+                            Navigator.pop(ctx, 'report');
                           },
                         ),
                         _buildMenuOptionTile(
@@ -2418,7 +2493,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           title: "Mute Stories",
                           subtitle: "Stop seeing stories from this user",
                           onTap: () {
-                            _openMuteConfirmationDialog(group);
+                            Navigator.pop(ctx, 'mute');
                           },
                         ),
                         _buildMenuOptionTile(
@@ -2427,77 +2502,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           title: "Block User",
                           subtitle: "Block this user from contacting you",
                           isDanger: true,
-                          onTap: () async {
-                            final bool? confirmed = await showDialog<bool>(
-                              context: context,
-                              builder: (dialogCtx) => AlertDialog(
-                                backgroundColor: const Color(0xFF1E1E1E),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(22),
-                                ),
-                                title: Text(
-                                  "Block ${group.userName}?",
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 17,
-                                  ),
-                                ),
-                                content: const Text(
-                                  "They won't be able to see your stories or posts.",
-                                  style: TextStyle(
-                                    color: Color(0xFFAAAAAA),
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(dialogCtx, false),
-                                    child: const Text(
-                                      "Cancel",
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.danger,
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 10,
-                                      ),
-                                    ),
-                                    onPressed: () =>
-                                        Navigator.pop(dialogCtx, true),
-                                    child: const Text(
-                                      "Block",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-
-                            if (confirmed == true && mounted) {
-                              _closeViewer();
-                              AppNotificationBanner.showSuccess(
-                                context: context,
-                                title: "User Blocked",
-                                message:
-                                    "You will no longer see stories from ${group.userName}.",
-                                icon: Icons.block_rounded,
-                              );
-                            }
+                          onTap: () {
+                            Navigator.pop(ctx, 'block');
                           },
                         ),
                       ],
@@ -2509,7 +2515,37 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           ),
         ),
       ),
-    ).then((_) => _resumeStory());
+    );
+
+    if (action == 'privacy') {
+      _showPrivacySheet();
+    } else if (action == 'save') {
+      _saveStoryToDevice();
+    } else if (action == 'delete') {
+      await _showDeleteStoryDialog(story);
+    } else if (action == 'share') {
+      _openStoryShareSheet(group, story);
+    } else if (action == 'copy_link') {
+      Clipboard.setData(ClipboardData(text: "https://genlink.app/story/${story.id}"));
+      final bannerCtx = Get.context ?? Get.overlayContext ?? context;
+      if (bannerCtx.mounted) {
+        AppNotificationBanner.showSuccess(
+          context: bannerCtx,
+          title: "Link Copied",
+          message: "Story link copied to clipboard!",
+          icon: Icons.copy_rounded,
+        );
+      }
+      _resumeStory();
+    } else if (action == 'report') {
+      _openReportStorySheet(group, story);
+    } else if (action == 'mute') {
+      _openMuteConfirmationDialog(group);
+    } else if (action == 'block') {
+      _openBlockConfirmationDialog(group);
+    } else {
+      _resumeStory();
+    }
   }
 
   Widget _buildMenuOptionTile({
@@ -2520,47 +2556,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     required VoidCallback onTap,
     bool isDanger = false,
   }) {
-    final titleColor = isDanger ? AppColors.danger : Colors.white;
-    final iconColor = isDanger ? AppColors.danger : Colors.white;
-    final iconBg = isDanger
-        ? AppColors.danger.withValues(alpha: 0.15)
-        : Colors.white.withValues(alpha: 0.08);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-        leading: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
-          child: Icon(icon, color: iconColor, size: 18),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: titleColor,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
-            fontSize: 11.5,
-          ),
-        ),
-        onTap: () {
-          Navigator.pop(ctx);
-          onTap();
-        },
-      ),
+    return _StoryMenuActionTile(
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
+      onTap: onTap,
+      isDanger: isDanger,
     );
   }
 
@@ -2636,6 +2637,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       matchedTemplate ??= storyTemplatePresets.first;
     }
 
+    final demoStory = getDemoStoryById(story.id);
+
     return Stack(
       children: [
         Positioned.fill(child: _buildMediaWidget(story, group)),
@@ -2648,27 +2651,103 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               customText: story.textContent,
             ),
           ),
-        ...story.layers.map((layer) => _buildViewerLayerWidget(layer)),
-        if (!isTemplate &&
-            story.layers.isEmpty &&
-            story.textContent != null &&
-            story.textContent!.trim().isNotEmpty)
-          Positioned(
-            left: 28,
-            right: 28,
-            bottom: 120,
-            child: Text(
-              story.textContent!,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                height: 1.35,
-                shadows: [Shadow(color: Colors.black87, blurRadius: 16)],
+        if (demoStory != null)
+          Positioned.fill(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (demoStory.icon != null) ...[
+                      Container(
+                        width: 64,
+                        height: 64,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.18),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.35),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Icon(
+                          demoStory.icon,
+                          size: 32,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    if (demoStory.tag != null && demoStory.tag!.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          demoStory.tag!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    Text(
+                      demoStory.storyContent,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        height: 1.45,
+                        letterSpacing: -0.2,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black38,
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          )
+        else ...[
+          ...story.layers.map((layer) => _buildViewerLayerWidget(layer)),
+          if (!isTemplate &&
+              story.layers.isEmpty &&
+              story.textContent != null &&
+              story.textContent!.trim().isNotEmpty)
+            Positioned(
+              left: 28,
+              right: 28,
+              bottom: 120,
+              child: Text(
+                story.textContent!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  height: 1.35,
+                  shadows: [Shadow(color: Colors.black87, blurRadius: 16)],
+                ),
+              ),
+            ),
+        ],
       ],
     );
   }
@@ -2702,15 +2781,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     Widget mediaWidget;
 
     final url = story.mediaUrl!;
-    if (url.startsWith('assets/')) {
-      mediaWidget = Image.asset(
-        url,
-        fit: BoxFit.contain,
-        alignment: Alignment.center,
-        errorBuilder: (context, error, stackTrace) =>
-            _buildErrorMediaPlaceholder(),
-      );
-    } else if (_isVideoFile(url)) {
+    if (story.type == StoryType.video || _isVideoFile(url)) {
       mediaWidget = Container(
         color: Colors.black,
         child: Center(
@@ -2780,6 +2851,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             ],
           ),
         ),
+      );
+    } else if (url.startsWith('assets/')) {
+      mediaWidget = Image.asset(
+        url,
+        fit: BoxFit.contain,
+        alignment: Alignment.center,
+        errorBuilder: (context, error, stackTrace) =>
+            _buildErrorMediaPlaceholder(),
       );
     } else if (url.startsWith('http://') || url.startsWith('https://')) {
       mediaWidget = Image.network(
@@ -3301,8 +3380,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             _closeViewer();
           }
         },
-        child: Stack(
-          children: [
+        child: RepaintBoundary(
+          key: _storyContentKey,
+          child: Stack(
+            children: [
             // Full Screen Story Content with Ultra-Comfortable 90ms Anchored Pure Crossfade (Instagram / WhatsApp Comfort Standard)
             Positioned.fill(
               child: AnimatedSwitcher(
@@ -3315,7 +3396,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 child: KeyedSubtree(
                   key: ValueKey("story_${story.id}"),
                   child: RepaintBoundary(
-                    key: _storyContentKey,
                     child: _buildUnifiedStoryPageContent(story, group),
                   ),
                 ),
@@ -3381,47 +3461,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 ],
               ),
             ),
-
-            // Floating Heart Feedback (rises & fades near center on double-tap)
-            if (_showHeartAnimation)
-              Center(
-                child: AnimatedBuilder(
-                  animation: _floatingHeartAnimController,
-                  builder: (context, child) {
-                    return Transform.translate(
-                      offset: _floatingHeartTranslateAnim.value,
-                      child: Transform.scale(
-                        scale: _floatingHeartScaleAnim.value,
-                        child: Opacity(
-                          opacity: _floatingHeartOpacityAnim.value.clamp(
-                            0.0,
-                            1.0,
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.50),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.45),
-                                  blurRadius: 20,
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.favorite_rounded,
-                              color: AppColors.likedAccent,
-                              size: 72,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
 
             // Top Header: Segmented Progress Bar & Clean User Avatar Header Row
             Positioned(
@@ -3498,16 +3537,13 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                               );
                               _resumeStory();
                             },
-                            child: Hero(
-                              tag: 'story_avatar_${group.userId}',
-                              child: CircleAvatar(
-                                radius: 18,
-                                backgroundImage:
-                                    group.userAvatar.startsWith('assets/')
-                                    ? AssetImage(group.userAvatar)
-                                          as ImageProvider
-                                    : NetworkImage(group.userAvatar),
-                              ),
+                            child: CircleAvatar(
+                              radius: 18,
+                              backgroundImage:
+                                  group.userAvatar.startsWith('assets/')
+                                  ? AssetImage(group.userAvatar)
+                                        as ImageProvider
+                                  : NetworkImage(group.userAvatar),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -3616,8 +3652,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      if (group.isOwner) ...[
-                        // ── Owner Actions: Viewers Pill Button ──
+                      if (_isOwnStory) ...[
+                        // ── Owner Actions: Viewers & Likes Engagement Pill Button ──
                         InkWell(
                           borderRadius: BorderRadius.circular(22),
                           onTap: _showViewersSheet,
@@ -3639,13 +3675,34 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                                   color: Colors.white,
                                   size: 18,
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
                                 Text(
-                                  "${story.viewersCount} Viewers",
+                                  "${story.viewersCount}",
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Container(
+                                  width: 1,
+                                  height: 14,
+                                  color: Colors.white24,
+                                ),
+                                const SizedBox(width: 10),
+                                const Icon(
+                                  Icons.favorite_rounded,
+                                  color: AppColors.likedAccent,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  "${story.likesCount}",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],
@@ -3658,16 +3715,16 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                             StoryReplyPermission.off)
                           Expanded(
                             child: InkWell(
-                              borderRadius: BorderRadius.circular(19),
+                              borderRadius: BorderRadius.circular(21),
                               onTap: () => _openStoryReplySheet(group, story),
                               child: Container(
-                                height: 38,
+                                height: 42,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 14,
                                 ),
                                 decoration: BoxDecoration(
                                   color: Colors.black.withValues(alpha: 0.35),
-                                  borderRadius: BorderRadius.circular(19),
+                                  borderRadius: BorderRadius.circular(21),
                                   border: Border.all(
                                     color: Colors.white.withValues(alpha: 0.08),
                                     width: 0.5,
@@ -3681,20 +3738,17 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                                       color: Colors.white.withValues(
                                         alpha: 0.50,
                                       ),
-                                      size: 15,
+                                      size: 16,
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        'community.writeCommentHint'.tr.length >
-                                                15
-                                            ? "Comment..."
-                                            : 'community.writeCommentHint'.tr,
+                                        "Send a message...",
                                         style: TextStyle(
                                           color: Colors.white.withValues(
-                                            alpha: 0.45,
+                                            alpha: 0.65,
                                           ),
-                                          fontSize: 12,
+                                          fontSize: 13,
                                           fontWeight: FontWeight.w400,
                                           letterSpacing: 0.1,
                                         ),
@@ -3710,66 +3764,22 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                         else
                           const Spacer(),
 
-                        if (story.allowReactions) ...[
-                          const SizedBox(width: 10),
+                        if (story.allowReactions && !_isOwnStory) ...[
+                          const SizedBox(width: 8),
 
-                          // ── Monochrome Like Button ──
-                          Semantics(
-                            label: story.isLiked
-                                ? 'Unlike story'
-                                : 'Like story',
-                            button: true,
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () => _toggleLike(story),
-                              child: ScaleTransition(
-                                scale: _likeBtnScaleAnim,
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 180),
-                                  curve: Curves.easeOutCubic,
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.50),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: story.isLiked
-                                          ? Colors.white.withValues(alpha: 0.35)
-                                          : Colors.white.withValues(
-                                              alpha: 0.20,
-                                            ),
-                                      width: 1.0,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.30,
-                                        ),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Center(
-                                    child: Icon(
-                                      story.isLiked
-                                          ? Icons.favorite_rounded
-                                          : Icons.favorite_border_rounded,
-                                      color: story.isLiked
-                                          ? AppColors.likedAccent
-                                          : Colors.white,
-                                      size: 24,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
+                          // ── Interactive Like Button ──
+                          StoryInteractiveLikeButton(
+                            key: ValueKey('story_like_${story.id}'),
+                            isLiked: story.isLiked,
+                            likesCount: story.likesCount,
+                            showCount: story.id.startsWith('demo_'),
+                            onTap: () => _toggleLike(story),
                           ),
                         ],
 
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 8),
 
-                        // More Menu Button (38x38)
+                        // More Menu Button (42x42 with 48x48 hit target)
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTapDown: (_) =>
@@ -3779,29 +3789,37 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           onTapCancel: () =>
                               setState(() => _isMorePressed = false),
                           onTap: _showMoreMenu,
-                          child: AnimatedScale(
-                            scale: _isMorePressed ? 0.90 : 1.0,
-                            duration: const Duration(milliseconds: 120),
-                            curve: Curves.easeOutCubic,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 160),
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                color: _isMorePressed
-                                    ? Colors.white.withValues(alpha: 0.16)
-                                    : Colors.black.withValues(alpha: 0.35),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.12),
-                                  width: 0.6,
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
+                            alignment: Alignment.center,
+                            color: Colors.transparent,
+                            child: AnimatedScale(
+                              scale: _isMorePressed ? 0.90 : 1.0,
+                              duration: const Duration(milliseconds: 120),
+                              curve: Curves.easeOutCubic,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 160),
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: _isMorePressed
+                                      ? Colors.white.withValues(alpha: 0.16)
+                                      : Colors.black.withValues(alpha: 0.35),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.12),
+                                    width: 0.6,
+                                  ),
                                 ),
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.more_horiz_rounded,
-                                  color: Colors.white,
-                                  size: 20,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.more_horiz_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                 ),
                               ),
                             ),
@@ -3814,6 +3832,125 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               ),
             ),
           ],
+        ),
+      ),
+    ),
+  );
+}
+}
+
+class _StoryMenuActionTile extends StatefulWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool isDanger;
+
+  const _StoryMenuActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.isDanger = false,
+  });
+
+  @override
+  State<_StoryMenuActionTile> createState() => _StoryMenuActionTileState();
+}
+
+class _StoryMenuActionTileState extends State<_StoryMenuActionTile> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final titleColor = widget.isDanger ? AppColors.danger : Colors.white;
+    final iconColor = widget.isDanger ? AppColors.danger : Colors.white;
+    final iconBg = widget.isDanger
+        ? AppColors.danger.withValues(alpha: 0.15)
+        : Colors.white.withValues(alpha: 0.08);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOutCubic,
+        child: AnimatedOpacity(
+          opacity: _isPressed ? 0.88 : 1.0,
+          duration: const Duration(milliseconds: 110),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 52),
+            decoration: BoxDecoration(
+              color: _isPressed
+                  ? Colors.white.withValues(alpha: 0.07)
+                  : Colors.white.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _isPressed
+                    ? Colors.white.withValues(alpha: 0.18)
+                    : Colors.white.withValues(alpha: 0.04),
+                width: 0.8,
+              ),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (_) {
+                  if (mounted) setState(() => _isPressed = true);
+                },
+                onPointerUp: (_) {
+                  if (mounted) setState(() => _isPressed = false);
+                },
+                onPointerCancel: (_) {
+                  if (mounted) setState(() => _isPressed = false);
+                },
+                child: ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 2,
+                  ),
+                  minVerticalPadding: 8,
+                  leading: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: iconBg,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Icon(widget.icon, color: iconColor, size: 19),
+                    ),
+                  ),
+                  title: Text(
+                    widget.title,
+                    style: TextStyle(
+                      color: titleColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      letterSpacing: -0.1,
+                    ),
+                  ),
+                  subtitle: Text(
+                    widget.subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.48),
+                      fontSize: 11.5,
+                      height: 1.2,
+                    ),
+                  ),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    widget.onTap();
+                  },
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

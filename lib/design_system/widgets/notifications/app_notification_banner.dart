@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../colors/app_colors.dart';
 
 enum NotificationBannerType { success, error, warning, info }
@@ -51,6 +52,48 @@ class AppNotificationBanner {
     );
   }
 
+  static void showError({
+    required BuildContext context,
+    required String title,
+    required String message,
+    IconData icon = Icons.error_outline_rounded,
+    Duration duration = const Duration(seconds: 4),
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    show(
+      context: context,
+      title: title,
+      message: message,
+      type: NotificationBannerType.error,
+      icon: icon,
+      duration: duration,
+      actionLabel: actionLabel,
+      onAction: onAction,
+    );
+  }
+
+  static void showWarning({
+    required BuildContext context,
+    required String title,
+    required String message,
+    IconData icon = Icons.warning_amber_rounded,
+    Duration duration = const Duration(seconds: 3),
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    show(
+      context: context,
+      title: title,
+      message: message,
+      type: NotificationBannerType.warning,
+      icon: icon,
+      duration: duration,
+      actionLabel: actionLabel,
+      onAction: onAction,
+    );
+  }
+
   static void showInfo({
     required BuildContext context,
     required String title,
@@ -91,9 +134,34 @@ class AppNotificationBanner {
           Overlay.maybeOf(context);
     } catch (_) {}
 
+    if (overlayState == null && Get.overlayContext != null) {
+      try {
+        overlayState =
+            Overlay.maybeOf(Get.overlayContext!, rootOverlay: true) ??
+            Overlay.maybeOf(Get.overlayContext!);
+      } catch (_) {}
+    }
+
+    if (overlayState == null && Get.key.currentState?.overlay != null) {
+      overlayState = Get.key.currentState?.overlay;
+    }
+
     if (overlayState == null) {
       debugPrint(
         '[AppNotificationBanner] No Overlay found for banner: $title - $message',
+      );
+      Get.rawSnackbar(
+        title: title,
+        message: message,
+        backgroundColor: AppColors.darkSurfacePrimary.withValues(alpha: 0.95),
+        borderRadius: 20,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        snackPosition: SnackPosition.TOP,
+        duration: duration,
+        icon: Icon(
+          icon ?? (type == NotificationBannerType.success ? Icons.check_circle_rounded : Icons.info_outline_rounded),
+          color: type == NotificationBannerType.success ? AppColors.success : AppColors.danger,
+        ),
       );
       return;
     }
@@ -162,15 +230,23 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 350),
+      duration: const Duration(milliseconds: 280),
     );
 
-    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
+    _fadeAnim = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOut,
+    );
 
-    _slideAnim = Tween<Offset>(begin: const Offset(0, -1.2), end: Offset.zero)
-        .animate(
-          CurvedAnimation(parent: _animController, curve: Curves.easeOutBack),
-        );
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, -0.6),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
 
     _animController.forward();
 
@@ -194,22 +270,22 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
   Color get _accentColor {
     switch (widget.type) {
       case NotificationBannerType.success:
-        return AppColors.success; // #4ADE80
+        return const Color(0xFF4ADE80); // Vibrant GenLink success green
       case NotificationBannerType.error:
-        return AppColors.danger; // #EF6A6A
+        return const Color(0xFFEF6A6A); // Danger red
       case NotificationBannerType.warning:
-        return AppColors.warning; // #F5B84B
+        return const Color(0xFFF5B84B); // Warning amber
       case NotificationBannerType.info:
-        return AppColors.communityAccent; // #5DADEC
+        return const Color(0xFF5DADEC); // Community blue
     }
   }
 
   IconData get _defaultIcon {
     switch (widget.type) {
       case NotificationBannerType.success:
-        return Icons.check_circle_rounded;
+        return Icons.check_rounded;
       case NotificationBannerType.error:
-        return Icons.delete_outline_rounded;
+        return Icons.close_rounded;
       case NotificationBannerType.warning:
         return Icons.warning_amber_rounded;
       case NotificationBannerType.info:
@@ -222,143 +298,149 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
     final topPadding = MediaQuery.of(context).padding.top;
 
     return Positioned(
-      top: topPadding + 12,
+      top: topPadding + 6,
       left: 16,
       right: 16,
-      child: Material(
-        color: Colors.transparent,
-        child: SlideTransition(
-          position: _slideAnim,
-          child: FadeTransition(
-            opacity: _fadeAnim,
-            child: Dismissible(
-              key: UniqueKey(),
-              direction: DismissDirection.up,
-              onDismissed: (_) => widget.onDismiss(),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.darkSurfacePrimary.withValues(
-                        alpha: 0.92,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: _accentColor.withValues(alpha: 0.35),
-                        width: 1.0,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.5),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Material(
+            color: Colors.transparent,
+            child: SlideTransition(
+              position: _slideAnim,
+              child: FadeTransition(
+                opacity: _fadeAnim,
+                child: Dismissible(
+                  key: UniqueKey(),
+                  direction: DismissDirection.up,
+                  onDismissed: (_) => widget.onDismiss(),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Icon Container
-                        Container(
-                          padding: const EdgeInsets.all(9),
-                          decoration: BoxDecoration(
-                            color: _accentColor.withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF14161A).withValues(alpha: 0.96),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            width: 0.8,
                           ),
-                          child: Icon(
-                            widget.icon ?? _defaultIcon,
-                            color: _accentColor,
-                            size: 20,
-                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.35),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-
-                        // Title & Message Text Column (Expanded to prevent overflow)
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                widget.title,
-                                style: const TextStyle(
-                                  color: AppColors.darkTextPrimary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13.5,
-                                  letterSpacing: -0.2,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (widget.message.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  widget.message,
-                                  style: const TextStyle(
-                                    color: AppColors.darkTextSecondary,
-                                    fontSize: 12,
-                                    height: 1.35,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-
-                        // Optional Action Button or Close Button
-                        if (widget.actionLabel != null) ...[
-                          const SizedBox(width: 8),
-                          InkWell(
-                            onTap: () {
-                              _hide();
-                              widget.onAction?.call();
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // 1. Small Icon inside circular container
+                            Container(
+                              width: 28,
+                              height: 28,
                               decoration: BoxDecoration(
-                                color: _accentColor,
-                                borderRadius: BorderRadius.circular(12),
+                                color: _accentColor.withValues(alpha: 0.14),
+                                shape: BoxShape.circle,
                               ),
-                              child: Text(
-                                widget.actionLabel!,
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
+                              alignment: Alignment.center,
+                              child: Icon(
+                                widget.icon ?? _defaultIcon,
+                                color: _accentColor,
+                                size: 15,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+
+                            // 2. Text Hierarchy (White Title + Gray Message)
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    widget.title,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12.5,
+                                      letterSpacing: -0.1,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (widget.message.isNotEmpty) ...[
+                                    const SizedBox(height: 1.5),
+                                    Text(
+                                      widget.message,
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.65),
+                                        fontSize: 11,
+                                        height: 1.2,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+
+                            // 3. Optional Action Button or Small Close Button
+                            if (widget.actionLabel != null) ...[
+                              const SizedBox(width: 8),
+                              InkWell(
+                                onTap: () {
+                                  _hide();
+                                  widget.onAction?.call();
+                                },
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _accentColor,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    widget.actionLabel!,
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                        ] else ...[
-                          const SizedBox(width: 4),
-                          IconButton(
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 28,
-                              minHeight: 28,
-                            ),
-                            icon: const Icon(
-                              Icons.close_rounded,
-                              color: AppColors.darkTextMuted,
-                              size: 18,
-                            ),
-                            onPressed: _hide,
-                            tooltip: 'Close',
-                          ),
-                        ],
-                      ],
+                            ] else ...[
+                              const SizedBox(width: 4),
+                              GestureDetector(
+                                onTap: _hide,
+                                behavior: HitTestBehavior.opaque,
+                                child: Container(
+                                  width: 24,
+                                  height: 24,
+                                  alignment: Alignment.center,
+                                  child: Icon(
+                                    Icons.close_rounded,
+                                    color: Colors.white.withValues(alpha: 0.4),
+                                    size: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),

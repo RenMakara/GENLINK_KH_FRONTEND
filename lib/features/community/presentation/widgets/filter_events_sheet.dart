@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
+import '../controllers/community_controller.dart';
 
 class FilterEventsSheet extends StatefulWidget {
   const FilterEventsSheet({super.key});
@@ -10,25 +11,138 @@ class FilterEventsSheet extends StatefulWidget {
 }
 
 class _FilterEventsSheetState extends State<FilterEventsSheet> {
-  String selectedDate = 'Upcoming';
-  final Set<String> selectedCategories = {'Workshop'};
-  String selectedMode = 'All';
-  String selectedPrice = 'All';
+  late String selectedDate;
+  late Set<String> selectedCategories;
+  late String selectedMode;
+  late String selectedPrice;
+
+  CommunityController? _controller;
 
   final List<String> dateOptions = [
+    'All',
     'Today',
     'This Week',
     'This Month',
     'Upcoming',
   ];
+
+  final List<String> modeOptions = [
+    'All',
+    'In person',
+    'Online',
+  ];
+
+  final List<String> priceOptions = [
+    'All',
+    'Free',
+    'Paid',
+  ];
+
   final List<Map<String, dynamic>> categoryOptions = [
     {'name': 'Workshop', 'icon': Icons.tune},
     {'name': 'Seminar', 'icon': Icons.groups_outlined},
     {'name': 'Competition', 'icon': Icons.emoji_events_outlined},
     {'name': 'Hackathon', 'icon': Icons.terminal_outlined},
-    {'name': 'Volunteer', 'icon': Icons.favorite_border},
     {'name': 'Career', 'icon': Icons.work_outline},
+    {'name': 'Technology', 'icon': Icons.memory_rounded},
   ];
+
+  String _getLocalizedLabel(String key) {
+    final lower = key.toLowerCase();
+    if (lower == 'all') {
+      return 'community.all'.tr.isNotEmpty && 'community.all'.tr != 'community.all'
+          ? 'community.all'.tr
+          : 'All';
+    }
+    if (lower == 'today') {
+      return 'community.today'.tr.isNotEmpty && 'community.today'.tr != 'community.today'
+          ? 'community.today'.tr
+          : 'Today';
+    }
+    if (lower == 'this week') {
+      return 'community.thisWeek'.tr.isNotEmpty && 'community.thisWeek'.tr != 'community.thisWeek'
+          ? 'community.thisWeek'.tr
+          : 'This Week';
+    }
+    if (lower == 'this month') {
+      return 'community.thisMonth'.tr.isNotEmpty && 'community.thisMonth'.tr != 'community.thisMonth'
+          ? 'community.thisMonth'.tr
+          : 'This Month';
+    }
+    if (lower == 'upcoming') {
+      return 'community.upcoming'.tr.isNotEmpty && 'community.upcoming'.tr != 'community.upcoming'
+          ? 'community.upcoming'.tr
+          : 'Upcoming';
+    }
+    if (lower == 'in person') {
+      return 'community.inPerson'.tr.isNotEmpty && 'community.inPerson'.tr != 'community.inPerson'
+          ? 'community.inPerson'.tr
+          : 'In Person';
+    }
+    if (lower == 'online') {
+      return 'community.online'.tr.isNotEmpty && 'community.online'.tr != 'community.online'
+          ? 'community.online'.tr
+          : 'Online';
+    }
+    if (lower == 'free') {
+      return 'community.free'.tr.isNotEmpty && 'community.free'.tr != 'community.free'
+          ? 'community.free'.tr
+          : 'Free';
+    }
+    if (lower == 'paid') {
+      return 'community.paid'.tr.isNotEmpty && 'community.paid'.tr != 'community.paid'
+          ? 'community.paid'.tr
+          : 'Paid';
+    }
+    final catKey = 'community.$lower';
+    if (catKey.tr.isNotEmpty && catKey.tr != catKey) {
+      return catKey.tr;
+    }
+    return key;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (Get.isRegistered<CommunityController>()) {
+      _controller = Get.find<CommunityController>();
+      selectedDate = _controller!.selectedEventDate.value.isEmpty
+          ? 'All'
+          : _controller!.selectedEventDate.value;
+      selectedCategories = Set<String>.from(_controller!.selectedEventCategories);
+      selectedMode = _controller!.selectedEventMode.value.isEmpty
+          ? 'All'
+          : _controller!.selectedEventMode.value;
+      selectedPrice = _controller!.selectedEventPrice.value.isEmpty
+          ? 'All'
+          : _controller!.selectedEventPrice.value;
+    } else {
+      selectedDate = 'All';
+      selectedCategories = {};
+      selectedMode = 'All';
+      selectedPrice = 'All';
+    }
+  }
+
+  void _reset() {
+    setState(() {
+      selectedDate = 'All';
+      selectedCategories.clear();
+      selectedMode = 'All';
+      selectedPrice = 'All';
+    });
+    _controller?.resetEventFilter();
+  }
+
+  void _apply() {
+    _controller?.applyEventFilter(
+      date: selectedDate,
+      categories: selectedCategories,
+      mode: selectedMode,
+      price: selectedPrice,
+    );
+    Navigator.of(context).pop();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,257 +150,405 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
     final surfacePrimary = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
+    final surfaceSecondary = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightBgSecondary;
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
     final textSecondary = isDark
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
-    final unselectedBg = isDark
-        ? Colors.white.withValues(alpha: 0.04)
-        : AppColors.lightBgSecondary;
-    final unselectedBorder = isDark
-        ? Colors.white10
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
       decoration: BoxDecoration(
         color: surfacePrimary,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: SingleChildScrollView(
+      child: SafeArea(
+        top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title Header
+            // Drag Handle
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Title Header & Reset Button
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'community.filterEvents'.tr,
+                  'community.filterEvents'.tr.isNotEmpty &&
+                          'community.filterEvents'.tr != 'community.filterEvents'
+                      ? 'community.filterEvents'.tr
+                      : 'Filter Events',
                   style: TextStyle(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
-                    fontSize: 20,
+                    fontSize: 18,
                   ),
                 ),
                 TextButton(
-                  onPressed: () {
-                    setState(() {
-                      selectedDate = 'Upcoming';
-                      selectedCategories.clear();
-                      selectedCategories.add('Workshop');
-                      selectedMode = 'All';
-                      selectedPrice = 'All';
-                    });
-                  },
+                  onPressed: _reset,
                   child: Text(
-                    'community.reset'.tr,
+                    'community.reset'.tr.isNotEmpty &&
+                            'community.reset'.tr != 'community.reset'
+                        ? 'community.reset'.tr
+                        : 'Reset',
                     style: const TextStyle(
                       color: AppColors.communityAccent,
                       fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
 
-            // 1. Date Section
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  color: textSecondary,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'community.dateRange'.tr,
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Column(
-              children: dateOptions.map((opt) {
-                final isSelected = selectedDate == opt;
-                return GestureDetector(
-                  onTap: () => setState(() => selectedDate = opt),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
+            const SizedBox(height: 8),
+
+            Flexible(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 1. Format / Event Type (In Person vs Online)
+                    _buildSectionHeader(
+                      icon: Icons.place_outlined,
+                      title: 'community.format'.tr.isNotEmpty &&
+                              'community.format'.tr != 'community.format'
+                          ? 'community.format'.tr
+                          : 'Format',
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
                     ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? (isDark
-                                ? Colors.white.withValues(alpha: 0.15)
-                                : Colors.black.withValues(alpha: 0.08))
-                          : unselectedBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? (isDark ? Colors.white : Colors.black)
-                            : unselectedBorder,
+                    const SizedBox(height: 8),
+                    _buildSingleSelectRow(
+                      options: modeOptions,
+                      selected: selectedMode,
+                      onSelect: (val) => setState(() => selectedMode = val),
+                      isDark: isDark,
+                      textPrimary: textPrimary,
+                      textSecondary: textSecondary,
+                      surfaceSecondary: surfaceSecondary,
+                      borderSubtle: borderSubtle,
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // 2. Date Range
+                    _buildSectionHeader(
+                      icon: Icons.calendar_today_outlined,
+                      title: 'community.dateRange'.tr.isNotEmpty &&
+                              'community.dateRange'.tr != 'community.dateRange'
+                          ? 'community.dateRange'.tr
+                          : 'Date Range',
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildSingleSelectWrap(
+                      options: dateOptions,
+                      selected: selectedDate,
+                      onSelect: (val) => setState(() => selectedDate = val),
+                      isDark: isDark,
+                      textPrimary: textPrimary,
+                      textSecondary: textSecondary,
+                      surfaceSecondary: surfaceSecondary,
+                      borderSubtle: borderSubtle,
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // 3. Category Section
+                    _buildSectionHeader(
+                      icon: Icons.grid_view_rounded,
+                      title: 'community.category'.tr.isNotEmpty &&
+                              'community.category'.tr != 'community.category'
+                          ? 'community.category'.tr
+                          : 'Category',
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                    ),
+                    const SizedBox(height: 8),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 3.2,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isSelected
-                              ? Icons.check_circle
-                              : Icons.circle_outlined,
-                          color: isSelected
-                              ? (isDark ? Colors.white : Colors.black)
-                              : textSecondary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          opt,
-                          style: TextStyle(
-                            color: isSelected
-                                ? (isDark
-                                      ? Colors.white
-                                      : AppColors.lightTextPrimary)
-                                : textSecondary,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
+                      itemCount: categoryOptions.length,
+                      itemBuilder: (context, i) {
+                        final item = categoryOptions[i];
+                        final catName = item['name'] as String;
+                        final isSelected = selectedCategories.contains(catName);
+                        final localizedCat = _getLocalizedLabel(catName);
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              if (isSelected) {
+                                selectedCategories.remove(catName);
+                              } else {
+                                selectedCategories.add(catName);
+                              }
+                            });
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? (isDark ? Colors.white : Colors.black)
+                                  : surfaceSecondary,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected
+                                    ? (isDark ? Colors.white : Colors.black)
+                                    : borderSubtle,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isSelected
+                                      ? Icons.check_circle_rounded
+                                      : item['icon'] as IconData,
+                                  color: isSelected
+                                      ? (isDark ? Colors.black : Colors.white)
+                                      : textSecondary,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    localizedCat,
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? (isDark ? Colors.black : Colors.white)
+                                          : textSecondary,
+                                      fontSize: 13,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        );
+                      },
                     ),
-                  ),
-                );
-              }).toList(),
-            ),
 
-            const SizedBox(height: 16),
+                    const SizedBox(height: 18),
 
-            // 2. Category Section
-            Row(
-              children: [
-                Icon(Icons.grid_view, color: textSecondary, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  'community.category'.tr,
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                    // 4. Price Section
+                    _buildSectionHeader(
+                      icon: Icons.monetization_on_outlined,
+                      title: 'community.price'.tr.isNotEmpty &&
+                              'community.price'.tr != 'community.price'
+                          ? 'community.price'.tr
+                          : 'Price',
+                      textPrimary: textPrimary,
+                      textMuted: textMuted,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildSingleSelectRow(
+                      options: priceOptions,
+                      selected: selectedPrice,
+                      onSelect: (val) => setState(() => selectedPrice = val),
+                      isDark: isDark,
+                      textPrimary: textPrimary,
+                      textSecondary: textSecondary,
+                      surfaceSecondary: surfaceSecondary,
+                      borderSubtle: borderSubtle,
+                    ),
+
+                    const SizedBox(height: 20),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 3.2,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
               ),
-              itemCount: categoryOptions.length,
-              itemBuilder: (context, i) {
-                final item = categoryOptions[i];
-                final catName = item['name'] as String;
-                final isSelected = selectedCategories.contains(catName);
-
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      if (isSelected) {
-                        selectedCategories.remove(catName);
-                      } else {
-                        selectedCategories.add(catName);
-                      }
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? (isDark
-                                ? Colors.white.withValues(alpha: 0.15)
-                                : Colors.black.withValues(alpha: 0.08))
-                          : unselectedBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? (isDark ? Colors.white : Colors.black)
-                            : unselectedBorder,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isSelected
-                              ? Icons.check_circle
-                              : item['icon'] as IconData,
-                          color: isSelected
-                              ? (isDark ? Colors.white : Colors.black)
-                              : textSecondary,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          catName,
-                          style: TextStyle(
-                            color: isSelected
-                                ? (isDark
-                                      ? Colors.white
-                                      : AppColors.lightTextPrimary)
-                                : textSecondary,
-                            fontSize: 13,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
             ),
-
-            const SizedBox(height: 16),
 
             // Apply Button
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 48,
               child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: _apply,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.communityAccent,
+                  backgroundColor: isDark ? Colors.white : Colors.black,
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
                 child: Text(
-                  'community.applyFilters'.tr,
-                  style: const TextStyle(
-                    color: Colors.black,
+                  'community.applyFilters'.tr.isNotEmpty &&
+                          'community.applyFilters'.tr != 'community.applyFilters'
+                      ? 'community.applyFilters'.tr
+                      : 'Apply Filters',
+                  style: TextStyle(
+                    color: isDark ? Colors.black : Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 15,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 10),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required IconData icon,
+    required String title,
+    required Color textPrimary,
+    required Color textMuted,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, color: textMuted, size: 16),
+        const SizedBox(width: 6),
+        Text(
+          title,
+          style: TextStyle(
+            color: textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 13.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSingleSelectRow({
+    required List<String> options,
+    required String selected,
+    required ValueChanged<String> onSelect,
+    required bool isDark,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color surfaceSecondary,
+    required Color borderSubtle,
+  }) {
+    return Row(
+      children: options.map((opt) {
+        final isSelected = selected == opt;
+        final label = _getLocalizedLabel(opt);
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: GestureDetector(
+              onTap: () => onSelect(opt),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? (isDark ? Colors.white : Colors.black)
+                      : surfaceSecondary,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected
+                        ? (isDark ? Colors.white : Colors.black)
+                        : borderSubtle,
+                  ),
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: isSelected
+                        ? (isDark ? Colors.black : Colors.white)
+                        : textSecondary,
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildSingleSelectWrap({
+    required List<String> options,
+    required String selected,
+    required ValueChanged<String> onSelect,
+    required bool isDark,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color surfaceSecondary,
+    required Color borderSubtle,
+  }) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: options.map((opt) {
+        final isSelected = selected == opt;
+        final label = _getLocalizedLabel(opt);
+        return GestureDetector(
+          onTap: () => onSelect(opt),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? (isDark ? Colors.white : Colors.black)
+                  : surfaceSecondary,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected
+                    ? (isDark ? Colors.white : Colors.black)
+                    : borderSubtle,
+              ),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isSelected
+                    ? (isDark ? Colors.black : Colors.white)
+                    : textSecondary,
+                fontSize: 12.5,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

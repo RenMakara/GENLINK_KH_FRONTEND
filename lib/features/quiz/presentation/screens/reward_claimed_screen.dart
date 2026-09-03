@@ -21,18 +21,18 @@ class RewardClaimedScreen extends GetView<QuizController> {
               const SizedBox(height: 40),
               _buildSuccessBadge(),
               const SizedBox(height: 20),
-              const Text(
-                'Reward Claimed!',
-                style: TextStyle(
+              Text(
+                'quiz.rewardClaimed'.tr,
+                style: const TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
                   color: QuizColors.heading,
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'Your rewards have been added to your account',
-                style: TextStyle(fontSize: 14, color: QuizColors.body),
+              Text(
+                'quiz.rewardsAdded'.tr,
+                style: const TextStyle(fontSize: 14, color: QuizColors.body),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 28),
@@ -40,7 +40,7 @@ class RewardClaimedScreen extends GetView<QuizController> {
               const SizedBox(height: 32),
               Obx(
                 () => QuizGradientButton(
-                  label: 'Continue',
+                  label: 'common.continue'.tr,
                   icon: Icons.arrow_forward,
                   isLoading: controller.isRewardClaimed.value,
                   onPressed: controller.isRewardClaimed.value
@@ -67,9 +67,9 @@ class RewardClaimedScreen extends GetView<QuizController> {
                         route.settings.name == '/home',
                   );
                 },
-                child: const Text(
-                  'Back to Dashboard',
-                  style: TextStyle(
+                child: Text(
+                  'quiz.backToDashboard'.tr,
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: QuizColors.body,
@@ -105,18 +105,18 @@ class RewardClaimedScreen extends GetView<QuizController> {
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
-            'Congratulations!',
-            style: TextStyle(
+          Text(
+            'quiz.congratulations'.tr,
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
               color: QuizColors.heading,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'All rewards have been credited',
-            style: TextStyle(fontSize: 13, color: QuizColors.body),
+          Text(
+            'quiz.rewardsCredited'.tr,
+            style: const TextStyle(fontSize: 13, color: QuizColors.body),
           ),
         ],
       ),
@@ -135,23 +135,27 @@ class RewardClaimedScreen extends GetView<QuizController> {
               'XP',
               '${stats.xp}',
               QuizColors.primary,
-              '+${controller.quizResult.value?.xpEarned ?? 0}',
+              'quiz.xpValue'.trParams({
+                'xp': '${controller.quizResult.value?.xpEarned ?? 0}',
+              }),
             ),
             const SizedBox(width: 10),
             _buildBalancePill(
               Icons.monetization_on,
-              'Coins',
+              'quiz.coins'.tr,
               '${stats.coins}',
               QuizColors.gold,
-              '+${controller.quizResult.value?.coinsEarned ?? 0}',
+              'quiz.coinsValue'.trParams({
+                'coins': '${controller.quizResult.value?.coinsEarned ?? 0}',
+              }),
             ),
             const SizedBox(width: 10),
             _buildBalancePill(
               Icons.military_tech,
-              'Badges',
+              'quiz.badges'.tr,
               '${stats.badges}',
               const Color(0xFFF59E0B),
-              '+1',
+              '+0',
             ),
           ],
         ),

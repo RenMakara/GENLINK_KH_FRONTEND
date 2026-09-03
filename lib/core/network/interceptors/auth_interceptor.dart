@@ -1,14 +1,16 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
+import '../../../core/errors/app_error.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../../../features/auth/domain/repositories/auth_repository.dart';
 
 /// Interceptor that injects the Bearer token and handles refresh-token retry.
 ///
 /// Behavior:
-/// 1. Attaches `Authorization: Bearer <token>` to every request.
+/// 1. Attaches `Authorization: Bearer <token>` to every protected request.
 /// 2. On 401, refreshes once using the stored refresh token.
 /// 3. Retries the original request through the *configured* Dio instance.
 /// 4. If refresh fails, clears the session and invokes [onSessionExpired]
@@ -42,6 +44,7 @@ class AuthInterceptor extends Interceptor {
   /// Marks a request that has already been replayed, so a second 401 on
   /// the retry cannot start a refresh loop.
   static const _retriedFlag = 'genlink_auth_retried';
+  static const _missingSessionFlag = 'genlink_auth_missing_session';
 
   /// Shared in-flight refresh. Concurrent 401s await this instead of
   /// each firing their own refresh call.
@@ -59,9 +62,48 @@ class AuthInterceptor extends Interceptor {
     }
 
     final token = await _storage.readAccessToken();
-    if (token != null && token.isNotEmpty) {
-      options.headers['Authorization'] = 'Bearer $token';
+    final hasRealToken =
+        token != null && token.isNotEmpty && !_isDemoToken(token);
+
+    if (kDebugMode && options.path.contains('/entertainment/quizzes')) {
+      debugPrint(
+        '[Quiz API]\n'
+        'Auth attached: $hasRealToken\n'
+        'Token source: ${hasRealToken ? 'authenticated session' : 'none'}\n'
+        'Demo token: ${token != null && _isDemoToken(token)}',
+      );
     }
+
+    if (!hasRealToken) {
+      if (token != null && token.isNotEmpty) {
+        await _storage.clearAll();
+      }
+      options.extra[_missingSessionFlag] = true;
+      onSessionExpired?.call();
+      handler.reject(
+        DioException(
+          requestOptions: options,
+          response: Response<dynamic>(
+            requestOptions: options,
+            statusCode: 401,
+            data: const {
+              'success': false,
+              'message': 'Authentication required.',
+              'errorCode': 'AUTH_REQUIRED',
+            },
+          ),
+          type: DioExceptionType.badResponse,
+          error: const AppError(
+            message: 'Authentication required.',
+            errorCode: 'AUTH_REQUIRED',
+            statusCode: 401,
+          ),
+        ),
+      );
+      return;
+    }
+
+    options.headers['Authorization'] = 'Bearer $token';
     handler.next(options);
   }
 
@@ -71,10 +113,7 @@ class AuthInterceptor extends Interceptor {
     final options = err.requestOptions;
 
     final token = await _storage.readAccessToken();
-    final isDemoToken =
-        token == 'demo_access_token' ||
-        token == 'mock_access_token_123' ||
-        token == 'mock_google_token';
+    final isDemoToken = token != null && _isDemoToken(token);
 
     if (isDemoToken) {
       // Demo session: backend API failures must not wipe demo state or bounce to login.
@@ -88,7 +127,8 @@ class AuthInterceptor extends Interceptor {
     final shouldRefresh =
         statusCode == 401 &&
         !_isAuthEndpoint(options.path) &&
-        options.extra[_retriedFlag] != true;
+        options.extra[_retriedFlag] != true &&
+        options.extra[_missingSessionFlag] != true;
 
     if (!shouldRefresh) {
       handler.next(err);
@@ -182,4 +222,9 @@ class AuthInterceptor extends Interceptor {
         path.contains('/auth/resend-otp') ||
         path.contains('/auth/resend-verification-otp');
   }
+
+  bool _isDemoToken(String token) =>
+      token == 'demo_access_token' ||
+      token == 'mock_access_token_123' ||
+      token == 'mock_google_token';
 }

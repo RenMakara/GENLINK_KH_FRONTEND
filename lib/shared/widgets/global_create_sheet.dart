@@ -9,10 +9,10 @@ import '../../features/community/presentation/screens/create_event_screen.dart';
 import '../../features/community/presentation/screens/create_post_screen.dart';
 import '../../features/community/presentation/widgets/community_creation_flow.dart';
 import '../../features/community/presentation/widgets/story_creation_picker_sheet.dart';
-import '../../features/finance/presentation/screens/budget_feature/screens/set_budget_screen.dart';
-import '../../features/finance/presentation/screens/expense_feature/screens/expense_add_screen.dart';
-import '../../features/finance/presentation/screens/learn_feature/screens/investing_quiz.dart';
-import '../../features/finance/presentation/screens/Saving Goal Feature/screens/saving_goals_create.dart';
+import 'package:genlink_frontend/app/routes/app_routes.dart';
+import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_set_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_add_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_create.dart';
 import '../../features/productivity/presentation/screens/create_habit_screen.dart';
 import '../../features/productivity/presentation/screens/create_task_screen.dart';
 
@@ -734,11 +734,10 @@ class GlobalCreateSheet extends StatelessWidget {
                                     border: border,
                                     textPrimary: textPrimary,
                                     isDark: isDark,
-                                    onTap: () => _navigate(
-                                      context,
-                                      const InvestingQuizScreen(),
-                                      routeName: '/InvestingQuizScreen',
-                                    ),
+                                    onTap: () {
+                                      Navigator.of(context).pop();
+                                      Get.toNamed(AppRoutes.quizDashboard);
+                                    },
                                   ),
                                 ),
                                 const SizedBox(width: 8),

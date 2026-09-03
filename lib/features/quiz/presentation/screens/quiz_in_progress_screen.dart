@@ -21,28 +21,73 @@ class QuizInProgressScreen extends GetView<QuizController> {
         ),
       ),
       body: Obx(() {
-        if (controller.questions.isEmpty) {
+        if (controller.isQuizLoading.value) {
           return const Center(
+            child: CircularProgressIndicator(color: QuizColors.primary),
+          );
+        }
+
+        if (controller.quizError.value != null) {
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.inbox, size: 48, color: QuizColors.border),
-                  SizedBox(height: 16),
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: QuizColors.incorrect,
+                  ),
+                  const SizedBox(height: 16),
                   Text(
-                    'No questions available right now.',
-                    style: TextStyle(
+                    'quiz.couldNotLoadQuiz'.tr,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       color: QuizColors.heading,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () {
+                      final quizId = controller.currentQuizId.value;
+                      if (quizId != null) {
+                        controller.startSelectedQuiz(quizId);
+                      } else {
+                        controller.startQuiz();
+                      }
+                    },
+                    child: Text('common.retry'.tr),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (controller.questions.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.inbox, size: 48, color: QuizColors.border),
+                  const SizedBox(height: 16),
                   Text(
-                    'Try picking another category or check back later.',
+                    'quiz.noQuestionsAvailable'.tr,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: QuizColors.heading,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'quiz.pickAnotherCategory'.tr,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: QuizColors.body),
+                    style: const TextStyle(color: QuizColors.body),
                   ),
                 ],
               ),
@@ -79,18 +124,18 @@ class QuizInProgressScreen extends GetView<QuizController> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Quit Quiz?',
-          style: TextStyle(color: QuizColors.heading),
+        title: Text(
+          'quiz.quitQuizTitle'.tr,
+          style: const TextStyle(color: QuizColors.heading),
         ),
-        content: const Text(
-          'Your progress will be lost.',
-          style: TextStyle(color: QuizColors.body),
+        content: Text(
+          'quiz.quitQuizMessage'.tr,
+          style: const TextStyle(color: QuizColors.body),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('common.cancel'.tr),
           ),
           TextButton(
             onPressed: () {
@@ -102,9 +147,9 @@ class QuizInProgressScreen extends GetView<QuizController> {
               );
               controller.resetQuiz();
             },
-            child: const Text(
-              'Quit',
-              style: TextStyle(color: QuizColors.incorrect),
+            child: Text(
+              'quiz.quit'.tr,
+              style: const TextStyle(color: QuizColors.incorrect),
             ),
           ),
         ],
@@ -119,7 +164,10 @@ class QuizInProgressScreen extends GetView<QuizController> {
         child: Row(
           children: [
             Text(
-              'Question ${controller.currentQuestionIndex.value + 1} of ${controller.totalQuestions}',
+              'quiz.questionOfTotal'.trParams({
+                'current': '${controller.currentQuestionIndex.value + 1}',
+                'total': '${controller.totalQuestions}',
+              }),
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -167,7 +215,7 @@ class QuizInProgressScreen extends GetView<QuizController> {
               ),
             ),
             Text(
-              '${time}s',
+              'quiz.secondsShort'.trParams({'seconds': '$time'}),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -272,9 +320,12 @@ class QuizInProgressScreen extends GetView<QuizController> {
                     ),
                     minimumSize: const Size(0, 52),
                   ),
-                  child: const Text(
-                    'Skip',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  child: Text(
+                    'common.skip'.tr,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -303,7 +354,7 @@ class QuizInProgressScreen extends GetView<QuizController> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              isLast ? 'Review' : 'Next',
+                              isLast ? 'quiz.review'.tr : 'common.next'.tr,
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,

@@ -88,7 +88,6 @@ abstract final class ApiEndpoints {
   static const habits = '$_base/productivity/habits';
   static String habitCheckIn(String habitId) =>
       '$_base/productivity/habits/$habitId/check-in';
-
   // ── Finance ──────────────────────────────────────────────────────────
   static const financeWallet = '$_base/finance/wallet';
   static const financeWalletTopUp = '$_base/finance/wallet/top-up';

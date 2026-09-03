@@ -26,6 +26,7 @@ class _InterestsScreenState extends State<InterestsScreen> {
 
   ProfileController get _controller => Get.find<ProfileController>();
 
+  final _search = TextEditingController();
   final Set<String> _selected = {};
   bool _showAllSkills = false;
 
@@ -33,6 +34,7 @@ class _InterestsScreenState extends State<InterestsScreen> {
   void initState() {
     super.initState();
     _loadInitialSelection();
+    _search.addListener(_refresh);
   }
 
   Future<void> _loadInitialSelection() async {
@@ -43,6 +45,25 @@ class _InterestsScreenState extends State<InterestsScreen> {
         _controller.interests.map((interest) => interest.interestId),
       );
     });
+  }
+
+  @override
+  void dispose() {
+    _search.removeListener(_refresh);
+    _search.dispose();
+    super.dispose();
+  }
+
+  void _refresh() => setState(() {});
+
+  Iterable<InterestEntity> get _filtered {
+    final query = _search.text.trim().toLowerCase();
+    if (query.isEmpty) return _controller.interestCatalog;
+    return _controller.interestCatalog.where(
+      (interest) =>
+          interest.name.toLowerCase().contains(query) ||
+          interest.code.toLowerCase().contains(query),
+    );
   }
 
   void _toggle(InterestEntity interest) {
@@ -59,6 +80,13 @@ class _InterestsScreenState extends State<InterestsScreen> {
       }
       _selected.add(interest.interestId);
     });
+  }
+
+  void _addSearchResult() {
+    final result = _filtered.firstOrNull;
+    if (result == null) return;
+    if (!_selected.contains(result.interestId)) _toggle(result);
+    _search.clear();
   }
 
   Future<void> _save() async {
@@ -110,6 +138,12 @@ class _InterestsScreenState extends State<InterestsScreen> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: AppSpacing.lg),
+                      _SearchBar(
+                        controller: _search,
+                        enabled: _filtered.isNotEmpty,
+                        onAdd: _addSearchResult,
+                      ),
                       const SizedBox(height: AppSpacing.xl),
                       Row(
                         children: [
@@ -153,26 +187,33 @@ class _InterestsScreenState extends State<InterestsScreen> {
                         ),
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            for (final interest in _controller.interestCatalog
-                                .where((i) => !_selected.contains(i.interestId))
-                                .take(8)) ...[
-                              ActionChip(
-                                avatar: Icon(
-                                  _categoryIcon(interest.category),
-                                  size: 17,
+                      if (_filtered.isEmpty)
+                        Text('interests.noResults'.tr)
+                      else
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              for (final interest
+                                  in _filtered
+                                      .where(
+                                        (i) =>
+                                            !_selected.contains(i.interestId),
+                                      )
+                                      .take(8)) ...[
+                                ActionChip(
+                                  avatar: Icon(
+                                    _categoryIcon(interest.category),
+                                    size: 17,
+                                  ),
+                                  label: Text(interest.name),
+                                  onPressed: () => _toggle(interest),
                                 ),
-                                label: Text(interest.name),
-                                onPressed: () => _toggle(interest),
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
+                                const SizedBox(width: AppSpacing.sm),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -188,6 +229,56 @@ class _InterestsScreenState extends State<InterestsScreen> {
       }),
     );
   }
+}
+
+class _SearchBar extends StatelessWidget {
+  const _SearchBar({
+    required this.controller,
+    required this.enabled,
+    required this.onAdd,
+  });
+
+  final TextEditingController controller;
+  final bool enabled;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.fromLTRB(
+      AppSpacing.md,
+      AppSpacing.xs,
+      AppSpacing.xs,
+      AppSpacing.xs,
+    ),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.search),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: TextField(
+            key: const ValueKey('expertise-search'),
+            controller: controller,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => enabled ? onAdd() : null,
+            decoration: InputDecoration.collapsed(
+              hintText: 'interests.searchHint'.tr,
+            ),
+          ),
+        ),
+        AppButton(
+          key: const ValueKey('expertise-add'),
+          label: 'interests.add'.tr,
+          expanded: false,
+          height: 46,
+          onPressed: enabled ? onAdd : null,
+        ),
+      ],
+    ),
+  );
 }
 
 class _CountPill extends StatelessWidget {
@@ -207,9 +298,7 @@ class _CountPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(
-          color: scheme.outlineVariant,
-        ),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Text(
         'interests.selectedCount'.trParams({'count': '$count'}),
@@ -240,15 +329,14 @@ class _SkillChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedItems =
-        catalog.where((item) => selected.contains(item.interestId)).toList();
-    final unselectedItems =
-        catalog.where((item) => !selected.contains(item.interestId)).toList();
+    final selectedItems = catalog
+        .where((item) => selected.contains(item.interestId))
+        .toList();
+    final unselectedItems = catalog
+        .where((item) => !selected.contains(item.interestId))
+        .toList();
 
-    final visible = <InterestEntity>[
-      ...selectedItems,
-      ...unselectedItems,
-    ];
+    final visible = <InterestEntity>[...selectedItems, ...unselectedItems];
 
     final displayList = showAll ? visible : visible.take(12).toList();
     final hasMore = visible.length > 12 && !showAll;
@@ -264,11 +352,7 @@ class _SkillChips extends StatelessWidget {
             onTap: () => onToggle(interest),
           ),
         if (hasMore)
-          _CustomChip(
-            label: 'More...',
-            selected: false,
-            onTap: onShowMore,
-          ),
+          _CustomChip(label: 'More...', selected: false, onTap: onShowMore),
       ],
     );
   }
@@ -388,16 +472,9 @@ class _CoreInterestGrid extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(
-                        _categoryIcon(interest.category),
-                        color: textColor,
-                      ),
+                      Icon(_categoryIcon(interest.category), color: textColor),
                       if (active)
-                        Icon(
-                          Icons.verified,
-                          size: 18,
-                          color: scheme.onPrimary,
-                        ),
+                        Icon(Icons.verified, size: 18, color: scheme.onPrimary),
                     ],
                   ),
                   const Spacer(),
@@ -448,11 +525,7 @@ class _SaveFooter extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: scheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: scheme.outlineVariant,
-          ),
-        ),
+        border: Border(top: BorderSide(color: scheme.outlineVariant)),
       ),
       child: SafeArea(
         top: false,
@@ -476,9 +549,7 @@ class _SaveFooter extends StatelessWidget {
                       }),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: scheme.onSurface.withValues(
-                          alpha: 0.8,
-                        ),
+                        color: scheme.onSurface.withValues(alpha: 0.8),
                       ),
                     ),
                   ),

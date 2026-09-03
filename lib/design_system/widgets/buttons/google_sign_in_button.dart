@@ -20,6 +20,9 @@ class GoogleSignInButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Semantics(
       button: true,
@@ -30,28 +33,31 @@ class GoogleSignInButton extends StatelessWidget {
         width: double.infinity,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
             boxShadow: [
               BoxShadow(
-                color: AppColors.lightPrimary.withValues(alpha: 0.04),
+                color: (isDark ? Colors.black : AppColors.lightPrimary)
+                    .withValues(alpha: 0.04),
                 blurRadius: AppSpacing.md,
                 offset: const Offset(0, AppSpacing.xs),
               ),
             ],
           ),
           child: Material(
-            color: enabled
-                ? AppColors.lightSurfacePrimary
-                : AppColors.lightSurfaceSecondary,
-            shape: const StadiumBorder(
-              side: BorderSide(color: AppColors.lightBorderSubtle),
+            color: enabled ? scheme.surface : scheme.surfaceContainerLow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              side: BorderSide(
+                color: enabled ? scheme.outlineVariant : scheme.outline.withValues(alpha: 0.12) ,
+                width: 1.2,
+              ),
             ),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: onPressed,
               overlayColor: WidgetStateProperty.resolveWith(
                 (states) => states.contains(WidgetState.pressed)
-                    ? AppColors.lightPrimary.withValues(alpha: 0.06)
+                    ? scheme.primary.withValues(alpha: 0.06)
                     : null,
               ),
               child: ExcludeSemantics(
@@ -67,10 +73,8 @@ class GoogleSignInButton extends StatelessWidget {
                     const SizedBox(width: AppSpacing.md),
                     Text(
                       semanticLabel ?? 'Continue with Google',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: enabled
-                            ? AppColors.lightTextPrimary
-                            : AppColors.lightTextMuted,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: enabled ? scheme.onSurface : scheme.onSurfaceVariant,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

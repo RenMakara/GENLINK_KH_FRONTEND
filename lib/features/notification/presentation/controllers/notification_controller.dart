@@ -5,9 +5,9 @@ import '../../../../design_system/widgets/notifications/app_notification_banner.
 import '../../../community/presentation/controllers/story_controller.dart';
 import '../../../community/presentation/screens/events_screen.dart';
 import '../../../community/presentation/screens/friend_requests_screen.dart';
-import '../../../finance/presentation/screens/Saving Goal Feature/screens/saving_goals_screen.dart';
-import '../../../finance/presentation/screens/budget_feature/screens/budget_screen.dart';
-import '../../../finance/presentation/screens/finance_home/screens/finance_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_screen.dart';
+import 'package:genlink_frontend/features/finance/finance_screen.dart';
 import '../../../productivity/presentation/focus_feature/focus_home_screen.dart';
 import '../../../productivity/presentation/habit_feature/habit_home_screen.dart';
 import '../../../productivity/presentation/task_feature/task_home_screen.dart';

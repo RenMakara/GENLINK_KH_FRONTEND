@@ -20,9 +20,9 @@ class FindOpponentScreen extends GetView<QuizController> {
           icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
           onPressed: () => Get.back(),
         ),
-        title: const Text(
-          'Find Opponent',
-          style: TextStyle(
+        title: Text(
+          'quiz.findOpponent'.tr,
+          style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: QuizColors.heading,
@@ -119,9 +119,9 @@ class FindOpponentScreen extends GetView<QuizController> {
       if (controller.opponentSearchProgress.value >= 1.0) {
         return Column(
           children: [
-            const Text(
-              'Opponent Found!',
-              style: TextStyle(
+            Text(
+              'quiz.opponentFound'.tr,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
                 color: QuizColors.correct,
@@ -129,7 +129,7 @@ class FindOpponentScreen extends GetView<QuizController> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Preparing match...',
+              'quiz.preparingMatch'.tr,
               style: TextStyle(
                 fontSize: 15,
                 color: QuizColors.body.withValues(alpha: 0.8),
@@ -140,9 +140,9 @@ class FindOpponentScreen extends GetView<QuizController> {
       }
       return Column(
         children: [
-          const Text(
-            'Finding Opponent...',
-            style: TextStyle(
+          Text(
+            'quiz.findingOpponent'.tr,
+            style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
               color: QuizColors.heading,
@@ -150,7 +150,7 @@ class FindOpponentScreen extends GetView<QuizController> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Searching for players near your level',
+            'quiz.searchingPlayers'.tr,
             style: TextStyle(
               fontSize: 14,
               color: QuizColors.body.withValues(alpha: 0.8),
@@ -198,9 +198,9 @@ class FindOpponentScreen extends GetView<QuizController> {
             ),
             minimumSize: const Size(double.infinity, 48),
           ),
-          child: const Text(
-            'Cancel',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          child: Text(
+            'common.cancel'.tr,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
           ),
         ),
       );
@@ -228,10 +228,10 @@ class FindOpponentScreen extends GetView<QuizController> {
               ),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Answer correctly to earn XP and climb the leaderboard!',
-                style: TextStyle(
+                'quiz.matchTip'.tr,
+                style: const TextStyle(
                   fontSize: 13,
                   color: QuizColors.body,
                   height: 1.4,

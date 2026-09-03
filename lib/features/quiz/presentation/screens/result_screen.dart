@@ -20,15 +20,18 @@ class ResultScreen extends GetView<QuizController> {
           child: Obx(() {
             final result = controller.quizResult.value;
             if (result == null) {
-              return const Padding(
-                padding: EdgeInsets.only(top: 80),
+              return Padding(
+                padding: const EdgeInsets.only(top: 80),
                 child: Column(
                   children: [
-                    CircularProgressIndicator(color: QuizColors.primary),
-                    SizedBox(height: 20),
+                    const CircularProgressIndicator(color: QuizColors.primary),
+                    const SizedBox(height: 20),
                     Text(
-                      'Loading results...',
-                      style: TextStyle(fontSize: 15, color: QuizColors.body),
+                      'quiz.loadingResults'.tr,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: QuizColors.body,
+                      ),
                     ),
                   ],
                 ),
@@ -45,14 +48,14 @@ class ResultScreen extends GetView<QuizController> {
                 _buildSummaryGrid(result),
                 const SizedBox(height: 28),
                 QuizGradientButton(
-                  label: 'Review Answers',
+                  label: 'quiz.reviewAnswers'.tr,
                   icon: Icons.visibility_outlined,
                   isOutlined: true,
                   onPressed: () => _showAnswerBreakdown(context),
                 ),
                 const SizedBox(height: 14),
                 QuizGradientButton(
-                  label: 'Claim Reward',
+                  label: 'quiz.claimReward'.tr,
                   icon: Icons.card_giftcard,
                   onPressed: () {
                     Get.offAndToNamed('/quiz/claim-reward');
@@ -68,9 +71,9 @@ class ResultScreen extends GetView<QuizController> {
                           route.settings.name == '/home',
                     );
                   },
-                  child: const Text(
-                    'Back to Dashboard',
-                    style: TextStyle(
+                  child: Text(
+                    'quiz.backToDashboard'.tr,
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: QuizColors.body,
@@ -116,11 +119,11 @@ class ResultScreen extends GetView<QuizController> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.only(bottom: 12),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
-                  'Answer Breakdown',
-                  style: TextStyle(
+                  'quiz.answerBreakdown'.tr,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: QuizColors.heading,
@@ -132,7 +135,7 @@ class ResultScreen extends GetView<QuizController> {
                   controller: scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: questions.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (_, i) => _buildAnswerReviewItem(
                     i,
                     questions[i],
@@ -158,7 +161,7 @@ class ResultScreen extends GetView<QuizController> {
     final selectedIdx = selectedAnswers[index];
     final qResult = results.firstWhereOrNull((r) => r.questionId == q.id);
 
-    final correctIndex = qResult != null
+    final int? correctIndex = qResult != null
         ? q.options.indexWhere((o) => o.id == qResult.correctOptionId)
         : q.correctIndex;
     final selectedIndex = qResult != null
@@ -166,7 +169,9 @@ class ResultScreen extends GetView<QuizController> {
         : selectedIdx;
     final isCorrect = qResult != null
         ? (selectedIndex ?? -1) >= 0 && selectedIndex == correctIndex
-        : selectedIdx != null && selectedIdx == q.correctIndex;
+        : selectedIdx != null &&
+              q.correctIndex != null &&
+              selectedIdx == q.correctIndex;
     final wasAnswered = qResult != null
         ? (selectedIndex ?? -1) >= 0
         : selectedIdx != null;
@@ -227,7 +232,9 @@ class ResultScreen extends GetView<QuizController> {
               ),
               const Spacer(),
               Text(
-                wasAnswered ? (isCorrect ? 'Correct' : 'Incorrect') : 'Skipped',
+                wasAnswered
+                    ? (isCorrect ? 'quiz.correct'.tr : 'quiz.incorrect'.tr)
+                    : 'quiz.skipped'.tr,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -251,7 +258,7 @@ class ResultScreen extends GetView<QuizController> {
           ...List.generate(q.options.length, (oi) {
             final optionLabel = String.fromCharCode(65 + oi);
             final isSelected = selectedIndex == oi;
-            final isCorrectOption = correctIndex == oi;
+            final isCorrectOption = correctIndex != null && correctIndex == oi;
 
             Color bgColor;
             Color textColor;
@@ -382,7 +389,7 @@ class ResultScreen extends GetView<QuizController> {
           ),
           const SizedBox(height: 12),
           Text(
-            isHigh ? 'Excellent Work!' : 'Quiz Complete!',
+            isHigh ? 'quiz.excellentWork'.tr : 'quiz.quizComplete'.tr,
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -391,7 +398,7 @@ class ResultScreen extends GetView<QuizController> {
           ),
           const SizedBox(height: 4),
           Text(
-            isHigh ? 'You crushed it!' : 'Keep practicing!',
+            isHigh ? 'quiz.youCrushedIt'.tr : 'quiz.keepPracticing'.tr,
             style: const TextStyle(fontSize: 14, color: QuizColors.body),
           ),
         ],
@@ -434,7 +441,10 @@ class ResultScreen extends GetView<QuizController> {
                   ),
                 ),
                 Text(
-                  '$correct/$total Correct',
+                  'quiz.correctRatio'.trParams({
+                    'correct': '$correct',
+                    'total': '$total',
+                  }),
                   style: const TextStyle(fontSize: 13, color: QuizColors.body),
                 ),
               ],
@@ -459,38 +469,40 @@ class ResultScreen extends GetView<QuizController> {
       children: [
         _buildSummaryTile(
           Icons.check_circle,
-          'Correct',
+          'quiz.correct'.tr,
           '$correct',
           QuizColors.correct,
         ),
         _buildSummaryTile(
           Icons.cancel,
-          'Wrong',
+          'quiz.wrong'.tr,
           '$wrong',
           QuizColors.incorrect,
         ),
         _buildSummaryTile(
           Icons.timer_outlined,
-          'Time Taken',
-          '${result.timeTakenSeconds}s',
+          'quiz.timeTaken'.tr,
+          'quiz.secondsShort'.trParams({
+            'seconds': '${result.timeTakenSeconds}',
+          }),
           const Color(0xFF6366F1),
         ),
         _buildSummaryTile(
           Icons.star,
-          'XP Earned',
+          'quiz.xpEarned'.tr,
           '+${result.xpEarned}',
           QuizColors.primary,
         ),
         _buildSummaryTile(
           Icons.monetization_on,
-          'Coins Earned',
+          'quiz.coinsEarned'.tr,
           '+${result.coinsEarned}',
           QuizColors.gold,
         ),
         _buildSummaryTile(
           Icons.military_tech,
-          'Badges',
-          _accuracy(result) >= 80 ? '+1' : '0',
+          'quiz.badges'.tr,
+          '0',
           const Color(0xFFF59E0B),
         ),
       ],

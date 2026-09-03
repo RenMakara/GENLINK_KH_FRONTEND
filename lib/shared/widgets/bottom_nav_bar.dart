@@ -60,10 +60,18 @@ class BottomNavBar extends StatelessWidget {
               final safeBottom = MediaQuery.of(context).padding.bottom;
               final bottomMargin = safeBottom > 0 ? safeBottom + 8.0 : 20.0;
 
-              final centerBtnSize = isVeryNarrow ? 50.0 : (isNarrow ? 54.0 : 60.0);
-              final centerIconSize = isVeryNarrow ? 24.0 : (isNarrow ? 26.0 : 28.0);
-              final navIconSize = isVeryNarrow ? 22.0 : (isNarrow ? 23.0 : 24.0);
-              final navFontSize = isVeryNarrow ? 10.0 : (isNarrow ? 10.5 : 11.0);
+              final centerBtnSize = isVeryNarrow
+                  ? 50.0
+                  : (isNarrow ? 54.0 : 60.0);
+              final centerIconSize = isVeryNarrow
+                  ? 24.0
+                  : (isNarrow ? 26.0 : 28.0);
+              final navIconSize = isVeryNarrow
+                  ? 22.0
+                  : (isNarrow ? 23.0 : 24.0);
+              final navFontSize = isVeryNarrow
+                  ? 10.0
+                  : (isNarrow ? 10.5 : 11.0);
 
               return Align(
                 alignment: Alignment.bottomCenter,
@@ -81,7 +89,9 @@ class BottomNavBar extends StatelessWidget {
                         borderRadius: BorderRadius.circular(AppRadius.xl),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+                            color: Colors.black.withValues(
+                              alpha: isDark ? 0.35 : 0.08,
+                            ),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -202,44 +212,50 @@ class BottomNavBar extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white24 : Colors.black12,
-                  borderRadius: BorderRadius.circular(2),
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.black12,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            ListTile(
-              leading: Icon(Icons.group_add_outlined, color: textPrimary),
-              title: Text('auth.switchAccount'.tr),
-              onTap: () {
-                Navigator.pop(ctx);
-                Get.showSnackbar(
-                  GetSnackBar(
-                    message: 'Coming soon',
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.exit_to_app_rounded, color: Colors.redAccent),
-              title: Text('auth.logout'.tr, style: const TextStyle(color: Colors.redAccent)),
-              onTap: () {
-                Navigator.pop(ctx);
-                _showLogoutConfirm(context, authController);
-              },
-            ),
-          ],
+              ListTile(
+                leading: Icon(Icons.group_add_outlined, color: textPrimary),
+                title: Text('auth.switchAccount'.tr),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Get.showSnackbar(
+                    GetSnackBar(
+                      message: 'Coming soon',
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.exit_to_app_rounded,
+                  color: Colors.redAccent,
+                ),
+                title: Text(
+                  'auth.logout'.tr,
+                  style: const TextStyle(color: Colors.redAccent),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showLogoutConfirm(context, authController);
+                },
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _showLogoutConfirm(BuildContext context, AuthController authController) {
     Get.dialog(
@@ -256,7 +272,10 @@ class BottomNavBar extends StatelessWidget {
               Get.back();
               authController.logout();
             },
-            child: Text('auth.logout'.tr, style: const TextStyle(color: Colors.redAccent)),
+            child: Text(
+              'auth.logout'.tr,
+              style: const TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),
@@ -276,44 +295,47 @@ class _CenterButton extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [Colors.white, const Color(0xFFE0E0E0)]
-                : [AppColors.lightPrimary, const Color(0xFF333333)],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: (isDark ? Colors.white : AppColors.lightPrimary)
-                  .withValues(alpha: 0.1),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+    return Semantics(
+      button: true,
+      label: 'nav.create'.tr,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? [Colors.white, const Color(0xFFE0E0E0)]
+                  : [AppColors.lightPrimary, const Color(0xFF333333)],
             ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: () {
-              HapticFeedback.mediumImpact();
-              onTap?.call();
-            },
-            child: SizedBox(
-              height: size,
-              width: size,
-              child: Icon(
-                CupertinoIcons.plus,
-                size: iconSize,
-                color: isDark ? Colors.black : Colors.white,
-                semanticLabel: 'nav.create'.tr,
+            boxShadow: [
+              BoxShadow(
+                color: (isDark ? Colors.white : AppColors.lightPrimary)
+                    .withValues(alpha: 0.1),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                onTap?.call();
+              },
+              child: SizedBox(
+                height: size,
+                width: size,
+                child: Icon(
+                  CupertinoIcons.plus,
+                  size: iconSize,
+                  color: isDark ? Colors.black : Colors.white,
+                ),
               ),
             ),
           ),
@@ -413,10 +435,7 @@ class _NavItem extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             height: 3,
             width: active ? 3 : 0,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
         ],
       ),

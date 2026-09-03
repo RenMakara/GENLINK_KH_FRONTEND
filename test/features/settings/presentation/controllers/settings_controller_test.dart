@@ -37,16 +37,17 @@ void main() {
     repository = _MockSettingsRepository();
     themeController = _MockThemeController();
     localization = _MockLocalizationService();
-    when(() => themeController.backendTheme).thenReturn(UserSettingsEntity.themeLight);
-    when(() => localization.language).thenReturn(RxString(UserSettingsEntity.languageEnglish));
+    when(
+      () => themeController.backendTheme,
+    ).thenReturn(UserSettingsEntity.themeSystem);
+    when(
+      () => localization.language,
+    ).thenReturn(UserSettingsEntity.languageEnglish.obs);
     controller = SettingsController(
       repository: repository,
       themeController: themeController,
       localization: localization,
     )..settings.value = _initialSettings;
-    clearInteractions(themeController);
-    clearInteractions(localization);
-    clearInteractions(repository);
   });
 
   tearDown(Get.reset);
@@ -108,6 +109,7 @@ void main() {
     verify(
       () => themeController.applyBackendTheme(UserSettingsEntity.themeDark),
     ).called(1);
+    verify(() => themeController.backendTheme).called(1);
     verifyNoMoreInteractions(themeController);
   });
 }

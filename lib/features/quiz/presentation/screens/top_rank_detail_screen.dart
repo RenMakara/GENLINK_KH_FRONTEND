@@ -26,7 +26,7 @@ class TopRankDetailScreen extends GetView<QuizController> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: QuizGradientButton(
-                  label: 'Challenge',
+                  label: 'quiz.challenge'.tr,
                   icon: Icons.bolt,
                   onPressed: () {
                     Get.offAndToNamed('/quiz/categories');
@@ -40,9 +40,9 @@ class TopRankDetailScreen extends GetView<QuizController> {
                       route.settings.name == '/quiz/dashboard' ||
                       route.settings.name == '/home',
                 ),
-                child: const Text(
-                  'Back to Dashboard',
-                  style: TextStyle(
+                child: Text(
+                  'quiz.backToDashboard'.tr,
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: QuizColors.body,
@@ -125,9 +125,9 @@ class TopRankDetailScreen extends GetView<QuizController> {
                       ),
                     ],
                   ),
-                  child: const Text(
-                    'Global Rank #1',
-                    style: TextStyle(
+                  child: Text(
+                    'quiz.globalRank'.trParams({'rank': '1'}),
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -175,9 +175,9 @@ class TopRankDetailScreen extends GetView<QuizController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Achievements',
-              style: TextStyle(
+            Text(
+              'quiz.achievements'.tr,
+              style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
                 color: QuizColors.heading,
@@ -232,12 +232,18 @@ class TopRankDetailScreen extends GetView<QuizController> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          Expanded(child: _buildStatItem('148', 'Quizzes', QuizColors.primary)),
+          Expanded(
+            child: _buildStatItem('148', 'quiz.quizzes'.tr, QuizColors.primary),
+          ),
           const SizedBox(width: 10),
           Expanded(child: _buildStatItem('12,450', 'XP', QuizColors.gold)),
           const SizedBox(width: 10),
           Expanded(
-            child: _buildStatItem('8', 'Badges', const Color(0xFFF59E0B)),
+            child: _buildStatItem(
+              '8',
+              'quiz.badges'.tr,
+              const Color(0xFFF59E0B),
+            ),
           ),
         ],
       ),

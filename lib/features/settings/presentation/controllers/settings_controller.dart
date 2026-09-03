@@ -46,8 +46,8 @@ class SettingsController extends GetxController {
       final loaded = await _repository.getSettings();
       final current = settings.value;
 
-      // Merge: prefer backend if it's NOT the default, otherwise stay with 
-      // current local state. This prevents backend defaults from 
+      // Merge: prefer backend if it's NOT the default, otherwise stay with
+      // current local state. This prevents backend defaults from
       // clobbering a user's manual choice when opening the settings page.
       final merged = loaded.copyWith(
         theme: loaded.theme == UserSettingsEntity.themeSystem
@@ -165,18 +165,44 @@ class SettingsController extends GetxController {
         biometricEnabled: biometricEnabled,
       );
 
-      // If the backend returns defaults for fields we just tried to set,
-      // keep our local value for now to avoid the UI "flickering" or
-      // ticking the wrong box while the backend catches up.
-      settings.value = updated.copyWith(
-        language: language,
-        theme: theme,
-        notificationEnabled: notificationEnabled,
-        privacyProfile: privacyProfile,
-        allowMessages: allowMessages,
-        allowFollowRequest: allowFollowRequest,
-        biometricEnabled: biometricEnabled,
-      );
+      // If the backend returns a default/different value for a field we just
+      // changed, keep the optimistic value until the backend catches up. If
+      // the response already matches, retain the exact response instance so
+      // callers can rely on server-owned fields and identity.
+      final mergedLanguage = language != null && updated.language != language
+          ? language
+          : updated.language;
+      final mergedTheme = theme != null && updated.theme != theme
+          ? theme
+          : updated.theme;
+      final mergedNotificationEnabled =
+          notificationEnabled ?? updated.notificationEnabled;
+      final mergedPrivacyProfile = privacyProfile ?? updated.privacyProfile;
+      final mergedAllowMessages = allowMessages ?? updated.allowMessages;
+      final mergedAllowFollowRequest =
+          allowFollowRequest ?? updated.allowFollowRequest;
+      final mergedBiometricEnabled =
+          biometricEnabled ?? updated.biometricEnabled;
+
+      final responseMatches =
+          mergedLanguage == updated.language &&
+          mergedTheme == updated.theme &&
+          mergedNotificationEnabled == updated.notificationEnabled &&
+          mergedPrivacyProfile == updated.privacyProfile &&
+          mergedAllowMessages == updated.allowMessages &&
+          mergedAllowFollowRequest == updated.allowFollowRequest &&
+          mergedBiometricEnabled == updated.biometricEnabled;
+      settings.value = responseMatches
+          ? updated
+          : updated.copyWith(
+              language: mergedLanguage,
+              theme: mergedTheme,
+              notificationEnabled: mergedNotificationEnabled,
+              privacyProfile: mergedPrivacyProfile,
+              allowMessages: mergedAllowMessages,
+              allowFollowRequest: mergedAllowFollowRequest,
+              biometricEnabled: mergedBiometricEnabled,
+            );
       return true;
     } on AppError catch (e) {
       errorMessage.value = e.message;

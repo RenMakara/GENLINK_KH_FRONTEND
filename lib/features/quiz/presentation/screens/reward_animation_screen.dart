@@ -94,29 +94,25 @@ class _RewardAnimationScreenState extends State<RewardAnimationScreen>
                         const SizedBox(height: 28),
                         if (result != null) ...[
                           _buildRewardCard(
-                            '+${result.xpEarned} XP',
+                            'quiz.xpValue'.trParams({
+                              'xp': '${result.xpEarned}',
+                            }),
                             Icons.star,
                             QuizColors.primary,
                           ),
                           const SizedBox(height: 14),
                           _buildRewardCard(
-                            '+${result.coinsEarned} Coins',
+                            'quiz.coinsValue'.trParams({
+                              'coins': '${result.coinsEarned}',
+                            }),
                             Icons.monetization_on,
                             QuizColors.gold,
                           ),
-                          if (result.accuracyPercent >= 80) ...[
-                            const SizedBox(height: 14),
-                            _buildRewardCard(
-                              'Badge New',
-                              Icons.military_tech,
-                              const Color(0xFFF59E0B),
-                            ),
-                          ],
                         ],
                         const SizedBox(height: 32),
-                        const Text(
-                          'Rewards Earned!',
-                          style: TextStyle(
+                        Text(
+                          'quiz.rewardsEarned'.tr,
+                          style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,

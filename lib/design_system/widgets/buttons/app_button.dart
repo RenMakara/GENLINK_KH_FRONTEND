@@ -148,7 +148,7 @@ class AppButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           foregroundColor: scheme.onSurface,
           textStyle: textStyle,
-          side: BorderSide(color: scheme.outline),
+          side: BorderSide(color: scheme.outline, width: 1.2),
           minimumSize: Size(0, height),
           padding: padding,
           shape: shape,

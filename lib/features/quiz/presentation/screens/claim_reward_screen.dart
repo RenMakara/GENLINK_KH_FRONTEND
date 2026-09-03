@@ -33,24 +33,24 @@ class ClaimRewardScreen extends GetView<QuizController> {
               const SizedBox(height: 10),
               _buildGiftBox(),
               const SizedBox(height: 24),
-              const Text(
-                'Your Reward',
-                style: TextStyle(
+              Text(
+                'quiz.yourReward'.tr,
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
                   color: QuizColors.heading,
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'Great job! Here\'s what you earned',
-                style: TextStyle(fontSize: 14, color: QuizColors.body),
+              Text(
+                'quiz.rewardSubtitle'.tr,
+                style: const TextStyle(fontSize: 14, color: QuizColors.body),
               ),
               const SizedBox(height: 24),
               _buildRewardBreakdown(result),
               const SizedBox(height: 28),
               QuizGradientButton(
-                label: 'Claim Reward',
+                label: 'quiz.claimReward'.tr,
                 icon: Icons.card_giftcard,
                 onPressed: () {
                   Get.toNamed('/quiz/reward-animation');
@@ -63,9 +63,9 @@ class ClaimRewardScreen extends GetView<QuizController> {
                       route.settings.name == '/quiz/dashboard' ||
                       route.settings.name == '/home',
                 ),
-                child: const Text(
-                  'Maybe Later',
-                  style: TextStyle(
+                child: Text(
+                  'quiz.maybeLater'.tr,
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: QuizColors.body,
@@ -100,18 +100,18 @@ class ClaimRewardScreen extends GetView<QuizController> {
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
-            'Rewards Unlocked',
-            style: TextStyle(
+          Text(
+            'quiz.rewardsUnlocked'.tr,
+            style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
               color: QuizColors.heading,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Your performance earned these rewards',
-            style: TextStyle(fontSize: 13, color: QuizColors.body),
+          Text(
+            'quiz.performanceRewards'.tr,
+            style: const TextStyle(fontSize: 13, color: QuizColors.body),
           ),
         ],
       ),
@@ -123,36 +123,18 @@ class ClaimRewardScreen extends GetView<QuizController> {
       children: [
         _buildRewardRow(
           Icons.star,
-          '+${quizResult.xpEarned} XP',
-          'Experience Points',
+          'quiz.xpValue'.trParams({'xp': '${quizResult.xpEarned}'}),
+          'quiz.experiencePoints'.tr,
           QuizColors.primary,
           const Color(0x206C5CE7),
         ),
         const SizedBox(height: 12),
         _buildRewardRow(
           Icons.monetization_on,
-          '+${quizResult.coinsEarned} Coins',
-          'Quiz Coins',
+          'quiz.coinsValue'.trParams({'coins': '${quizResult.coinsEarned}'}),
+          'quiz.quizCoins'.tr,
           QuizColors.gold,
           const Color(0x20FFC107),
-        ),
-        if (quizResult.accuracyPercent >= 80) ...[
-          const SizedBox(height: 12),
-          _buildRewardRow(
-            Icons.military_tech,
-            'New Badge',
-            'High Scorer Badge',
-            const Color(0xFFF59E0B),
-            const Color(0x20F59E0B),
-          ),
-        ],
-        const SizedBox(height: 12),
-        _buildRewardRow(
-          Icons.local_fire_department,
-          '+1 Day',
-          'Streak Extended',
-          const Color(0xFFEF4444),
-          const Color(0x20EF4444),
         ),
       ],
     );

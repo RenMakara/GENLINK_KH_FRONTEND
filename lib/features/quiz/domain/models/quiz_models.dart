@@ -1,5 +1,34 @@
 enum QuizType { single, random }
 
+class QuizSummary {
+  final String quizId;
+  final String title;
+  final String? category;
+  final String difficulty;
+  final int xpReward;
+  final int questionCount;
+
+  const QuizSummary({
+    required this.quizId,
+    required this.title,
+    this.category,
+    required this.difficulty,
+    required this.xpReward,
+    required this.questionCount,
+  });
+
+  factory QuizSummary.fromJson(Map<String, dynamic> json) {
+    return QuizSummary(
+      quizId: (json['quizId'] ?? '').toString(),
+      title: (json['title'] ?? '').toString(),
+      category: json['category']?.toString(),
+      difficulty: (json['difficulty'] ?? '').toString(),
+      xpReward: (json['xpReward'] as num?)?.toInt() ?? 0,
+      questionCount: (json['questionCount'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
 class QuizCategory {
   final String id;
   final String name;
@@ -41,13 +70,13 @@ class QuizQuestion {
   final String id;
   final String question;
   final List<QuizOptionModel> options;
-  final int correctIndex;
+  final int? correctIndex;
 
   const QuizQuestion({
     required this.id,
     required this.question,
     required this.options,
-    required this.correctIndex,
+    this.correctIndex,
   });
 }
 
@@ -66,6 +95,7 @@ class QuizQuestionResult {
 }
 
 class QuizResult {
+  final String attemptId;
   final int correct;
   final int wrong;
   final int total;
@@ -76,6 +106,7 @@ class QuizResult {
   final List<QuizQuestionResult> results;
 
   const QuizResult({
+    this.attemptId = '',
     required this.correct,
     required this.wrong,
     required this.total,
@@ -87,6 +118,7 @@ class QuizResult {
   });
 
   QuizResult copyWith({
+    String? attemptId,
     int? correct,
     int? wrong,
     int? total,
@@ -97,6 +129,7 @@ class QuizResult {
     List<QuizQuestionResult>? results,
   }) {
     return QuizResult(
+      attemptId: attemptId ?? this.attemptId,
       correct: correct ?? this.correct,
       wrong: wrong ?? this.wrong,
       total: total ?? this.total,
@@ -105,6 +138,41 @@ class QuizResult {
       coinsEarned: coinsEarned ?? this.coinsEarned,
       accuracyPercent: accuracyPercent ?? this.accuracyPercent,
       results: results ?? this.results,
+    );
+  }
+}
+
+class QuizAttemptSummary {
+  final String attemptId;
+  final String quizId;
+  final String quizTitle;
+  final int score;
+  final int correctCount;
+  final int totalQuestions;
+  final int xpEarned;
+  final String? completedAt;
+
+  const QuizAttemptSummary({
+    required this.attemptId,
+    required this.quizId,
+    required this.quizTitle,
+    required this.score,
+    required this.correctCount,
+    required this.totalQuestions,
+    required this.xpEarned,
+    this.completedAt,
+  });
+
+  factory QuizAttemptSummary.fromJson(Map<String, dynamic> json) {
+    return QuizAttemptSummary(
+      attemptId: (json['attemptId'] ?? '').toString(),
+      quizId: (json['quizId'] ?? '').toString(),
+      quizTitle: (json['quizTitle'] ?? json['title'] ?? '').toString(),
+      score: (json['score'] as num?)?.toInt() ?? 0,
+      correctCount: (json['correctCount'] as num?)?.toInt() ?? 0,
+      totalQuestions: (json['totalQuestions'] as num?)?.toInt() ?? 0,
+      xpEarned: (json['xpEarned'] as num?)?.toInt() ?? 0,
+      completedAt: json['completedAt']?.toString(),
     );
   }
 }

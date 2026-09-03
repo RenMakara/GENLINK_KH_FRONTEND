@@ -5,7 +5,7 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
-import '../../../finance/presentation/screens/Saving Goal Feature/screens/saving_goals_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_screen.dart';
 import '../../../leaderboard/presentation/screens/leaderboard_home_screen.dart';
 import '../../../productivity/presentation/focus_feature/focus_home_screen.dart';
 import '../../../productivity/presentation/habit_feature/habit_home_screen.dart';

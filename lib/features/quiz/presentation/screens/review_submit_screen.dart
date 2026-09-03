@@ -19,9 +19,9 @@ class ReviewSubmitScreen extends GetView<QuizController> {
           icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
           onPressed: () => Get.back(),
         ),
-        title: const Text(
-          'Review Answers',
-          style: TextStyle(
+        title: Text(
+          'quiz.reviewAnswers'.tr,
+          style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: QuizColors.heading,
@@ -37,13 +37,17 @@ class ReviewSubmitScreen extends GetView<QuizController> {
                 children: [
                   _buildStatusChip(
                     Icons.check_circle_outline,
-                    '${controller.answeredCount} Answered',
+                    'quiz.answeredCount'.trParams({
+                      'count': '${controller.answeredCount}',
+                    }),
                     QuizColors.correct,
                   ),
                   const SizedBox(width: 12),
                   _buildStatusChip(
                     Icons.radio_button_unchecked,
-                    '${controller.unansweredCount} Unanswered',
+                    'quiz.unansweredCount'.trParams({
+                      'count': '${controller.unansweredCount}',
+                    }),
                     QuizColors.incorrect,
                   ),
                 ],
@@ -135,7 +139,7 @@ class ReviewSubmitScreen extends GetView<QuizController> {
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
-                  'Question ${index + 1}',
+                  'quiz.questionNumber'.trParams({'number': '${index + 1}'}),
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -180,7 +184,19 @@ class ReviewSubmitScreen extends GetView<QuizController> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Text(
-                    '$unanswered question${unanswered > 1 ? "s" : ""} unanswered',
+                    'quiz.unansweredWarning'.trParams({'count': '$unanswered'}),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: QuizColors.incorrect,
+                    ),
+                  ),
+                ),
+              if (controller.submitError.value != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Text(
+                    'quiz.submissionFailed'.tr,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 13,
                       color: QuizColors.incorrect,
@@ -188,7 +204,7 @@ class ReviewSubmitScreen extends GetView<QuizController> {
                   ),
                 ),
               QuizGradientButton(
-                label: 'Submit Quiz',
+                label: 'quiz.submitQuiz'.tr,
                 icon: Icons.send_rounded,
                 isLoading: isSubmitting,
                 onPressed: isSubmitting

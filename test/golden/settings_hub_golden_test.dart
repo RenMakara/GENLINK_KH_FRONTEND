@@ -70,6 +70,12 @@ void main() {
     themeController = _MockThemeController();
     localization = _MockLocalizationService();
     when(
+      () => themeController.backendTheme,
+    ).thenReturn(UserSettingsEntity.themeSystem);
+    when(
+      () => localization.language,
+    ).thenReturn(UserSettingsEntity.languageEnglish.obs);
+    when(
       settingsRepository.getSettings,
     ).thenAnswer((_) async => const UserSettingsEntity());
     when(

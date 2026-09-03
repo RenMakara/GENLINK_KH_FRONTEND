@@ -21,10 +21,9 @@ class FullRankingScreen extends GetView<LeaderboardController> {
           padding: EdgeInsets.only(left: AppSpacing.md),
           child: Center(child: AppBackButton()),
         ),
-        leadingWidth: 74,
-        title: const Text(
-          'Global Ranking',
-          style: TextStyle(
+        title: Text(
+          'leaderboard.globalRanking'.tr,
+          style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: QuizColors.heading,
@@ -36,7 +35,7 @@ class FullRankingScreen extends GetView<LeaderboardController> {
         return ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           itemCount: users.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 1),
+          separatorBuilder: (_, _) => const SizedBox(height: 1),
           itemBuilder: (_, i) => _buildRankRow(users[i]),
         );
       }),
@@ -98,9 +97,9 @@ class FullRankingScreen extends GetView<LeaderboardController> {
                             color: QuizColors.primary,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text(
-                            'YOU',
-                            style: TextStyle(
+                          child: Text(
+                            'quiz.you'.tr,
+                            style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,

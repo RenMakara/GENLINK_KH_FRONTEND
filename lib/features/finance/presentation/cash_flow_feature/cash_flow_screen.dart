@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -50,26 +51,27 @@ class CashFlowScreen extends StatelessWidget {
                 parent: BouncingScrollPhysics(),
               ),
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 36),
+
               children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                      color: textPrimary,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        'finance.cashFlow.title'.tr,
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
+                SizedBox(
+                  height: 48,
+                  child: Row(
+                    children: [
+                      AppBackButton(),
+                      const SizedBox(width: 13),
+                      Expanded(
+                        child: Text(
+                          'finance.cashFlow.title'.tr,
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 14),
                 _CurrencyBar(

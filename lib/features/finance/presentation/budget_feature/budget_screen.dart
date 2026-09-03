@@ -33,6 +33,9 @@ class BudgetScreen extends GetView<BudgetController> {
     final text = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
     final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final border = isDark
         ? AppColors.darkBorderSubtle
@@ -65,9 +68,10 @@ class BudgetScreen extends GetView<BudgetController> {
                       child: Text(
                         'finance.budget.title'.tr,
                         style: TextStyle(
-                          color: text,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
+                          color: textPrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),

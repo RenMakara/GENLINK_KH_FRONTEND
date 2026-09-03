@@ -80,6 +80,10 @@ class _IncomeScreenState extends State<IncomeScreen> {
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
 
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
     final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
 
     final border = isDark
@@ -118,9 +122,10 @@ class _IncomeScreenState extends State<IncomeScreen> {
                       child: Text(
                         'finance.income.title'.tr,
                         style: TextStyle(
-                          color: text,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
+                          color: textPrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),

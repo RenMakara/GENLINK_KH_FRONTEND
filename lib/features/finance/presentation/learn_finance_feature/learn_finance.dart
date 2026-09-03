@@ -24,6 +24,9 @@ class LearnFinanceScreen extends GetView<FinanceLearningController> {
     final text = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
     final border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
@@ -49,10 +52,10 @@ class LearnFinanceScreen extends GetView<FinanceLearningController> {
                       child: Text(
                         'finance.learning.title'.tr,
                         style: TextStyle(
-                          color: text,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.3,
+                          color: textPrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),

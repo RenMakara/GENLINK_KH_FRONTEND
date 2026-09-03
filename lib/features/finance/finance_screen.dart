@@ -30,14 +30,21 @@ class FinanceScreen extends GetView<FinanceController> {
       final dashboard = controller.dashboard.value;
       return Scaffold(
         backgroundColor: bg,
+        extendBody: true,
         body: SafeArea(
+          bottom: false,
           child: RefreshIndicator(
             onRefresh: controller.reload,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics(),
               ),
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 30),
+              padding: const EdgeInsets.fromLTRB(
+                16,
+                14,
+                16,
+                100, // space for bottom navigation
+              ),
               children: [
                 _FinanceHeader(
                   selectedCurrency: controller.selectedCurrency.value,

@@ -151,16 +151,10 @@ class _DemoStoryViewerDialogState extends State<DemoStoryViewerDialog>
                         child: CircleAvatar(
                           radius: 18,
                           backgroundColor: Colors.white24,
-                          backgroundImage: AssetImage(story.userAvatar),
+                          backgroundImage: story.author.avatarUrl.startsWith('assets/')
+                              ? AssetImage(story.author.avatarUrl) as ImageProvider
+                              : NetworkImage(story.author.avatarUrl),
                           onBackgroundImageError: (_, _) {},
-                          child: Text(
-                            story.userName.substring(0, 1),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -257,7 +251,7 @@ class _DemoStoryViewerDialogState extends State<DemoStoryViewerDialog>
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              story.tag,
+                              story.tag!,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,

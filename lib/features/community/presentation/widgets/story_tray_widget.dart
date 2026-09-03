@@ -4,6 +4,7 @@ import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/radius/app_radius.dart';
 import 'package:genlink_frontend/design_system/spacing/app_spacing.dart';
 import '../../domain/models/story_model.dart';
+import '../../../../shared/utils/current_user.dart';
 import '../controllers/story_controller.dart';
 import '../screens/story_viewer_screen.dart';
 import 'demo_stories_data.dart';
@@ -77,15 +78,30 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
       }
 
       final allGroups = controller.storyGroups;
-      // Smart sorting: Owner story first, then unseen groups, then viewed groups
-      final ownerGroup = allGroups.firstWhereOrNull((g) => g.isOwner) ??
-          StoryGroupModel(
-            userId: 'current_user',
-            userName: 'community.yourStory'.tr,
-            userAvatar: 'assets/images/user_profile.png',
-            isOwner: true,
-            stories: [],
-          );
+      final currentUserId = CurrentUser.id;
+      final currentUserAvatar = CurrentUser.avatarUrl;
+      final rawOwnerGroup = allGroups.firstWhereOrNull((g) => g.isOwner);
+      final ownerGroup = rawOwnerGroup != null
+          ? StoryGroupModel(
+              userId: rawOwnerGroup.userId,
+              userName: rawOwnerGroup.userName,
+              userAvatar: rawOwnerGroup.userAvatar.isNotEmpty
+                  ? rawOwnerGroup.userAvatar
+                  : (currentUserAvatar != null && currentUserAvatar.isNotEmpty
+                      ? currentUserAvatar
+                      : 'assets/images/user_profile.png'),
+              isOwner: true,
+              stories: rawOwnerGroup.stories,
+            )
+          : StoryGroupModel(
+              userId: currentUserId.isNotEmpty ? currentUserId : 'current_user',
+              userName: 'community.yourStory'.tr,
+              userAvatar: (currentUserAvatar != null && currentUserAvatar.isNotEmpty)
+                  ? currentUserAvatar
+                  : 'assets/images/user_profile.png',
+              isOwner: true,
+              stories: [],
+            );
       final otherGroups = allGroups.where((g) => !g.isOwner).toList();
 
       otherGroups.sort((a, b) {

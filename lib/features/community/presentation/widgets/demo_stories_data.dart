@@ -1,14 +1,33 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/story_model.dart';
 
+export '../../domain/models/story_model.dart' show StoryAuthor;
+
+/// Established demo authors whose identities are consistent with the GenLink Feed.
+abstract final class DemoStoryAuthors {
+  static const renMakara = StoryAuthor(
+    id: 'user_makara',
+    name: 'Ren Makara',
+    avatarUrl: 'assets/images/ren_makara_profile.png',
+    handle: '@renmakara',
+    university: 'ACLEDA University of Business (AUB)',
+  );
+
+  static const hengChansela = StoryAuthor(
+    id: 'user_chansela',
+    name: 'Heng Chansela',
+    avatarUrl: 'assets/images/heng_chansela_profile.png',
+    handle: '@hengchansela',
+    university: 'ACLEDA University of Business (AUB)',
+  );
+}
+
 /// Temporary frontend demo story model for evaluating the Stories UI.
 ///
-/// NOTE: This is frontend-only mock data. It has no backend persistence
-/// and can be safely removed once backend Story retrieval is fully active.
+/// NOTE: Uses a complete [StoryAuthor] as the single source of truth for
+/// user identity across Feed, Stories, and Profile.
 class DemoStoryModel {
-  final String userId;
-  final String userName;
-  final String avatarUrl;
+  final StoryAuthor author;
   final String storyContent;
   final DateTime createdAt;
   final String timeAgo;
@@ -21,9 +40,7 @@ class DemoStoryModel {
   bool isViewed;
 
   DemoStoryModel({
-    required this.userId,
-    required this.userName,
-    required this.avatarUrl,
+    required this.author,
     required this.storyContent,
     required this.createdAt,
     this.timeAgo = '2h ago',
@@ -36,30 +53,33 @@ class DemoStoryModel {
     this.isViewed = false,
   });
 
-  // Backward compatibility getters
-  String get id => 'demo_$userId';
-  String get userAvatar => avatarUrl;
+  // Source-of-truth author properties
+  String get userId => author.id;
+  String get userName => author.name;
+  String get avatarUrl => author.avatarUrl;
+  String get id => 'demo_${author.id}';
+  String get userAvatar => author.avatarUrl;
   String get content => storyContent;
 
   /// Converts this demo story model into a [StoryGroupModel] compatible with
-  /// the existing Story Viewer and tray components.
+  /// the shared Story Viewer and tray components.
   StoryGroupModel toStoryGroup() {
     final startHex = gradientColors.isNotEmpty
-        ? '0x${gradientColors.first.value.toRadixString(16).padLeft(8, '0')}'
+        ? '0x${gradientColors.first.toARGB32().toRadixString(16).padLeft(8, '0')}'
         : '0xFF0F172A';
     final endHex = gradientColors.length > 1
-        ? '0x${gradientColors.last.value.toRadixString(16).padLeft(8, '0')}'
+        ? '0x${gradientColors.last.toARGB32().toRadixString(16).padLeft(8, '0')}'
         : '0xFF1E293B';
 
     return StoryGroupModel(
-      userId: userId,
-      userName: userName,
-      userAvatar: avatarUrl,
+      userId: author.id,
+      userName: author.name,
+      userAvatar: author.avatarUrl,
       isOwner: false,
       hasUnseen: !isViewed,
       stories: [
         StoryItemModel(
-          id: 'demo_$userId',
+          id: 'demo_${author.id}',
           type: StoryType.text,
           textContent: storyContent,
           location: location,
@@ -81,12 +101,10 @@ class DemoStoryModel {
   }
 }
 
-/// Pre-populated list of demo stories for UI/UX evaluation.
+/// Pre-populated list of demo stories using established Feed authors.
 final List<DemoStoryModel> kDemoStories = [
   DemoStoryModel(
-    userId: 'demo_user_dara',
-    userName: 'Dara',
-    avatarUrl: 'assets/images/ren_makara_profile.png',
+    author: DemoStoryAuthors.renMakara,
     storyContent:
         'Working on the Flutter mobile design system today! 🚀💻 Loving the new GenLink dark theme tokens.',
     location: 'CADT Innovation Hub',
@@ -98,23 +116,7 @@ final List<DemoStoryModel> kDemoStories = [
     likesCount: 14,
   ),
   DemoStoryModel(
-    userId: 'demo_user_lina',
-    userName: 'Lina',
-    avatarUrl: 'assets/images/meimei_profile.png',
-    storyContent:
-        'Study session at the library until 5 PM! Exam prep is in full swing. Join our study table! 📚☕',
-    location: 'Central Campus Library',
-    timeAgo: '3h ago',
-    createdAt: DateTime.now().subtract(const Duration(hours: 3)),
-    gradientColors: const [Color(0xFFE11D48), Color(0xFFF43F5E)],
-    icon: Icons.menu_book_rounded,
-    tag: '#StudyGroup #Exams',
-    likesCount: 21,
-  ),
-  DemoStoryModel(
-    userId: 'demo_user_sokha',
-    userName: 'Sokha',
-    avatarUrl: 'assets/images/heng_chansela_profile.png',
+    author: DemoStoryAuthors.hengChansela,
     storyContent:
         'Campus Hackathon 2026 kick-off this Saturday! Who wants to build AI agents with us? 🤖💡',
     location: 'Main Auditorium',
@@ -125,34 +127,6 @@ final List<DemoStoryModel> kDemoStories = [
     tag: '#Hackathon #Innovation',
     likesCount: 35,
   ),
-  DemoStoryModel(
-    userId: 'demo_user_visal',
-    userName: 'Visal',
-    avatarUrl: 'assets/images/amnot_profile.jpg',
-    storyContent:
-        'Great football match this afternoon! Champions league vibe on the campus pitch ⚽🏆',
-    location: 'University Sports Field',
-    timeAgo: '6h ago',
-    createdAt: DateTime.now().subtract(const Duration(hours: 6)),
-    gradientColors: const [Color(0xFF059669), Color(0xFF10B981)],
-    icon: Icons.sports_soccer_rounded,
-    tag: '#CampusSports #Football',
-    likesCount: 18,
-  ),
-  DemoStoryModel(
-    userId: 'demo_user_sreyneang',
-    userName: 'Sreyneang',
-    avatarUrl: 'assets/images/heng_chansela_km_profile.jpg',
-    storyContent:
-        'Photography club workshop photos are out! Golden hour shots around campus look magical 📸🌅',
-    location: 'Campus Arts & Culture Center',
-    timeAgo: '8h ago',
-    createdAt: DateTime.now().subtract(const Duration(hours: 8)),
-    gradientColors: const [Color(0xFF7C3AED), Color(0xFFDB2777)],
-    icon: Icons.camera_alt_rounded,
-    tag: '#Photography #GoldenHour',
-    likesCount: 29,
-  ),
 ];
 
 /// Returns all demo stories formatted as [StoryGroupModel]s.
@@ -160,15 +134,18 @@ List<StoryGroupModel> getDemoStoryGroups() {
   return kDemoStories.map((d) => d.toStoryGroup()).toList();
 }
 
-/// Finds a demo story by story id or user id.
+/// Finds a demo story by story id, author id, or author name.
 DemoStoryModel? getDemoStoryById(String storyId) {
-  final normalized = storyId.replaceFirst('demo_', '');
+  final normalized = storyId.replaceFirst('demo_', '').toLowerCase();
   for (final story in kDemoStories) {
-    if (story.id == storyId ||
-        story.userId == storyId ||
-        story.userId == normalized ||
-        story.userId == 'demo_user_$normalized' ||
-        story.userName.toLowerCase() == normalized.toLowerCase()) {
+    if (story.id.toLowerCase() == storyId.toLowerCase() ||
+        story.userId.toLowerCase() == storyId.toLowerCase() ||
+        story.userId.toLowerCase() == normalized ||
+        story.userId.toLowerCase() == 'user_$normalized' ||
+        story.userId.toLowerCase() == 'demo_user_$normalized' ||
+        story.userName.toLowerCase() == normalized ||
+        story.author.name.toLowerCase() == normalized ||
+        story.author.id.toLowerCase() == normalized) {
       return story;
     }
   }

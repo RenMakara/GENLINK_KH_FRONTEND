@@ -934,7 +934,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                                     }
                                   },
                                   decoration: const InputDecoration(
-                                    hintText: "Reply to story...",
+                                    hintText: "Send a message...",
                                     hintStyle: TextStyle(
                                       color: Colors.white54,
                                       fontSize: 15.5,
@@ -1074,6 +1074,36 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     StoryItemModel story,
     String message,
   ) async {
+    final isDemo = story.id.startsWith('demo_') ||
+        group.userId.startsWith('demo_');
+
+    if (isDemo) {
+      if (Get.isRegistered<NotificationController>()) {
+        final notifCtrl = Get.find<NotificationController>();
+        notifCtrl.addActivityNotification(
+          NotificationModel(
+            id: 'notif_reply_${story.id}_${DateTime.now().millisecondsSinceEpoch}',
+            type: NotificationType.comment,
+            title: 'Story Reply',
+            body: '${group.userName} replied: "$message"',
+            senderName: group.userName,
+            senderAvatar: group.userAvatar,
+            timeAgo: 'Just now',
+            timestamp: DateTime.now(),
+            isRead: false,
+            targetId: story.id,
+            targetType: 'story',
+          ),
+        );
+      }
+
+      if (mounted) {
+        _showCompactReplyToast(context, group.userName, group.userAvatar);
+        _resumeStory();
+      }
+      return;
+    }
+
     try {
       if (!Get.isRegistered<ChatController>()) {
         ChatBinding().dependencies();
@@ -2607,6 +2637,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       matchedTemplate ??= storyTemplatePresets.first;
     }
 
+    final demoStory = getDemoStoryById(story.id);
+
     return Stack(
       children: [
         Positioned.fill(child: _buildMediaWidget(story, group)),
@@ -2619,27 +2651,103 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               customText: story.textContent,
             ),
           ),
-        ...story.layers.map((layer) => _buildViewerLayerWidget(layer)),
-        if (!isTemplate &&
-            story.layers.isEmpty &&
-            story.textContent != null &&
-            story.textContent!.trim().isNotEmpty)
-          Positioned(
-            left: 28,
-            right: 28,
-            bottom: 120,
-            child: Text(
-              story.textContent!,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                height: 1.35,
-                shadows: [Shadow(color: Colors.black87, blurRadius: 16)],
+        if (demoStory != null)
+          Positioned.fill(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (demoStory.icon != null) ...[
+                      Container(
+                        width: 64,
+                        height: 64,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.18),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.35),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Icon(
+                          demoStory.icon,
+                          size: 32,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    if (demoStory.tag != null && demoStory.tag!.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          demoStory.tag!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    Text(
+                      demoStory.storyContent,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        height: 1.45,
+                        letterSpacing: -0.2,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black38,
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          )
+        else ...[
+          ...story.layers.map((layer) => _buildViewerLayerWidget(layer)),
+          if (!isTemplate &&
+              story.layers.isEmpty &&
+              story.textContent != null &&
+              story.textContent!.trim().isNotEmpty)
+            Positioned(
+              left: 28,
+              right: 28,
+              bottom: 120,
+              child: Text(
+                story.textContent!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  height: 1.35,
+                  shadows: [Shadow(color: Colors.black87, blurRadius: 16)],
+                ),
+              ),
+            ),
+        ],
       ],
     );
   }
@@ -3635,15 +3743,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        'community.writeCommentHint'.tr.length >
-                                                15
-                                            ? "Comment..."
-                                            : 'community.writeCommentHint'.tr,
+                                        "Send a message...",
                                         style: TextStyle(
                                           color: Colors.white.withValues(
-                                            alpha: 0.45,
+                                            alpha: 0.65,
                                           ),
-                                          fontSize: 12.5,
+                                          fontSize: 13,
                                           fontWeight: FontWeight.w400,
                                           letterSpacing: 0.1,
                                         ),
@@ -3662,12 +3767,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                         if (story.allowReactions && !_isOwnStory) ...[
                           const SizedBox(width: 8),
 
-                          // ── Interactive Like Button (Count hidden for other users' stories) ──
+                          // ── Interactive Like Button ──
                           StoryInteractiveLikeButton(
                             key: ValueKey('story_like_${story.id}'),
                             isLiked: story.isLiked,
                             likesCount: story.likesCount,
-                            showCount: false,
+                            showCount: story.id.startsWith('demo_'),
                             onTap: () => _toggleLike(story),
                           ),
                         ],

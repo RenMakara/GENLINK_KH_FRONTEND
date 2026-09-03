@@ -30,14 +30,21 @@ class FinanceScreen extends GetView<FinanceController> {
       final dashboard = controller.dashboard.value;
       return Scaffold(
         backgroundColor: bg,
+        extendBody: true,
         body: SafeArea(
+          bottom: false,
           child: RefreshIndicator(
             onRefresh: controller.reload,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics(),
               ),
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 30),
+              padding: const EdgeInsets.fromLTRB(
+                16,
+                14,
+                16,
+                100, // space for bottom navigation
+              ),
               children: [
                 _FinanceHeader(
                   selectedCurrency: controller.selectedCurrency.value,
@@ -89,15 +96,15 @@ class _FinanceHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
-    final surfaceSecondary = isDark
-        ? AppColors.darkSurfaceSecondary
-        : AppColors.lightSurfaceSecondary;
+
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
+
     final border = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
@@ -105,63 +112,56 @@ class _FinanceHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Header
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'finance.title'.tr,
-              style: TextStyle(
-                color: textPrimary,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.3,
+            Expanded(
+              child: Text(
+                'finance.title'.tr,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
               ),
             ),
-            Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
+
+            // Notification
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {},
+                borderRadius: BorderRadius.circular(13),
+                child: Ink(
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: surface,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(13),
                     border: Border.all(color: border),
                   ),
                   child: Icon(
                     Icons.notifications_none_rounded,
-                    size: 22,
+                    size: 23,
                     color: textPrimary,
                   ),
                 ),
-                const SizedBox(width: 10),
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: surfaceSecondary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      'SR',
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+
+        const SizedBox(height: 14),
+
+        // Currency selector
         _CurrencySelector(
           selectedCurrency: selectedCurrency,
           onChanged: onCurrencyChanged,
           background: surface,
-          selectedBackground: surfaceSecondary,
+          selectedBackground: isDark
+              ? AppColors.darkSurfaceSecondary
+              : AppColors.lightSurfaceSecondary,
           border: border,
           textColor: textPrimary,
         ),
@@ -189,34 +189,63 @@ class _CurrencySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final isUsd = selectedCurrency == FinanceCurrency.usd;
+
+    return SizedBox(
+      width: 150,
       height: 38,
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _CurrencyChoice(
-            currency: FinanceCurrency.usd,
-            selected: selectedCurrency == FinanceCurrency.usd,
-            onTap: () => onChanged(FinanceCurrency.usd),
-            selectedBackground: selectedBackground,
-            border: border,
-            textColor: textColor,
-          ),
-          _CurrencyChoice(
-            currency: FinanceCurrency.khr,
-            selected: selectedCurrency == FinanceCurrency.khr,
-            onTap: () => onChanged(FinanceCurrency.khr),
-            selectedBackground: selectedBackground,
-            border: border,
-            textColor: textColor,
-          ),
-        ],
+      child: Container(
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: border),
+        ),
+        child: Stack(
+          children: [
+            // Sliding selected background
+            AnimatedAlign(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              alignment: isUsd ? Alignment.centerLeft : Alignment.centerRight,
+              child: Container(
+                width: 72,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: selectedBackground,
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(color: border),
+                ),
+              ),
+            ),
+
+            // Clickable currency buttons
+            Row(
+              children: [
+                Expanded(
+                  child: _CurrencyChoice(
+                    currency: FinanceCurrency.usd,
+                    selected: isUsd,
+                    onTap: () => onChanged(FinanceCurrency.usd),
+                    selectedBackground: selectedBackground,
+                    border: border,
+                    textColor: textColor,
+                  ),
+                ),
+                Expanded(
+                  child: _CurrencyChoice(
+                    currency: FinanceCurrency.khr,
+                    selected: !isUsd,
+                    onTap: () => onChanged(FinanceCurrency.khr),
+                    selectedBackground: selectedBackground,
+                    border: border,
+                    textColor: textColor,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -248,21 +277,18 @@ class _CurrencyChoice extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(9),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? selectedBackground : Colors.transparent,
-            borderRadius: BorderRadius.circular(9),
-            border: selected ? Border.all(color: border) : null,
-          ),
-          child: Text(
-            currency.apiValue,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 12,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        child: SizedBox(
+          height: 30,
+          child: Center(
+            child: AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
+              child: Text(currency.apiValue),
             ),
           ),
         ),

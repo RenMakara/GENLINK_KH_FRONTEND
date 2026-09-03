@@ -7,8 +7,10 @@ import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import '../../domain/models/community_models.dart';
 import '../../domain/models/community_post_model.dart';
 import '../screens/create_post_screen.dart';
+import '../screens/event_details_screen.dart';
 import '../controllers/community_controller.dart';
 import 'comments_bottom_sheet.dart';
 import 'full_screen_image_viewer.dart';
@@ -42,8 +44,14 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
       duration: const Duration(milliseconds: 200),
     );
     _likeScaleAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
-      TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.18).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.18, end: 1.0).chain(CurveTween(curve: Curves.easeInCubic)),
+        weight: 50,
+      ),
     ]).animate(_likeAnimController);
 
     _bookmarkAnimController = AnimationController(
@@ -710,6 +718,10 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               domain: widget.post.linkPreviewDomain,
             ),
 
+          // Attached Event Card Component
+          if (widget.post.attachedEvent != null)
+            _buildAttachedEventCard(context, widget.post.attachedEvent!),
+
           const SizedBox(height: 2),
           // Post Action Buttons Bar (Like, Comment, Repost, Bookmark)
           Padding(
@@ -728,7 +740,9 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                           scale: _likeScaleAnim,
                           child: Icon(
                             widget.post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            color: widget.post.isLiked ? const Color(0xFFFF5C5C) : const Color(0xFFA6A6A6),
+                            color: widget.post.isLiked
+                                ? AppColors.likedAccent
+                                : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
                             size: 20,
                           ),
                         ),
@@ -736,12 +750,16 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                         Text(
                           "${widget.post.likesCount}",
                           style: theme.textTheme.labelMedium?.copyWith(
-                                color: widget.post.isLiked ? const Color(0xFFFF5C5C) : const Color(0xFFA6A6A6),
+                                color: widget.post.isLiked
+                                    ? AppColors.likedAccent
+                                    : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13,
                               ) ??
                               TextStyle(
-                                color: widget.post.isLiked ? const Color(0xFFFF5C5C) : const Color(0xFFA6A6A6),
+                                color: widget.post.isLiked
+                                    ? AppColors.likedAccent
+                                    : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1063,6 +1081,244 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAttachedEventCard(BuildContext context, EventModel event) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final cardBg = isDark ? const Color(0xFF111111) : const Color(0xFFF5F5F5);
+    final borderSubtle = isDark ? const Color(0xFF303030) : const Color(0xFFE0E0E0);
+    final textPrimary = isDark ? const Color(0xFFFFFFFF) : const Color(0xFF111111);
+    final textSecondary = isDark ? const Color(0xFFA0A0A0) : const Color(0xFF666666);
+    final badgeBg = isDark ? const Color(0xFF222222) : const Color(0xFFE5E5E5);
+    final ctaBg = isDark ? Colors.white : Colors.black87;
+    final ctaText = isDark ? Colors.black : Colors.white;
+
+    final hasLocalCover = event.coverImageFile != null;
+    final hasNetworkCover = event.imageUrl.isNotEmpty;
+
+    // Location / Online string resolution
+    final isOnline = event.eventType.toLowerCase() == 'online';
+    final locationText = isOnline
+        ? (event.onlineLink.isNotEmpty ? event.onlineLink : 'Online Event')
+        : (event.location.isNotEmpty ? event.location : 'In person');
+
+    final locationIcon = isOnline ? Icons.videocam_outlined : Icons.location_on_outlined;
+
+    // Formatted date & time display
+    final dateTimeString = StringBuffer(event.dateString);
+    if (event.timeString.isNotEmpty) {
+      dateTimeString.write(' · ${event.timeString}');
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderSubtle, width: 1.0),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => Get.to(() => EventDetailsScreen(event: event)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. Event Cover Image Banner
+                  SizedBox(
+                    height: 150,
+                    width: double.infinity,
+                    child: hasLocalCover
+                        ? Image.file(event.coverImageFile!, fit: BoxFit.cover)
+                        : (hasNetworkCover
+                            ? Image.network(
+                                event.imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => _buildMonochromeEventPlaceholder(isDark, textSecondary),
+                              )
+                            : _buildMonochromeEventPlaceholder(isDark, textSecondary)),
+                  ),
+
+                  // 2. Event Info Details
+                  Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // EVENT Badge + Category
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: badgeBg,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                event.category.isNotEmpty
+                                    ? 'EVENT · ${event.category.toUpperCase()}'
+                                    : 'EVENT',
+                                style: TextStyle(
+                                  color: textSecondary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // Event Title (Most Prominent)
+                        Text(
+                          event.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.bold,
+                            height: 1.3,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // Date & Time
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_month_outlined, color: textSecondary, size: 14),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                dateTimeString.toString(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: textSecondary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        // Location OR Online Indicator
+                        Row(
+                          children: [
+                            Icon(locationIcon, color: textSecondary, size: 14),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                locationText,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: textSecondary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Short Description (if available)
+                        if (event.description.trim().isNotEmpty &&
+                            event.description.trim() != event.title) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            event.description.trim(),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: textSecondary,
+                              fontSize: 12.5,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 14),
+
+                        // CTA Button: White bg + Black text
+                        Container(
+                          width: double.infinity,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: ctaBg,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'View Event',
+                                  style: TextStyle(
+                                    color: ctaText,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13.5,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 16,
+                                  color: ctaText,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Clean monochrome GenLink Event Placeholder when no cover image is available
+  Widget _buildMonochromeEventPlaceholder(bool isDark, Color textSecondary) {
+    final bg = isDark ? const Color(0xFF181818) : const Color(0xFFEBEBEB);
+    final iconColor = isDark ? const Color(0xFF333333) : const Color(0xFFCCCCCC);
+    return Container(
+      color: bg,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.event_outlined, size: 40, color: iconColor),
+            const SizedBox(height: 6),
+            Text(
+              'GENLINK COMMUNITY EVENT',
+              style: TextStyle(
+                color: textSecondary.withValues(alpha: 0.6),
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

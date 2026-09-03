@@ -4,8 +4,11 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../shared/utils/current_user.dart';
+import '../../domain/models/community_models.dart';
 import '../../domain/models/community_post_model.dart';
 import '../controllers/community_controller.dart';
+import 'create_event_screen.dart';
+import 'event_details_screen.dart';
 
 class CreatePostScreen extends StatefulWidget {
   final CommunityPostModel? initialPost;
@@ -23,6 +26,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   String _selectedAudience = 'Public';
   List<String> _attachedImages = [];
   String? _selectedEventDate;
+  EventModel? _attachedEvent;
 
   // Poll state
   String? _pollQuestion;
@@ -53,6 +57,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       _pollQuestion = widget.initialPost!.pollQuestion;
       if (widget.initialPost!.pollOptions != null) {
         _pollOptionsList = widget.initialPost!.pollOptions!.map((o) => o.text).toList();
+      }
+      if (widget.initialPost!.attachedEvent != null) {
+        _attachedEvent = widget.initialPost!.attachedEvent;
       }
     }
     _textController.addListener(() {
@@ -313,6 +320,25 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 ),
 
                 _buildContentOption(
+                  icon: Icons.event_outlined,
+                  label: 'community.event'.tr,
+                  circleBg: circleBg,
+                  iconColor: iconColor,
+                  textColor: textPrimary,
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final event = await Get.to<EventModel>(
+                      () => const CreateEventScreen(returnCreatedEvent: true),
+                    );
+                    if (event != null) {
+                      setState(() {
+                        _attachedEvent = event;
+                      });
+                    }
+                  },
+                ),
+
+                _buildContentOption(
                   icon: Icons.bar_chart_rounded,
                   label: 'community.poll'.tr,
                   circleBg: circleBg,
@@ -529,7 +555,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     final text = _textController.text.trim();
     return text.isNotEmpty ||
         _attachedImages.isNotEmpty ||
-        _pollQuestion != null;
+        _pollQuestion != null ||
+        _attachedEvent != null;
   }
 
   void _onBackPress() {
@@ -621,6 +648,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         pollQuestion: _pollQuestion,
         pollOptions: pollOpts,
         pollDuration: _pollDuration,
+        attachedEvent: _attachedEvent,
       );
 
       AppNotificationBanner.showSuccess(
@@ -640,6 +668,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         pollQuestion: _pollQuestion,
         pollOptions: pollOpts,
         pollDuration: _pollDuration,
+        attachedEvent: _attachedEvent,
       );
 
       AppNotificationBanner.showSuccess(
@@ -851,7 +880,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     ),
 
                     // Attached Content Previews (Shown ONLY when user explicitly attaches)
-                    if (_attachedImages.isNotEmpty || _pollQuestion != null)
+                    if (_attachedImages.isNotEmpty || _pollQuestion != null || _attachedEvent != null)
                       Wrap(
                         spacing: 12,
                         runSpacing: 12,
@@ -904,6 +933,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               ),
                             );
                           }),
+
+                          // 2. Attached Event Card
+                          if (_attachedEvent != null)
+                            _buildAttachedEventCard(isDark, cardBg, cardBorder),
 
 
                           // 3. Attached Poll Card
@@ -976,6 +1009,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     ),
 
                     _ToolbarBtn(
+                      icon: Icons.event_outlined,
+                      tooltip: 'community.event'.tr,
+                      color: textPrimary.withValues(alpha: 0.65),
+                      onPressed: () async {
+                        final event = await Get.to<EventModel>(
+                          () => const CreateEventScreen(returnCreatedEvent: true),
+                        );
+                        if (event != null) {
+                          setState(() {
+                            _attachedEvent = event;
+                          });
+                        }
+                      },
+                    ),
+
+                    _ToolbarBtn(
                       icon: Icons.bar_chart_rounded,
                       tooltip: 'community.poll'.tr,
                       color: textPrimary.withValues(alpha: 0.65),
@@ -1023,6 +1072,141 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAttachedEventCard(bool isDark, Color cardBg, Color cardBorder) {
+    if (_attachedEvent == null) return const SizedBox.shrink();
+    final ev = _attachedEvent!;
+    final textPrimary = isDark ? Colors.white : Colors.black87;
+    final textSecondary = isDark ? Colors.white70 : Colors.black54;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cardBorder),
+      ),
+      child: Stack(
+        children: [
+          InkWell(
+            onTap: () => Get.to(() => EventDetailsScreen(event: ev)),
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      color: isDark ? const Color(0xFF252525) : const Color(0xFFE8E8E8),
+                      child: ev.coverImageFile != null
+                          ? Image.file(ev.coverImageFile!, fit: BoxFit.cover)
+                          : (ev.imageUrl.isNotEmpty
+                              ? Image.network(
+                                  ev.imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Icon(Icons.event, color: textSecondary, size: 28),
+                                )
+                              : Icon(Icons.event, color: textSecondary, size: 28)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (ev.category.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            margin: const EdgeInsets.only(bottom: 4),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF303030) : const Color(0xFFE0E0E0),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              ev.category,
+                              style: TextStyle(color: textSecondary, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        Text(
+                          ev.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_month_outlined, color: textSecondary, size: 13),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                ev.dateString,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: textSecondary, fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (ev.location.isNotEmpty || ev.onlineLink.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(
+                                ev.eventType == 'Online' ? Icons.videocam_outlined : Icons.location_on_outlined,
+                                color: textSecondary,
+                                size: 13,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  ev.eventType == 'Online' ? ev.onlineLink : ev.location,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(color: textSecondary, fontSize: 11.5),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 28),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _attachedEvent = null;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF333333) : const Color(0xFFDDDDDD),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.close, color: textPrimary, size: 14),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

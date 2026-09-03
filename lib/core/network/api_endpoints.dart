@@ -84,6 +84,54 @@ abstract final class ApiEndpoints {
   static const mobileProductivityDashboard =
       '$_base/mobile/productivity-dashboard';
 
+  // ── Finance ──────────────────────────────────────────────────────────
+  static const financeWallet = '$_base/finance/wallet';
+  static const financeWalletTopUp = '$_base/finance/wallet/top-up';
+  static const financeWalletPay = '$_base/finance/wallet/pay';
+  static const financeWalletTransactions = '$_base/finance/wallet/transactions';
+
+  static const financeIncomes = '$_base/finance/incomes';
+  static const financeCashFlow = '$_base/finance/incomes/cash-flow';
+
+  static const financeExpenses = '$_base/finance/expenses';
+  static const financeExpenseSummary = '$_base/finance/expenses/summary';
+
+  static const financeBudgets = '$_base/finance/budgets';
+  static const financeBudgetCurrent = '$_base/finance/budgets/current';
+
+  static const financeSavings = '$_base/finance/savings';
+
+  static String financeIncome(String incomeId) =>
+      '$_base/finance/incomes/$incomeId';
+
+  static String financeExpense(String expenseId) =>
+      '$_base/finance/expenses/$expenseId';
+
+  static String financeBudget(String budgetId) =>
+      '$_base/finance/budgets/$budgetId';
+
+  static String financeSaving(String savingGoalId) =>
+      '$_base/finance/savings/$savingGoalId';
+
+  static String financeSavingDeposits(String savingGoalId) =>
+      '$_base/finance/savings/$savingGoalId/deposits';
+
+  // ── Finance learning ────────────────────────────────────────────────
+  static const financeLearningDashboard = '$_base/finance/literacy/dashboard';
+  static const financeLearningLessons = '$_base/finance/literacy/lessons';
+
+  static String financeLearningLesson(String lessonId) =>
+      '$_base/finance/literacy/lessons/$lessonId';
+
+  static String financeLearningComplete(String lessonId) =>
+      '$_base/finance/literacy/lessons/$lessonId/complete';
+
+  static String financeLearningQuiz(String lessonId) =>
+      '$_base/finance/literacy/lessons/$lessonId/quiz';
+
+  static String financeLearningQuizSubmit(String lessonId) =>
+      '$_base/finance/literacy/lessons/$lessonId/quiz/submit';
+
   // ── Community ─────────────────────────────────────────────────────────
   static const communityFeed = '$_base/community/posts/feed';
   static const communityPosts = '$_base/community/posts';
@@ -100,10 +148,30 @@ abstract final class ApiEndpoints {
   static String communityPostComments(String postId) =>
       '$_base/community/posts/$postId/comments';
 
+  // ── Stories ────────────────────────────────────────────────────────────
+  static const stories = '$_base/community/stories';
+
+  static String storyItem(String storyId) =>
+      '$_base/community/stories/$storyId';
+
+  static String storyView(String storyId) =>
+      '$_base/community/stories/$storyId/view';
+
+  static String storyViewers(String storyId) =>
+      '$_base/community/stories/$storyId/viewers';
+
   // ── Notifications ─────────────────────────────────────────────────────
   static const notifications = '$_base/notifications';
 
   // ── Chats ─────────────────────────────────────────────────────────────
   static const chats = '$_base/community/chats';
-}
 
+  // ── Entertainment / Gamification ──────────────────────────────────────
+  static const quizzes = '$_base/entertainment/quizzes';
+  static String quizDetail(String quizId) =>
+      '$_base/entertainment/quizzes/$quizId';
+  static String quizAttempt(String quizId) =>
+      '$_base/entertainment/quizzes/$quizId/attempts';
+  static const quizHistory = '$_base/entertainment/quizzes/history';
+  static const leaderboards = '$_base/entertainment/leaderboards';
+}

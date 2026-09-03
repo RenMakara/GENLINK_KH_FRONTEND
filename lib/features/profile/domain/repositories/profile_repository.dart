@@ -1,11 +1,6 @@
-import '../../../settings/domain/entities/user_settings_entity.dart';
 import '../entities/profile_entity.dart';
 
-/// Abstract profile + settings contract.
-///
-/// Settings live here rather than in a separate repository because the
-/// backend serves them from the same `/profile` controller family and the
-/// two are always loaded together.
+/// Profile identity, interests, portfolio, badges, saved items and links.
 abstract class ProfileRepository {
   Future<ProfileEntity> getMyProfile();
 
@@ -29,20 +24,6 @@ abstract class ProfileRepository {
   Future<ProfileEntity> updateAvatarFromMedia(String mediaId);
 
   Future<PublicProfileEntity> getPublicProfile(String username);
-
-  // ── Settings ──────────────────────────────────────────────────────────
-
-  Future<UserSettingsEntity> getSettings();
-
-  Future<UserSettingsEntity> updateSettings({
-    String? language,
-    String? theme,
-    bool? notificationEnabled,
-    String? privacyProfile,
-    bool? allowMessages,
-    bool? allowFollowRequest,
-    bool? biometricEnabled,
-  });
 
   // ── Interests ─────────────────────────────────────────────────────────
 

@@ -52,7 +52,7 @@ class EventDetailsScreen extends StatelessWidget {
                               ? Image.network(
                                   event.imageUrl,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, _) => _placeholderCover(isDark),
+                                  errorBuilder: (context, error, stackTrace) => _placeholderCover(isDark),
                                 )
                               : _placeholderCover(isDark),
                     ),

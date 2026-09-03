@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../../../../app/routes/app_routes.dart';
@@ -6,14 +7,14 @@ import '../../../auth/presentation/controllers/auth_controller.dart';
 
 /// Decides the app's first real screen.
 ///
-/// Order matters: onboarding is shown only on a genuinely first run, so a
-/// returning user with an expired token lands on login, not onboarding.
+/// Order matters: the preference chooser is shown only until it is completed,
+/// while onboarding is shown until its own independent completion flag is set.
 class SplashController extends GetxController {
   SplashController({
     required AuthController authController,
     required LocalStorage localStorage,
-  })  : _auth = authController,
-        _storage = localStorage;
+  }) : _auth = authController,
+       _storage = localStorage;
 
   final AuthController _auth;
   final LocalStorage _storage;
@@ -28,32 +29,54 @@ class SplashController extends GetxController {
   }
 
   Future<void> _resolveDestination() async {
-    // Started first so the restore call runs inside the minimum display
-    // window rather than after it.
+    debugPrint('[SPLASH] Starting initialization');
     final minimumElapsed = Future<void>.delayed(_minimumDisplay);
 
     var restored = false;
+    var initialPreferencesSeen = false;
     var onboardingSeen = false;
 
     try {
-      restored = await _auth.restoreSession();
-      onboardingSeen = await _storage.readOnboardingSeen();
-    } catch (_) {
-      // Secure storage can fail outright (keystore reset, restored backup,
-      // rooted device). Falling through with both flags false sends the
-      // user to the first-run flow — never leaves them stuck on splash.
+      debugPrint('[SPLASH] Restoring token...');
+      restored = await _auth.restoreSession().timeout(
+        const Duration(seconds: 5),
+      );
+      debugPrint('[SPLASH] Token restore completed: restored=$restored');
+
+      debugPrint('[SPLASH] Checking initial preferences status...');
+      initialPreferencesSeen = await _storage
+          .readInitialPreferencesSeen()
+          .timeout(const Duration(seconds: 5));
+      debugPrint(
+        '[SPLASH] Initial preferences check completed: '
+        'seen=$initialPreferencesSeen',
+      );
+
+      debugPrint('[SPLASH] Checking onboarding status...');
+      onboardingSeen = await _storage.readOnboardingSeen().timeout(
+        const Duration(seconds: 5),
+      );
+      debugPrint('[SPLASH] Onboarding check completed: seen=$onboardingSeen');
+    } catch (e) {
+      debugPrint('[SPLASH] Session restore/onboarding check failed: $e');
     }
 
+    debugPrint('[SPLASH] Waiting for minimum display time...');
     await minimumElapsed;
+    debugPrint('[SPLASH] Minimum display time elapsed');
 
     if (restored) {
+      debugPrint('[SPLASH] Navigating to Home');
       Get.offAllNamed<void>(AppRoutes.home);
-    } else if (!onboardingSeen) {
-      // First run starts at language select (step 1), which then hands off
-      // to the onboarding slides.
+    } else if (!initialPreferencesSeen) {
+      debugPrint('[SPLASH] Navigating to Language Select');
       Get.offAllNamed<void>(AppRoutes.languageSelect);
+    } else if (!onboardingSeen) {
+      debugPrint('[SPLASH] Navigating to Onboarding');
+      Get.offAllNamed<void>(AppRoutes.onboarding);
     } else {
-      Get.offAllNamed<void>(AppRoutes.login);
+      debugPrint('[SPLASH] Navigating to Auth Choice');
+      Get.offAllNamed<void>(AppRoutes.authChoice);
     }
   }
 }

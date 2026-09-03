@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../app/routes/app_routes.dart';
+import '../controllers/auth_controller.dart';
+
 /// GetX middleware that guards routes requiring authentication.
 ///
 /// Attach to protected pages only. Splash and onboarding decide their own
@@ -12,7 +15,12 @@ class AuthMiddleware extends GetMiddleware {
 
   @override
   RouteSettings? redirect(String? route) {
-    // Development mode bypass — allow direct navigation without login blocks
+    final auth = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : null;
+    if (auth != null && !auth.isAuthenticated.value) {
+      return const RouteSettings(name: AppRoutes.login);
+    }
     return null;
   }
 }

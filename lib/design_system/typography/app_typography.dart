@@ -4,5 +4,5 @@
 /// should be centralized here or in the localization service.
 abstract final class AppTypography {
   static const englishFontFamily = 'Sora';
-  static const khmerFontFamily = 'Kantumruy Pro';
+  static const khmerFontFamily = 'KantumruyPro';
 }

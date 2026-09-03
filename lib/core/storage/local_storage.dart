@@ -9,13 +9,14 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// only touches this file.
 class LocalStorage {
   LocalStorage({FlutterSecureStorage? storage})
-      : _storage = storage ?? const FlutterSecureStorage();
+    : _storage = storage ?? const FlutterSecureStorage();
 
   final FlutterSecureStorage _storage;
 
   // Keys
   static const _kThemeMode = 'genlink_theme_mode';
   static const _kLanguage = 'genlink_language';
+  static const _kInitialPreferencesSeen = 'genlink_initial_preferences_seen';
   static const _kOnboardingSeen = 'genlink_onboarding_seen';
 
   // ── Theme ─────────────────────────────────────────────────────────────
@@ -35,6 +36,20 @@ class LocalStorage {
       _storage.write(key: _kLanguage, value: language);
 
   // ── Onboarding ────────────────────────────────────────────────────────
+
+  /// Whether the first-run language and appearance step was completed.
+  ///
+  /// Falling back to the legacy onboarding flag migrates existing installs:
+  /// users who already completed onboarding must not see a newly introduced
+  /// preference step after upgrading the app.
+  Future<bool> readInitialPreferencesSeen() async {
+    final stored = await _storage.read(key: _kInitialPreferencesSeen);
+    if (stored == 'true') return true;
+    return readOnboardingSeen();
+  }
+
+  Future<void> markInitialPreferencesSeen() =>
+      _storage.write(key: _kInitialPreferencesSeen, value: 'true');
 
   Future<bool> readOnboardingSeen() async =>
       await _storage.read(key: _kOnboardingSeen) == 'true';
@@ -58,6 +73,7 @@ class LocalStorage {
   Future<void> clearAll() async {
     await _storage.delete(key: _kThemeMode);
     await _storage.delete(key: _kLanguage);
+    await _storage.delete(key: _kInitialPreferencesSeen);
     await _storage.delete(key: _kOnboardingSeen);
     await _storage.delete(key: _kStoryDraft);
   }

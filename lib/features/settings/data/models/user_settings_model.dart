@@ -5,7 +5,8 @@ abstract final class UserSettingsMapper {
   static UserSettingsEntity fromJson(Map<String, dynamic> json) {
     return UserSettingsEntity(
       settingsId: json['settingsId'] as String?,
-      language: json['language'] as String? ?? UserSettingsEntity.languageKhmer,
+      language:
+          json['language'] as String? ?? UserSettingsEntity.languageEnglish,
       theme: json['theme'] as String? ?? UserSettingsEntity.themeSystem,
       notificationEnabled: json['notificationEnabled'] as bool? ?? true,
       privacyProfile:

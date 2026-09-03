@@ -27,12 +27,16 @@ class SettingsScreen extends GetView<SettingsController> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: AppSpacing.md),
+        leading: const Center(
           child: AppBackButton(),
         ),
-        leadingWidth: 58 + AppSpacing.md * 2,
-        title: Text('settings.title'.tr),
+        leadingWidth: 74,
+        title: Text(
+          'settings.title'.tr,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
       body: Obx(() {
         final user = auth.currentUser.value;
@@ -76,8 +80,9 @@ class SettingsScreen extends GetView<SettingsController> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.5),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.5,
+                            ),
                           ),
                         ),
                       ],
@@ -108,7 +113,8 @@ class SettingsScreen extends GetView<SettingsController> {
               () => _HubTile(
                 icon: Icons.language,
                 title: 'settings.language'.tr,
-                subtitle: controller.settings.value.language ==
+                subtitle:
+                    controller.settings.value.language ==
                         UserSettingsEntity.languageKhmer
                     ? 'settings.languageKhmer'.tr
                     : 'settings.languageEnglish'.tr,
@@ -129,8 +135,9 @@ class SettingsScreen extends GetView<SettingsController> {
                 title: Text('settings.notifications'.tr),
                 value: controller.settings.value.notificationEnabled,
                 onChanged: controller.setNotificationEnabled,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                ),
               ),
             ),
 
@@ -148,8 +155,9 @@ class SettingsScreen extends GetView<SettingsController> {
                 title: Text('settings.biometric'.tr),
                 value: controller.settings.value.biometricEnabled,
                 onChanged: controller.setBiometricEnabled,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                ),
               ),
             ),
 
@@ -175,10 +183,10 @@ class SettingsScreen extends GetView<SettingsController> {
   }
 
   String _themeLabel(String theme) => switch (theme) {
-        'LIGHT' => 'settings.themeLight'.tr,
-        'DARK' => 'settings.themeDark'.tr,
-        _ => 'settings.themeSystem'.tr,
-      };
+    'LIGHT' => 'settings.themeLight'.tr,
+    'DARK' => 'settings.themeDark'.tr,
+    _ => 'settings.themeSystem'.tr,
+  };
 
   /// The design's log-out confirmation: bottom sheet, avatar, red action.
   Future<void> _confirmLogout(BuildContext context) async {
@@ -189,8 +197,7 @@ class SettingsScreen extends GetView<SettingsController> {
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (sheetContext) => SafeArea(
         child: Padding(
@@ -309,7 +316,7 @@ class _LogOutTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final error = Theme.of(context).colorScheme.error;
     return ListTile(
-      leading: Icon(Icons.logout, color: error),
+      leading: Icon(Icons.exit_to_app_rounded, color: error),
       title: Text('auth.logout'.tr, style: TextStyle(color: error)),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),

@@ -49,8 +49,7 @@ class ProfileSetupController extends GetxController {
   final selectedInterestIds = <String>{}.obs;
   final isLoadingCatalog = false.obs;
 
-  bool get hasEnoughInterests =>
-      selectedInterestIds.length >= minInterests;
+  bool get hasEnoughInterests => selectedInterestIds.length >= minInterests;
 
   // ── Step 1 ────────────────────────────────────────────────────────────
 

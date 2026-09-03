@@ -125,11 +125,7 @@ class AuthRemoteDatasource {
   }) async {
     final response = await _post(
       ApiEndpoints.resetPassword,
-      data: {
-        'email': email,
-        'otp': otp,
-        'newPassword': newPassword,
-      },
+      data: {'email': email, 'otp': otp, 'newPassword': newPassword},
     );
     return _parseMessage(response);
   }

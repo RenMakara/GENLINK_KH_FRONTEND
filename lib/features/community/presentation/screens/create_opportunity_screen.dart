@@ -13,7 +13,8 @@ class CreateOpportunityScreen extends StatefulWidget {
   const CreateOpportunityScreen({super.key});
 
   @override
-  State<CreateOpportunityScreen> createState() => _CreateOpportunityScreenState();
+  State<CreateOpportunityScreen> createState() =>
+      _CreateOpportunityScreenState();
 }
 
 class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
@@ -58,7 +59,8 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
   }
 
   void _onBackPress() {
-    final hasContent = _titleController.text.trim().isNotEmpty ||
+    final hasContent =
+        _titleController.text.trim().isNotEmpty ||
         _companyController.text.trim().isNotEmpty ||
         _descController.text.trim().isNotEmpty ||
         _selectedType != null;
@@ -70,7 +72,11 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
           backgroundColor: const Color(0xFF1E2228),
           title: Text(
             'community.discardDraft'.tr,
-            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           content: Text(
             'community.discardMessage'.tr,
@@ -125,8 +131,12 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF0F1115) : Colors.white;
     final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textMuted = isDark ? const Color(0xFF8E9297) : const Color(0xFF9E9E9E);
-    final cardBorder = isDark ? const Color(0xFF2B313A) : const Color(0xFFE2E4E8);
+    final textMuted = isDark
+        ? const Color(0xFF8E9297)
+        : const Color(0xFF9E9E9E);
+    final cardBorder = isDark
+        ? const Color(0xFF2B313A)
+        : const Color(0xFFE2E4E8);
     final inputBg = isDark ? const Color(0xFF1A1D22) : const Color(0xFFF7F8FA);
 
     return PopScope(
@@ -157,17 +167,28 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
           ),
           actions: [
             Padding(
-              padding: const EdgeInsets.only(right: 12, top: 10, bottom: 10, left: 4),
+              padding: const EdgeInsets.only(
+                right: 12,
+                top: 10,
+                bottom: 10,
+                left: 4,
+              ),
               child: ElevatedButton(
                 onPressed: _canPost && !_isSubmitting ? _submit : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _canPost
                       ? (isDark ? Colors.white : Colors.black87)
-                      : (isDark ? const Color(0xFF222222) : const Color(0xFFE0E0E0)),
-                  disabledBackgroundColor: isDark ? const Color(0xFF222222) : const Color(0xFFE0E0E0),
+                      : (isDark
+                            ? const Color(0xFF222222)
+                            : const Color(0xFFE0E0E0)),
+                  disabledBackgroundColor: isDark
+                      ? const Color(0xFF222222)
+                      : const Color(0xFFE0E0E0),
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
                 child: _isSubmitting
                     ? SizedBox(
@@ -203,7 +224,11 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Author identity row ────────────────────────────────────
-              AuthorRow(isDark: isDark, textPrimary: textPrimary, textMuted: textMuted),
+              AuthorRow(
+                isDark: isDark,
+                textPrimary: textPrimary,
+                textMuted: textMuted,
+              ),
               const SizedBox(height: 20),
 
               // ── Title ──────────────────────────────────────────────
@@ -214,8 +239,18 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
                 focusNode: _titleFocus,
                 maxLines: 1,
                 maxLength: 120,
-                buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
-                style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
+                buildCounter:
+                    (
+                      _, {
+                      required currentLength,
+                      required isFocused,
+                      maxLength,
+                    }) => null,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
                 decoration: _inputDecoration(
                   hint: 'community.opportunityTitle'.tr,
                   isDark: isDark,
@@ -238,8 +273,18 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
                 focusNode: _companyFocus,
                 maxLines: 1,
                 maxLength: 100,
-                buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
-                style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w600),
+                buildCounter:
+                    (
+                      _, {
+                      required currentLength,
+                      required isFocused,
+                      maxLength,
+                    }) => null,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
                 decoration: _inputDecoration(
                   hint: 'community.opportunityCompany'.tr,
                   isDark: isDark,
@@ -262,7 +307,9 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
                   final isSelected = _selectedType == key;
                   return Expanded(
                     child: Padding(
-                      padding: EdgeInsets.only(right: key != _typeKeys.last ? 8 : 0),
+                      padding: EdgeInsets.only(
+                        right: key != _typeKeys.last ? 8 : 0,
+                      ),
                       child: GestureDetector(
                         onTap: () => setState(() => _selectedType = key),
                         child: AnimatedContainer(
@@ -274,7 +321,9 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
                                 : inputBg,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: isSelected ? Colors.transparent : cardBorder,
+                              color: isSelected
+                                  ? Colors.transparent
+                                  : cardBorder,
                             ),
                           ),
                           child: Center(
@@ -308,7 +357,13 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
                 minLines: 5,
                 maxLines: null,
                 maxLength: 2000,
-                buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
+                buildCounter:
+                    (
+                      _, {
+                      required currentLength,
+                      required isFocused,
+                      maxLength,
+                    }) => null,
                 style: TextStyle(color: textPrimary, fontSize: 15, height: 1.5),
                 decoration: _inputDecoration(
                   hint: 'community.opportunityDesc'.tr,
@@ -350,7 +405,11 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
   }) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: textMuted, fontSize: 15, fontWeight: FontWeight.w400),
+      hintStyle: TextStyle(
+        color: textMuted,
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+      ),
       filled: true,
       fillColor: inputBg,
       border: OutlineInputBorder(

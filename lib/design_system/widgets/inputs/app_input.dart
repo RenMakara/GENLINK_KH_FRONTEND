@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 
 import '../../radius/app_radius.dart';
 import '../../spacing/app_spacing.dart';
@@ -29,6 +30,7 @@ class AppInput extends StatefulWidget {
     this.onSubmitted,
     this.prefixIcon,
     this.suffix,
+    this.radius,
   });
 
   /// Email field with the right keyboard and no autocapitalisation.
@@ -46,12 +48,13 @@ class AppInput extends StatefulWidget {
     this.onSubmitted,
     this.prefixIcon,
     this.suffix,
-  })  : obscure = false,
-        maxLines = 1,
-        maxLength = null,
-        keyboardType = TextInputType.emailAddress,
-        textCapitalization = TextCapitalization.none,
-        inputFormatters = null;
+    this.radius,
+  }) : obscure = false,
+       maxLines = 1,
+       maxLength = null,
+       keyboardType = TextInputType.emailAddress,
+       textCapitalization = TextCapitalization.none,
+       inputFormatters = null;
 
   /// Password field with the obscure toggle enabled.
   const AppInput.password({
@@ -67,13 +70,14 @@ class AppInput extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.prefixIcon,
-  })  : obscure = true,
-        maxLines = 1,
-        maxLength = null,
-        keyboardType = null,
-        textCapitalization = TextCapitalization.none,
-        inputFormatters = null,
-        suffix = null;
+    this.radius,
+  }) : obscure = true,
+       maxLines = 1,
+       maxLength = null,
+       keyboardType = null,
+       textCapitalization = TextCapitalization.none,
+       inputFormatters = null,
+       suffix = null;
 
   final String label;
   final TextEditingController? controller;
@@ -93,6 +97,7 @@ class AppInput extends StatefulWidget {
   final ValueChanged<String>? onSubmitted;
   final IconData? prefixIcon;
   final Widget? suffix;
+  final double? radius;
 
   @override
   State<AppInput> createState() => _AppInputState();
@@ -113,6 +118,7 @@ class _AppInputState extends State<AppInput> {
         TextFormField(
           controller: widget.controller,
           obscureText: _obscured,
+          obscuringCharacter: '●',
           enabled: widget.enabled,
           autofocus: widget.autofocus,
           maxLines: widget.obscure ? 1 : widget.maxLines,
@@ -129,8 +135,9 @@ class _AppInputState extends State<AppInput> {
             hintText: widget.hint,
             helperText: widget.helper,
             counterText: '',
-            prefixIcon:
-                widget.prefixIcon == null ? null : Icon(widget.prefixIcon),
+            prefixIcon: widget.prefixIcon == null
+                ? null
+                : Icon(widget.prefixIcon),
             suffixIcon: _suffixIcon(),
           ).applyDefaults(_decorationTheme(theme)),
         ),
@@ -143,13 +150,16 @@ class _AppInputState extends State<AppInput> {
   /// and wastes the corners.
   InputDecorationThemeData _decorationTheme(ThemeData theme) {
     final base = theme.inputDecorationTheme;
-    if (widget.maxLines <= 1 || widget.obscure) return base;
 
     InputBorder reshape(InputBorder? border) {
-      if (border is! OutlineInputBorder) return border ?? const OutlineInputBorder();
-      return border.copyWith(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-      );
+      if (border is! OutlineInputBorder) {
+        return border ?? const OutlineInputBorder();
+      }
+      final r = widget.radius ??
+          (widget.maxLines > 1 && !widget.obscure
+              ? AppRadius.xl
+              : AppRadius.pill);
+      return border.copyWith(borderRadius: BorderRadius.circular(r));
     }
 
     return base.copyWith(
@@ -164,10 +174,23 @@ class _AppInputState extends State<AppInput> {
 
   Widget? _suffixIcon() {
     if (widget.obscure) {
-      return IconButton(
-        icon: Icon(_obscured ? Icons.visibility_off : Icons.visibility),
-        onPressed: () => setState(() => _obscured = !_obscured),
-        tooltip: _obscured ? 'Show password' : 'Hide password',
+      final theme = Theme.of(context);
+      return GestureDetector(
+        onTap: () => setState(() => _obscured = !_obscured),
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _obscured ? 'common.show'.tr : 'common.hide'.tr,
+                style: theme.inputDecorationTheme.hintStyle,
+              ),
+            ],
+          ),
+        ),
       );
     }
     return widget.suffix;

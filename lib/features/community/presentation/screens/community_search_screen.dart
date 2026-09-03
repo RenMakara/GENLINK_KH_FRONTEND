@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/buttons/app_back_button.dart';
 
 /// Community Search Screen
 ///
@@ -10,10 +11,7 @@ import '../../../../design_system/colors/app_colors.dart';
 class CommunitySearchScreen extends StatefulWidget {
   final String activeTab;
 
-  const CommunitySearchScreen({
-    super.key,
-    required this.activeTab,
-  });
+  const CommunitySearchScreen({super.key, required this.activeTab});
 
   @override
   State<CommunitySearchScreen> createState() => _CommunitySearchScreenState();
@@ -79,66 +77,59 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
-    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textSecondary = isDark
+        ? Colors.white70
+        : AppColors.lightTextSecondary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: textPrimary, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: const Center(child: AppBackButton()),
+        leadingWidth: 72,
         titleSpacing: 0,
         title: Padding(
-          padding: const EdgeInsets.only(right: 12),
+          padding: const EdgeInsets.only(right: 16),
           child: SizedBox(
-            height: 42,
+            height: 46,
             child: TextField(
               controller: _searchController,
               focusNode: _focusNode,
-              style: TextStyle(color: textPrimary, fontSize: 14),
+              style: theme.textTheme.bodyLarge?.copyWith(fontSize: 14),
               onChanged: _onQueryChanged,
               onSubmitted: (val) => _addToRecentSearches(val),
               decoration: InputDecoration(
                 hintText: 'community.searchHint'.tr,
-                hintStyle: TextStyle(color: textMuted, fontSize: 13),
-                prefixIcon: Icon(Icons.search_rounded, color: textMuted, size: 19),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: textMuted,
+                  size: 20,
+                ),
                 suffixIcon: _query.isNotEmpty
                     ? IconButton(
-                        icon: Icon(Icons.close_rounded, color: textSecondary, size: 16),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: textSecondary,
+                          size: 18,
+                        ),
                         onPressed: () {
                           _searchController.clear();
                           _onQueryChanged('');
                         },
                       )
                     : null,
-                filled: true,
-                fillColor: surfaceSecondary,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: borderSubtle, width: 1.0),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 16,
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: borderSubtle, width: 1.0),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(
-                    color: isDark ? Colors.white.withValues(alpha: 0.35) : AppColors.lightBorderStrong,
-                    width: 1.2,
-                  ),
-                ),
-              ),
+              ).applyDefaults(theme.inputDecorationTheme),
             ),
           ),
         ),
@@ -153,8 +144,8 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
             child: _query.trim().isEmpty
                 ? _buildIdleState()
                 : _isLoading
-                    ? _buildLoadingState()
-                    : _buildSearchResults(),
+                ? _buildLoadingState()
+                : _buildSearchResults(),
           ),
         ],
       ),
@@ -167,10 +158,18 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
   Widget _buildIdleState() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
-    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textSecondary = isDark
+        ? Colors.white70
+        : AppColors.lightTextSecondary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     // Show only the latest 3 recent searches
     final displayRecent = _recentSearches.take(3).toList();
@@ -197,13 +196,21 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
               children: [
                 Text(
                   'community.recentSearches'.tr,
-                  style: TextStyle(color: textPrimary, fontSize: 13.5, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 GestureDetector(
                   onTap: _clearAllRecentSearches,
                   child: Text(
                     'community.clear'.tr,
-                    style: TextStyle(color: textSecondary, fontSize: 12, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -230,8 +237,13 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => setState(() => _recentSearches.remove(item)),
-                        child: Icon(Icons.close_rounded, color: textMuted, size: 15),
+                        onTap: () =>
+                            setState(() => _recentSearches.remove(item)),
+                        child: Icon(
+                          Icons.close_rounded,
+                          color: textMuted,
+                          size: 15,
+                        ),
                       ),
                     ],
                   ),
@@ -244,7 +256,11 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
           // ── 2. Trending Topics (Compact Chips) ──
           Text(
             'community.trending'.tr,
-            style: TextStyle(color: textPrimary, fontSize: 13.5, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 13.5,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -259,7 +275,10 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                 },
                 borderRadius: BorderRadius.circular(14),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: surfaceSecondary,
                     borderRadius: BorderRadius.circular(14),
@@ -288,9 +307,15 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
   // ---------------------------------------------------------------------------
   Widget _buildLoadingState() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-    final skeletonColor = isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.05);
+    final surfaceSecondary = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+    final skeletonColor = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.black.withValues(alpha: 0.05);
 
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -352,12 +377,24 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
   Widget _buildSearchResults() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-    final iconBgColor = isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.lightBgSecondary;
-    final badgeBgColor = isDark ? Colors.white.withValues(alpha: 0.10) : AppColors.lightBgSecondary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+    final surfaceSecondary = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+    final iconBgColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : AppColors.lightBgSecondary;
+    final badgeBgColor = isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : AppColors.lightBgSecondary;
 
     final results = [
       {
@@ -405,7 +442,11 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
               Text(
                 'community.noResultsFound'.tr,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: textPrimary, fontSize: 14.5, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -474,7 +515,11 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                   children: [
                     Text(
                       res['title']!,
-                      style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 13.5),
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13.5,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -494,7 +539,11 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                 ),
                 child: Text(
                   badgeText,
-                  style: TextStyle(color: textPrimary, fontSize: 11, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],

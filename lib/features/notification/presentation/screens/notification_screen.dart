@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/models/notification_model.dart';
 import '../bindings/notification_binding.dart';
 import '../controllers/notification_controller.dart';
@@ -97,15 +98,9 @@ class NotificationScreen extends GetView<NotificationController> {
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
-      leadingWidth: 44,
-      leading: Semantics(
-        label: 'notification.back'.tr,
-        child: IconButton(
-          padding: const EdgeInsets.only(left: 12),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.darkTextPrimary, size: 20),
-          onPressed: () => Get.back(),
-        ),
+      leadingWidth: 74,
+      leading: const Center(
+        child: AppBackButton(),
       ),
       titleSpacing: 8,
       title: Row(
@@ -157,7 +152,10 @@ class NotificationScreen extends GetView<NotificationController> {
             child: _PressScaleButton(
               onTap: notifController.markAllAsRead,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 child: Text(
                   'notification.markAllRead'.tr,
                   style: const TextStyle(
@@ -182,53 +180,57 @@ class NotificationScreen extends GetView<NotificationController> {
   // ── Tab Bar ───────────────────────────────────────────────────────────────
 
   Widget _buildTabBar(NotificationController notifController) {
-    return Obx(() => SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            children: notifController.tabs.map((tab) {
-              final isSelected = notifController.selectedTab.value == tab;
-              final label = _tabKeyMap[tab]?.tr ?? tab;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: _PressScaleButton(
-                  onTap: () => notifController.selectTab(tab),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeInOut,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 8),
-                    decoration: BoxDecoration(
+    return Obx(
+      () => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: notifController.tabs.map((tab) {
+            final isSelected = notifController.selectedTab.value == tab;
+            final label = _tabKeyMap[tab]?.tr ?? tab;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _PressScaleButton(
+                onTap: () => notifController.selectTab(tab),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeInOut,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.darkTextPrimary
+                        : const Color(0xFF1C1C1C),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
                       color: isSelected
                           ? AppColors.darkTextPrimary
-                          : const Color(0xFF1C1C1C),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.darkTextPrimary
-                            : const Color(0xFF2E2E2E),
-                        width: 1,
-                      ),
-                    ),
-                    child: AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 180),
-                      style: TextStyle(
-                        color: isSelected
-                            ? const Color(0xFF111111)
-                            : AppColors.darkTextSecondary,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.w500,
-                        fontSize: 13,
-                      ),
-                      child: Text(label),
+                          : const Color(0xFF2E2E2E),
+                      width: 1,
                     ),
                   ),
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 180),
+                    style: TextStyle(
+                      color: isSelected
+                          ? const Color(0xFF111111)
+                          : AppColors.darkTextSecondary,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
+                      fontSize: 13,
+                    ),
+                    child: Text(label),
+                  ),
                 ),
-              );
-            }).toList(),
-          ),
-        ));
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
   }
 
   // ── Body: Loading / Empty / Error / List ──────────────────────────────────
@@ -261,8 +263,7 @@ class NotificationScreen extends GetView<NotificationController> {
         }
       }
 
-      final showGroups =
-          todayItems.isNotEmpty && earlierItems.isNotEmpty;
+      final showGroups = todayItems.isNotEmpty && earlierItems.isNotEmpty;
 
       return RefreshIndicator(
         onRefresh: notifController.fetchNotifications,
@@ -270,8 +271,9 @@ class NotificationScreen extends GetView<NotificationController> {
         backgroundColor: const Color(0xFF1C1C1C),
         displacement: 40,
         child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16)
-              .copyWith(bottom: 24, top: 4),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+          ).copyWith(bottom: 24, top: 4),
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             if (showGroups) ...[
@@ -338,12 +340,17 @@ class _NotificationCardState extends State<_NotificationCard> {
   @override
   Widget build(BuildContext context) {
     final notif = widget.notif;
-    final typeLabel = (widget.typeKeyMap[notif.type] ?? 'notification.typeSystem').tr;
-    final typeIcon = widget.typeIconMap[notif.type] ?? Icons.notifications_rounded;
+    final typeLabel =
+        (widget.typeKeyMap[notif.type] ?? 'notification.typeSystem').tr;
+    final typeIcon =
+        widget.typeIconMap[notif.type] ?? Icons.notifications_rounded;
 
     return Obx(() {
       // Re-render on any notifications list change
-      widget.controller.notifications.length; // reactive dependency (length is public)
+      widget
+          .controller
+          .notifications
+          .length; // reactive dependency (length is public)
       final isRead = notif.isRead;
 
       return Dismissible(
@@ -357,15 +364,18 @@ class _NotificationCardState extends State<_NotificationCard> {
             color: const Color(0xFF3A1A1A),
             borderRadius: BorderRadius.circular(18),
           ),
-          child: const Icon(Icons.delete_outline_rounded,
-              color: Color(0xFFEF6A6A), size: 22),
+          child: const Icon(
+            Icons.delete_outline_rounded,
+            color: Color(0xFFEF6A6A),
+            size: 22,
+          ),
         ),
         onDismissed: (_) => widget.controller.deleteNotification(notif.id),
         child: GestureDetector(
           onTapDown: (_) => setState(() => _pressed = true),
           onTapUp: (_) {
             setState(() => _pressed = false);
-            widget.controller.markAsRead(notif.id);
+            widget.controller.handleNotificationTap(notif, context);
           },
           onTapCancel: () => setState(() => _pressed = false),
           child: AnimatedScale(
@@ -499,8 +509,8 @@ class _AvatarWithBadge extends StatelessWidget {
     final ImageProvider imgProvider = hasNetwork
         ? NetworkImage(avatarUrl!) as ImageProvider
         : (avatarUrl != null
-            ? AssetImage(avatarUrl!) as ImageProvider
-            : const AssetImage('assets/images/user_profile.png'));
+              ? AssetImage(avatarUrl!) as ImageProvider
+              : const AssetImage('assets/images/user_profile.png'));
 
     return SizedBox(
       width: 46,
@@ -519,7 +529,9 @@ class _AvatarWithBadge extends StatelessWidget {
               width: 18,
               height: 18,
               decoration: BoxDecoration(
-                color: isRead ? const Color(0xFF252525) : const Color(0xFF303030),
+                color: isRead
+                    ? const Color(0xFF252525)
+                    : const Color(0xFF303030),
                 shape: BoxShape.circle,
                 border: Border.all(color: const Color(0xFF0F0F0F), width: 1.5),
               ),
@@ -527,7 +539,9 @@ class _AvatarWithBadge extends StatelessWidget {
                 child: Icon(
                   icon,
                   size: 10,
-                  color: isRead ? AppColors.darkTextMuted : AppColors.darkTextSecondary,
+                  color: isRead
+                      ? AppColors.darkTextMuted
+                      : AppColors.darkTextSecondary,
                 ),
               ),
             ),

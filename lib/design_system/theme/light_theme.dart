@@ -91,7 +91,9 @@ abstract final class LightTheme {
         vertical: AppSpacing.md + 2,
       ),
       hintStyle: text.bodyMedium?.copyWith(color: AppColors.lightTextMuted),
-      labelStyle: text.bodyMedium?.copyWith(color: AppColors.lightTextSecondary),
+      labelStyle: text.bodyMedium?.copyWith(
+        color: AppColors.lightTextSecondary,
+      ),
       errorStyle: text.bodySmall?.copyWith(color: AppColors.danger),
       enabledBorder: border(AppColors.lightBorderSubtle),
       // Focus is signalled by the fill, not the outline — the border stays

@@ -139,7 +139,6 @@ class CommunityRemoteDataSource {
         },
       ),
     );
-    
     if (response.statusCode == 200 || response.statusCode == 201) {
       final body = response.data;
       final data = body is Map<String, dynamic> ? body['data'] : null;

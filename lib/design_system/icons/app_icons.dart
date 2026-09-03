@@ -1,6 +1,5 @@
-/// Icon token folder.
-///
-/// Register app icon asset paths and icon aliases here.
 abstract final class AppIcons {
   const AppIcons._();
+
+  static const String google = 'assets/icons/png/googleIcon.png';
 }

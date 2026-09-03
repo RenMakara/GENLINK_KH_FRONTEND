@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
 import 'package:genlink_frontend/core/localization/localization_service.dart';
 import 'package:genlink_frontend/core/storage/local_storage.dart';
+import 'package:genlink_frontend/core/theme/theme_controller.dart';
 import 'package:genlink_frontend/design_system/theme/app_theme.dart';
 import 'package:genlink_frontend/features/onboarding/presentation/controllers/language_select_controller.dart';
 import 'package:genlink_frontend/features/onboarding/presentation/controllers/onboarding_controller.dart';
@@ -23,6 +24,9 @@ void main() {
       ..put<LocalStorage>(LocalStorage())
       ..put<LocalizationService>(
         LocalizationService(localStorage: Get.find<LocalStorage>()),
+      )
+      ..put<ThemeController>(
+        ThemeController(localStorage: Get.find<LocalStorage>()),
       );
   });
 
@@ -69,7 +73,11 @@ void main() {
 
   testWidgets('language select', (tester) async {
     Get.put<LanguageSelectController>(
-      LanguageSelectController(localization: Get.find<LocalizationService>()),
+      LanguageSelectController(
+        localization: Get.find<LocalizationService>(),
+        themeController: Get.find<ThemeController>(),
+        localStorage: Get.find<LocalStorage>(),
+      ),
     );
     await pumpScreen(tester, const LanguageSelectScreen());
     await expectLater(

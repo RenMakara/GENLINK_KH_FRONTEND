@@ -9,7 +9,9 @@ import '../controllers/community_controller.dart';
 import 'event_details_screen.dart';
 
 class CreateEventScreen extends StatefulWidget {
-  const CreateEventScreen({super.key});
+  final bool returnCreatedEvent;
+
+  const CreateEventScreen({super.key, this.returnCreatedEvent = false});
 
   @override
   State<CreateEventScreen> createState() => _CreateEventScreenState();
@@ -29,7 +31,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   bool _isSubmitting = false;
   String _eventType = 'Online'; // 'Online' or 'In person'
   File? _coverImage;
-  
+
   String? _selectedCategory;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
@@ -42,28 +44,42 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   ];
 
   bool get _canCreate =>
-      _titleController.text.trim().isNotEmpty && 
+      _titleController.text.trim().isNotEmpty &&
       _selectedDate != null &&
-      (_eventType == 'Online' ? _linkController.text.trim().isNotEmpty : _locationController.text.trim().isNotEmpty);
+      (_eventType == 'Online'
+          ? _linkController.text.trim().isNotEmpty
+          : _locationController.text.trim().isNotEmpty);
 
   String get _formattedDate {
     if (_selectedDate == null) return '';
     final d = _selectedDate!;
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    
+
     final dayName = days[d.weekday - 1];
     final monthName = months[d.month - 1];
     final dateStr = '$dayName, $monthName ${d.day}';
-    
+
     if (_selectedTime != null) {
-      final h = _selectedTime!.hourOfPeriod == 0 ? 12 : _selectedTime!.hourOfPeriod;
+      final h = _selectedTime!.hourOfPeriod == 0
+          ? 12
+          : _selectedTime!.hourOfPeriod;
       final m = _selectedTime!.minute.toString().padLeft(2, '0');
       final period = _selectedTime!.period == DayPeriod.am ? 'AM' : 'PM';
-      return '$dateStr, $h:$m $period';
+      return '$dateStr · $h:$m $period';
     }
     return dateStr;
   }
@@ -90,7 +106,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   void _onBackPress() {
-    final hasContent = _titleController.text.trim().isNotEmpty ||
+    final hasContent =
+        _titleController.text.trim().isNotEmpty ||
         _descController.text.trim().isNotEmpty ||
         _locationController.text.trim().isNotEmpty ||
         _linkController.text.trim().isNotEmpty ||
@@ -105,7 +122,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           backgroundColor: const Color(0xFF1E2228),
           title: Text(
             'community.discardDraft'.tr,
-            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           content: Text(
             'community.discardMessage'.tr,
@@ -148,18 +169,50 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   Future<void> _pickDate() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final initialDate =
+        _selectedDate ?? DateTime.now().add(const Duration(days: 1));
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
+      initialDate: initialDate,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: isDark
+              ? ThemeData.dark().copyWith(
+                  colorScheme: const ColorScheme.dark(
+                    primary: Colors.white,
+                    onPrimary: Colors.black,
+                    surface: Color(0xFF161616),
+                    onSurface: Colors.white,
+                  ),
+                  dialogTheme: const DialogThemeData(
+                    backgroundColor: Color(0xFF161616),
+                  ),
+                )
+              : ThemeData.light().copyWith(
+                  colorScheme: const ColorScheme.light(
+                    primary: Colors.black,
+                    onPrimary: Colors.white,
+                    surface: Colors.white,
+                    onSurface: Colors.black,
+                  ),
+                ),
+          child: child!,
+        );
+      },
     );
+
     if (picked != null) {
       setState(() => _selectedDate = picked);
       if (!mounted) return;
-      final pickedTime = await showTimePicker(
-        context: context,
-        initialTime: const TimeOfDay(hour: 9, minute: 0),
+
+      final initialTime = _selectedTime ?? const TimeOfDay(hour: 9, minute: 0);
+      final pickedTime = await _showCustomTimePicker(
+        context,
+        initialTime: initialTime,
       );
       if (pickedTime != null) {
         setState(() => _selectedTime = pickedTime);
@@ -184,7 +237,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           : '',
       organizerName: 'Me',
       eventType: _eventType,
-      location: _eventType == 'In person' ? _locationController.text.trim() : '',
+      location: _eventType == 'In person'
+          ? _locationController.text.trim()
+          : '',
       onlineLink: _eventType == 'Online' ? _linkController.text.trim() : '',
       dateString: _formattedDate,
       timeString: '',
@@ -208,21 +263,31 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       message: 'community.eventCreatedMsg'.tr,
     );
 
-    // Navigate to the freshly-created event's detail screen
-    Get.off(() => EventDetailsScreen(event: newEvent));
+    if (widget.returnCreatedEvent) {
+      Get.back(result: newEvent);
+    } else {
+      // Navigate to the freshly-created event's detail screen
+      Get.off(() => EventDetailsScreen(event: newEvent));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Strict Dark Theme based on instructions
     final bg = isDark ? Colors.black : Colors.white;
     final inputBg = isDark ? const Color(0xFF181818) : Colors.white;
     final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textMuted = isDark ? const Color(0xFFA6A6A6) : const Color(0xFF666666);
-    final cardBorder = isDark ? const Color(0xFF303030) : const Color(0xFFDDDDDD);
-    final imagePlaceholderBg = isDark ? const Color(0xFF181818) : const Color(0xFFF0F2F5);
+    final textMuted = isDark
+        ? const Color(0xFFA6A6A6)
+        : const Color(0xFF666666);
+    final cardBorder = isDark
+        ? const Color(0xFF303030)
+        : const Color(0xFFDDDDDD);
+    final imagePlaceholderBg = isDark
+        ? const Color(0xFF181818)
+        : const Color(0xFFF0F2F5);
 
     return PopScope(
       canPop: false,
@@ -259,8 +324,12 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isDark ? Colors.white : Colors.black,
                   foregroundColor: isDark ? Colors.black : Colors.white,
-                  disabledBackgroundColor: isDark ? const Color(0xFF222222) : const Color(0xFFE0E0E0),
-                  disabledForegroundColor: isDark ? Colors.white30 : Colors.black38,
+                  disabledBackgroundColor: isDark
+                      ? const Color(0xFF222222)
+                      : const Color(0xFFE0E0E0),
+                  disabledForegroundColor: isDark
+                      ? Colors.white30
+                      : Colors.black38,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -278,7 +347,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       )
                     : const Text(
                         'Create',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
                       ),
               ),
             ),
@@ -295,9 +367,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 height: MediaQuery.of(context).size.width * (9 / 16),
                 decoration: BoxDecoration(
                   color: imagePlaceholderBg,
-                  border: Border(
-                    bottom: BorderSide(color: cardBorder),
-                  ),
+                  border: Border(bottom: BorderSide(color: cardBorder)),
                 ),
                 child: Stack(
                   children: [
@@ -312,11 +382,18 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.add_photo_alternate_outlined, color: textMuted, size: 40),
+                              Icon(
+                                Icons.add_photo_alternate_outlined,
+                                color: textMuted,
+                                size: 40,
+                              ),
                               const SizedBox(height: 8),
                               Text(
                                 'Upload cover image',
-                                style: TextStyle(color: textMuted, fontSize: 14),
+                                style: TextStyle(
+                                  color: textMuted,
+                                  fontSize: 14,
+                                ),
                               ),
                             ],
                           ),
@@ -349,7 +426,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: isDark ? Colors.black54 : Colors.white70,
+                                  color: isDark
+                                      ? Colors.black54
+                                      : Colors.white70,
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
@@ -359,7 +438,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                                 ),
                               ),
                             ),
-                          ]
+                          ],
                         ],
                       ),
                     ),
@@ -368,7 +447,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               ),
 
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 20,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -392,9 +474,15 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       focusNode: _titleFocus,
                       maxLines: 1,
                       style: TextStyle(color: textPrimary, fontSize: 16),
-                      decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary, inputBg: inputBg),
+                      decoration: _inputDeco(
+                        cardBorder: cardBorder,
+                        textPrimary: textPrimary,
+                        inputBg: inputBg,
+                      ),
                       textInputAction: TextInputAction.next,
-                      onSubmitted: (_) => _eventType == 'Online' ? _linkFocus.requestFocus() : _locationFocus.requestFocus(),
+                      onSubmitted: (_) => _eventType == 'Online'
+                          ? _linkFocus.requestFocus()
+                          : _locationFocus.requestFocus(),
                     ),
                     const SizedBox(height: 24),
 
@@ -405,12 +493,22 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       onTap: _pickDate,
                       child: IgnorePointer(
                         child: TextField(
-                          controller: TextEditingController(text: _formattedDate),
-                          style: TextStyle(color: textPrimary, fontSize: 16),
-                          decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary, inputBg: inputBg).copyWith(
-                            hintText: 'Select date and time',
-                            hintStyle: TextStyle(color: textMuted, fontSize: 16),
+                          controller: TextEditingController(
+                            text: _formattedDate,
                           ),
+                          style: TextStyle(color: textPrimary, fontSize: 16),
+                          decoration:
+                              _inputDeco(
+                                cardBorder: cardBorder,
+                                textPrimary: textPrimary,
+                                inputBg: inputBg,
+                              ).copyWith(
+                                hintText: 'Select date and time',
+                                hintStyle: TextStyle(
+                                  color: textMuted,
+                                  fontSize: 16,
+                                ),
+                              ),
                         ),
                       ),
                     ),
@@ -430,10 +528,18 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         focusNode: _linkFocus,
                         maxLines: 1,
                         style: TextStyle(color: textPrimary, fontSize: 16),
-                        decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary, inputBg: inputBg).copyWith(
-                          hintText: 'e.g. https://meet.google.com/...',
-                          hintStyle: TextStyle(color: textMuted, fontSize: 16),
-                        ),
+                        decoration:
+                            _inputDeco(
+                              cardBorder: cardBorder,
+                              textPrimary: textPrimary,
+                              inputBg: inputBg,
+                            ).copyWith(
+                              hintText: 'e.g. https://meet.google.com/...',
+                              hintStyle: TextStyle(
+                                color: textMuted,
+                                fontSize: 16,
+                              ),
+                            ),
                         textInputAction: TextInputAction.next,
                         onSubmitted: (_) => _descFocus.requestFocus(),
                       ),
@@ -445,10 +551,18 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         focusNode: _locationFocus,
                         maxLines: 1,
                         style: TextStyle(color: textPrimary, fontSize: 16),
-                        decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary, inputBg: inputBg).copyWith(
-                          hintText: 'Add event location',
-                          hintStyle: TextStyle(color: textMuted, fontSize: 16),
-                        ),
+                        decoration:
+                            _inputDeco(
+                              cardBorder: cardBorder,
+                              textPrimary: textPrimary,
+                              inputBg: inputBg,
+                            ).copyWith(
+                              hintText: 'Add event location',
+                              hintStyle: TextStyle(
+                                color: textMuted,
+                                fontSize: 16,
+                              ),
+                            ),
                         textInputAction: TextInputAction.next,
                         onSubmitted: (_) => _descFocus.requestFocus(),
                       ),
@@ -464,14 +578,26 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       minLines: 4,
                       maxLines: 10,
                       maxLength: 5000,
-                      style: TextStyle(color: textPrimary, fontSize: 16, height: 1.5),
-                      decoration: _inputDeco(cardBorder: cardBorder, textPrimary: textPrimary, inputBg: inputBg).copyWith(
-                        hintText: 'Tell people about your event',
-                        hintStyle: TextStyle(color: textMuted, fontSize: 16),
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 16,
+                        height: 1.5,
                       ),
+                      decoration:
+                          _inputDeco(
+                            cardBorder: cardBorder,
+                            textPrimary: textPrimary,
+                            inputBg: inputBg,
+                          ).copyWith(
+                            hintText: 'Tell people about your event',
+                            hintStyle: TextStyle(
+                              color: textMuted,
+                              fontSize: 16,
+                            ),
+                          ),
                       textInputAction: TextInputAction.done,
                     ),
-                    
+
                     const SizedBox(height: 24),
 
                     // ── Category (Preserved GenLink Feature) ────────────────
@@ -488,12 +614,17 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                           }),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 180),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
                               color: isSelected ? textPrimary : inputBg,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: isSelected ? Colors.transparent : cardBorder,
+                                color: isSelected
+                                    ? Colors.transparent
+                                    : cardBorder,
                               ),
                             ),
                             child: Text(
@@ -522,11 +653,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   Widget _buildLabel(String text, Color color) {
     return Text(
       text,
-      style: TextStyle(
-        color: color,
-        fontSize: 15,
-        fontWeight: FontWeight.w500,
-      ),
+      style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.w500),
     );
   }
 
@@ -549,13 +676,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          Text(
-            title,
-            style: TextStyle(
-              color: textPrimary,
-              fontSize: 15,
-            ),
-          ),
+          Text(title, style: TextStyle(color: textPrimary, fontSize: 15)),
         ],
       ),
     );
@@ -583,6 +704,389 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       counterStyle: TextStyle(fontSize: 13), // for maxLength counter
+    );
+  }
+}
+
+/// Opens the modern custom GenLink time picker modal bottom sheet
+Future<TimeOfDay?> _showCustomTimePicker(
+  BuildContext context, {
+  required TimeOfDay initialTime,
+}) {
+  return showModalBottomSheet<TimeOfDay>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (ctx) => _GenLinkTimePickerSheet(initialTime: initialTime),
+  );
+}
+
+/// Custom GenLink Time Picker Modal Sheet with strict black/white/gray theme
+class _GenLinkTimePickerSheet extends StatefulWidget {
+  final TimeOfDay initialTime;
+
+  const _GenLinkTimePickerSheet({required this.initialTime});
+
+  @override
+  State<_GenLinkTimePickerSheet> createState() =>
+      _GenLinkTimePickerSheetState();
+}
+
+class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
+  late int _selectedHour12; // 1 to 12
+  late int _selectedMinute; // 0 to 59
+  late DayPeriod _selectedPeriod; // AM or PM
+
+  @override
+  void initState() {
+    super.initState();
+    final h = widget.initialTime.hourOfPeriod;
+    _selectedHour12 = h == 0 ? 12 : h;
+    _selectedMinute = widget.initialTime.minute;
+    _selectedPeriod = widget.initialTime.period;
+  }
+
+  String get _formattedSelectedTime {
+    final mStr = _selectedMinute.toString().padLeft(2, '0');
+    final periodStr = _selectedPeriod == DayPeriod.am ? 'AM' : 'PM';
+    return '$_selectedHour12:$mStr $periodStr';
+  }
+
+  TimeOfDay get _resultingTimeOfDay {
+    int hour24;
+    if (_selectedPeriod == DayPeriod.am) {
+      hour24 = _selectedHour12 == 12 ? 0 : _selectedHour12;
+    } else {
+      hour24 = _selectedHour12 == 12 ? 12 : _selectedHour12 + 12;
+    }
+    return TimeOfDay(hour: hour24, minute: _selectedMinute);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const bg = Color(0xFF111111);
+    const border = Color(0xFF303030);
+    const textPrimary = Color(0xFFFFFFFF);
+    const textSecondary = Color(0xFFA0A0A0);
+    const surfaceUnselected = Color(0xFF202020);
+
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(color: border, width: 1.0),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag Handle Bar
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header Title
+            const Text(
+              'Select time',
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Prominent Selected Time Display
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: border, width: 0.8),
+              ),
+              child: Center(
+                child: Text(
+                  _formattedSelectedTime,
+                  style: const TextStyle(
+                    color: textPrimary,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // AM / PM Segmented Control Toggle
+            Container(
+              height: 42,
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: surfaceUnselected,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: border, width: 0.8),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () =>
+                          setState(() => _selectedPeriod = DayPeriod.am),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        decoration: BoxDecoration(
+                          color: _selectedPeriod == DayPeriod.am
+                              ? Colors.white
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'AM',
+                          style: TextStyle(
+                            color: _selectedPeriod == DayPeriod.am
+                                ? Colors.black
+                                : textSecondary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () =>
+                          setState(() => _selectedPeriod = DayPeriod.pm),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        decoration: BoxDecoration(
+                          color: _selectedPeriod == DayPeriod.pm
+                              ? Colors.white
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'PM',
+                          style: TextStyle(
+                            color: _selectedPeriod == DayPeriod.pm
+                                ? Colors.black
+                                : textSecondary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Hours Selection (1 to 12)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Hour',
+                style: TextStyle(
+                  color: textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: List.generate(12, (index) {
+                  final hour = index + 1;
+                  final isSelected = _selectedHour12 == hour;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedHour12 = hour),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: isSelected ? Colors.white : surfaceUnselected,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected ? Colors.white : border,
+                            width: 1.0,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$hour',
+                          style: TextStyle(
+                            color: isSelected ? Colors.black : textPrimary,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Minutes Selection (00 to 55 in 5 min increments)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Minute',
+                style: TextStyle(
+                  color: textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: () {
+                  final minuteList = [
+                    0,
+                    5,
+                    10,
+                    15,
+                    20,
+                    25,
+                    30,
+                    35,
+                    40,
+                    45,
+                    50,
+                    55,
+                  ];
+                  if (!minuteList.contains(_selectedMinute)) {
+                    minuteList.add(_selectedMinute);
+                    minuteList.sort();
+                  }
+                  return minuteList.map((m) {
+                    final isSelected = _selectedMinute == m;
+                    final mStr = m.toString().padLeft(2, '0');
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedMinute = m),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: 46,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Colors.white
+                                : surfaceUnselected,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected ? Colors.white : border,
+                              width: 1.0,
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            mStr,
+                            style: TextStyle(
+                              color: isSelected ? Colors.black : textPrimary,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList();
+                }(),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Bottom Actions: Cancel and OK
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 46,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context, null),
+                      style: TextButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: border),
+                        ),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: textSecondary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 46,
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          Navigator.pop(context, _resultingTimeOfDay),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'OK',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../radius/app_radius.dart';
+import '../../spacing/app_spacing.dart';
 
 /// Brand asset paths.
 ///
@@ -55,6 +56,43 @@ class AppWordmark extends StatelessWidget {
         AppLogoAssets.wordmark,
         height: height,
         fit: BoxFit.contain,
+      ),
+    );
+  }
+}
+
+/// Horizontal brand lockup used at the top of authentication forms.
+///
+/// The source assets stay independent so the mark retains its gradient while
+/// the monochrome wordmark follows the current light/dark text colour.
+class AuthBrandLockup extends StatelessWidget {
+  const AuthBrandLockup({
+    super.key,
+    this.markSize = 44,
+    this.wordmarkHeight = 18,
+    this.alignment = MainAxisAlignment.start,
+  });
+
+  final double markSize;
+  final double wordmarkHeight;
+  final MainAxisAlignment alignment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      image: true,
+      label: 'GenLink KH',
+      child: Row(
+        key: const ValueKey('auth-brand-lockup'),
+        mainAxisAlignment: alignment,
+        mainAxisSize: alignment == MainAxisAlignment.center
+            ? MainAxisSize.min
+            : MainAxisSize.max,
+        children: [
+          AppLogoMark(size: markSize),
+          const SizedBox(width: AppSpacing.md),
+          AppWordmark(height: wordmarkHeight),
+        ],
       ),
     );
   }

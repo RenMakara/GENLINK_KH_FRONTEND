@@ -28,6 +28,9 @@ class CashFlowScreen extends StatelessWidget {
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
+    final text = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
     final textMuted = isDark
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
@@ -79,8 +82,8 @@ class CashFlowScreen extends StatelessWidget {
                   onChanged: controller.selectCurrency,
                   surface: surface,
                   border: border,
+                  text: text,
                   primary: primary,
-                  textPrimary: textPrimary,
                 ),
                 const SizedBox(height: 16),
                 _PeriodBar(
@@ -216,50 +219,77 @@ class _CurrencyBar extends StatelessWidget {
     required this.onChanged,
     required this.surface,
     required this.border,
+    required this.text,
     required this.primary,
-    required this.textPrimary,
   });
 
   final FinanceCurrency currency;
   final ValueChanged<FinanceCurrency> onChanged;
   final Color surface;
   final Color border;
+  final Color text;
   final Color primary;
-  final Color textPrimary;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: FinanceCurrency.values.map((item) {
-        final selected = item == currency;
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(
-              right: item == FinanceCurrency.usd ? 8 : 0,
-            ),
-            child: InkWell(
-              onTap: () => onChanged(item),
-              borderRadius: BorderRadius.circular(12),
+    final isUsd = currency == FinanceCurrency.usd;
+
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: border),
+      ),
+      child: Stack(
+        children: [
+          // Sliding background
+          AnimatedAlign(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            alignment: isUsd ? Alignment.centerLeft : Alignment.centerRight,
+            child: FractionallySizedBox(
+              widthFactor: 0.5,
               child: Container(
-                height: 42,
-                alignment: Alignment.center,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: selected ? primary : surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: selected ? primary : border),
-                ),
-                child: Text(
-                  item.apiValue,
-                  style: TextStyle(
-                    color: selected ? Colors.white : textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  color: primary,
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
             ),
           ),
-        );
-      }).toList(),
+
+          // Currency buttons
+          Row(
+            children: FinanceCurrency.values.map((value) {
+              final selected = value == currency;
+
+              return Expanded(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => onChanged(value),
+                  child: Center(
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOut,
+                      style: TextStyle(
+                        color: selected
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : text,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                      child: Text(value.apiValue),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
     );
   }
 }

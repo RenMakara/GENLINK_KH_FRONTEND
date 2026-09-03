@@ -96,9 +96,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-    final text = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
     final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;

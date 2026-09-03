@@ -99,6 +99,9 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     final text = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
     final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final controller = this.controller;
     final formCurrency =
@@ -116,14 +119,11 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(18, 12, 18, 30),
             children: [
-              // ============================================================
               // HEADER
-              // ============================================================
               Row(
                 children: [
                   AppBackButton(),
                   const SizedBox(width: 13),
-
                   Expanded(
                     child: Text(
                       (widget.isEditing
@@ -131,10 +131,10 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                               : 'finance.goal.create')
                           .tr,
                       style: TextStyle(
-                        color: text,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
+                        color: textPrimary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
                       ),
                     ),
                   ),
@@ -143,17 +143,13 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
               const SizedBox(height: 20),
 
-              // ============================================================
               // ERROR
-              // ============================================================
               if (error != null) ...[
                 _ErrorBanner(message: error),
                 const SizedBox(height: 14),
               ],
 
-              // ============================================================
               // GOAL NAME
-              // ============================================================
               TextField(
                 controller: _titleController,
                 enabled: !submitting,
@@ -167,9 +163,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
               const SizedBox(height: 16),
 
-              // ============================================================
               // TARGET AMOUNT
-              // ============================================================
               TextField(
                 controller: _amountController,
                 enabled: !submitting,
@@ -187,9 +181,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
               const SizedBox(height: 16),
 
-              // ============================================================
               // DEADLINE
-              // ============================================================
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 enabled: !submitting,
@@ -205,9 +197,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
               const SizedBox(height: 12),
 
-              // ============================================================
               // CURRENCY
-              // ============================================================
               Text(
                 '${'finance.goal.currency'.tr}: ${formCurrency.apiValue}',
                 style: TextStyle(color: muted, fontWeight: FontWeight.w600),
@@ -215,9 +205,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
               const SizedBox(height: 28),
 
-              // ============================================================
               // SAVE / UPDATE
-              // ============================================================
               AppButton(
                 label:
                     (widget.isEditing

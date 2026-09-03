@@ -68,7 +68,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                   color: textPrimary,
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
+                  letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: 8),

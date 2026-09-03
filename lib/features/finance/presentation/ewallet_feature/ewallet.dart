@@ -87,9 +87,7 @@ class EWalletScreen extends GetView<EWalletController> {
                     child: Row(
                       children: [
                         AppBackButton(),
-
                         const SizedBox(width: 13),
-
                         Expanded(
                           child: Text(
                             'finance.ewallet.title'.tr,

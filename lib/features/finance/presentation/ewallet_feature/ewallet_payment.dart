@@ -97,14 +97,14 @@ class _PayWithKHQRScreenState extends State<PayWithKHQRScreen> {
               Row(
                 children: [
                   AppBackButton(),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 13),
                   Text(
                     'finance.ewallet.paymentTitle'.tr,
                     style: TextStyle(
                       color: textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ],

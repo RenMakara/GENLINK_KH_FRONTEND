@@ -78,7 +78,7 @@ class ExpenseScreen extends GetView<ExpenseController> {
                         'finance.expense.title'.tr,
                         style: TextStyle(
                           color: textPrimary,
-                          fontSize: 24,
+                          fontSize: 22,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.5,
                         ),

@@ -12,6 +12,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  mobile_scanner: ^7.0.1
 
   # ==============================
   # State Management + Routing + i18n

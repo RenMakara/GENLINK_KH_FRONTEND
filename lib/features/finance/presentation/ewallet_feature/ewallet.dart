@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
-import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_scanner_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_payment_scanner.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';

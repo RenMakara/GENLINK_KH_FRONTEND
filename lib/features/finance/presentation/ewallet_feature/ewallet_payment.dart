@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_payment_processing.dart';
@@ -32,7 +33,10 @@ class _PaymentState extends State<Payment> {
     }
   }
 
+  // ─────────────────────────────────────────────
   // AMOUNT
+  // ─────────────────────────────────────────────
+
   String _formatInitialAmount(double amount) {
     if (amount == amount.roundToDouble()) {
       return amount.toInt().toString();
@@ -67,7 +71,10 @@ class _PaymentState extends State<Payment> {
     return _amountText;
   }
 
+  // ─────────────────────────────────────────────
   // KEYPAD
+  // ─────────────────────────────────────────────
+
   void _onKeyPressed(String key) {
     if (_isProcessing) return;
 
@@ -137,14 +144,17 @@ class _PaymentState extends State<Payment> {
     });
   }
 
+  // ─────────────────────────────────────────────
   // PAYMENT
+  // ─────────────────────────────────────────────
+
   void _confirmPayment() {
     if (_isProcessing) return;
 
     final amount = _getAmount();
 
     if (amount <= 0) {
-      _showMessage('Please enter a valid amount', AppColors.danger);
+      _showMessage('finance.ewallet.invalidAmount'.tr, AppColors.danger);
       return;
     }
 
@@ -184,7 +194,10 @@ class _PaymentState extends State<Payment> {
     );
   }
 
+  // ─────────────────────────────────────────────
   // BUILD
+  // ─────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -223,7 +236,9 @@ class _PaymentState extends State<Payment> {
         ? AppColors.darkTextInverse
         : AppColors.lightTextInverse;
 
+    // ─────────────────────────────────────────────
     // RESPONSIVE
+    // ─────────────────────────────────────────────
 
     final size = MediaQuery.sizeOf(context);
 
@@ -250,6 +265,10 @@ class _PaymentState extends State<Payment> {
         ? height * 0.40
         : height * 0.43;
 
+    // ─────────────────────────────────────────────
+    // SCAFFOLD
+    // ─────────────────────────────────────────────
+
     return Scaffold(
       backgroundColor: background,
       resizeToAvoidBottomInset: false,
@@ -262,7 +281,9 @@ class _PaymentState extends State<Payment> {
               height: double.infinity,
               child: Stack(
                 children: [
+                  // ───────────────────────────────
                   // TOP AREA
+                  // ───────────────────────────────
                   SizedBox(
                     height: topHeight,
                     child: Padding(
@@ -271,7 +292,9 @@ class _PaymentState extends State<Payment> {
                       ),
                       child: Column(
                         children: [
+                          // ────────────────────────
                           // HEADER
+                          // ────────────────────────
                           SizedBox(
                             height: isVeryShort ? 48 : 56,
                             child: Row(
@@ -308,10 +331,12 @@ class _PaymentState extends State<Payment> {
                                     ),
                                   ),
                                 ),
+
                                 const SizedBox(width: 13),
+
                                 Expanded(
                                   child: Text(
-                                    'Confirm Payment',
+                                    'finance.ewallet.confirmPayment'.tr,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -326,7 +351,9 @@ class _PaymentState extends State<Payment> {
                             ),
                           ),
 
+                          // ────────────────────────
                           // MERCHANT
+                          // ────────────────────────
                           Expanded(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -373,7 +400,7 @@ class _PaymentState extends State<Payment> {
                                 const SizedBox(height: 4),
 
                                 Text(
-                                  'Payment to merchant',
+                                  'finance.ewallet.paymentToMerchant'.tr,
                                   style: TextStyle(
                                     color: textSecondary,
                                     fontSize: 12,
@@ -410,7 +437,9 @@ class _PaymentState extends State<Payment> {
                     ),
                   ),
 
+                  // ───────────────────────────────
                   // BOTTOM PAYMENT PANEL
+                  // ───────────────────────────────
                   Positioned(
                     left: 0,
                     right: 0,
@@ -441,7 +470,9 @@ class _PaymentState extends State<Payment> {
                         ),
                         child: Column(
                           children: [
+                            // ─────────────────────
                             // AMOUNT DISPLAY
+                            // ─────────────────────
                             _buildAmountDisplay(
                               surfaceSecondary: surfaceSecondary,
                               border: primary,
@@ -459,7 +490,9 @@ class _PaymentState extends State<Payment> {
                                   : 18,
                             ),
 
+                            // ─────────────────────
                             // KEYPAD
+                            // ─────────────────────
                             Expanded(
                               child: _buildKeypad(
                                 textPrimary: textPrimary,
@@ -478,7 +511,9 @@ class _PaymentState extends State<Payment> {
                                   : 14,
                             ),
 
+                            // ─────────────────────
                             // CONFIRM BUTTON
+                            // ─────────────────────
                             SizedBox(
                               width: double.infinity,
                               height: isVeryShort ? 48 : 54,
@@ -513,13 +548,13 @@ class _PaymentState extends State<Payment> {
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
-                                          Icon(
+                                          const Icon(
                                             Icons.arrow_forward_rounded,
                                             size: 20,
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
-                                            'Confirm Payment',
+                                            'finance.ewallet.confirmPayment'.tr,
                                             style: TextStyle(
                                               fontSize: isSmallPhone ? 14 : 15,
                                               fontWeight: FontWeight.w800,
@@ -532,7 +567,9 @@ class _PaymentState extends State<Payment> {
 
                             SizedBox(height: isVeryShort ? 2 : 5),
 
-                            // Cancel
+                            // ─────────────────────
+                            // CANCEL
+                            // ─────────────────────
                             SizedBox(
                               height: 30,
                               child: TextButton(
@@ -543,9 +580,9 @@ class _PaymentState extends State<Payment> {
                                   foregroundColor: textMuted,
                                   padding: EdgeInsets.zero,
                                 ),
-                                child: const Text(
-                                  'Cancel',
-                                  style: TextStyle(
+                                child: Text(
+                                  'finance.ewallet.cancel'.tr,
+                                  style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -566,7 +603,10 @@ class _PaymentState extends State<Payment> {
     );
   }
 
+  // ─────────────────────────────────────────────
   // AMOUNT DISPLAY
+  // ─────────────────────────────────────────────
+
   Widget _buildAmountDisplay({
     required Color surfaceSecondary,
     required Color border,
@@ -633,7 +673,10 @@ class _PaymentState extends State<Payment> {
     );
   }
 
+  // ─────────────────────────────────────────────
   // KEYPAD
+  // ─────────────────────────────────────────────
+
   Widget _buildKeypad({
     required Color textPrimary,
     required Color textMuted,
@@ -685,7 +728,10 @@ class _PaymentState extends State<Payment> {
     );
   }
 
+  // ─────────────────────────────────────────────
   // KEYPAD KEY
+  // ─────────────────────────────────────────────
+
   Widget _buildKey({
     required String key,
     required Color textPrimary,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/presentation/ewallet_feature/ewallet_payment.dart';
@@ -21,6 +22,10 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     _scannerController.dispose();
     super.dispose();
   }
+
+  // ─────────────────────────────────────────────
+  // HANDLE QR BARCODE
+  // ─────────────────────────────────────────────
 
   void _handleBarcode(BarcodeCapture capture) {
     if (_isProcessing) return;
@@ -47,6 +52,10 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     }
   }
 
+  // ─────────────────────────────────────────────
+  // BUILD
+  // ─────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,13 +63,17 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
+          // ───────────────────────────────────────
           // QR CAMERA
+          // ───────────────────────────────────────
           MobileScanner(
             controller: _scannerController,
             onDetect: _handleBarcode,
           ),
 
+          // ───────────────────────────────────────
           // DARK OVERLAY
+          // ───────────────────────────────────────
           IgnorePointer(
             child: Container(
               decoration: BoxDecoration(
@@ -79,7 +92,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             ),
           ),
 
+          // ───────────────────────────────────────
           // HEADER
+          // ───────────────────────────────────────
           Positioned(
             top: 16,
             left: 20,
@@ -98,7 +113,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                 ),
                 child: Row(
                   children: [
+                    // ─────────────────────────────
                     // QR LOGO
+                    // ─────────────────────────────
                     Container(
                       width: 46,
                       height: 46,
@@ -116,12 +133,14 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
                     const SizedBox(width: 12),
 
+                    // ─────────────────────────────
                     // TITLE
-                    const Expanded(
+                    // ─────────────────────────────
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'GenLink',
                             style: TextStyle(
                               color: AppColors.darkTextPrimary,
@@ -130,10 +149,12 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                               height: 1.1,
                             ),
                           ),
-                          SizedBox(height: 4),
+
+                          const SizedBox(height: 4),
+
                           Text(
-                            'Scan & Pay',
-                            style: TextStyle(
+                            'finance.ewallet.scanAndPay'.tr,
+                            style: const TextStyle(
                               color: AppColors.darkTextSecondary,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -143,7 +164,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                       ),
                     ),
 
+                    // ─────────────────────────────
                     // CLOSE BUTTON
+                    // ─────────────────────────────
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
@@ -173,7 +196,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             ),
           ),
 
+          // ───────────────────────────────────────
           // SCANNER FRAME
+          // ───────────────────────────────────────
           Center(
             child: Container(
               width: 280,
@@ -188,7 +213,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             ),
           ),
 
+          // ───────────────────────────────────────
           // SCANNER CORNERS
+          // ───────────────────────────────────────
           Center(
             child: SizedBox(
               width: 280,
@@ -196,16 +223,19 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               child: Stack(
                 children: [
                   Positioned(top: 0, left: 0, child: _corner()),
+
                   Positioned(
                     top: 0,
                     right: 0,
                     child: Transform.rotate(angle: 1.5708, child: _corner()),
                   ),
+
                   Positioned(
                     bottom: 0,
                     right: 0,
                     child: Transform.rotate(angle: 3.14159, child: _corner()),
                   ),
+
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -216,27 +246,31 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             ),
           ),
 
+          // ───────────────────────────────────────
           // SCANNER INSTRUCTION
+          // ───────────────────────────────────────
           Positioned(
             left: 24,
             right: 24,
             bottom: 90,
             child: Column(
               children: [
-                const Text(
-                  'Scan QR Code',
+                Text(
+                  'finance.ewallet.scanQrCode'.tr,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.darkTextPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+
                 const SizedBox(height: 8),
+
                 Text(
-                  'Place the QR code inside the frame',
+                  'finance.ewallet.scanQrHint'.tr,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.darkTextSecondary,
                     fontSize: 14,
                   ),
@@ -245,7 +279,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             ),
           ),
 
+          // ───────────────────────────────────────
           // BOTTOM CANCEL BUTTON
+          // ───────────────────────────────────────
           Positioned(
             left: 20,
             right: 20,
@@ -264,9 +300,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(
+                child: Text(
+                  'finance.ewallet.cancel'.tr,
+                  style: const TextStyle(
                     color: AppColors.darkTextPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -280,7 +316,10 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     );
   }
 
+  // ─────────────────────────────────────────────
   // SCANNER CORNER
+  // ─────────────────────────────────────────────
+
   Widget _corner() {
     return Container(
       width: 35,

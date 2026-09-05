@@ -8,11 +8,7 @@ class QuizRepositoryImpl implements QuizRepository {
   const QuizRepositoryImpl(this._remoteDataSource);
 
   @override
-<<<<<<< Updated upstream
-  Future<List<Map<String, dynamic>>> getQuizzes({
-=======
   Future<List<QuizSummary>> getQuizzes({
->>>>>>> Stashed changes
     String? category,
     String? difficulty,
   }) =>
@@ -29,11 +25,7 @@ class QuizRepositoryImpl implements QuizRepository {
   ) => _remoteDataSource.submitQuizAttempt(quizId, answers);
 
   @override
-<<<<<<< Updated upstream
-  Future<List<Map<String, dynamic>>> getQuizHistory() =>
-=======
   Future<List<QuizAttemptSummary>> getQuizHistory() =>
->>>>>>> Stashed changes
       _remoteDataSource.getQuizHistory();
 
   @override

@@ -1,6 +1,4 @@
 enum QuizType { single, random }
-<<<<<<< Updated upstream
-=======
 
 class QuizSummary {
   final String quizId;
@@ -30,7 +28,6 @@ class QuizSummary {
     );
   }
 }
->>>>>>> Stashed changes
 
 class QuizCategory {
   final String id;

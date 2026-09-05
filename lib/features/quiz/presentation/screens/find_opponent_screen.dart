@@ -20,15 +20,9 @@ class FindOpponentScreen extends GetView<QuizController> {
           icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
           onPressed: () => Get.back(),
         ),
-<<<<<<< Updated upstream
-        title: const Text(
-          'Find Opponent',
-          style: TextStyle(
-=======
         title: Text(
           'quiz.findOpponent'.tr,
           style: const TextStyle(
->>>>>>> Stashed changes
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: QuizColors.heading,
@@ -125,15 +119,9 @@ class FindOpponentScreen extends GetView<QuizController> {
       if (controller.opponentSearchProgress.value >= 1.0) {
         return Column(
           children: [
-<<<<<<< Updated upstream
-            const Text(
-              'Opponent Found!',
-              style: TextStyle(
-=======
             Text(
               'quiz.opponentFound'.tr,
               style: const TextStyle(
->>>>>>> Stashed changes
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
                 color: QuizColors.correct,
@@ -141,17 +129,10 @@ class FindOpponentScreen extends GetView<QuizController> {
             ),
             const SizedBox(height: 8),
             Text(
-<<<<<<< Updated upstream
-              'Preparing match...',
-              style: TextStyle(
-                fontSize: 15,
-                color: QuizColors.body.withOpacity(0.8),
-=======
               'quiz.preparingMatch'.tr,
               style: TextStyle(
                 fontSize: 15,
                 color: QuizColors.body.withValues(alpha: 0.8),
->>>>>>> Stashed changes
               ),
             ),
           ],
@@ -159,15 +140,9 @@ class FindOpponentScreen extends GetView<QuizController> {
       }
       return Column(
         children: [
-<<<<<<< Updated upstream
-          const Text(
-            'Finding Opponent...',
-            style: TextStyle(
-=======
           Text(
             'quiz.findingOpponent'.tr,
             style: const TextStyle(
->>>>>>> Stashed changes
               fontSize: 24,
               fontWeight: FontWeight.w700,
               color: QuizColors.heading,
@@ -175,17 +150,10 @@ class FindOpponentScreen extends GetView<QuizController> {
           ),
           const SizedBox(height: 8),
           Text(
-<<<<<<< Updated upstream
-            'Searching for players near your level',
-            style: TextStyle(
-              fontSize: 14,
-              color: QuizColors.body.withOpacity(0.8),
-=======
             'quiz.searchingPlayers'.tr,
             style: TextStyle(
               fontSize: 14,
               color: QuizColors.body.withValues(alpha: 0.8),
->>>>>>> Stashed changes
             ),
           ),
           const SizedBox(height: 20),
@@ -212,14 +180,9 @@ class FindOpponentScreen extends GetView<QuizController> {
 
   Widget _buildCancelButton() {
     return Obx(() {
-<<<<<<< Updated upstream
-      if (controller.opponentSearchProgress.value >= 1.0)
-        return const SizedBox.shrink();
-=======
       if (controller.opponentSearchProgress.value >= 1.0) {
         return const SizedBox.shrink();
       }
->>>>>>> Stashed changes
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40),
         child: OutlinedButton(
@@ -235,15 +198,9 @@ class FindOpponentScreen extends GetView<QuizController> {
             ),
             minimumSize: const Size(double.infinity, 48),
           ),
-<<<<<<< Updated upstream
-          child: const Text(
-            'Cancel',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-=======
           child: Text(
             'common.cancel'.tr,
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
->>>>>>> Stashed changes
           ),
         ),
       );
@@ -273,13 +230,8 @@ class FindOpponentScreen extends GetView<QuizController> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-<<<<<<< Updated upstream
-                'Answer correctly to earn XP and climb the leaderboard!',
-                style: TextStyle(
-=======
                 'quiz.matchTip'.tr,
                 style: const TextStyle(
->>>>>>> Stashed changes
                   fontSize: 13,
                   color: QuizColors.body,
                   height: 1.4,

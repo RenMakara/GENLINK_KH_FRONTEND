@@ -34,22 +34,10 @@ class QuizInProgressScreen extends GetView<QuizController> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-<<<<<<< Updated upstream
-                  Icon(Icons.inbox, size: 48, color: QuizColors.border),
-                  SizedBox(height: 16),
-                  Text(
-                    'No questions available right now.',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: QuizColors.heading,
-                    ),
-=======
                   const Icon(
                     Icons.error_outline,
                     size: 48,
                     color: QuizColors.incorrect,
->>>>>>> Stashed changes
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -78,8 +66,6 @@ class QuizInProgressScreen extends GetView<QuizController> {
           );
         }
 
-<<<<<<< Updated upstream
-=======
         if (controller.questions.isEmpty) {
           return Center(
             child: Padding(
@@ -109,7 +95,6 @@ class QuizInProgressScreen extends GetView<QuizController> {
           );
         }
 
->>>>>>> Stashed changes
         return Column(
           children: [
             _buildTopBar(),
@@ -139,15 +124,6 @@ class QuizInProgressScreen extends GetView<QuizController> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-<<<<<<< Updated upstream
-        title: const Text(
-          'Quit Quiz?',
-          style: TextStyle(color: QuizColors.heading),
-        ),
-        content: const Text(
-          'Your progress will be lost.',
-          style: TextStyle(color: QuizColors.body),
-=======
         title: Text(
           'quiz.quitQuizTitle'.tr,
           style: const TextStyle(color: QuizColors.heading),
@@ -155,7 +131,6 @@ class QuizInProgressScreen extends GetView<QuizController> {
         content: Text(
           'quiz.quitQuizMessage'.tr,
           style: const TextStyle(color: QuizColors.body),
->>>>>>> Stashed changes
         ),
         actions: [
           TextButton(
@@ -172,15 +147,9 @@ class QuizInProgressScreen extends GetView<QuizController> {
               );
               controller.resetQuiz();
             },
-<<<<<<< Updated upstream
-            child: const Text(
-              'Quit',
-              style: TextStyle(color: QuizColors.incorrect),
-=======
             child: Text(
               'quiz.quit'.tr,
               style: const TextStyle(color: QuizColors.incorrect),
->>>>>>> Stashed changes
             ),
           ),
         ],
@@ -195,14 +164,10 @@ class QuizInProgressScreen extends GetView<QuizController> {
         child: Row(
           children: [
             Text(
-<<<<<<< Updated upstream
-              'Question ${controller.currentQuestionIndex.value + 1} of ${controller.totalQuestions}',
-=======
               'quiz.questionOfTotal'.trParams({
                 'current': '${controller.currentQuestionIndex.value + 1}',
                 'total': '${controller.totalQuestions}',
               }),
->>>>>>> Stashed changes
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -355,18 +320,12 @@ class QuizInProgressScreen extends GetView<QuizController> {
                     ),
                     minimumSize: const Size(0, 52),
                   ),
-<<<<<<< Updated upstream
-                  child: const Text(
-                    'Skip',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-=======
                   child: Text(
                     'common.skip'.tr,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
->>>>>>> Stashed changes
                   ),
                 ),
               ),

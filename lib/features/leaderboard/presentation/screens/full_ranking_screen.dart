@@ -21,16 +21,9 @@ class FullRankingScreen extends GetView<LeaderboardController> {
           padding: EdgeInsets.only(left: AppSpacing.md),
           child: Center(child: AppBackButton()),
         ),
-<<<<<<< Updated upstream
-        leadingWidth: 74,
-        title: const Text(
-          'Global Ranking',
-          style: TextStyle(
-=======
         title: Text(
           'leaderboard.globalRanking'.tr,
           style: const TextStyle(
->>>>>>> Stashed changes
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: QuizColors.heading,
@@ -104,15 +97,9 @@ class FullRankingScreen extends GetView<LeaderboardController> {
                             color: QuizColors.primary,
                             borderRadius: BorderRadius.circular(8),
                           ),
-<<<<<<< Updated upstream
-                          child: const Text(
-                            'YOU',
-                            style: TextStyle(
-=======
                           child: Text(
                             'quiz.you'.tr,
                             style: const TextStyle(
->>>>>>> Stashed changes
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -135,11 +122,7 @@ class FullRankingScreen extends GetView<LeaderboardController> {
                       const SizedBox(width: 8),
                       Icon(
                         Icons.star,
-<<<<<<< Updated upstream
-                        color: QuizColors.gold.withOpacity(0.7),
-=======
                         color: QuizColors.gold.withValues(alpha: 0.7),
->>>>>>> Stashed changes
                         size: 12,
                       ),
                       Text(

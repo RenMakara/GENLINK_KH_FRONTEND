@@ -21,16 +21,9 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
           padding: EdgeInsets.only(left: AppSpacing.md),
           child: Center(child: AppBackButton()),
         ),
-<<<<<<< Updated upstream
-        leadingWidth: 74,
-        title: const Text(
-          'Leaderboard',
-          style: TextStyle(
-=======
         title: Text(
           'quiz.leaderboard'.tr,
           style: const TextStyle(
->>>>>>> Stashed changes
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: QuizColors.heading,
@@ -146,13 +139,8 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-<<<<<<< Updated upstream
-              'Cambodia Ranking',
-              style: TextStyle(
-=======
               'leaderboard.cambodiaRanking'.tr,
               style: const TextStyle(
->>>>>>> Stashed changes
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: QuizColors.heading,
@@ -283,11 +271,7 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: Text(
-<<<<<<< Updated upstream
-              'No more users to display',
-=======
               'leaderboard.noMoreUsers'.tr,
->>>>>>> Stashed changes
               style: TextStyle(
                 fontSize: 14,
                 color: QuizColors.body.withValues(alpha: 0.7),
@@ -378,15 +362,9 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
                   color: QuizColors.primary,
                   borderRadius: BorderRadius.circular(12),
                 ),
-<<<<<<< Updated upstream
-                child: const Text(
-                  'YOU',
-                  style: TextStyle(
-=======
                 child: Text(
                   'quiz.you'.tr,
                   style: const TextStyle(
->>>>>>> Stashed changes
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -430,13 +408,8 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-<<<<<<< Updated upstream
-                  'Invite your friends',
-                  style: TextStyle(
-=======
                   'leaderboard.inviteFriends'.tr,
                   style: const TextStyle(
->>>>>>> Stashed changes
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: QuizColors.heading,
@@ -458,15 +431,9 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
                 gradient: QuizColors.gradient,
                 borderRadius: BorderRadius.circular(12),
               ),
-<<<<<<< Updated upstream
-              child: const Text(
-                'Invite',
-                style: TextStyle(
-=======
               child: Text(
                 'leaderboard.invite'.tr,
                 style: const TextStyle(
->>>>>>> Stashed changes
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -506,15 +473,9 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-<<<<<<< Updated upstream
-                const Text(
-                  'Your Country Rank: #3',
-                  style: TextStyle(
-=======
                 Text(
                   'leaderboard.yourCountryRank'.trParams({'rank': '3'}),
                   style: const TextStyle(
->>>>>>> Stashed changes
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: QuizColors.heading,
@@ -552,13 +513,8 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               borderRadius: BorderRadius.circular(16),
               child: Center(
                 child: Text(
-<<<<<<< Updated upstream
-                  'View Full Leaderboard',
-                  style: TextStyle(
-=======
                   'leaderboard.viewFull'.tr,
                   style: const TextStyle(
->>>>>>> Stashed changes
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -575,13 +531,6 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
   Widget _buildBottomBanner(bool isGlobal, bool isCountry) {
     String text;
     if (isCountry) {
-<<<<<<< Updated upstream
-      text =
-          'Your Rank: #3 (${controller.countryRankPercent}) - Keep learning to climb higher!';
-    } else {
-      text =
-          'Your Rank: #${controller.currentUserRank} (${controller.rankPercent}) - Keep learning to climb higher!';
-=======
       text = 'leaderboard.yourRankBanner'.trParams({
         'rank': '3',
         'percent': controller.countryRankPercent,
@@ -591,7 +540,6 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
         'rank': '${controller.currentUserRank}',
         'percent': controller.rankPercent,
       });
->>>>>>> Stashed changes
     }
 
     return Container(

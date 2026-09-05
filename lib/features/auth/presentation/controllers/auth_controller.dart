@@ -25,10 +25,7 @@ class AuthController extends GetxController {
     required SecureStorage secureStorage,
     required this._localization,
     GoogleAuthService googleAuthService = const UnconfiguredGoogleAuthService(),
-<<<<<<< Updated upstream
     this.onSessionCleared,
-=======
->>>>>>> Stashed changes
   }) : _storage = secureStorage,
        _google = googleAuthService;
 
@@ -179,27 +176,12 @@ class AuthController extends GetxController {
       lastErrorCode.value = e.errorCode;
       return false;
     } catch (_) {
-<<<<<<< Updated upstream
       errorMessage.value = 'common.error'.tr;
       lastErrorCode.value = 'UNKNOWN';
       return false;
     } finally {
       isLoading.value = false;
     }
-=======
-      // A provider failure is handled as an unavailable sign-in attempt;
-      // there is no local or demo-token fallback.
-    } finally {
-      isLoading.value = false;
-    }
-
-    if (idToken == null || idToken.isEmpty) {
-      errorMessage.value = 'auth.googleUnavailable'.tr;
-      lastErrorCode.value = 'GOOGLE_UNAVAILABLE';
-      return false;
-    }
-    return googleLogin(idToken: idToken);
->>>>>>> Stashed changes
   }
 
   /// Exchanges an existing Google ID token for a GenLink session.

@@ -6,24 +6,13 @@ import '../../../../core/network/api_endpoints.dart';
 import '../../domain/models/quiz_models.dart';
 
 abstract class QuizRemoteDataSource {
-<<<<<<< Updated upstream
-  Future<List<Map<String, dynamic>>> getQuizzes({
-    String? category,
-    String? difficulty,
-  });
-=======
   Future<List<QuizSummary>> getQuizzes({String? category, String? difficulty});
->>>>>>> Stashed changes
   Future<List<QuizQuestion>> getQuizDetails(String quizId);
   Future<QuizResult> submitQuizAttempt(
     String quizId,
     List<Map<String, String>> answers,
   );
-<<<<<<< Updated upstream
-  Future<List<Map<String, dynamic>>> getQuizHistory();
-=======
   Future<List<QuizAttemptSummary>> getQuizHistory();
->>>>>>> Stashed changes
   Future<List<LeaderboardEntry>> getLeaderboard(String category, String period);
 }
 
@@ -33,22 +22,6 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
   const QuizRemoteDataSourceImpl(this._apiClient);
 
   @override
-<<<<<<< Updated upstream
-  Future<List<Map<String, dynamic>>> getQuizzes({
-    String? category,
-    String? difficulty,
-  }) async {
-    try {
-      final query = <String, dynamic>{};
-      if (category != null) query['category'] = category;
-      if (difficulty != null) query['difficulty'] = difficulty;
-
-      final result = await _apiClient.get(
-        ApiEndpoints.quizzes,
-        query: query.isEmpty ? null : query,
-        parse: (data) =>
-            (data as List).map((e) => e as Map<String, dynamic>).toList(),
-=======
   Future<List<QuizSummary>> getQuizzes({
     String? category,
     String? difficulty,
@@ -82,7 +55,6 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
             rethrow;
           }
         },
->>>>>>> Stashed changes
       );
     } on AppError catch (e) {
       _debugQuizLog(
@@ -94,60 +66,10 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
       _debugQuizLog('[Quiz API ERROR] $e');
       rethrow;
     }
-<<<<<<< Updated upstream
-
-    // Fallback Mock Data
-    return [
-      {
-        'quizId': 'mock-quiz-1',
-        'title': 'Mock Quiz ($category)',
-        'category': category ?? 'General',
-      },
-    ];
-=======
->>>>>>> Stashed changes
   }
 
   @override
   Future<List<QuizQuestion>> getQuizDetails(String quizId) async {
-<<<<<<< Updated upstream
-    if (quizId == 'mock-quiz-1') {
-      return _getMockQuestions();
-    }
-
-    try {
-      final result = await _apiClient.get(
-        ApiEndpoints.quizDetail(quizId),
-        parse: (data) {
-          final questionsData = data['questions'] as List? ?? [];
-          return questionsData.map((e) {
-            final optionsList = e['options'] as List? ?? [];
-            return QuizQuestion(
-              id: e['questionId'] ?? '',
-              question: e['questionText'] ?? '',
-              // Map the API options to QuizOptionModel so we can retain optionId
-              options: optionsList
-                  .map(
-                    (o) => QuizOptionModel(
-                      id: (o['optionId'] ?? '').toString(),
-                      text: (o['optionText'] ?? '').toString(),
-                    ),
-                  )
-                  .toList(),
-              correctIndex:
-                  -1, // Correct index is withheld by the API until submit!
-            );
-          }).toList();
-        },
-      );
-
-      if (result.isNotEmpty) return result;
-    } catch (e) {
-      print('API Error getting quiz details: $e, using fallback data.');
-    }
-
-    return _getMockQuestions();
-=======
     return _apiClient.get(
       ApiEndpoints.quizDetail(quizId),
       parse: (data) {
@@ -172,7 +94,6 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
             .toList(growable: false);
       },
     );
->>>>>>> Stashed changes
   }
 
   @override
@@ -180,48 +101,10 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
     String quizId,
     List<Map<String, String>> answers,
   ) async {
-<<<<<<< Updated upstream
-    if (quizId == 'mock-quiz-1') {
-      await Future.delayed(const Duration(seconds: 1));
-      return QuizResult(
-        correct: answers.length, // Simulate perfect score for mock
-        wrong: 0,
-        total: answers.length,
-        timeTakenSeconds: 15,
-        xpEarned: 50,
-        coinsEarned: 20,
-        accuracyPercent: 100,
-      );
-    }
-
-=======
->>>>>>> Stashed changes
     return _apiClient.post(
       ApiEndpoints.quizAttempt(quizId),
       body: {'answers': answers},
       parse: (data) {
-<<<<<<< Updated upstream
-        final resultsData = data['results'] as List? ?? const [];
-        final results = resultsData
-            .map(
-              (e) => QuizQuestionResult(
-                questionId: (e['questionId'] ?? '').toString(),
-                selectedOptionId: (e['selectedOptionId'] ?? '').toString(),
-                correctOptionId: (e['correctOptionId'] ?? '').toString(),
-                correct: e['correct'] ?? false,
-              ),
-            )
-            .toList();
-        return QuizResult(
-          correct: data['correctCount'] ?? 0,
-          wrong: (data['totalQuestions'] ?? 0) - (data['correctCount'] ?? 0),
-          total: data['totalQuestions'] ?? 0,
-          timeTakenSeconds: 0, // Not provided by the API attempt response
-          xpEarned: data['xpEarned'] ?? 0,
-          coinsEarned:
-              0, // Not provided by API, perhaps it's an app-only concept or handled differently
-          accuracyPercent: data['score'] ?? 0,
-=======
         final response = ApiClient.asMap(data);
         final results = _asObjectList(response['results'])
             .map(
@@ -253,7 +136,6 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
           xpEarned: (response['xpEarned'] as num?)?.toInt() ?? 0,
           coinsEarned: (response['coinsEarned'] as num?)?.toInt() ?? 0,
           accuracyPercent: score,
->>>>>>> Stashed changes
           results: results,
         );
       },
@@ -265,11 +147,7 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
     return _apiClient.get(
       ApiEndpoints.quizHistory,
       parse: (data) =>
-<<<<<<< Updated upstream
-          (data as List).map((e) => e as Map<String, dynamic>).toList(),
-=======
           _asObjectList(data).map(QuizAttemptSummary.fromJson).toList(),
->>>>>>> Stashed changes
     );
   }
 

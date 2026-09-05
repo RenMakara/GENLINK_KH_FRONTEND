@@ -33,15 +33,9 @@ class ClaimRewardScreen extends GetView<QuizController> {
               const SizedBox(height: 10),
               _buildGiftBox(),
               const SizedBox(height: 24),
-<<<<<<< Updated upstream
-              const Text(
-                'Your Reward',
-                style: TextStyle(
-=======
               Text(
                 'quiz.yourReward'.tr,
                 style: const TextStyle(
->>>>>>> Stashed changes
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
                   color: QuizColors.heading,
@@ -69,15 +63,9 @@ class ClaimRewardScreen extends GetView<QuizController> {
                       route.settings.name == '/quiz/dashboard' ||
                       route.settings.name == '/home',
                 ),
-<<<<<<< Updated upstream
-                child: const Text(
-                  'Maybe Later',
-                  style: TextStyle(
-=======
                 child: Text(
                   'quiz.maybeLater'.tr,
                   style: const TextStyle(
->>>>>>> Stashed changes
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: QuizColors.body,
@@ -112,15 +100,9 @@ class ClaimRewardScreen extends GetView<QuizController> {
             ),
           ),
           const SizedBox(height: 14),
-<<<<<<< Updated upstream
-          const Text(
-            'Rewards Unlocked',
-            style: TextStyle(
-=======
           Text(
             'quiz.rewardsUnlocked'.tr,
             style: const TextStyle(
->>>>>>> Stashed changes
               fontSize: 17,
               fontWeight: FontWeight.w700,
               color: QuizColors.heading,

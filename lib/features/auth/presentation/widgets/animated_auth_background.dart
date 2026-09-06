@@ -24,12 +24,12 @@ class AuthBackgroundShell extends StatelessWidget {
   }
 }
 
-/// Calm, theme-aware decorative background for the signed-out welcome page.
+/// Calm, theme-aware decorative background shared by the Auth flow.
 ///
-/// A single 180-second controller drives several seamless sub-loops:
-/// cyan (12s), violet (15s), wave (18s), and mint (20s). The painter is
-/// connected directly to the controller, so only this layer repaints; the
-/// authentication content above it is never rebuilt by the animation.
+/// A single slow controller drives the blue top wave and lavender bottom wave.
+/// The painter is connected directly to the controller, so only this layer
+/// repaints; the authentication content above it is never rebuilt by the
+/// animation.
 class AnimatedAuthBackground extends StatefulWidget {
   const AnimatedAuthBackground({super.key});
 
@@ -39,7 +39,7 @@ class AnimatedAuthBackground extends StatefulWidget {
 
 class _AnimatedAuthBackgroundState extends State<AnimatedAuthBackground>
     with SingleTickerProviderStateMixin {
-  static const _masterDuration = Duration(seconds: 180);
+  static const _masterDuration = Duration(seconds: 12);
   static const _staticFrame = 0.23;
 
   late final AnimationController _controller = AnimationController(
@@ -88,9 +88,7 @@ class _AnimatedAuthBackgroundState extends State<AnimatedAuthBackground>
               progress: _controller,
               baseColor: theme.scaffoldBackgroundColor,
               cyan: AppColors.communityAccent,
-              blue: AppColors.brandPrimary,
               violet: AppColors.productivityAccent,
-              mint: AppColors.financeAccent,
               isDark: isDark,
             ),
             child: const SizedBox.expand(),
@@ -106,18 +104,14 @@ class _AuthBackgroundPainter extends CustomPainter {
     required this.progress,
     required this.baseColor,
     required this.cyan,
-    required this.blue,
     required this.violet,
-    required this.mint,
     required this.isDark,
   }) : super(repaint: progress);
 
   final Animation<double> progress;
   final Color baseColor;
   final Color cyan;
-  final Color blue;
   final Color violet;
-  final Color mint;
   final bool isDark;
 
   static const _tau = math.pi * 2;
@@ -128,125 +122,165 @@ class _AuthBackgroundPainter extends CustomPainter {
 
     canvas.drawRect(Offset.zero & size, Paint()..color = baseColor);
 
-    final t = progress.value;
-    final shortest = math.min(size.width, size.height);
-    final longest = math.max(size.width, size.height);
-    final lightFactor = isDark ? 0.48 : 1.0;
+    final phase = _tau * progress.value;
+    final lightFactor = isDark ? 0.52 : 1.0;
 
-    // 12-second cyan loop — lower-left, drifting by less than 20px.
-    final cyanPhase = _tau * t * 15;
-    _drawGlow(
-      canvas,
-      center: Offset(
-        size.width * 0.05 + math.sin(cyanPhase) * 16,
-        size.height * 0.68 + math.cos(cyanPhase) * 12,
-      ),
-      radius: longest * (0.56 + math.sin(cyanPhase) * 0.012),
-      color: cyan,
-      opacity: (0.095 + math.sin(cyanPhase) * 0.018) * lightFactor,
-    );
+    // The waves are deliberately oversized and extend beyond both sides of
+    // the viewport, so their curves stay organic on narrow and wide phones.
+    final topShift = Offset(math.sin(phase) * 10, math.cos(phase) * 5);
+    final bottomShift = Offset(math.cos(phase) * -12, math.sin(phase) * 6);
 
-    // 15-second blue/violet loop — upper-right, counter-moving for depth.
-    final violetPhase = _tau * t * 12;
-    _drawGlow(
-      canvas,
-      center: Offset(
-        size.width * 0.96 + math.cos(violetPhase) * 14,
-        size.height * 0.18 + math.sin(violetPhase) * 16,
-      ),
-      radius: longest * (0.48 + math.cos(violetPhase) * 0.012),
-      color: violet,
-      opacity: (0.075 + math.cos(violetPhase) * 0.014) * lightFactor,
-    );
+    _drawTopWave(canvas, size, shift: topShift, lightFactor: lightFactor);
+    _drawBottomWave(canvas, size, shift: bottomShift, lightFactor: lightFactor);
+  }
 
-    // A second, cooler glow makes the transition between cyan and violet
-    // feel continuous without adding blur filters.
-    _drawGlow(
-      canvas,
-      center: Offset(size.width * 0.78, size.height * 0.52),
-      radius: shortest * 0.72,
-      color: blue,
-      opacity: 0.035 * lightFactor,
-    );
-
-    // 18-second translucent diagonal ribbon. Its Bezier geometry extends
-    // beyond the viewport, so it remains responsive at every aspect ratio.
-    final wavePhase = _tau * t * 10;
-    final waveShiftX = math.sin(wavePhase) * 14;
-    final waveShiftY = math.cos(wavePhase) * 12;
+  void _drawTopWave(
+    Canvas canvas,
+    Size size, {
+    required Offset shift,
+    required double lightFactor,
+  }) {
+    final width = size.width;
+    final height = size.height;
     final wave = Path()
-      ..moveTo(-size.width * 0.24 + waveShiftX, size.height * 0.29 + waveShiftY)
+      ..moveTo(-width * 0.12 + shift.dx, height * 0.12 + shift.dy)
       ..cubicTo(
-        size.width * 0.16 + waveShiftX,
-        size.height * 0.12 + waveShiftY,
-        size.width * 0.58 + waveShiftX,
-        size.height * 0.58 + waveShiftY,
-        size.width * 1.24 + waveShiftX,
-        size.height * 0.35 + waveShiftY,
+        width * 0.15 + shift.dx,
+        height * 0.09 + shift.dy,
+        width * 0.36 + shift.dx,
+        height * 0.24 + shift.dy,
+        width * 0.58 + shift.dx,
+        height * 0.21 + shift.dy,
       )
-      ..lineTo(size.width * 1.24 + waveShiftX, size.height * 0.54 + waveShiftY)
       ..cubicTo(
-        size.width * 0.62 + waveShiftX,
-        size.height * 0.75 + waveShiftY,
-        size.width * 0.12 + waveShiftX,
-        size.height * 0.31 + waveShiftY,
-        -size.width * 0.24 + waveShiftX,
-        size.height * 0.49 + waveShiftY,
+        width * 0.80 + shift.dx,
+        height * 0.18 + shift.dy,
+        width * 0.96 + shift.dx,
+        height * 0.05 + shift.dy,
+        width * 1.12 + shift.dx,
+        height * 0.01 + shift.dy,
+      )
+      ..lineTo(width * 1.12 + shift.dx, height * 0.17 + shift.dy)
+      ..cubicTo(
+        width * 0.93 + shift.dx,
+        height * 0.25 + shift.dy,
+        width * 0.76 + shift.dx,
+        height * 0.31 + shift.dy,
+        width * 0.55 + shift.dx,
+        height * 0.29 + shift.dy,
+      )
+      ..cubicTo(
+        width * 0.30 + shift.dx,
+        height * 0.27 + shift.dy,
+        width * 0.10 + shift.dx,
+        height * 0.20 + shift.dy,
+        -width * 0.12 + shift.dx,
+        height * 0.19 + shift.dy,
       )
       ..close();
 
-    final waveBounds = wave.getBounds();
+    final bounds = Rect.fromLTWH(0, 0, width, height * 0.42);
     canvas.drawPath(
       wave,
       Paint()
         ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: [
-            cyan.withValues(alpha: 0),
+            cyan.withValues(alpha: 0.015 * lightFactor),
+            cyan.withValues(alpha: 0.075 * lightFactor),
             cyan.withValues(alpha: 0.028 * lightFactor),
-            violet.withValues(
-              alpha: (0.045 + math.sin(wavePhase) * 0.008) * lightFactor,
-            ),
-            violet.withValues(alpha: 0),
           ],
-          stops: const [0, 0.28, 0.7, 1],
-        ).createShader(waveBounds),
-    );
-
-    // 20-second mint loop — soft grounding glow near the bottom.
-    final mintPhase = _tau * t * 9;
-    _drawGlow(
-      canvas,
-      center: Offset(
-        size.width * 0.74 + math.sin(mintPhase) * 12,
-        size.height * 1.02 + math.cos(mintPhase) * 10,
-      ),
-      radius: longest * (0.42 + math.sin(mintPhase) * 0.01),
-      color: mint,
-      opacity: (0.065 + math.sin(mintPhase) * 0.012) * lightFactor,
+          stops: const [0, 0.48, 1],
+        ).createShader(bounds),
     );
   }
 
-  void _drawGlow(
-    Canvas canvas, {
-    required Offset center,
-    required double radius,
-    required Color color,
-    required double opacity,
+  void _drawBottomWave(
+    Canvas canvas,
+    Size size, {
+    required Offset shift,
+    required double lightFactor,
   }) {
-    final bounds = Rect.fromCircle(center: center, radius: radius);
-    canvas.drawCircle(
-      center,
-      radius,
+    final width = size.width;
+    final height = size.height;
+    final tint = Path()
+      ..moveTo(-width * 0.12 + shift.dx, height * 0.70 + shift.dy)
+      ..cubicTo(
+        width * 0.15 + shift.dx,
+        height * 0.62 + shift.dy,
+        width * 0.38 + shift.dx,
+        height * 0.73 + shift.dy,
+        width * 0.61 + shift.dx,
+        height * 0.69 + shift.dy,
+      )
+      ..cubicTo(
+        width * 0.82 + shift.dx,
+        height * 0.66 + shift.dy,
+        width * 0.98 + shift.dx,
+        height * 0.57 + shift.dy,
+        width * 1.12 + shift.dx,
+        height * 0.52 + shift.dy,
+      )
+      ..lineTo(width * 1.12 + shift.dx, height * 1.12 + shift.dy)
+      ..lineTo(-width * 0.12 + shift.dx, height * 1.12 + shift.dy)
+      ..close();
+
+    final band = Path()
+      ..moveTo(-width * 0.12 + shift.dx, height * 0.70 + shift.dy)
+      ..cubicTo(
+        width * 0.15 + shift.dx,
+        height * 0.62 + shift.dy,
+        width * 0.38 + shift.dx,
+        height * 0.73 + shift.dy,
+        width * 0.61 + shift.dx,
+        height * 0.69 + shift.dy,
+      )
+      ..cubicTo(
+        width * 0.82 + shift.dx,
+        height * 0.66 + shift.dy,
+        width * 0.98 + shift.dx,
+        height * 0.57 + shift.dy,
+        width * 1.12 + shift.dx,
+        height * 0.52 + shift.dy,
+      )
+      ..lineTo(width * 1.12 + shift.dx, height * 0.69 + shift.dy)
+      ..cubicTo(
+        width * 0.91 + shift.dx,
+        height * 0.79 + shift.dy,
+        width * 0.75 + shift.dx,
+        height * 0.84 + shift.dy,
+        width * 0.55 + shift.dx,
+        height * 0.81 + shift.dy,
+      )
+      ..cubicTo(
+        width * 0.31 + shift.dx,
+        height * 0.78 + shift.dy,
+        width * 0.10 + shift.dx,
+        height * 0.83 + shift.dy,
+        -width * 0.12 + shift.dx,
+        height * 0.89 + shift.dy,
+      )
+      ..close();
+
+    final bounds = Rect.fromLTWH(0, height * 0.48, width, height * 0.64);
+    canvas.drawPath(
+      tint,
       Paint()
-        ..shader = RadialGradient(
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: [
-            color.withValues(alpha: opacity.clamp(0.0, 1.0)),
-            color.withValues(alpha: 0),
+            violet.withValues(alpha: 0.018 * lightFactor),
+            violet.withValues(alpha: 0.028 * lightFactor),
+            violet.withValues(alpha: 0.012 * lightFactor),
           ],
-          stops: const [0, 1],
+          stops: const [0, 0.3, 1],
         ).createShader(bounds),
+    );
+    canvas.drawPath(
+      band,
+      Paint()..color = violet.withValues(alpha: 0.042 * lightFactor),
     );
   }
 
@@ -254,8 +288,6 @@ class _AuthBackgroundPainter extends CustomPainter {
   bool shouldRepaint(covariant _AuthBackgroundPainter oldDelegate) =>
       oldDelegate.baseColor != baseColor ||
       oldDelegate.cyan != cyan ||
-      oldDelegate.blue != blue ||
       oldDelegate.violet != violet ||
-      oldDelegate.mint != mint ||
       oldDelegate.isDark != isDark;
 }

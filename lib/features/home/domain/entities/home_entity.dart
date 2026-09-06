@@ -23,6 +23,29 @@ class HomeEntity {
   final List<CommunitySuggestion> recommendedCommunities;
   final MotivationCard? dailyMotivation;
   final List<FeedPreview> feedPreview;
+
+  HomeEntity copyWith({
+    HomeUser? user,
+    TodayProgress? todayProgress,
+    ChallengePreview? dailyChallenge,
+    FinanceSnapshot? financeSnapshot,
+    UpcomingEvent? upcomingEvent,
+    List<CommunitySuggestion>? recommendedCommunities,
+    MotivationCard? dailyMotivation,
+    List<FeedPreview>? feedPreview,
+  }) {
+    return HomeEntity(
+      user: user ?? this.user,
+      todayProgress: todayProgress ?? this.todayProgress,
+      dailyChallenge: dailyChallenge ?? this.dailyChallenge,
+      financeSnapshot: financeSnapshot ?? this.financeSnapshot,
+      upcomingEvent: upcomingEvent ?? this.upcomingEvent,
+      recommendedCommunities:
+          recommendedCommunities ?? this.recommendedCommunities,
+      dailyMotivation: dailyMotivation ?? this.dailyMotivation,
+      feedPreview: feedPreview ?? this.feedPreview,
+    );
+  }
 }
 
 class HomeUser {
@@ -40,12 +63,15 @@ class HomeUser {
   final int level;
   final int totalXp;
 
+  int get safeLevel => level > 0 ? level : 1;
+  int get safeTotalXp => totalXp >= 0 ? totalXp : 0;
+
   /// Levels are 100 XP wide (`level = 1 + total_xp / 100` on the backend).
   static const xpPerLevel = 100;
 
-  int get xpIntoLevel => totalXp % xpPerLevel;
-  int get xpForNextLevel => level * xpPerLevel;
-  double get levelProgress => xpIntoLevel / xpPerLevel;
+  int get xpIntoLevel => safeTotalXp % xpPerLevel;
+  int get xpForNextLevel => safeLevel * xpPerLevel;
+  double get levelProgress => (xpIntoLevel / xpPerLevel).clamp(0.0, 1.0);
   int get percentToNext => (levelProgress * 100).round();
 
   /// First name only, for the greeting.
@@ -56,7 +82,7 @@ class HomeUser {
   }
 }
 
-/// Drives the Today Hub progress. Totals can be 0 — guard the divide.
+/// Drives the Today Hub progress. Totals can be 0 — guard the divide safely.
 class TodayProgress {
   const TodayProgress({
     required this.habitsCompletedToday,
@@ -73,8 +99,59 @@ class TodayProgress {
   int get doneCount => habitsCompletedToday + tasksCompleted;
   int get totalCount => habitsTotal + tasksTotal;
 
-  double get progress => totalCount == 0 ? 0 : doneCount / totalCount;
+  double get progress =>
+      totalCount <= 0 ? 0.0 : (doneCount / totalCount).clamp(0.0, 1.0);
   int get percent => (progress * 100).round();
+
+  TodayProgress copyWith({
+    int? habitsCompletedToday,
+    int? habitsTotal,
+    int? tasksCompleted,
+    int? tasksTotal,
+  }) {
+    return TodayProgress(
+      habitsCompletedToday: habitsCompletedToday ?? this.habitsCompletedToday,
+      habitsTotal: habitsTotal ?? this.habitsTotal,
+      tasksCompleted: tasksCompleted ?? this.tasksCompleted,
+      tasksTotal: tasksTotal ?? this.tasksTotal,
+    );
+  }
+}
+
+class HabitItemEntity {
+  const HabitItemEntity({
+    required this.habitId,
+    required this.title,
+    this.category,
+    this.frequency,
+    this.streakCount = 0,
+    this.checkedInToday = false,
+  });
+
+  final String habitId;
+  final String title;
+  final String? category;
+  final String? frequency;
+  final int streakCount;
+  final bool checkedInToday;
+
+  HabitItemEntity copyWith({
+    String? habitId,
+    String? title,
+    String? category,
+    String? frequency,
+    int? streakCount,
+    bool? checkedInToday,
+  }) {
+    return HabitItemEntity(
+      habitId: habitId ?? this.habitId,
+      title: title ?? this.title,
+      category: category ?? this.category,
+      frequency: frequency ?? this.frequency,
+      streakCount: streakCount ?? this.streakCount,
+      checkedInToday: checkedInToday ?? this.checkedInToday,
+    );
+  }
 }
 
 class ChallengePreview {
@@ -122,6 +199,9 @@ class UpcomingEvent {
     this.dateTime,
     this.locationName,
     this.coverImageUrl,
+    this.description,
+    this.category,
+    this.participantCount,
   });
 
   final String eventId;
@@ -129,6 +209,9 @@ class UpcomingEvent {
   final String? dateTime;
   final String? locationName;
   final String? coverImageUrl;
+  final String? description;
+  final String? category;
+  final int? participantCount;
 }
 
 class CommunitySuggestion {
@@ -165,6 +248,8 @@ class FeedPreview {
     this.contentText,
     this.imageUrl,
     this.likeCount,
+    this.commentCount,
+    this.communityName,
     this.createdAt,
   });
 
@@ -174,6 +259,8 @@ class FeedPreview {
   final String? contentText;
   final String? imageUrl;
   final int? likeCount;
+  final int? commentCount;
+  final String? communityName;
 
   /// ISO-8601 instant.
   final String? createdAt;

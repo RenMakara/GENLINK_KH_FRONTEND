@@ -84,6 +84,11 @@ abstract final class ApiEndpoints {
   static const mobileProductivityDashboard =
       '$_base/mobile/productivity-dashboard';
 
+  // ── Productivity ──────────────────────────────────────────────────────
+  static const habits = '$_base/productivity/habits';
+  static String habitCheckIn(String habitId) =>
+      '$_base/productivity/habits/$habitId/check-in';
+
   // ── Finance ──────────────────────────────────────────────────────────
   static const financeWallet = '$_base/finance/wallet';
   static const financeWalletTopUp = '$_base/finance/wallet/top-up';
@@ -142,11 +147,35 @@ abstract final class ApiEndpoints {
   static String communityPostLike(String postId) =>
       '$_base/community/posts/$postId/like';
 
+  static String communityPostUnlike(String postId) =>
+      '$_base/community/posts/$postId/like';
+
   static String communityPostBookmark(String postId) =>
       '$_base/community/posts/$postId/bookmark';
 
+  static String communityPostRepost(String postId) =>
+      '$_base/community/posts/$postId/repost';
+
+  static String communityPostReport(String postId) =>
+      '$_base/community/posts/$postId/report';
+
   static String communityPostComments(String postId) =>
       '$_base/community/posts/$postId/comments';
+
+  static String communityFollowUser(String userId) =>
+      '$_base/community/users/$userId/follow';
+
+  static String communityFollowStats(String userId) =>
+      '$_base/community/users/$userId/follow-stats';
+
+  // ── Discussions ───────────────────────────────────────────────────────
+  static const communityDiscussions = '$_base/community/discussions';
+  static String communityDiscussionDetail(String discussionId) =>
+      '$_base/community/discussions/$discussionId';
+  static String communityDiscussionComments(String discussionId) =>
+      '$_base/community/discussions/$discussionId/comments';
+  static String communityDiscussionReact(String discussionId) =>
+      '$_base/community/discussions/$discussionId/react';
 
   // ── Stories ────────────────────────────────────────────────────────────
   static const stories = '$_base/community/stories';
@@ -156,6 +185,9 @@ abstract final class ApiEndpoints {
 
   static String storyView(String storyId) =>
       '$_base/community/stories/$storyId/view';
+
+  static String storyLike(String storyId) =>
+      '$_base/community/stories/$storyId/like';
 
   static String storyViewers(String storyId) =>
       '$_base/community/stories/$storyId/viewers';

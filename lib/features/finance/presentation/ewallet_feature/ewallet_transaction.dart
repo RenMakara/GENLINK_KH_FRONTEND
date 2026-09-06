@@ -127,9 +127,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                           }),
                           style: TextStyle(
                             color: textPrimary,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.3,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
                           ),
                         ),
                       ),

@@ -72,11 +72,11 @@ class _IncomeScreenState extends State<IncomeScreen> {
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
 
-    final secondary = isDark
-        ? AppColors.darkSurfaceSecondary
-        : AppColors.lightSurfaceSecondary;
-
     final text = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final textPrimary = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
 
@@ -99,6 +99,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
           final incomes = controller.incomes.toList(growable: false);
           final loading = controller.isInitialLoading.value;
           final error = controller.listErrorMessage.value;
+          final currency = controller.selectedCurrency.value;
 
           return RefreshIndicator(
             onRefresh: controller.refresh,
@@ -118,9 +119,10 @@ class _IncomeScreenState extends State<IncomeScreen> {
                       child: Text(
                         'finance.income.title'.tr,
                         style: TextStyle(
-                          color: text,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
+                          color: textPrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),
@@ -163,12 +165,11 @@ class _IncomeScreenState extends State<IncomeScreen> {
                 // CURRENCY BAR
                 // Same color setup as BudgetScreen
                 _CurrencyBar(
-                  value: controller.selectedCurrency.value,
+                  currency: currency,
                   onChanged: controller.selectCurrency,
-                  text: text,
-                  muted: muted,
-                  secondary: secondary,
+                  surface: surface,
                   border: border,
+                  text: text,
                   primary: primary,
                 ),
 
@@ -322,89 +323,80 @@ class _IncomeScreenState extends State<IncomeScreen> {
 // CURRENCY BAR
 class _CurrencyBar extends StatelessWidget {
   const _CurrencyBar({
-    required this.value,
+    required this.currency,
     required this.onChanged,
-    required this.text,
-    required this.muted,
-    required this.secondary,
+    required this.surface,
     required this.border,
+    required this.text,
     required this.primary,
   });
 
-  final FinanceCurrency value;
+  final FinanceCurrency currency;
   final ValueChanged<FinanceCurrency> onChanged;
-  final Color text;
-  final Color muted;
-  final Color secondary;
+  final Color surface;
   final Color border;
+  final Color text;
   final Color primary;
 
   @override
   Widget build(BuildContext context) {
-    final currencies = FinanceCurrency.values;
-    final selectedIndex = currencies.indexOf(value);
+    final isUsd = currency == FinanceCurrency.usd;
 
     return Container(
+      height: 48,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: secondary,
-        borderRadius: BorderRadius.circular(12),
+        color: surface,
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: border),
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final itemWidth = constraints.maxWidth / currencies.length;
+      child: Stack(
+        children: [
+          // Sliding background
+          AnimatedAlign(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            alignment: isUsd ? Alignment.centerLeft : Alignment.centerRight,
+            child: FractionallySizedBox(
+              widthFactor: 0.5,
+              child: Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
 
-          return SizedBox(
-            height: 40,
-            child: Stack(
-              children: [
-                // SLIDING SELECTED BACKGROUND
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOut,
-                  left: selectedIndex * itemWidth,
-                  top: 0,
-                  bottom: 0,
-                  width: itemWidth,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: primary,
-                      borderRadius: BorderRadius.circular(9),
+          // Currency buttons
+          Row(
+            children: FinanceCurrency.values.map((value) {
+              final selected = value == currency;
+
+              return Expanded(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => onChanged(value),
+                  child: Center(
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOut,
+                      style: TextStyle(
+                        color: selected
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : text,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                      child: Text(value.apiValue),
                     ),
                   ),
                 ),
-
-                // CURRENCY OPTIONS
-                Row(
-                  children: currencies.map((currency) {
-                    final selected = currency == value;
-
-                    return Expanded(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => onChanged(currency),
-                        child: Center(
-                          child: Text(
-                            currency.apiValue,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: selected
-                                  ? Theme.of(context).colorScheme.onPrimary
-                                  : muted,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          );
-        },
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

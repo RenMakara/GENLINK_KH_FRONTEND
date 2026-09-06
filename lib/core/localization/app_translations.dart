@@ -137,7 +137,10 @@ class AppTranslations extends Translations {
     // ── Navigation ──────────────────────────────────────────────────────
     'nav.home': 'Home',
     'nav.community': 'Community',
+    'nav.growth': 'Growth',
+    'nav.levelUp': 'LevelUp',
     'nav.create': 'Create',
+    'nav.finance': 'Finance',
     'nav.financial': 'Financial',
     'nav.profile': 'Profile',
 
@@ -1096,6 +1099,13 @@ class AppTranslations extends Translations {
     'finance.transactionType.income': 'Income',
     'finance.transactionType.saving': 'Saving',
     'finance.transactionType.unknown': 'Wallet Transaction',
+    'finance.ewallet.processingPayment': 'Processing Payment',
+    'finance.ewallet.processingPaymentHint':
+        'Please wait while we process your payment.',
+    'finance.ewallet.doNotCloseApp': 'Please do not close the app',
+    'finance.ewallet.paymentToMerchant': 'Payment to merchant',
+    'finance.ewallet.cancel': 'Cancel',
+    'finance.ewallet.invalidAmount': 'Please enter a valid amount',
 
     // ── Finance Categories ─────────────────────────────────────────────────
     'finance.category.food': 'Food',
@@ -1119,6 +1129,9 @@ class AppTranslations extends Translations {
     'finance.payment.acleda': 'ACLEDA',
     'finance.payment.ewallet': 'E-Wallet',
     'finance.payment.other': 'Other',
+    'finance.ewallet.scanAndPay': 'Scan & Pay',
+    'finance.ewallet.scanQrCode': 'Scan QR Code',
+    'finance.ewallet.scanQrHint': 'Place the QR code inside the frame',
 
     // ── Productivity ───────────────────────────────────────────────────────
     'productivity.title': 'Productivity',
@@ -1308,7 +1321,10 @@ class AppTranslations extends Translations {
     // ── Navigation ──────────────────────────────────────────────────────
     'nav.home': 'ទំព័រដើម',
     'nav.community': 'សហគមន៍',
+    'nav.growth': 'ការរីកចម្រើន',
+    'nav.levelUp': 'ឡើងកម្រិត',
     'nav.create': 'បង្កើត',
+    'nav.finance': 'ហិរញ្ញវត្ថុ',
     'nav.financial': 'ហិរញ្ញវត្ថុ',
     'nav.profile': 'ប្រវត្តិរូប',
 
@@ -1909,7 +1925,7 @@ class AppTranslations extends Translations {
     'finance.Income': 'ប្រាក់ចំណូល',
     'finance.Budget': 'កម្រិតថវិកា',
     'finance.saveGoal': 'គោលដៅសន្សំ',
-    'finance.ewallet': 'កាបូបអេឡិចត្រូនិក',
+    'finance.ewallet': 'កាបូបឌីជីថល',
     'finance.learn': 'រៀន',
 
     'finance.recentTransactions': 'ប្រតិបត្តិការថ្មីៗ',
@@ -2275,6 +2291,16 @@ class AppTranslations extends Translations {
     'finance.transactionType.income': 'ចំណូល',
     'finance.transactionType.saving': 'ការសន្សំ',
     'finance.transactionType.unknown': 'ប្រតិបត្តិការកាបូប',
+    'finance.ewallet.processingPayment': 'កំពុងដំណើរការការទូទាត់',
+    'finance.ewallet.processingPaymentHint':
+        'សូមរង់ចាំ ខណៈពេលដែលយើងកំពុងដំណើរការការទូទាត់របស់អ្នក។',
+    'finance.ewallet.doNotCloseApp': 'សូមកុំបិទកម្មវិធី',
+    'finance.ewallet.paymentToMerchant': 'ការទូទាត់ទៅកាន់អ្នកលក់',
+    'finance.ewallet.cancel': 'បោះបង់',
+    'finance.ewallet.invalidAmount': 'សូមបញ្ចូលចំនួនទឹកប្រាក់ត្រឹមត្រូវ',
+    'finance.ewallet.scanAndPay': 'ស្កេន និងទូទាត់',
+    'finance.ewallet.scanQrCode': 'ស្កេនកូដ QR',
+    'finance.ewallet.scanQrHint': 'ដាក់កូដ QR នៅក្នុងស៊ុម',
 
     // ── Finance Categories ─────────────────────────────────────────────────
     'finance.category.food': 'អាហារ',

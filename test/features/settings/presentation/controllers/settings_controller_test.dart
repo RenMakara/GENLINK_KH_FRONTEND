@@ -37,6 +37,12 @@ void main() {
     repository = _MockSettingsRepository();
     themeController = _MockThemeController();
     localization = _MockLocalizationService();
+    when(
+      () => themeController.backendTheme,
+    ).thenReturn(UserSettingsEntity.themeSystem);
+    when(
+      () => localization.language,
+    ).thenReturn(UserSettingsEntity.languageEnglish.obs);
     controller = SettingsController(
       repository: repository,
       themeController: themeController,
@@ -103,6 +109,7 @@ void main() {
     verify(
       () => themeController.applyBackendTheme(UserSettingsEntity.themeDark),
     ).called(1);
+    verify(() => themeController.backendTheme).called(1);
     verifyNoMoreInteractions(themeController);
   });
 }

@@ -37,7 +37,7 @@ abstract final class AppColors {
   // =========================================================
 
   // Background
-  static const darkBgPrimary = Color(0xFF131313); // #000000
+  static const darkBgPrimary = Color(0xFF191919); // #000000
   static const darkBgSecondary = Color(0xFF111111); // #111111
 
   // Surface

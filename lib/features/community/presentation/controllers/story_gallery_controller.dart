@@ -122,9 +122,11 @@ class StoryGalleryController extends GetxController {
   Future<void> fetchAlbumsAndMedia() async {
     isLoading.value = true;
     try {
+      final isTemplate = selectedTemplate.value != null || requiredPhotosCount.value > 0;
+      final requestType = isTemplate ? RequestType.image : RequestType.common;
       final List<AssetPathEntity> fetchedAlbums =
           await PhotoManager.getAssetPathList(
-            type: RequestType.image,
+            type: requestType,
             onlyAll: false,
           );
       albums.assignAll(fetchedAlbums);

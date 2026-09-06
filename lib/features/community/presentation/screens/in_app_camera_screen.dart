@@ -1,13 +1,10 @@
 import 'dart:async';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../domain/models/story_model.dart';
-import '../controllers/story_controller.dart';
 import 'story_creator_screen.dart';
 
 enum FlashMode { off, on, auto }
@@ -60,11 +57,6 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
     });
   }
 
-  bool get _isDesktopPlatform {
-    if (kIsWeb) return false;
-    return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
-  }
-
   void _startTimer() {
     _recordingSeconds = 0;
     _recordingTimer?.cancel();
@@ -83,7 +75,7 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
     _recordingTimer?.cancel();
   }
 
-  Future<void> _captureMedia({bool instantPost = false}) async {
+  Future<void> _captureMedia() async {
     if (_isCapturing) return;
     setState(() => _isCapturing = true);
 
@@ -95,138 +87,84 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
     XFile? media;
 
     try {
-      if (_isDesktopPlatform) {
-        media = _isVideoMode
-            ? await picker.pickVideo(
-                source: ImageSource.gallery,
-                maxDuration: const Duration(seconds: 60),
-              )
-            : await picker.pickImage(
-                source: ImageSource.gallery,
-                imageQuality: 95,
-              );
-      } else {
-        media = _isVideoMode
-            ? await picker.pickVideo(
-                source: ImageSource.camera,
-                maxDuration: const Duration(seconds: 60),
-              )
-            : await picker.pickImage(
-                source: ImageSource.camera,
-                imageQuality: 95,
-              );
-      }
+      media = _isVideoMode
+          ? await picker.pickVideo(
+              source: ImageSource.camera,
+              maxDuration: const Duration(seconds: 60),
+            )
+          : await picker.pickImage(
+              source: ImageSource.camera,
+              imageQuality: 95,
+            );
 
       _stopTimer();
 
       if (media != null && mounted) {
-        if (instantPost) {
-          final controller = Get.isRegistered<StoryController>()
-              ? Get.find<StoryController>()
-              : Get.put(StoryController(), permanent: true);
-          final success = await controller.publishStory(
+        final result = await Get.to(
+          () => StoryCreatorScreen(
             type: _isVideoMode ? StoryType.video : StoryType.photo,
-            mediaUrl: media.path,
-            textContent: "CampusLink KH Story",
-            visibility: "Public",
-          );
-
-          if (mounted) {
-            if (success) {
-              final bannerContext =
-                  Get.context ?? Get.overlayContext ?? context;
-              if (bannerContext.mounted) {
-                AppNotificationBanner.showSuccess(
-                  context: bannerContext,
-                  title: "✓ Story Posted",
-                  message: "Your story is live on CampusLink KH!",
-                  icon: Icons.camera_alt_rounded,
-                  duration: const Duration(seconds: 3),
-                );
-              }
-
-              const storyRouteNames = {
-                '/StoryGalleryScreen',
-                '/InAppCameraScreen',
-                '/StoryCreatorScreen',
-              };
-
-              Get.until((route) {
-                if (route.isFirst) return true;
-                final name = route.settings.name;
-                if (name != null && storyRouteNames.contains(name)) {
-                  return false;
-                }
-                return true;
-              });
-            } else {
-              setState(() => _isCapturing = false);
-              AppNotificationBanner.showDanger(
-                context: context,
-                title: "Upload Failed",
-                message: "Couldn't post story. Please try again.",
-              );
-            }
-          }
-        } else {
-          final result = await Get.to(
-            () => StoryCreatorScreen(
-              type: _isVideoMode ? StoryType.video : StoryType.photo,
-              mediaPaths: [media!.path],
-            ),
-            routeName: '/StoryCreatorScreen',
-            transition: Transition.fadeIn,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-          );
-          if (result == true && mounted) {
-            Get.back(result: true);
-          }
+            mediaPaths: [media!.path],
+          ),
+          routeName: '/StoryCreatorScreen',
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+        );
+        if (result == true && mounted) {
+          Get.back(result: true);
         }
-      } else {
+      }
+    } catch (e, stack) {
+      _stopTimer();
+      debugPrint('[InAppCameraScreen] Camera capture error: $e\n$stack');
+      if (mounted) {
+        final String errorMessage = e is StateError
+            ? "Camera is not available on this device."
+            : "Could not access device camera: $e";
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: "Camera Unavailable",
+          message: errorMessage,
+        );
+      }
+    } finally {
+      _stopTimer();
+      if (mounted) {
         setState(() => _isCapturing = false);
       }
-    } catch (e) {
-      _stopTimer();
-      try {
-        media = _isVideoMode
-            ? await picker.pickVideo(
-                source: ImageSource.gallery,
-                maxDuration: const Duration(seconds: 60),
-              )
-            : await picker.pickImage(
-                source: ImageSource.gallery,
-                imageQuality: 95,
-              );
+    }
+  }
 
-        if (media != null && mounted) {
-          final result = await Get.to(
-            () => StoryCreatorScreen(
-              type: _isVideoMode ? StoryType.video : StoryType.photo,
-              mediaPaths: [media!.path],
-            ),
-            routeName: '/StoryCreatorScreen',
-            transition: Transition.fadeIn,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-          );
-          if (result == true && mounted) {
-            Get.back(result: true);
-          }
-        } else {
-          setState(() => _isCapturing = false);
-        }
-      } catch (_) {
-        if (mounted) {
-          setState(() => _isCapturing = false);
-          AppNotificationBanner.showDanger(
-            context: context,
-            title: "Selection Cancelled",
-            message: "No media file selected for story creation.",
-          );
+  Future<void> _openGallery() async {
+    if (_isCapturing) return;
+    final picker = ImagePicker();
+    try {
+      final XFile? media = _isVideoMode
+          ? await picker.pickVideo(
+              source: ImageSource.gallery,
+              maxDuration: const Duration(seconds: 60),
+            )
+          : await picker.pickImage(
+              source: ImageSource.gallery,
+              imageQuality: 95,
+            );
+
+      if (media != null && mounted) {
+        final result = await Get.to(
+          () => StoryCreatorScreen(
+            type: _isVideoMode ? StoryType.video : StoryType.photo,
+            mediaPaths: [media.path],
+          ),
+          routeName: '/StoryCreatorScreen',
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+        );
+        if (result == true && mounted) {
+          Get.back(result: true);
         }
       }
-    }
+    } catch (_) {}
   }
 
   String _formatRecordingTime(int sec) {
@@ -460,9 +398,7 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
                       children: [
                         // Gallery Action Button
                         TextButton.icon(
-                          onPressed: _isCapturing
-                              ? null
-                              : () => _captureMedia(instantPost: true),
+                          onPressed: _isCapturing ? null : _openGallery,
                           icon: const Icon(
                             Icons.photo_library_rounded,
                             color: Colors.white,
@@ -493,7 +429,7 @@ class _InAppCameraScreenState extends State<InAppCameraScreen> {
 
                         // Main Capture Shutter Button
                         GestureDetector(
-                          onTap: () => _captureMedia(instantPost: false),
+                          onTap: _isCapturing ? null : _captureMedia,
                           child: Container(
                             width: 78,
                             height: 78,

@@ -41,6 +41,9 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
     final text = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
     final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final border = isDark
         ? AppColors.darkBorderSubtle
@@ -169,9 +172,10 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                       Text(
                         'finance.goal.depositHistory'.tr,
                         style: TextStyle(
-                          color: text,
-                          fontSize: 18,
+                          color: textPrimary,
+                          fontSize: 22,
                           fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
                         ),
                       ),
 

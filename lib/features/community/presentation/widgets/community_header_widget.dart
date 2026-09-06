@@ -4,18 +4,24 @@ import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../chat/presentation/screens/chat_list_screen.dart';
+import '../../../notification/presentation/controllers/notification_controller.dart';
 import '../../../notification/presentation/screens/notification_screen.dart';
 import '../screens/community_search_screen.dart';
 
 /// GenLink KH Community Header Widget
 ///
-/// Refactored to strictly match the design system tokens, layout, typography,
-/// and component architecture of the Finance header.
+/// Displays "Home" in Home mode, or "Community" in Community mode, alongside
+/// standard Search, Chat, and Notification action buttons.
 class CommunityHeaderWidget extends StatelessWidget
     implements PreferredSizeWidget {
   final String activeCategory;
+  final bool isHomeScreen;
 
-  const CommunityHeaderWidget({super.key, required this.activeCategory});
+  const CommunityHeaderWidget({
+    super.key,
+    required this.activeCategory,
+    this.isHomeScreen = false,
+  });
 
   @override
   Size get preferredSize => const Size.fromHeight(64.0);
@@ -31,89 +37,93 @@ class CommunityHeaderWidget extends StatelessWidget
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
 
-    final titleText =
-        'community.title'.tr.isNotEmpty &&
-            'community.title'.tr != 'community.title'
-        ? 'community.title'.tr
-        : 'Community';
+    final titleText = isHomeScreen
+        ? ('nav.home'.tr.isNotEmpty && 'nav.home'.tr != 'nav.home'
+            ? 'nav.home'.tr
+            : 'Home')
+        : ('community.title'.tr.isNotEmpty &&
+                'community.title'.tr != 'community.title'
+            ? 'community.title'.tr
+            : 'Community');
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isNarrow = screenWidth < 360;
+    final isVeryNarrow = screenWidth < 335;
+    final buttonSize = isVeryNarrow ? 32.0 : (isNarrow ? 36.0 : 42.0);
+    final buttonGap = isVeryNarrow
+        ? 2.0
+        : (isNarrow ? 4.0 : AppSpacing.sm);
+    final iconSize = isVeryNarrow ? 18.0 : (isNarrow ? 20.0 : 22.0);
+    final titleFontSize = isVeryNarrow
+        ? 18.0
+        : (isNarrow ? 20.0 : 22.0);
+    final horizontalPadding = isVeryNarrow ? 8.0 : (isNarrow ? 10.0 : AppSpacing.md);
 
     return Container(
       color: bg,
       child: SafeArea(
         bottom: false,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isNarrow = constraints.maxWidth < 360;
-            final isVeryNarrow = constraints.maxWidth < 335;
-            final buttonSize = isVeryNarrow ? 34.0 : (isNarrow ? 38.0 : 42.0);
-            final buttonGap = isVeryNarrow
-                ? 3.0
-                : (isNarrow ? 5.0 : AppSpacing.sm);
-            final iconSize = isVeryNarrow ? 18.0 : (isNarrow ? 20.0 : 22.0);
-            final titleFontSize = isVeryNarrow
-                ? 18.0
-                : (isNarrow ? 20.0 : 22.0);
-            final horizontalPadding = isNarrow ? 10.0 : AppSpacing.md;
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: Container(
+              height: preferredSize.height,
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Row(
+                children: [
+                  // 1. LEFT TITLE
+                  Expanded(
+                    child: Text(
+                      titleText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: titleFontSize,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
 
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: Container(
-                  height: preferredSize.height,
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                  child: Row(
+                  const SizedBox(width: 6),
+
+                  // 2. RIGHT ACTION BUTTONS (Search, Chat, Notification)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // 1. LEFT TITLE - Flexible and non-overflowing
-                      Expanded(
-                        child: Text(
-                          titleText,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: textPrimary,
-                            fontSize: titleFontSize,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.3,
+                      // Search Button
+                      _HeaderActionButton(
+                        icon: Icons.search_rounded,
+                        onTap: () => Get.to(
+                          () => CommunitySearchScreen(
+                            activeTab: activeCategory,
                           ),
                         ),
+                        iconColor: textPrimary,
+                        buttonSize: buttonSize,
+                        iconSize: iconSize,
+                        tooltip: 'community.search'.tr,
                       ),
 
-                      const SizedBox(width: 6),
+                      SizedBox(width: buttonGap),
 
-                      // 2. RIGHT ACTION BUTTONS (Search, Chat, Notification)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Search Button
-                          _HeaderActionButton(
-                            icon: Icons.search_rounded,
-                            onTap: () => Get.to(
-                              () => CommunitySearchScreen(
-                                activeTab: activeCategory,
-                              ),
-                            ),
-                            iconColor: textPrimary,
-                            buttonSize: buttonSize,
-                            iconSize: iconSize,
-                            tooltip: 'community.search'.tr,
-                          ),
+                      // Chat Button - Two overlapping speech bubbles icon
+                      _HeaderActionButton(
+                        icon: Icons.forum_outlined,
+                        onTap: () => Get.to(() => const ChatListScreen()),
+                        iconColor: textPrimary,
+                        buttonSize: buttonSize,
+                        iconSize: iconSize,
+                        tooltip: 'community.chat'.tr,
+                      ),
 
-                          SizedBox(width: buttonGap),
+                      SizedBox(width: buttonGap),
 
-                          // Chat Button - Two overlapping speech bubbles icon
-                          _HeaderActionButton(
-                            icon: Icons.forum_outlined,
-                            onTap: () => Get.to(() => const ChatListScreen()),
-                            iconColor: textPrimary,
-                            buttonSize: buttonSize,
-                            iconSize: iconSize,
-                            tooltip: 'community.chat'.tr,
-                          ),
-
-                          SizedBox(width: buttonGap),
-
-                          // Notification Button
-                          _HeaderActionButton(
+                      // Notification Button with reactive unread badge
+                      Builder(builder: (context) {
+                        if (!Get.isRegistered<NotificationController>()) {
+                          return _HeaderActionButton(
                             icon: Icons.notifications_none_rounded,
                             onTap: () =>
                                 Get.to(() => const NotificationScreen()),
@@ -121,15 +131,32 @@ class CommunityHeaderWidget extends StatelessWidget
                             buttonSize: buttonSize,
                             iconSize: iconSize,
                             tooltip: 'community.notifications'.tr,
-                          ),
-                        ],
-                      ),
+                          );
+                        }
+                        final notifController =
+                            Get.find<NotificationController>();
+                        return Obx(() {
+                          final unread = notifController.unreadCount;
+                          return _HeaderActionButton(
+                            icon: unread > 0
+                                ? Icons.notifications_active_outlined
+                                : Icons.notifications_none_rounded,
+                            onTap: () =>
+                                Get.to(() => const NotificationScreen()),
+                            iconColor: textPrimary,
+                            buttonSize: buttonSize,
+                            iconSize: iconSize,
+                            hasBadge: unread > 0,
+                            tooltip: 'community.notifications'.tr,
+                          );
+                        });
+                      }),
                     ],
                   ),
-                ),
+                ],
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );
@@ -137,7 +164,7 @@ class CommunityHeaderWidget extends StatelessWidget
 }
 
 /// Reusable Header Action Button component with standardized touch target,
-/// 24px icon size, and no backgrounds or badges.
+/// 24px icon size, and badge support.
 class _HeaderActionButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -145,6 +172,7 @@ class _HeaderActionButton extends StatelessWidget {
   final double buttonSize;
   final double iconSize;
   final String tooltip;
+  final bool hasBadge;
 
   const _HeaderActionButton({
     required this.icon,
@@ -153,6 +181,7 @@ class _HeaderActionButton extends StatelessWidget {
     this.buttonSize = 44.0,
     this.iconSize = 24.0,
     required this.tooltip,
+    this.hasBadge = false,
   });
 
   @override
@@ -168,7 +197,26 @@ class _HeaderActionButton extends StatelessWidget {
             width: buttonSize,
             height: buttonSize,
             child: Center(
-              child: Icon(icon, size: iconSize, color: iconColor),
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(icon, size: iconSize, color: iconColor),
+                  if (hasBadge)
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xFFF97316),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

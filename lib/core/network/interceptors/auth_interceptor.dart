@@ -112,6 +112,21 @@ class AuthInterceptor extends Interceptor {
     final statusCode = err.response?.statusCode;
     final options = err.requestOptions;
 
+<<<<<<< HEAD
+=======
+    final token = await _storage.readAccessToken();
+    final isDemoToken = token != null && _isDemoToken(token);
+
+    if (isDemoToken) {
+      // Demo session: backend API failures must not wipe demo state or bounce to login.
+      handler.next(err);
+      return;
+    }
+
+    // A 403 means the authenticated user lacks permission; refreshing does
+    // not change authorization and must never turn a forbidden operation
+    // into a logout. Only a 401 is a token-authentication failure.
+>>>>>>> 8b06999452f85e3446ffa6b8116d9166bca9b671
     final shouldRefresh =
         statusCode == 401 &&
         !_isAuthEndpoint(options.path) &&

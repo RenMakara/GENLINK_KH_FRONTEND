@@ -7,8 +7,10 @@ import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
 import '../../domain/models/community_models.dart';
 import '../../domain/models/community_post_model.dart';
+import '../screens/create_discussion_screen.dart';
 import '../screens/create_post_screen.dart';
 import '../screens/event_details_screen.dart';
 import '../controllers/community_controller.dart';
@@ -166,11 +168,119 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     );
   }
 
+  void _confirmDeleteDiscussion(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface =
+        isDark ? const Color(0xFF1E2228) : Colors.white;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? Colors.white70 : AppColors.lightTextSecondary;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: surface,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg)),
+        title: Text(
+          'community.deleteDiscussion'.tr.isNotEmpty &&
+                  'community.deleteDiscussion'.tr !=
+                      'community.deleteDiscussion'
+              ? '${'community.deleteDiscussion'.tr}?'
+              : 'Delete Discussion?',
+          style: TextStyle(
+            color: textPrimary,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        content: Text(
+          'community.deleteDiscussionConfirm'.tr.isNotEmpty &&
+                  'community.deleteDiscussionConfirm'.tr !=
+                      'community.deleteDiscussionConfirm'
+              ? 'community.deleteDiscussionConfirm'.tr
+              : 'Are you sure you want to delete this discussion? This action cannot be undone.',
+          style: TextStyle(color: textSecondary, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'common.cancel'.tr.isNotEmpty &&
+                      'common.cancel'.tr != 'common.cancel'
+                  ? 'common.cancel'.tr
+                  : 'Cancel',
+              style: TextStyle(color: textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final success =
+                  await widget.controller.deleteDiscussion(widget.post.id);
+              if (success && context.mounted) {
+                AppNotificationBanner.showSuccess(
+                  context: context,
+                  title: 'community.discussionDeleted'.tr.isNotEmpty &&
+                          'community.discussionDeleted'.tr !=
+                              'community.discussionDeleted'
+                      ? 'community.discussionDeleted'.tr
+                      : 'Discussion Deleted',
+                  message: 'community.discussionDeletedMsg'.tr.isNotEmpty &&
+                          'community.discussionDeletedMsg'.tr !=
+                              'community.discussionDeletedMsg'
+                      ? 'community.discussionDeletedMsg'.tr
+                      : 'Your discussion has been removed.',
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.pill)),
+            ),
+            child: Text(
+              'common.delete'.tr.isNotEmpty &&
+                      'common.delete'.tr != 'common.delete'
+                  ? 'common.delete'.tr
+                  : 'Delete',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool get _isOwnPost {
+    String? currentUserId;
+    if (Get.isRegistered<AuthController>()) {
+      currentUserId = Get.find<AuthController>().currentUser.value?.id;
+    }
+    currentUserId ??= widget.controller.currentUserId;
+    return widget.post.checkIsOwner(currentUserId) ||
+        (currentUserId != null &&
+            currentUserId.isNotEmpty &&
+            widget.post.userId == currentUserId);
+  }
+
+  bool get _isFollowing {
+    final livePost =
+        widget.controller.posts.firstWhereOrNull((p) => p.id == widget.post.id);
+    if (livePost != null) return livePost.isFollowing;
+    return widget.controller.isFollowingUser(widget.post.userId) ||
+        widget.post.isFollowing;
+  }
+
   void _showMoreMenu(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final surface = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+
+    final isDiscussion = widget.post.postType == 'DISCUSSION';
 
     showModalBottomSheet(
       context: context,
@@ -184,10 +294,14 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // 1. Bookmark toggle (Always available)
             Material(
               color: Colors.transparent,
               child: ListTile(
-                leading: Icon(Icons.bookmark_border, color: textPrimary),
+                leading: Icon(
+                  widget.post.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border,
+                  color: textPrimary,
+                ),
                 title: Text(
                   widget.post.isBookmarked ? 'community.removeBookmark'.tr : 'community.saveBookmark'.tr,
                   style: theme.textTheme.bodyMedium?.copyWith(color: textPrimary) ??
@@ -207,28 +321,83 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                 },
               ),
             ),
-            Material(
-              color: Colors.transparent,
-              child: ListTile(
-                leading: Icon(Icons.repeat_rounded, color: textPrimary),
-                title: Text(
-                  'community.repost'.tr,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: textPrimary) ??
-                      TextStyle(color: textPrimary),
+
+            // 2. OTHER USER'S POST OPTIONS: Repost / Unrepost, Report Post
+            if (!_isOwnPost) ...[
+              if (!isDiscussion)
+                Material(
+                  color: Colors.transparent,
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.repeat_rounded,
+                      color: widget.post.isRepostedByMe ? AppColors.growthAccent : textPrimary,
+                    ),
+                    title: Text(
+                      widget.post.isRepostedByMe ? 'community.unrepost'.tr : 'community.repost'.tr,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                            color: widget.post.isRepostedByMe ? AppColors.growthAccent : textPrimary,
+                          ) ??
+                          TextStyle(
+                            color: widget.post.isRepostedByMe ? AppColors.growthAccent : textPrimary,
+                          ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      if (widget.post.isRepostedByMe) {
+                        widget.controller.unrepostPost(widget.post.id);
+                        AppNotificationBanner.showInfo(
+                          context: context,
+                          title: 'community.unreposted'.tr,
+                          message: 'community.unrepostedMsg'.tr,
+                          icon: Icons.repeat_rounded,
+                        );
+                      } else {
+                        _showRepostDialog(context);
+                      }
+                    },
+                  ),
                 ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _showRepostDialog(context);
-                },
+              Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  leading: Icon(Icons.flag_outlined, color: textPrimary),
+                  title: Text(
+                    isDiscussion
+                        ? ('community.report'.tr.isNotEmpty && 'community.report'.tr != 'community.report'
+                            ? 'community.report'.tr
+                            : 'Report')
+                        : 'community.reportPost'.tr,
+                    style: theme.textTheme.bodyMedium?.copyWith(color: textPrimary) ??
+                        TextStyle(color: textPrimary),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    widget.controller.reportPost(widget.post.id);
+                    AppNotificationBanner.showInfo(
+                      context: context,
+                      title: 'community.postReported'.tr,
+                      message: 'community.postReportedMsg'.tr,
+                      icon: Icons.flag_rounded,
+                    );
+                  },
+                ),
               ),
-            ),
-            if (widget.post.isOwner) ...[
+            ],
+
+            // 3. OWN POST OPTIONS: Edit Post, Delete Post (NO REPOST)
+            if (_isOwnPost) ...[
               Material(
                 color: Colors.transparent,
                 child: ListTile(
                   leading: Icon(Icons.edit_outlined, color: textPrimary),
                   title: Text(
-                    'community.editPost'.tr,
+                    isDiscussion
+                        ? ('community.editDiscussion'.tr.isNotEmpty &&
+                                'community.editDiscussion'.tr !=
+                                    'community.editDiscussion'
+                            ? 'community.editDiscussion'.tr
+                            : 'Edit Discussion')
+                        : 'community.editPost'.tr,
                     style: theme.textTheme.bodyMedium?.copyWith(color: textPrimary) ??
                         TextStyle(color: textPrimary),
                   ),
@@ -243,13 +412,23 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                 child: ListTile(
                   leading: const Icon(Icons.delete_outline, color: AppColors.danger),
                   title: Text(
-                    'community.deletePost'.tr,
+                    isDiscussion
+                        ? ('community.deleteDiscussion'.tr.isNotEmpty &&
+                                'community.deleteDiscussion'.tr !=
+                                    'community.deleteDiscussion'
+                            ? 'community.deleteDiscussion'.tr
+                            : 'Delete Discussion')
+                        : 'community.deletePost'.tr,
                     style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.danger) ??
                         const TextStyle(color: AppColors.danger),
                   ),
                   onTap: () {
                     Navigator.pop(ctx);
-                    _confirmDeletePost(context);
+                    if (isDiscussion) {
+                      _confirmDeleteDiscussion(context);
+                    } else {
+                      _confirmDeletePost(context);
+                    }
                   },
                 ),
               ),
@@ -261,6 +440,13 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
   }
 
   void _showEditDialog(BuildContext context) {
+    if (widget.post.postType == 'DISCUSSION') {
+      final topic = widget.controller.getDiscussionById(widget.post.id);
+      if (topic != null) {
+        Get.to(() => CreateDiscussionScreen(initialDiscussion: topic));
+        return;
+      }
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -480,9 +666,9 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
             builder: (context, constraints) {
               final isNarrow = constraints.maxWidth < 360;
               final isVeryNarrow = constraints.maxWidth < 330;
-              final avatarRadius = isVeryNarrow ? 17.0 : (isNarrow ? 19.0 : 21.0);
-              final headerGap = isVeryNarrow ? 6.0 : (isNarrow ? 8.0 : 12.0);
-              final authorFontSize = isVeryNarrow ? 13.5 : (isNarrow ? 14.5 : 15.5);
+              final avatarRadius = isVeryNarrow ? 17.0 : (isNarrow ? 19.0 : 20.0);
+              final headerGap = isVeryNarrow ? 6.0 : (isNarrow ? 8.0 : 10.0);
+              final authorFontSize = isVeryNarrow ? 13.5 : (isNarrow ? 14.5 : 15.0);
 
               return Padding(
                 padding: EdgeInsets.fromLTRB(
@@ -492,6 +678,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                   8,
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     GestureDetector(
                       onTap: () {
@@ -520,6 +707,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Row(
                             children: [
@@ -555,90 +743,158 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                             ],
                           ),
                           const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Text(
-                                _formatTimeAgo(widget.post.timeAgo),
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                      color: textMuted,
-                                      fontSize: isVeryNarrow ? 10.5 : 11.5,
-                                    ) ??
-                                    TextStyle(color: textMuted, fontSize: isVeryNarrow ? 10.5 : 11.5),
-                              ),
-                              const SizedBox(width: 4),
-                              Text('·', style: TextStyle(color: textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? AppColors.darkSurfacePrimary
-                                        : AppColors.lightBgSecondary,
-                                    borderRadius: BorderRadius.circular(AppRadius.sm + 2),
+                          if (widget.post.attachedEvent != null || widget.post.postType?.toLowerCase() == 'event')
+                            Row(
+                              children: [
+                                Text(
+                                  'community.postedAnEvent'.tr.isNotEmpty &&
+                                          'community.postedAnEvent'.tr != 'community.postedAnEvent'
+                                      ? 'community.postedAnEvent'.tr
+                                      : 'Posted an event',
+                                  style: TextStyle(
+                                    color: textSecondary,
+                                    fontSize: isVeryNarrow ? 10.5 : 11.5,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.25,
                                   ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text('·', style: TextStyle(color: textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
+                                const SizedBox(width: 4),
+                                Flexible(
                                   child: Text(
-                                    widget.post.community,
+                                    _formatTimeAgo(widget.post.timeAgo),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                          color: textMuted,
+                                          fontSize: isVeryNarrow ? 10.5 : 11.5,
+                                        ) ??
+                                        TextStyle(color: textMuted, fontSize: isVeryNarrow ? 10.5 : 11.5),
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    _formatTimeAgo(widget.post.timeAgo),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                          color: textMuted,
+                                          fontSize: isVeryNarrow ? 10.5 : 11.5,
+                                        ) ??
+                                        TextStyle(color: textMuted, fontSize: isVeryNarrow ? 10.5 : 11.5),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text('·', style: TextStyle(color: textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    (widget.post.postType == 'DISCUSSION' || widget.post.category != null)
+                                        ? '${widget.post.category ?? 'Technology'} · ${'community.discussion'.tr.isNotEmpty && 'community.discussion'.tr != 'community.discussion' ? 'community.discussion'.tr : 'Discussion'}'
+                                        : widget.post.community,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.labelSmall?.copyWith(
                                           color: textSecondary,
-                                          fontSize: isVeryNarrow ? 9.5 : 10.5,
-                                          fontWeight: FontWeight.w600,
+                                          fontSize: isVeryNarrow ? 10.0 : 11.0,
+                                          fontWeight: FontWeight.w500,
                                         ) ??
                                         TextStyle(
                                           color: textSecondary,
-                                          fontSize: isVeryNarrow ? 9.5 : 10.5,
-                                          fontWeight: FontWeight.w600,
+                                          fontSize: isVeryNarrow ? 10.0 : 11.0,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
                         ],
                       ),
                     ),
-                    if (!widget.post.isOwner) ...[
-                      const SizedBox(width: 4),
-                      InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () => widget.controller.toggleFollowUser(widget.post.userId),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          curve: Curves.easeOutCubic,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: widget.post.isFollowing
-                                ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05))
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: widget.post.isFollowing
-                                  ? borderSubtle
-                                  : (isDark ? Colors.white.withValues(alpha: 0.55) : Colors.black.withValues(alpha: 0.35)),
-                              width: 0.9,
+                    if (!_isOwnPost) ...[
+                      const SizedBox(width: 6),
+                      Obx(() {
+                        final isFollowing = _isFollowing;
+                        final isLoading = widget.controller.followLoadingUserIds.contains(widget.post.userId);
+
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          onTap: isLoading ? null : () => widget.controller.toggleFollowUser(widget.post.userId),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeInOut,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                            decoration: BoxDecoration(
+                              color: isFollowing
+                                  ? (isDark ? Colors.white.withValues(alpha: 0.10) : Colors.black.withValues(alpha: 0.06))
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              border: Border.all(
+                                color: isFollowing
+                                    ? (isDark ? Colors.white30 : Colors.black26)
+                                    : (isDark ? Colors.white.withValues(alpha: 0.40) : Colors.black.withValues(alpha: 0.35)),
+                                width: 0.9,
+                              ),
+                            ),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 180),
+                              transitionBuilder: (child, animation) =>
+                                  FadeTransition(opacity: animation, child: child),
+                              child: isFollowing
+                                  ? Row(
+                                      key: const ValueKey('following'),
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.check_rounded,
+                                          size: 13,
+                                          color: textPrimary,
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          'community.following'.tr,
+                                          style: TextStyle(
+                                            fontSize: isVeryNarrow ? 10.0 : 11.0,
+                                            fontWeight: FontWeight.w600,
+                                            color: textPrimary,
+                                            letterSpacing: -0.1,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Row(
+                                      key: const ValueKey('follow'),
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.add_rounded,
+                                          size: 13,
+                                          color: textPrimary,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          'community.follow'.tr,
+                                          style: TextStyle(
+                                            fontSize: isVeryNarrow ? 10.0 : 11.0,
+                                            fontWeight: FontWeight.w600,
+                                            color: textPrimary,
+                                            letterSpacing: -0.1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (!widget.post.isFollowing)
-                                Icon(Icons.add_rounded, size: 12, color: textPrimary),
-                              if (!widget.post.isFollowing) const SizedBox(width: 2),
-                              Text(
-                                widget.post.isFollowing ? 'community.following'.tr : 'community.follow'.tr,
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: widget.post.isFollowing ? textSecondary : textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                        );
+                      }),
                     ],
+                    const SizedBox(width: 2),
                     IconButton(
                       icon: Icon(Icons.more_horiz_rounded, color: actionIconColor, size: isVeryNarrow ? 18 : 20),
                       padding: const EdgeInsets.all(4),
@@ -651,6 +907,33 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               );
             },
           ),
+
+          // Discussion Title (if discussion post)
+          if (widget.post.discussionTitle != null &&
+              widget.post.discussionTitle!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                4,
+                AppSpacing.md,
+                2,
+              ),
+              child: Text(
+                widget.post.discussionTitle!,
+                style: theme.textTheme.titleMedium?.copyWith(
+                      color: textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16.0,
+                      height: 1.35,
+                    ) ??
+                    TextStyle(
+                      color: textPrimary,
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.bold,
+                      height: 1.35,
+                    ),
+              ),
+            ),
 
           // Post Content Text
           if (widget.post.content.isNotEmpty)
@@ -802,22 +1085,56 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 
                 // Repost Button
                 InkWell(
-                  onTap: () => _showRepostDialog(context),
+                  onTap: _isOwnPost
+                      ? () {
+                          AppNotificationBanner.showWarning(
+                            context: context,
+                            title: "Cannot Repost",
+                            message: 'community.cannotRepostOwnPost'.tr,
+                          );
+                        }
+                      : () {
+                          if (widget.post.isRepostedByMe) {
+                            widget.controller.unrepostPost(widget.post.id);
+                            AppNotificationBanner.showInfo(
+                              context: context,
+                              title: 'community.unreposted'.tr,
+                              message: 'community.unrepostedMsg'.tr,
+                              icon: Icons.repeat_rounded,
+                            );
+                          } else {
+                            _showRepostDialog(context);
+                          }
+                        },
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     child: Row(
                       children: [
-                        Icon(Icons.repeat_rounded, color: actionIconColor, size: 20),
+                        Icon(
+                          Icons.repeat_rounded,
+                          color: widget.post.isRepostedByMe
+                              ? AppColors.growthAccent
+                              : actionIconColor,
+                          size: 20,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           "${widget.post.repostsCount}",
                           style: theme.textTheme.labelMedium?.copyWith(
-                                color: actionIconColor,
+                                color: widget.post.isRepostedByMe
+                                    ? AppColors.growthAccent
+                                    : actionIconColor,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13,
                               ) ??
-                              TextStyle(color: actionIconColor, fontSize: 13, fontWeight: FontWeight.w600),
+                              TextStyle(
+                                color: widget.post.isRepostedByMe
+                                    ? AppColors.growthAccent
+                                    : actionIconColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                       ],
                     ),
@@ -827,21 +1144,26 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                 const Spacer(),
 
                 // Bookmark Button
-                IconButton(
-                  onPressed: () {
-                    _bookmarkAnimController.forward(from: 0.0);
-                    widget.controller.toggleBookmark(widget.post.id);
-                  },
-                  icon: ScaleTransition(
-                    scale: _bookmarkScaleAnim,
-                    child: Icon(
-                      widget.post.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                      color: widget.post.isBookmarked ? textPrimary : actionIconColor,
-                      size: 21,
+                Obx(() {
+                  final livePost = widget.controller.posts.firstWhereOrNull((p) => p.id == widget.post.id);
+                  final isBookmarked = livePost?.isBookmarked ?? widget.post.isBookmarked;
+
+                  return IconButton(
+                    onPressed: () {
+                      _bookmarkAnimController.forward(from: 0.0);
+                      widget.controller.toggleBookmark(widget.post.id);
+                    },
+                    icon: ScaleTransition(
+                      scale: _bookmarkScaleAnim,
+                      child: Icon(
+                        isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                        color: isBookmarked ? const Color(0xFFF59E0B) : actionIconColor,
+                        size: 21,
+                      ),
                     ),
-                  ),
-                  tooltip: widget.post.isBookmarked ? 'community.removeBookmark'.tr : 'community.saveBookmark'.tr,
-                ),
+                    tooltip: isBookmarked ? 'community.removeBookmark'.tr : 'community.saveBookmark'.tr,
+                  );
+                }),
               ],
             ),
           ),
@@ -1083,34 +1405,81 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     );
   }
 
+  String _formatEventDate(String dateString, String timeString) {
+    if (dateString.trim().isEmpty) return '';
+
+    String localizedDate = dateString.trim();
+    final isKhmer = Get.locale?.languageCode == 'km';
+    if (isKhmer) {
+      final kmMonths = 'date.months'.tr.split(',');
+      const enMonths = [
+        'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+        'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+      ];
+      if (kmMonths.length == 12) {
+        for (int i = 0; i < enMonths.length; i++) {
+          final regex = RegExp(enMonths[i], caseSensitive: false);
+          if (regex.hasMatch(localizedDate)) {
+            localizedDate = localizedDate.replaceFirst(regex, kmMonths[i].trim());
+            break;
+          }
+        }
+      }
+    }
+
+    if (timeString.trim().isNotEmpty) {
+      return '$localizedDate · $timeString';
+    }
+    return localizedDate;
+  }
+
   Widget _buildAttachedEventCard(BuildContext context, EventModel event) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final cardBg = isDark ? const Color(0xFF111111) : const Color(0xFFF5F5F5);
-    final borderSubtle = isDark ? const Color(0xFF303030) : const Color(0xFFE0E0E0);
-    final textPrimary = isDark ? const Color(0xFFFFFFFF) : const Color(0xFF111111);
-    final textSecondary = isDark ? const Color(0xFFA0A0A0) : const Color(0xFF666666);
-    final badgeBg = isDark ? const Color(0xFF222222) : const Color(0xFFE5E5E5);
-    final ctaBg = isDark ? Colors.white : Colors.black87;
-    final ctaText = isDark ? Colors.black : Colors.white;
+    final cardBg = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
+    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final badgeBg = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+    final ctaBg = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
+    final ctaText = isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse;
 
     final hasLocalCover = event.coverImageFile != null;
     final hasNetworkCover = event.imageUrl.isNotEmpty;
 
     // Location / Online string resolution
-    final isOnline = event.eventType.toLowerCase() == 'online';
+    final isOnline = event.eventType.toLowerCase().contains('online');
+    final String onlineLabel = 'community.onlineEvent'.tr.isNotEmpty &&
+            'community.onlineEvent'.tr != 'community.onlineEvent'
+        ? 'community.onlineEvent'.tr
+        : 'Online Event';
+    final String inPersonLabel = 'community.inPerson'.tr.isNotEmpty &&
+            'community.inPerson'.tr != 'community.inPerson'
+        ? 'community.inPerson'.tr
+        : 'In person';
+
     final locationText = isOnline
-        ? (event.onlineLink.isNotEmpty ? event.onlineLink : 'Online Event')
-        : (event.location.isNotEmpty ? event.location : 'In person');
+        ? (event.onlineLink.isNotEmpty ? event.onlineLink : onlineLabel)
+        : (event.location.isNotEmpty ? event.location : inPersonLabel);
 
     final locationIcon = isOnline ? Icons.videocam_outlined : Icons.location_on_outlined;
 
-    // Formatted date & time display
-    final dateTimeString = StringBuffer(event.dateString);
-    if (event.timeString.isNotEmpty) {
-      dateTimeString.write(' · ${event.timeString}');
-    }
+    // Formatted date & time display with localization support
+    final dateTimeDisplay = _formatEventDate(event.dateString, event.timeString);
+
+    final rawCat = event.category.isNotEmpty ? event.category : 'Event';
+    final catKey = 'community.${rawCat.toLowerCase()}';
+    final categoryDisplay = catKey.tr.isNotEmpty && catKey.tr != catKey ? catKey.tr : rawCat;
+
+    final String joinedLabel = 'community.joined'.tr.isNotEmpty &&
+            'community.joined'.tr != 'community.joined'
+        ? 'community.joined'.tr
+        : 'joined';
+    final String viewEventLabel = 'community.viewEvent'.tr.isNotEmpty &&
+            'community.viewEvent'.tr != 'community.viewEvent'
+        ? 'community.viewEvent'.tr
+        : 'View Event';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
@@ -1125,7 +1494,12 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () => Get.to(() => EventDetailsScreen(event: event)),
+              onTap: () => Get.to(
+                () => EventDetailsScreen(
+                  event: event,
+                  heroTag: 'post-event-${event.id}-${widget.post.id}',
+                ),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1133,15 +1507,19 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                   SizedBox(
                     height: 150,
                     width: double.infinity,
-                    child: hasLocalCover
-                        ? Image.file(event.coverImageFile!, fit: BoxFit.cover)
-                        : (hasNetworkCover
-                            ? Image.network(
-                                event.imageUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => _buildMonochromeEventPlaceholder(isDark, textSecondary),
-                              )
-                            : _buildMonochromeEventPlaceholder(isDark, textSecondary)),
+                    child: Hero(
+                      tag: 'post-event-${event.id}-${widget.post.id}',
+                      child: hasLocalCover
+                          ? Image.file(event.coverImageFile!, fit: BoxFit.cover)
+                          : (hasNetworkCover
+                              ? Image.network(
+                                  event.imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      _buildMonochromeEventPlaceholder(isDark, textSecondary),
+                                )
+                              : _buildMonochromeEventPlaceholder(isDark, textSecondary)),
+                    ),
                   ),
 
                   // 2. Event Info Details
@@ -1150,7 +1528,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // EVENT Badge + Category
+                        // Category Badge
                         Row(
                           children: [
                             Container(
@@ -1160,9 +1538,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                event.category.isNotEmpty
-                                    ? 'EVENT · ${event.category.toUpperCase()}'
-                                    : 'EVENT',
+                                categoryDisplay.toUpperCase(),
                                 style: TextStyle(
                                   color: textSecondary,
                                   fontSize: 10,
@@ -1171,6 +1547,26 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                                 ),
                               ),
                             ),
+                            if (event.isPaid) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.communityAccent.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'community.paid'.tr.isNotEmpty && 'community.paid'.tr != 'community.paid'
+                                      ? 'community.paid'.tr.toUpperCase()
+                                      : 'PAID',
+                                  style: const TextStyle(
+                                    color: AppColors.communityAccent,
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
 
@@ -1199,13 +1595,14 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                dateTimeString.toString(),
+                                dateTimeDisplay,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: textSecondary,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
+                                  height: 1.25,
                                 ),
                               ),
                             ),
@@ -1228,6 +1625,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                                   color: textSecondary,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
+                                  height: 1.25,
                                 ),
                               ),
                             ),
@@ -1250,37 +1648,39 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                           ),
                         ],
 
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 12),
 
-                        // CTA Button: White bg + Black text
-                        Container(
-                          width: double.infinity,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: ctaBg,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Center(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'View Event',
-                                  style: TextStyle(
-                                    color: ctaText,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13.5,
-                                  ),
+                        // Bottom Row: Attendees count on left, View Event button on right
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (event.attendeesCount > 0)
+                              Text(
+                                '👥 ${event.attendeesCount} $joinedLabel',
+                                style: TextStyle(
+                                  color: textSecondary,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                                const SizedBox(width: 6),
-                                Icon(
-                                  Icons.arrow_forward_rounded,
-                                  size: 16,
+                              )
+                            else
+                              const SizedBox.shrink(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                              decoration: BoxDecoration(
+                                color: ctaBg,
+                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                              ),
+                              child: Text(
+                                viewEventLabel,
+                                style: TextStyle(
                                   color: ctaText,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12.5,
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
@@ -1296,8 +1696,8 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 
   /// Clean monochrome GenLink Event Placeholder when no cover image is available
   Widget _buildMonochromeEventPlaceholder(bool isDark, Color textSecondary) {
-    final bg = isDark ? const Color(0xFF181818) : const Color(0xFFEBEBEB);
-    final iconColor = isDark ? const Color(0xFF333333) : const Color(0xFFCCCCCC);
+    final bg = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfaceSecondary;
+    final iconColor = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     return Container(
       color: bg,
       child: Center(

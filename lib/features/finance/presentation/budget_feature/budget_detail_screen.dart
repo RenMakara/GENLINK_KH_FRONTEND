@@ -32,6 +32,9 @@ class BudgetDetailScreen extends StatelessWidget {
     final text = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
     final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final border = isDark
         ? AppColors.darkBorderSubtle
@@ -48,13 +51,15 @@ class BudgetDetailScreen extends StatelessWidget {
             Row(
               children: [
                 AppBackButton(),
+                const SizedBox(width: 13),
                 Expanded(
                   child: Text(
                     'finance.budget.title'.tr,
                     style: TextStyle(
-                      color: text,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
+                      color: textPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ),

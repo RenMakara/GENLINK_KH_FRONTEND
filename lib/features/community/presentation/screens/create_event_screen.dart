@@ -36,19 +36,20 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
 
+  String? _titleError;
+  String? _dateError;
+  String? _linkError;
+  String? _locationError;
+
   static const List<String> _categoryKeys = [
     'community.workshop',
     'community.seminar',
     'community.hackathon',
+    'community.competition',
+    'community.career',
+    'community.technology',
     'community.categoryOther',
   ];
-
-  bool get _canCreate =>
-      _titleController.text.trim().isNotEmpty &&
-      _selectedDate != null &&
-      (_eventType == 'Online'
-          ? _linkController.text.trim().isNotEmpty
-          : _locationController.text.trim().isNotEmpty);
 
   String get _formattedDate {
     if (_selectedDate == null) return '';
@@ -87,9 +88,27 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   @override
   void initState() {
     super.initState();
-    _titleController.addListener(() => setState(() {}));
-    _locationController.addListener(() => setState(() {}));
-    _linkController.addListener(() => setState(() {}));
+    _titleController.addListener(() {
+      if (_titleError != null && _titleController.text.trim().isNotEmpty) {
+        setState(() => _titleError = null);
+      } else {
+        setState(() {});
+      }
+    });
+    _locationController.addListener(() {
+      if (_locationError != null && _locationController.text.trim().isNotEmpty) {
+        setState(() => _locationError = null);
+      } else {
+        setState(() {});
+      }
+    });
+    _linkController.addListener(() {
+      if (_linkError != null && _linkController.text.trim().isNotEmpty) {
+        setState(() => _linkError = null);
+      } else {
+        setState(() {});
+      }
+    });
   }
 
   @override
@@ -116,28 +135,34 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         _coverImage != null;
 
     if (hasContent) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final dialogBg = isDark ? const Color(0xFF1E2228) : Colors.white;
+      final titleColor = isDark ? Colors.white : Colors.black87;
+      final contentColor = isDark ? Colors.white70 : Colors.black54;
+
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E2228),
+          backgroundColor: dialogBg,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             'community.discardDraft'.tr,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: titleColor,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
           content: Text(
             'community.discardMessage'.tr,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
+            style: TextStyle(color: contentColor, fontSize: 14),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text(
                 'community.keepEditing'.tr,
-                style: const TextStyle(color: Colors.white60),
+                style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
               ),
             ),
             TextButton(
@@ -147,7 +172,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               },
               child: Text(
                 'community.discard'.tr,
-                style: const TextStyle(color: Colors.redAccent),
+                style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -206,7 +231,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     );
 
     if (picked != null) {
-      setState(() => _selectedDate = picked);
+      setState(() {
+        _selectedDate = picked;
+        _dateError = null;
+      });
       if (!mounted) return;
 
       final initialTime = _selectedTime ?? const TimeOfDay(hour: 9, minute: 0);
@@ -221,7 +249,56 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   void _submit() async {
-    if (!_canCreate || _isSubmitting) return;
+    if (_isSubmitting) return;
+
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      setState(() => _titleError = 'Event name is required');
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: 'Validation Error',
+        message: 'Event name is required.',
+      );
+      _titleFocus.requestFocus();
+      return;
+    }
+
+    if (_selectedDate == null) {
+      setState(() => _dateError = 'Date & time is required');
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: 'Validation Error',
+        message: 'Date & time is required.',
+      );
+      return;
+    }
+
+    if (_eventType == 'Online') {
+      final link = _linkController.text.trim();
+      if (link.isEmpty) {
+        setState(() => _linkError = 'Online event link is required');
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: 'Validation Error',
+          message: 'Online event link is required.',
+        );
+        _linkFocus.requestFocus();
+        return;
+      }
+    } else {
+      final loc = _locationController.text.trim();
+      if (loc.isEmpty) {
+        setState(() => _locationError = 'Location is required');
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: 'Validation Error',
+          message: 'Location is required.',
+        );
+        _locationFocus.requestFocus();
+        return;
+      }
+    }
+
     setState(() => _isSubmitting = true);
 
     // Short UI feedback delay (local-first, no network)
@@ -231,7 +308,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     // Build an EventModel from the form data
     final newEvent = EventModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: _titleController.text.trim(),
+      title: title,
       subtitle: _descController.text.trim().isNotEmpty
           ? _descController.text.trim().split('\n').first
           : '',
@@ -251,7 +328,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     );
 
     // Register in controller so the Event list updates reactively
-    final controller = Get.find<CommunityController>();
+    final controller = Get.isRegistered<CommunityController>()
+        ? Get.find<CommunityController>()
+        : Get.put(CommunityController());
     controller.createEvent(newEvent);
 
     setState(() => _isSubmitting = false);
@@ -308,7 +387,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           ),
           titleSpacing: 8,
           title: Text(
-            'Create Event',
+            'community.createEvent'.tr.isNotEmpty &&
+                    'community.createEvent'.tr != 'community.createEvent'
+                ? 'community.createEvent'.tr
+                : 'Create Event',
             style: TextStyle(
               color: textPrimary,
               fontSize: 17,
@@ -320,7 +402,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             Padding(
               padding: const EdgeInsets.only(right: 12, top: 10, bottom: 10),
               child: ElevatedButton(
-                onPressed: _canCreate && !_isSubmitting ? _submit : null,
+                onPressed: !_isSubmitting ? _submit : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isDark ? Colors.white : Colors.black,
                   foregroundColor: isDark ? Colors.black : Colors.white,
@@ -358,292 +440,297 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         ),
         body: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Banner Image Area ─────────────────────────────────────────
-              Container(
-                width: double.infinity,
-                height: MediaQuery.of(context).size.width * (9 / 16),
-                decoration: BoxDecoration(
-                  color: imagePlaceholderBg,
-                  border: Border(bottom: BorderSide(color: cardBorder)),
-                ),
-                child: Stack(
-                  children: [
-                    if (_coverImage != null)
-                      Positioned.fill(
-                        child: Image.file(_coverImage!, fit: BoxFit.cover),
-                      )
-                    else
-                      GestureDetector(
-                        onTap: _pickCoverImage,
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.add_photo_alternate_outlined,
-                                color: textMuted,
-                                size: 40,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Upload cover image',
-                                style: TextStyle(
-                                  color: textMuted,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Banner Image Area ─────────────────────────────────────────
+                  AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: imagePlaceholderBg,
+                        border: Border(bottom: BorderSide(color: cardBorder)),
                       ),
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Row(
+                      child: Stack(
                         children: [
-                          GestureDetector(
-                            onTap: _pickCoverImage,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: isDark ? Colors.black54 : Colors.white70,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.edit,
-                                color: textPrimary,
-                                size: 18,
+                          if (_coverImage != null)
+                            Positioned.fill(
+                              child: Image.file(_coverImage!, fit: BoxFit.cover),
+                            )
+                          else
+                            GestureDetector(
+                              onTap: _pickCoverImage,
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.add_photo_alternate_outlined,
+                                      color: textMuted,
+                                      size: 40,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Upload cover image',
+                                      style: TextStyle(
+                                        color: textMuted,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          if (_coverImage != null) ...[
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: () => setState(() => _coverImage = null),
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? Colors.black54
-                                      : Colors.white70,
-                                  shape: BoxShape.circle,
+                          Positioned(
+                            top: 12,
+                            right: 12,
+                            child: Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: _pickCoverImage,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.black54 : Colors.white70,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.edit,
+                                      color: textPrimary,
+                                      size: 18,
+                                    ),
+                                  ),
                                 ),
-                                child: Icon(
-                                  Icons.close,
-                                  color: textPrimary,
+                                if (_coverImage != null) ...[
+                                  const SizedBox(width: 8),
+                                  GestureDetector(
+                                    onTap: () => setState(() => _coverImage = null),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.black54
+                                            : Colors.white70,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.close,
+                                        color: textPrimary,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 20,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ── Event Type ──────────────────────────────────────────
+                        _buildLabel('Event type', textMuted),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            _buildRadioButton('Online', 'Online', textPrimary),
+                            const SizedBox(width: 24),
+                            _buildRadioButton('In person', 'In person', textPrimary),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+
+                        // ── Event Name ──────────────────────────────────────────
+                        _buildLabel('Event name*', textMuted),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _titleController,
+                          focusNode: _titleFocus,
+                          maxLines: 1,
+                          style: TextStyle(color: textPrimary, fontSize: 16),
+                          decoration: _inputDeco(
+                            cardBorder: cardBorder,
+                            textPrimary: textPrimary,
+                            inputBg: inputBg,
+                            errorText: _titleError,
+                            hintText: 'Event name',
+                            textMuted: textMuted,
+                          ),
+                          textInputAction: TextInputAction.next,
+                          onSubmitted: (_) => _eventType == 'Online'
+                              ? _linkFocus.requestFocus()
+                              : _locationFocus.requestFocus(),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // ── Date and Time ───────────────────────────────────────
+                        _buildLabel('Date & time*', textMuted),
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: _pickDate,
+                          child: IgnorePointer(
+                            child: TextField(
+                              controller: TextEditingController(
+                                text: _formattedDate,
+                              ),
+                              style: TextStyle(color: textPrimary, fontSize: 16),
+                              decoration: _inputDeco(
+                                cardBorder: cardBorder,
+                                textPrimary: textPrimary,
+                                inputBg: inputBg,
+                                errorText: _dateError,
+                                hintText: 'Select date and time',
+                                textMuted: textMuted,
+                                prefixIcon: Icon(
+                                  Icons.calendar_today_outlined,
+                                  color: textMuted,
                                   size: 18,
                                 ),
                               ),
                             ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 20,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Event Type ──────────────────────────────────────────
-                    _buildLabel('Event type', textMuted),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        _buildRadioButton('Online', textPrimary),
-                        const SizedBox(width: 24),
-                        _buildRadioButton('In person', textPrimary),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // ── Event Name ──────────────────────────────────────────
-                    _buildLabel('Event name*', textMuted),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _titleController,
-                      focusNode: _titleFocus,
-                      maxLines: 1,
-                      style: TextStyle(color: textPrimary, fontSize: 16),
-                      decoration: _inputDeco(
-                        cardBorder: cardBorder,
-                        textPrimary: textPrimary,
-                        inputBg: inputBg,
-                      ),
-                      textInputAction: TextInputAction.next,
-                      onSubmitted: (_) => _eventType == 'Online'
-                          ? _linkFocus.requestFocus()
-                          : _locationFocus.requestFocus(),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // ── Date and Time ───────────────────────────────────────
-                    _buildLabel('Date & time*', textMuted),
-                    const SizedBox(height: 8),
-                    InkWell(
-                      onTap: _pickDate,
-                      child: IgnorePointer(
-                        child: TextField(
-                          controller: TextEditingController(
-                            text: _formattedDate,
                           ),
-                          style: TextStyle(color: textPrimary, fontSize: 16),
-                          decoration:
-                              _inputDeco(
-                                cardBorder: cardBorder,
-                                textPrimary: textPrimary,
-                                inputBg: inputBg,
-                              ).copyWith(
-                                hintText: 'Select date and time',
-                                hintStyle: TextStyle(
-                                  color: textMuted,
-                                  fontSize: 16,
-                                ),
-                              ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Your event timezone is set to Local Time',
-                      style: TextStyle(color: textMuted, fontSize: 13),
-                    ),
-                    const SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
-                    // ── Dynamic Field (Location / Link) ─────────────────────
-                    if (_eventType == 'Online') ...[
-                      _buildLabel('Online event link*', textMuted),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _linkController,
-                        focusNode: _linkFocus,
-                        maxLines: 1,
-                        style: TextStyle(color: textPrimary, fontSize: 16),
-                        decoration:
-                            _inputDeco(
+                        // ── Dynamic Field (Location / Link) ─────────────────────
+                        if (_eventType == 'Online') ...[
+                          _buildLabel('Online event link*', textMuted),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _linkController,
+                            focusNode: _linkFocus,
+                            maxLines: 1,
+                            style: TextStyle(color: textPrimary, fontSize: 16),
+                            decoration: _inputDeco(
                               cardBorder: cardBorder,
                               textPrimary: textPrimary,
                               inputBg: inputBg,
-                            ).copyWith(
+                              errorText: _linkError,
                               hintText: 'e.g. https://meet.google.com/...',
-                              hintStyle: TextStyle(
+                              textMuted: textMuted,
+                              prefixIcon: Icon(
+                                Icons.link_rounded,
                                 color: textMuted,
-                                fontSize: 16,
+                                size: 20,
                               ),
                             ),
-                        textInputAction: TextInputAction.next,
-                        onSubmitted: (_) => _descFocus.requestFocus(),
-                      ),
-                    ] else ...[
-                      _buildLabel('Location*', textMuted),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _locationController,
-                        focusNode: _locationFocus,
-                        maxLines: 1,
-                        style: TextStyle(color: textPrimary, fontSize: 16),
-                        decoration:
-                            _inputDeco(
+                            textInputAction: TextInputAction.next,
+                            onSubmitted: (_) => _descFocus.requestFocus(),
+                          ),
+                        ] else ...[
+                          _buildLabel('Location*', textMuted),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _locationController,
+                            focusNode: _locationFocus,
+                            maxLines: 1,
+                            style: TextStyle(color: textPrimary, fontSize: 16),
+                            decoration: _inputDeco(
                               cardBorder: cardBorder,
                               textPrimary: textPrimary,
                               inputBg: inputBg,
-                            ).copyWith(
-                              hintText: 'Add event location',
-                              hintStyle: TextStyle(
-                                color: textMuted,
-                                fontSize: 16,
-                              ),
+                              errorText: _locationError,
+                              hintText: '📍 Enter event location',
+                              textMuted: textMuted,
                             ),
-                        textInputAction: TextInputAction.next,
-                        onSubmitted: (_) => _descFocus.requestFocus(),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
+                            textInputAction: TextInputAction.next,
+                            onSubmitted: (_) => _descFocus.requestFocus(),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
 
-                    // ── Description ─────────────────────────────────────────
-                    _buildLabel('Description', textMuted),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _descController,
-                      focusNode: _descFocus,
-                      minLines: 4,
-                      maxLines: 10,
-                      maxLength: 5000,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 16,
-                        height: 1.5,
-                      ),
-                      decoration:
-                          _inputDeco(
+                        // ── Description ─────────────────────────────────────────
+                        _buildLabel('Description', textMuted),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _descController,
+                          focusNode: _descFocus,
+                          minLines: 4,
+                          maxLines: 10,
+                          maxLength: 5000,
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 16,
+                            height: 1.5,
+                          ),
+                          decoration: _inputDeco(
                             cardBorder: cardBorder,
                             textPrimary: textPrimary,
                             inputBg: inputBg,
-                          ).copyWith(
                             hintText: 'Tell people about your event',
-                            hintStyle: TextStyle(
-                              color: textMuted,
-                              fontSize: 16,
-                            ),
+                            textMuted: textMuted,
                           ),
-                      textInputAction: TextInputAction.done,
-                    ),
+                          textInputAction: TextInputAction.done,
+                        ),
 
-                    const SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
-                    // ── Category (Preserved GenLink Feature) ────────────────
-                    _buildLabel('Category (Optional)', textMuted),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _categoryKeys.map((key) {
-                        final isSelected = _selectedCategory == key;
-                        return GestureDetector(
-                          onTap: () => setState(() {
-                            _selectedCategory = isSelected ? null : key;
-                          }),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected ? textPrimary : inputBg,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: isSelected
-                                    ? Colors.transparent
-                                    : cardBorder,
+                        // ── Category (Preserved GenLink Feature) ────────────────
+                        _buildLabel(
+                          'community.category'.tr.isNotEmpty &&
+                                  'community.category'.tr !=
+                                      'community.category'
+                              ? 'community.category'.tr
+                              : 'Category (Optional)',
+                          textMuted,
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _categoryKeys.map((key) {
+                            final isSelected = _selectedCategory == key;
+                            return GestureDetector(
+                              onTap: () => setState(() {
+                                _selectedCategory = isSelected ? null : key;
+                              }),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? textPrimary : inputBg,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? Colors.transparent
+                                        : cardBorder,
+                                  ),
+                                ),
+                                child: Text(
+                                  key.tr,
+                                  style: TextStyle(
+                                    color: isSelected ? bg : textPrimary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              key.tr,
-                              style: TextStyle(
-                                color: isSelected ? bg : textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 40),
+                      ],
                     ),
-                    const SizedBox(height: 40),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -657,10 +744,18 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     );
   }
 
-  Widget _buildRadioButton(String title, Color textPrimary) {
-    final isSelected = _eventType == title;
+  Widget _buildRadioButton(String displayTitle, String rawValue, Color textPrimary) {
+    final isSelected = _eventType == rawValue;
     return GestureDetector(
-      onTap: () => setState(() => _eventType = title),
+      onTap: () {
+        if (_eventType != rawValue) {
+          setState(() {
+            _eventType = rawValue;
+            _linkError = null;
+            _locationError = null;
+          });
+        }
+      },
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -676,7 +771,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          Text(title, style: TextStyle(color: textPrimary, fontSize: 15)),
+          Text(displayTitle, style: TextStyle(color: textPrimary, fontSize: 15)),
         ],
       ),
     );
@@ -686,24 +781,51 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     required Color cardBorder,
     required Color textPrimary,
     required Color inputBg,
+    String? hintText,
+    Color? textMuted,
+    String? errorText,
+    Widget? prefixIcon,
   }) {
     return InputDecoration(
       filled: true,
       fillColor: inputBg,
+      hintText: hintText,
+      hintStyle: textMuted != null
+          ? TextStyle(color: textMuted, fontSize: 16)
+          : null,
+      prefixIcon: prefixIcon,
+      errorText: errorText,
+      errorStyle: const TextStyle(
+        color: Colors.redAccent,
+        fontSize: 12,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
         borderSide: BorderSide(color: cardBorder),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: BorderSide(color: cardBorder),
+        borderSide: BorderSide(
+          color: errorText != null ? Colors.redAccent : cardBorder,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: BorderSide(color: textPrimary, width: 1.5),
+        borderSide: BorderSide(
+          color: errorText != null ? Colors.redAccent : textPrimary,
+          width: 1.5,
+        ),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: const BorderSide(color: Colors.redAccent),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(6),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      counterStyle: TextStyle(fontSize: 13), // for maxLength counter
+      counterStyle: const TextStyle(fontSize: 13), // for maxLength counter
     );
   }
 }
@@ -764,11 +886,26 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFF111111);
-    const border = Color(0xFF303030);
-    const textPrimary = Color(0xFFFFFFFF);
-    const textSecondary = Color(0xFFA0A0A0);
-    const surfaceUnselected = Color(0xFF202020);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF141414) : Colors.white;
+    final border = isDark ? const Color(0xFF303030) : const Color(0xFFE5E7EB);
+    final textPrimary = isDark ? Colors.white : Colors.black87;
+    final textSecondary = isDark ? Colors.white60 : const Color(0xFF6B7280);
+    final surfaceUnselected = isDark ? const Color(0xFF222222) : const Color(0xFFF3F4F6);
+    final displayBoxBg = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF9FAFB);
+
+    final selectTimeTitle = 'community.selectTime'.tr.isNotEmpty &&
+            'community.selectTime'.tr != 'community.selectTime'
+        ? 'community.selectTime'.tr
+        : 'Select time';
+    final hourLabel = 'community.hour'.tr.isNotEmpty &&
+            'community.hour'.tr != 'community.hour'
+        ? 'community.hour'.tr
+        : 'Hour';
+    final minuteLabel = 'community.minute'.tr.isNotEmpty &&
+            'community.minute'.tr != 'community.minute'
+        ? 'community.minute'.tr
+        : 'Minute';
 
     return SafeArea(
       child: Container(
@@ -788,15 +925,15 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white24,
+                  color: isDark ? Colors.white24 : Colors.black12,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
 
             // Header Title
-            const Text(
-              'Select time',
+            Text(
+              selectTimeTitle,
               style: TextStyle(
                 color: textPrimary,
                 fontSize: 16,
@@ -811,14 +948,14 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
+                color: displayBoxBg,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: border, width: 0.8),
               ),
               child: Center(
                 child: Text(
                   _formattedSelectedTime,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: textPrimary,
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -849,7 +986,7 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                         duration: const Duration(milliseconds: 150),
                         decoration: BoxDecoration(
                           color: _selectedPeriod == DayPeriod.am
-                              ? Colors.white
+                              ? (isDark ? Colors.white : Colors.black)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(9),
                         ),
@@ -858,7 +995,7 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                           'AM',
                           style: TextStyle(
                             color: _selectedPeriod == DayPeriod.am
-                                ? Colors.black
+                                ? (isDark ? Colors.black : Colors.white)
                                 : textSecondary,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -875,7 +1012,7 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                         duration: const Duration(milliseconds: 150),
                         decoration: BoxDecoration(
                           color: _selectedPeriod == DayPeriod.pm
-                              ? Colors.white
+                              ? (isDark ? Colors.white : Colors.black)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(9),
                         ),
@@ -884,7 +1021,7 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                           'PM',
                           style: TextStyle(
                             color: _selectedPeriod == DayPeriod.pm
-                                ? Colors.black
+                                ? (isDark ? Colors.black : Colors.white)
                                 : textSecondary,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -903,7 +1040,7 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Hour',
+                hourLabel,
                 style: TextStyle(
                   color: textSecondary,
                   fontSize: 13,
@@ -927,10 +1064,14 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: isSelected ? Colors.white : surfaceUnselected,
+                          color: isSelected
+                              ? (isDark ? Colors.white : Colors.black)
+                              : surfaceUnselected,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected ? Colors.white : border,
+                            color: isSelected
+                                ? (isDark ? Colors.white : Colors.black)
+                                : border,
                             width: 1.0,
                           ),
                         ),
@@ -938,7 +1079,9 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                         child: Text(
                           '$hour',
                           style: TextStyle(
-                            color: isSelected ? Colors.black : textPrimary,
+                            color: isSelected
+                                ? (isDark ? Colors.black : Colors.white)
+                                : textPrimary,
                             fontWeight: isSelected
                                 ? FontWeight.bold
                                 : FontWeight.w500,
@@ -958,7 +1101,7 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Minute',
+                minuteLabel,
                 style: TextStyle(
                   color: textSecondary,
                   fontSize: 13,
@@ -1002,11 +1145,13 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                           height: 44,
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? Colors.white
+                                ? (isDark ? Colors.white : Colors.black)
                                 : surfaceUnselected,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected ? Colors.white : border,
+                              color: isSelected
+                                  ? (isDark ? Colors.white : Colors.black)
+                                  : border,
                               width: 1.0,
                             ),
                           ),
@@ -1014,7 +1159,9 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                           child: Text(
                             mStr,
                             style: TextStyle(
-                              color: isSelected ? Colors.black : textPrimary,
+                              color: isSelected
+                                  ? (isDark ? Colors.black : Colors.white)
+                                  : textPrimary,
                               fontWeight: isSelected
                                   ? FontWeight.bold
                                   : FontWeight.w500,
@@ -1042,11 +1189,14 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                       style: TextButton.styleFrom(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: border),
+                          side: BorderSide(color: border),
                         ),
                       ),
-                      child: const Text(
-                        'Cancel',
+                      child: Text(
+                        'common.cancel'.tr.isNotEmpty &&
+                                'common.cancel'.tr != 'common.cancel'
+                            ? 'common.cancel'.tr
+                            : 'Cancel',
                         style: TextStyle(
                           color: textSecondary,
                           fontWeight: FontWeight.w600,
@@ -1064,8 +1214,8 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                       onPressed: () =>
                           Navigator.pop(context, _resultingTimeOfDay),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
+                        backgroundColor: isDark ? Colors.white : Colors.black,
+                        foregroundColor: isDark ? Colors.black : Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1074,7 +1224,6 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                       child: const Text(
                         'OK',
                         style: TextStyle(
-                          color: Colors.black,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),

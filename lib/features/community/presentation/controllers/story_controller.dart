@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
+import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/story_model.dart';
 import '../../domain/repositories/story_repository.dart';
 import '../../data/repositories/story_repository_impl.dart';
 
 class StoryController extends GetxController {
-  final StoryRepository _repository = StoryRepositoryImpl();
+  final StoryRepository _repository;
+
+  StoryController({StoryRepository? repository})
+      : _repository = repository ??
+            (Get.isRegistered<StoryRepository>()
+                ? Get.find<StoryRepository>()
+                : StoryRepositoryImpl());
 
   final RxList<StoryGroupModel> storyGroups = <StoryGroupModel>[].obs;
   final RxBool isLoading = true.obs;
@@ -83,7 +89,8 @@ class StoryController extends GetxController {
       );
 
       // Update owner story group in reactive tray list (preventing duplicates)
-      final ownerGroupIdx = storyGroups.indexWhere((g) => g.isOwner);
+      final ownerGroupIdx = storyGroups.indexWhere((g) =>
+          g.isOwner || (CurrentUser.id.isNotEmpty && g.userId == CurrentUser.id));
       if (ownerGroupIdx != -1) {
         final group = storyGroups[ownerGroupIdx];
         if (!group.stories.any((s) => s.id == newStory.id)) {
@@ -101,9 +108,13 @@ class StoryController extends GetxController {
         storyGroups.insert(
           0,
           StoryGroupModel(
-            userId: 'user_me',
-            userName: 'Sokny Enat',
-            userAvatar: 'assets/images/user_profile.png',
+            userId: CurrentUser.id.isNotEmpty ? CurrentUser.id : 'user_me',
+            userName: CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
+                ? CurrentUser.name
+                : 'Sokny Enat',
+            userAvatar: CurrentUser.avatarUrl?.isNotEmpty == true
+                ? CurrentUser.avatarUrl!
+                : 'assets/images/user_profile.png',
             isOwner: true,
             hasUnseen: false,
             stories: [newStory],
@@ -111,23 +122,6 @@ class StoryController extends GetxController {
         );
       }
       storyGroups.refresh();
-
-      try {
-        final bannerContext = Get.context ?? Get.overlayContext;
-        if (bannerContext != null && bannerContext.mounted) {
-          AppNotificationBanner.showSuccess(
-            context: bannerContext,
-            title: "✓ Story Live",
-            message:
-                "Your story has been shared with $visibility on CampusLink KH!",
-            icon: Icons.auto_awesome_rounded,
-            duration: const Duration(seconds: 3),
-          );
-        }
-      } catch (bannerErr) {
-        debugPrint('[StoryController] Banner notification skipped: $bannerErr');
-      }
-
       return true;
     } finally {
       isUploading.value = false;
@@ -149,26 +143,53 @@ class StoryController extends GetxController {
     }
   }
 
-  void toggleLike(String storyId) {
+  Future<void> toggleLike(String storyId) async {
     for (final group in storyGroups) {
+      final isOwn = group.isOwner ||
+          (CurrentUser.id.isNotEmpty && group.userId == CurrentUser.id);
       for (final story in group.stories) {
         if (story.id == storyId) {
+          if (isOwn) return; // Prevent liking own story
+          final previousLiked = story.isLiked;
+          final previousCount = story.likesCount;
           story.isLiked = !story.isLiked;
           story.likesCount += story.isLiked ? 1 : -1;
           storyGroups.refresh();
-          _repository.toggleLikeStory(storyId);
+          try {
+            await _repository.toggleLikeStory(storyId);
+          } catch (e) {
+            story.isLiked = previousLiked;
+            story.likesCount = previousCount;
+            storyGroups.refresh();
+            rethrow;
+          }
           return;
         }
       }
     }
+    await _repository.toggleLikeStory(storyId);
   }
 
   /// Sends the like/unlike API call without toggling local state.
   /// Used by StoryViewerScreen which already toggles the local story
   /// object directly (same reference as storyGroups entries).
-  void syncLikeToBackend(String storyId) {
-    _repository.toggleLikeStory(storyId);
-    storyGroups.refresh();
+  Future<void> syncLikeToBackend(String storyId) async {
+    bool foundInGroups = false;
+    for (final group in storyGroups) {
+      final isOwn = group.isOwner ||
+          (CurrentUser.id.isNotEmpty && group.userId == CurrentUser.id);
+      for (final story in group.stories) {
+        if (story.id == storyId) {
+          if (isOwn) return; // Prevent backend API call for own story
+          foundInGroups = true;
+          break;
+        }
+      }
+    }
+    await _repository.toggleLikeStory(storyId);
+    if (foundInGroups) {
+      storyGroups.refresh();
+    }
   }
 
   Future<bool> updateStory(String storyId, StoryItemModel updatedStory) async {
@@ -214,16 +235,18 @@ class StoryController extends GetxController {
         timeAgo: oldStory.timeAgo,
         createdAt: oldStory.createdAt,
         settings: newSettings,
-        layers: oldStory.layers,
+        layers: List.from(oldStory.layers),
         bgScale: oldStory.bgScale,
         bgOffset: oldStory.bgOffset,
         bgRotation: oldStory.bgRotation,
+        viewers: List.from(oldStory.viewers),
+        templateId: oldStory.templateId,
+        templateSlots: List.from(oldStory.templateSlots),
       );
       updatedStory.likesCount = oldStory.likesCount;
       updatedStory.isLiked = oldStory.isLiked;
       updatedStory.isViewed = oldStory.isViewed;
       updatedStory.viewersCount = oldStory.viewersCount;
-      updatedStory.viewers.addAll(oldStory.viewers);
 
       ownerGroup.stories[index] = updatedStory;
       storyGroups.refresh();
@@ -231,13 +254,19 @@ class StoryController extends GetxController {
     }
   }
 
-  void deleteStory(String storyId) {
-    for (final group in storyGroups) {
-      group.stories.removeWhere((s) => s.id == storyId);
+  Future<bool> deleteStory(String storyId) async {
+    try {
+      await _repository.deleteStory(storyId);
+      for (final group in storyGroups) {
+        group.stories.removeWhere((s) => s.id == storyId);
+      }
+      storyGroups.removeWhere((group) => group.stories.isEmpty && !group.isOwner);
+      storyGroups.refresh();
+      return true;
+    } catch (e) {
+      debugPrint('[StoryController] Delete story error: $e');
+      return false;
     }
-    storyGroups.removeWhere((group) => group.stories.isEmpty && !group.isOwner);
-    storyGroups.refresh();
-    _repository.deleteStory(storyId);
   }
 
   Future<void> markStoryViewed(String storyId) async {

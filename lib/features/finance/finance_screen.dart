@@ -183,13 +183,24 @@ class _CurrencySelector extends StatelessWidget {
   final FinanceCurrency selectedCurrency;
   final ValueChanged<FinanceCurrency> onChanged;
   final Color background;
+
+  // Kept in the constructor so you don't need to change _FinanceHeader.
+  // The selected color is now based on the app primary color, just like
+  // the Cash Flow currency bar.
   final Color selectedBackground;
+
   final Color border;
   final Color textColor;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isUsd = selectedCurrency == FinanceCurrency.usd;
+
+    final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
+
+    final onPrimary = theme.colorScheme.onPrimary;
 
     return SizedBox(
       width: 150,
@@ -205,21 +216,22 @@ class _CurrencySelector extends StatelessWidget {
           children: [
             // Sliding selected background
             AnimatedAlign(
-              duration: const Duration(milliseconds: 220),
+              duration: const Duration(milliseconds: 250),
               curve: Curves.easeOutCubic,
               alignment: isUsd ? Alignment.centerLeft : Alignment.centerRight,
-              child: Container(
-                width: 72,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: selectedBackground,
-                  borderRadius: BorderRadius.circular(9),
-                  border: Border.all(color: border),
+              child: FractionallySizedBox(
+                widthFactor: 0.5,
+                child: Container(
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: primary,
+                    borderRadius: BorderRadius.circular(9),
+                  ),
                 ),
               ),
             ),
 
-            // Clickable currency buttons
+            // Currency buttons
             Row(
               children: [
                 Expanded(
@@ -227,9 +239,10 @@ class _CurrencySelector extends StatelessWidget {
                     currency: FinanceCurrency.usd,
                     selected: isUsd,
                     onTap: () => onChanged(FinanceCurrency.usd),
-                    selectedBackground: selectedBackground,
+                    selectedBackground: primary,
                     border: border,
                     textColor: textColor,
+                    selectedTextColor: onPrimary,
                   ),
                 ),
                 Expanded(
@@ -237,9 +250,10 @@ class _CurrencySelector extends StatelessWidget {
                     currency: FinanceCurrency.khr,
                     selected: !isUsd,
                     onTap: () => onChanged(FinanceCurrency.khr),
-                    selectedBackground: selectedBackground,
+                    selectedBackground: primary,
                     border: border,
                     textColor: textColor,
+                    selectedTextColor: onPrimary,
                   ),
                 ),
               ],
@@ -259,6 +273,7 @@ class _CurrencyChoice extends StatelessWidget {
     required this.selectedBackground,
     required this.border,
     required this.textColor,
+    required this.selectedTextColor,
   });
 
   final FinanceCurrency currency;
@@ -267,6 +282,7 @@ class _CurrencyChoice extends StatelessWidget {
   final Color selectedBackground;
   final Color border;
   final Color textColor;
+  final Color selectedTextColor;
 
   @override
   Widget build(BuildContext context) {
@@ -284,7 +300,7 @@ class _CurrencyChoice extends StatelessWidget {
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
               style: TextStyle(
-                color: textColor,
+                color: selected ? selectedTextColor : textColor,
                 fontSize: 12,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               ),

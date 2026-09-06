@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../quiz_colors.dart';
+import '../../../../design_system/radius/app_radius.dart';
 
 class QuizGradientButton extends StatelessWidget {
   const QuizGradientButton({
@@ -10,7 +10,7 @@ class QuizGradientButton extends StatelessWidget {
     this.isOutlined = false,
     this.isLoading = false,
     this.height = 56,
-    this.borderRadius = 16,
+    this.borderRadius = AppRadius.lg,
     this.icon,
   });
 
@@ -24,34 +24,32 @@ class QuizGradientButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final gradient = LinearGradient(
+      colors: [scheme.primary, scheme.primary.withValues(alpha: 0.86)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+    final foreground = isOutlined ? scheme.primary : scheme.onPrimary;
+    final labelStyle = theme.textTheme.labelLarge?.copyWith(color: foreground);
     final child = isLoading
-        ? const SizedBox(
+        ? SizedBox(
             height: 22,
             width: 22,
             child: CircularProgressIndicator(
               strokeWidth: 2.5,
-              color: Colors.white,
+              color: foreground,
             ),
           )
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[
-                Icon(
-                  icon,
-                  size: 20,
-                  color: isOutlined ? QuizColors.primary : Colors.white,
-                ),
+                Icon(icon, size: 20, color: foreground),
                 const SizedBox(width: 8),
               ],
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
+              Text(label, style: labelStyle),
             ],
           );
 
@@ -62,29 +60,13 @@ class QuizGradientButton extends StatelessWidget {
         child: OutlinedButton(
           onPressed: isLoading ? null : onPressed,
           style: OutlinedButton.styleFrom(
-            foregroundColor: QuizColors.primary,
-            side: const BorderSide(color: QuizColors.primary, width: 2),
+            foregroundColor: scheme.primary,
+            side: BorderSide(color: scheme.primary, width: 2),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(borderRadius),
             ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 20, color: QuizColors.primary),
-                const SizedBox(width: 8),
-              ],
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: QuizColors.primary,
-                ),
-              ),
-            ],
-          ),
+          child: child,
         ),
       );
     }
@@ -94,7 +76,7 @@ class QuizGradientButton extends StatelessWidget {
       height: height,
       child: Container(
         decoration: BoxDecoration(
-          gradient: QuizColors.gradient,
+          gradient: gradient,
           borderRadius: BorderRadius.circular(borderRadius),
         ),
         child: Material(

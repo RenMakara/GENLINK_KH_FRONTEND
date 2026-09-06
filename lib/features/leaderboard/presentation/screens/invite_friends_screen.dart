@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
-import '../../../quiz/presentation/quiz_colors.dart';
+import '../../../../design_system/widgets/surfaces/app_glass_surface.dart';
 
 class InviteFriendsScreen extends StatelessWidget {
   const InviteFriendsScreen({super.key});
@@ -13,8 +14,9 @@ class InviteFriendsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: QuizColors.background,
+      backgroundColor: scheme.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -25,46 +27,44 @@ class InviteFriendsScreen extends StatelessWidget {
         leadingWidth: 74,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         child: Column(
           children: [
             const SizedBox(height: 20),
-            _buildHeaderIllustration(),
+            _buildHeaderIllustration(scheme),
             const SizedBox(height: 24),
             Text(
               'leaderboard.inviteTitle'.tr,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: QuizColors.heading,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: scheme.onSurface,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
             Text(
               'leaderboard.inviteSubtitle'.tr,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: QuizColors.body,
+                color: scheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 28),
-            _buildReferralCode(),
+            _buildReferralCode(scheme),
             const SizedBox(height: 28),
-            _buildSocialShare(),
+            _buildSocialShare(scheme),
             const SizedBox(height: 32),
-            _buildInviteButton(),
+            _buildInviteButton(scheme),
             const SizedBox(height: 14),
             TextButton(
               onPressed: () => Get.back(),
               child: Text(
                 'quiz.maybeLater'.tr,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: QuizColors.body,
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -75,14 +75,14 @@ class InviteFriendsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeaderIllustration() {
+  Widget _buildHeaderIllustration(ColorScheme scheme) {
     return Container(
       width: 160,
       height: 160,
       decoration: BoxDecoration(
-        color: QuizColors.primaryLight,
+        color: scheme.primaryContainer,
         borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: QuizColors.primary.withValues(alpha: 0.15)),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.15)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -96,7 +96,7 @@ class InviteFriendsScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          const Icon(Icons.celebration, color: QuizColors.primary, size: 40),
+          Icon(Icons.celebration, color: scheme.primary, size: 40),
         ],
       ),
     );
@@ -114,25 +114,20 @@ class InviteFriendsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReferralCode() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: QuizColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: QuizColors.border),
-        boxShadow: QuizColors.cardShadow,
-      ),
+  Widget _buildReferralCode(ColorScheme scheme) {
+    return AppGlassSurface(
+      padding: const EdgeInsets.all(AppSpacing.xs),
+      radius: AppRadius.squircle,
       child: Row(
         children: [
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               _referralCode,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: QuizColors.heading,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: scheme.onSurface,
                 letterSpacing: 2,
               ),
             ),
@@ -144,14 +139,14 @@ class InviteFriendsScreen extends StatelessWidget {
                 'leaderboard.copied'.tr,
                 'leaderboard.referralCopied'.tr,
                 snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: QuizColors.primary,
-                colorText: Colors.white,
+                backgroundColor: scheme.primary,
+                colorText: scheme.onPrimary,
                 duration: const Duration(seconds: 2),
                 margin: const EdgeInsets.all(16),
                 borderRadius: 12,
               );
             },
-            icon: const Icon(Icons.copy, color: QuizColors.primary, size: 22),
+            icon: Icon(Icons.copy, color: scheme.primary, size: 22),
             tooltip: 'leaderboard.copyReferralCode'.tr,
           ),
           const SizedBox(width: 4),
@@ -160,7 +155,7 @@ class InviteFriendsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSocialShare() {
+  Widget _buildSocialShare(ColorScheme scheme) {
     final platforms = [
       _PlatformIcon(Icons.chat, 'WhatsApp', const Color(0xFF25D366)),
       _PlatformIcon(Icons.send, 'Telegram', const Color(0xFF0088CC)),
@@ -168,7 +163,7 @@ class InviteFriendsScreen extends StatelessWidget {
       _PlatformIcon(
         Icons.more_horiz,
         'leaderboard.more'.tr,
-        QuizColors.primary,
+        scheme.primary,
       ),
     ];
 
@@ -179,10 +174,10 @@ class InviteFriendsScreen extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 12),
           child: Text(
             'leaderboard.shareVia'.tr,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: QuizColors.heading,
+              color: scheme.onSurface,
             ),
           ),
         ),
@@ -197,10 +192,16 @@ class InviteFriendsScreen extends StatelessWidget {
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: QuizColors.surface,
+                      color: scheme.surface,
                       shape: BoxShape.circle,
-                      border: Border.all(color: QuizColors.border),
-                      boxShadow: QuizColors.cardShadow,
+                      border: Border.all(color: scheme.outlineVariant),
+                      boxShadow: [
+                        BoxShadow(
+                          color: scheme.shadow.withValues(alpha: 0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Icon(p.icon, color: p.color, size: 28),
                   ),
@@ -208,10 +209,10 @@ class InviteFriendsScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   p.label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: QuizColors.body,
+                    color: scheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -222,13 +223,15 @@ class InviteFriendsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInviteButton() {
+  Widget _buildInviteButton(ColorScheme scheme) {
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: Container(
         decoration: BoxDecoration(
-          gradient: QuizColors.gradient,
+          gradient: LinearGradient(
+            colors: [scheme.primary, scheme.primary.withValues(alpha: 0.78)],
+          ),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Material(
@@ -240,14 +243,14 @@ class InviteFriendsScreen extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.link, color: Colors.white, size: 20),
+                  Icon(Icons.link, color: scheme.onPrimary, size: 20),
                   const SizedBox(width: 8),
                   Text(
                     'leaderboard.inviteViaLink'.tr,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: scheme.onPrimary,
                     ),
                   ),
                 ],

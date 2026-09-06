@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/spacing/app_spacing.dart';
 import '../quiz_colors.dart';
 
 class QuizOptionTile extends StatelessWidget {
@@ -24,49 +26,53 @@ class QuizOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color bgColor = QuizColors.surface;
-    Color borderColor = QuizColors.border;
-    Color textColor = QuizColors.heading;
-    Color radioColor = QuizColors.border;
+    final scheme = Theme.of(context).colorScheme;
+    Color bgColor = scheme.surface;
+    Color borderColor = scheme.outlineVariant;
+    Color textColor = scheme.onSurface;
+    Color radioColor = scheme.outlineVariant;
     Widget? suffixIcon;
 
     if (showResult && isCorrect != null) {
       if (isCorrect!) {
-        bgColor = const Color(0xFFD1FAE5);
-        borderColor = QuizColors.correct;
-        textColor = const Color(0xFF065F46);
-        radioColor = QuizColors.correct;
-        suffixIcon = const Icon(
+        bgColor = QuizThemeColors.correctSoft;
+        borderColor = QuizThemeColors.correct;
+        textColor = QuizThemeColors.correct;
+        radioColor = QuizThemeColors.correct;
+        suffixIcon = Icon(
           Icons.check_circle,
-          color: QuizColors.correct,
+          color: QuizThemeColors.correct,
           size: 22,
         );
       } else if (isSelected) {
-        bgColor = const Color(0xFFFEE2E2);
-        borderColor = QuizColors.incorrect;
-        textColor = const Color(0xFF991B1B);
-        radioColor = QuizColors.incorrect;
-        suffixIcon = const Icon(
+        bgColor = QuizThemeColors.incorrectSoft;
+        borderColor = QuizThemeColors.incorrect;
+        textColor = QuizThemeColors.incorrect;
+        radioColor = QuizThemeColors.incorrect;
+        suffixIcon = Icon(
           Icons.cancel,
-          color: QuizColors.incorrect,
+          color: QuizThemeColors.incorrect,
           size: 22,
         );
       }
     } else if (isSelected) {
-      bgColor = QuizColors.primaryLight;
-      borderColor = QuizColors.primary;
-      textColor = QuizColors.primary;
-      radioColor = QuizColors.primary;
+      bgColor = scheme.primary.withValues(alpha: 0.08);
+      borderColor = scheme.primary;
+      textColor = scheme.primary;
+      radioColor = scheme.primary;
     }
 
     return GestureDetector(
       onTap: showResult ? null : onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm + 4),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.md,
+        ),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
             color: borderColor,
             width: isSelected || (showResult && isCorrect != null) ? 2 : 1,
@@ -81,17 +87,21 @@ class QuizOptionTile extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isSelected && !showResult
-                      ? QuizColors.primary
+                      ? scheme.primary
                       : radioColor,
                   width: 2,
                 ),
                 color: isSelected && !showResult
-                    ? QuizColors.primary
+                    ? scheme.primary
                     : Colors.transparent,
               ),
               child: isSelected && !showResult
-                  ? const Center(
-                      child: Icon(Icons.circle, size: 14, color: Colors.white),
+                  ? Center(
+                      child: Icon(
+                        Icons.circle,
+                        size: 14,
+                        color: scheme.onPrimary,
+                      ),
                     )
                   : Center(
                       child: Text(
@@ -104,13 +114,11 @@ class QuizOptionTile extends StatelessWidget {
                       ),
                     ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: AppSpacing.sm + 6),
             Expanded(
               child: Text(
                 label,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: textColor,
                   height: 1.4,
                 ),

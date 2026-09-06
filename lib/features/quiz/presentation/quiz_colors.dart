@@ -1,55 +1,104 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
-abstract final class QuizColors {
-  static const background = Color(0xFFF5F3FF);
-  static const backgroundAlt = Color(0xFFF4F0FF);
+import '../../../design_system/colors/app_colors.dart';
 
-  static const primary = Color(0xFF6C5CE7);
-  static const primaryDark = Color(0xFF7C3AED);
-  static const primaryLight = Color(0xFFF3E8FF);
-  static const primaryGradientStart = Color(0xFF8B5CF6);
-  static const primaryGradientEnd = Color(0xFF6D28D9);
+/// Theme bridge for the Quiz feature.
+///
+/// Quiz screens historically consumed a second purple palette. These semantic
+/// values now resolve from the app's active Material theme so the existing
+/// Quiz layout follows Light/Dark mode without changing Quiz behavior.
+abstract final class QuizThemeColors {
+  static BuildContext? get _context => Get.context;
 
-  static const surface = Color(0xFFFFFFFF);
-  static const border = Color(0xFFE5E7EB);
+  static ColorScheme get _scheme {
+    final context = _context;
+    if (context != null) return Theme.of(context).colorScheme;
+    return const ColorScheme.light(
+      primary: AppColors.lightPrimary,
+      onPrimary: AppColors.lightTextInverse,
+      surface: AppColors.lightSurfacePrimary,
+      onSurface: AppColors.lightTextPrimary,
+      outline: AppColors.lightBorderStrong,
+      outlineVariant: AppColors.lightBorderSubtle,
+    );
+  }
 
-  static const correct = Color(0xFF10B981);
-  static const incorrect = Color(0xFFEF4444);
-  static const gold = Color(0xFFFFC107);
+  static Color get background => _context == null
+      ? AppColors.lightBgPrimary
+      : Theme.of(_context!).scaffoldBackgroundColor;
 
-  static const heading = Color(0xFF1E1B4B);
-  static const body = Color(0xFF6B7280);
-  static const white = Color(0xFFFFFFFF);
+  static Color get backgroundAlt => _scheme.surfaceContainerLow;
+  static Color get primary => _scheme.primary;
+  static Color get primaryDark => _scheme.primary;
+  static Color get primaryLight =>
+      _scheme.primary.withValues(alpha: _isDark ? 0.16 : 0.08);
+  static Color get surface => _scheme.surface;
+  static Color get border => _scheme.outlineVariant;
 
-  static const darkOverlay = Color(0xFF1E1B4B);
+  // Semantic colors remain stable across themes because their meaning does.
+  static const correct = AppColors.success;
+  static const incorrect = AppColors.danger;
+  static const gold = AppColors.warning;
+  static const medalSilver = Color(0xFF9E9E9E);
+  static const medalBronze = Color(0xFFCD7F32);
 
-  static const cardShadow = <BoxShadow>[
-    BoxShadow(color: Color(0x0A000000), blurRadius: 12, offset: Offset(0, 4)),
-  ];
+  static Color get correctSoft =>
+      correct.withValues(alpha: _isDark ? 0.22 : 0.12);
+  static Color get incorrectSoft =>
+      incorrect.withValues(alpha: _isDark ? 0.22 : 0.12);
+  static Color get warningSoft => gold.withValues(alpha: _isDark ? 0.22 : 0.12);
+  static Color get primarySoft =>
+      primary.withValues(alpha: _isDark ? 0.18 : 0.08);
+  static Color get muted => _scheme.onSurfaceVariant;
+  static Color get disabled => _scheme.onSurface.withValues(alpha: 0.38);
+  static Color get shadow => _scheme.shadow.withValues(alpha: 0.05);
 
-  static const gradient = LinearGradient(
-    colors: [primaryGradientStart, primaryGradientEnd],
+  static Color get heading => _scheme.onSurface;
+  static Color get body => _scheme.onSurfaceVariant;
+  static Color get onPrimary => _scheme.onPrimary;
+  static Color get darkOverlay => _isDark ? _scheme.surface : _scheme.onSurface;
+  static Color get rewardForeground =>
+      _isDark ? _scheme.onSurface : _scheme.surface;
+
+  static bool get _isDark => _scheme.brightness == Brightness.dark;
+
+  static List<BoxShadow> get cardShadow => _isDark
+      ? const []
+      : [
+          BoxShadow(
+            color: _scheme.shadow.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ];
+
+  static LinearGradient get gradient => LinearGradient(
+    colors: [
+      primary,
+      primary.withValues(alpha: _isDark ? 0.78 : 0.86),
+    ],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  static const statGradient = LinearGradient(
-    colors: [Color(0xFF1E1B4B), Color(0xFF374151)],
+  static LinearGradient get statGradient => LinearGradient(
+    colors: [_scheme.surfaceContainerHighest, _scheme.surface],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  static const categoryColors = [
-    Color(0xFFDBEAFE),
-    Color(0xFFFEF3C7),
-    Color(0xFFF3E8FF),
-    Color(0xFFFCE7F3),
+  static List<Color> get categoryColors => [
+    _scheme.surfaceContainerHighest,
+    _scheme.surfaceContainerHigh,
+    primaryLight,
+    _scheme.secondaryContainer,
   ];
 
-  static const categoryIconColors = [
-    Color(0xFF3B82F6),
-    Color(0xFFF59E0B),
-    Color(0xFF8B5CF6),
-    Color(0xFFEC4899),
+  static List<Color> get categoryIconColors => [
+    primary,
+    _scheme.secondary,
+    _scheme.onSurfaceVariant,
+    _scheme.tertiary,
   ];
 }

@@ -279,6 +279,23 @@ class AuthController extends GetxController {
   /// Keep the cached user in step after a profile or settings update.
   void updateCachedUser(UserEntity user) => currentUser.value = user;
 
+  /// Refresh server-backed account fields after another feature grants XP.
+  Future<bool> refreshCurrentUser() async {
+    if (!isAuthenticated.value) return false;
+
+    try {
+      final user = await _authRepository.getCurrentUser();
+      if (!user.isActive) {
+        await _clearSession();
+        return false;
+      }
+      currentUser.value = user;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // ── Cooldown ─────────────────────────────────────────────────────────
 
   void startResendCooldown() {

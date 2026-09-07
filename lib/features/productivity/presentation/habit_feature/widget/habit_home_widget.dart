@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
-// ============================================================
-// DATA MODELS
-// ============================================================
+import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
+import 'package:genlink_frontend/features/productivity/presentation/habit_feature/create_habit_screen.dart';
+import 'package:genlink_frontend/features/productivity/presentation/habit_feature/habit_detail_screen.dart';
 
 class HabitStreakData {
   final int days;
@@ -29,22 +29,28 @@ class HabitData {
     required this.completed,
     required this.completedDays,
   });
-}
 
-// ============================================================
-// MAIN WIDGET
-// ============================================================
+  HabitData copyWith({
+    String? title,
+    int? streak,
+    bool? completed,
+    int? completedDays,
+  }) {
+    return HabitData(
+      title: title ?? this.title,
+      streak: streak ?? this.streak,
+      completed: completed ?? this.completed,
+      completedDays: completedDays ?? this.completedDays,
+    );
+  }
+}
 
 class HabitHomeWidget extends StatefulWidget {
   final String title;
-
   final HabitStreakData streak;
-
   final String todayTitle;
   final String manageText;
-
   final List<HabitData> habits;
-
   final String weeklyTitle;
   final List<List<int>> weeklyData;
 
@@ -64,189 +70,345 @@ class HabitHomeWidget extends StatefulWidget {
 }
 
 class _HabitHomeWidgetState extends State<HabitHomeWidget> {
-  late List<bool> completedHabits;
+  late List<HabitData> _habits;
 
   @override
   void initState() {
     super.initState();
 
-    completedHabits = widget.habits.map((habit) => habit.completed).toList();
+    _habits = List<HabitData>.from(widget.habits);
   }
+
+  int get _completedToday {
+    return _habits.where((habit) => habit.completed).length;
+  }
+
+  double get _todayProgress {
+    if (_habits.isEmpty) {
+      return 0;
+    }
+
+    return _completedToday / _habits.length;
+  }
+
+  // ============================================================
+  // TOGGLE HABIT
+  // ============================================================
 
   void _toggleHabit(int index) {
     setState(() {
-      completedHabits[index] = !completedHabits[index];
+      final habit = _habits[index];
+
+      _habits[index] = habit.copyWith(completed: !habit.completed);
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = _HabitColors(
-      Theme.of(context).brightness == Brightness.dark,
+  // ============================================================
+  // OPEN DETAIL
+  // ============================================================
+
+  Future<void> _openHabitDetail(int index) async {
+    final habit = _habits[index];
+
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            HabitDetailScreen(habit: habit, isCompletedToday: habit.completed),
+      ),
     );
 
+    if (!mounted) {
+      return;
+    }
+
+    if (result != null) {
+      setState(() {
+        _habits[index] = habit.copyWith(completed: result);
+      });
+    }
+  }
+
+  // ============================================================
+  // REFRESH
+  // ============================================================
+
+  Future<void> _refreshHabits() async {
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final background = isDark
+        ? AppColors.darkBgPrimary
+        : AppColors.lightBgPrimary;
+
     return Scaffold(
-      backgroundColor: colors.background,
-
-      // No bottomNavigationBar.
+      backgroundColor: background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _HabitHeader(title: widget.title),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
 
-              const SizedBox(height: 18),
+            final horizontalPadding = width < 360
+                ? 12.0
+                : width < 400
+                ? 14.0
+                : 16.0;
 
-              _StreakCard(data: widget.streak),
+            final titleSize = width < 360 ? 19.0 : 21.0;
 
-              const SizedBox(height: 18),
+            return RefreshIndicator(
+              onRefresh: _refreshHabits,
+              color: isDark
+                  ? AppColors.darkTextPrimary
+                  : AppColors.lightTextPrimary,
+              backgroundColor: isDark
+                  ? AppColors.darkSurfacePrimary
+                  : AppColors.lightSurfacePrimary,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  10,
+                  horizontalPadding,
+                  28,
+                ),
+                children: [
+                  _buildHeader(
+                    titleSize: titleSize,
+                    textPrimary: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.lightTextPrimary,
+                    inverseText: isDark
+                        ? AppColors.darkTextInverse
+                        : AppColors.lightTextInverse,
+                    width: width,
+                  ),
 
-              _SectionHeader(
-                title: widget.todayTitle,
-                actionText: widget.manageText,
+                  const SizedBox(height: 16),
+
+                  _buildStreakCard(isDark: isDark),
+
+                  const SizedBox(height: 18),
+
+                  _buildTodayHeader(isDark: isDark),
+
+                  const SizedBox(height: 9),
+
+                  if (_habits.isEmpty)
+                    _buildEmptyState(isDark: isDark)
+                  else
+                    ...List.generate(_habits.length, (index) {
+                      return _buildHabitCard(
+                        habit: _habits[index],
+                        index: index,
+                        isDark: isDark,
+                      );
+                    }),
+
+                  const SizedBox(height: 7),
+
+                  _buildWeeklyHeader(isDark: isDark),
+
+                  const SizedBox(height: 9),
+
+                  _buildWeeklyCard(isDark: isDark),
+
+                  const SizedBox(height: 18),
+
+                  _buildMotivationCard(isDark: isDark),
+                ],
               ),
-
-              const SizedBox(height: 8),
-
-              _TodayHabitsCard(
-                habits: widget.habits,
-                completedHabits: completedHabits,
-                onToggle: _toggleHabit,
-              ),
-
-              const SizedBox(height: 18),
-
-              _SectionHeader(title: widget.weeklyTitle),
-
-              const SizedBox(height: 8),
-
-              _WeeklyOverviewCard(data: widget.weeklyData),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
   }
-}
 
-// ============================================================
-// COLORS
-// ============================================================
+  // ============================================================
+  // HEADER
+  // ============================================================
 
-class _HabitColors {
-  final bool isDark;
+  Widget _buildHeader({
+    required double titleSize,
+    required Color textPrimary,
+    required Color inverseText,
+    required double width,
+  }) {
+    final buttonSize = width < 360 ? 38.0 : 40.0;
 
-  _HabitColors(this.isDark);
+    return SizedBox(
+      height: 42,
+      child: Row(
+        children: [
+          const AppBackButton(),
 
-  Color get background =>
-      isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
+          const SizedBox(width: 8),
 
-  Color get surface =>
-      isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+          Expanded(
+            child: Text(
+              widget.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: titleSize,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ),
 
-  Color get surfaceSecondary =>
-      isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfaceSecondary;
+          const SizedBox(width: 8),
 
-  Color get textPrimary =>
-      isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CreateHabitScreen()),
+                );
 
-  Color get textMuted =>
-      isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+                if (!mounted) return;
 
-  Color get border =>
-      isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-}
-
-// ============================================================
-// HEADER
-// ============================================================
-
-class _HabitHeader extends StatelessWidget {
-  final String title;
-
-  const _HabitHeader({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _HabitColors(
-      Theme.of(context).brightness == Brightness.dark,
-    );
-
-    return Text(
-      title,
-      style: TextStyle(
-        color: colors.textPrimary,
-        fontSize: 16,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.2,
+                if (result is HabitData) {
+                  setState(() {
+                    // habits.add(result);
+                    // completed.add(false);
+                  });
+                }
+              },
+              borderRadius: BorderRadius.circular(11),
+              child: Container(
+                width: buttonSize,
+                height: buttonSize,
+                decoration: BoxDecoration(
+                  color: textPrimary,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(
+                  Icons.add_rounded,
+                  color: inverseText,
+                  size: width < 360 ? 20 : 21,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
-}
 
-// ============================================================
-// STREAK CARD
-// ============================================================
+  // ============================================================
+  // STREAK CARD
+  // ============================================================
 
-class _StreakCard extends StatelessWidget {
-  final HabitStreakData data;
+  Widget _buildStreakCard({required bool isDark}) {
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
 
-  const _StreakCard({required this.data});
+    final border = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
-  @override
-  Widget build(BuildContext context) {
-    final _ = _HabitColors(Theme.of(context).brightness == Brightness.dark);
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+
+    final primarySoft = isDark
+        ? AppColors.darkPrimarySoft
+        : AppColors.lightPrimarySoft;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: const Color(0xFF111111),
-        borderRadius: BorderRadius.circular(14),
+        color: surface,
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: border, width: 0.8),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .10),
+                  color: primarySoft,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
-                  Icons.local_fire_department_rounded,
-                  color: Color(0xFFFFB43B),
-                  size: 22,
+                child: Icon(
+                  Icons.local_fire_department_outlined,
+                  color: textPrimary,
+                  size: 20,
                 ),
               ),
 
               const SizedBox(width: 10),
 
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${data.days}-day streak',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Current Streak',
+                      style: TextStyle(color: textMuted, fontSize: 9),
                     ),
-                  ),
+
+                    const SizedBox(height: 2),
+
+                    Text(
+                      '${widget.streak.days} days',
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Best', style: TextStyle(color: textMuted, fontSize: 9)),
 
                   const SizedBox(height: 2),
 
                   Text(
-                    'Keep it up! Best: ${data.bestDays} days',
+                    '${widget.streak.bestDays} days',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: .62),
-                      fontSize: 9,
+                      color: textPrimary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -254,35 +416,31 @@ class _StreakCard extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 15),
-
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: LinearProgressIndicator(
-              value: data.weeklyCompletion / 100,
-              minHeight: 5,
-              backgroundColor: Colors.white.withValues(alpha: .18),
-              valueColor: const AlwaysStoppedAnimation(Color(0xFFD7D0C4)),
-            ),
-          ),
-
-          const SizedBox(height: 7),
+          const SizedBox(height: 10),
 
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Weekly completion',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: .55),
-                  fontSize: 8,
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: _todayProgress,
+                    minHeight: 5,
+                    backgroundColor: primarySoft,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.productivityAccent,
+                    ),
+                  ),
                 ),
               ),
+
+              const SizedBox(width: 9),
+
               Text(
-                '${data.weeklyCompletion}%',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 8,
+                '${widget.streak.weeklyCompletion}%',
+                style: TextStyle(
+                  color: textSecondary,
+                  fontSize: 9,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -292,345 +450,452 @@ class _StreakCard extends StatelessWidget {
       ),
     );
   }
-}
 
-// ============================================================
-// SECTION HEADER
-// ============================================================
+  // ============================================================
+  // TODAY HEADER
+  // ============================================================
 
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final String? actionText;
+  Widget _buildTodayHeader({required bool isDark}) {
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
-  const _SectionHeader({required this.title, this.actionText});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _HabitColors(
-      Theme.of(context).brightness == Brightness.dark,
-    );
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
 
     return Row(
       children: [
         Expanded(
           child: Text(
-            title,
+            widget.todayTitle,
             style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: 11,
+              color: textPrimary,
+              fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
           ),
         ),
 
-        if (actionText != null)
-          Text(
-            actionText!,
-            style: TextStyle(color: colors.textMuted, fontSize: 8),
+        Text(
+          '$_completedToday/${_habits.length}',
+          style: TextStyle(
+            color: textMuted,
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
           ),
+        ),
       ],
     );
   }
-}
 
-// ============================================================
-// TODAY HABITS
-// ============================================================
+  // ============================================================
+  // HABIT CARD
+  // ============================================================
 
-class _TodayHabitsCard extends StatelessWidget {
-  final List<HabitData> habits;
-  final List<bool> completedHabits;
-  final ValueChanged<int> onToggle;
+  Widget _buildHabitCard({
+    required HabitData habit,
+    required int index,
+    required bool isDark,
+  }) {
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
 
-  const _TodayHabitsCard({
-    required this.habits,
-    required this.completedHabits,
-    required this.onToggle,
-  });
+    final secondarySurface = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfaceSecondary;
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = _HabitColors(
-      Theme.of(context).brightness == Brightness.dark,
-    );
+    final border = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: colors.isDark ? .10 : .04),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          for (int index = 0; index < habits.length; index++) ...[
-            _HabitTile(
-              data: habits[index],
-              completed: completedHabits[index],
-              onToggle: () => onToggle(index),
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+
+    final inverseText = isDark
+        ? AppColors.darkTextInverse
+        : AppColors.lightTextInverse;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _openHabitDetail(index),
+          borderRadius: BorderRadius.circular(13),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: surface,
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(color: border, width: 0.8),
             ),
-
-            if (index < habits.length - 1)
-              Divider(height: 1, color: colors.border),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================
-// HABIT TILE
-// ============================================================
-
-class _HabitTile extends StatelessWidget {
-  final HabitData data;
-  final bool completed;
-  final VoidCallback onToggle;
-
-  const _HabitTile({
-    required this.data,
-    required this.completed,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _HabitColors(
-      Theme.of(context).brightness == Brightness.dark,
-    );
-
-    return InkWell(
-      onTap: onToggle,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 9),
-        child: Row(
-          children: [
-            GestureDetector(
-              onTap: onToggle,
-              child: Container(
-                width: 13,
-                height: 13,
-                decoration: BoxDecoration(
-                  color: completed
-                      ? AppColors.growthAccent
-                      : Colors.transparent,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: completed
-                        ? AppColors.growthAccent
-                        : colors.textMuted,
+            child: Row(
+              children: [
+                // CHECK
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    _toggleHabit(index);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: habit.completed ? textPrimary : secondarySurface,
+                      border: Border.all(
+                        color: habit.completed ? textPrimary : border,
+                      ),
+                    ),
+                    child: habit.completed
+                        ? Icon(
+                            Icons.check_rounded,
+                            size: 17,
+                            color: inverseText,
+                          )
+                        : null,
                   ),
                 ),
-                child: completed
-                    ? const Icon(
-                        Icons.check_rounded,
-                        color: Colors.white,
-                        size: 9,
-                      )
-                    : null,
-              ),
-            ),
 
-            const SizedBox(width: 8),
+                const SizedBox(width: 11),
 
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    data.title,
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                    ),
+                // TEXT
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        habit.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: habit.completed ? textMuted : textPrimary,
+                          fontSize: 13,
+                          height: 1.2,
+                          fontWeight: FontWeight.w700,
+                          decoration: habit.completed
+                              ? TextDecoration.lineThrough
+                              : null,
+                          decorationColor: textMuted,
+                        ),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.local_fire_department_outlined,
+                            size: 11,
+                            color: textMuted,
+                          ),
+
+                          const SizedBox(width: 3),
+
+                          Text(
+                            '${habit.streak} day streak',
+                            style: TextStyle(color: textMuted, fontSize: 9),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          Container(
+                            width: 3,
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: textMuted,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          Text(
+                            '${habit.completedDays}/7',
+                            style: TextStyle(color: textMuted, fontSize: 9),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
+                ),
 
-                  const SizedBox(height: 4),
+                const SizedBox(width: 7),
 
-                  _ProgressDots(completedDays: data.completedDays),
-                ],
-              ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 10,
+                  color: textMuted,
+                ),
+              ],
             ),
-
-            _StreakBadge(days: data.streak),
-          ],
+          ),
         ),
       ),
     );
   }
-}
 
-// ============================================================
-// PROGRESS DOTS
-// ============================================================
+  // ============================================================
+  // EMPTY STATE
+  // ============================================================
 
-class _ProgressDots extends StatelessWidget {
-  final int completedDays;
+  Widget _buildEmptyState({required bool isDark}) {
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
 
-  const _ProgressDots({required this.completedDays});
+    final border = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = _HabitColors(
-      Theme.of(context).brightness == Brightness.dark,
-    );
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
-    return Row(
-      children: List.generate(7, (index) {
-        return Container(
-          width: 4,
-          height: 4,
-          margin: const EdgeInsets.only(right: 2),
-          decoration: BoxDecoration(
-            color: index < completedDays
-                ? const Color(0xFFBDB5A9)
-                : colors.surfaceSecondary,
-            shape: BoxShape.circle,
-          ),
-        );
-      }),
-    );
-  }
-}
-
-// ============================================================
-// STREAK BADGE
-// ============================================================
-
-class _StreakBadge extends StatelessWidget {
-  final int days;
-
-  const _StreakBadge({required this.days});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _HabitColors(
-      Theme.of(context).brightness == Brightness.dark,
-    );
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-      decoration: BoxDecoration(
-        color: colors.surfaceSecondary,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.local_fire_department_rounded,
-            size: 9,
-            color: Color(0xFFFFB43B),
-          ),
-
-          const SizedBox(width: 2),
-
-          Text(
-            '${days}d',
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: 8,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================
-// WEEKLY OVERVIEW
-// ============================================================
-
-class _WeeklyOverviewCard extends StatelessWidget {
-  final List<List<int>> data;
-
-  const _WeeklyOverviewCard({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _HabitColors(
-      Theme.of(context).brightness == Brightness.dark,
-    );
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(9),
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
       decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: colors.isDark ? .10 : .04),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: surface,
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: border, width: 0.8),
       ),
       child: Column(
         children: [
-          for (final row in data)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: Row(
-                children: [
-                  for (final level in row)
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: AspectRatio(
-                          aspectRatio: 1.35,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: _heatmapColor(colors, level),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
+          Icon(Icons.repeat_rounded, size: 30, color: textMuted),
+
+          const SizedBox(height: 9),
+
+          Text(
+            'No habits yet',
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          Text(
+            'Create your first habit to start your routine.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: textMuted, fontSize: 10),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // WEEKLY HEADER
+  // ============================================================
+
+  Widget _buildWeeklyHeader({required bool isDark}) {
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    return Text(
+      widget.weeklyTitle,
+      style: TextStyle(
+        color: textPrimary,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+  }
+
+  // ============================================================
+  // WEEKLY CARD
+  // ============================================================
+
+  Widget _buildWeeklyCard({required bool isDark}) {
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+
+    final border = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+
+    final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: border, width: 0.8),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              for (final day in days)
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      day,
+                      style: TextStyle(
+                        color: textMuted,
+                        fontSize: 8,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                ],
-              ),
+                  ),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 7),
+
+          if (widget.weeklyData.isEmpty)
+            const SizedBox(height: 30)
+          else
+            Column(
+              children: [
+                for (int row = 0; row < widget.weeklyData.length; row++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 5),
+                    child: Row(
+                      children: [
+                        for (int column = 0; column < 7; column++)
+                          Expanded(
+                            child: Center(
+                              child: _buildHeatCell(
+                                value: widget.weeklyData[row][column],
+                                isDark: isDark,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
         ],
       ),
     );
   }
 
-  Color _heatmapColor(_HabitColors colors, int level) {
-    if (colors.isDark) {
-      switch (level) {
-        case 1:
-          return const Color(0xFF4B4842);
-        case 2:
-          return const Color(0xFF686157);
-        case 3:
-          return const Color(0xFF8B8174);
-        default:
-          return colors.surfaceSecondary;
-      }
-    }
+  // ============================================================
+  // HEAT CELL
+  // ============================================================
 
-    switch (level) {
+  Widget _buildHeatCell({required int value, required bool isDark}) {
+    return Container(
+      width: 24,
+      height: 20,
+      decoration: BoxDecoration(
+        color: _heatColor(value, isDark),
+        borderRadius: BorderRadius.circular(5),
+      ),
+    );
+  }
+
+  Color _heatColor(int value, bool isDark) {
+    switch (value.clamp(0, 3)) {
       case 1:
-        return const Color(0xFFE9E6E0);
+        return isDark ? const Color(0xFF303030) : const Color(0xFFD9D9D9);
+
       case 2:
-        return const Color(0xFFD8D3CA);
+        return isDark ? const Color(0xFF555555) : const Color(0xFFBDBDBD);
+
       case 3:
-        return const Color(0xFFC9C2B7);
+        return isDark ? const Color(0xFF888888) : const Color(0xFF8D8D8D);
+
+      case 0:
       default:
-        return const Color(0xFFF6F5F2);
+        return isDark
+            ? AppColors.darkPrimarySoft
+            : AppColors.lightSurfaceSecondary;
     }
+  }
+
+  // ============================================================
+  // MOTIVATION
+  // ============================================================
+
+  Widget _buildMotivationCard({required bool isDark}) {
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+
+    final border = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: border, width: 0.8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.auto_awesome_outlined, size: 19, color: textPrimary),
+
+          const SizedBox(width: 10),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Keep going',
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                Text(
+                  'Small habits become big results. '
+                  'Stay consistent every day.',
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 10,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

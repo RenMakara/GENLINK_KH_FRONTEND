@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/features/productivity/presentation/focus_feature/focus_home_screen.dart';
-import 'package:genlink_frontend/features/productivity/presentation/habit_feature/habit_home_screen.dart';
+import 'package:genlink_frontend/features/productivity/presentation/habit_feature/habit_screen.dart';
 import 'package:genlink_frontend/features/productivity/presentation/task_feature/task_home_screen.dart';
 import 'package:genlink_frontend/features/productivity/presentation/widget/productivity_widget.dart';
 import 'package:get/get_utils/src/extensions/internacionalization.dart';

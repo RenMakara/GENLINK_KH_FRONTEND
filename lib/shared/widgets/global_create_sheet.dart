@@ -1,7 +1,7 @@
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:genlink_frontend/features/productivity/presentation/habit_feature/habit_home_screen.dart';
+import 'package:genlink_frontend/features/productivity/presentation/habit_feature/habit_screen.dart';
 import 'package:genlink_frontend/features/productivity/presentation/goals_plan/goal_plan.dart';
 import 'package:genlink_frontend/features/productivity/presentation/task_feature/task_home_screen.dart';
 import 'package:get/get.dart';

@@ -682,7 +682,7 @@ class CreateCategorySelector extends StatelessWidget {
 
         itemCount: categories.length,
 
-        separatorBuilder: (_, _) {
+        separatorBuilder: (_, __) {
           return const SizedBox(width: 8);
         },
 

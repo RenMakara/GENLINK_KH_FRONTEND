@@ -1,6 +1,9 @@
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:genlink_frontend/features/productivity/presentation/habit_feature/habit_home_screen.dart';
+import 'package:genlink_frontend/features/productivity/presentation/plan_goal/plan_goal_screen.dart';
+import 'package:genlink_frontend/features/productivity/presentation/task_feature/task_home_screen.dart';
 import 'package:get/get.dart';
 
 import '../../design_system/radius/app_radius.dart';
@@ -13,8 +16,6 @@ import 'package:genlink_frontend/app/routes/app_routes.dart';
 import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_set_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_add_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_create.dart';
-import '../../features/productivity/presentation/screens/create_habit_screen.dart';
-import '../../features/productivity/presentation/screens/create_task_screen.dart';
 
 /// Global "Create" Bottom Sheet for GenLink KH.
 ///
@@ -45,7 +46,10 @@ class GlobalCreateSheet extends StatelessWidget {
   static const Color accentPinkPurple = Color(0xFFEC4899);
 
   /// Presents the modal bottom sheet.
-  static Future<void> show(BuildContext context, {bool fromPostComposer = false}) {
+  static Future<void> show(
+    BuildContext context, {
+    bool fromPostComposer = false,
+  }) {
     return showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -70,7 +74,8 @@ class GlobalCreateSheet extends StatelessWidget {
     Navigator.of(context).pop();
     final currentRoute = Get.currentRoute;
     final modalName = ModalRoute.of(context)?.settings.name;
-    final isAlreadyInPostComposer = fromPostComposer ||
+    final isAlreadyInPostComposer =
+        fromPostComposer ||
         currentRoute == '/CreatePostScreen' ||
         modalName == '/CreatePostScreen';
 
@@ -97,15 +102,18 @@ class GlobalCreateSheet extends StatelessWidget {
     bool isDark,
   ) {
     Navigator.of(context).pop();
-    final dialogTitle = 'create.actionChallenge'.tr.isNotEmpty &&
+    final dialogTitle =
+        'create.actionChallenge'.tr.isNotEmpty &&
             'create.actionChallenge'.tr != 'create.actionChallenge'
         ? 'create.actionChallenge'.tr
         : 'Challenge';
-    final dialogDesc = 'create.dialogChallengeDesc'.tr.isNotEmpty &&
+    final dialogDesc =
+        'create.dialogChallengeDesc'.tr.isNotEmpty &&
             'create.dialogChallengeDesc'.tr != 'create.dialogChallengeDesc'
         ? 'create.dialogChallengeDesc'.tr
         : 'Daily challenges are automatically assigned to your Today Hub on the Home dashboard. Complete tasks and habits to earn XP and level up.';
-    final doneText = 'common.done'.tr.isNotEmpty && 'common.done'.tr != 'common.done'
+    final doneText =
+        'common.done'.tr.isNotEmpty && 'common.done'.tr != 'common.done'
         ? 'common.done'.tr
         : 'Done';
 
@@ -157,17 +165,15 @@ class GlobalCreateSheet extends StatelessWidget {
         ),
         content: Text(
           dialogDesc,
-          style: TextStyle(
-            color: textSecondary,
-            fontSize: 13.5,
-            height: 1.45,
-          ),
+          style: TextStyle(color: textSecondary, fontSize: 13.5, height: 1.45),
         ),
         actions: [
           TextButton(
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text(
@@ -193,21 +199,27 @@ class GlobalCreateSheet extends StatelessWidget {
     bool isDark,
   ) {
     Navigator.of(context).pop();
-    final dialogTitle = 'create.actionShortContent'.tr.isNotEmpty &&
+    final dialogTitle =
+        'create.actionShortContent'.tr.isNotEmpty &&
             'create.actionShortContent'.tr != 'create.actionShortContent'
         ? 'create.actionShortContent'.tr
         : 'Short Content';
-    final dialogDesc = 'create.dialogShortContentDesc'.tr.isNotEmpty &&
-            'create.dialogShortContentDesc'.tr != 'create.dialogShortContentDesc'
+    final dialogDesc =
+        'create.dialogShortContentDesc'.tr.isNotEmpty &&
+            'create.dialogShortContentDesc'.tr !=
+                'create.dialogShortContentDesc'
         ? 'create.dialogShortContentDesc'.tr
         : 'Create and share short video clips or reels directly to your Story or Community feed.';
-    final openStoryText = 'create.openStoryCreator'.tr.isNotEmpty &&
+    final openStoryText =
+        'create.openStoryCreator'.tr.isNotEmpty &&
             'create.openStoryCreator'.tr != 'create.openStoryCreator'
         ? 'create.openStoryCreator'.tr
-        : ('create.actionStory'.tr.isNotEmpty && 'create.actionStory'.tr != 'create.actionStory'
-            ? 'create.actionStory'.tr
-            : 'Open Story Creator');
-    final cancelText = 'common.cancel'.tr.isNotEmpty && 'common.cancel'.tr != 'common.cancel'
+        : ('create.actionStory'.tr.isNotEmpty &&
+                  'create.actionStory'.tr != 'create.actionStory'
+              ? 'create.actionStory'.tr
+              : 'Open Story Creator');
+    final cancelText =
+        'common.cancel'.tr.isNotEmpty && 'common.cancel'.tr != 'common.cancel'
         ? 'common.cancel'.tr
         : 'Cancel';
 
@@ -259,17 +271,15 @@ class GlobalCreateSheet extends StatelessWidget {
         ),
         content: Text(
           dialogDesc,
-          style: TextStyle(
-            color: textSecondary,
-            fontSize: 13.5,
-            height: 1.45,
-          ),
+          style: TextStyle(color: textSecondary, fontSize: 13.5, height: 1.45),
         ),
         actions: [
           TextButton(
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             onPressed: () {
               Navigator.of(ctx).pop();
@@ -287,15 +297,14 @@ class GlobalCreateSheet extends StatelessWidget {
           TextButton(
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text(
               cancelText,
-              style: TextStyle(
-                color: textSecondary,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: textSecondary, fontSize: 14),
             ),
           ),
         ],
@@ -317,7 +326,9 @@ class GlobalCreateSheet extends StatelessWidget {
         ? const Color(0x661E232F) // Subtle neutral glass surface
         : const Color(0xCCF4F6FA); // Subtle light neutral glass surface
     final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final textSecondary = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
     final border = isDark
         ? const Color(0x2EFFFFFF) // Thin subtle white border in dark mode
         : const Color(0x18000000); // Thin subtle border in light mode
@@ -339,7 +350,9 @@ class GlobalCreateSheet extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: sheetBg,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
                 border: Border(
                   top: BorderSide(color: sheetBorder, width: 0.8),
                   left: BorderSide(color: sheetBorder, width: 0.8),
@@ -384,7 +397,8 @@ class GlobalCreateSheet extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'create.title'.tr.isNotEmpty && 'create.title'.tr != 'create.title'
+                                  'create.title'.tr.isNotEmpty &&
+                                          'create.title'.tr != 'create.title'
                                       ? 'create.title'.tr
                                       : 'Create',
                                   style: TextStyle(
@@ -396,7 +410,9 @@ class GlobalCreateSheet extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'create.subtitle'.tr.isNotEmpty && 'create.subtitle'.tr != 'create.subtitle'
+                                  'create.subtitle'.tr.isNotEmpty &&
+                                          'create.subtitle'.tr !=
+                                              'create.subtitle'
                                       ? 'create.subtitle'.tr
                                       : 'What would you like to create?',
                                   style: TextStyle(
@@ -442,8 +458,10 @@ class GlobalCreateSheet extends StatelessWidget {
                         children: [
                           // ── 1. COMMUNITY (2x2 Grid) ──
                           _CategoryHeader(
-                            title: 'create.categoryCommunity'.tr.isNotEmpty &&
-                                    'create.categoryCommunity'.tr != 'create.categoryCommunity'
+                            title:
+                                'create.categoryCommunity'.tr.isNotEmpty &&
+                                    'create.categoryCommunity'.tr !=
+                                        'create.categoryCommunity'
                                 ? 'create.categoryCommunity'.tr.toUpperCase()
                                 : 'COMMUNITY',
                             textColor: textSecondary,
@@ -456,12 +474,16 @@ class GlobalCreateSheet extends StatelessWidget {
                                   child: _CommunityFeatureCard(
                                     icon: Icons.article_outlined,
                                     accentColor: accentBlue,
-                                    title: 'create.actionPost'.tr.isNotEmpty &&
-                                            'create.actionPost'.tr != 'create.actionPost'
+                                    title:
+                                        'create.actionPost'.tr.isNotEmpty &&
+                                            'create.actionPost'.tr !=
+                                                'create.actionPost'
                                         ? 'create.actionPost'.tr
                                         : 'Post',
-                                    description: 'create.actionPostDesc'.tr.isNotEmpty &&
-                                            'create.actionPostDesc'.tr != 'create.actionPostDesc'
+                                    description:
+                                        'create.actionPostDesc'.tr.isNotEmpty &&
+                                            'create.actionPostDesc'.tr !=
+                                                'create.actionPostDesc'
                                         ? 'create.actionPostDesc'.tr
                                         : 'Share an update with your network',
                                     cardBg: cardBg,
@@ -477,12 +499,18 @@ class GlobalCreateSheet extends StatelessWidget {
                                   child: _CommunityFeatureCard(
                                     icon: Icons.amp_stories_outlined,
                                     accentColor: accentPurple,
-                                    title: 'create.actionStory'.tr.isNotEmpty &&
-                                            'create.actionStory'.tr != 'create.actionStory'
+                                    title:
+                                        'create.actionStory'.tr.isNotEmpty &&
+                                            'create.actionStory'.tr !=
+                                                'create.actionStory'
                                         ? 'create.actionStory'.tr
                                         : 'Story',
-                                    description: 'create.actionStoryDesc'.tr.isNotEmpty &&
-                                            'create.actionStoryDesc'.tr != 'create.actionStoryDesc'
+                                    description:
+                                        'create.actionStoryDesc'
+                                                .tr
+                                                .isNotEmpty &&
+                                            'create.actionStoryDesc'.tr !=
+                                                'create.actionStoryDesc'
                                         ? 'create.actionStoryDesc'.tr
                                         : 'Share photo or video to your story',
                                     cardBg: cardBg,
@@ -505,12 +533,18 @@ class GlobalCreateSheet extends StatelessWidget {
                                   child: _CommunityFeatureCard(
                                     icon: Icons.event_outlined,
                                     accentColor: accentOrange,
-                                    title: 'create.actionEvent'.tr.isNotEmpty &&
-                                            'create.actionEvent'.tr != 'create.actionEvent'
+                                    title:
+                                        'create.actionEvent'.tr.isNotEmpty &&
+                                            'create.actionEvent'.tr !=
+                                                'create.actionEvent'
                                         ? 'create.actionEvent'.tr
                                         : 'Event',
-                                    description: 'create.actionEventDesc'.tr.isNotEmpty &&
-                                            'create.actionEventDesc'.tr != 'create.actionEventDesc'
+                                    description:
+                                        'create.actionEventDesc'
+                                                .tr
+                                                .isNotEmpty &&
+                                            'create.actionEventDesc'.tr !=
+                                                'create.actionEventDesc'
                                         ? 'create.actionEventDesc'.tr
                                         : 'Host an event or community meetup',
                                     cardBg: cardBg,
@@ -530,12 +564,20 @@ class GlobalCreateSheet extends StatelessWidget {
                                   child: _CommunityFeatureCard(
                                     icon: Icons.forum_outlined,
                                     accentColor: accentCyan,
-                                    title: 'create.actionDiscussion'.tr.isNotEmpty &&
-                                            'create.actionDiscussion'.tr != 'create.actionDiscussion'
+                                    title:
+                                        'create.actionDiscussion'
+                                                .tr
+                                                .isNotEmpty &&
+                                            'create.actionDiscussion'.tr !=
+                                                'create.actionDiscussion'
                                         ? 'create.actionDiscussion'.tr
                                         : 'Discussion',
-                                    description: 'create.actionDiscussionDesc'.tr.isNotEmpty &&
-                                            'create.actionDiscussionDesc'.tr != 'create.actionDiscussionDesc'
+                                    description:
+                                        'create.actionDiscussionDesc'
+                                                .tr
+                                                .isNotEmpty &&
+                                            'create.actionDiscussionDesc'.tr !=
+                                                'create.actionDiscussionDesc'
                                         ? 'create.actionDiscussionDesc'.tr
                                         : 'Start a topic in the forum',
                                     cardBg: cardBg,
@@ -558,8 +600,10 @@ class GlobalCreateSheet extends StatelessWidget {
 
                           // ── 2. PRODUCTIVITY (3-col Grid) ──
                           _CategoryHeader(
-                            title: 'create.categoryProductivity'.tr.isNotEmpty &&
-                                    'create.categoryProductivity'.tr != 'create.categoryProductivity'
+                            title:
+                                'create.categoryProductivity'.tr.isNotEmpty &&
+                                    'create.categoryProductivity'.tr !=
+                                        'create.categoryProductivity'
                                 ? 'create.categoryProductivity'.tr.toUpperCase()
                                 : 'PRODUCTIVITY',
                             textColor: textSecondary,
@@ -572,8 +616,10 @@ class GlobalCreateSheet extends StatelessWidget {
                                   child: _GridFeatureCard(
                                     icon: Icons.flag_outlined,
                                     accentColor: accentGreen,
-                                    title: 'create.actionGoal'.tr.isNotEmpty &&
-                                            'create.actionGoal'.tr != 'create.actionGoal'
+                                    title:
+                                        'create.actionGoal'.tr.isNotEmpty &&
+                                            'create.actionGoal'.tr !=
+                                                'create.actionGoal'
                                         ? 'create.actionGoal'.tr
                                         : 'Goal',
                                     cardBg: cardBg,
@@ -582,8 +628,8 @@ class GlobalCreateSheet extends StatelessWidget {
                                     isDark: isDark,
                                     onTap: () => _navigate(
                                       context,
-                                      const CreateGoalScreen(),
-                                      routeName: '/CreateGoalScreen',
+                                      const PlanGoalScreen(),
+                                      routeName: '/CreatePlanGoalScreen',
                                     ),
                                   ),
                                 ),
@@ -592,8 +638,10 @@ class GlobalCreateSheet extends StatelessWidget {
                                   child: _GridFeatureCard(
                                     icon: Icons.check_circle_outline_rounded,
                                     accentColor: accentBlue,
-                                    title: 'create.actionTodo'.tr.isNotEmpty &&
-                                            'create.actionTodo'.tr != 'create.actionTodo'
+                                    title:
+                                        'create.actionTodo'.tr.isNotEmpty &&
+                                            'create.actionTodo'.tr !=
+                                                'create.actionTodo'
                                         ? 'create.actionTodo'.tr
                                         : 'To-Do',
                                     cardBg: cardBg,
@@ -602,7 +650,7 @@ class GlobalCreateSheet extends StatelessWidget {
                                     isDark: isDark,
                                     onTap: () => _navigate(
                                       context,
-                                      const CreateTaskScreen(),
+                                      const TasksPage(),
                                       routeName: '/CreateTaskScreen',
                                     ),
                                   ),
@@ -612,8 +660,10 @@ class GlobalCreateSheet extends StatelessWidget {
                                   child: _GridFeatureCard(
                                     icon: Icons.local_fire_department_outlined,
                                     accentColor: accentOrange,
-                                    title: 'create.actionHabit'.tr.isNotEmpty &&
-                                            'create.actionHabit'.tr != 'create.actionHabit'
+                                    title:
+                                        'create.actionHabit'.tr.isNotEmpty &&
+                                            'create.actionHabit'.tr !=
+                                                'create.actionHabit'
                                         ? 'create.actionHabit'.tr
                                         : 'Habit',
                                     cardBg: cardBg,
@@ -622,7 +672,7 @@ class GlobalCreateSheet extends StatelessWidget {
                                     isDark: isDark,
                                     onTap: () => _navigate(
                                       context,
-                                      const CreateHabitScreen(),
+                                      const HabitHomeScreen(),
                                       routeName: '/CreateHabitScreen',
                                     ),
                                   ),
@@ -635,8 +685,10 @@ class GlobalCreateSheet extends StatelessWidget {
 
                           // ── 3. FINANCIAL (3-col Grid) ──
                           _CategoryHeader(
-                            title: 'create.categoryFinancial'.tr.isNotEmpty &&
-                                    'create.categoryFinancial'.tr != 'create.categoryFinancial'
+                            title:
+                                'create.categoryFinancial'.tr.isNotEmpty &&
+                                    'create.categoryFinancial'.tr !=
+                                        'create.categoryFinancial'
                                 ? 'create.categoryFinancial'.tr.toUpperCase()
                                 : 'FINANCIAL',
                             textColor: textSecondary,
@@ -649,8 +701,10 @@ class GlobalCreateSheet extends StatelessWidget {
                                   child: _GridFeatureCard(
                                     icon: Icons.receipt_long_outlined,
                                     accentColor: accentAmber,
-                                    title: 'create.actionExpense'.tr.isNotEmpty &&
-                                            'create.actionExpense'.tr != 'create.actionExpense'
+                                    title:
+                                        'create.actionExpense'.tr.isNotEmpty &&
+                                            'create.actionExpense'.tr !=
+                                                'create.actionExpense'
                                         ? 'create.actionExpense'.tr
                                         : 'Expense',
                                     cardBg: cardBg,
@@ -669,8 +723,12 @@ class GlobalCreateSheet extends StatelessWidget {
                                   child: _GridFeatureCard(
                                     icon: Icons.savings_outlined,
                                     accentColor: accentGreen,
-                                    title: 'create.actionSavingGoal'.tr.isNotEmpty &&
-                                            'create.actionSavingGoal'.tr != 'create.actionSavingGoal'
+                                    title:
+                                        'create.actionSavingGoal'
+                                                .tr
+                                                .isNotEmpty &&
+                                            'create.actionSavingGoal'.tr !=
+                                                'create.actionSavingGoal'
                                         ? 'create.actionSavingGoal'.tr
                                         : 'Saving Goal',
                                     cardBg: cardBg,
@@ -689,8 +747,10 @@ class GlobalCreateSheet extends StatelessWidget {
                                   child: _GridFeatureCard(
                                     icon: Icons.pie_chart_outline_rounded,
                                     accentColor: accentPurple,
-                                    title: 'create.actionBudget'.tr.isNotEmpty &&
-                                            'create.actionBudget'.tr != 'create.actionBudget'
+                                    title:
+                                        'create.actionBudget'.tr.isNotEmpty &&
+                                            'create.actionBudget'.tr !=
+                                                'create.actionBudget'
                                         ? 'create.actionBudget'.tr
                                         : 'Budget',
                                     cardBg: cardBg,
@@ -712,9 +772,12 @@ class GlobalCreateSheet extends StatelessWidget {
 
                           // ── 4. ENTERTAINMENT (3-col Grid) ──
                           _CategoryHeader(
-                            title: 'create.categoryEntertainment'.tr.isNotEmpty &&
-                                    'create.categoryEntertainment'.tr != 'create.categoryEntertainment'
-                                ? 'create.categoryEntertainment'.tr.toUpperCase()
+                            title:
+                                'create.categoryEntertainment'.tr.isNotEmpty &&
+                                    'create.categoryEntertainment'.tr !=
+                                        'create.categoryEntertainment'
+                                ? 'create.categoryEntertainment'.tr
+                                      .toUpperCase()
                                 : 'ENTERTAINMENT',
                             textColor: textSecondary,
                           ),
@@ -726,8 +789,10 @@ class GlobalCreateSheet extends StatelessWidget {
                                   child: _GridFeatureCard(
                                     icon: Icons.quiz_outlined,
                                     accentColor: accentPinkPurple,
-                                    title: 'create.actionQuiz'.tr.isNotEmpty &&
-                                            'create.actionQuiz'.tr != 'create.actionQuiz'
+                                    title:
+                                        'create.actionQuiz'.tr.isNotEmpty &&
+                                            'create.actionQuiz'.tr !=
+                                                'create.actionQuiz'
                                         ? 'create.actionQuiz'.tr
                                         : 'Quiz',
                                     cardBg: cardBg,
@@ -745,8 +810,12 @@ class GlobalCreateSheet extends StatelessWidget {
                                   child: _GridFeatureCard(
                                     icon: Icons.emoji_events_outlined,
                                     accentColor: accentPurple,
-                                    title: 'create.actionChallenge'.tr.isNotEmpty &&
-                                            'create.actionChallenge'.tr != 'create.actionChallenge'
+                                    title:
+                                        'create.actionChallenge'
+                                                .tr
+                                                .isNotEmpty &&
+                                            'create.actionChallenge'.tr !=
+                                                'create.actionChallenge'
                                         ? 'create.actionChallenge'.tr
                                         : 'Challenge',
                                     cardBg: cardBg,
@@ -768,8 +837,12 @@ class GlobalCreateSheet extends StatelessWidget {
                                   child: _GridFeatureCard(
                                     icon: Icons.video_library_outlined,
                                     accentColor: accentPink,
-                                    title: 'create.actionShortContent'.tr.isNotEmpty &&
-                                            'create.actionShortContent'.tr != 'create.actionShortContent'
+                                    title:
+                                        'create.actionShortContent'
+                                                .tr
+                                                .isNotEmpty &&
+                                            'create.actionShortContent'.tr !=
+                                                'create.actionShortContent'
                                         ? 'create.actionShortContent'.tr
                                         : 'Short Content',
                                     cardBg: cardBg,
@@ -808,10 +881,7 @@ class _CategoryHeader extends StatelessWidget {
   final String title;
   final Color textColor;
 
-  const _CategoryHeader({
-    required this.title,
-    required this.textColor,
-  });
+  const _CategoryHeader({required this.title, required this.textColor});
 
   @override
   Widget build(BuildContext context) {
@@ -900,15 +970,13 @@ class _CommunityFeatureCard extends StatelessWidget {
                     color: accentColor.withValues(alpha: isDark ? 0.14 : 0.10),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: accentColor.withValues(alpha: isDark ? 0.28 : 0.20),
+                      color: accentColor.withValues(
+                        alpha: isDark ? 0.28 : 0.20,
+                      ),
                       width: 0.8,
                     ),
                   ),
-                  child: Icon(
-                    icon,
-                    color: accentColor,
-                    size: 20,
-                  ),
+                  child: Icon(icon, color: accentColor, size: 20),
                 ),
                 const SizedBox(height: 10),
                 Column(
@@ -1014,15 +1082,13 @@ class _GridFeatureCard extends StatelessWidget {
                     color: accentColor.withValues(alpha: isDark ? 0.14 : 0.10),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: accentColor.withValues(alpha: isDark ? 0.28 : 0.20),
+                      color: accentColor.withValues(
+                        alpha: isDark ? 0.28 : 0.20,
+                      ),
                       width: 0.8,
                     ),
                   ),
-                  child: Icon(
-                    icon,
-                    color: accentColor,
-                    size: 19,
-                  ),
+                  child: Icon(icon, color: accentColor, size: 19),
                 ),
                 const SizedBox(height: 8),
                 Text(

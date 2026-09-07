@@ -1173,6 +1173,8 @@ class AppTranslations extends Translations {
     'tasks.priority.high': 'HIGH',
     'tasks.priority.medium': 'MEDIUM',
     'tasks.priority.low': 'LOW',
+    'tasks.detail.makeCompleted': 'Make Completed',
+    'tasks.detail.makeIncompleted': 'Make Active',
 
     // ── Productivity - Task Create ───────────────────────────────────────────
     // English
@@ -1199,6 +1201,29 @@ class AppTranslations extends Translations {
     'task.create.addSubtask': 'Add subtask...',
     'task.create.save': 'Save Task',
     'task.create.validation.titleRequired': 'Please enter a task title',
+
+    // ── Productivity - Task Detail ───────────────────────────────────────────
+    'task.detail.title': 'Task Details',
+    'task.detail.taskInformation': 'Task Information',
+    'task.detail.completed': 'Completed',
+    'task.detail.inProgress': 'In Progress',
+    'task.detail.progress': 'Progress',
+    'task.detail.subtasksCompleted': '@completed of @total subtasks completed',
+    'task.detail.noSubtasks': 'No subtasks',
+    'task.detail.markComplete': 'Mark Complete',
+    'task.detail.markIncomplete': 'Mark Incomplete',
+    'task.detail.edit': 'Edit Task',
+    'task.detail.deleteTitle': 'Delete Task',
+    'task.detail.deleteMessage':
+        'Are you sure you want to delete this task? This action cannot be undone.',
+    'task.detail.cancel': 'Cancel',
+    'task.detail.delete': 'Delete',
+    'tasks.detail.researchLibraries': 'Research existing libraries',
+    'tasks.detail.componentStructure': 'Write initial component structure',
+    'tasks.detail.typescriptGenerics': 'Add TypeScript generics',
+    'tasks.detail.defaultDescription':
+        'Build the main dashboard component with TypeScript generics, proper type definitions, and all sub-components integrated.',
+    'tasks.detail.reminder30': '30 min before',
   };
 
   static const _km = <String, String>{
@@ -2342,13 +2367,13 @@ class AppTranslations extends Translations {
 
     // ── Productivity - Task ──────────────────────────────────────────────────
     'tasks.title': 'កិច្ចការ',
-    'tasks.subtitle': 'ផ្តោតអារម្មណ៍ និងបំពេញការងារ។',
+    'tasks.subtitle': 'ផ្តោតអារម្មណ៍។ បំពេញការងាររបស់អ្នក។',
     'tasks.searchHint': 'ស្វែងរកកិច្ចការរបស់អ្នក...',
     'tasks.myTasks': 'កិច្ចការរបស់ខ្ញុំ',
-    'tasks.bottomTip': 'ចុចលើកិច្ចការ ដើម្បីសម្គាល់ថាបានបញ្ចប់',
+    'tasks.bottomTip': 'ចុចលើកិច្ចការដើម្បីសម្គាល់ថាបានបញ្ចប់',
     'tasks.empty.title': 'រកមិនឃើញកិច្ចការ',
-    'tasks.empty.message': 'សាកល្បងផ្លាស់ប្តូរការស្វែងរក ឬតម្រង',
-    'tasks.filter.title': 'តម្រងកិច្ចការ',
+    'tasks.empty.message': 'សូមព្យាយាមផ្លាស់ប្តូរការស្វែងរក ឬតម្រងរបស់អ្នក។',
+    'tasks.filter.title': 'ត្រងកិច្ចការ',
     'tasks.filter.subtitle': 'កំណត់បញ្ជីកិច្ចការរបស់អ្នក',
     'tasks.filter.status': 'ស្ថានភាព',
     'tasks.filter.priority': 'អាទិភាព',
@@ -2361,13 +2386,12 @@ class AppTranslations extends Translations {
     'tasks.filter.high': 'ខ្ពស់',
     'tasks.filter.medium': 'មធ្យម',
     'tasks.filter.low': 'ទាប',
-    'tasks.search': 'ស្វែងរកកិច្ចការរបស់អ្នក...',
-    'tasks.emptyTitle': 'រកមិនឃើញកិច្ចការ',
-    'tasks.emptyMessage': 'សាកល្បងប្តូរការស្វែងរក ឬតម្រងរបស់អ្នក',
-    'tasks.active': 'សកម្ម',
+    'tasks.active': 'កំពុងដំណើរការ',
     'tasks.priority.high': 'ខ្ពស់',
     'tasks.priority.medium': 'មធ្យម',
     'tasks.priority.low': 'ទាប',
+    'tasks.detail.makeCompleted': 'សម្គាល់ថាបានបញ្ចប់',
+    'tasks.detail.makeIncompleted': 'សម្គាល់ថាកំពុងដំណើរការ',
 
     // ── Productivity - Task Create ───────────────────────────────────────────
     'task.create.title': 'បង្កើតកិច្ចការ',
@@ -2385,7 +2409,7 @@ class AppTranslations extends Translations {
     'task.create.category.personal': 'ផ្ទាល់ខ្លួន',
     'task.create.category.health': 'សុខភាព',
     'task.create.category.other': 'ផ្សេងៗ',
-    'task.create.dueDate': 'កាលបរិច្ឆេទកំណត់',
+    'task.create.dueDate': 'ថ្ងៃផុតកំណត់',
     'task.create.selectDate': 'ជ្រើសរើសកាលបរិច្ឆេទ',
     'task.create.reminder': 'ការរំលឹក',
     'task.create.setReminder': 'កំណត់ការរំលឹក',
@@ -2393,5 +2417,29 @@ class AppTranslations extends Translations {
     'task.create.addSubtask': 'បន្ថែមកិច្ចការរង...',
     'task.create.save': 'រក្សាទុកកិច្ចការ',
     'task.create.validation.titleRequired': 'សូមបញ្ចូលចំណងជើងកិច្ចការ',
+
+    // ── Productivity - Task Detail ───────────────────────────────────────────
+    'task.detail.title': 'ព័ត៌មានលម្អិតកិច្ចការ',
+    'task.detail.taskInformation': 'ព័ត៌មានអំពីកិច្ចការ',
+    'task.detail.completed': 'បានបញ្ចប់',
+    'task.detail.inProgress': 'កំពុងដំណើរការ',
+    'task.detail.progress': 'វឌ្ឍនភាព',
+    'task.detail.subtasksCompleted':
+        'បានបញ្ចប់ @completed ក្នុងចំណោម @total កិច្ចការរង',
+    'task.detail.noSubtasks': 'មិនមានកិច្ចការរងទេ',
+    'task.detail.markComplete': 'សម្គាល់ថាបានបញ្ចប់',
+    'task.detail.markIncomplete': 'សម្គាល់ថាមិនទាន់បញ្ចប់',
+    'task.detail.edit': 'កែសម្រួលកិច្ចការ',
+    'task.detail.deleteTitle': 'លុបកិច្ចការ',
+    'task.detail.deleteMessage':
+        'តើអ្នកប្រាកដថាចង់លុបកិច្ចការនេះមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
+    'task.detail.cancel': 'បោះបង់',
+    'task.detail.delete': 'លុប',
+    'tasks.detail.researchLibraries': 'ស្រាវជ្រាវ Library ដែលមានស្រាប់',
+    'tasks.detail.componentStructure': 'សរសេររចនាសម្ព័ន្ធ Component ដំបូង',
+    'tasks.detail.typescriptGenerics': 'បន្ថែម TypeScript Generics',
+    'tasks.detail.defaultDescription':
+        'បង្កើតផ្នែក Dashboard សំខាន់ដោយប្រើ TypeScript Generics កំណត់ប្រភេទទិន្នន័យឱ្យបានត្រឹមត្រូវ និងភ្ជាប់ផ្នែករងទាំងអស់ចូលគ្នា។',
+    'tasks.detail.reminder30': '30 នាទីមុន',
   };
 }

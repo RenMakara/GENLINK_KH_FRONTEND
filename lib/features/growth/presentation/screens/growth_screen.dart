@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/features/productivity/presentation/goals_plan/goal_plan.dart';
 import 'package:get/get.dart';
 
 import '../../../../app/routes/app_routes.dart';
@@ -1084,10 +1085,10 @@ class _ProductivityTools extends StatelessWidget {
         onTap: () => Get.to(() => const FocusPage()),
       ),
       (
-        icon: Icons.savings_outlined,
+        icon: Icons.flag_outlined,
         label: 'Goals',
         accentColor: const Color(0xFF10B981), // Emerald
-        onTap: () => Get.to(() => const SavingGoalsScreen()),
+        onTap: () => Get.to(() => const PlanGoalScreen()),
       ),
     ];
 

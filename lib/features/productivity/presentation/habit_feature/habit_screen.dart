@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:genlink_frontend/features/productivity/presentation/habit_feature/widget/habit_home_widget.dart';
 
 class HabitHomeScreen extends StatelessWidget {
@@ -12,6 +13,7 @@ class HabitHomeScreen extends StatelessWidget {
       streak: HabitStreakData(days: 7, bestDays: 14, weeklyCompletion: 66),
 
       todayTitle: "Today's Habits",
+
       manageText: 'Manage',
 
       habits: [

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/features/productivity/presentation/goals_plan/goal_plan.dart';
 import 'package:get/get.dart';
 
 import '../../../../app/routes/app_routes.dart';
@@ -8,7 +9,7 @@ import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../finance/presentation/saving_goal_feature/saving_goals_screen.dart';
 import '../../../leaderboard/presentation/screens/leaderboard_home_screen.dart';
 import '../../../productivity/presentation/focus_feature/focus_home_screen.dart';
-import '../../../productivity/presentation/habit_feature/habit_home_screen.dart';
+import '../../../productivity/presentation/habit_feature/habit_screen.dart';
 import '../../../productivity/presentation/task_feature/task_home_screen.dart';
 import '../../../home/domain/entities/home_entity.dart';
 import '../../../home/presentation/controllers/home_controller.dart';
@@ -160,11 +161,12 @@ class _GrowthHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
-    final growthTitle = 'nav.growth'.tr.isNotEmpty &&
-            'nav.growth'.tr != 'nav.growth'
+    final growthTitle =
+        'nav.growth'.tr.isNotEmpty && 'nav.growth'.tr != 'nav.growth'
         ? 'nav.growth'.tr.toUpperCase()
         : 'GROWTH';
 
@@ -240,17 +242,21 @@ class _GrowthGreeting extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     final greetingBase = _getGreeting();
     final name = user.firstName.isNotEmpty ? user.firstName : '';
-    final greetingDisplay =
-        name.isNotEmpty ? '$greetingBase, $name 👋' : '$greetingBase 👋';
+    final greetingDisplay = name.isNotEmpty
+        ? '$greetingBase, $name 👋'
+        : '$greetingBase 👋';
 
-    final subtitle = 'home.greetingSubtitle'.tr.isNotEmpty &&
+    final subtitle =
+        'home.greetingSubtitle'.tr.isNotEmpty &&
             'home.greetingSubtitle'.tr != 'home.greetingSubtitle'
         ? 'home.greetingSubtitle'.tr
         : "Here's what's important today.";
@@ -298,25 +304,37 @@ class _LevelProgressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final textMuted =
-        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final cardSurface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+    final cardSurface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     final nextLevel = user.safeLevel + 1;
-    final levelLabel = 'home.levelLabel'.trParams({'level': '${user.safeLevel}'});
-    final levelDisplay = (levelLabel.isNotEmpty && levelLabel != 'home.levelLabel')
+    final levelLabel = 'home.levelLabel'.trParams({
+      'level': '${user.safeLevel}',
+    });
+    final levelDisplay =
+        (levelLabel.isNotEmpty && levelLabel != 'home.levelLabel')
         ? levelLabel
         : 'Level ${user.safeLevel}';
 
-    final progressToward = 'home.progressTowardLevel'.trParams({'level': '$nextLevel'});
-    final progressLabel = (progressToward.isNotEmpty && progressToward != 'home.progressTowardLevel')
+    final progressToward = 'home.progressTowardLevel'.trParams({
+      'level': '$nextLevel',
+    });
+    final progressLabel =
+        (progressToward.isNotEmpty &&
+            progressToward != 'home.progressTowardLevel')
         ? progressToward
         : 'Progress toward Level $nextLevel';
 
@@ -345,7 +363,9 @@ class _LevelProgressCard extends StatelessWidget {
                         width: 26,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: growthAccent.withValues(alpha: isDark ? 0.16 : 0.12),
+                          color: growthAccent.withValues(
+                            alpha: isDark ? 0.16 : 0.12,
+                          ),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Icon(
@@ -393,10 +413,7 @@ class _LevelProgressCard extends StatelessWidget {
                 children: [
                   Text(
                     progressLabel,
-                    style: TextStyle(
-                      color: textSecondary,
-                      fontSize: 11.5,
-                    ),
+                    style: TextStyle(color: textSecondary, fontSize: 11.5),
                   ),
                   Text(
                     '${user.percentToNext}%',
@@ -433,13 +450,16 @@ class _GrowthImportantAlerts extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     final finance = home.financeSnapshot;
-    final isFinanceAlert = finance != null &&
+    final isFinanceAlert =
+        finance != null &&
         ((finance.budgetStatus == 'WARNING' ||
                 finance.budgetStatus == 'LIMIT_REACHED') ||
             (finance.totalBudget != null &&
@@ -449,7 +469,8 @@ class _GrowthImportantAlerts extends StatelessWidget {
 
     final habitsTotal = home.todayProgress.habitsTotal;
     final habitsDone = home.todayProgress.habitsCompletedToday;
-    final isStreakAtRisk = habitsTotal > 0 &&
+    final isStreakAtRisk =
+        habitsTotal > 0 &&
         habitsDone < habitsTotal &&
         controller.habits.any((h) => !h.checkedInToday && h.streakCount > 0);
 
@@ -465,21 +486,26 @@ class _GrowthImportantAlerts extends StatelessWidget {
       final percent = total > 0 ? ((spent / total) * 100).round() : 80;
       final isLimit = percent >= 100 || finance.budgetStatus == 'LIMIT_REACHED';
 
-      final alertTitle = 'home.budgetAlertTitle'.tr.isNotEmpty &&
+      final alertTitle =
+          'home.budgetAlertTitle'.tr.isNotEmpty &&
               'home.budgetAlertTitle'.tr != 'home.budgetAlertTitle'
           ? 'home.budgetAlertTitle'.tr
           : 'Budget Alert';
 
       final alertMsg = isLimit
           ? ('home.budgetAlertLimit'.tr.isNotEmpty &&
-                  'home.budgetAlertLimit'.tr != 'home.budgetAlertLimit'
-              ? 'home.budgetAlertLimit'.tr
-              : "You've reached your monthly budget limit.")
-          : ('home.budgetAlertWarning'.trParams({'percent': '$percent'}).isNotEmpty &&
-                  'home.budgetAlertWarning'.trParams({'percent': '$percent'}) !=
-                      'home.budgetAlertWarning'
-              ? 'home.budgetAlertWarning'.trParams({'percent': '$percent'})
-              : "You've used $percent% of your monthly budget.");
+                    'home.budgetAlertLimit'.tr != 'home.budgetAlertLimit'
+                ? 'home.budgetAlertLimit'.tr
+                : "You've reached your monthly budget limit.")
+          : ('home.budgetAlertWarning'.trParams({
+                      'percent': '$percent',
+                    }).isNotEmpty &&
+                    'home.budgetAlertWarning'.trParams({
+                          'percent': '$percent',
+                        }) !=
+                        'home.budgetAlertWarning'
+                ? 'home.budgetAlertWarning'.trParams({'percent': '$percent'})
+                : "You've used $percent% of your monthly budget.");
 
       alerts.add(
         _GrowthAlertCard(
@@ -497,12 +523,14 @@ class _GrowthImportantAlerts extends StatelessWidget {
     }
 
     if (isStreakAtRisk) {
-      final alertTitle = 'home.habitStreakAlertTitle'.tr.isNotEmpty &&
+      final alertTitle =
+          'home.habitStreakAlertTitle'.tr.isNotEmpty &&
               'home.habitStreakAlertTitle'.tr != 'home.habitStreakAlertTitle'
           ? 'home.habitStreakAlertTitle'.tr
           : 'Habit Streak at Risk';
 
-      final alertMsg = 'home.habitStreakAlertMsg'.tr.isNotEmpty &&
+      final alertMsg =
+          'home.habitStreakAlertMsg'.tr.isNotEmpty &&
               'home.habitStreakAlertMsg'.tr != 'home.habitStreakAlertMsg'
           ? 'home.habitStreakAlertMsg'.tr
           : "Complete today's habit check-in to protect your streak!";
@@ -562,7 +590,9 @@ class _GrowthAlertCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary,
+      color: isDark
+          ? AppColors.darkSurfacePrimary
+          : AppColors.lightSurfacePrimary,
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: InkWell(
         onTap: onTap,
@@ -651,21 +681,26 @@ class _GrowthTodayChecklist extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final textMuted =
-        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final cardSurface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+    final cardSurface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     final progress = home.todayProgress;
 
-    final todayTitle = 'home.today'.tr.isNotEmpty &&
-            'home.today'.tr != 'home.today'
+    final todayTitle =
+        'home.today'.tr.isNotEmpty && 'home.today'.tr != 'home.today'
         ? 'home.today'.tr.toUpperCase()
         : 'TODAY';
 
@@ -720,11 +755,13 @@ class _GrowthTodayChecklist extends StatelessWidget {
               // 1. Habits Checklist Item
               if (habitsTotal == 0)
                 _buildEmptyRow(
-                  title: 'home.noHabitsTitle'.tr.isNotEmpty &&
+                  title:
+                      'home.noHabitsTitle'.tr.isNotEmpty &&
                           'home.noHabitsTitle'.tr != 'home.noHabitsTitle'
                       ? 'home.noHabitsTitle'.tr
                       : 'No habits for today',
-                  subtitle: 'home.noHabitsSubtitle'.tr.isNotEmpty &&
+                  subtitle:
+                      'home.noHabitsSubtitle'.tr.isNotEmpty &&
                           'home.noHabitsSubtitle'.tr != 'home.noHabitsSubtitle'
                       ? 'home.noHabitsSubtitle'.tr
                       : 'Start building a routine.',
@@ -736,7 +773,8 @@ class _GrowthTodayChecklist extends StatelessWidget {
               else
                 _GrowthTodayChecklistRow(
                   isDone: isHabitDone,
-                  title: 'home.rowHabits'.tr.isNotEmpty &&
+                  title:
+                      'home.rowHabits'.tr.isNotEmpty &&
                           'home.rowHabits'.tr != 'home.rowHabits'
                       ? 'home.rowHabits'.tr
                       : 'Check in your habits',
@@ -754,11 +792,13 @@ class _GrowthTodayChecklist extends StatelessWidget {
               // 2. Tasks Checklist Item
               if (tasksTotal == 0)
                 _buildEmptyRow(
-                  title: 'home.noTasksTitle'.tr.isNotEmpty &&
+                  title:
+                      'home.noTasksTitle'.tr.isNotEmpty &&
                           'home.noTasksTitle'.tr != 'home.noTasksTitle'
                       ? 'home.noTasksTitle'.tr
                       : 'No tasks for today',
-                  subtitle: 'home.noTasksSubtitle'.tr.isNotEmpty &&
+                  subtitle:
+                      'home.noTasksSubtitle'.tr.isNotEmpty &&
                           'home.noTasksSubtitle'.tr != 'home.noTasksSubtitle'
                       ? 'home.noTasksSubtitle'.tr
                       : "You're all caught up.",
@@ -770,7 +810,8 @@ class _GrowthTodayChecklist extends StatelessWidget {
               else
                 _GrowthTodayChecklistRow(
                   isDone: isTaskDone,
-                  title: 'home.rowTasks'.tr.isNotEmpty &&
+                  title:
+                      'home.rowTasks'.tr.isNotEmpty &&
                           'home.rowTasks'.tr != 'home.rowTasks'
                       ? 'home.rowTasks'.tr
                       : "Finish today's tasks",
@@ -848,10 +889,7 @@ class _GrowthTodayChecklist extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: borderSubtle,
-                width: 1.2,
-              ),
+              border: Border.all(color: borderSubtle, width: 1.2),
             ),
             child: Container(
               height: 5,
@@ -918,12 +956,15 @@ class _GrowthTodayChecklistRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     return Material(
       color: Colors.transparent,
@@ -1020,8 +1061,9 @@ class _ProductivityTools extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
     final tools = [
       (
@@ -1043,10 +1085,10 @@ class _ProductivityTools extends StatelessWidget {
         onTap: () => Get.to(() => const FocusPage()),
       ),
       (
-        icon: Icons.savings_outlined,
+        icon: Icons.flag_outlined,
         label: 'Goals',
         accentColor: const Color(0xFF10B981), // Emerald
-        onTap: () => Get.to(() => const SavingGoalsScreen()),
+        onTap: () => Get.to(() => const PlanGoalScreen()),
       ),
     ];
 
@@ -1100,12 +1142,15 @@ class _ToolTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final cardSurface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final cardSurface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1155,10 +1200,7 @@ class _ToolTile extends StatelessWidget {
 // ── 7. FOR YOU (PERSONALIZED CARDS) ─────────────────────────────────────────
 
 class _GrowthForYouSection extends StatelessWidget {
-  const _GrowthForYouSection({
-    required this.home,
-    this.onNavigateTab,
-  });
+  const _GrowthForYouSection({required this.home, this.onNavigateTab});
 
   final HomeEntity home;
   final ValueChanged<int>? onNavigateTab;
@@ -1167,14 +1209,18 @@ class _GrowthForYouSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final cardSurface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final cardSurface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     final cards = <Widget>[];
 
@@ -1197,7 +1243,9 @@ class _GrowthForYouSection extends StatelessWidget {
           accentColor: const Color(0xFFF97316),
           title: challengeTitle,
           subtitle: challengeDesc,
-          badgeText: (xpReward != null && xpReward > 0) ? '+$xpReward XP' : null,
+          badgeText: (xpReward != null && xpReward > 0)
+              ? '+$xpReward XP'
+              : null,
           cardSurface: cardSurface,
           borderSubtle: borderSubtle,
           textPrimary: textPrimary,
@@ -1223,7 +1271,8 @@ class _GrowthForYouSection extends StatelessWidget {
           icon: Icons.savings_outlined,
           accentColor: const Color(0xFF10B981),
           title: 'Saving Goal Update',
-          subtitle: '$percent% saved (${current.toStringAsFixed(0)} of ${target.toStringAsFixed(0)})',
+          subtitle:
+              '$percent% saved (${current.toStringAsFixed(0)} of ${target.toStringAsFixed(0)})',
           badgeText: '$percent%',
           cardSurface: cardSurface,
           borderSubtle: borderSubtle,
@@ -1367,7 +1416,9 @@ class _GrowthForYouCard extends StatelessWidget {
                               vertical: 2.5,
                             ),
                             decoration: BoxDecoration(
-                              color: accentColor.withValues(alpha: isDark ? 0.20 : 0.12),
+                              color: accentColor.withValues(
+                                alpha: isDark ? 0.20 : 0.12,
+                              ),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -1413,12 +1464,15 @@ class _GrowthSkeletonView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final skeletonBase =
-        isDark ? const Color(0xFF1E1E22) : const Color(0xFFE5E7EB);
-    final cardSurface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final skeletonBase = isDark
+        ? const Color(0xFF1E1E22)
+        : const Color(0xFFE5E7EB);
+    final cardSurface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -1534,10 +1588,7 @@ class _GrowthSkeletonView extends StatelessWidget {
 // ── ERROR VIEW ──────────────────────────────────────────────────────────────
 
 class _GrowthErrorView extends StatelessWidget {
-  const _GrowthErrorView({
-    required this.errorMessage,
-    required this.onRetry,
-  });
+  const _GrowthErrorView({required this.errorMessage, required this.onRetry});
 
   final String errorMessage;
   final VoidCallback onRetry;
@@ -1546,10 +1597,12 @@ class _GrowthErrorView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -1598,8 +1651,9 @@ class _GrowthErrorView extends StatelessWidget {
                 ElevatedButton(
                   onPressed: onRetry,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        isDark ? Colors.white : AppColors.lightPrimary,
+                    backgroundColor: isDark
+                        ? Colors.white
+                        : AppColors.lightPrimary,
                     foregroundColor: isDark ? Colors.black : Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,

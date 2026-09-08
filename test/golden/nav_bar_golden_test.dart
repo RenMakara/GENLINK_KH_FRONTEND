@@ -26,7 +26,7 @@ void main() {
         theme: theme,
         home: Scaffold(
           bottomNavigationBar: BottomNavBar(
-            currentIndex: 1,
+            currentIndex: 0,
             onTap: (_) {},
             onCenterTap: () {},
           ),
@@ -38,6 +38,8 @@ void main() {
 
   testWidgets('nav bar light', (tester) async {
     await pumpBar(tester, AppTheme.lightFor('en'));
+    expect(find.text('Community'), findsOneWidget);
+    expect(find.text('LevelUp'), findsOneWidget);
     await expectLater(
       find.byType(BottomNavBar),
       matchesGoldenFile('goldens/nav_bar.png'),
@@ -46,6 +48,8 @@ void main() {
 
   testWidgets('nav bar dark', (tester) async {
     await pumpBar(tester, AppTheme.darkFor('en'));
+    expect(find.text('Community'), findsOneWidget);
+    expect(find.text('LevelUp'), findsOneWidget);
     await expectLater(
       find.byType(BottomNavBar),
       matchesGoldenFile('goldens/nav_bar_dark.png'),

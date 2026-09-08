@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
@@ -225,11 +226,16 @@ class _PreviewContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF9F9F7);
-    final surface =
-        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFFFFFFF);
-    final accent = isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.06);
-    final barColor = isDark ? Colors.white24 : Colors.black.withValues(alpha: 0.1);
+    final bg = isDark ? AppColors.darkBgPrimary : const Color(0xFFF9F9F7);
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : const Color(0xFFFFFFFF);
+    final accent = isDark
+        ? AppColors.darkPrimary.withValues(alpha: 0.20)
+        : Colors.black.withValues(alpha: 0.06);
+    final barColor = isDark
+        ? AppColors.darkAccentCyan.withValues(alpha: 0.40)
+        : Colors.black.withValues(alpha: 0.1);
 
     return Container(
       color: bg,

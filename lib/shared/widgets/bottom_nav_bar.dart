@@ -119,9 +119,9 @@ class BottomNavBar extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: _NavItem(
-                                    icon: CupertinoIcons.house,
-                                    activeIcon: CupertinoIcons.house_fill,
-                                    label: _label('nav.home', 'Home'),
+                                    icon: Icons.groups_outlined,
+                                    activeIcon: Icons.groups_rounded,
+                                    label: _label('nav.community', 'Community'),
                                     active: currentIndex == 0,
                                     iconSize: navIconSize,
                                     fontSize: navFontSize,
@@ -197,8 +197,10 @@ class BottomNavBar extends StatelessWidget {
   void _showProfileMenu(BuildContext context) {
     final authController = Get.find<AuthController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? const Color(0xFF161616) : Colors.white;
-    final textPrimary = isDark ? Colors.white : Colors.black87;
+    final surface = isDark ? AppColors.darkSurfacePrimary : Colors.white;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : Colors.black87;
 
     showModalBottomSheet(
       context: context,
@@ -307,13 +309,13 @@ class _CenterButton extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: isDark
-                  ? [Colors.white, const Color(0xFFE0E0E0)]
+                  ? [AppColors.darkPrimary, AppColors.darkAccentCyan]
                   : [AppColors.lightPrimary, const Color(0xFF333333)],
             ),
             boxShadow: [
               BoxShadow(
-                color: (isDark ? Colors.white : AppColors.lightPrimary)
-                    .withValues(alpha: 0.1),
+                color: (isDark ? AppColors.darkPrimary : AppColors.lightPrimary)
+                    .withValues(alpha: isDark ? 0.28 : 0.1),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -334,7 +336,7 @@ class _CenterButton extends StatelessWidget {
                 child: Icon(
                   CupertinoIcons.plus,
                   size: iconSize,
-                  color: isDark ? Colors.black : Colors.white,
+                  color: isDark ? AppColors.darkTextInverse : Colors.white,
                 ),
               ),
             ),
@@ -373,9 +375,11 @@ class _NavItem extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final activeColor = isDark ? Colors.white : AppColors.lightPrimary;
-    final inactiveColor = (isDark ? Colors.white : AppColors.lightPrimary)
-        .withValues(alpha: 0.4);
+    final activeColor = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
+    final inactiveColor = (isDark
+            ? AppColors.darkTextSecondary
+            : AppColors.lightPrimary)
+        .withValues(alpha: 0.55);
 
     final color = active ? activeColor : inactiveColor;
 

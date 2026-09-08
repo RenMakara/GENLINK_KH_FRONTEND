@@ -31,7 +31,6 @@ abstract final class AppConfig {
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://18.143.33.191',
-    // defaultValue: 'http://localhost:8888',
   );
 
   /// OAuth **Web** client id, passed to Google Sign-In as `serverClientId`.

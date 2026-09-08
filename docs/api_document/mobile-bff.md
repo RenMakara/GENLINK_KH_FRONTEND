@@ -54,7 +54,7 @@ class HomeResponse {
     recommendedCommunities=j['recommendedCommunities'] ?? const [], feedPreview=j['feedPreview'] ?? const [];
 }
 ```
-`budgetStatus`: SAFE/WARNING/LIMIT_REACHED. *(Note: the Home finance snapshot currently reads the stored budget counter — a known follow-up; `/mobile/finance-dashboard` has live spend.)*
+`budgetStatus`: SAFE/WARNING/LIMIT_REACHED. The Home finance snapshot and `/mobile/finance-dashboard` use live expense spend.
 
 ---
 
@@ -66,7 +66,7 @@ class HomeResponse {
   "topCategories": [ { "category":"FOOD","amount":90.00 } ],
   "saving": { "totalTarget":800.00,"totalSaved":150.00,"progressPercent":18,"activeGoals":1 },
   "recentExpenses": [ { "expenseId":"…","title":"Coffee","category":"FOOD","amount":2.50,"expenseDate":"2026-07-19" } ],
-  "wallet": { "balance":85.00,"currency":"USD" },
+  "wallet": { "balanceUsd":85.00,"balanceKhr":0.00 },
   "financialTip": "Track every expense for a week — awareness alone cuts spending.",
   "quickActions": [ "ADD_EXPENSE","SET_BUDGET","NEW_SAVING_GOAL","TOP_UP_WALLET" ]
 }
@@ -112,4 +112,4 @@ Aggregated identity + counts for the profile header. (Auth/Profile owned by the 
 ---
 
 ## Deferred (do not wire yet)
-`GET /mobile/events/{id}` and `GET /mobile/notifications` return TODO stubs.
+`GET /mobile/events/{id}` and `GET /mobile/notifications` return `NOT_IMPLEMENTED` stubs.

@@ -9,6 +9,8 @@ import '../../features/profile/presentation/bindings/profile_binding.dart';
 class MainBinding extends Bindings {
   @override
   void dependencies() {
+    // The legacy Home data module supplies the LevelUp tab's progress and
+    // productivity state. Community is the first tab in MainScreen.
     HomeBinding().dependencies();
     CommunityBinding().dependencies();
     FinanceBinding().dependencies();

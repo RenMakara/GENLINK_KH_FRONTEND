@@ -23,15 +23,25 @@ abstract final class DarkTheme {
       ),
       colorScheme: const ColorScheme.dark(
         primary: AppColors.darkPrimary,
-        onPrimary: AppColors.darkTextInverse,
-        secondary: AppColors.accentPremium,
+        onPrimary: AppColors.darkTextPrimary,
+        primaryContainer: AppColors.darkPrimarySoft,
+        onPrimaryContainer: AppColors.darkTextPrimary,
+        secondary: AppColors.darkAccentMint,
         onSecondary: AppColors.darkTextInverse,
+        secondaryContainer: Color(0xFF123B42),
+        onSecondaryContainer: AppColors.darkTextPrimary,
+        tertiary: AppColors.darkAccentPink,
+        onTertiary: AppColors.darkTextInverse,
+        tertiaryContainer: Color(0xFF48203A),
+        onTertiaryContainer: AppColors.darkTextPrimary,
         surface: AppColors.darkSurfacePrimary,
         onSurface: AppColors.darkTextPrimary,
+        onSurfaceVariant: AppColors.darkTextSecondary,
         error: AppColors.danger,
         onError: AppColors.darkTextPrimary,
         outline: AppColors.darkBorderStrong,
         outlineVariant: AppColors.darkBorderSubtle,
+        surfaceTint: AppColors.darkPrimary,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.darkBgPrimary,
@@ -57,6 +67,30 @@ abstract final class DarkTheme {
           borderRadius: BorderRadius.circular(AppRadius.xl),
           side: const BorderSide(color: AppColors.darkBorderSubtle),
         ),
+      ),
+      iconTheme: const IconThemeData(color: AppColors.darkTextSecondary),
+      listTileTheme: const ListTileThemeData(
+        iconColor: AppColors.darkTextSecondary,
+        textColor: AppColors.darkTextPrimary,
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AppColors.darkSurfacePrimary,
+        modalBackgroundColor: AppColors.darkSurfacePrimary,
+        surfaceTintColor: Colors.transparent,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.darkSurfacePrimary,
+        surfaceTintColor: Colors.transparent,
+        titleTextStyle: text.titleLarge?.copyWith(
+          color: AppColors.darkTextPrimary,
+        ),
+        contentTextStyle: text.bodyMedium?.copyWith(
+          color: AppColors.darkTextSecondary,
+        ),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.darkPrimary,
+        linearTrackColor: AppColors.darkBorderSubtle,
       ),
       inputDecorationTheme: _inputTheme(text),
       snackBarTheme: SnackBarThemeData(
@@ -94,9 +128,7 @@ abstract final class DarkTheme {
       labelStyle: text.bodyMedium?.copyWith(color: AppColors.darkTextSecondary),
       errorStyle: text.bodySmall?.copyWith(color: AppColors.danger),
       enabledBorder: border(AppColors.darkBorderSubtle),
-      // Focus is signalled by the fill, not the outline — the border stays
-      // identical so the field does not appear to grow on tap.
-      focusedBorder: border(AppColors.darkBorderSubtle),
+      focusedBorder: border(AppColors.darkPrimary, 1.4),
       errorBorder: border(AppColors.danger),
       focusedErrorBorder: border(AppColors.danger),
       disabledBorder: border(AppColors.darkBorderSubtle),

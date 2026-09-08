@@ -10,11 +10,15 @@ import '../screens/community_search_screen.dart';
 
 /// GenLink KH Community Header Widget
 ///
-/// Displays "Home" in Home mode, or "Community" in Community mode, alongside
-/// standard Search, Chat, and Notification action buttons.
+/// Displays the Community title alongside standard Search, Chat, and
+/// Notification action buttons. Community is the first signed-in experience;
+/// the former Home experience now lives under LevelUp.
 class CommunityHeaderWidget extends StatelessWidget
     implements PreferredSizeWidget {
   final String activeCategory;
+  /// Kept for source compatibility with older callers. Community is now
+  /// always the title for this header, including the primary shell tab.
+  @Deprecated('Community is always the primary shell experience.')
   final bool isHomeScreen;
 
   const CommunityHeaderWidget({
@@ -37,14 +41,10 @@ class CommunityHeaderWidget extends StatelessWidget
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
 
-    final titleText = isHomeScreen
-        ? ('nav.home'.tr.isNotEmpty && 'nav.home'.tr != 'nav.home'
-            ? 'nav.home'.tr
-            : 'Home')
-        : ('community.title'.tr.isNotEmpty &&
-                'community.title'.tr != 'community.title'
-            ? 'community.title'.tr
-            : 'Community');
+    final titleText = 'community.title'.tr.isNotEmpty &&
+            'community.title'.tr != 'community.title'
+        ? 'community.title'.tr
+        : 'Community';
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isNarrow = screenWidth < 360;

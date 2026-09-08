@@ -1,6 +1,8 @@
 // ignore: depend_on_referenced_packages
 import 'dart:io';
 
+import '../../../finance/domain/entities/finance_entities.dart';
+
 class EventModel {
   final String id;
   final String title;
@@ -16,12 +18,20 @@ class EventModel {
   /// URL — used when eventType == 'Online'
   final String onlineLink;
 
+  /// Backend event contract. The legacy dateString/timeString fields remain
+  /// for the existing cards, while these values are used for API writes.
+  final DateTime? startDateTime;
+  final DateTime? endDateTime;
+  final double? latitude;
+  final double? longitude;
+
   final String dateString;
   final String timeString;
   final String description;
   final String category;
   final bool isPaid;
-  final double priceKhr;
+  final double price;
+  final FinanceCurrency currency;
 
   /// Network URL or empty string for placeholder
   final String imageUrl;
@@ -42,12 +52,17 @@ class EventModel {
     this.eventType = 'In person',
     this.location = '',
     this.onlineLink = '',
+    this.startDateTime,
+    this.endDateTime,
+    this.latitude,
+    this.longitude,
     required this.dateString,
     required this.timeString,
     this.description = '',
     this.category = '',
     this.isPaid = false,
-    this.priceKhr = 0.0,
+    this.price = 0.0,
+    this.currency = FinanceCurrency.usd,
     this.imageUrl = '',
     this.coverImageFile,
     this.attendeesCount = 0,
@@ -64,12 +79,17 @@ class EventModel {
     String? eventType,
     String? location,
     String? onlineLink,
+    DateTime? startDateTime,
+    DateTime? endDateTime,
+    double? latitude,
+    double? longitude,
     String? dateString,
     String? timeString,
     String? description,
     String? category,
     bool? isPaid,
-    double? priceKhr,
+    double? price,
+    FinanceCurrency? currency,
     String? imageUrl,
     File? coverImageFile,
     int? attendeesCount,
@@ -85,12 +105,17 @@ class EventModel {
       eventType: eventType ?? this.eventType,
       location: location ?? this.location,
       onlineLink: onlineLink ?? this.onlineLink,
+      startDateTime: startDateTime ?? this.startDateTime,
+      endDateTime: endDateTime ?? this.endDateTime,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       dateString: dateString ?? this.dateString,
       timeString: timeString ?? this.timeString,
       description: description ?? this.description,
       category: category ?? this.category,
       isPaid: isPaid ?? this.isPaid,
-      priceKhr: priceKhr ?? this.priceKhr,
+      price: price ?? this.price,
+      currency: currency ?? this.currency,
       imageUrl: imageUrl ?? this.imageUrl,
       coverImageFile: coverImageFile ?? this.coverImageFile,
       attendeesCount: attendeesCount ?? this.attendeesCount,
@@ -99,6 +124,81 @@ class EventModel {
       attendeeAvatars: attendeeAvatars ?? this.attendeeAvatars,
     );
   }
+}
+
+/// Payload used by the event creation API. Keeping it in the domain layer
+/// prevents screens from depending on JSON field names.
+class EventCreateInput {
+  final String title;
+  final String description;
+  final String category;
+  final DateTime startDateTime;
+  final DateTime endDateTime;
+  final String eventType;
+  final String? meetingUrl;
+  final String? locationName;
+  final double? latitude;
+  final double? longitude;
+  final bool paid;
+  final double? price;
+  final FinanceCurrency? currency;
+  final int? attendeeLimit;
+
+  const EventCreateInput({
+    required this.title,
+    this.description = '',
+    this.category = '',
+    required this.startDateTime,
+    required this.endDateTime,
+    required this.eventType,
+    this.meetingUrl,
+    this.locationName,
+    this.latitude,
+    this.longitude,
+    this.paid = false,
+    this.price,
+    this.currency,
+    this.attendeeLimit,
+  });
+}
+
+/// Payload used by the full event registration form.
+class EventRegistrationInput {
+  final String fullName;
+  final String email;
+  final String phoneNumber;
+  final String university;
+  final String faculty;
+  final String studyYear;
+  final bool termsAccepted;
+
+  const EventRegistrationInput({
+    required this.fullName,
+    required this.email,
+    required this.phoneNumber,
+    required this.university,
+    required this.faculty,
+    required this.studyYear,
+    required this.termsAccepted,
+  });
+}
+
+class EventRsvpResult {
+  final String eventId;
+  final String status;
+  final int attendeeCount;
+  final int xpAwarded;
+  final double? chargedAmount;
+  final bool paymentSimulated;
+
+  const EventRsvpResult({
+    required this.eventId,
+    required this.status,
+    required this.attendeeCount,
+    required this.xpAwarded,
+    this.chargedAmount,
+    required this.paymentSimulated,
+  });
 }
 
 class ForumTopicModel {
@@ -144,7 +244,9 @@ class ForumTopicModel {
           authorId == 'demo_user_1') {
         return true;
       }
-      if (currentUserId != null && currentUserId.isNotEmpty && authorId != currentUserId) {
+      if (currentUserId != null &&
+          currentUserId.isNotEmpty &&
+          authorId != currentUserId) {
         return false;
       }
     }
@@ -187,14 +289,17 @@ class ForumTopicModel {
     final authorObj = json['author'] is Map<String, dynamic>
         ? json['author'] as Map<String, dynamic>
         : null;
-    final authorName = authorObj?['fullName'] as String? ??
+    final authorName =
+        authorObj?['fullName'] as String? ??
         json['authorName'] as String? ??
         json['username'] as String? ??
         'User';
-    final authorAvatar = authorObj?['avatarUrl'] as String? ??
+    final authorAvatar =
+        authorObj?['avatarUrl'] as String? ??
         json['authorAvatar'] as String? ??
         'assets/images/user_profile.png';
-    final authorId = authorObj?['userId'] as String? ??
+    final authorId =
+        authorObj?['userId'] as String? ??
         json['authorId'] as String? ??
         json['userId'] as String?;
 
@@ -208,20 +313,22 @@ class ForumTopicModel {
           : 'assets/images/user_profile.png',
       category: json['category'] as String? ?? 'General',
       content: json['content'] as String? ?? '',
-      upvotes: json['reactionCount'] as int? ??
+      upvotes:
+          json['reactionCount'] as int? ??
           json['upvotes'] as int? ??
           json['likesCount'] as int? ??
           0,
-      repliesCount: json['commentCount'] as int? ??
+      repliesCount:
+          json['commentCount'] as int? ??
           json['repliesCount'] as int? ??
           json['commentsCount'] as int? ??
           0,
-      timeAgo: json['timeAgo'] as String? ??
+      timeAgo:
+          json['timeAgo'] as String? ??
           json['createdAt'] as String? ??
           'Just now',
-      isLiked: json['reactedByMe'] as bool? ??
-          json['isLiked'] as bool? ??
-          false,
+      isLiked:
+          json['reactedByMe'] as bool? ?? json['isLiked'] as bool? ?? false,
       isPinned: json['isPinned'] as bool? ?? false,
       isOwner: json['mine'] as bool? ?? json['isOwner'] as bool? ?? false,
     );

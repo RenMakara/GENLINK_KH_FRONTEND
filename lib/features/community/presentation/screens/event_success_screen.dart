@@ -5,17 +5,16 @@ import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
+import '../../../finance/presentation/formatters/finance_money_formatter.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import 'event_details_screen.dart';
 
 class EventSuccessScreen extends StatefulWidget {
   final EventModel event;
+  final EventRsvpResult? result;
 
-  const EventSuccessScreen({
-    super.key,
-    required this.event,
-  });
+  const EventSuccessScreen({super.key, required this.event, this.result});
 
   @override
   State<EventSuccessScreen> createState() => _EventSuccessScreenState();
@@ -76,15 +75,13 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
         curve: const Interval(0.46, 0.66, curve: Curves.easeOutQuad),
       ),
     );
-    _titleSlideAnim = Tween<Offset>(
-      begin: const Offset(0.0, 0.25),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.46, 0.66, curve: Curves.easeOutQuad),
-      ),
-    );
+    _titleSlideAnim =
+        Tween<Offset>(begin: const Offset(0.0, 0.25), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.46, 0.66, curve: Curves.easeOutQuad),
+          ),
+        );
 
     // 600ms - 760ms: Description fade
     _descFadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -101,15 +98,13 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
         curve: const Interval(0.70, 0.88, curve: Curves.easeOutQuad),
       ),
     );
-    _cardSlideAnim = Tween<Offset>(
-      begin: const Offset(0.0, 0.18),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.70, 0.88, curve: Curves.easeOutQuad),
-      ),
-    );
+    _cardSlideAnim =
+        Tween<Offset>(begin: const Offset(0.0, 0.18), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.70, 0.88, curve: Curves.easeOutQuad),
+          ),
+        );
 
     // 860ms - 1050ms: Buttons fade in
     _buttonsFadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -158,23 +153,37 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
     final isDark = theme.brightness == Brightness.dark;
 
     final bgPrimary = theme.scaffoldBackgroundColor;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final cardBg = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+    final cardBg = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
-    final titleLabel = 'community.registrationSuccessful'.tr.isNotEmpty &&
-            'community.registrationSuccessful'.tr != 'community.registrationSuccessful'
+    final titleLabel =
+        'community.registrationSuccessful'.tr.isNotEmpty &&
+            'community.registrationSuccessful'.tr !=
+                'community.registrationSuccessful'
         ? 'community.registrationSuccessful'.tr
         : 'Registration Successful!';
 
-    final primaryBtnLabel = 'community.viewEvent'.tr.isNotEmpty &&
+    final primaryBtnLabel =
+        'community.viewEvent'.tr.isNotEmpty &&
             'community.viewEvent'.tr != 'community.viewEvent'
         ? 'community.viewEvent'.tr
         : 'View Event';
 
-    final secondaryBtnLabel = 'community.done'.tr.isNotEmpty &&
+    final secondaryBtnLabel =
+        'community.done'.tr.isNotEmpty &&
             'community.done'.tr != 'community.done'
         ? 'community.done'.tr
         : 'Done';
@@ -195,7 +204,10 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
               return Center(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
+                  ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -306,16 +318,23 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
                               children: [
                                 TextSpan(
                                   text: widget.event.title.isNotEmpty
-                                      ? ('community.registeredSuccessfullyFor'.tr.isNotEmpty &&
-                                              'community.registeredSuccessfullyFor'.tr !=
-                                                  'community.registeredSuccessfullyFor'
-                                          ? '${'community.registeredSuccessfullyFor'.tr}\n'
-                                          : 'You are successfully registered for\n')
-                                      : ('community.registeredSuccessfullySub'.tr.isNotEmpty &&
-                                              'community.registeredSuccessfullySub'.tr !=
-                                                  'community.registeredSuccessfullySub'
-                                          ? 'community.registeredSuccessfullySub'.tr
-                                          : 'You are successfully registered for this event.'),
+                                      ? ('community.registeredSuccessfullyFor'
+                                                    .tr
+                                                    .isNotEmpty &&
+                                                'community.registeredSuccessfullyFor'
+                                                        .tr !=
+                                                    'community.registeredSuccessfullyFor'
+                                            ? '${'community.registeredSuccessfullyFor'.tr}\n'
+                                            : 'You are successfully registered for\n')
+                                      : ('community.registeredSuccessfullySub'
+                                                    .tr
+                                                    .isNotEmpty &&
+                                                'community.registeredSuccessfullySub'
+                                                        .tr !=
+                                                    'community.registeredSuccessfullySub'
+                                            ? 'community.registeredSuccessfullySub'
+                                                  .tr
+                                            : 'You are successfully registered for this event.'),
                                 ),
                                 if (widget.event.title.isNotEmpty)
                                   TextSpan(
@@ -371,8 +390,9 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
                                       ? AppColors.darkTextInverse
                                       : AppColors.lightTextInverse,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.md),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.md,
+                                    ),
                                   ),
                                   elevation: 0,
                                 ),
@@ -399,8 +419,9 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
                                 onPressed: () => _onDone(context),
                                 style: TextButton.styleFrom(
                                   shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.md),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.md,
+                                    ),
                                   ),
                                 ),
                                 child: Text(
@@ -440,11 +461,13 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
     required Color textMuted,
   }) {
     final isOnline = widget.event.eventType.toLowerCase().contains('online');
-    final onlineLabel = 'community.onlineEvent'.tr.isNotEmpty &&
+    final onlineLabel =
+        'community.onlineEvent'.tr.isNotEmpty &&
             'community.onlineEvent'.tr != 'community.onlineEvent'
         ? 'community.onlineEvent'.tr
         : 'Online Event';
-    final inPersonLabel = 'community.inPerson'.tr.isNotEmpty &&
+    final inPersonLabel =
+        'community.inPerson'.tr.isNotEmpty &&
             'community.inPerson'.tr != 'community.inPerson'
         ? 'community.inPerson'.tr
         : 'In person';
@@ -455,7 +478,14 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
 
     final String dateDisplay = widget.event.timeString.isNotEmpty
         ? '📅 ${widget.event.dateString} · ${widget.event.timeString}'
-        : (widget.event.dateString.isNotEmpty ? '📅 ${widget.event.dateString}' : '');
+        : (widget.event.dateString.isNotEmpty
+              ? '📅 ${widget.event.dateString}'
+              : '');
+    final chargedAmount = widget.result?.chargedAmount;
+    final paymentDisplay = chargedAmount == null
+        ? null
+        : 'Paid ${FinanceMoneyFormatter.format(chargedAmount, widget.event.currency)}'
+              '${widget.result?.paymentSimulated == true ? ' · Demo wallet' : ''}';
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -519,6 +549,19 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
                     fontWeight: FontWeight.w400,
                   ),
                 ),
+                if (paymentDisplay != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    paymentDisplay,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: textSecondary,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -529,10 +572,7 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
 
   Widget _buildThumbnail(bool isDark, Color textMuted) {
     if (widget.event.coverImageFile != null) {
-      return Image.file(
-        widget.event.coverImageFile!,
-        fit: BoxFit.cover,
-      );
+      return Image.file(widget.event.coverImageFile!, fit: BoxFit.cover);
     }
     if (widget.event.imageUrl.isNotEmpty) {
       return Image.network(
@@ -547,13 +587,11 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
 
   Widget _placeholderThumbnail(bool isDark, Color textMuted) {
     return Container(
-      color: isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary,
+      color: isDark
+          ? AppColors.darkSurfaceSecondary
+          : AppColors.lightBgSecondary,
       child: Center(
-        child: Icon(
-          Icons.event_outlined,
-          color: textMuted,
-          size: 28,
-        ),
+        child: Icon(Icons.event_outlined, color: textMuted, size: 28),
       ),
     );
   }
@@ -626,18 +664,102 @@ class _CelebrationParticlesPainter extends CustomPainter {
   });
 
   static const List<_ParticleConfig> _configs = [
-    _ParticleConfig(angle: 0.0, baseRadius: 46, maxOffset: 18, size: 3.5, type: 0, colorIdx: 0),
-    _ParticleConfig(angle: 0.52, baseRadius: 48, maxOffset: 22, size: 4.0, type: 1, colorIdx: 1),
-    _ParticleConfig(angle: 1.05, baseRadius: 44, maxOffset: 16, size: 3.0, type: 0, colorIdx: 2),
-    _ParticleConfig(angle: 1.57, baseRadius: 47, maxOffset: 20, size: 4.5, type: 1, colorIdx: 0),
-    _ParticleConfig(angle: 2.09, baseRadius: 45, maxOffset: 18, size: 3.2, type: 0, colorIdx: 1),
-    _ParticleConfig(angle: 2.62, baseRadius: 48, maxOffset: 24, size: 4.0, type: 1, colorIdx: 2),
-    _ParticleConfig(angle: 3.14, baseRadius: 46, maxOffset: 17, size: 3.5, type: 0, colorIdx: 0),
-    _ParticleConfig(angle: 3.67, baseRadius: 47, maxOffset: 22, size: 4.2, type: 1, colorIdx: 1),
-    _ParticleConfig(angle: 4.19, baseRadius: 44, maxOffset: 19, size: 3.0, type: 0, colorIdx: 2),
-    _ParticleConfig(angle: 4.71, baseRadius: 48, maxOffset: 23, size: 4.5, type: 1, colorIdx: 0),
-    _ParticleConfig(angle: 5.24, baseRadius: 45, maxOffset: 18, size: 3.2, type: 0, colorIdx: 1),
-    _ParticleConfig(angle: 5.76, baseRadius: 47, maxOffset: 20, size: 3.8, type: 1, colorIdx: 2),
+    _ParticleConfig(
+      angle: 0.0,
+      baseRadius: 46,
+      maxOffset: 18,
+      size: 3.5,
+      type: 0,
+      colorIdx: 0,
+    ),
+    _ParticleConfig(
+      angle: 0.52,
+      baseRadius: 48,
+      maxOffset: 22,
+      size: 4.0,
+      type: 1,
+      colorIdx: 1,
+    ),
+    _ParticleConfig(
+      angle: 1.05,
+      baseRadius: 44,
+      maxOffset: 16,
+      size: 3.0,
+      type: 0,
+      colorIdx: 2,
+    ),
+    _ParticleConfig(
+      angle: 1.57,
+      baseRadius: 47,
+      maxOffset: 20,
+      size: 4.5,
+      type: 1,
+      colorIdx: 0,
+    ),
+    _ParticleConfig(
+      angle: 2.09,
+      baseRadius: 45,
+      maxOffset: 18,
+      size: 3.2,
+      type: 0,
+      colorIdx: 1,
+    ),
+    _ParticleConfig(
+      angle: 2.62,
+      baseRadius: 48,
+      maxOffset: 24,
+      size: 4.0,
+      type: 1,
+      colorIdx: 2,
+    ),
+    _ParticleConfig(
+      angle: 3.14,
+      baseRadius: 46,
+      maxOffset: 17,
+      size: 3.5,
+      type: 0,
+      colorIdx: 0,
+    ),
+    _ParticleConfig(
+      angle: 3.67,
+      baseRadius: 47,
+      maxOffset: 22,
+      size: 4.2,
+      type: 1,
+      colorIdx: 1,
+    ),
+    _ParticleConfig(
+      angle: 4.19,
+      baseRadius: 44,
+      maxOffset: 19,
+      size: 3.0,
+      type: 0,
+      colorIdx: 2,
+    ),
+    _ParticleConfig(
+      angle: 4.71,
+      baseRadius: 48,
+      maxOffset: 23,
+      size: 4.5,
+      type: 1,
+      colorIdx: 0,
+    ),
+    _ParticleConfig(
+      angle: 5.24,
+      baseRadius: 45,
+      maxOffset: 18,
+      size: 3.2,
+      type: 0,
+      colorIdx: 1,
+    ),
+    _ParticleConfig(
+      angle: 5.76,
+      baseRadius: 47,
+      maxOffset: 20,
+      size: 3.8,
+      type: 1,
+      colorIdx: 2,
+    ),
   ];
 
   @override

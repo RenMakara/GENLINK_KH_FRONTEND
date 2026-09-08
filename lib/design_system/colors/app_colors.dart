@@ -33,31 +33,38 @@ abstract final class AppColors {
   static const lightPrimarySoft = Color(0xFFE8E8E3);
 
   // =========================================================
-  // DARK THEME (PRIMARY GENLINK KH PALETTE)
+  // DARK THEME (MIDNIGHT / GEN-Z GENLINK KH PALETTE)
   // =========================================================
 
   // Background
-  static const darkBgPrimary = Color(0xFF191919); // #000000
-  static const darkBgSecondary = Color(0xFF111111); // #111111
+  // A blue-black foundation keeps OLED contrast while avoiding the harsh,
+  // flat feeling of pure black. Surfaces deliberately lift in small steps so
+  // cards and sheets remain easy to scan at night.
+  static const darkBgPrimary = Color(0xFF0B1020);
+  static const darkBgSecondary = Color(0xFF0F172A);
 
   // Surface
-  static const darkSurfacePrimary = Color(0xFF181818); // #181818
-  static const darkSurfaceSecondary = Color(0xFF111111); // #111111
-  static const darkSurfaceGlass = Color.fromRGBO(24, 24, 24, 0.75);
+  static const darkSurfacePrimary = Color(0xFF121A2D);
+  static const darkSurfaceSecondary = Color(0xFF18243B);
+  static const darkSurfaceElevated = Color(0xFF1F2D47);
+  static const darkSurfaceGlass = Color.fromRGBO(18, 26, 45, 0.84);
 
   // Text
-  static const darkTextPrimary = Color(0xFFFFFFFF); // #FFFFFF
-  static const darkTextSecondary = Color(0xFFA0A0A0); // #A0A0A0
-  static const darkTextMuted = Color(0xFF666666); // #666666
-  static const darkTextInverse = Color(0xFF000000);
+  static const darkTextPrimary = Color(0xFFF7F8FC);
+  static const darkTextSecondary = Color(0xFFB6C1D8);
+  static const darkTextMuted = Color(0xFF7D8AA4);
+  static const darkTextInverse = Color(0xFF0B1020);
 
   // Border
-  static const darkBorderSubtle = Color(0xFF303030); // #303030
-  static const darkBorderStrong = Color(0xFF444444);
+  static const darkBorderSubtle = Color.fromRGBO(129, 150, 190, 0.20);
+  static const darkBorderStrong = Color(0xFF526486);
 
   // Brand
-  static const darkPrimary = Color(0xFFFFFFFF);
-  static const darkPrimarySoft = Color(0xFF242424);
+  static const darkPrimary = Color(0xFF9B8CFF);
+  static const darkPrimarySoft = Color(0xFF2A2550);
+  static const darkAccentCyan = Color(0xFF56D9FF);
+  static const darkAccentMint = Color(0xFF43D8C6);
+  static const darkAccentPink = Color(0xFFFF78B7);
 
   // =========================================================
   // Shared & Semantic Accent Colors

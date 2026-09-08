@@ -10,7 +10,7 @@ import 'shared/widgets/bottom_nav_bar.dart';
 import 'shared/widgets/global_create_sheet.dart';
 
 /// Signed-in shell. The tab order here must match [BottomNavBar]:
-/// Home (0) [Community Experience], LevelUp (1), Financial (2), Profile (3).
+/// Community (0), LevelUp (1), Finance (2), Profile (3).
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -24,7 +24,6 @@ class _MainScreenState extends State<MainScreen> {
 
   late final List<Widget> pages = [
     CommunityScreen(
-      isHomeScreen: true,
       onNavigateTab: (index) => controller.changeIndex(index),
     ),
     GrowthScreen(onNavigateTab: (index) => controller.changeIndex(index)),

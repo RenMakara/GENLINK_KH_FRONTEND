@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import '../../../finance/domain/entities/finance_entities.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import 'event_details_screen.dart';
@@ -22,6 +24,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   final TextEditingController _descController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _linkController = TextEditingController();
+  final TextEditingController _latitudeController = TextEditingController();
+  final TextEditingController _longitudeController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
 
   final FocusNode _titleFocus = FocusNode();
   final FocusNode _descFocus = FocusNode();
@@ -30,16 +35,21 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
   bool _isSubmitting = false;
   String _eventType = 'Online'; // 'Online' or 'In person'
+  bool _isPaid = false;
+  FinanceCurrency _selectedCurrency = FinanceCurrency.usd;
   File? _coverImage;
 
   String? _selectedCategory;
   DateTime? _selectedDate;
-  TimeOfDay? _selectedTime;
+  TimeOfDay? _selectedStartTime;
+  TimeOfDay? _selectedEndTime;
 
   String? _titleError;
   String? _dateError;
   String? _linkError;
   String? _locationError;
+  String? _coordinatesError;
+  String? _priceError;
 
   static const List<String> _categoryKeys = [
     'community.workshop',
@@ -51,9 +61,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     'community.categoryOther',
   ];
 
-  String get _formattedDate {
-    if (_selectedDate == null) return '';
-    final d = _selectedDate!;
+  String _dateLabel(DateTime d) {
     final months = [
       'Jan',
       'Feb',
@@ -69,20 +77,27 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       'Dec',
     ];
     final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return '${days[d.weekday - 1]}, ${months[d.month - 1]} ${d.day}';
+  }
 
-    final dayName = days[d.weekday - 1];
-    final monthName = months[d.month - 1];
-    final dateStr = '$dayName, $monthName ${d.day}';
+  String _timeLabel(TimeOfDay? time) {
+    if (time == null) return '';
+    final h = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+    final m = time.minute.toString().padLeft(2, '0');
+    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+    return '$h:$m $period';
+  }
 
-    if (_selectedTime != null) {
-      final h = _selectedTime!.hourOfPeriod == 0
-          ? 12
-          : _selectedTime!.hourOfPeriod;
-      final m = _selectedTime!.minute.toString().padLeft(2, '0');
-      final period = _selectedTime!.period == DayPeriod.am ? 'AM' : 'PM';
-      return '$dateStr · $h:$m $period';
-    }
-    return dateStr;
+  String get _formattedStartDateTime {
+    if (_selectedDate == null) return '';
+    final time = _timeLabel(_selectedStartTime);
+    return '${_dateLabel(_selectedDate!)}${time.isEmpty ? '' : ' · $time'}';
+  }
+
+  String get _formattedEndDateTime {
+    if (_selectedDate == null) return '';
+    final time = _timeLabel(_selectedEndTime);
+    return '${_dateLabel(_selectedDate!)}${time.isEmpty ? '' : ' · $time'}';
   }
 
   @override
@@ -96,7 +111,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       }
     });
     _locationController.addListener(() {
-      if (_locationError != null && _locationController.text.trim().isNotEmpty) {
+      if (_locationError != null &&
+          _locationController.text.trim().isNotEmpty) {
         setState(() => _locationError = null);
       } else {
         setState(() {});
@@ -117,6 +133,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     _descController.dispose();
     _locationController.dispose();
     _linkController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
+    _priceController.dispose();
     _titleFocus.dispose();
     _descFocus.dispose();
     _locationFocus.dispose();
@@ -130,6 +149,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         _descController.text.trim().isNotEmpty ||
         _locationController.text.trim().isNotEmpty ||
         _linkController.text.trim().isNotEmpty ||
+        _latitudeController.text.trim().isNotEmpty ||
+        _longitudeController.text.trim().isNotEmpty ||
+        _priceController.text.trim().isNotEmpty ||
+        _isPaid ||
         _selectedDate != null ||
         _selectedCategory != null ||
         _coverImage != null;
@@ -144,7 +167,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: dialogBg,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Text(
             'community.discardDraft'.tr,
             style: TextStyle(
@@ -162,7 +187,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               onPressed: () => Navigator.pop(ctx),
               child: Text(
                 'community.keepEditing'.tr,
-                style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
+                style: TextStyle(
+                  color: isDark ? Colors.white60 : Colors.black54,
+                ),
               ),
             ),
             TextButton(
@@ -172,7 +199,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               },
               child: Text(
                 'community.discard'.tr,
-                style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -237,18 +267,48 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       });
       if (!mounted) return;
 
-      final initialTime = _selectedTime ?? const TimeOfDay(hour: 9, minute: 0);
+      final initialTime =
+          _selectedStartTime ?? const TimeOfDay(hour: 9, minute: 0);
       final pickedTime = await _showCustomTimePicker(
         context,
         initialTime: initialTime,
       );
       if (pickedTime != null) {
-        setState(() => _selectedTime = pickedTime);
+        setState(() {
+          _selectedStartTime = pickedTime;
+          _selectedEndTime ??= _oneHourLater(pickedTime);
+        });
       }
     }
   }
 
-  void _submit() async {
+  TimeOfDay _oneHourLater(TimeOfDay time) {
+    final minutes = (time.hour * 60 + time.minute + 60) % (24 * 60);
+    return TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
+  }
+
+  Future<void> _pickEndTime() async {
+    if (_selectedDate == null) {
+      await _pickDate();
+      return;
+    }
+    final pickedTime = await _showCustomTimePicker(
+      context,
+      initialTime:
+          _selectedEndTime ??
+          _oneHourLater(
+            _selectedStartTime ?? const TimeOfDay(hour: 9, minute: 0),
+          ),
+    );
+    if (pickedTime != null) {
+      setState(() {
+        _selectedEndTime = pickedTime;
+        _dateError = null;
+      });
+    }
+  }
+
+  Future<void> _submit() async {
     if (_isSubmitting) return;
 
     final title = _titleController.text.trim();
@@ -263,14 +323,44 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       return;
     }
 
-    if (_selectedDate == null) {
-      setState(() => _dateError = 'Date & time is required');
+    if (_selectedDate == null ||
+        _selectedStartTime == null ||
+        _selectedEndTime == null) {
+      setState(() => _dateError = 'Start and end time are required');
       AppNotificationBanner.showDanger(
         context: context,
         title: 'Validation Error',
-        message: 'Date & time is required.',
+        message: 'Start and end time are required.',
       );
       return;
+    }
+
+    final startMinutes =
+        _selectedStartTime!.hour * 60 + _selectedStartTime!.minute;
+    final endMinutes = _selectedEndTime!.hour * 60 + _selectedEndTime!.minute;
+    if (endMinutes <= startMinutes) {
+      setState(() => _dateError = 'End time must be after start time');
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: 'Validation Error',
+        message: 'End time must be after start time.',
+      );
+      return;
+    }
+
+    double? price;
+    if (_isPaid) {
+      final priceText = _priceController.text.trim();
+      price = double.tryParse(priceText);
+      if (price == null || !price.isFinite || price <= 0) {
+        setState(() => _priceError = 'Enter a price greater than zero');
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: 'Validation Error',
+          message: 'Paid events need a price greater than zero.',
+        );
+        return;
+      }
     }
 
     if (_eventType == 'Online') {
@@ -281,6 +371,19 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           context: context,
           title: 'Validation Error',
           message: 'Online event link is required.',
+        );
+        _linkFocus.requestFocus();
+        return;
+      }
+      final uri = Uri.tryParse(link);
+      if (uri == null ||
+          (uri.scheme != 'http' && uri.scheme != 'https') ||
+          uri.host.isEmpty) {
+        setState(() => _linkError = 'Enter a valid http(s) meeting URL');
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: 'Validation Error',
+          message: 'Enter a valid http(s) meeting URL.',
         );
         _linkFocus.requestFocus();
         return;
@@ -299,54 +402,90 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       }
     }
 
+    final latitudeText = _latitudeController.text.trim();
+    final longitudeText = _longitudeController.text.trim();
+    final latitude = latitudeText.isEmpty
+        ? null
+        : double.tryParse(latitudeText);
+    final longitude = longitudeText.isEmpty
+        ? null
+        : double.tryParse(longitudeText);
+    if ((latitudeText.isNotEmpty && latitude == null) ||
+        (longitudeText.isNotEmpty && longitude == null) ||
+        (latitude != null && (latitude < -90 || latitude > 90)) ||
+        (longitude != null && (longitude < -180 || longitude > 180)) ||
+        (latitude == null) != (longitude == null)) {
+      setState(() => _coordinatesError = 'Enter both valid map coordinates');
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: 'Validation Error',
+        message: 'Enter both valid latitude and longitude values.',
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
+    try {
+      final start = DateTime(
+        _selectedDate!.year,
+        _selectedDate!.month,
+        _selectedDate!.day,
+        _selectedStartTime!.hour,
+        _selectedStartTime!.minute,
+      );
+      final end = DateTime(
+        _selectedDate!.year,
+        _selectedDate!.month,
+        _selectedDate!.day,
+        _selectedEndTime!.hour,
+        _selectedEndTime!.minute,
+      );
+      final controller = Get.isRegistered<CommunityController>()
+          ? Get.find<CommunityController>()
+          : Get.put(CommunityController());
+      final createdEvent = await controller.createEventRemote(
+        EventCreateInput(
+          title: title,
+          description: _descController.text.trim(),
+          category: _selectedCategory?.split('.').last ?? '',
+          startDateTime: start,
+          endDateTime: end,
+          eventType: _eventType,
+          meetingUrl: _eventType == 'Online'
+              ? _linkController.text.trim()
+              : null,
+          locationName: _eventType == 'In person'
+              ? _locationController.text.trim()
+              : null,
+          latitude: _eventType == 'In person' ? latitude : null,
+          longitude: _eventType == 'In person' ? longitude : null,
+          paid: _isPaid,
+          price: price,
+          currency: _isPaid ? _selectedCurrency : null,
+        ),
+      );
 
-    // Short UI feedback delay (local-first, no network)
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (!mounted) return;
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      AppNotificationBanner.showSuccess(
+        context: context,
+        title: 'community.eventCreated'.tr,
+        message: 'community.eventCreatedMsg'.tr,
+      );
 
-    // Build an EventModel from the form data
-    final newEvent = EventModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title,
-      subtitle: _descController.text.trim().isNotEmpty
-          ? _descController.text.trim().split('\n').first
-          : '',
-      organizerName: 'Me',
-      eventType: _eventType,
-      location: _eventType == 'In person'
-          ? _locationController.text.trim()
-          : '',
-      onlineLink: _eventType == 'Online' ? _linkController.text.trim() : '',
-      dateString: _formattedDate,
-      timeString: '',
-      description: _descController.text.trim(),
-      category: _selectedCategory?.tr ?? '',
-      imageUrl: '',
-      coverImageFile: _coverImage,
-      attendeesCount: 0,
-    );
-
-    // Register in controller so the Event list updates reactively
-    final controller = Get.isRegistered<CommunityController>()
-        ? Get.find<CommunityController>()
-        : Get.put(CommunityController());
-    controller.createEvent(newEvent);
-
-    setState(() => _isSubmitting = false);
-
-    if (!mounted) return;
-    AppNotificationBanner.showSuccess(
-      context: context,
-      title: 'community.eventCreated'.tr,
-      message: 'community.eventCreatedMsg'.tr,
-    );
-
-    if (widget.returnCreatedEvent) {
-      Get.back(result: newEvent);
-    } else {
-      // Navigate to the freshly-created event's detail screen
-      Get.off(() => EventDetailsScreen(event: newEvent));
+      if (widget.returnCreatedEvent) {
+        Get.back(result: createdEvent);
+      } else {
+        Get.off(() => EventDetailsScreen(event: createdEvent));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: 'Unable to create event',
+        message: e.toString(),
+      );
     }
   }
 
@@ -459,7 +598,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         children: [
                           if (_coverImage != null)
                             Positioned.fill(
-                              child: Image.file(_coverImage!, fit: BoxFit.cover),
+                              child: Image.file(
+                                _coverImage!,
+                                fit: BoxFit.cover,
+                              ),
                             )
                           else
                             GestureDetector(
@@ -495,7 +637,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: isDark ? Colors.black54 : Colors.white70,
+                                      color: isDark
+                                          ? Colors.black54
+                                          : Colors.white70,
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
@@ -508,7 +652,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                                 if (_coverImage != null) ...[
                                   const SizedBox(width: 8),
                                   GestureDetector(
-                                    onTap: () => setState(() => _coverImage = null),
+                                    onTap: () =>
+                                        setState(() => _coverImage = null),
                                     child: Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
@@ -548,9 +693,113 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                           children: [
                             _buildRadioButton('Online', 'Online', textPrimary),
                             const SizedBox(width: 24),
-                            _buildRadioButton('In person', 'In person', textPrimary),
+                            _buildRadioButton(
+                              'In person',
+                              'In person',
+                              textPrimary,
+                            ),
                           ],
                         ),
+                        const SizedBox(height: 24),
+
+                        // ── Registration Fee ─────────────────────────────────
+                        _buildLabel('Registration fee', textMuted),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            _buildChoiceButton(
+                              title: 'Free',
+                              selected: !_isPaid,
+                              onTap: () => setState(() {
+                                _isPaid = false;
+                                _priceError = null;
+                              }),
+                              textPrimary: textPrimary,
+                              selectedForeground: bg,
+                              selectedBackground: textPrimary,
+                              unselectedBackground: inputBg,
+                              borderColor: cardBorder,
+                            ),
+                            const SizedBox(width: 10),
+                            _buildChoiceButton(
+                              title: 'Paid',
+                              selected: _isPaid,
+                              onTap: () => setState(() => _isPaid = true),
+                              textPrimary: textPrimary,
+                              selectedForeground: bg,
+                              selectedBackground: textPrimary,
+                              unselectedBackground: inputBg,
+                              borderColor: cardBorder,
+                            ),
+                          ],
+                        ),
+                        if (_isPaid) ...[
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _priceController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                RegExp(r'[0-9.]'),
+                              ),
+                            ],
+                            style: TextStyle(color: textPrimary, fontSize: 16),
+                            onChanged: (_) {
+                              if (_priceError != null) {
+                                setState(() => _priceError = null);
+                              }
+                            },
+                            decoration: _inputDeco(
+                              cardBorder: cardBorder,
+                              textPrimary: textPrimary,
+                              inputBg: inputBg,
+                              errorText: _priceError,
+                              hintText: 'Enter event price',
+                              textMuted: textMuted,
+                              prefixIcon: Icon(
+                                Icons.payments_outlined,
+                                color: textMuted,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildLabel('Currency', textMuted),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              _buildChoiceButton(
+                                title: 'USD',
+                                selected:
+                                    _selectedCurrency == FinanceCurrency.usd,
+                                onTap: () => setState(() {
+                                  _selectedCurrency = FinanceCurrency.usd;
+                                }),
+                                textPrimary: textPrimary,
+                                selectedForeground: bg,
+                                selectedBackground: textPrimary,
+                                unselectedBackground: inputBg,
+                                borderColor: cardBorder,
+                              ),
+                              const SizedBox(width: 10),
+                              _buildChoiceButton(
+                                title: 'KHR',
+                                selected:
+                                    _selectedCurrency == FinanceCurrency.khr,
+                                onTap: () => setState(() {
+                                  _selectedCurrency = FinanceCurrency.khr;
+                                }),
+                                textPrimary: textPrimary,
+                                selectedForeground: bg,
+                                selectedBackground: textPrimary,
+                                unselectedBackground: inputBg,
+                                borderColor: cardBorder,
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 24),
 
                         // ── Event Name ──────────────────────────────────────────
@@ -576,26 +825,59 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        // ── Date and Time ───────────────────────────────────────
-                        _buildLabel('Date & time*', textMuted),
+                        // ── Start and End Date/Time ────────────────────────────
+                        _buildLabel('Start date & time*', textMuted),
                         const SizedBox(height: 8),
                         InkWell(
                           onTap: _pickDate,
                           child: IgnorePointer(
                             child: TextField(
                               controller: TextEditingController(
-                                text: _formattedDate,
+                                text: _formattedStartDateTime,
                               ),
-                              style: TextStyle(color: textPrimary, fontSize: 16),
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 16,
+                              ),
                               decoration: _inputDeco(
                                 cardBorder: cardBorder,
                                 textPrimary: textPrimary,
                                 inputBg: inputBg,
                                 errorText: _dateError,
-                                hintText: 'Select date and time',
+                                hintText: 'Select start date and time',
                                 textMuted: textMuted,
                                 prefixIcon: Icon(
                                   Icons.calendar_today_outlined,
+                                  color: textMuted,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildLabel('End date & time*', textMuted),
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: _pickEndTime,
+                          child: IgnorePointer(
+                            child: TextField(
+                              controller: TextEditingController(
+                                text: _formattedEndDateTime,
+                              ),
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 16,
+                              ),
+                              decoration: _inputDeco(
+                                cardBorder: cardBorder,
+                                textPrimary: textPrimary,
+                                inputBg: inputBg,
+                                errorText: _dateError,
+                                hintText: 'Select end date and time',
+                                textMuted: textMuted,
+                                prefixIcon: Icon(
+                                  Icons.event_available_outlined,
                                   color: textMuted,
                                   size: 18,
                                 ),
@@ -648,6 +930,65 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                             ),
                             textInputAction: TextInputAction.next,
                             onSubmitted: (_) => _descFocus.requestFocus(),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _latitudeController,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                        signed: true,
+                                      ),
+                                  style: TextStyle(
+                                    color: textPrimary,
+                                    fontSize: 15,
+                                  ),
+                                  decoration: _inputDeco(
+                                    cardBorder: cardBorder,
+                                    textPrimary: textPrimary,
+                                    inputBg: inputBg,
+                                    hintText: 'Latitude (optional)',
+                                    textMuted: textMuted,
+                                    prefixIcon: Icon(
+                                      Icons.my_location_outlined,
+                                      color: textMuted,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: TextField(
+                                  controller: _longitudeController,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                        signed: true,
+                                      ),
+                                  style: TextStyle(
+                                    color: textPrimary,
+                                    fontSize: 15,
+                                  ),
+                                  decoration: _inputDeco(
+                                    cardBorder: cardBorder,
+                                    textPrimary: textPrimary,
+                                    inputBg: inputBg,
+                                    errorText: _coordinatesError,
+                                    hintText: 'Longitude (optional)',
+                                    textMuted: textMuted,
+                                    prefixIcon: Icon(
+                                      Icons.location_on_outlined,
+                                      color: textMuted,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                         const SizedBox(height: 24),
@@ -744,7 +1085,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     );
   }
 
-  Widget _buildRadioButton(String displayTitle, String rawValue, Color textPrimary) {
+  Widget _buildRadioButton(
+    String displayTitle,
+    String rawValue,
+    Color textPrimary,
+  ) {
     final isSelected = _eventType == rawValue;
     return GestureDetector(
       onTap: () {
@@ -771,8 +1116,45 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          Text(displayTitle, style: TextStyle(color: textPrimary, fontSize: 15)),
+          Text(
+            displayTitle,
+            style: TextStyle(color: textPrimary, fontSize: 15),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildChoiceButton({
+    required String title,
+    required bool selected,
+    required VoidCallback onTap,
+    required Color textPrimary,
+    required Color selectedForeground,
+    required Color selectedBackground,
+    required Color unselectedBackground,
+    required Color borderColor,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? selectedBackground : unselectedBackground,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? selectedBackground : borderColor,
+          ),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            color: selected ? selectedForeground : textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     );
   }
@@ -795,10 +1177,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           : null,
       prefixIcon: prefixIcon,
       errorText: errorText,
-      errorStyle: const TextStyle(
-        color: Colors.redAccent,
-        fontSize: 12,
-      ),
+      errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
         borderSide: BorderSide(color: cardBorder),
@@ -891,18 +1270,25 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
     final border = isDark ? const Color(0xFF303030) : const Color(0xFFE5E7EB);
     final textPrimary = isDark ? Colors.white : Colors.black87;
     final textSecondary = isDark ? Colors.white60 : const Color(0xFF6B7280);
-    final surfaceUnselected = isDark ? const Color(0xFF222222) : const Color(0xFFF3F4F6);
-    final displayBoxBg = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF9FAFB);
+    final surfaceUnselected = isDark
+        ? const Color(0xFF222222)
+        : const Color(0xFFF3F4F6);
+    final displayBoxBg = isDark
+        ? const Color(0xFF1A1A1A)
+        : const Color(0xFFF9FAFB);
 
-    final selectTimeTitle = 'community.selectTime'.tr.isNotEmpty &&
+    final selectTimeTitle =
+        'community.selectTime'.tr.isNotEmpty &&
             'community.selectTime'.tr != 'community.selectTime'
         ? 'community.selectTime'.tr
         : 'Select time';
-    final hourLabel = 'community.hour'.tr.isNotEmpty &&
+    final hourLabel =
+        'community.hour'.tr.isNotEmpty &&
             'community.hour'.tr != 'community.hour'
         ? 'community.hour'.tr
         : 'Hour';
-    final minuteLabel = 'community.minute'.tr.isNotEmpty &&
+    final minuteLabel =
+        'community.minute'.tr.isNotEmpty &&
             'community.minute'.tr != 'community.minute'
         ? 'community.minute'.tr
         : 'Minute';

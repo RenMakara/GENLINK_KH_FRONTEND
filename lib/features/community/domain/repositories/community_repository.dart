@@ -2,6 +2,21 @@ import '../models/community_models.dart';
 import '../models/community_post_model.dart';
 
 abstract class CommunityRepository {
+  Future<List<EventModel>> getEvents({
+    String? category,
+    int page = 1,
+    int limit = 20,
+  });
+
+  Future<EventModel> createEvent(EventCreateInput input);
+
+  Future<EventRsvpResult> registerForEvent(
+    String eventId,
+    EventRegistrationInput input,
+  );
+
+  Future<void> cancelEventRegistration(String eventId);
+
   Future<List<CommunityPostModel>> getPosts({int page = 1, int limit = 10});
 
   Future<CommunityPostModel> createPost({
@@ -25,7 +40,10 @@ abstract class CommunityRepository {
   Future<bool> toggleBookmark(String postId);
   Future<bool> repostPost(String postId, {String? caption, String? reposterId});
   Future<bool> unrepostPost(String postId, {String? reposterId});
-  Future<bool> reportPost(String postId, {String reason = 'INAPPROPRIATE_CONTENT'});
+  Future<bool> reportPost(
+    String postId, {
+    String reason = 'INAPPROPRIATE_CONTENT',
+  });
 
   Future<List<CommentModel>> getComments(String postId);
 

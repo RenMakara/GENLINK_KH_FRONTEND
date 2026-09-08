@@ -193,7 +193,7 @@ void main() {
     });
   });
 
-  test('logout resets the main navigation tab to Home', () async {
+  test('logout resets the main navigation tab to Community', () async {
     mainController.changeIndex(3);
     when(() => google.signOut()).thenAnswer((_) async {});
     when(() => repository.logout()).thenAnswer((_) async {});

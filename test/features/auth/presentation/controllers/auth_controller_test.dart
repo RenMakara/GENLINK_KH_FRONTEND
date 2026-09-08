@@ -120,6 +120,9 @@ void main() {
       ).thenAnswer((_) async => 'access-token');
       when(() => storage.saveUserEmail(any())).thenAnswer((_) async {});
       when(() => storage.saveUserId(any())).thenAnswer((_) async {});
+      when(
+        () => storage.readAccessToken(),
+      ).thenAnswer((_) async => 'access-token');
 
       final result = await controller.signInWithGoogle();
 

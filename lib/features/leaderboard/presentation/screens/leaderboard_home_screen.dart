@@ -3,17 +3,18 @@ import 'package:get/get.dart';
 
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
+import '../../../../design_system/widgets/surfaces/app_glass_surface.dart';
 import '../controllers/leaderboard_controller.dart';
 import '../../domain/models/leaderboard_models.dart';
-import '../../../quiz/presentation/quiz_colors.dart';
 
 class LeaderboardHomeScreen extends GetView<LeaderboardController> {
   const LeaderboardHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: QuizColors.background,
+      backgroundColor: scheme.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -23,17 +24,15 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
         ),
         title: Text(
           'quiz.leaderboard'.tr,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: QuizColors.heading,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: scheme.onSurface,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.emoji_events_outlined,
-              color: QuizColors.primary,
+              color: scheme.primary,
             ),
             onPressed: () => Get.toNamed('/leaderboard/achievements'),
           ),
@@ -41,8 +40,8 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(
-            child: CircularProgressIndicator(color: QuizColors.primary),
+          return Center(
+            child: CircularProgressIndicator(color: scheme.primary),
           );
         }
 
@@ -54,21 +53,21 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
             controller.selectedTab.value == LeaderboardTab.country;
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Column(
             children: [
               const SizedBox(height: 8),
-              _buildSegmentedTabs(),
+              _buildSegmentedTabs(scheme),
               const SizedBox(height: 20),
-              if (isCountry) _buildCountryHeader(),
-              if (isGlobal) _buildPodium(users),
+              if (isCountry) _buildCountryHeader(scheme),
+              if (isGlobal) _buildPodium(users, scheme),
               const SizedBox(height: 20),
-              _buildRankedList(users),
-              if (isFriends) _buildInviteBanner(),
-              if (isCountry) _buildCountryBanner(),
+              _buildRankedList(users, scheme),
+              if (isFriends) _buildInviteBanner(scheme),
+              if (isCountry) _buildCountryBanner(scheme),
               const SizedBox(height: 16),
-              if (isGlobal) _buildFullLeaderboardButton(),
-              _buildBottomBanner(isGlobal, isCountry),
+              if (isGlobal) _buildFullLeaderboardButton(scheme),
+              _buildBottomBanner(isGlobal, isCountry, scheme),
               const SizedBox(height: 20),
             ],
           ),
@@ -77,25 +76,30 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
     );
   }
 
-  Widget _buildSegmentedTabs() {
+  Widget _buildSegmentedTabs(ColorScheme scheme) {
     final tabs = controller.selectedTab.value;
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFEEEAFD),
+        color: scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(28),
       ),
       child: Row(
         children: [
-          _buildTab('leaderboard.global'.tr, LeaderboardTab.global, tabs),
-          _buildTab('leaderboard.friends'.tr, LeaderboardTab.friends, tabs),
-          _buildTab('leaderboard.country'.tr, LeaderboardTab.country, tabs),
+          _buildTab('leaderboard.global'.tr, LeaderboardTab.global, tabs, scheme),
+          _buildTab('leaderboard.friends'.tr, LeaderboardTab.friends, tabs, scheme),
+          _buildTab('leaderboard.country'.tr, LeaderboardTab.country, tabs, scheme),
         ],
       ),
     );
   }
 
-  Widget _buildTab(String label, LeaderboardTab tab, LeaderboardTab active) {
+  Widget _buildTab(
+    String label,
+    LeaderboardTab tab,
+    LeaderboardTab active,
+    ColorScheme scheme,
+  ) {
     final isActive = tab == active;
     return Expanded(
       child: GestureDetector(
@@ -103,7 +107,7 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isActive ? QuizColors.primary : Colors.transparent,
+            color: isActive ? scheme.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(24),
           ),
           child: FittedBox(
@@ -115,7 +119,7 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: isActive ? Colors.white : QuizColors.body,
+                color: isActive ? scheme.onPrimary : scheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -124,14 +128,14 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
     );
   }
 
-  Widget _buildCountryHeader() {
+  Widget _buildCountryHeader(ColorScheme scheme) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: QuizColors.primaryLight,
+        color: scheme.primaryContainer,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: QuizColors.primary.withValues(alpha: 0.2)),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -140,10 +144,10 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
           Expanded(
             child: Text(
               'leaderboard.cambodiaRanking'.tr,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: QuizColors.heading,
+                color: scheme.onSurface,
               ),
             ),
           ),
@@ -152,24 +156,28 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
     );
   }
 
-  Widget _buildPodium(List<LeaderboardUser> users) {
+  Widget _buildPodium(List<LeaderboardUser> users, ColorScheme scheme) {
     if (users.length < 3) return const SizedBox.shrink();
 
     final first = users[0];
     final second = users.length > 1 ? users[1] : null;
     final third = users.length > 2 ? users[2] : null;
 
-    return SizedBox(
-      height: 230,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
+    return AppGlassSurface(
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: SizedBox(
+        height: 230,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
           Expanded(
             child: _buildPodiumItem(
               second!,
               2,
               _silverGradient,
               const Color(0xFF9CA3AF),
+              scheme,
             ),
           ),
           Expanded(
@@ -178,6 +186,7 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               1,
               _goldGradient,
               const Color(0xFFFFC107),
+              scheme,
             ),
           ),
           Expanded(
@@ -186,9 +195,11 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               3,
               _bronzeGradient,
               const Color(0xFFD97706),
+              scheme,
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -198,6 +209,7 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
     int rank,
     LinearGradient gradient,
     Color accent,
+    ColorScheme scheme,
   ) {
     final isFirst = rank == 1;
     final avatarSize = isFirst ? 72.0 : 56.0;
@@ -229,15 +241,15 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               ],
               border: Border.all(color: accent, width: 2),
             ),
-            child: const Icon(Icons.person, color: Colors.white, size: 32),
+            child: Icon(Icons.person, color: scheme.onPrimary, size: 32),
           ),
           const SizedBox(height: 8),
           Text(
             user.name,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: QuizColors.heading,
+              color: scheme.onSurface,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -262,7 +274,7 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
     );
   }
 
-  Widget _buildRankedList(List<LeaderboardUser> users) {
+  Widget _buildRankedList(List<LeaderboardUser> users, ColorScheme scheme) {
     final listUsers = users.length > 3 ? users.sublist(3) : <LeaderboardUser>[];
 
     return Column(
@@ -274,16 +286,16 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               'leaderboard.noMoreUsers'.tr,
               style: TextStyle(
                 fontSize: 14,
-                color: QuizColors.body.withValues(alpha: 0.7),
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
           ),
-        ...listUsers.map((user) => _buildRankRow(user)),
+        ...listUsers.map((user) => _buildRankRow(user, scheme)),
       ],
     );
   }
 
-  Widget _buildRankRow(LeaderboardUser user) {
+  Widget _buildRankRow(LeaderboardUser user, ColorScheme scheme) {
     final isMe = user.isCurrentUser;
     return GestureDetector(
       onTap: () => Get.toNamed('/leaderboard/profile', arguments: user),
@@ -291,13 +303,13 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: isMe ? QuizColors.primaryLight : QuizColors.surface,
+          color: isMe ? scheme.primaryContainer : scheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isMe ? QuizColors.primary : QuizColors.border,
+            color: isMe ? scheme.primary : scheme.outlineVariant,
             width: isMe ? 1.5 : 1,
           ),
-          boxShadow: isMe ? [] : QuizColors.cardShadow,
+          boxShadow: isMe ? [] : _cardShadow(scheme),
         ),
         child: Row(
           children: [
@@ -305,7 +317,7 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: isMe ? QuizColors.primary : QuizColors.border,
+                color: isMe ? scheme.primary : scheme.outlineVariant,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(
@@ -314,7 +326,7 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: isMe ? Colors.white : QuizColors.body,
+                    color: isMe ? scheme.onPrimary : scheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -323,11 +335,11 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
             Container(
               width: 40,
               height: 40,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: QuizColors.gradient,
+                gradient: _primaryGradient(scheme),
               ),
-              child: const Icon(Icons.person, color: Colors.white, size: 20),
+              child: Icon(Icons.person, color: scheme.onPrimary, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -339,14 +351,14 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: isMe ? FontWeight.w700 : FontWeight.w500,
-                      color: isMe ? QuizColors.primary : QuizColors.heading,
+                      color: isMe ? scheme.primary : scheme.onSurface,
                     ),
                   ),
                   Text(
                     '${user.xp} XP',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: QuizColors.body,
+                      color: scheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -359,15 +371,15 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: QuizColors.primary,
+                  color: scheme.primary,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   'quiz.you'.tr,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: scheme.onPrimary,
                   ),
                 ),
               ),
@@ -377,15 +389,15 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
     );
   }
 
-  Widget _buildInviteBanner() {
+  Widget _buildInviteBanner(ColorScheme scheme) {
     return Container(
       margin: const EdgeInsets.only(top: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: QuizColors.surface,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: QuizColors.border),
-        boxShadow: QuizColors.cardShadow,
+        border: Border.all(color: scheme.outlineVariant),
+        boxShadow: _cardShadow(scheme),
       ),
       child: Row(
         children: [
@@ -393,12 +405,12 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: QuizColors.primaryLight,
+              color: scheme.primaryContainer,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.celebration,
-              color: QuizColors.primary,
+              color: scheme.primary,
               size: 26,
             ),
           ),
@@ -409,16 +421,16 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               children: [
                 Text(
                   'leaderboard.inviteFriends'.tr,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: QuizColors.heading,
+                    color: scheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'leaderboard.competeOnLeaderboard'.tr,
-                  style: const TextStyle(fontSize: 13, color: QuizColors.body),
+                  style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -428,15 +440,15 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                gradient: QuizColors.gradient,
+                gradient: _primaryGradient(scheme),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 'leaderboard.invite'.tr,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: scheme.onPrimary,
                 ),
               ),
             ),
@@ -446,14 +458,14 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
     );
   }
 
-  Widget _buildCountryBanner() {
+  Widget _buildCountryBanner(ColorScheme scheme) {
     return Container(
       margin: const EdgeInsets.only(top: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: QuizColors.primaryLight,
+        color: scheme.primaryContainer,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: QuizColors.primary.withValues(alpha: 0.2)),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -461,7 +473,7 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: QuizColors.primary.withValues(alpha: 0.15),
+              color: scheme.primary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Center(
@@ -475,27 +487,27 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               children: [
                 Text(
                   'leaderboard.yourCountryRank'.trParams({'rank': '3'}),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: QuizColors.heading,
+                    color: scheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   controller.countryRankPercent,
-                  style: const TextStyle(fontSize: 13, color: QuizColors.body),
+                  style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: QuizColors.body, size: 22),
+          Icon(Icons.chevron_right, color: scheme.onSurfaceVariant, size: 22),
         ],
       ),
     );
   }
 
-  Widget _buildFullLeaderboardButton() {
+  Widget _buildFullLeaderboardButton(ColorScheme scheme) {
     return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 20),
       child: SizedBox(
@@ -503,7 +515,7 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
         height: 52,
         child: Container(
           decoration: BoxDecoration(
-            gradient: QuizColors.gradient,
+            gradient: _primaryGradient(scheme),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Material(
@@ -514,10 +526,10 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
               child: Center(
                 child: Text(
                   'leaderboard.viewFull'.tr,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: scheme.onPrimary,
                   ),
                 ),
               ),
@@ -528,7 +540,11 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
     );
   }
 
-  Widget _buildBottomBanner(bool isGlobal, bool isCountry) {
+  Widget _buildBottomBanner(
+    bool isGlobal,
+    bool isCountry,
+    ColorScheme scheme,
+  ) {
     String text;
     if (isCountry) {
       text = 'leaderboard.yourRankBanner'.trParams({
@@ -542,35 +558,50 @@ class LeaderboardHomeScreen extends GetView<LeaderboardController> {
       });
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: QuizColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: QuizColors.border),
-        boxShadow: QuizColors.cardShadow,
+    return AppGlassSurface(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
       ),
       child: Row(
         children: [
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: QuizColors.body,
+                color: scheme.onSurfaceVariant,
               ),
             ),
           ),
           const SizedBox(width: 8),
-          const Icon(
+          Icon(
             Icons.arrow_forward_ios,
-            color: QuizColors.primary,
+            color: scheme.primary,
             size: 14,
           ),
         ],
       ),
     );
+  }
+
+  LinearGradient _primaryGradient(ColorScheme scheme) {
+    return LinearGradient(
+      colors: [scheme.primary, scheme.primary.withValues(alpha: 0.78)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+  }
+
+  List<BoxShadow> _cardShadow(ColorScheme scheme) {
+    return [
+      BoxShadow(
+        color: scheme.shadow.withValues(alpha: 0.08),
+        blurRadius: 12,
+        offset: const Offset(0, 4),
+      ),
+    ];
   }
 
   static const _goldGradient = LinearGradient(

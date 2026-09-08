@@ -75,7 +75,7 @@ class _RewardAnimationScreenState extends State<RewardAnimationScreen>
     final result = controller.quizResult.value;
 
     return Scaffold(
-      backgroundColor: QuizColors.darkOverlay,
+      backgroundColor: QuizThemeColors.darkOverlay,
       body: Stack(
         children: [
           _buildSparkles(),
@@ -98,7 +98,7 @@ class _RewardAnimationScreenState extends State<RewardAnimationScreen>
                               'xp': '${result.xpEarned}',
                             }),
                             Icons.star,
-                            QuizColors.primary,
+                            QuizThemeColors.primary,
                           ),
                           const SizedBox(height: 14),
                           _buildRewardCard(
@@ -106,16 +106,16 @@ class _RewardAnimationScreenState extends State<RewardAnimationScreen>
                               'coins': '${result.coinsEarned}',
                             }),
                             Icons.monetization_on,
-                            QuizColors.gold,
+                            QuizThemeColors.gold,
                           ),
                         ],
                         const SizedBox(height: 32),
                         Text(
                           'quiz.rewardsEarned'.tr,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: QuizThemeColors.rewardForeground,
                           ),
                         ),
                       ],
@@ -147,7 +147,11 @@ class _RewardAnimationScreenState extends State<RewardAnimationScreen>
           ),
         ],
       ),
-      child: const Icon(Icons.emoji_events, color: Colors.white, size: 56),
+      child: Icon(
+        Icons.emoji_events,
+        color: QuizThemeColors.rewardForeground,
+        size: 56,
+      ),
     );
   }
 
@@ -155,9 +159,11 @@ class _RewardAnimationScreenState extends State<RewardAnimationScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
+        color: QuizThemeColors.rewardForeground.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: QuizThemeColors.rewardForeground.withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -222,7 +228,9 @@ class _SparklePainter extends CustomPainter {
     for (final p in points) {
       final x = p.x * size.width;
       final y = (p.baseY * size.height) + sin(time * 2 + p.phaseOffset) * 20;
-      paint.color = Colors.white.withValues(alpha: p.opacity);
+      paint.color = QuizThemeColors.rewardForeground.withValues(
+        alpha: p.opacity,
+      );
       canvas.drawCircle(Offset(x, y), p.radius, paint);
     }
   }

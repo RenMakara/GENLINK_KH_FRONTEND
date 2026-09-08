@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/spacing/app_spacing.dart';
 import '../controllers/quiz_controller.dart';
 import '../../domain/models/quiz_models.dart';
 import '../quiz_colors.dart';
 import '../widgets/quiz_custom_card.dart';
+import '../widgets/quiz_section_header.dart';
 
 class CategorySelectionScreen extends GetView<QuizController> {
   const CategorySelectionScreen({super.key});
@@ -46,9 +49,9 @@ class CategorySelectionScreen extends GetView<QuizController> {
 
     final selected = await showModalBottomSheet<QuizSummary>(
       context: Get.context!,
-      backgroundColor: QuizColors.surface,
+      backgroundColor: QuizThemeColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (context) {
         return SafeArea(
@@ -60,7 +63,7 @@ class CategorySelectionScreen extends GetView<QuizController> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: QuizColors.border,
+                  color: QuizThemeColors.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -68,10 +71,8 @@ class CategorySelectionScreen extends GetView<QuizController> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
                   'quiz.chooseQuiz'.tr,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: QuizColors.heading,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: QuizThemeColors.heading,
                   ),
                 ),
               ),
@@ -82,9 +83,9 @@ class CategorySelectionScreen extends GetView<QuizController> {
                   itemBuilder: (context, index) {
                     final quiz = options[index];
                     return ListTile(
-                      leading: const Icon(
+                      leading: Icon(
                         Icons.quiz_outlined,
-                        color: QuizColors.primary,
+                        color: QuizThemeColors.primary,
                       ),
                       title: Text(
                         quiz.title.isEmpty
@@ -92,17 +93,17 @@ class CategorySelectionScreen extends GetView<QuizController> {
                                 'number': '${index + 1}',
                               })
                             : quiz.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: QuizColors.heading,
+                          color: QuizThemeColors.heading,
                         ),
                       ),
                       subtitle: Text(
                         _difficultyLabel(quiz.difficulty),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: QuizColors.body,
+                          color: QuizThemeColors.body,
                         ),
                       ),
                       onTap: () => Navigator.pop(context, quiz),
@@ -125,27 +126,25 @@ class CategorySelectionScreen extends GetView<QuizController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: QuizColors.background,
+      backgroundColor: QuizThemeColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
+          icon: Icon(Icons.arrow_back, color: QuizThemeColors.heading),
           onPressed: () => Get.back(),
         ),
         title: Text(
           'quiz.chooseQuizCategory'.tr,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: QuizColors.heading,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: QuizThemeColors.heading,
           ),
         ),
       ),
       body: Obx(() {
         if (controller.isQuizListLoading.value && controller.quizzes.isEmpty) {
-          return const Center(
-            child: CircularProgressIndicator(color: QuizColors.primary),
+          return Center(
+            child: CircularProgressIndicator(color: QuizThemeColors.primary),
           );
         }
 
@@ -165,21 +164,14 @@ class CategorySelectionScreen extends GetView<QuizController> {
         }
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildCategoryGrid(),
               const SizedBox(height: 24),
-              Text(
-                'quiz.recentlyPlayed'.tr,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: QuizColors.heading,
-                ),
-              ),
-              const SizedBox(height: 12),
+              QuizSectionHeader(title: 'quiz.recentlyPlayed'.tr),
+              const SizedBox(height: AppSpacing.sm + 4),
               _buildRecentList(),
               const SizedBox(height: 20),
             ],
@@ -192,19 +184,17 @@ class CategorySelectionScreen extends GetView<QuizController> {
   Widget _buildRetryState(String message, VoidCallback onRetry) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.quiz_outlined, size: 48, color: QuizColors.border),
+            Icon(Icons.quiz_outlined, size: 48, color: QuizThemeColors.border),
             const SizedBox(height: 16),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: QuizColors.heading,
+              style: Theme.of(Get.context!).textTheme.titleMedium?.copyWith(
+                color: QuizThemeColors.heading,
               ),
             ),
             const SizedBox(height: 16),
@@ -232,8 +222,8 @@ class CategorySelectionScreen extends GetView<QuizController> {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 220,
         childAspectRatio: 1.2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
@@ -241,15 +231,14 @@ class CategorySelectionScreen extends GetView<QuizController> {
       itemCount: controller.categories.length,
       itemBuilder: (context, index) {
         final cat = controller.categories[index];
-        final bgColor = QuizColors.categoryColors[cat.colorIndex];
-        final iconColor = QuizColors.categoryIconColors[cat.colorIndex];
-        return GestureDetector(
-          onTap: () {
-            controller.selectCategory(cat);
-            _navigateAfterCategory();
-          },
-          child: QuizCustomCard(
-            padding: const EdgeInsets.all(18),
+        final bgColor = QuizThemeColors.categoryColors[cat.colorIndex];
+        final iconColor = QuizThemeColors.categoryIconColors[cat.colorIndex];
+        return QuizCustomCard(
+            padding: const EdgeInsets.all(AppSpacing.md + 2),
+            onTap: () {
+              controller.selectCategory(cat);
+              _navigateAfterCategory();
+            },
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -259,17 +248,15 @@ class CategorySelectionScreen extends GetView<QuizController> {
                   height: 50,
                   decoration: BoxDecoration(
                     color: bgColor,
-                    borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),
                   child: Icon(Icons.category, color: iconColor, size: 26),
                 ),
                 const SizedBox(height: 14),
                 Text(
                   cat.name,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: QuizColors.heading,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: QuizThemeColors.heading,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -277,12 +264,13 @@ class CategorySelectionScreen extends GetView<QuizController> {
                   'quiz.questionsCount'.trParams({
                     'count': '${cat.questionCount}',
                   }),
-                  style: const TextStyle(fontSize: 13, color: QuizColors.body),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: QuizThemeColors.body,
+                  ),
                 ),
               ],
             ),
-          ),
-        );
+          );
       },
     );
   }
@@ -291,12 +279,12 @@ class CategorySelectionScreen extends GetView<QuizController> {
     return Obx(() {
       return Column(
         children: controller.recentCategories.map((cat) {
-          final bgColor = QuizColors.categoryColors[cat.colorIndex];
-          final iconColor = QuizColors.categoryIconColors[cat.colorIndex];
+          final bgColor = QuizThemeColors.categoryColors[cat.colorIndex];
+          final iconColor = QuizThemeColors.categoryIconColors[cat.colorIndex];
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: QuizCustomCard(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(AppSpacing.sm + 6),
               child: Row(
                 children: [
                   Container(
@@ -315,10 +303,8 @@ class CategorySelectionScreen extends GetView<QuizController> {
                       children: [
                         Text(
                           cat.name,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: QuizColors.heading,
+                          style: Theme.of(Get.context!).textTheme.titleSmall?.copyWith(
+                            color: QuizThemeColors.heading,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -326,9 +312,9 @@ class CategorySelectionScreen extends GetView<QuizController> {
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
                             value: 0.65,
-                            backgroundColor: QuizColors.border,
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              QuizColors.primary,
+                            backgroundColor: QuizThemeColors.border,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              QuizThemeColors.primary,
                             ),
                             minHeight: 5,
                           ),
@@ -348,15 +334,13 @@ class CategorySelectionScreen extends GetView<QuizController> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        gradient: QuizColors.gradient,
+                        gradient: QuizThemeColors.gradient,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         'common.continue'.tr,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                        style: Theme.of(Get.context!).textTheme.labelMedium?.copyWith(
+                          color: QuizThemeColors.onPrimary,
                         ),
                       ),
                     ),

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/surfaces/app_glass_surface.dart';
 import '../quiz_colors.dart';
 
 class QuizCustomCard extends StatelessWidget {
@@ -11,6 +14,7 @@ class QuizCustomCard extends StatelessWidget {
     this.margin,
     this.onTap,
     this.border,
+    this.glass = false,
   });
 
   final Widget child;
@@ -19,23 +23,43 @@ class QuizCustomCard extends StatelessWidget {
   final EdgeInsetsGeometry? margin;
   final VoidCallback? onTap;
   final BoxBorder? border;
+  final bool glass;
 
   @override
   Widget build(BuildContext context) {
-    final card = Container(
-      margin: margin,
-      padding: padding ?? const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: QuizColors.surface,
-        borderRadius: BorderRadius.circular(borderRadius ?? 20),
-        border: border ?? Border.all(color: QuizColors.border),
-        boxShadow: QuizColors.cardShadow,
-      ),
-      child: child,
-    );
+    final scheme = Theme.of(context).colorScheme;
+    final radius = borderRadius ?? AppRadius.squircle;
+    final card = glass
+        ? AppGlassSurface(
+            margin: margin,
+            padding: padding ?? const EdgeInsets.all(AppSpacing.md),
+            radius: radius,
+            border: border,
+            child: child,
+          )
+        : Container(
+            margin: margin,
+            padding: padding ?? const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: scheme.surface,
+              borderRadius: BorderRadius.circular(radius),
+              border: border ?? Border.all(color: scheme.outlineVariant),
+              boxShadow: QuizThemeColors.cardShadow,
+            ),
+            child: child,
+          );
 
     if (onTap == null) return card;
 
-    return GestureDetector(onTap: onTap, child: card);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(radius),
+        hoverColor: scheme.primary.withValues(alpha: 0.04),
+        splashColor: scheme.primary.withValues(alpha: 0.08),
+        child: card,
+      ),
+    );
   }
 }

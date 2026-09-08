@@ -7,7 +7,6 @@ import '../../core/network/dio_provider.dart';
 import '../../core/network/interceptors/auth_interceptor.dart';
 import '../../core/network/interceptors/error_interceptor.dart';
 import '../../core/network/interceptors/language_interceptor.dart';
-import '../../core/network/interceptors/mock_interceptor.dart';
 import '../../core/storage/local_storage.dart';
 import '../../core/storage/secure_storage.dart';
 import '../../core/theme/theme_controller.dart';
@@ -46,10 +45,7 @@ class InitialBinding extends Bindings {
 
     // ── Shared HTTP stack ───────────────────────────────────────────────
     final dio = DioProvider.create();
-    dio.interceptors.addAll([
-      LanguageInterceptor(localization),
-      MockInterceptor(secureStorage),
-    ]);
+    dio.interceptors.addAll([LanguageInterceptor(localization)]);
     final apiClient = ApiClient(dio);
     Get
       ..put<Dio>(dio, permanent: true)

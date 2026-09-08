@@ -8,6 +8,7 @@ import '../../../../design_system/spacing/app_spacing.dart';
 import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_screen.dart';
 import '../../../leaderboard/presentation/screens/leaderboard_home_screen.dart';
 import '../../../productivity/presentation/focus_feature/focus_home_screen.dart';
+import '../../../productivity/presentation/goals_plan/goal_plan.dart';
 import '../../../productivity/presentation/habit_feature/habit_home_screen.dart';
 import '../../../productivity/presentation/task_feature/task_home_screen.dart';
 import '../../../home/domain/entities/home_entity.dart';
@@ -1043,10 +1044,10 @@ class _ProductivityTools extends StatelessWidget {
         onTap: () => Get.to(() => const FocusPage()),
       ),
       (
-        icon: Icons.savings_outlined,
+        icon: Icons.flag_outlined,
         label: 'Goals',
         accentColor: const Color(0xFF10B981), // Emerald
-        onTap: () => Get.to(() => const SavingGoalsScreen()),
+        onTap: () => Get.to(() => const PlanGoalScreen()),
       ),
     ];
 

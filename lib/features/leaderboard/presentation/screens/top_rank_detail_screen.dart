@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../features/quiz/presentation/widgets/quiz_icon_container.dart';
 import '../../domain/models/leaderboard_models.dart';
 
 class TopRankDetailScreen extends StatefulWidget {
@@ -127,7 +128,7 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
             color: scheme.primaryContainer,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           child: Text(
             'leaderboard.globalRankWithCountry'.trParams({
@@ -467,20 +468,12 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
                   ),
                   child: Column(
                     children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: iconColors[i % iconColors.length].withValues(
-                            alpha: 0.12,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          achievements[i].icon,
-                          color: iconColors[i % iconColors.length],
-                          size: 24,
-                        ),
+                      QuizIconContainer(
+                        icon: achievements[i].icon,
+                        accentColor: iconColors[i % iconColors.length],
+                        size: 44,
+                        iconSize: 24,
+                        borderRadius: AppRadius.md,
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -552,7 +545,13 @@ class _TopRankDetailScreenState extends State<TopRankDetailScreen>
                     ),
                     child: Column(
                       children: [
-                        Icon(a.icon, color: colors[i], size: 24),
+                        QuizIconContainer(
+                          icon: a.icon,
+                          accentColor: colors[i],
+                          size: 36,
+                          iconSize: 20,
+                          borderRadius: AppRadius.md,
+                        ),
                         const SizedBox(height: 6),
                         Text(
                           a.title,

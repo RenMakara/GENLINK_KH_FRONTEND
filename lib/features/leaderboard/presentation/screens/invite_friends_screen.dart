@@ -5,7 +5,8 @@ import 'package:get/get.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
-import '../../../../design_system/widgets/surfaces/app_glass_surface.dart';
+import '../../../../design_system/widgets/buttons/app_button.dart';
+import '../../../../design_system/widgets/surfaces/app_surface.dart';
 
 class InviteFriendsScreen extends StatelessWidget {
   const InviteFriendsScreen({super.key});
@@ -35,9 +36,9 @@ class InviteFriendsScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               'leaderboard.inviteTitle'.tr,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: scheme.onSurface,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(color: scheme.onSurface),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
@@ -55,7 +56,7 @@ class InviteFriendsScreen extends StatelessWidget {
             const SizedBox(height: 28),
             _buildSocialShare(scheme),
             const SizedBox(height: 32),
-            _buildInviteButton(scheme),
+            _buildInviteButton(),
             const SizedBox(height: 14),
             TextButton(
               onPressed: () => Get.back(),
@@ -115,7 +116,7 @@ class InviteFriendsScreen extends StatelessWidget {
   }
 
   Widget _buildReferralCode(ColorScheme scheme) {
-    return AppGlassSurface(
+    return AppSurface(
       padding: const EdgeInsets.all(AppSpacing.xs),
       radius: AppRadius.squircle,
       child: Row(
@@ -124,10 +125,10 @@ class InviteFriendsScreen extends StatelessWidget {
           Expanded(
             child: Text(
               _referralCode,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: scheme.onSurface,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: scheme.onSurface,
                 letterSpacing: 2,
               ),
             ),
@@ -160,11 +161,7 @@ class InviteFriendsScreen extends StatelessWidget {
       _PlatformIcon(Icons.chat, 'WhatsApp', const Color(0xFF25D366)),
       _PlatformIcon(Icons.send, 'Telegram', const Color(0xFF0088CC)),
       _PlatformIcon(Icons.facebook, 'Messenger', const Color(0xFF006AFF)),
-      _PlatformIcon(
-        Icons.more_horiz,
-        'leaderboard.more'.tr,
-        scheme.primary,
-      ),
+      _PlatformIcon(Icons.more_horiz, 'leaderboard.more'.tr, scheme.primary),
     ];
 
     return Column(
@@ -223,42 +220,13 @@ class InviteFriendsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInviteButton(ColorScheme scheme) {
-    return SizedBox(
-      width: double.infinity,
+  Widget _buildInviteButton() {
+    return AppButton(
+      label: 'leaderboard.inviteViaLink'.tr,
+      icon: Icons.link,
       height: 56,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [scheme.primary, scheme.primary.withValues(alpha: 0.78)],
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {},
-            borderRadius: BorderRadius.circular(16),
-            child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.link, color: scheme.onPrimary, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'leaderboard.inviteViaLink'.tr,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: scheme.onPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+      radius: AppRadius.pill,
+      onPressed: () {},
     );
   }
 }

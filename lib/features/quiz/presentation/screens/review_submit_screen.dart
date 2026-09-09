@@ -5,6 +5,7 @@ import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../controllers/quiz_controller.dart';
 import '../quiz_colors.dart';
+import '../widgets/quiz_custom_card.dart';
 import '../widgets/quiz_gradient_button.dart';
 
 class ReviewSubmitScreen extends GetView<QuizController> {
@@ -23,9 +24,9 @@ class ReviewSubmitScreen extends GetView<QuizController> {
         ),
         title: Text(
           'quiz.reviewAnswers'.tr,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: QuizThemeColors.heading,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(color: QuizThemeColors.heading),
         ),
       ),
       body: Column(
@@ -60,7 +61,7 @@ class ReviewSubmitScreen extends GetView<QuizController> {
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               itemCount: controller.totalQuestions,
               itemBuilder: (context, index) {
-                return _buildQuestionRow(index);
+                return _buildQuestionRow(context, index);
               },
             ),
           ),
@@ -95,67 +96,58 @@ class ReviewSubmitScreen extends GetView<QuizController> {
     );
   }
 
-  Widget _buildQuestionRow(int index) {
+  Widget _buildQuestionRow(BuildContext context, int index) {
     return Obx(() {
       final isAnswered = controller.selectedAnswers.containsKey(index);
-      return GestureDetector(
+      return QuizCustomCard(
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm + 2),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md + 2,
+          vertical: AppSpacing.sm + 6,
+        ),
         onTap: () {
           controller.goToQuestion(index);
           Get.back();
         },
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          decoration: BoxDecoration(
-            color: QuizThemeColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: QuizThemeColors.border),
-            boxShadow: QuizThemeColors.cardShadow,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: isAnswered
-                      ? QuizThemeColors.correctSoft
-                      : QuizThemeColors.incorrectSoft,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Center(
-                  child: Text(
-                    '${index + 1}',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: isAnswered
-                          ? QuizThemeColors.correct
-                          : QuizThemeColors.incorrect,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  'quiz.questionNumber'.trParams({'number': '${index + 1}'}),
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: QuizThemeColors.heading,
-                  ),
-                ),
-              ),
-              Icon(
-                isAnswered ? Icons.check_circle : Icons.cancel,
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
                 color: isAnswered
-                    ? QuizThemeColors.correct
-                    : QuizThemeColors.incorrect,
-                size: 24,
+                    ? QuizThemeColors.correctSoft
+                    : QuizThemeColors.incorrectSoft,
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-            ],
-          ),
+              child: Center(
+                child: Text(
+                  '${index + 1}',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: isAnswered
+                        ? QuizThemeColors.correct
+                        : QuizThemeColors.incorrect,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm + 6),
+            Expanded(
+              child: Text(
+                'quiz.questionNumber'.trParams({'number': '${index + 1}'}),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: QuizThemeColors.heading),
+              ),
+            ),
+            Icon(
+              isAnswered ? Icons.check_circle : Icons.cancel,
+              color: isAnswered
+                  ? QuizThemeColors.correct
+                  : QuizThemeColors.incorrect,
+              size: 24,
+            ),
+          ],
         ),
       );
     });

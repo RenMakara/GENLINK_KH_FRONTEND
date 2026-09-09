@@ -8,6 +8,7 @@ import '../quiz_colors.dart';
 import '../../domain/models/quiz_models.dart';
 import '../widgets/quiz_custom_card.dart';
 import '../widgets/quiz_gradient_button.dart';
+import '../widgets/quiz_icon_container.dart';
 
 class ResultScreen extends GetView<QuizController> {
   const ResultScreen({super.key});
@@ -43,9 +44,9 @@ class ResultScreen extends GetView<QuizController> {
             return Column(
               children: [
                 const SizedBox(height: 20),
-                _buildTrophyBanner(),
-                const SizedBox(height: 24),
-                _buildScoreRing(result),
+                _buildTrophyBanner(context),
+                const SizedBox(height: AppSpacing.md),
+                _buildScoreRing(context, result),
                 const SizedBox(height: 28),
                 _buildSummaryGrid(result),
                 const SizedBox(height: 28),
@@ -363,71 +364,60 @@ class ResultScreen extends GetView<QuizController> {
     return (_correctCount(result) * 100 / total).round();
   }
 
-  Widget _buildTrophyBanner() {
+  Widget _buildTrophyBanner(BuildContext context) {
     return Obx(() {
       final result = controller.quizResult.value;
       final isHigh = result != null && _accuracy(result) >= 80;
+      final theme = Theme.of(context);
+      final scheme = theme.colorScheme;
+      final trophyAccent = isHigh
+          ? QuizThemeColors.gold
+          : QuizThemeColors.medalSilver;
       return QuizCustomCard(
-        glass: true,
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.md,
+          AppSpacing.lg,
+          AppSpacing.lg,
+        ),
         child: Column(
           children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: isHigh
-                    ? [
-                        QuizThemeColors.gold,
-                        QuizThemeColors.gold.withValues(alpha: 0.78),
-                      ]
-                    : [
-                        QuizThemeColors.medalSilver,
-                        QuizThemeColors.medalSilver.withValues(alpha: 0.78),
-                      ],
+            QuizIconContainer(
+              icon: Icons.emoji_events,
+              accentColor: trophyAccent,
+              size: 92,
+              iconSize: 50,
+              borderRadius: AppRadius.xl,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              isHigh ? 'quiz.excellentWork'.tr : 'quiz.quizComplete'.tr,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: scheme.onSurface,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: isHigh
-                      ? QuizThemeColors.gold.withValues(alpha: 0.25)
-                      : QuizThemeColors.border,
-                  blurRadius: 30,
-                  offset: const Offset(0, 8),
-                ),
-              ],
             ),
-            child: Icon(
-              Icons.emoji_events,
-              color: QuizThemeColors.onPrimary,
-              size: 50,
+            const SizedBox(height: 4),
+            Text(
+              isHigh ? 'quiz.youCrushedIt'.tr : 'quiz.keepPracticing'.tr,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            isHigh ? 'quiz.excellentWork'.tr : 'quiz.quizComplete'.tr,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: QuizThemeColors.heading,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            isHigh ? 'quiz.youCrushedIt'.tr : 'quiz.keepPracticing'.tr,
-            style: TextStyle(fontSize: 14, color: QuizThemeColors.body),
-          ),
           ],
         ),
       );
     });
   }
 
-  Widget _buildScoreRing(QuizResult result) {
+  Widget _buildScoreRing(BuildContext context, QuizResult result) {
     final correct = _correctCount(result);
     final total = _totalCount(result);
     final accuracy = _accuracy(result);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final activeColor = accuracy >= 80
+        ? QuizThemeColors.correct
+        : QuizThemeColors.primary;
     return Center(
       child: SizedBox(
         width: 160,
@@ -435,18 +425,31 @@ class ResultScreen extends GetView<QuizController> {
         child: Stack(
           alignment: Alignment.center,
           children: [
+            Container(
+              width: 148,
+              height: 148,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: activeColor.withValues(
+                      alpha: scheme.brightness == Brightness.dark ? 0.16 : 0.08,
+                    ),
+                    blurRadius: 18,
+                  ),
+                ],
+              ),
+            ),
             SizedBox(
               width: 160,
               height: 160,
               child: CircularProgressIndicator(
                 value: accuracy / 100,
                 strokeWidth: 12,
-                backgroundColor: QuizThemeColors.border,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  accuracy >= 80
-                      ? QuizThemeColors.correct
-                      : QuizThemeColors.primary,
+                backgroundColor: scheme.outlineVariant.withValues(
+                  alpha: scheme.brightness == Brightness.dark ? 0.72 : 0.58,
                 ),
+                valueColor: AlwaysStoppedAnimation<Color>(activeColor),
               ),
             ),
             Column(
@@ -454,10 +457,8 @@ class ResultScreen extends GetView<QuizController> {
               children: [
                 Text(
                   '$accuracy%',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w800,
-                    color: QuizThemeColors.heading,
+                  style: theme.textTheme.displaySmall?.copyWith(
+                    color: scheme.onSurface,
                   ),
                 ),
                 Text(
@@ -465,7 +466,9 @@ class ResultScreen extends GetView<QuizController> {
                     'correct': '$correct',
                     'total': '$total',
                   }),
-                  style: TextStyle(fontSize: 13, color: QuizThemeColors.body),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -540,7 +543,13 @@ class ResultScreen extends GetView<QuizController> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 22),
+          QuizIconContainer(
+            icon: icon,
+            accentColor: color,
+            size: 36,
+            iconSize: 20,
+            borderRadius: AppRadius.md,
+          ),
           const SizedBox(height: 6),
           Text(
             value,

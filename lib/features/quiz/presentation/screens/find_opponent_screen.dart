@@ -7,6 +7,7 @@ import '../../../../design_system/spacing/app_spacing.dart';
 import '../controllers/quiz_controller.dart';
 import '../quiz_colors.dart';
 import '../widgets/quiz_custom_card.dart';
+import '../widgets/quiz_icon_container.dart';
 
 class FindOpponentScreen extends GetView<QuizController> {
   const FindOpponentScreen({super.key});
@@ -24,9 +25,9 @@ class FindOpponentScreen extends GetView<QuizController> {
         ),
         title: Text(
           'quiz.findOpponent'.tr,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: QuizThemeColors.heading,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(color: QuizThemeColors.heading),
         ),
       ),
       body: Column(
@@ -215,22 +216,15 @@ class FindOpponentScreen extends GetView<QuizController> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: QuizCustomCard(
-        glass: true,
         padding: const EdgeInsets.all(AppSpacing.sm + 6),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: QuizThemeColors.warningSoft,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.lightbulb_outline,
-                color: QuizThemeColors.gold,
-                size: 22,
-              ),
+            QuizIconContainer(
+              icon: Icons.lightbulb_outline,
+              accentColor: QuizThemeColors.gold,
+              size: 40,
+              iconSize: 22,
+              borderRadius: AppRadius.md,
             ),
             const SizedBox(width: 12),
             Expanded(

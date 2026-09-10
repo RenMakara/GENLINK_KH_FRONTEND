@@ -5,6 +5,7 @@ import '../../features/community/presentation/bindings/community_binding.dart';
 import '../../features/finance/presentation/bindings/finance_binding.dart';
 import '../../features/home/presentation/bindings/home_binding.dart';
 import '../../features/profile/presentation/bindings/profile_binding.dart';
+import '../../features/productivity/presentation/bindings/productivity_binding.dart';
 
 class MainBinding extends Bindings {
   @override
@@ -16,5 +17,6 @@ class MainBinding extends Bindings {
     FinanceBinding().dependencies();
     ProfileBinding().dependencies();
     ChatBinding().dependencies();
+    ProductivityBinding().dependencies();
   }
 }

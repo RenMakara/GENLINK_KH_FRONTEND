@@ -9,10 +9,6 @@ import 'package:genlink_frontend/features/finance/domain/entities/finance_entiti
 import 'package:genlink_frontend/features/finance/presentation/controllers/finance_learning_controller.dart';
 import 'investing_quiz.dart';
 
-/// Detail screen for one backend financial-literacy lesson.
-///
-/// The class name is retained for route compatibility with the original
-/// prototype; the content is now entirely supplied by the API.
 class InvestingBasicsScreen extends StatefulWidget {
   const InvestingBasicsScreen({
     super.key,
@@ -81,7 +77,6 @@ class _InvestingBasicsScreenState extends State<InvestingBasicsScreen> {
 
           return Column(
             children: [
-              // HEADER
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: Row(
@@ -105,7 +100,6 @@ class _InvestingBasicsScreenState extends State<InvestingBasicsScreen> {
                 ),
               ),
 
-              // CONTENT
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _reload,

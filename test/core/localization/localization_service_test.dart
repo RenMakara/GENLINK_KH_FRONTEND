@@ -9,9 +9,6 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockSecureStorage extends Mock implements FlutterSecureStorage {}
 
-/// Language resolution: default English; a Khmer device auto-selects Khmer;
-/// device changes are followed until the user makes an explicit choice; an
-/// account sync never ends device-following.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -37,7 +34,6 @@ void main() {
       () async {
     stubStored(null);
     await service.load();
-    // The test environment's platform locale is en_US.
     expect(PlatformDispatcher.instance.locale.languageCode, 'en');
     expect(service.language.value, LocalizationService.english);
   });

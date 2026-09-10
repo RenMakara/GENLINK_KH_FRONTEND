@@ -85,7 +85,6 @@ class StoryCreationPickerSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Swipe Drag Handle
           Center(
             child: Container(
               width: 36,
@@ -99,7 +98,6 @@ class StoryCreationPickerSheet extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // Header Title
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
@@ -114,7 +112,6 @@ class StoryCreationPickerSheet extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // 1. Camera Action
           Material(
             color: Colors.transparent,
             child: ListTile(
@@ -153,7 +150,6 @@ class StoryCreationPickerSheet extends StatelessWidget {
 
           const SizedBox(height: 4),
 
-          // 2. Gallery Action
           Material(
             color: Colors.transparent,
             child: ListTile(
@@ -192,7 +188,6 @@ class StoryCreationPickerSheet extends StatelessWidget {
 
           const SizedBox(height: 4),
 
-          // 3. Text Story Action
           Material(
             color: Colors.transparent,
             child: ListTile(

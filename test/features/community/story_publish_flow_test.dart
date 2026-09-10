@@ -63,14 +63,12 @@ void main() {
         textContent: 'Concurrent story attempt',
       );
 
-      // Should immediately return false because upload is already in progress
       expect(success, false);
     });
 
     testWidgets('Test 3: Story Creator Screen publishing flow closes composer on success', (tester) async {
       Get.put(StoryController());
 
-      // Simulate navigation stack: Home -> StoryGallery -> StoryCreator
       await tester.pumpWidget(
         GetMaterialApp(
           initialRoute: '/home',
@@ -97,7 +95,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Community Home Screen'), findsOneWidget);
 
-      // Push Gallery then Creator
       Get.toNamed('/StoryGalleryScreen');
       await tester.pumpAndSettle();
       expect(find.text('Gallery Screen'), findsOneWidget);
@@ -113,15 +110,12 @@ void main() {
 
       expect(find.text('Post Story'), findsOneWidget);
 
-      // Tap Post Story
       await tester.tap(find.text('Post Story'));
       await tester.pump();
 
-      // Wait for publish async completion and animations
       await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
 
-      // Should automatically exit composer and return to Community Home Screen
       expect(find.text('Community Home Screen'), findsOneWidget);
       expect(find.text('Post Story'), findsNothing);
       expect(find.text('Gallery Screen'), findsNothing);
@@ -145,7 +139,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Community Feed'), findsOneWidget);
 
-      // Push Gallery -> Camera -> Creator
       Get.to(
         () => const Scaffold(body: Text('StoryGalleryScreen Mock')),
         routeName: '/StoryGalleryScreen',
@@ -169,15 +162,12 @@ void main() {
 
       expect(find.text('Post Story'), findsOneWidget);
 
-      // Tap Post Story
       await tester.tap(find.text('Post Story'));
       await tester.pump();
 
-      // Settle publish async and popUntil
       await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
 
-      // Completely returned to Community Feed
       expect(find.text('Community Feed'), findsOneWidget);
       expect(find.text('InAppCameraScreen Mock'), findsNothing);
       expect(find.text('StoryGalleryScreen Mock'), findsNothing);
@@ -211,7 +201,6 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Open StoryViewer
       Get.to(
         () => const Scaffold(body: Text('StoryViewerScreen Mock')),
         routeName: '/StoryViewerScreen',
@@ -219,7 +208,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('StoryViewerScreen Mock'), findsOneWidget);
 
-      // Open StoryCreator in edit mode
       Get.to(
         () => StoryCreatorScreen(
           type: StoryType.photo,
@@ -231,13 +219,11 @@ void main() {
 
       expect(find.text('Post Story'), findsOneWidget);
 
-      // Tap Post/Save Story
       await tester.tap(find.text('Post Story'));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
 
-      // Should return to StoryViewerScreen
       expect(find.text('StoryViewerScreen Mock'), findsOneWidget);
       expect(find.text('Post Story'), findsNothing);
     });
@@ -265,7 +251,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // If full screen text editor is open, tap 'Done' first to close editor
       if (find.text('Done').evaluate().isNotEmpty) {
         await tester.tap(find.text('Done'));
         await tester.pumpAndSettle();
@@ -273,13 +258,11 @@ void main() {
 
       expect(find.text('Post Story'), findsOneWidget);
 
-      // Tap Post Story with empty text
       await tester.tap(find.text('Post Story'));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
 
-      // Composer should remain OPEN
       expect(find.text('Post Story'), findsOneWidget);
       expect(find.text('Empty Story'), findsOneWidget);
     });
@@ -304,7 +287,6 @@ void main() {
       expect(createdStory.textContent, 'Fresh photo story from camera');
       expect(createdStory.mediaUrl, 'assets/images/user_profile.png');
 
-      // Verify no duplicate IDs in owner group
       final storyIds = ownerStories.map((s) => s.id).toList();
       expect(storyIds.toSet().length, storyIds.length);
     });

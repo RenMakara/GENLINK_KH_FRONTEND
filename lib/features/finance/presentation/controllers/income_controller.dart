@@ -7,11 +7,6 @@ import '../formatters/finance_localization.dart';
 import 'cash_flow_controller.dart';
 import 'finance_controller.dart';
 
-/// Owns the server-backed Income list and CRUD operations.
-///
-/// Income is always currency-scoped because the backend credits the matching
-/// wallet balance.  Requests are sequenced so a slower response from an older
-/// filter cannot overwrite the current list.
 class IncomeController extends GetxController {
   IncomeController({
     required this._repository,
@@ -70,13 +65,7 @@ class IncomeController extends GetxController {
   Future<void> loadInitial() async {
     final request = ++_requestSequence;
     isInitialLoading.value = true;
-    // A new initial load supersedes an in-flight refresh. Clear that stale
-    // indicator now because the superseded refresh will not clear it in its
-    // guarded finally block.
     isRefreshing.value = false;
-    // A reset supersedes any in-flight page request. Clear the indicator here
-    // because the stale request must not clear a newer request's state in its
-    // finally block.
     isLoadingMore.value = false;
     listErrorMessage.value = null;
     paginationErrorMessage.value = null;
@@ -87,18 +76,11 @@ class IncomeController extends GetxController {
     if (request == _requestSequence) isInitialLoading.value = false;
   }
 
-  /// Refreshes page zero while retaining existing rows if the request fails.
   @override
   Future<void> refresh() async {
     final request = ++_requestSequence;
     isRefreshing.value = true;
-    // A refresh supersedes an in-flight initial load. Clear that stale
-    // indicator now because the superseded load will not clear it after its
-    // request sequence is invalidated.
     isInitialLoading.value = false;
-    // Refresh invalidates an in-flight next-page request. Without resetting
-    // this flag, that stale request's guarded finally block can leave
-    // pagination disabled forever.
     isLoadingMore.value = false;
     listErrorMessage.value = null;
     paginationErrorMessage.value = null;
@@ -124,8 +106,6 @@ class IncomeController extends GetxController {
   }
 
   Future<void> selectSource(String? source) async {
-    // Income source is documented as free text, so preserve its case and only
-    // remove surrounding whitespace before sending the exact backend value.
     final trimmed = source?.trim();
     final filter = trimmed == null || trimmed.isEmpty ? null : trimmed;
     if (filter == selectedSource.value) return;

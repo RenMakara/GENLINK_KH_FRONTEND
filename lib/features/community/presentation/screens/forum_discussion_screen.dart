@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/radius/app_radius.dart';
@@ -45,6 +46,19 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     }
 
     _controller.fetchDiscussionComments(_discussion.id);
+    _loadDiscussionDetail();
+  }
+
+  Future<void> _loadDiscussionDetail() async {
+    final detail = await _controller.fetchDiscussionDetails(_discussion.id);
+    if (detail != null && mounted) {
+      setState(() {
+        _discussion = detail;
+        _repliesCount = detail.repliesCount;
+        _upvotes = detail.upvotes;
+        _isLiked = detail.isLiked;
+      });
+    }
   }
 
   void _handleLikeTap() async {
@@ -59,6 +73,11 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
         _isLiked = !_isLiked;
         _upvotes += _isLiked ? 1 : -1;
       });
+      AppNotificationBanner.showError(
+        context: context,
+        title: 'Error',
+        message: 'Failed to update reaction. Please try again.',
+      );
     }
   }
 
@@ -240,14 +259,28 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                       fontSize: 15,
                     ),
                   ),
-                  onTap: () {
+                  onTap: () async {
                     Get.back();
-                    AppNotificationBanner.showSuccess(
-                      context: context,
-                      title: 'Reported',
-                      message:
-                          'Thank you for reporting. Our team will review it.',
-                    );
+                    final ok = await _controller.reportDiscussion(_discussion.id);
+                    if (mounted && context.mounted) {
+                      if (ok) {
+                        AppNotificationBanner.showSuccess(
+                          context: context,
+                          title: 'community.reported'.tr.isNotEmpty &&
+                                  'community.reported'.tr != 'community.reported'
+                              ? 'community.reported'.tr
+                              : 'Reported',
+                          message:
+                              'Thank you for reporting. Our team will review it.',
+                        );
+                      } else {
+                        AppNotificationBanner.showError(
+                          context: context,
+                          title: 'Error',
+                          message: 'Failed to report discussion. Please try again.',
+                        );
+                      }
+                    }
                   },
                 ),
               ],
@@ -332,22 +365,38 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
             ),
             onPressed: () async {
               Navigator.pop(ctx);
-              final success = await _controller.deleteDiscussion(_discussion.id);
-              if (success) {
-                Get.back();
-                if (Get.context != null) {
-                  AppNotificationBanner.showSuccess(
-                    context: Get.context!,
-                    title: 'community.discussionDeleted'.tr.isNotEmpty &&
-                            'community.discussionDeleted'.tr !=
-                                'community.discussionDeleted'
-                        ? 'community.discussionDeleted'.tr
-                        : 'Discussion Deleted',
-                    message: 'community.discussionDeletedMsg'.tr.isNotEmpty &&
-                            'community.discussionDeletedMsg'.tr !=
-                                'community.discussionDeletedMsg'
-                        ? 'community.discussionDeletedMsg'.tr
-                        : 'Your discussion has been removed.',
+              try {
+                final success = await _controller.deleteDiscussion(_discussion.id);
+                if (success) {
+                  Get.back();
+                  if (Get.context != null) {
+                    AppNotificationBanner.showSuccess(
+                      context: Get.context!,
+                      title: 'community.discussionDeleted'.tr.isNotEmpty &&
+                              'community.discussionDeleted'.tr !=
+                                  'community.discussionDeleted'
+                          ? 'community.discussionDeleted'.tr
+                          : 'Discussion Deleted',
+                      message: 'community.discussionDeletedMsg'.tr.isNotEmpty &&
+                              'community.discussionDeletedMsg'.tr !=
+                                  'community.discussionDeletedMsg'
+                          ? 'community.discussionDeletedMsg'.tr
+                          : 'Your discussion has been removed.',
+                    );
+                  }
+                } else if (mounted && context.mounted) {
+                  AppNotificationBanner.showError(
+                    context: context,
+                    title: 'Error',
+                    message: 'Failed to delete discussion. Please try again.',
+                  );
+                }
+              } catch (_) {
+                if (mounted && context.mounted) {
+                  AppNotificationBanner.showError(
+                    context: context,
+                    title: 'Error',
+                    message: 'Failed to delete discussion. Please try again.',
                   );
                 }
               }
@@ -420,7 +469,6 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Author Info & Category
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -473,7 +521,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                             ),
                             const SizedBox(height: 1),
                             Text(
-                              _discussion.timeAgo,
+                              formatCommunityTimestamp(_discussion.createdAt ?? _discussion.timeAgo),
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: textMuted,
                                 fontSize: 11.5,
@@ -510,7 +558,6 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md + 2),
 
-                  // Title & Content
                   Text(
                     _discussion.title,
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -542,7 +589,6 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                   ],
                   const SizedBox(height: AppSpacing.lg),
 
-                  // Actions (Like & Comment Counts)
                   Row(
                     children: [
                       Material(
@@ -618,7 +664,6 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                   Divider(color: borderSubtle, height: 1),
                   const SizedBox(height: AppSpacing.md + 2),
 
-                  // Comments Section Header
                   Text(
                     'community.comments'.tr.isNotEmpty &&
                             'community.comments'.tr != 'community.comments'
@@ -712,7 +757,6 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
               ),
             ),
           ),
-          // Reply Input
           SafeArea(
             top: false,
             child: Container(
@@ -801,6 +845,110 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     );
   }
 
+  void _showDeleteCommentDialog(CommentModel comment) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final dialogBg = isDark ? const Color(0xFF1E2228) : Colors.white;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? Colors.white70 : AppColors.lightTextSecondary;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: dialogBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        title: Text(
+          'community.deleteComment'.tr.isNotEmpty &&
+                  'community.deleteComment'.tr != 'community.deleteComment'
+              ? '${'community.deleteComment'.tr}?'
+              : 'Delete Comment?',
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'community.deleteCommentConfirm'.tr.isNotEmpty &&
+                  'community.deleteCommentConfirm'.tr !=
+                      'community.deleteCommentConfirm'
+              ? 'community.deleteCommentConfirm'.tr
+              : 'Are you sure you want to delete this comment?',
+          style: TextStyle(color: textSecondary, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'common.cancel'.tr.isNotEmpty &&
+                      'common.cancel'.tr != 'common.cancel'
+                  ? 'common.cancel'.tr
+                  : 'Cancel',
+              style: TextStyle(color: textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                final success = await _controller.deleteDiscussionComment(
+                  _discussion.id,
+                  comment.id,
+                );
+                if (success && mounted) {
+                  setState(() {
+                    if (_repliesCount > 0) _repliesCount--;
+                  });
+                  AppNotificationBanner.showSuccess(
+                    context: context,
+                    title: 'community.commentDeleted'.tr.isNotEmpty &&
+                            'community.commentDeleted'.tr !=
+                                'community.commentDeleted'
+                        ? 'community.commentDeleted'.tr
+                        : 'Deleted',
+                    message: 'Comment deleted successfully.',
+                  );
+                } else if (mounted) {
+                  AppNotificationBanner.showError(
+                    context: context,
+                    title: 'Error',
+                    message: 'Failed to delete comment. Please try again.',
+                  );
+                }
+              } catch (_) {
+                if (mounted) {
+                  AppNotificationBanner.showError(
+                    context: context,
+                    title: 'Error',
+                    message: 'Failed to delete comment. Please try again.',
+                  );
+                }
+              }
+            },
+            child: Text(
+              'common.delete'.tr.isNotEmpty &&
+                      'common.delete'.tr != 'common.delete'
+                  ? 'common.delete'.tr
+                  : 'Delete',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCommentItem(
     BuildContext context,
     CommentModel comment,
@@ -811,6 +959,9 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     Color textMuted,
   ) {
     final hasAvatar = comment.userAvatar.isNotEmpty;
+    final isCommentOwner = comment.isOwner ||
+        (comment.userId.isNotEmpty &&
+            comment.userId == _controller.currentUserId);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm + 4),
@@ -856,20 +1007,44 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        comment.userName,
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12.5,
+                      Expanded(
+                        child: Text(
+                          comment.userName,
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Text(
-                        comment.timeAgo,
-                        style: TextStyle(
-                          color: textMuted,
-                          fontSize: 11,
-                        ),
+                      const SizedBox(width: 8),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            formatCommunityTimestamp(comment.createdAt ?? comment.timeAgo),
+                            style: TextStyle(
+                              color: textMuted,
+                              fontSize: 11,
+                            ),
+                          ),
+                          if (isCommentOwner) ...[
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: () => _showDeleteCommentDialog(comment),
+                              child: Padding(
+                                padding: const EdgeInsets.all(2),
+                                child: Icon(
+                                  Icons.delete_outline_rounded,
+                                  size: 15,
+                                  color: AppColors.danger.withValues(alpha: 0.8),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ),
@@ -880,6 +1055,40 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                       color: textPrimary.withValues(alpha: 0.9),
                       fontSize: 13,
                       height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  GestureDetector(
+                    onTap: () => _controller.toggleDiscussionCommentLike(
+                      _discussion.id,
+                      comment.id,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          comment.isLiked
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
+                          size: 14,
+                          color: comment.isLiked
+                              ? AppColors.danger
+                              : textMuted,
+                        ),
+                        if (comment.likesCount > 0) ...[
+                          const SizedBox(width: 4),
+                          Text(
+                            '${comment.likesCount}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: comment.isLiked
+                                  ? AppColors.danger
+                                  : textMuted,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],

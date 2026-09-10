@@ -3,10 +3,6 @@ import 'package:flutter/material.dart';
 import '../../radius/app_radius.dart';
 import '../../spacing/app_spacing.dart';
 
-/// Standard bordered surface used by feature cards and grouped content.
-///
-/// It consumes the active [CardTheme] so feature screens do not duplicate
-/// light/dark colors, borders, elevation, or large-card radius decisions.
 class AppSurface extends StatelessWidget {
   const AppSurface({
     super.key,

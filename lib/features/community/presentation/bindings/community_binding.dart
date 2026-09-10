@@ -7,8 +7,8 @@ import '../controllers/story_controller.dart';
 class CommunityBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<StoryRepository>(() => StoryRepositoryImpl());
-    Get.lazyPut<CommunityController>(() => CommunityController());
-    Get.lazyPut<StoryController>(() => StoryController());
+    Get.lazyPut<StoryRepository>(() => StoryRepositoryImpl(), fenix: true);
+    Get.lazyPut<CommunityController>(() => CommunityController(), fenix: true);
+    Get.lazyPut<StoryController>(() => StoryController(), fenix: true);
   }
 }

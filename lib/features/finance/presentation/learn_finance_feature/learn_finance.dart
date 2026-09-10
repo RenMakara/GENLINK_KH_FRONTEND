@@ -8,7 +8,6 @@ import 'package:genlink_frontend/features/finance/domain/entities/finance_entiti
 import 'package:genlink_frontend/features/finance/presentation/controllers/finance_learning_controller.dart';
 import 'investing_basics.dart';
 
-/// Finance Learning index backed by the financial-literacy API.
 class LearnFinanceScreen extends GetView<FinanceLearningController> {
   const LearnFinanceScreen({super.key});
 
@@ -41,7 +40,6 @@ class LearnFinanceScreen extends GetView<FinanceLearningController> {
         child: Obx(
           () => Column(
             children: [
-              // HEADER
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: Row(
@@ -63,7 +61,6 @@ class LearnFinanceScreen extends GetView<FinanceLearningController> {
                 ),
               ),
 
-              // CONTENT
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: controller.refresh,

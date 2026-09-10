@@ -90,7 +90,11 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
             if (_isTemplateMode) _buildTemplateInstructionBanner(),
             Expanded(
               child: Stack(
-                children: [_buildMainContent(), _buildDraftOverlay()],
+                children: [
+                  _buildMainContent(),
+                  _buildDraftOverlay(),
+                  if (!_isTemplateMode) _buildMultiSelectBottomBar(),
+                ],
               ),
             ),
           ],
@@ -110,42 +114,90 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
         headerTitle = tmpl.name;
       }
 
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      final currentAlbumName = controller.currentAlbum.value?.name;
+      final albumDisplayName = (currentAlbumName == null ||
+              currentAlbumName.isEmpty ||
+              currentAlbumName == 'isAll')
+          ? "Recent"
+          : currentAlbumName;
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             IconButton(
               tooltip: "Close",
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
               icon: const Icon(
                 Icons.close_rounded,
                 color: Colors.white,
-                size: 28,
+                size: 26,
               ),
               onPressed: () {
                 controller.saveDraft();
                 Get.back();
               },
             ),
+            const SizedBox(width: 4),
             Expanded(
-              child: Text(
-                headerTitle,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
+              child: GestureDetector(
+                onTap: () => _showAlbumPickerSheet(context),
+                behavior: HitTestBehavior.opaque,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      headerTitle,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            "Album: $albumDisplayName",
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.75),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: Colors.white.withValues(alpha: 0.75),
+                          size: 15,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
+            const SizedBox(width: 4),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
                   tooltip: "Camera",
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                   icon: const Icon(
                     Icons.camera_alt_outlined,
                     color: Colors.white,
@@ -154,13 +206,15 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                   onPressed: _openDeviceCamera,
                 ),
                 IconButton(
-                  tooltip: "System Gallery",
+                  tooltip: "Gallery",
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                   icon: const Icon(
-                    Icons.photo_library_outlined,
+                    Icons.photo_library_rounded,
                     color: Colors.white,
                     size: 24,
                   ),
-                  onPressed: _pickFromSystemPicker,
+                  onPressed: _handleGalleryHeaderAction,
                 ),
               ],
             ),
@@ -249,6 +303,16 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
     );
     if (result == true && mounted) {
       Get.back(result: true);
+    }
+  }
+
+  void _handleGalleryHeaderAction() {
+    // Primary flow: Stay strictly inside GenLink Story Gallery.
+    // Do NOT automatically launch the Android system photo picker on top of the in-app gallery.
+    if (controller.hasPermission.value) {
+      controller.fetchAlbumsAndMedia();
+    } else {
+      controller.checkAndRequestPermission();
     }
   }
 
@@ -615,7 +679,9 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                       vertical: 2,
                     ),
                     title: Text(
-                      album.name.isEmpty ? "All Photos" : album.name,
+                      album.isAll || album.name == 'isAll' || album.name.isEmpty
+                          ? "Recent"
+                          : album.name,
                       style: TextStyle(
                         color: isSelected ? Colors.white : Colors.white70,
                         fontWeight: isSelected
@@ -743,6 +809,23 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: _pickFromSystemPicker,
+              icon: const Icon(
+                Icons.perm_media_outlined,
+                color: Colors.white70,
+                size: 18,
+              ),
+              label: const Text(
+                "Use system photo picker",
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -796,37 +879,69 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
               ),
             ),
             const SizedBox(height: 24),
-            GestureDetector(
-              onTap: _openDeviceCamera,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.camera_alt_rounded,
-                      color: Colors.black,
-                      size: 18,
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 10,
+              children: [
+                GestureDetector(
+                  onTap: _openDeviceCamera,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
                     ),
-                    SizedBox(width: 8),
-                    Text(
-                      "Open Camera",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
                     ),
-                  ],
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.camera_alt_rounded,
+                          color: Colors.black,
+                          size: 18,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          "Open Camera",
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+                OutlinedButton.icon(
+                  onPressed: _pickFromSystemPicker,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  icon: const Icon(Icons.folder_open_rounded, size: 18),
+                  label: const Text(
+                    "System Picker",
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -836,19 +951,30 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
 
   // ── 7. Clean 3-Column Photo Grid ──
   Widget _buildPhotoGrid() {
-    return GridView.builder(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(2),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 2,
-        mainAxisSpacing: 2,
-      ),
-      itemCount: controller.mediaAssets.length,
-      itemBuilder: (context, index) {
-        final asset = controller.mediaAssets[index];
-        return _buildAssetItem(asset);
+    return NotificationListener<ScrollNotification>(
+      onNotification: (ScrollNotification scrollInfo) {
+        if (scrollInfo.metrics.pixels >=
+            scrollInfo.metrics.maxScrollExtent - 400) {
+          controller.loadMoreMedia();
+        }
+        return false;
       },
+      child: GridView.builder(
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        padding: const EdgeInsets.all(2),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 2,
+          mainAxisSpacing: 2,
+        ),
+        itemCount: controller.mediaAssets.length,
+        itemBuilder: (context, index) {
+          final asset = controller.mediaAssets[index];
+          return _buildAssetItem(asset);
+        },
+      ),
     );
   }
 
@@ -1123,6 +1249,12 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
       return;
     }
 
+    // If multi-select mode is active in regular story flow
+    if (controller.isMultiSelectMode.value) {
+      controller.selectAsset(asset);
+      return;
+    }
+
     // Single photo/video selection -> open Story Creator directly
     final file = await asset.file;
     if (file != null && mounted) {
@@ -1131,6 +1263,95 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
         () => StoryCreatorScreen(
           type: isVideo ? StoryType.video : StoryType.photo,
           mediaPaths: [file.path],
+        ),
+        routeName: '/StoryCreatorScreen',
+        transition: Transition.fadeIn,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+      );
+      if (result == true && mounted) {
+        Get.back(result: true);
+      }
+    }
+  }
+
+  // ── 9. Multi-Select Bottom Bar & Submission ──
+  Widget _buildMultiSelectBottomBar() {
+    return Obx(() {
+      final isMulti = controller.isMultiSelectMode.value;
+      final selected = controller.selectedAssets;
+      if (!isMulti || selected.isEmpty) {
+        return const SizedBox.shrink();
+      }
+
+      final count = selected.length;
+      return Positioned(
+        left: 16,
+        right: 16,
+        bottom: 16,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E22),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black54,
+                blurRadius: 16,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "$count photo${count > 1 ? 's' : ''} selected",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 8,
+                  ),
+                ),
+                onPressed: _proceedWithMultiSelection,
+                child: const Text(
+                  "Next",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  Future<void> _proceedWithMultiSelection() async {
+    final List<String> paths = [];
+    for (final a in controller.selectedAssets) {
+      final f = await a.file;
+      if (f != null) {
+        paths.add(f.path);
+      }
+    }
+    if (paths.isNotEmpty && mounted) {
+      final result = await Get.to(
+        () => StoryCreatorScreen(
+          type: StoryType.photo,
+          mediaPaths: paths,
         ),
         routeName: '/StoryCreatorScreen',
         transition: Transition.fadeIn,

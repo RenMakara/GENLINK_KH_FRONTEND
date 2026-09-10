@@ -8,9 +8,6 @@ File _resolveMediaFile(String rawPath) {
   return File(clean);
 }
 
-/// Clean, responsive bottom sheet/grid for selecting Story Templates.
-/// Each template card displays an authentic visual layout preview (occupying ~58% of the card),
-/// template name, photo count badge, short description, and selected checkmark state.
 class StoryTemplatePickerSheet extends StatefulWidget {
   final StoryTemplateConfig? selectedTemplate;
   final List<String> initialMediaPaths;
@@ -121,7 +118,6 @@ class _StoryTemplatePickerSheetState extends State<StoryTemplatePickerSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Drag Handle ──
             Center(
               child: Container(
                 margin: const EdgeInsets.only(top: 10, bottom: 8),
@@ -134,7 +130,6 @@ class _StoryTemplatePickerSheetState extends State<StoryTemplatePickerSheet> {
               ),
             ),
 
-            // ── Header Title Row ──
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
               child: Row(
@@ -182,7 +177,6 @@ class _StoryTemplatePickerSheetState extends State<StoryTemplatePickerSheet> {
 
             const SizedBox(height: 10),
 
-            // ── Category Filter Chips (Swipable photo count categories) ──
             SizedBox(
               height: 36,
               child: ListView.separated(
@@ -233,7 +227,6 @@ class _StoryTemplatePickerSheetState extends State<StoryTemplatePickerSheet> {
 
             const SizedBox(height: 12),
 
-            // ── Visual Layout Previews Grid (3 Columns) ──
             Flexible(
               child: GridView.builder(
                 padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset + 16),
@@ -270,7 +263,6 @@ class _StoryTemplatePickerSheetState extends State<StoryTemplatePickerSheet> {
   }
 }
 
-/// Visual layout card showing miniature layout preview, short name, and selection ring.
 class _TemplatePickerCard extends StatelessWidget {
   final StoryTemplateConfig template;
   final List<String> mediaPaths;
@@ -315,7 +307,6 @@ class _TemplatePickerCard extends StatelessWidget {
         padding: const EdgeInsets.all(8),
         child: Column(
           children: [
-            // ── Visual Miniature Preview (~72% of card) ──
             Expanded(
               flex: 72,
               child: ClipRRect(
@@ -337,7 +328,6 @@ class _TemplatePickerCard extends StatelessWidget {
 
             const SizedBox(height: 6),
 
-            // ── Short Layout Title (~28% of card) ──
             Expanded(
               flex: 28,
               child: Center(
@@ -361,7 +351,6 @@ class _TemplatePickerCard extends StatelessWidget {
   }
 }
 
-/// Visual miniature representation of the actual template layout geometry.
 class _TemplateMiniaturePreview extends StatelessWidget {
   final StoryTemplateConfig template;
   final List<String> mediaPaths;
@@ -393,7 +382,6 @@ class _TemplateMiniaturePreview extends StatelessWidget {
       );
     }
 
-    // Aesthetic placeholder slot with soft gradient & subtle border
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
@@ -432,7 +420,6 @@ class _TemplateMiniaturePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     switch (template.layoutType) {
-      // ── 1. SINGLE PHOTO ──
       case StoryTemplateLayoutType.singlePolaroid:
         return AspectRatio(
           aspectRatio: 0.78,
@@ -516,7 +503,6 @@ class _TemplateMiniaturePreview extends StatelessWidget {
           ),
         );
 
-      // ── 2. TWO PHOTOS ──
       case StoryTemplateLayoutType.splitVertical:
         return Column(
           children: [
@@ -572,7 +558,6 @@ class _TemplateMiniaturePreview extends StatelessWidget {
           ],
         );
 
-      // ── 3. THREE PHOTOS ──
       case StoryTemplateLayoutType.threeHeroBottom:
         return Column(
           children: [
@@ -620,7 +605,6 @@ class _TemplateMiniaturePreview extends StatelessWidget {
           ],
         );
 
-      // ── 4. FOUR PHOTOS ──
       case StoryTemplateLayoutType.fourGrid:
         return Column(
           children: [
@@ -666,7 +650,6 @@ class _TemplateMiniaturePreview extends StatelessWidget {
           ],
         );
 
-      // ── 5. FIVE PHOTOS ──
       case StoryTemplateLayoutType.fiveHeroGrid:
         return Column(
           children: [
@@ -764,7 +747,6 @@ class _TemplateMiniaturePreview extends StatelessWidget {
           ],
         );
 
-      // ── 6. SIX PHOTOS ──
       case StoryTemplateLayoutType.sixGrid:
         return Column(
           children: [
@@ -886,7 +868,6 @@ class _TemplateMiniaturePreview extends StatelessWidget {
           ],
         );
 
-      // ── 7. PHOTO + TEXT ──
       case StoryTemplateLayoutType.photoTextPolaroid:
         return AspectRatio(
           aspectRatio: 0.78,

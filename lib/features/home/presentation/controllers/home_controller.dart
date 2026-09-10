@@ -4,7 +4,6 @@ import '../../../../core/errors/app_error.dart';
 import '../../data/home_repository.dart';
 import '../../domain/entities/home_entity.dart';
 
-/// Loads and manages the Home Super Dashboard state.
 class HomeController extends GetxController {
   HomeController({required this.repository});
 
@@ -47,7 +46,6 @@ class HomeController extends GetxController {
     }
   }
 
-  /// Pull-to-refresh entry point
   Future<void> reload() async {
     isRefreshing.value = true;
     try {
@@ -78,7 +76,6 @@ class HomeController extends GetxController {
     }
   }
 
-  /// Interactive habit check-in with optimistic UI update and safe rollback
   Future<void> toggleHabitCheckIn({String? habitId, bool? targetState}) async {
     if (isCheckingInHabit.value) return;
 

@@ -12,20 +12,20 @@ class LeaderboardScreen extends GetView<QuizController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: QuizThemeColors.background,
+      backgroundColor: QuizColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: QuizThemeColors.heading),
+          icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
           onPressed: () => Get.back(),
         ),
         title: Text(
           'quiz.leaderboard'.tr,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: QuizThemeColors.heading,
+            color: QuizColors.heading,
           ),
         ),
       ),
@@ -53,10 +53,10 @@ class LeaderboardScreen extends GetView<QuizController> {
               ),
               child: Text(
                 'quiz.backToDashboard'.tr,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: QuizThemeColors.body,
+                  color: QuizColors.body,
                 ),
               ),
             ),
@@ -77,25 +77,12 @@ class LeaderboardScreen extends GetView<QuizController> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // 2nd place
             Expanded(
-              child: _buildPodiumItem(
-                entries[1],
-                56,
-                QuizThemeColors.medalSilver,
-              ),
+              child: _buildPodiumItem(entries[1], 56, Colors.grey[400]!),
             ),
-            // 1st place
+            Expanded(child: _buildPodiumItem(entries[0], 72, QuizColors.gold)),
             Expanded(
-              child: _buildPodiumItem(entries[0], 72, QuizThemeColors.gold),
-            ),
-            // 3rd place
-            Expanded(
-              child: _buildPodiumItem(
-                entries[2],
-                48,
-                QuizThemeColors.medalBronze,
-              ),
+              child: _buildPodiumItem(entries[2], 48, const Color(0xFFCD7F32)),
             ),
           ],
         ),
@@ -131,11 +118,7 @@ class LeaderboardScreen extends GetView<QuizController> {
                   ),
                 ],
               ),
-              child: Icon(
-                Icons.person,
-                color: QuizThemeColors.onPrimary,
-                size: 32,
-              ),
+              child: const Icon(Icons.person, color: Colors.white, size: 32),
             ),
             Positioned(
               top: -20,
@@ -146,19 +129,19 @@ class LeaderboardScreen extends GetView<QuizController> {
         const SizedBox(height: 8),
         Text(
           entry.name,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
-            color: QuizThemeColors.heading,
+            color: QuizColors.heading,
           ),
           overflow: TextOverflow.ellipsis,
         ),
         Text(
           '${entry.xp} XP',
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: QuizThemeColors.body,
+            color: QuizColors.primary,
           ),
         ),
       ],
@@ -175,14 +158,12 @@ class LeaderboardScreen extends GetView<QuizController> {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: isMe
-                  ? QuizThemeColors.primaryLight
-                  : QuizThemeColors.surface,
+              color: isMe ? QuizColors.primaryLight : QuizColors.surface,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isMe ? QuizThemeColors.primary : QuizThemeColors.border,
+                color: isMe ? QuizColors.primary : QuizColors.border,
               ),
-              boxShadow: isMe ? [] : QuizThemeColors.cardShadow,
+              boxShadow: isMe ? [] : QuizColors.cardShadow,
             ),
             child: Row(
               children: [
@@ -190,9 +171,7 @@ class LeaderboardScreen extends GetView<QuizController> {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: isMe
-                        ? QuizThemeColors.primary
-                        : QuizThemeColors.border,
+                    color: isMe ? QuizColors.primary : QuizColors.border,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
@@ -201,9 +180,7 @@ class LeaderboardScreen extends GetView<QuizController> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: isMe
-                            ? QuizThemeColors.onPrimary
-                            : QuizThemeColors.body,
+                        color: isMe ? Colors.white : QuizColors.body,
                       ),
                     ),
                   ),
@@ -212,13 +189,13 @@ class LeaderboardScreen extends GetView<QuizController> {
                 Container(
                   width: 40,
                   height: 40,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: QuizThemeColors.gradient,
+                    gradient: QuizColors.gradient,
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.person,
-                    color: QuizThemeColors.onPrimary,
+                    color: Colors.white,
                     size: 20,
                   ),
                 ),
@@ -232,16 +209,14 @@ class LeaderboardScreen extends GetView<QuizController> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: isMe ? FontWeight.w700 : FontWeight.w500,
-                          color: isMe
-                              ? QuizThemeColors.primary
-                              : QuizThemeColors.heading,
+                          color: isMe ? QuizColors.primary : QuizColors.heading,
                         ),
                       ),
                       Text(
                         '${entry.xp} XP',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
-                          color: QuizThemeColors.body,
+                          color: QuizColors.body,
                         ),
                       ),
                     ],
@@ -254,15 +229,15 @@ class LeaderboardScreen extends GetView<QuizController> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: QuizThemeColors.primary,
+                      color: QuizColors.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       'quiz.you'.tr,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: QuizThemeColors.onPrimary,
+                        color: Colors.white,
                       ),
                     ),
                   ),

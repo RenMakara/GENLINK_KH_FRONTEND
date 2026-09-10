@@ -5,11 +5,6 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../core/storage/local_storage.dart';
 import '../../../../design_system/colors/app_colors.dart';
 
-/// One row inside a slide's dark preview card.
-///
-/// [trailing] is a short status string; when [progress] is set the row also
-/// renders an accent-coloured meter. The values are illustrative — this is
-/// a marketing preview, not live data.
 class OnboardingRow {
   const OnboardingRow({
     required this.icon,
@@ -26,8 +21,6 @@ class OnboardingRow {
   final double? progress;
 }
 
-/// A single onboarding slide. Text is held as translation keys so the
-/// slides follow the active language.
 class OnboardingSlide {
   const OnboardingSlide({
     required this.titleKey,
@@ -40,7 +33,6 @@ class OnboardingSlide {
   final List<OnboardingRow> rows;
 }
 
-/// Drives the onboarding pager and records that it has been seen.
 class OnboardingController extends GetxController {
   OnboardingController({required LocalStorage localStorage})
     : _storage = localStorage;
@@ -125,8 +117,6 @@ class OnboardingController extends GetxController {
     );
   }
 
-  /// Skip and finish both mark onboarding as seen — the user has made a
-  /// decision either way and should not be shown it again.
   Future<void> finish() async {
     await _storage.markOnboardingSeen();
     Get.offAllNamed<void>(AppRoutes.authChoice);

@@ -147,10 +147,8 @@ void main() {
         ),
       );
 
-      // Verify Community title
       expect(find.text('Community'), findsOneWidget);
 
-      // Verify 3 Header action icons (Search, Chat/Forum, Notifications)
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
       expect(find.byIcon(Icons.forum_outlined), findsOneWidget);
       expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
@@ -170,7 +168,6 @@ void main() {
         ),
       );
 
-      // Verify tooltips/labels
       expect(find.byTooltip('Search'), findsOneWidget);
       expect(find.byTooltip('Chat'), findsOneWidget);
       expect(find.byTooltip('Notifications'), findsOneWidget);
@@ -191,12 +188,10 @@ void main() {
       );
       await tester.pump();
 
-      // Verify exactly Feed, Forum, Event tabs are present
       expect(find.text('Feed'), findsOneWidget);
       expect(find.text('Forum'), findsOneWidget);
       expect(find.text('Event'), findsOneWidget);
 
-      // Verify Career tab is NOT present in the header tabs
       expect(controller.categories, equals(['Feed', 'Forum', 'Event']));
       expect(controller.categories.contains('Career'), isFalse);
     });
@@ -216,17 +211,14 @@ void main() {
 
       expect(controller.selectedCategory.value, equals('Feed'));
 
-      // Switch to Forum
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
       expect(controller.selectedCategory.value, equals('Forum'));
 
-      // Switch to Event
       await tester.tap(find.text('Event'));
       await tester.pumpAndSettle();
       expect(controller.selectedCategory.value, equals('Event'));
 
-      // Switch back to Feed
       await tester.tap(find.text('Feed'));
       await tester.pumpAndSettle();
       expect(controller.selectedCategory.value, equals('Feed'));

@@ -10,8 +10,6 @@ import '../../../../design_system/widgets/loaders/app_loader.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../controllers/profile_controller.dart';
 
-/// Portfolio management: list, add, edit, delete — the full CRUD the
-/// backend exposes at `/profile/portfolio`.
 class PortfolioScreen extends GetView<ProfileController> {
   const PortfolioScreen({super.key});
 
@@ -79,7 +77,6 @@ class PortfolioScreen extends GetView<ProfileController> {
     if (confirmed) await controller.deletePortfolioItem(item.portfolioId);
   }
 
-  /// One dialog serves add and edit; [item] null means add.
   Future<void> _edit(BuildContext context, PortfolioItemEntity? item) async {
     final title = TextEditingController(text: item?.title ?? '');
     final description = TextEditingController(text: item?.description ?? '');
@@ -134,7 +131,6 @@ class PortfolioScreen extends GetView<ProfileController> {
             child: Text('common.cancel'.tr),
           ),
           FilledButton(
-            // Title is the only backend-required field.
             onPressed: () =>
                 Navigator.of(dialogContext).pop(title.text.trim().isNotEmpty),
             child: Text('common.save'.tr),

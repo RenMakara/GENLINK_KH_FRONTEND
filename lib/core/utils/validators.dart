@@ -1,13 +1,6 @@
 import 'package:get/get.dart';
 
-/// Form field validators.
-///
-/// These mirror the backend's Bean Validation constraints so the user gets
-/// immediate feedback, but they are a convenience, not the authority — the
-/// server still validates and its `VALIDATION_ERROR` message wins.
 abstract final class Validators {
-  /// Deliberately permissive: `something@something.tld`. Anything stricter
-  /// rejects addresses that are actually valid.
   static final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
   static const minPasswordLength = 8;
@@ -49,7 +42,6 @@ abstract final class Validators {
     return null;
   }
 
-  /// Confirm-password check. [original] is the first password field.
   static String? Function(String?) matches(String Function() original) {
     return (String? value) {
       final missing = required(value);
@@ -59,7 +51,6 @@ abstract final class Validators {
     };
   }
 
-  /// Optional field: only validated when the user typed something.
   static String? Function(String?) optional(String? Function(String?) inner) {
     return (String? value) {
       if (value == null || value.trim().isEmpty) return null;

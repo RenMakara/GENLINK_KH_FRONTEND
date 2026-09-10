@@ -9,7 +9,6 @@ class NotificationRemoteDataSource {
   NotificationRemoteDataSource({required this.dio});
 
   final List<NotificationModel> _mockNotifications = [
-    // ── TODAY ──────────────────────────────────────────────────────────────
     NotificationModel(
       id: 'notif_1',
       type: NotificationType.reply,
@@ -83,7 +82,6 @@ class NotificationRemoteDataSource {
       targetType: 'friend_request',
     ),
 
-    // ── YESTERDAY ──────────────────────────────────────────────────────────
     NotificationModel(
       id: 'notif_6',
       type: NotificationType.like,
@@ -128,7 +126,6 @@ class NotificationRemoteDataSource {
       targetType: 'saving_goal',
     ),
 
-    // ── EARLIER ────────────────────────────────────────────────────────────
     NotificationModel(
       id: 'notif_9',
       type: NotificationType.eventRsvp,
@@ -236,7 +233,6 @@ class NotificationRemoteDataSource {
   }
 
   Future<void> addNotification(NotificationModel notification) async {
-    // Check duplicate notification by ID or identical target/actor combo within 1 minute
     final exists = _mockNotifications.any(
       (n) =>
           n.id == notification.id ||

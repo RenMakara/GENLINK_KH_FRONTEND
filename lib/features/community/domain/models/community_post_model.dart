@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'community_models.dart';
+import '../../../../core/utils/date_formatter.dart';
+import '../../../../shared/utils/current_user.dart';
 
 class PollOptionModel {
   final String text;
@@ -89,17 +92,9 @@ class CommunityPostModel {
     this.category,
   });
 
-  /// Evaluates whether the given user ID matches this post's author ID.
-  /// Falls back to [isOwner] flag when [currentUserId] is not provided.
   bool checkIsOwner(String? currentUserId) {
     if (currentUserId != null && currentUserId.isNotEmpty) {
       if (userId == currentUserId) return true;
-      if (isOwner &&
-          (userId == 'user_me' ||
-              userId == 'current_user' ||
-              userId == 'demo_user_1')) {
-        return true;
-      }
       return false;
     }
     return isOwner;
@@ -185,39 +180,88 @@ class CommunityPostModel {
   }
 
   factory CommunityPostModel.fromJson(Map<String, dynamic> json) {
-    // Parse Spring Boot AuthorSummary object or fallback flat properties
     final authorObj = json['author'] is Map<String, dynamic>
         ? json['author'] as Map<String, dynamic>
         : null;
-    final authorName =
+    final rawAuthorName =
         authorObj?['fullName'] as String? ??
         json['authorName'] as String? ??
         json['username'] as String? ??
         'User';
-    final authorTag = authorObj?['username'] != null
+    final rawAuthorTag = authorObj?['username'] != null
         ? '@${authorObj!['username']}'
         : (json['authorTag'] as String? ?? '@user');
-    final authorAvatar =
+    final rawAuthorAvatar =
         authorObj?['avatarUrl'] as String? ??
         json['authorAvatar'] as String? ??
         json['avatar'] as String? ??
         '';
     final userId =
-        authorObj?['userId'] as String? ??
-        json['userId'] as String? ??
+        authorObj?['userId']?.toString() ??
+        json['userId']?.toString() ??
         'user_1';
 
-    // Parse image list or single imageUrl
+    final currentUserId = CurrentUser.id;
+    final isMe = currentUserId.isNotEmpty &&
+        (userId == currentUserId || authorObj?['userId']?.toString() == currentUserId);
+
+    final authorName = (rawAuthorName.isNotEmpty && rawAuthorName != 'User')
+        ? rawAuthorName
+        : (isMe && CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
+            ? CurrentUser.name
+            : rawAuthorName);
+
+    final authorTag = (rawAuthorTag.isNotEmpty && rawAuthorTag != '@user')
+        ? rawAuthorTag
+        : (isMe && CurrentUser.username.isNotEmpty
+            ? '@${CurrentUser.username}'
+            : rawAuthorTag);
+
+    final authorAvatar = rawAuthorAvatar.isNotEmpty
+        ? rawAuthorAvatar
+        : (isMe && CurrentUser.avatarUrl?.isNotEmpty == true
+            ? CurrentUser.avatarUrl!
+            : rawAuthorAvatar);
+
+    final isPostOwner = (json['isOwner'] as bool?) ??
+        (json['mine'] as bool?) ??
+        isMe;
+
     List<String> imagesList = [];
     if (json['imageUrls'] is List) {
       imagesList = (json['imageUrls'] as List)
-          .map((e) => e.toString())
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
           .toList();
     } else if (json['images'] is List) {
-      imagesList = (json['images'] as List).map((e) => e.toString()).toList();
+      imagesList = (json['images'] as List)
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
     } else if (json['imageUrl'] != null &&
-        (json['imageUrl'] as String).isNotEmpty) {
-      imagesList = [json['imageUrl'] as String];
+        (json['imageUrl'] as String).trim().isNotEmpty) {
+      final raw = (json['imageUrl'] as String).trim();
+      if (raw.startsWith('[') && raw.endsWith(']')) {
+        try {
+          final decoded = jsonDecode(raw);
+          if (decoded is List) {
+            imagesList = decoded
+                .map((e) => e.toString().trim())
+                .where((e) => e.isNotEmpty)
+                .toList();
+          }
+        } catch (_) {
+          imagesList = [raw];
+        }
+      } else if (raw.contains(',')) {
+        imagesList = raw
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+      } else {
+        imagesList = [raw];
+      }
     }
 
     return CommunityPostModel(
@@ -228,10 +272,11 @@ class CommunityPostModel {
       authorAvatar: authorAvatar,
       isVerified:
           json['isVerified'] as bool? ?? json['verified'] as bool? ?? false,
-      timeAgo:
-          json['timeAgo'] as String? ??
-          json['createdAt'] as String? ??
-          'Just now',
+      timeAgo: formatCommunityTimestamp(
+        json['createdAt'] as String? ??
+            json['timeAgo'] as String? ??
+            'Just now',
+      ),
       content:
           json['contentText'] as String? ??
           json['content'] as String? ??
@@ -260,7 +305,7 @@ class CommunityPostModel {
           (authorObj?['following'] as bool?) ??
           false,
       isRepostedByMe: json['isRepostedByMe'] as bool? ?? false,
-      isOwner: json['isOwner'] as bool? ?? json['mine'] as bool? ?? false,
+      isOwner: isPostOwner,
       visibility: json['visibility'] as String? ?? 'Public',
       community: json['community'] as String? ?? 'All GenLink',
       repostedBy: json['repostedBy'] as String?,
@@ -289,6 +334,8 @@ class CommunityPostModel {
       'createdAt': timeAgo,
       'text': content,
       'images': imageUrls,
+      'imageUrls': imageUrls,
+      'imageUrl': imageUrls.isNotEmpty ? imageUrls.join(',') : null,
       'likes': likesCount,
       'comments': commentsCount,
       'shares': sharesCount,
@@ -318,9 +365,11 @@ class CommentModel {
   final String userAvatar;
   final String text;
   final String timeAgo;
+  final DateTime? createdAt;
   int likesCount;
   bool isLiked;
   final String? parentCommentId;
+  final bool isOwner;
 
   CommentModel({
     required this.id,
@@ -330,13 +379,19 @@ class CommentModel {
     required this.userAvatar,
     required this.text,
     required this.timeAgo,
+    this.createdAt,
     this.likesCount = 0,
     this.isLiked = false,
     this.parentCommentId,
+    this.isOwner = false,
   });
 
   factory CommentModel.fromJson(Map<String, dynamic> json) {
     final authorObj = json['author'] as Map<String, dynamic>?;
+    final rawDate = json['createdAt'] as String? ?? json['timeAgo'] as String?;
+    final parsedUtc = CommunityDateFormatter.parseToUtc(rawDate);
+    final formattedTime = formatCommunityTimestamp(parsedUtc ?? rawDate ?? 'Just now');
+
     return CommentModel(
       id: json['commentId'] as String? ?? json['id'] as String? ?? '',
       postId: json['postId'] as String? ??
@@ -353,10 +408,42 @@ class CommentModel {
           authorObj?['avatarUrl'] as String? ??
           '',
       text: json['content'] as String? ?? json['text'] as String? ?? '',
-      timeAgo: json['timeAgo'] as String? ?? 'Just now',
+      timeAgo: formattedTime.isNotEmpty ? formattedTime : 'Just now',
+      createdAt: parsedUtc?.toLocal(),
       likesCount: json['likeCount'] as int? ?? json['likesCount'] as int? ?? 0,
       isLiked: json['likedByMe'] as bool? ?? json['isLiked'] as bool? ?? false,
       parentCommentId: json['parentCommentId'] as String?,
+      isOwner: json['mine'] as bool? ?? json['isOwner'] as bool? ?? false,
+    );
+  }
+
+  CommentModel copyWith({
+    String? id,
+    String? postId,
+    String? userId,
+    String? userName,
+    String? userAvatar,
+    String? text,
+    String? timeAgo,
+    DateTime? createdAt,
+    int? likesCount,
+    bool? isLiked,
+    String? parentCommentId,
+    bool? isOwner,
+  }) {
+    return CommentModel(
+      id: id ?? this.id,
+      postId: postId ?? this.postId,
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      userAvatar: userAvatar ?? this.userAvatar,
+      text: text ?? this.text,
+      timeAgo: timeAgo ?? this.timeAgo,
+      createdAt: createdAt ?? this.createdAt,
+      likesCount: likesCount ?? this.likesCount,
+      isLiked: isLiked ?? this.isLiked,
+      parentCommentId: parentCommentId ?? this.parentCommentId,
+      isOwner: isOwner ?? this.isOwner,
     );
   }
 
@@ -369,9 +456,11 @@ class CommentModel {
       'userAvatar': userAvatar,
       'text': text,
       'timeAgo': timeAgo,
+      if (createdAt != null) 'createdAt': createdAt!.toUtc().toIso8601String(),
       'likesCount': likesCount,
       'isLiked': isLiked,
       'parentCommentId': parentCommentId,
+      'isOwner': isOwner,
     };
   }
 }

@@ -2,14 +2,12 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../domain/entities/home_entity.dart';
 
-/// Contract for the home dashboard data.
 abstract class HomeRepository {
   Future<HomeEntity> getHome();
   Future<List<HabitItemEntity>> getHabits();
   Future<HabitItemEntity> checkInHabit(String habitId, bool completed);
 }
 
-/// Fetches and maps `GET /api/v1/mobile/home` and productivity habits.
 class HomeRepositoryImpl implements HomeRepository {
   const HomeRepositoryImpl(this._client);
 

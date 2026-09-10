@@ -41,21 +41,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     FocusScope.of(context).unfocus();
 
-    // workStatus is optional on the backend and is collected later, on the
-    // Edit Profile screen, to keep sign-up to five fields.
     final success = await _auth.register(
       fullName: _fullName.text.trim(),
       username: _username.text.trim(),
       email: _email.text.trim(),
       password: _password.text,
     );
-    // Registration returns a message, not a session — the account is
-    // PENDING until the emailed OTP is verified.
     if (success) Get.toNamed<void>(AppRoutes.verifyEmail);
   }
 
-  /// Google is both sign-in and sign-up: the backend creates the account
-  /// when the email is new, so this always lands on home.
   Future<void> _signInWithGoogle() async {
     final success = await _auth.signInWithGoogle();
     if (success) Get.offAllNamed<void>(AppRoutes.home);
@@ -71,8 +65,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       footer: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Wrap, not Row: the prompt + link overflows on narrow screens
-          // and in Khmer, where the phrase is longer.
           Wrap(
             alignment: WrapAlignment.center,
             crossAxisAlignment: WrapCrossAlignment.center,

@@ -4,15 +4,6 @@ import 'package:flutter/services.dart';
 import '../../radius/app_radius.dart';
 import '../../spacing/app_spacing.dart';
 
-/// Six-box OTP entry.
-///
-/// One [TextField] per digit, auto-advancing forward on input and back on
-/// delete. Pasting a full code into any box distributes it across all of
-/// them, which is what happens when the user taps an SMS/email autofill
-/// suggestion.
-///
-/// The joined value is reported through [onChanged]; [onCompleted] fires
-/// once every box is filled so the caller can submit without a tap.
 class OtpInput extends StatefulWidget {
   const OtpInput({
     super.key,
@@ -66,8 +57,6 @@ class _OtpInputState extends State<OtpInput> {
   }
 
   void _onChanged(int index, String raw) {
-    // A multi-character value means a paste or an autofill suggestion:
-    // spread the digits across the remaining boxes.
     final digits = raw.replaceAll(RegExp(r'\D'), '');
     if (digits.length > 1) {
       _distribute(digits, from: index);
@@ -98,8 +87,6 @@ class _OtpInputState extends State<OtpInput> {
     _report();
   }
 
-  /// Backspace on an empty box steps back and clears the previous one, so
-  /// deleting never strands the caret.
   KeyEventResult _onKey(int index, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
     if (event.logicalKey != LogicalKeyboardKey.backspace) {
@@ -121,10 +108,6 @@ class _OtpInputState extends State<OtpInput> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // The boxes shrink to fit a narrow screen but stop growing at
-        // [_OtpBox.maxWidth] — left to stretch, they overshoot their height
-        // on a wide device and the field reads as a row of wide slabs
-        // instead of upright boxes.
         LayoutBuilder(
           builder: (context, constraints) {
             final gaps = AppSpacing.xs * (widget.length - 1);
@@ -183,12 +166,6 @@ class _OtpBox extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final KeyEventResult Function(KeyEvent) onKey;
 
-  /// Box size, from the Figma spec (59 x 65).
-  ///
-  /// Height is fixed. Width is a *ceiling*: the boxes divide the content
-  /// width so they shrink on a narrow phone, but stop at [maxWidth] so a
-  /// wide screen gets six upright boxes centred in the row rather than six
-  /// stretched slabs. These are the two numbers to tune.
   static const height = 64.0;
   static const maxWidth = 59.0;
 
@@ -209,20 +186,13 @@ class _OtpBox extends StatelessWidget {
           keyboardType: TextInputType.number,
           textInputAction: TextInputAction.next,
           maxLength: 1,
-          // titleLarge, not a headline: the digit should read large inside
-          // the box without crowding the squircle's corners.
           style: theme.textTheme.titleLarge,
-          // The single-digit maxLength would otherwise show "0/1".
           decoration: InputDecoration(
             counterText: '',
             filled: true,
-            // Solid surface — the boxes sit as white cards on the page
-            // background, they are not a glass surface.
             fillColor: scheme.surface,
             contentPadding: EdgeInsets.zero,
             enabledBorder: _border(_strokeColor(scheme, hasError)),
-            // Same border on focus — the caret and fill carry the state,
-            // consistent with the other inputs.
             focusedBorder: _border(_strokeColor(scheme, hasError)),
             border: _border(_strokeColor(scheme, hasError)),
           ),
@@ -232,7 +202,6 @@ class _OtpBox extends StatelessWidget {
     );
   }
 
-  /// `outlineVariant` is the design system's `border-subtle`.
   static Color _strokeColor(ColorScheme scheme, bool hasError) =>
       hasError ? scheme.error : scheme.outlineVariant;
 

@@ -15,8 +15,6 @@ import 'package:genlink_frontend/features/finance/presentation/learn_finance_fea
 import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_screen.dart';
 import 'package:genlink_frontend/features/finance/widgets/finance_widget.dart';
 
-/// Finance home. The dashboard, Income, Cash Flow, and Expense flows are
-/// backed by the Finance API; other linked modules keep their phase boundaries.
 class FinanceScreen extends GetView<FinanceController> {
   const FinanceScreen({super.key});
 
@@ -43,7 +41,7 @@ class FinanceScreen extends GetView<FinanceController> {
                 16,
                 14,
                 16,
-                100, // space for bottom navigation
+                120,
               ),
               children: [
                 _FinanceHeader(
@@ -112,7 +110,6 @@ class _FinanceHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header
         Row(
           children: [
             Expanded(
@@ -127,7 +124,6 @@ class _FinanceHeader extends StatelessWidget {
               ),
             ),
 
-            // Notification
             Material(
               color: Colors.transparent,
               child: InkWell(
@@ -154,7 +150,6 @@ class _FinanceHeader extends StatelessWidget {
 
         const SizedBox(height: 14),
 
-        // Currency selector
         _CurrencySelector(
           selectedCurrency: selectedCurrency,
           onChanged: onCurrencyChanged,
@@ -183,24 +178,13 @@ class _CurrencySelector extends StatelessWidget {
   final FinanceCurrency selectedCurrency;
   final ValueChanged<FinanceCurrency> onChanged;
   final Color background;
-
-  // Kept in the constructor so you don't need to change _FinanceHeader.
-  // The selected color is now based on the app primary color, just like
-  // the Cash Flow currency bar.
   final Color selectedBackground;
-
   final Color border;
   final Color textColor;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final isUsd = selectedCurrency == FinanceCurrency.usd;
-
-    final primary = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
-
-    final onPrimary = theme.colorScheme.onPrimary;
 
     return SizedBox(
       width: 150,
@@ -214,24 +198,21 @@ class _CurrencySelector extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // Sliding selected background
             AnimatedAlign(
-              duration: const Duration(milliseconds: 250),
+              duration: const Duration(milliseconds: 220),
               curve: Curves.easeOutCubic,
               alignment: isUsd ? Alignment.centerLeft : Alignment.centerRight,
-              child: FractionallySizedBox(
-                widthFactor: 0.5,
-                child: Container(
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: primary,
-                    borderRadius: BorderRadius.circular(9),
-                  ),
+              child: Container(
+                width: 72,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: selectedBackground,
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(color: border),
                 ),
               ),
             ),
 
-            // Currency buttons
             Row(
               children: [
                 Expanded(
@@ -239,10 +220,9 @@ class _CurrencySelector extends StatelessWidget {
                     currency: FinanceCurrency.usd,
                     selected: isUsd,
                     onTap: () => onChanged(FinanceCurrency.usd),
-                    selectedBackground: primary,
+                    selectedBackground: selectedBackground,
                     border: border,
                     textColor: textColor,
-                    selectedTextColor: onPrimary,
                   ),
                 ),
                 Expanded(
@@ -250,10 +230,9 @@ class _CurrencySelector extends StatelessWidget {
                     currency: FinanceCurrency.khr,
                     selected: !isUsd,
                     onTap: () => onChanged(FinanceCurrency.khr),
-                    selectedBackground: primary,
+                    selectedBackground: selectedBackground,
                     border: border,
                     textColor: textColor,
-                    selectedTextColor: onPrimary,
                   ),
                 ),
               ],
@@ -273,7 +252,6 @@ class _CurrencyChoice extends StatelessWidget {
     required this.selectedBackground,
     required this.border,
     required this.textColor,
-    required this.selectedTextColor,
   });
 
   final FinanceCurrency currency;
@@ -282,7 +260,6 @@ class _CurrencyChoice extends StatelessWidget {
   final Color selectedBackground;
   final Color border;
   final Color textColor;
-  final Color selectedTextColor;
 
   @override
   Widget build(BuildContext context) {
@@ -300,7 +277,7 @@ class _CurrencyChoice extends StatelessWidget {
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
               style: TextStyle(
-                color: selected ? selectedTextColor : textColor,
+                color: textColor,
                 fontSize: 12,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               ),
@@ -844,8 +821,6 @@ class _QuickActions extends StatelessWidget {
       }
     }
 
-    // Learning is a separate destination and is not part of the dashboard
-    // quickActions response; keep its existing entry until that API phase.
     actions.add((
       Icons.trending_up_rounded,
       'finance.Income'.tr,

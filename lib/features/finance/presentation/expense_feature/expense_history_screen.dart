@@ -12,8 +12,6 @@ import 'package:genlink_frontend/features/finance/presentation/expense_feature/e
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_history_widget.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
 
-/// Server-backed Expense history. Search remains intentionally local to the
-/// loaded pages because the backend contract does not expose a search query.
 class ExpenseHistoryScreen extends StatefulWidget {
   const ExpenseHistoryScreen({super.key});
 

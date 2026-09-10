@@ -126,12 +126,8 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
-  Future<ForumTopicModel> getDiscussionDetails(String discussionId) async {
-    final discussions = await remoteDataSource.fetchDiscussions();
-    return discussions.firstWhere(
-      (discussion) => discussion.id == discussionId,
-      orElse: () => throw StateError('Discussion not found: $discussionId'),
-    );
+  Future<ForumTopicModel> getDiscussionDetails(String discussionId) {
+    return remoteDataSource.getDiscussionDetails(discussionId);
   }
 
   @override
@@ -159,7 +155,10 @@ class CommunityRepositoryImpl implements CommunityRepository {
     String discussionId, {
     bool isCurrentlyLiked = false,
   }) {
-    return remoteDataSource.toggleDiscussionLike(discussionId);
+    return remoteDataSource.toggleDiscussionLike(
+      discussionId,
+      isCurrentlyLiked: isCurrentlyLiked,
+    );
   }
 
   @override
@@ -167,7 +166,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
     String discussionId, {
     String reason = 'INAPPROPRIATE_CONTENT',
     String? details,
-  }) async {
+  }) {
     return remoteDataSource.reportDiscussion(
       discussionId,
       reason: reason,
@@ -228,7 +227,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
   Future<RsvpResponseModel> rsvpEvent(
     String eventId, {
     EventRegistrationRequest? request,
-  }) async {
+  }) {
     return remoteDataSource.rsvpEvent(eventId, request: request);
   }
 }

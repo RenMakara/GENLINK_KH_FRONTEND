@@ -6,7 +6,6 @@ import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 
-/// Data class representing a pending friend request.
 class FriendRequestItem {
   final String id;
   final String name;
@@ -27,10 +26,6 @@ class FriendRequestItem {
   });
 }
 
-/// GenLink KH — Friend Requests Screen.
-///
-/// Clean, mobile-first screen for managing social friend requests.
-/// Accessed when tapping friend-request notifications from the Unified Notification Center.
 class FriendRequestsScreen extends StatefulWidget {
   const FriendRequestsScreen({super.key});
 
@@ -230,7 +225,6 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row 1: Avatar, Name, Username, Time
           InkWell(
             onTap: () =>
                 Get.to(() => ProfileScreen(viewingUsername: item.username)),
@@ -283,7 +277,6 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
 
           const SizedBox(height: 10),
 
-          // Row 2: Mutual friends context
           Row(
             children: [
               Icon(
@@ -304,7 +297,6 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
 
           const SizedBox(height: 12),
 
-          // Row 3: Action Buttons
           if (item.isAccepted)
             Container(
               padding: const EdgeInsets.symmetric(vertical: 8),

@@ -5,7 +5,6 @@ import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 
-/// Task / To-Do Creation Screen for GenLink Productivity.
 class CreateTaskScreen extends StatefulWidget {
   const CreateTaskScreen({super.key});
 
@@ -84,7 +83,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
-            // Title Input
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
@@ -107,7 +105,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
 
             const SizedBox(height: AppSpacing.md),
 
-            // Description Input
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
@@ -131,7 +128,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
 
             const SizedBox(height: AppSpacing.lg),
 
-            // Category Selector
             Text(
               'Category',
               style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
@@ -165,7 +161,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
 
             const SizedBox(height: AppSpacing.lg),
 
-            // Priority Selector
             Text(
               'Priority',
               style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
@@ -209,7 +204,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
 
             const SizedBox(height: AppSpacing.lg),
 
-            // Due Time Tile
             ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               tileColor: surfaceSecondary,

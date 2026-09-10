@@ -8,10 +8,6 @@ import '../../../../design_system/widgets/loaders/app_loader.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../controllers/profile_controller.dart';
 
-/// Saved items with type filter chips, per the design's tabs.
-///
-/// Chips are built from the types actually present in the user's saved
-/// list (plus "All"), so an empty category never renders a dead tab.
 class SavedItemsScreen extends StatefulWidget {
   const SavedItemsScreen({super.key});
 

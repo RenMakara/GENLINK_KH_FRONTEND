@@ -43,8 +43,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (success) Get.offAllNamed<void>(AppRoutes.home);
   }
 
-  /// Google is both sign-in and sign-up: the backend creates the account
-  /// when the email is new, so a success always lands on home.
   Future<void> _signInWithGoogle() async {
     FocusScope.of(context).unfocus();
     final success = await _auth.signInWithGoogle();
@@ -54,8 +52,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
-      // Wrap, not Row: the prompt + link overflows on narrow screens and
-      // in Khmer, where the phrase is longer.
       footer: Wrap(
         alignment: WrapAlignment.center,
         crossAxisAlignment: WrapCrossAlignment.center,

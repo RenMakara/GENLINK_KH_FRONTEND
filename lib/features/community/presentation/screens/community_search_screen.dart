@@ -3,11 +3,6 @@ import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 
-/// Community Search Screen
-///
-/// Clean, fast, and modern search interface inspired by modern social platforms.
-/// Features a single category navigation bar, compact recent search history (max 3 items),
-/// lightweight category & trending chips, and instant live search results.
 class CommunitySearchScreen extends StatefulWidget {
   final String activeTab;
 
@@ -139,7 +134,6 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
         children: [
           const SizedBox(height: 12),
 
-          // ── Dynamic Body: Idle State vs Live Results ──
           Expanded(
             child: _query.trim().isEmpty
                 ? _buildIdleState()
@@ -152,9 +146,6 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Idle State: Compact Recent Searches (Max 3), Modern Categories & Trending
-  // ---------------------------------------------------------------------------
   Widget _buildIdleState() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
@@ -171,7 +162,6 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
 
-    // Show only the latest 3 recent searches
     final displayRecent = _recentSearches.take(3).toList();
 
     final trendingHashtags = [
@@ -189,7 +179,6 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── 1. Recent Searches (Compact, Max 3) ──
           if (displayRecent.isNotEmpty) ...[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -253,7 +242,6 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
             const SizedBox(height: 18),
           ],
 
-          // ── 2. Trending Topics (Compact Chips) ──
           Text(
             'community.trending'.tr,
             style: TextStyle(
@@ -302,9 +290,6 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Lightweight Loading State
-  // ---------------------------------------------------------------------------
   Widget _buildLoadingState() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surfaceSecondary = isDark
@@ -371,9 +356,6 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Live Search Results List
-  // ---------------------------------------------------------------------------
   Widget _buildSearchResults() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
@@ -424,7 +406,6 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
       },
     ];
 
-    // Filter by query match
     final filtered = results.where((item) {
       return item['title']!.toLowerCase().contains(_query.toLowerCase()) ||
           item['subtitle']!.toLowerCase().contains(_query.toLowerCase());
@@ -469,7 +450,6 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
         final res = filtered[idx];
         final rawCat = res['category']!;
 
-        // Map category to concise badge text
         String badgeText = rawCat;
         IconData catIcon = Icons.article_outlined;
 

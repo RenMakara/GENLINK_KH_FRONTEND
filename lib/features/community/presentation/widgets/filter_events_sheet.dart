@@ -181,7 +181,6 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Drag Handle
             Center(
               child: Container(
                 width: 36,
@@ -194,7 +193,6 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
               ),
             ),
 
-            // Title Header & Reset Button
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -234,7 +232,6 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 1. Format / Event Type (In Person vs Online)
                     _buildSectionHeader(
                       icon: Icons.place_outlined,
                       title: 'community.format'.tr.isNotEmpty &&
@@ -258,7 +255,6 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
 
                     const SizedBox(height: 18),
 
-                    // 2. Date Range
                     _buildSectionHeader(
                       icon: Icons.calendar_today_outlined,
                       title: 'community.dateRange'.tr.isNotEmpty &&
@@ -282,7 +278,6 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
 
                     const SizedBox(height: 18),
 
-                    // 3. Category Section
                     _buildSectionHeader(
                       icon: Icons.grid_view_rounded,
                       title: 'community.category'.tr.isNotEmpty &&
@@ -370,7 +365,6 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
 
                     const SizedBox(height: 18),
 
-                    // 4. Price Section
                     _buildSectionHeader(
                       icon: Icons.monetization_on_outlined,
                       title: 'community.price'.tr.isNotEmpty &&
@@ -398,7 +392,6 @@ class _FilterEventsSheetState extends State<FilterEventsSheet> {
               ),
             ),
 
-            // Apply Button
             SizedBox(
               width: double.infinity,
               height: 48,

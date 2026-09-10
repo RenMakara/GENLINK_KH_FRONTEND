@@ -113,8 +113,6 @@ void main() {
           refreshToken: any(named: 'refreshToken'),
         ),
       ).thenAnswer((_) async {});
-      // The controller verifies that the token was persisted by reading it
-      // back from secure storage before publishing the authenticated state.
       when(
         () => storage.readAccessToken(),
       ).thenAnswer((_) async => 'access-token');

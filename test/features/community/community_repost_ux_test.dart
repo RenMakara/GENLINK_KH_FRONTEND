@@ -233,16 +233,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Open the '...' more menu
       await tester.tap(find.byTooltip('Options'));
       await tester.pumpAndSettle();
 
-      // For own post, expect Save Bookmark, Edit Post, Delete Post
       expect(find.text('Save Bookmark'), findsOneWidget);
       expect(find.text('Edit Post'), findsOneWidget);
       expect(find.text('Delete Post'), findsOneWidget);
 
-      // Verify Repost is NOT shown
       expect(find.text('Repost'), findsNothing);
       expect(find.text('Report Post'), findsNothing);
     });
@@ -273,16 +270,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Open the '...' more menu
       await tester.tap(find.byTooltip('Options'));
       await tester.pumpAndSettle();
 
-      // For other user's post, expect Save Bookmark, Repost, Report Post
       expect(find.text('Save Bookmark'), findsOneWidget);
       expect(find.text('Repost'), findsOneWidget);
       expect(find.text('Report Post'), findsOneWidget);
 
-      // Verify Edit and Delete are NOT shown
       expect(find.text('Edit Post'), findsNothing);
       expect(find.text('Delete Post'), findsNothing);
     });
@@ -302,10 +296,8 @@ void main() {
 
       controller.posts.assignAll([otherPost]);
 
-      // Repost the post with an optional caption
       controller.repostPost('post_other_1', caption: 'Must read for developers!');
 
-      // Verify feed has exactly 1 post (no separate duplicate post was added)
       expect(controller.posts.length, equals(1));
 
       final updatedPost = controller.posts.first;
@@ -334,20 +326,16 @@ void main() {
 
       controller.posts.assignAll([otherPost]);
 
-      // First repost
       controller.repostPost('post_other_1', caption: 'First quote');
       expect(controller.posts.length, equals(1));
       expect(controller.posts.first.sharesCount, equals(6));
       expect(controller.posts.first.isRepostedByMe, isTrue);
 
-      // Attempt to repost again
       controller.repostPost('post_other_1', caption: 'Duplicate quote attempt');
 
-      // Verify count remains 6 and length remains 1
       expect(controller.posts.length, equals(1));
       expect(controller.posts.first.sharesCount, equals(6));
 
-      // Unrepost works cleanly
       controller.unrepostPost('post_other_1');
       expect(controller.posts.first.sharesCount, equals(5));
       expect(controller.posts.first.isRepostedByMe, isFalse);
@@ -370,7 +358,6 @@ void main() {
 
       controller.posts.assignAll([postA]);
 
-      // Verify feed has 1 unique post referencing original post
       expect(controller.posts.length, equals(1));
       expect(controller.posts.first.id, equals('post_100'));
       expect(controller.posts.first.authorName, equals('User A'));
@@ -396,12 +383,10 @@ void main() {
 
       controller.posts.assignAll([repostedPost]);
 
-      // Retrieve user's posts & reposts
       final userPosts = controller.getUserPosts('user_me', username: 'Sokny Enat');
       expect(userPosts.length, equals(1));
       expect(userPosts.first.repostedBy, equals('Sokny Enat'));
 
-      // Render the post card
       await tester.pumpWidget(
         GetMaterialApp(
           translations: AppTranslations(),
@@ -416,11 +401,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Expect reposter banner and caption
       expect(find.text('Sokny Enat reposted'), findsOneWidget);
       expect(find.text('Great post!'), findsOneWidget);
 
-      // Expect original author and content to be visible
       expect(find.text('User A'), findsOneWidget);
       expect(find.text('Hello GenLink!'), findsOneWidget);
     });
@@ -443,11 +426,9 @@ void main() {
 
       controller.posts.assignAll([originalPost]);
 
-      // Repost it
       controller.repostPost('post_original_99');
 
       final post = controller.posts.first;
-      // Original author fields are intact
       expect(post.authorName, equals('Original Author'));
       expect(post.authorTag, equals('@originalauthor'));
       expect(post.authorAvatar, equals('assets/images/user_avatar.png'));

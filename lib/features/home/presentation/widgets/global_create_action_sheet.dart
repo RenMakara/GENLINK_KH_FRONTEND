@@ -7,14 +7,9 @@ import 'package:genlink_frontend/features/finance/presentation/expense_feature/e
 import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_create.dart';
 import '../../../productivity/presentation/screens/create_task_screen.dart';
 
-/// Home Quick Create Action Sheet.
-///
-/// Designed as a Daily Life Quick Create action containing exclusively
-/// To-Do, Goal, and Expense creation shortcuts.
 class GlobalCreateActionSheet extends StatelessWidget {
   const GlobalCreateActionSheet({super.key});
 
-  /// Opens the daily life quick create action sheet.
   static Future<void> show(BuildContext context) {
     return showModalBottomSheet<void>(
       context: context,
@@ -51,7 +46,6 @@ class GlobalCreateActionSheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Drag Handle
               Center(
                 child: Container(
                   width: 36,
@@ -64,7 +58,6 @@ class GlobalCreateActionSheet extends StatelessWidget {
                 ),
               ),
 
-              // Sheet Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -88,7 +81,6 @@ class GlobalCreateActionSheet extends StatelessWidget {
 
               const SizedBox(height: 18),
 
-              // ── Daily Life Quick Actions ──
               Row(
                 children: [
                   Expanded(

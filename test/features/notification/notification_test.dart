@@ -16,7 +16,6 @@ List<NotificationModel> _createComprehensiveSampleNotifications() {
   final now = DateTime.now();
 
   return [
-    // ── TODAY ──
     NotificationModel(
       id: 'n1',
       type: NotificationType.reply,
@@ -90,7 +89,6 @@ List<NotificationModel> _createComprehensiveSampleNotifications() {
       targetType: 'friend_request',
     ),
 
-    // ── YESTERDAY ──
     NotificationModel(
       id: 'n6',
       type: NotificationType.like,
@@ -134,7 +132,6 @@ List<NotificationModel> _createComprehensiveSampleNotifications() {
       targetType: 'saving_goal',
     ),
 
-    // ── EARLIER ──
     NotificationModel(
       id: 'n9',
       type: NotificationType.achievement,
@@ -231,11 +228,11 @@ void main() {
       await controller.fetchNotifications();
 
       expect(controller.unreadCountForCategory('All'), 5);
-      expect(controller.unreadCountForCategory('Social'), 2); // n1, n5
-      expect(controller.unreadCountForCategory('Finance'), 1); // n2
-      expect(controller.unreadCountForCategory('Events'), 1); // n3
-      expect(controller.unreadCountForCategory('Reminders'), 1); // n4
-      expect(controller.unreadCountForCategory('Updates'), 0); // n7, n9 are read
+      expect(controller.unreadCountForCategory('Social'), 2);
+      expect(controller.unreadCountForCategory('Finance'), 1);
+      expect(controller.unreadCountForCategory('Events'), 1);
+      expect(controller.unreadCountForCategory('Reminders'), 1);
+      expect(controller.unreadCountForCategory('Updates'), 0);
     });
 
     test('markAsRead updates isRead state and decreases unreadCount', () async {
@@ -292,18 +289,14 @@ void main() {
       await tester.pumpWidget(buildTestScreen());
       await tester.pumpAndSettle();
 
-      // Simple header title "Notifications"
       expect(find.text('Notifications'), findsOneWidget);
 
-      // Verify NO back button
       expect(find.byIcon(Icons.arrow_back_ios_new_rounded), findsNothing);
       expect(find.byIcon(Icons.arrow_back), findsNothing);
 
-      // Verify NO settings button
       expect(find.byIcon(Icons.settings), findsNothing);
       expect(find.byIcon(Icons.settings_outlined), findsNothing);
 
-      // Verify NO "All / Unread" tabs
       expect(find.text('Unread'), findsNothing);
     });
 
@@ -313,7 +306,6 @@ void main() {
       await tester.pumpWidget(buildTestScreen());
       await tester.pumpAndSettle();
 
-      // All categories from specification must be rendered in category bar
       expect(find.text('All'), findsOneWidget);
       expect(find.text('Social'), findsOneWidget);
       expect(find.text('Finance'), findsOneWidget);
@@ -328,26 +320,22 @@ void main() {
       await tester.pumpWidget(buildTestScreen());
       await tester.pumpAndSettle();
 
-      // Group section labels
       expect(find.text('TODAY'), findsOneWidget);
       expect(find.text('YESTERDAY'), findsOneWidget);
       expect(find.text('Earlier'), findsOneWidget);
 
-      // Notifications in TODAY
       expect(find.text('Dara replied to your comment'), findsOneWidget);
       expect(find.text("You've used 80% of your budget"), findsOneWidget);
       expect(find.text('Flutter Workshop is tomorrow'), findsOneWidget);
       expect(find.text('Time to complete Morning Reading'), findsOneWidget);
       expect(find.text('Lina sent you a friend request'), findsOneWidget);
 
-      // Short context lines
       expect(find.text('“Great idea!”'), findsOneWidget);
       expect(find.text('Food · \$80 of \$100'), findsOneWidget);
       expect(find.text('9:00 AM · ACLEDA University'), findsOneWidget);
       expect(find.text('Keep your streak going!'), findsOneWidget);
       expect(find.text('2 mutual friends'), findsOneWidget);
 
-      // Verify NO big accept/decline buttons directly inside notification feed
       expect(find.text('Accept'), findsNothing);
       expect(find.text('Decline'), findsNothing);
     });
@@ -358,19 +346,15 @@ void main() {
       await tester.pumpWidget(buildTestScreen());
       await tester.pumpAndSettle();
 
-      // Tap on Finance category pill
       await tester.tap(find.text('Finance'));
       await tester.pumpAndSettle();
 
       expect(controller.selectedCategory.value, 'Finance');
-      // Finance items present
       expect(find.text("You've used 80% of your budget"), findsOneWidget);
       expect(find.text("You're 70% closer to your saving goal"), findsOneWidget);
-      // Non-finance items absent
       expect(find.text('Dara replied to your comment'), findsNothing);
       expect(find.text('Flutter Workshop is tomorrow'), findsNothing);
 
-      // Tap on Events category pill
       await tester.tap(find.text('Events'));
       await tester.pumpAndSettle();
 
@@ -378,14 +362,12 @@ void main() {
       expect(find.text('Flutter Workshop is tomorrow'), findsOneWidget);
       expect(find.text("You've used 80% of your budget"), findsNothing);
 
-      // Tap on Reminders category pill
       await tester.tap(find.text('Reminders'));
       await tester.pumpAndSettle();
 
       expect(controller.selectedCategory.value, 'Reminders');
       expect(find.text('Time to complete Morning Reading'), findsOneWidget);
 
-      // Tap on Updates category pill
       await tester.tap(find.text('Updates'));
       await tester.pumpAndSettle();
 
@@ -400,11 +382,9 @@ void main() {
       await tester.pumpWidget(buildTestScreen());
       await tester.pumpAndSettle();
 
-      // Tap the friend request item
       await tester.tap(find.text('Lina sent you a friend request'));
       await tester.pumpAndSettle();
 
-      // Verify Friend Requests screen opened with Accept and Decline buttons
       expect(find.byType(FriendRequestsScreen), findsOneWidget);
       expect(find.text('Friend Requests'), findsOneWidget);
       expect(find.text('Accept'), findsWidgets);
@@ -418,7 +398,6 @@ void main() {
 
       expect(controller.unreadCount, 5);
 
-      // Tap the budget notification
       await tester.tap(find.text("You've used 80% of your budget"));
       await tester.pumpAndSettle();
 
@@ -433,7 +412,6 @@ void main() {
 
       expect(find.text('Dara replied to your comment'), findsOneWidget);
 
-      // Dismiss the item
       await tester.drag(find.text('Dara replied to your comment'), const Offset(-500, 0));
       await tester.pumpAndSettle();
 
@@ -443,7 +421,6 @@ void main() {
 
     testWidgets('renders contextual empty state when category has no notifications',
         (tester) async {
-      // Mock notifications with only Social items
       when(() => mockRepo.getNotifications()).thenAnswer((_) async => [
             NotificationModel(
               id: 'n1',
@@ -461,7 +438,6 @@ void main() {
       await tester.pumpWidget(buildTestScreen());
       await tester.pumpAndSettle();
 
-      // Tap on Finance category (which has 0 items)
       await tester.tap(find.text('Finance'));
       await tester.pumpAndSettle();
 
@@ -489,21 +465,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Title in Khmer: ការជូនដំណឹង
       expect(find.text('ការជូនដំណឹង'), findsOneWidget);
 
-      // Categories in Khmer
-      expect(find.text('ទាំងអស់'), findsOneWidget); // All
-      expect(find.text('សង្គម'), findsOneWidget); // Social
-      expect(find.text('ហិរញ្ញវត្ថុ'), findsOneWidget); // Finance
-      expect(find.text('ព្រឹត្តិការណ៍'), findsOneWidget); // Events
+      expect(find.text('ទាំងអស់'), findsOneWidget);
+      expect(find.text('សង្គម'), findsOneWidget);
+      expect(find.text('ហិរញ្ញវត្ថុ'), findsOneWidget);
+      expect(find.text('ព្រឹត្តិការណ៍'), findsOneWidget);
 
-      // Scroll horizontal category bar to reveal 'Updates' (បច្ចុប្បន្នភាព)
       await tester.drag(find.text('សង្គម'), const Offset(-200, 0));
       await tester.pumpAndSettle();
-      expect(find.text('បច្ចុប្បន្នភាព'), findsOneWidget); // Updates
+      expect(find.text('បច្ចុប្បន្នភាព'), findsOneWidget);
 
-      // Scroll back
       await tester.drag(
         find.text('បច្ចុប្បន្នភាព'),
         const Offset(200, 0),
@@ -511,10 +483,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Section labels in Khmer
-      expect(find.text('ថ្ងៃនេះ'), findsOneWidget); // TODAY
-      expect(find.text('ម្សិលមិញ'), findsOneWidget); // YESTERDAY
-      expect(find.text('មុននេះ'), findsOneWidget); // Earlier
+      expect(find.text('ថ្ងៃនេះ'), findsOneWidget);
+      expect(find.text('ម្សិលមិញ'), findsOneWidget);
+      expect(find.text('មុននេះ'), findsOneWidget);
     });
 
     testWidgets('renders gracefully on small screen width (320px) without overflow',

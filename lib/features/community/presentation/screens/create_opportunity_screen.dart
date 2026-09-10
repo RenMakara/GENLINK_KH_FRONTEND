@@ -4,11 +4,6 @@ import 'package:get/get.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import 'widgets/author_row.dart';
 
-/// Create Opportunity Screen — Career tab creation flow.
-///
-/// Fields: Title, Company, Type (Full-Time/Part-Time/Internship), Description.
-/// Mirrors the existing Career data structure (JobCard fields).
-/// Black/white design — zero cyan/blue.
 class CreateOpportunityScreen extends StatefulWidget {
   const CreateOpportunityScreen({super.key});
 
@@ -112,7 +107,6 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
     if (!_canPost || _isSubmitting) return;
     setState(() => _isSubmitting = true);
 
-    // Simulate network delay (replace with actual repo call when backend is ready)
     await Future.delayed(const Duration(milliseconds: 600));
 
     if (!mounted) return;
@@ -223,7 +217,6 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Author identity row ────────────────────────────────────
               AuthorRow(
                 isDark: isDark,
                 textPrimary: textPrimary,
@@ -231,7 +224,6 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ── Title ──────────────────────────────────────────────
               _buildLabel('Title', textMuted),
               const SizedBox(height: 8),
               TextField(
@@ -265,7 +257,6 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
 
               const SizedBox(height: 16),
 
-              // ── Company ────────────────────────────────────────────────
               _buildLabel('Company', textMuted),
               const SizedBox(height: 8),
               TextField(
@@ -299,7 +290,6 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
 
               const SizedBox(height: 16),
 
-              // ── Type Selector ──────────────────────────────────────────
               _buildLabel('community.opportunityType'.tr, textMuted),
               const SizedBox(height: 8),
               Row(
@@ -348,7 +338,6 @@ class _CreateOpportunityScreenState extends State<CreateOpportunityScreen> {
 
               const SizedBox(height: 16),
 
-              // ── Description ────────────────────────────────────────────
               _buildLabel('Description', textMuted),
               const SizedBox(height: 8),
               TextField(

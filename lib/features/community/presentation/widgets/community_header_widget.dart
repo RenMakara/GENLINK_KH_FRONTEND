@@ -8,10 +8,6 @@ import '../../../notification/presentation/controllers/notification_controller.d
 import '../../../notification/presentation/screens/notification_screen.dart';
 import '../screens/community_search_screen.dart';
 
-/// GenLink KH Community Header Widget
-///
-/// Displays "Home" in Home mode, or "Community" in Community mode, alongside
-/// standard Search, Chat, and Notification action buttons.
 class CommunityHeaderWidget extends StatelessWidget
     implements PreferredSizeWidget {
   final String activeCategory;
@@ -71,7 +67,6 @@ class CommunityHeaderWidget extends StatelessWidget
               padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: Row(
                 children: [
-                  // 1. LEFT TITLE
                   Expanded(
                     child: Text(
                       titleText,
@@ -88,11 +83,9 @@ class CommunityHeaderWidget extends StatelessWidget
 
                   const SizedBox(width: 6),
 
-                  // 2. RIGHT ACTION BUTTONS (Search, Chat, Notification)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Search Button
                       _HeaderActionButton(
                         icon: Icons.search_rounded,
                         onTap: () => Get.to(
@@ -108,7 +101,6 @@ class CommunityHeaderWidget extends StatelessWidget
 
                       SizedBox(width: buttonGap),
 
-                      // Chat Button - Two overlapping speech bubbles icon
                       _HeaderActionButton(
                         icon: Icons.forum_outlined,
                         onTap: () => Get.to(() => const ChatListScreen()),
@@ -120,7 +112,6 @@ class CommunityHeaderWidget extends StatelessWidget
 
                       SizedBox(width: buttonGap),
 
-                      // Notification Button with reactive unread badge
                       Builder(builder: (context) {
                         if (!Get.isRegistered<NotificationController>()) {
                           return _HeaderActionButton(
@@ -163,8 +154,6 @@ class CommunityHeaderWidget extends StatelessWidget
   }
 }
 
-/// Reusable Header Action Button component with standardized touch target,
-/// 24px icon size, and badge support.
 class _HeaderActionButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;

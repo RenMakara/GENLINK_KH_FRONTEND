@@ -4,7 +4,6 @@ import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import '../../domain/models/story_model.dart';
 import 'story_template_canvas.dart';
 
-/// Shared typography helper for Story layers across Composer and Viewer.
 TextStyle getStoryTextStyle({
   required TextStyleType fontStyle,
   required Color color,
@@ -24,29 +23,29 @@ TextStyle getStoryTextStyle({
       weight = FontWeight.w600;
       letterSpacing = 0.2;
       break;
-    case TextStyleType.elegant: // Deco
+    case TextStyleType.elegant:
       style = FontStyle.italic;
       weight = FontWeight.w600;
       letterSpacing = 0.8;
       break;
-    case TextStyleType.bold: // Bubble
+    case TextStyleType.bold:
       weight = FontWeight.w900;
       letterSpacing = -0.3;
       break;
-    case TextStyleType.modern: // Modern
+    case TextStyleType.modern:
       weight = FontWeight.w800;
       letterSpacing = 0.8;
       break;
-    case TextStyleType.minimal: // Minimal Clean
+    case TextStyleType.minimal:
       weight = FontWeight.w700;
       letterSpacing = 1.2;
       break;
-    case TextStyleType.handwriting: // Script
+    case TextStyleType.handwriting:
       weight = FontWeight.w500;
       style = FontStyle.italic;
       letterSpacing = 0.5;
       break;
-    case TextStyleType.coding: // Code
+    case TextStyleType.coding:
       weight = FontWeight.w600;
       fontFamily = 'monospace';
       letterSpacing = -0.2;
@@ -64,7 +63,6 @@ TextStyle getStoryTextStyle({
       break;
   }
 
-  // Explicit Text Effects system (Independent from Font Styles)
   switch (effect) {
     case TextEffectType.shadow:
       textShadows = [
@@ -97,7 +95,7 @@ TextStyle getStoryTextStyle({
       break;
     case TextEffectType.outline:
     case TextEffectType.none:
-      textShadows = null; // Clean, flat, NO shadow by default
+      textShadows = null;
       break;
   }
 
@@ -129,7 +127,6 @@ bool isStoryVideoPath(String path) {
       p.endsWith('.flv');
 }
 
-/// Shared helper to build the visual content of any Story layer.
 Widget buildStoryLayerContent({
   required MovableStoryLayer layer,
   required double maxCanvasWidth,
@@ -279,18 +276,36 @@ Widget buildStoryLayerContent({
     case LayerType.hashtag:
       return ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
             color: AppColors.communityAccent.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.25),
+              width: 0.8,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.communityAccent.withValues(alpha: 0.35),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Text(
             layer.text,
+            softWrap: true,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              fontSize: 14.5,
+              letterSpacing: -0.1,
+              height: 1.25,
             ),
           ),
         ),
@@ -306,7 +321,9 @@ Widget buildStoryLayerContent({
 
       return ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: layer.bgStyle == TextBgStyle.filled
@@ -328,14 +345,15 @@ Widget buildStoryLayerContent({
                   ]
                 : null,
           ),
-          child: Text(
-            cleanMention,
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 200),
             style: TextStyle(
               color: textColor,
               fontWeight: FontWeight.w900,
               fontSize: 18,
               letterSpacing: 0.5,
             ),
+            child: Text(cleanMention),
           ),
         ),
       );
@@ -349,7 +367,9 @@ Widget buildStoryLayerContent({
 
       return ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             color: layer.bgStyle == TextBgStyle.filled
@@ -377,14 +397,17 @@ Widget buildStoryLayerContent({
               Icon(Icons.location_on_rounded, color: textColor, size: 16),
               const SizedBox(width: 6),
               Flexible(
-                child: Text(
-                  cleanLocation,
+                child: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
                   style: TextStyle(
                     color: textColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
-                  overflow: TextOverflow.ellipsis,
+                  child: Text(
+                    cleanLocation,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
             ],
@@ -471,7 +494,6 @@ Widget buildStoryLayerContent({
   }
 }
 
-/// Shared Story Background renderer
 Widget buildStoryBackground({
   required StoryType storyType,
   String? mediaUrl,
@@ -643,8 +665,6 @@ Widget buildStoryBackground({
   );
 }
 
-/// Unified StoryCanvasRenderer
-/// Shared rendering pipeline connecting StoryModel -> Composer and StoryModel -> Viewer.
 class StoryCanvasRenderer extends StatelessWidget {
   final Size canvasSize;
   final List<MovableStoryLayer> layers;
@@ -664,7 +684,6 @@ class StoryCanvasRenderer extends StatelessWidget {
   final String? templateId;
   final List<StoryTemplateSlot>? templateSlots;
 
-  // Composer interaction callbacks
   final ValueChanged<MovableStoryLayer>? onSelectLayer;
   final ValueChanged<MovableStoryLayer>? onEditLayer;
   final void Function(MovableStoryLayer, ScaleStartDetails)? onScaleStartLayer;
@@ -721,7 +740,6 @@ class StoryCanvasRenderer extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 1. Background
         Positioned.fill(
           child: customBackground ??
               buildStoryBackground(
@@ -735,7 +753,6 @@ class StoryCanvasRenderer extends StatelessWidget {
               ),
         ),
 
-        // 1.5 Template Canvas (if Template Story)
         if (isTemplateStory && matchedTemplate != null)
           Positioned.fill(
             child: StoryTemplateCanvas(
@@ -746,7 +763,6 @@ class StoryCanvasRenderer extends StatelessWidget {
             ),
           ),
 
-        // 2. Movable Overlays (Text, Stickers, Hashtags, Mentions, Locations, Music, Images)
         ...layers.map((layer) {
           if (editingLayerId != null && layer.id == editingLayerId) {
             return const SizedBox.shrink();
@@ -810,7 +826,6 @@ class StoryCanvasRenderer extends StatelessWidget {
           );
         }),
 
-        // 3. Fallback text content if no layers exist
         if (!isTemplateStory &&
             layers.isEmpty &&
             textContent != null &&

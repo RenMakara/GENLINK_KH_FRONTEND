@@ -7,8 +7,6 @@ import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/saving_goal_controller.dart';
 
-/// Create form for a backend saving goal. When [goal] is supplied the same
-/// form is used for an update, keeping the edit contract identical to create.
 class CreateGoalScreen extends StatefulWidget {
   const CreateGoalScreen({super.key, this.goal});
 
@@ -52,8 +50,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _targetDate ?? now,
-      // targetDate is optional and the backend does not require it to be in
-      // the future, so do not impose a client-only business rule here.
       firstDate: DateTime(2000),
       lastDate: DateTime(now.year + 20),
     );
@@ -96,7 +92,7 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-    final textPrimary = isDark
+    final text = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
     final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
@@ -116,11 +112,11 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(18, 12, 18, 30),
             children: [
-              // HEADER
               Row(
                 children: [
                   AppBackButton(),
                   const SizedBox(width: 13),
+
                   Expanded(
                     child: Text(
                       (widget.isEditing
@@ -128,10 +124,10 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                               : 'finance.goal.create')
                           .tr,
                       style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
+                        color: text,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
                       ),
                     ),
                   ),
@@ -140,13 +136,11 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
               const SizedBox(height: 20),
 
-              // ERROR
               if (error != null) ...[
                 _ErrorBanner(message: error),
                 const SizedBox(height: 14),
               ],
 
-              // GOAL NAME
               TextField(
                 controller: _titleController,
                 enabled: !submitting,
@@ -160,7 +154,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
               const SizedBox(height: 16),
 
-              // TARGET AMOUNT
               TextField(
                 controller: _amountController,
                 enabled: !submitting,
@@ -178,7 +171,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
               const SizedBox(height: 16),
 
-              // DEADLINE
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 enabled: !submitting,
@@ -194,7 +186,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
               const SizedBox(height: 12),
 
-              // CURRENCY
               Text(
                 '${'finance.goal.currency'.tr}: ${formCurrency.apiValue}',
                 style: TextStyle(color: muted, fontWeight: FontWeight.w600),
@@ -202,7 +193,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
               const SizedBox(height: 28),
 
-              // SAVE / UPDATE
               AppButton(
                 label:
                     (widget.isEditing

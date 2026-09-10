@@ -103,7 +103,6 @@ void main() {
 
       expect(positionedWidgets.length, 2);
 
-      // Both layers must be placed safely inside visible canvas bounds
       for (final p in positionedWidgets) {
         expect(p.left, greaterThan(screenSize.width * 0.20));
         expect(p.left, lessThan(screenSize.width * 0.80));
@@ -185,7 +184,6 @@ void main() {
         find.byKey(const ValueKey('img_layer_2')),
       );
 
-      // Drag layer 1
       await tester.dragFrom(
         Offset(screenSize.width * 0.4, screenSize.height * 0.4),
         const Offset(50, 50),
@@ -196,7 +194,6 @@ void main() {
         find.byKey(const ValueKey('img_layer_2')),
       );
 
-      // Layer 2 position must remain unchanged
       expect(updatedPos2.left, equals(initialPos2.left));
       expect(updatedPos2.top, equals(initialPos2.top));
     });
@@ -242,7 +239,6 @@ void main() {
       expect(find.byKey(const ValueKey('img_layer_dup_1')), findsOneWidget);
       expect(find.byKey(const ValueKey('img_layer_dup_2')), findsOneWidget);
 
-      // Drag layer 1 down to delete zone (screenHeight - 100)
       await tester.dragFrom(
         Offset(screenSize.width * 0.4, screenSize.height * 0.4),
         const Offset(0, 400),
@@ -251,7 +247,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
-      // Layer 1 is deleted, layer 2 remains intact
       expect(find.byKey(const ValueKey('img_layer_dup_1')), findsNothing);
       expect(find.byKey(const ValueKey('img_layer_dup_2')), findsOneWidget);
     });
@@ -432,7 +427,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final images = tester.widgetList<Image>(find.byType(Image)).toList();
-      expect(images.length, equals(2)); // background image + overlay image
+      expect(images.length, equals(2));
       for (final img in images) {
         expect(img.fit, equals(BoxFit.contain));
       }

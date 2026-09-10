@@ -3,17 +3,11 @@ import '../../../../core/network/api_endpoints.dart';
 import '../../domain/entities/finance_entities.dart';
 import '../models/finance_models.dart';
 
-/// Remote Finance data source.
-///
-/// This is the only Finance layer that knows endpoint paths, query parameters,
-/// request JSON, and the ApiResponse envelope.  [ApiClient] handles the
-/// authenticated Dio stack and unwraps the envelope before mapping.
 class FinanceRemoteDatasource {
   const FinanceRemoteDatasource(this._client);
 
   final ApiClient _client;
 
-  // ── Dashboard ────────────────────────────────────────────────────────
 
   Future<FinanceDashboardEntity> getFinanceDashboard(FinanceCurrency currency) {
     return _client.get(
@@ -23,7 +17,6 @@ class FinanceRemoteDatasource {
     );
   }
 
-  // ── Expenses ─────────────────────────────────────────────────────────
 
   Future<FinancePage<FinanceExpenseEntity>> getExpenses({
     String? category,
@@ -95,7 +88,6 @@ class FinanceRemoteDatasource {
     );
   }
 
-  // ── Income ───────────────────────────────────────────────────────────
 
   Future<FinancePage<FinanceIncomeEntity>> getIncomes({
     String? source,
@@ -165,7 +157,6 @@ class FinanceRemoteDatasource {
     );
   }
 
-  // ── Wallet ───────────────────────────────────────────────────────────
 
   Future<FinanceWalletEntity> getWallet() {
     return _client.get(
@@ -208,7 +199,6 @@ class FinanceRemoteDatasource {
     );
   }
 
-  // ── Budgets ──────────────────────────────────────────────────────────
 
   Future<FinancePage<FinanceBudgetEntity>> getBudgets({int? page, int? size}) {
     return _client.get(
@@ -264,7 +254,6 @@ class FinanceRemoteDatasource {
     return _client.delete(ApiEndpoints.financeBudget(budgetId));
   }
 
-  // ── Saving goals ─────────────────────────────────────────────────────
 
   Future<List<FinanceSavingGoalEntity>> getSavingGoals({
     String? status,
@@ -329,7 +318,6 @@ class FinanceRemoteDatasource {
     );
   }
 
-  // ── Financial literacy ──────────────────────────────────────────────
 
   Future<FinanceLearningDashboardEntity> getLearningDashboard() {
     return _client.get(

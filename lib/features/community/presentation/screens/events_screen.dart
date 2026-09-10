@@ -51,7 +51,6 @@ class _EventsScreenState extends State<EventsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Search & Header ──────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Row(
@@ -78,7 +77,6 @@ class _EventsScreenState extends State<EventsScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  // Create Event shortcut button
                   GestureDetector(
                     onTap: () => CommunityCreationFlow.openCreateEvent(context),
                     child: Container(
@@ -113,7 +111,6 @@ class _EventsScreenState extends State<EventsScreen> {
 
             const SizedBox(height: 16),
 
-            // ── Event List ───────────────────────────────────────────────
             Expanded(
               child: Obx(() {
                 final allEvents = _controller.events;
@@ -274,7 +271,6 @@ class _EventCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left: 92x92 Square Thumbnail
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: SizedBox(
@@ -288,13 +284,11 @@ class _EventCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
 
-                // Right: Information Lines
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Top Row: Category Badge + Paid Badge + Bookmark Button
                       Row(
                         children: [
                           Container(
@@ -379,7 +373,6 @@ class _EventCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 5),
 
-                      // Title
                       Text(
                         event.title,
                         style: TextStyle(
@@ -393,7 +386,6 @@ class _EventCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 5),
 
-                      // Date & Time
                       if (dateDisplay.isNotEmpty) ...[
                         Text(
                           dateDisplay,
@@ -408,7 +400,6 @@ class _EventCard extends StatelessWidget {
                         const SizedBox(height: 2),
                       ],
 
-                      // Location / Online
                       Text(
                         locationDisplay,
                         style: TextStyle(

@@ -11,7 +11,6 @@ import 'package:genlink_frontend/features/finance/presentation/formatters/financ
 import 'saving_goals_create.dart';
 import 'saving_goals_detail.dart';
 
-/// Currency- and status-scoped list of the user's backend saving goals.
 class SavingGoalsScreen extends GetView<SavingGoalController> {
   const SavingGoalsScreen({super.key});
 

@@ -270,13 +270,13 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
   Color get _accentColor {
     switch (widget.type) {
       case NotificationBannerType.success:
-        return const Color(0xFF4ADE80); // Vibrant GenLink success green
+        return const Color(0xFF4ADE80);
       case NotificationBannerType.error:
-        return const Color(0xFFEF6A6A); // Danger red
+        return const Color(0xFFEF6A6A);
       case NotificationBannerType.warning:
-        return const Color(0xFFF5B84B); // Warning amber
+        return const Color(0xFFF5B84B);
       case NotificationBannerType.info:
-        return const Color(0xFF5DADEC); // Community blue
+        return const Color(0xFF5DADEC);
     }
   }
 
@@ -342,7 +342,6 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // 1. Small Icon inside circular container
                             Container(
                               width: 28,
                               height: 28,
@@ -359,7 +358,6 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
                             ),
                             const SizedBox(width: 10),
 
-                            // 2. Text Hierarchy (White Title + Gray Message)
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,7 +391,6 @@ class _NotificationBannerWidgetState extends State<_NotificationBannerWidget>
                               ),
                             ),
 
-                            // 3. Optional Action Button or Small Close Button
                             if (widget.actionLabel != null) ...[
                               const SizedBox(width: 8),
                               InkWell(

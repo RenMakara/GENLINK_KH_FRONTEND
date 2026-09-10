@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../shared/utils/current_user.dart';
 import '../../../../shared/widgets/global_create_sheet.dart';
@@ -12,11 +14,6 @@ import '../controllers/community_controller.dart';
 import 'create_event_screen.dart';
 import 'event_details_screen.dart';
 
-/// New Post Composer Screen for GenLink KH.
-///
-/// Header: Close [X], User Avatar, "Anyone" Dropdown, Schedule [Clock], [Post] Button.
-/// Main: Large clean text editor ("What do you want to talk about?").
-/// Bottom Toolbar: Media/Image, GIF, Feeling/Activity, Event, Location, and [+] Create Sheet.
 class CreatePostScreen extends StatefulWidget {
   final CommunityPostModel? initialPost;
 
@@ -37,12 +34,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   String? _selectedFeeling;
   final List<String> _taggedPeople = [];
 
-  // Poll state (if editing existing post with poll)
   String? _pollQuestion;
   List<String> _pollOptionsList = [];
   final String _pollDuration = '3 Days';
 
-  // Link state
   String? _attachedLink;
   String? _linkTitle;
   String? _linkDomain;
@@ -93,7 +88,41 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           _attachedImages.addAll(selected.map((e) => e.path));
         });
       }
-    } catch (_) {}
+    } on PlatformException catch (e) {
+      // Permission denied or picker unavailable
+      debugPrint('[CreatePostScreen] Gallery pick PlatformException: ${e.code} — ${e.message}');
+      if (!mounted) return;
+      final bool isPermissionError =
+          e.code == 'photo_access_denied' ||
+          e.code == 'access_denied' ||
+          e.code == 'permission_denied' ||
+          (e.message ?? '').toLowerCase().contains('permission') ||
+          (e.message ?? '').toLowerCase().contains('denied');
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: isPermissionError
+            ? ('community.photoPermissionDenied'.tr.isNotEmpty &&
+                'community.photoPermissionDenied'.tr != 'community.photoPermissionDenied'
+                    ? 'community.photoPermissionDenied'.tr
+                    : 'Photo Access Denied')
+            : ('community.galleryUnavailable'.tr.isNotEmpty &&
+                'community.galleryUnavailable'.tr != 'community.galleryUnavailable'
+                    ? 'community.galleryUnavailable'.tr
+                    : 'Gallery Unavailable'),
+        message: isPermissionError
+            ? ('community.photoPermissionDeniedMsg'.tr.isNotEmpty &&
+                'community.photoPermissionDeniedMsg'.tr != 'community.photoPermissionDeniedMsg'
+                    ? 'community.photoPermissionDeniedMsg'.tr
+                    : 'Please allow photo access in your device settings to attach images.')
+            : ('community.galleryUnavailableMsg'.tr.isNotEmpty &&
+                'community.galleryUnavailableMsg'.tr != 'community.galleryUnavailableMsg'
+                    ? 'community.galleryUnavailableMsg'.tr
+                    : 'Could not open photo gallery. Please try again.'),
+      );
+    } catch (e) {
+      // Unexpected error — log but do not crash; picker cancellation is not an error
+      debugPrint('[CreatePostScreen] Gallery pick unexpected error: $e');
+    }
   }
 
   Future<void> _pickCameraImage() async {
@@ -557,7 +586,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               Expanded(
                 child: TabBarView(
                   children: [
-                    // Feelings Grid
                     GridView.builder(
                       physics: const BouncingScrollPhysics(),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -606,7 +634,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         );
                       },
                     ),
-                    // Activities Grid
                     GridView.builder(
                       physics: const BouncingScrollPhysics(),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -910,16 +937,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     }
   }
 
-  /// Builds the user avatar from the authenticated user's profile.
   Widget _buildUserAvatar(bool isDark) {
-    final avatarUrl = CurrentUser.avatarUrl;
-    final hasNetwork = avatarUrl != null && avatarUrl.isNotEmpty;
-    return CircleAvatar(
-      radius: 17,
-      backgroundColor: isDark ? const Color(0xFF2B313A) : const Color(0xFFE2E4E8),
-      backgroundImage: hasNetwork
-          ? NetworkImage(avatarUrl) as ImageProvider
-          : const AssetImage('assets/images/user_profile.png'),
+    return AppAvatar(
+      imageUrl: CurrentUser.avatarUrl,
+      name: CurrentUser.name,
+      size: 34,
     );
   }
 
@@ -948,7 +970,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     final visibilityValue = _selectedAudience;
 
     if (_isEditing) {
-      controller.updatePost(
+      await controller.updatePost(
         postId: widget.initialPost!.id,
         content: _textController.text.trim(),
         imageUrls: _attachedImages,
@@ -963,17 +985,20 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         attachedEvent: _attachedEvent,
       );
 
-      AppNotificationBanner.showSuccess(
-        context: context,
-        title: 'community.postUpdated'.tr.isNotEmpty && 'community.postUpdated'.tr != 'community.postUpdated'
-            ? 'community.postUpdated'.tr
-            : 'Post updated',
-        message: 'community.postUpdatedMsg'.tr.isNotEmpty && 'community.postUpdatedMsg'.tr != 'community.postUpdatedMsg'
-            ? 'community.postUpdatedMsg'.tr
-            : 'Your post changes have been saved.',
-      );
+      if (mounted) {
+        AppNotificationBanner.showSuccess(
+          context: context,
+          title: 'community.postUpdated'.tr.isNotEmpty && 'community.postUpdated'.tr != 'community.postUpdated'
+              ? 'community.postUpdated'.tr
+              : 'Post updated',
+          message: 'community.postUpdatedMsg'.tr.isNotEmpty && 'community.postUpdatedMsg'.tr != 'community.postUpdatedMsg'
+              ? 'community.postUpdatedMsg'.tr
+              : 'Your post changes have been saved.',
+        );
+        Navigator.pop(context);
+      }
     } else {
-      controller.createPost(
+      final success = await controller.createPost(
         content: _textController.text.trim(),
         imageUrls: _attachedImages,
         visibility: visibilityValue,
@@ -987,18 +1012,25 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         attachedEvent: _attachedEvent,
       );
 
-      AppNotificationBanner.showSuccess(
-        context: context,
-        title: 'community.postCreated'.tr.isNotEmpty && 'community.postCreated'.tr != 'community.postCreated'
-            ? 'community.postCreated'.tr
-            : 'Post published',
-        message: 'community.postCreatedMsg'.tr.isNotEmpty && 'community.postCreatedMsg'.tr != 'community.postCreatedMsg'
-            ? 'community.postCreatedMsg'.tr
-            : 'Your post is now live on the community feed.',
-      );
+      if (mounted) {
+        if (success) {
+          AppNotificationBanner.showSuccess(
+            context: context,
+            title: 'community.postCreated'.tr.isNotEmpty && 'community.postCreated'.tr != 'community.postCreated'
+                ? 'community.postCreated'.tr
+                : 'Post published',
+            message: 'community.postCreatedMsg'.tr.isNotEmpty && 'community.postCreatedMsg'.tr != 'community.postCreatedMsg'
+                ? 'community.postCreatedMsg'.tr
+                : 'Your post is now live on the community feed.',
+          );
+          Navigator.pop(context);
+        } else {
+          setState(() {
+            _isSubmitting = false;
+          });
+        }
+      }
     }
-
-    Navigator.pop(context);
   }
 
   @override
@@ -1022,7 +1054,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       child: Scaffold(
         resizeToAvoidBottomInset: true,
         backgroundColor: isDark ? const Color(0xFF0C0E12) : Colors.white,
-        // ── 1. HEADER ──
         appBar: AppBar(
           backgroundColor: isDark ? const Color(0xFF0C0E12) : Colors.white,
           elevation: 0,
@@ -1039,7 +1070,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             children: [
               _buildUserAvatar(isDark),
               const SizedBox(width: 6),
-              // "Anyone" Dropdown Capsule Selector
               Flexible(
                 child: Material(
                   color: Colors.transparent,
@@ -1097,7 +1127,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ],
           ),
           actions: [
-            // Clock / Schedule Icon
             IconButton(
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
@@ -1105,7 +1134,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               tooltip: 'Schedule Post',
               onPressed: _showScheduleDialog,
             ),
-            // Header "Post" Button
             Padding(
               padding: const EdgeInsets.only(right: 8, top: 10, bottom: 10, left: 2),
               child: AnimatedContainer(
@@ -1161,7 +1189,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ],
         ),
 
-        // ── 2. MAIN COMPOSER BODY ──
         body: SafeArea(
           child: Column(
             children: [
@@ -1173,7 +1200,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Large text input
                       TextField(
                         controller: _textController,
                         focusNode: _editorFocusNode,
@@ -1207,7 +1233,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         ),
                       ),
 
-                      // Character counter indicator if typing
                       if (charCount > 0)
                         Padding(
                           padding: const EdgeInsets.only(top: 8, bottom: 8),
@@ -1226,7 +1251,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
                       const SizedBox(height: 12),
 
-                      // ── Attached Content Previews ──
                       if (_attachedImages.isNotEmpty ||
                           _pollQuestion != null ||
                           _attachedEvent != null ||
@@ -1238,7 +1262,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           spacing: 10,
                           runSpacing: 10,
                           children: [
-                            // 1. Photo / GIF Thumbnail Cards with remove button
                             ..._attachedImages.asMap().entries.map((entry) {
                               final idx = entry.key;
                               final imgPath = entry.value;
@@ -1262,8 +1285,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                               errorBuilder: (context, error, stackTrace) =>
                                                   Icon(Icons.broken_image_outlined, color: textSecondary),
                                             )
-                                          : Image.file(File(imgPath), fit: BoxFit.cover),
-                                      // Dark gradient overlay for remove button
+                                          : imgPath.startsWith('assets/')
+                                              ? Image.asset(imgPath, fit: BoxFit.cover)
+                                              : Image.file(File(imgPath), fit: BoxFit.cover),
                                       Container(
                                         decoration: const BoxDecoration(
                                           gradient: LinearGradient(
@@ -1295,7 +1319,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               );
                             }),
 
-                            // 2. Attached Location Badge
                             if (_selectedLocation != null)
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1326,7 +1349,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                 ),
                               ),
 
-                            // 3. Attached Feeling Badge
                             if (_selectedFeeling != null)
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1357,11 +1379,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                 ),
                               ),
 
-                            // 4. Attached Event Card
                             if (_attachedEvent != null)
                               _buildAttachedEventCard(isDark, cardBg, cardBorder),
 
-                            // 5. Attached Poll Card
                             if (_pollQuestion != null)
                               Container(
                                 width: double.infinity,
@@ -1403,7 +1423,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                 ),
                               ),
 
-                            // 6. Attached Link Card
                             if (_attachedLink != null)
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1444,7 +1463,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 ),
               ),
 
-              // ── 3. BOTTOM COMPOSER TOOLBAR ──
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
@@ -1453,28 +1471,24 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 ),
                 child: Row(
                   children: [
-                    // Media / Image
                     _ToolbarBtn(
                       icon: Icons.image_outlined,
                       tooltip: 'Media / Image',
                       color: textPrimary.withValues(alpha: 0.85),
                       onPressed: _showMediaPickerSheet,
                     ),
-                    // GIF
                     _ToolbarBtn(
                       icon: Icons.gif_box_outlined,
                       tooltip: 'GIF',
                       color: textPrimary.withValues(alpha: 0.85),
                       onPressed: _showGifPickerSheet,
                     ),
-                    // Feeling / Activity
                     _ToolbarBtn(
                       icon: Icons.sentiment_satisfied_alt_outlined,
                       tooltip: 'Feeling / Activity',
                       color: textPrimary.withValues(alpha: 0.85),
                       onPressed: _showFeelingActivitySheet,
                     ),
-                    // Event
                     _ToolbarBtn(
                       icon: Icons.event_outlined,
                       tooltip: 'Event',
@@ -1490,7 +1504,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         }
                       },
                     ),
-                    // Location
                     _ToolbarBtn(
                       icon: Icons.location_on_outlined,
                       tooltip: 'Location',
@@ -1500,7 +1513,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
                     const Spacer(),
 
-                    // "+" Button -> Opens Create Bottom Sheet
                     Tooltip(
                       message: 'create.title'.tr.isNotEmpty && 'create.title'.tr != 'create.title'
                           ? 'create.title'.tr
@@ -1509,7 +1521,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         color: isDark ? const Color(0xFF1C2028) : const Color(0xFFF0F2F5),
                         borderRadius: BorderRadius.circular(10),
                         child: InkWell(
-                          onTap: () => GlobalCreateSheet.show(context, fromPostComposer: true),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            GlobalCreateSheet.show(context, fromPostComposer: true);
+                          },
                           borderRadius: BorderRadius.circular(10),
                           child: Container(
                             width: 38,
@@ -1649,7 +1664,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 }
 
-/// Compact, theme-aware toolbar icon button with animated tap feedback.
 class _ToolbarBtn extends StatefulWidget {
   final IconData icon;
   final String tooltip;

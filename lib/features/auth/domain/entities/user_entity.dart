@@ -1,8 +1,3 @@
-/// Auth-domain user entity.
-///
-/// This is a pure Dart representation of the user profile, decoupled from
-/// the backend JSON shape. Map to/from [UserResponseModel] at the
-/// data layer boundary.
 class UserEntity {
   const UserEntity({
     required this.id,

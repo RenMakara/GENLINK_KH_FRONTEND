@@ -54,16 +54,10 @@ import '../../main_screen.dart';
 import '../bindings/main_binding.dart';
 import 'app_routes.dart';
 
-/// Central GetX page registry.
-///
-/// Splash and onboarding are deliberately unguarded: splash is what
-/// restores the session in the first place, so guarding it would bounce
-/// the user to login before the stored token has been read.
 abstract final class AppPages {
   static const initial = AppRoutes.splash;
 
   static final pages = <GetPage<dynamic>>[
-    // ── Entry ───────────────────────────────────────────────────────────
     GetPage<dynamic>(
       name: AppRoutes.splash,
       page: () => const SplashScreen(),
@@ -80,7 +74,6 @@ abstract final class AppPages {
       binding: OnboardingBinding(),
     ),
 
-    // ── Auth ────────────────────────────────────────────────────────────
     GetPage<dynamic>(
       name: AppRoutes.authChoice,
       page: () => const AuthChoiceScreen(),
@@ -107,7 +100,6 @@ abstract final class AppPages {
       page: () => const ResetPasswordScreen(),
     ),
 
-    // ── Main ────────────────────────────────────────────────────────────
     GetPage<dynamic>(
       name: AppRoutes.home,
       page: () => const MainScreen(),
@@ -138,7 +130,6 @@ abstract final class AppPages {
       middlewares: [AuthMiddleware()],
     ),
 
-    // ── Quiz ─────────────────────────────────────────────────────────────────
     GetPage<dynamic>(
       name: AppRoutes.quizDashboard,
       page: () => const QuizDashboardScreen(),
@@ -212,7 +203,6 @@ abstract final class AppPages {
       middlewares: [AuthMiddleware()],
     ),
 
-    // ── Leaderboard (new module) ────────────────────────────────────────────
     GetPage<dynamic>(
       name: AppRoutes.leaderboard,
       page: () => const LeaderboardHomeScreen(),
@@ -244,7 +234,6 @@ abstract final class AppPages {
       middlewares: [AuthMiddleware()],
     ),
 
-    // ── Profile & settings ──────────────────────────────────────────────
     GetPage<dynamic>(
       name: AppRoutes.profileSetup,
       page: () => const ProfileSetupScreen(),
@@ -319,8 +308,6 @@ abstract final class AppPages {
     ),
   ];
 
-  /// Unknown routes fall back to splash, which re-resolves the session and
-  /// sends the user somewhere valid.
   static final unknownRoute = GetPage<dynamic>(
     name: '/not-found',
     page: () => const SplashScreen(),

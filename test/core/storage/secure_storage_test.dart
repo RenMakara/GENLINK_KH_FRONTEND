@@ -1,9 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genlink_frontend/core/storage/secure_storage.dart';
 
-/// SecureStorage tests use an in-memory map to avoid platform channel
-/// dependencies. On Windows/macOS/Linux, FlutterSecureStorage requires
-/// platform bindings that aren't available in pure unit tests.
 void main() {
   late _InMemorySecureStorage storage;
 
@@ -84,7 +81,6 @@ void main() {
   });
 }
 
-/// In-memory implementation that mirrors SecureStorage's API for testing.
 class _InMemorySecureStorage implements SecureStorage {
   final Map<String, String> _store = {};
 

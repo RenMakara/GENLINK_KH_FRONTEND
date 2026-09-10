@@ -11,7 +11,6 @@ import '../../../../design_system/widgets/buttons/google_sign_in_button.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/auth_scaffold.dart';
 
-/// Entry point for signed-out users before choosing login or registration.
 class AuthChoiceScreen extends StatelessWidget {
   const AuthChoiceScreen({super.key});
 

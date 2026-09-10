@@ -1,6 +1,5 @@
 import '../../domain/entities/user_settings_entity.dart';
 
-/// Wire model for `UserSettingResponse` / `UserSettingUpdateRequest`.
 abstract final class UserSettingsMapper {
   static UserSettingsEntity fromJson(Map<String, dynamic> json) {
     return UserSettingsEntity(
@@ -17,8 +16,6 @@ abstract final class UserSettingsMapper {
     );
   }
 
-  /// The update request is a partial patch — only send what changed so an
-  /// unrelated field can never be clobbered by a stale local value.
   static Map<String, dynamic> updateBody({
     String? language,
     String? theme,

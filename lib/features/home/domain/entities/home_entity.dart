@@ -1,8 +1,3 @@
-/// The Home Super Dashboard payload, from `GET /api/v1/mobile/home`.
-///
-/// Card fields are nullable on purpose — a brand-new user has no budget, no
-/// RSVP and possibly no challenge. Null means "render that card's empty
-/// state", not an error. Lists are empty rather than null.
 class HomeEntity {
   const HomeEntity({
     required this.user,
@@ -66,7 +61,6 @@ class HomeUser {
   int get safeLevel => level > 0 ? level : 1;
   int get safeTotalXp => totalXp >= 0 ? totalXp : 0;
 
-  /// Levels are 100 XP wide (`level = 1 + total_xp / 100` on the backend).
   static const xpPerLevel = 100;
 
   int get xpIntoLevel => safeTotalXp % xpPerLevel;
@@ -74,7 +68,6 @@ class HomeUser {
   double get levelProgress => (xpIntoLevel / xpPerLevel).clamp(0.0, 1.0);
   int get percentToNext => (levelProgress * 100).round();
 
-  /// First name only, for the greeting.
   String get firstName {
     final name = (fullName ?? '').trim();
     if (name.isEmpty) return '';
@@ -82,7 +75,6 @@ class HomeUser {
   }
 }
 
-/// Drives the Today Hub progress. Totals can be 0 — guard the divide safely.
 class TodayProgress {
   const TodayProgress({
     required this.habitsCompletedToday,
@@ -170,8 +162,6 @@ class ChallengePreview {
   final String? deadline;
 }
 
-/// Note: amounts come from the cached budget columns, which the backend
-/// documents as a known follow-up (live spend is on the finance dashboard).
 class FinanceSnapshot {
   const FinanceSnapshot({
     this.totalBudget,
@@ -186,7 +176,6 @@ class FinanceSnapshot {
   final double? spentAmount;
   final double? remainingAmount;
 
-  /// SAFE / WARNING / LIMIT_REACHED
   final String? budgetStatus;
   final double? savingTarget;
   final double? savingCurrent;
@@ -262,6 +251,5 @@ class FeedPreview {
   final int? commentCount;
   final String? communityName;
 
-  /// ISO-8601 instant.
   final String? createdAt;
 }

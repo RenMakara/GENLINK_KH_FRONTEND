@@ -9,10 +9,6 @@ import '../../../media/presentation/media_picker.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../../domain/repositories/profile_repository.dart';
 
-/// Owns the signed-in user's profile, interests, portfolio and social links.
-///
-/// Each section loads independently so one failing call (say, portfolio)
-/// does not blank the whole screen.
 class ProfileController extends GetxController {
   ProfileController({
     required this._repository,
@@ -23,8 +19,6 @@ class ProfileController extends GetxController {
   final ProfileRepository _repository;
   final void Function(ProfileEntity profile)? onOwnerProfileChanged;
 
-  /// Null for the signed-in owner's controller; set for a route-scoped
-  /// public-profile controller.
   final String? viewingUsername;
 
   static String publicTag(String username) => 'public-profile:$username';
@@ -43,7 +37,6 @@ class ProfileController extends GetxController {
   final badges = <BadgeEntity>[].obs;
   final savedItems = <SavedItemEntity>[].obs;
 
-  /// Full catalog, loaded lazily the first time the interest picker opens.
   final interestCatalog = <InterestEntity>[].obs;
 
   @override
@@ -52,8 +45,6 @@ class ProfileController extends GetxController {
     load();
   }
 
-  /// Load every section. Sections settle independently — a failure in one
-  /// leaves the others populated.
   Future<void> load() async {
     isLoading.value = true;
     errorMessage.value = null;
@@ -102,11 +93,8 @@ class ProfileController extends GetxController {
     ]);
   }
 
-  /// Pull-to-refresh entry point. Named `reload` because `GetxController`
-  /// already defines a non-async `refresh()`.
   Future<void> reload() => load();
 
-  // ── Profile ───────────────────────────────────────────────────────────
 
   Future<bool> updateProfile({
     String? fullName,
@@ -143,16 +131,11 @@ class ProfileController extends GetxController {
     });
   }
 
-  /// Pick a photo, upload it, and set it as the avatar.
-  ///
-  /// One call for the whole flow so the screen only has to show
-  /// [avatarUploadProgress]. Returns false if the user cancelled or any step
-  /// failed — the error is surfaced by [_save] as a snackbar.
   Future<bool> pickAndUploadAvatar({
     ImageSource source = ImageSource.gallery,
   }) async {
     final picked = await Get.find<MediaPicker>().pickImage(source: source);
-    if (picked == null) return false; // cancelled — not an error
+    if (picked == null) return false;
 
     avatarUploadProgress.value = 0;
     final ok = await _save(() async {
@@ -170,18 +153,14 @@ class ProfileController extends GetxController {
     return ok;
   }
 
-  /// 0.0 → 1.0 while an avatar upload is in flight, null when idle.
   final avatarUploadProgress = RxnDouble();
 
-  /// Earned badges first, then locked ones — the achievements row shows
-  /// what the user has before what they can still get.
   List<BadgeEntity> get sortedBadges {
     final earned = badges.where((b) => b.earned).toList();
     final locked = badges.where((b) => !b.earned).toList();
     return [...earned, ...locked];
   }
 
-  // ── Interests ─────────────────────────────────────────────────────────
 
   Future<void> loadInterestCatalog() async {
     if (interestCatalog.isNotEmpty) return;
@@ -191,14 +170,12 @@ class ProfileController extends GetxController {
     );
   }
 
-  /// Replaces the whole selection — the backend PUT is not additive.
   Future<bool> replaceInterests(List<String> interestIds) {
     return _save(() async {
       interests.value = await _repository.replaceInterests(interestIds);
     });
   }
 
-  // ── Portfolio ─────────────────────────────────────────────────────────
 
   Future<bool> addPortfolioItem({
     required String title,
@@ -250,7 +227,6 @@ class ProfileController extends GetxController {
     });
   }
 
-  // ── Social links ──────────────────────────────────────────────────────
 
   Future<bool> upsertSocialLink({
     required String platform,
@@ -279,14 +255,12 @@ class ProfileController extends GetxController {
     });
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────
 
   void _setOwnerProfile(ProfileEntity updated) {
     profile.value = updated;
     onOwnerProfileChanged?.call(updated);
   }
 
-  /// Run a mutation with saving state + snackbar error reporting.
   Future<bool> _save(Future<void> Function() action) async {
     isSaving.value = true;
     errorMessage.value = null;
@@ -306,12 +280,10 @@ class ProfileController extends GetxController {
     }
   }
 
-  /// Load one section, swallowing its error so siblings still render.
   Future<void> _loadSection(Future<void> Function() action) async {
     try {
       await action();
     } catch (_) {
-      // Section stays empty; the screen shows its own empty state.
     }
   }
 }

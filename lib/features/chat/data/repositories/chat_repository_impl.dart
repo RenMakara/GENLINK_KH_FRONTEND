@@ -30,12 +30,14 @@ class ChatRepositoryImpl {
     String content, {
     String messageType = 'text',
     String? mediaUrl,
+    ChatReplyReference? replyTo,
   }) {
     return remoteDataSource.sendMessage(
       conversationId,
       content,
       messageType: messageType,
       mediaUrl: mediaUrl,
+      replyTo: replyTo,
     );
   }
 
@@ -45,6 +47,22 @@ class ChatRepositoryImpl {
 
   Future<bool> deleteMessage(String conversationId, String messageId) {
     return remoteDataSource.deleteMessage(conversationId, messageId);
+  }
+
+  Future<bool> deleteConversation(String conversationId) {
+    return remoteDataSource.deleteConversation(conversationId);
+  }
+
+  Future<bool> archiveConversation(String conversationId) {
+    return remoteDataSource.archiveConversation(conversationId);
+  }
+
+  Future<bool> unarchiveConversation(String conversationId) {
+    return remoteDataSource.unarchiveConversation(conversationId);
+  }
+
+  Future<bool> muteConversation(String conversationId) {
+    return remoteDataSource.muteConversation(conversationId);
   }
 
   Future<int> getUnreadCount() {

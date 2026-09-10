@@ -4,9 +4,6 @@ import 'package:get/get.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 
-/// Read-only, six-cell representation of an OTP entered through
-/// [OtpNumericKeypad]. It deliberately contains no editable field, so the
-/// platform keyboard cannot cover the verification screen.
 class OtpCodeDisplay extends StatelessWidget {
   const OtpCodeDisplay({
     super.key,
@@ -156,10 +153,6 @@ class _OtpCursor extends StatelessWidget {
   }
 }
 
-/// A platform-keyboard replacement laid out as 1–9, *, 0, backspace.
-///
-/// [onSymbolPressed] is optional so callers can explicitly opt into symbol
-/// handling. It remains visible but disabled for numeric-only OTP flows.
 class OtpNumericKeypad extends StatelessWidget {
   const OtpNumericKeypad({
     super.key,

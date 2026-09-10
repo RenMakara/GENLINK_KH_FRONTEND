@@ -63,7 +63,6 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() => tester.view.resetPhysicalSize());
 
-    // Populate sample events
     controller.events.assignAll([
       EventModel(
         id: '1',
@@ -100,39 +99,30 @@ void main() {
     await tester.pumpWidget(buildTestWidget());
     await tester.pumpAndSettle();
 
-    // Select Event tab
     final eventTab = find.text('Event');
     expect(eventTab, findsOneWidget);
     await tester.tap(eventTab);
     await tester.pumpAndSettle();
 
-    // Verify large search bar and featured carousel are REMOVED
     expect(find.text('Search Events & Workshops...'), findsNothing);
     expect(find.text('Featured Events'), findsNothing);
 
-    // Verify Filter button is REMOVED
     expect(find.text('Filter'), findsNothing);
     expect(find.byIcon(Icons.tune_rounded), findsNothing);
 
-    // Verify Upcoming Events header is present
     expect(find.text('Upcoming Events'), findsOneWidget);
 
-    // Verify both events are rendered as cards in the list
     expect(find.text('Flutter Workshop 2026'), findsOneWidget);
     expect(find.text('AI Global Hackathon'), findsOneWidget);
 
-    // Verify Category badges
     expect(find.text('Workshop'), findsOneWidget);
     expect(find.text('Hackathon'), findsOneWidget);
 
-    // Verify In-Person vs Online labeling
     expect(find.text('📍 ACLEDA University of Business'), findsOneWidget);
     expect(find.text('🌐 Online Event'), findsOneWidget);
 
-    // Verify Bookmark buttons exist on each card
     expect(find.byIcon(Icons.bookmark_border_rounded), findsWidgets);
 
-    // Tap on the AI Global Hackathon card and verify navigation to EventDetailsScreen
     final upcomingCard = find.text('AI Global Hackathon');
     await tester.tap(upcomingCard);
     await tester.pumpAndSettle();
@@ -151,11 +141,9 @@ void main() {
     await tester.pumpWidget(buildTestWidget());
     await tester.pumpAndSettle();
 
-    // Select Event tab
     await tester.tap(find.text('Event'));
     await tester.pumpAndSettle();
 
-    // Verify empty state
     expect(find.text('No upcoming events'), findsOneWidget);
     expect(find.text('New events will appear here.'), findsOneWidget);
     expect(find.byIcon(Icons.calendar_today_outlined), findsWidgets);
@@ -188,7 +176,6 @@ void main() {
 
     expect(find.byIcon(Icons.bookmark_border_rounded), findsOneWidget);
 
-    // Tap bookmark icon
     await tester.tap(find.byIcon(Icons.bookmark_border_rounded));
     await tester.pumpAndSettle();
 
@@ -235,7 +222,6 @@ void main() {
     expect(find.text('Flutter Workshop 2026'), findsOneWidget);
     expect(find.text('AI Global Hackathon'), findsOneWidget);
 
-    // Enter search text
     await tester.enterText(find.byType(TextField), 'Flutter');
     await tester.pumpAndSettle();
 

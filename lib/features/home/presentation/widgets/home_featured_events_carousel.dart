@@ -8,14 +8,6 @@ import '../../../community/domain/models/community_models.dart';
 import '../../../community/presentation/screens/event_details_screen.dart';
 import '../../domain/entities/home_entity.dart';
 
-/// Featured Event on the GenLink KH Mobile Home Screen.
-///
-/// Follows Requirements 10 & 11:
-/// - Uses the actual upcomingEvent from GET /api/v1/mobile/home
-/// - Does not invent fake event data or fake carousel slides
-/// - Renders a clean compact empty state if upcomingEvent is null
-/// - Strong cover image, 2-line description, subtle orange calendar icon
-/// - Opens EventDetailsScreen on tap
 class HomeFeaturedEventsCarousel extends StatelessWidget {
   const HomeFeaturedEventsCarousel({
     super.key,
@@ -26,7 +18,7 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
   final UpcomingEvent? upcomingEvent;
   final VoidCallback? onViewAll;
 
-  static const Color eventAccentColor = Color(0xFFF97316); // Orange
+  static const Color eventAccentColor = Color(0xFFF97316);
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +45,6 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Title: FEATURED EVENTS (NO "See all", NO arrows)
         Text(
           sectionTitle,
           style: TextStyle(
@@ -243,7 +234,6 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // ── 1. Event Cover Image (Compact & Visually Strong) ──
                 Stack(
                   children: [
                     SizedBox(
@@ -259,7 +249,6 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
                       ),
                     ),
 
-                    // Top-Left Category Badge
                     Positioned(
                       top: 8,
                       left: 8,
@@ -290,14 +279,12 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
                   ],
                 ),
 
-                // ── 2. Compact Event Body ──
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Title
                       Text(
                         event.title,
                         maxLines: 1,
@@ -310,7 +297,6 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
                         ),
                       ),
 
-                      // Description (up to 2 lines, ellipsis)
                       if (descriptionText.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Text(
@@ -327,7 +313,6 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
 
                       const SizedBox(height: 10),
 
-                      // Date / Time row
                       if (dateTimeDisplay.isNotEmpty)
                         Row(
                           children: [
@@ -354,7 +339,6 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
 
                       const SizedBox(height: 4),
 
-                      // Location row
                       Row(
                         children: [
                           Icon(
@@ -382,7 +366,6 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
 
                       const SizedBox(height: 10),
 
-                      // Bottom row: Participant count + View Details →
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [

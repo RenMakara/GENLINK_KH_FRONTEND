@@ -10,12 +10,6 @@ import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../domain/entities/user_settings_entity.dart';
 import '../controllers/settings_controller.dart';
 
-/// Settings hub: profile header, grouped navigation tiles, log out.
-///
-/// Individual preferences live on sub-screens (language, appearance,
-/// privacy, account); this page only routes. Sections from the design with
-/// no backend today — security, blocked users — are not shown rather than
-/// rendered dead.
 class SettingsScreen extends GetView<SettingsController> {
   const SettingsScreen({super.key});
 
@@ -49,7 +43,6 @@ class SettingsScreen extends GetView<SettingsController> {
             AppSpacing.xl,
           ),
           children: [
-            // ── Profile header row ──────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
@@ -98,7 +91,6 @@ class SettingsScreen extends GetView<SettingsController> {
             ),
             const SizedBox(height: AppSpacing.lg),
 
-            // ── Account ────────────────────────────────────────────────
             _SectionLabel(text: 'settings.account'.tr),
             _HubTile(
               icon: Icons.person_outline,
@@ -107,7 +99,6 @@ class SettingsScreen extends GetView<SettingsController> {
               onTap: () => Get.toNamed<void>(AppRoutes.settingsAccount),
             ),
 
-            // ── Preferences ────────────────────────────────────────────
             _SectionLabel(text: 'settings.preferences'.tr),
             Obx(
               () => _HubTile(
@@ -141,7 +132,6 @@ class SettingsScreen extends GetView<SettingsController> {
               ),
             ),
 
-            // ── Privacy & security ─────────────────────────────────────
             _SectionLabel(text: 'settings.privacy'.tr),
             _HubTile(
               icon: Icons.lock_outline,
@@ -161,7 +151,6 @@ class SettingsScreen extends GetView<SettingsController> {
               ),
             ),
 
-            // ── About ──────────────────────────────────────────────────
             _SectionLabel(text: 'settings.support'.tr),
             _HubTile(
               icon: Icons.info_outline,
@@ -188,7 +177,6 @@ class SettingsScreen extends GetView<SettingsController> {
     _ => 'settings.themeSystem'.tr,
   };
 
-  /// The design's log-out confirmation: bottom sheet, avatar, red action.
   Future<void> _confirmLogout(BuildContext context) async {
     final auth = Get.find<AuthController>();
     final user = auth.currentUser.value;

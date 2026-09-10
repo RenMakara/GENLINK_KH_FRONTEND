@@ -29,7 +29,6 @@ const _profile = ProfileEntity(
   avatarUrl: null,
   emailVerified: true,
   accountStatus: 'ACTIVE',
-  // level must agree with the backend formula: 1 + totalXp / 100
   totalXp: 1250,
   level: 13,
   preferredLanguage: 'ENGLISH',
@@ -125,8 +124,6 @@ void main() {
     ).thenAnswer((_) async => _publicProfile);
 
     Get
-      // Constructing LocalStorage does not touch the platform channel, and
-      // these screens never read from it.
       ..put<LocalizationService>(
         LocalizationService(localStorage: LocalStorage()),
       )

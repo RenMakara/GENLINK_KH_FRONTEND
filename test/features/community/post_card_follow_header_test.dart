@@ -211,7 +211,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify "+ Follow" button is displayed
       expect(find.text('Follow'), findsOneWidget);
       expect(find.byIcon(Icons.add_rounded), findsOneWidget);
       expect(find.text('Following'), findsNothing);
@@ -246,17 +245,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap on "+ Follow"
       await tester.tap(find.text('Follow'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
       await tester.pumpAndSettle();
 
-      // Verify follow API was called
       expect(mockRepo.followCallCount, equals(1));
       expect(mockRepo.followedUserIds.contains('user_chansela'), isTrue);
 
-      // Verify "Following" appears
       expect(find.text('Following'), findsOneWidget);
       expect(find.text('Follow'), findsNothing);
     });
@@ -293,23 +289,19 @@ void main() {
 
       expect(find.text('Following'), findsOneWidget);
 
-      // Tap on "Following"
       await tester.tap(find.text('Following'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
       await tester.pumpAndSettle();
 
-      // Verify unfollow API was called
       expect(mockRepo.unfollowCallCount, equals(1));
       expect(mockRepo.followedUserIds.contains('user_chansela'), isFalse);
 
-      // Verify "+ Follow" appears
       expect(find.text('Follow'), findsOneWidget);
       expect(find.text('Following'), findsNothing);
     });
 
     testWidgets('Test D: Open the same author\'s post again -> Correct relationship state is loaded', (tester) async {
-      // Author is already followed in repository/backend
       mockRepo.followedUserIds.add('user_chansela');
 
       final postA = CommunityPostModel(
@@ -376,12 +368,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Follow button is completely hidden
       expect(find.text('Follow'), findsNothing);
       expect(find.text('Following'), findsNothing);
       expect(find.byIcon(Icons.add_rounded), findsNothing);
 
-      // ⋯ menu is still present
       expect(find.byTooltip('Options'), findsOneWidget);
     });
 
@@ -418,13 +408,11 @@ void main() {
 
       expect(find.byKey(const ValueKey('follow')), findsOneWidget);
 
-      // Tap on "+ Follow"
       await tester.tap(find.byKey(const ValueKey('follow')));
       await tester.pump();
       await tester.pump(const Duration(seconds: 4));
       await tester.pumpAndSettle();
 
-      // State is reverted back to not following
       expect(controller.posts.first.isFollowing, isFalse);
       expect(find.byKey(const ValueKey('follow')), findsOneWidget);
       expect(find.byKey(const ValueKey('following')), findsNothing);
@@ -461,7 +449,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap 3 times rapidly
       await tester.tap(find.text('Follow'));
       await tester.pump(const Duration(milliseconds: 20));
       await tester.tap(find.byType(InkWell).first);
@@ -470,7 +457,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
-      // Verify only 1 API call was fired
       expect(mockRepo.followCallCount, equals(1));
     });
 
@@ -489,7 +475,6 @@ void main() {
       );
       controller.posts.assignAll([narrowPost]);
 
-      // Set physical size to a narrow 320px screen
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -508,7 +493,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify all components exist and no overflow exception occurred
       expect(tester.takeException(), isNull);
       expect(find.text('Heng Chansela Very Long Name That Might Exceed Bounds'), findsOneWidget);
       expect(find.text('Follow'), findsOneWidget);

@@ -87,32 +87,25 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Initial state
-      expect(find.text('3'), findsOneWidget); // Replies count
+      expect(find.text('3'), findsOneWidget);
       expect(find.text('No comments yet'), findsOneWidget);
 
-      // Type "tesy"
       await tester.enterText(find.byType(TextField), 'tesy');
       await tester.pump();
 
-      // Tap Send
       await tester.tap(find.byIcon(Icons.send_rounded));
       await tester.pumpAndSettle();
 
-      // Verified API call
       expect(mockRepo.recordedAddCommentCalls.length, 1);
       expect(mockRepo.recordedAddCommentCalls.first['discussionId'], 'disc_101');
       expect(mockRepo.recordedAddCommentCalls.first['content'], 'tesy');
 
-      // Comment appears in the UI
       expect(find.text('tesy'), findsOneWidget);
       expect(find.text('Tester User'), findsOneWidget);
 
-      // Input is cleared
       final textField = tester.widget<TextField>(find.byType(TextField));
       expect(textField.controller?.text, isEmpty);
 
-      // Replies count updated from 3 to 4
       expect(find.text('4'), findsOneWidget);
     });
 
@@ -135,11 +128,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap Send while input is empty
       await tester.tap(find.byIcon(Icons.send_rounded));
       await tester.pumpAndSettle();
 
-      // Zero API calls
       expect(mockRepo.recordedAddCommentCalls, isEmpty);
     });
 
@@ -164,23 +155,18 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Type comment
       await tester.enterText(find.byType(TextField), 'My important comment');
       await tester.pump();
 
-      // Tap Send
       await tester.tap(find.byIcon(Icons.send_rounded));
       await tester.pump(const Duration(seconds: 3));
       await tester.pumpAndSettle();
 
-      // Text is preserved in the TextField
       final textField = tester.widget<TextField>(find.byType(TextField));
       expect(textField.controller?.text, 'My important comment');
 
-      // No comment displayed in list
-      expect(find.text('My important comment'), findsOneWidget); // only in textfield
+      expect(find.text('My important comment'), findsOneWidget);
 
-      // Replies count remains 2
       expect(find.text('2'), findsOneWidget);
     });
 
@@ -206,7 +192,6 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Rapid tap test');
       await tester.pump();
 
-      // Rapidly tap 3 times
       await tester.tap(find.byIcon(Icons.send_rounded));
       await tester.pump(const Duration(milliseconds: 10));
       await tester.tap(find.byIcon(Icons.send_rounded));
@@ -214,9 +199,8 @@ void main() {
       await tester.tap(find.byIcon(Icons.send_rounded));
       await tester.pumpAndSettle();
 
-      // Exactly 1 comment added
       expect(mockRepo.recordedAddCommentCalls.length, 1);
-      expect(find.text('6'), findsOneWidget); // 5 + 1
+      expect(find.text('6'), findsOneWidget);
     });
 
     testWidgets('TEST 5: Long comment submits correctly with trimmed whitespace', (tester) async {
@@ -296,7 +280,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // When text entered, icon is Colors.white
       await tester.enterText(find.byType(TextField), 'hello');
       await tester.pump();
 

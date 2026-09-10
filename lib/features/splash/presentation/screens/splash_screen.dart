@@ -7,11 +7,6 @@ import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/branding/app_logo.dart';
 
-/// First frame of the app: brand plate, wordmark, tagline, and an
-/// indeterminate loading bar.
-///
-/// [SplashController] resolves where to go next; this screen only shows the
-/// brand while that happens.
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
@@ -54,8 +49,6 @@ class SplashScreen extends StatelessWidget {
   }
 }
 
-/// Thin indeterminate track. Uses the brand gradient so the splash is the
-/// one place the accent colours appear on a neutral background.
 class _LoadingBar extends StatelessWidget {
   const _LoadingBar();
 

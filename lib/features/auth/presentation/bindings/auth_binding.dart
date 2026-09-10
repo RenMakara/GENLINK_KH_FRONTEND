@@ -9,11 +9,6 @@ import '../../data/services/google_auth_service_impl.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../controllers/auth_controller.dart';
 
-/// GetX binding for the auth feature.
-///
-/// App-wide storage, networking, preferences, navigation, and shared media
-/// services are owned by `InitialBinding`. This binding owns only the Auth
-/// data source, repository, platform service, and controller.
 class AuthBinding extends Bindings {
   AuthBinding({this.onSessionCleared});
 

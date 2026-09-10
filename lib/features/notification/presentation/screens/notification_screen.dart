@@ -6,16 +6,6 @@ import '../../domain/models/notification_model.dart';
 import '../bindings/notification_binding.dart';
 import '../controllers/notification_controller.dart';
 
-/// GenLink KH — Unified Mobile-First Notification Center.
-///
-/// Principles:
-///  - One unified activity stream for the entire application.
-///  - Simple clean header: "Notifications" (NO back button, NO settings button, NO all/unread tabs).
-///  - Telegram-inspired compact horizontal category navigation (All, Social, Finance, Events, Reminders, Updates).
-///  - Grouped by time: TODAY, YESTERDAY, Earlier.
-///  - Unified visual system: avatar or context icon, natural language title, short context, time, subtle unread indicator.
-///  - Tapping navigates to the relevant feature (posts, friend requests, budget, events, habits, tasks, quiz).
-///  - Light Mode & Dark Mode, English & Khmer support without text overflow.
 class NotificationScreen extends GetView<NotificationController> {
   const NotificationScreen({super.key});
 
@@ -53,9 +43,7 @@ class NotificationScreen extends GetView<NotificationController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Compact Telegram-style category navigation bar
                 _buildCategoryNav(context, notifController, isDark),
-                // Grouped vertical notification activity feed
                 Expanded(child: _buildBody(context, notifController, isDark)),
               ],
             ),
@@ -65,7 +53,6 @@ class NotificationScreen extends GetView<NotificationController> {
     );
   }
 
-  // ── 1. HEADER (Simple Title: Notifications — NO back button, NO settings, NO unread tabs) ──
 
   AppBar _buildHeader(BuildContext context, bool isDark) {
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
@@ -97,7 +84,6 @@ class NotificationScreen extends GetView<NotificationController> {
     );
   }
 
-  // ── 2. COMPACT TELEGRAM-STYLE CATEGORY NAVIGATION ────────────────────────
 
   Widget _buildCategoryNav(
     BuildContext context,
@@ -122,7 +108,6 @@ class NotificationScreen extends GetView<NotificationController> {
           return Obx(() {
             final isSelected = notifController.selectedCategory.value == name;
 
-            // Telegram-style compact pills
             final activeBg = isDark
                 ? const Color(0xFFFFFFFF)
                 : const Color(0xFF111111);
@@ -173,7 +158,6 @@ class NotificationScreen extends GetView<NotificationController> {
     );
   }
 
-  // ── 3. BODY (Grouped by TODAY, YESTERDAY, Earlier) ───────────────────────
 
   Widget _buildBody(
     BuildContext context,
@@ -199,7 +183,6 @@ class NotificationScreen extends GetView<NotificationController> {
         );
       }
 
-      // Grouping: TODAY, YESTERDAY, Earlier
       final now = DateTime.now();
       final todayStart = DateTime(now.year, now.month, now.day);
       final yesterdayStart = todayStart.subtract(const Duration(days: 1));
@@ -287,9 +270,6 @@ class NotificationScreen extends GetView<NotificationController> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Unified Notification Card (Consistent across all features)
-// ═══════════════════════════════════════════════════════════════════════════
 
 class _NotificationCard extends StatefulWidget {
   final NotificationModel notif;
@@ -315,7 +295,6 @@ class _NotificationCardState extends State<_NotificationCard> {
     final isDark = widget.isDark;
 
     return Obx(() {
-      // Observe reactive collection changes
       widget.controller.notifications.length;
       final isRead = notif.isRead;
 
@@ -345,7 +324,6 @@ class _NotificationCardState extends State<_NotificationCard> {
       final dismissIconColor =
           isDark ? const Color(0xFFEF6A6A) : const Color(0xFFDC2626);
 
-      // Context text: either explicit contextText, or body if different from title
       final shortContext = notif.contextText?.isNotEmpty == true
           ? notif.contextText!
           : (notif.body.isNotEmpty && notif.body != notif.title
@@ -396,7 +374,6 @@ class _NotificationCardState extends State<_NotificationCard> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Leading Avatar or Semantic Icon ─────────────────────
                   _LeadingVisual(
                     notif: notif,
                     isRead: isRead,
@@ -404,12 +381,10 @@ class _NotificationCardState extends State<_NotificationCard> {
                   ),
                   const SizedBox(width: 12),
 
-                  // ── Title + Short Context + Time ─────────────────────────
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Row: Title and Time
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.baseline,
                           textBaseline: TextBaseline.alphabetic,
@@ -442,7 +417,6 @@ class _NotificationCardState extends State<_NotificationCard> {
                           ],
                         ),
 
-                        // Short context line (if present)
                         if (shortContext != null) ...[
                           const SizedBox(height: 3),
                           Text(
@@ -461,7 +435,6 @@ class _NotificationCardState extends State<_NotificationCard> {
                     ),
                   ),
 
-                  // ── Subtle Unread Dot Indicator ──────────────────────────
                   if (!isRead)
                     Container(
                       width: 6,
@@ -482,9 +455,6 @@ class _NotificationCardState extends State<_NotificationCard> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Leading Visual: Avatar or Clean Semantic Context Icon
-// ═══════════════════════════════════════════════════════════════════════════
 
 class _LeadingVisual extends StatelessWidget {
   final NotificationModel notif;
@@ -562,7 +532,6 @@ class _LeadingVisual extends StatelessWidget {
       );
     }
 
-    // Feature Icon with subtle, premium container
     final iconData = _resolveCategoryIcon(notif.type, notif.category);
     final iconBg = isDark
         ? (isRead ? const Color(0xFF1E1E1E) : const Color(0xFF262626))
@@ -650,9 +619,6 @@ class _LeadingVisual extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Section Label (TODAY / YESTERDAY / Earlier)
-// ═══════════════════════════════════════════════════════════════════════════
 
 class _SectionLabel extends StatelessWidget {
   final String label;
@@ -680,9 +646,6 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Empty State (Contextual for All & specific categories)
-// ═══════════════════════════════════════════════════════════════════════════
 
 class _EmptyState extends StatelessWidget {
   final String category;
@@ -770,9 +733,6 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Loading Skeleton
-// ═══════════════════════════════════════════════════════════════════════════
 
 class _LoadingSkeleton extends StatelessWidget {
   final bool isDark;

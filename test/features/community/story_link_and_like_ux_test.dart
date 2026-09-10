@@ -90,19 +90,16 @@ void main() {
       );
       await tester.pump();
 
-      // Tap on title text
       await tester.tap(find.text('Copy Story Link'));
       await tester.pump(const Duration(milliseconds: 50));
       expect(tapped, isTrue);
 
       tapped = false;
-      // Tap on leading icon
       await tester.tap(find.byIcon(Icons.link_rounded));
       await tester.pump(const Duration(milliseconds: 50));
       expect(tapped, isTrue);
 
       tapped = false;
-      // Tap on subtitle
       await tester.tap(find.text('Copy direct link to share anywhere'));
       await tester.pump(const Duration(milliseconds: 50));
       expect(tapped, isTrue);
@@ -148,7 +145,6 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Open More Menu -> Tap Share Story
       await tester.tap(find.byIcon(Icons.more_horiz_rounded));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -159,16 +155,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Find Copy Story Link option
       final copyLinkFinder = find.text('Copy Story Link');
       expect(copyLinkFinder, findsOneWidget);
 
-      // Tap on Copy Story Link button surface
       await tester.tap(copyLinkFinder, warnIfMissed: false);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Verify copied link
       expect(copiedText, 'https://genlink.app/story/story_link_test_1');
       expect(find.text('Link Copied'), findsOneWidget);
     });
@@ -201,7 +194,6 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Open More Menu
       await tester.tap(find.byIcon(Icons.more_horiz_rounded));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -250,11 +242,9 @@ void main() {
       expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
       expect(story.isLiked, false);
 
-      // Tap Like button
       await tester.tap(find.byType(StoryInteractiveLikeButton));
       await tester.pump(const Duration(milliseconds: 350));
 
-      // Immediate state change confirmation
       expect(story.isLiked, true);
       expect(story.likesCount, 11);
       expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
@@ -294,7 +284,6 @@ void main() {
       expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
       expect(story.isLiked, true);
 
-      // Tap to Unlike
       await tester.tap(find.byType(StoryInteractiveLikeButton));
       await tester.pump(const Duration(milliseconds: 350));
 

@@ -3,16 +3,6 @@ import 'package:flutter/services.dart';
 
 import 'demo_stories_data.dart';
 
-/// A simple temporary story viewer for evaluating demo stories.
-///
-/// Shows:
-/// - User avatar
-/// - User name & time
-/// - Story progress bar
-/// - Demo story content with gradient background
-/// - Close button ('X')
-///
-/// Includes swipe-down to dismiss and tap-to-pause/resume.
 class DemoStoryViewerDialog extends StatefulWidget {
   final DemoStoryModel story;
 
@@ -114,7 +104,6 @@ class _DemoStoryViewerDialogState extends State<DemoStoryViewerDialog>
               children: [
                 SizedBox(height: topPadding + 8),
 
-                // 1. TOP PROGRESS BAR
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: AnimatedBuilder(
@@ -136,12 +125,10 @@ class _DemoStoryViewerDialogState extends State<DemoStoryViewerDialog>
 
                 const SizedBox(height: 12),
 
-                // 2. HEADER: Avatar + Name + Time + Close Button ('X')
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     children: [
-                      // Avatar
                       Container(
                         padding: const EdgeInsets.all(1.5),
                         decoration: BoxDecoration(
@@ -159,7 +146,6 @@ class _DemoStoryViewerDialogState extends State<DemoStoryViewerDialog>
                       ),
                       const SizedBox(width: 10),
 
-                      // User name & time
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -185,7 +171,6 @@ class _DemoStoryViewerDialogState extends State<DemoStoryViewerDialog>
                         ),
                       ),
 
-                      // Close Button ('X')
                       Material(
                         color: Colors.transparent,
                         child: InkWell(
@@ -211,7 +196,6 @@ class _DemoStoryViewerDialogState extends State<DemoStoryViewerDialog>
                   ),
                 ),
 
-                // 3. STORY BODY CONTENT
                 Expanded(
                   child: Center(
                     child: Padding(
@@ -219,7 +203,6 @@ class _DemoStoryViewerDialogState extends State<DemoStoryViewerDialog>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Story Icon / Badge
                           Container(
                             width: 64,
                             height: 64,
@@ -240,7 +223,6 @@ class _DemoStoryViewerDialogState extends State<DemoStoryViewerDialog>
                           ),
                           const SizedBox(height: 24),
 
-                          // Tag pill
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
@@ -262,7 +244,6 @@ class _DemoStoryViewerDialogState extends State<DemoStoryViewerDialog>
                           ),
                           const SizedBox(height: 18),
 
-                          // Main Text Content
                           Text(
                             story.content,
                             textAlign: TextAlign.center,
@@ -287,12 +268,10 @@ class _DemoStoryViewerDialogState extends State<DemoStoryViewerDialog>
                   ),
                 ),
 
-                // 4. FOOTER: Quick interaction bar
                 Padding(
                   padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding + 16),
                   child: Row(
                     children: [
-                      // Reply bubble
                       Expanded(
                         child: Container(
                           height: 44,
@@ -317,7 +296,6 @@ class _DemoStoryViewerDialogState extends State<DemoStoryViewerDialog>
                       ),
                       const SizedBox(width: 12),
 
-                      // Like button
                       GestureDetector(
                         onTap: _onToggleLike,
                         child: Container(

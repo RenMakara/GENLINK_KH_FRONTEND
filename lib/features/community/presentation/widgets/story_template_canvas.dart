@@ -9,9 +9,6 @@ File _resolveMediaFile(String rawPath) {
   return File(clean);
 }
 
-/// Unified Story Template Canvas Widget.
-/// Renders responsive template slot layouts for Single Photo, Two Photos,
-/// Three Photos, Four Photos, and Photo + Text arrangements.
 class StoryTemplateCanvas extends StatelessWidget {
   final StoryTemplateConfig template;
   final List<StoryTemplateSlot> slots;
@@ -102,7 +99,6 @@ class StoryTemplateCanvas extends StatelessWidget {
 
   Widget _buildLayout(BuildContext context, double width, double height) {
     switch (template.layoutType) {
-      // ── 1. SINGLE PHOTO ──
       case StoryTemplateLayoutType.singlePolaroid:
         return _buildSinglePolaroid(context, width, height);
 
@@ -112,7 +108,6 @@ class StoryTemplateCanvas extends StatelessWidget {
       case StoryTemplateLayoutType.singleFramed:
         return _buildSingleFramed(context, width, height);
 
-      // ── 2. TWO PHOTOS ──
       case StoryTemplateLayoutType.splitVertical:
         return _buildSplitVertical(context, width, height);
 
@@ -122,7 +117,6 @@ class StoryTemplateCanvas extends StatelessWidget {
       case StoryTemplateLayoutType.twoDiptych:
         return _buildTwoDiptych(context, width, height);
 
-      // ── 3. THREE PHOTOS ──
       case StoryTemplateLayoutType.threeHeroBottom:
         return _buildThreeHeroBottom(context, width, height);
 
@@ -132,14 +126,12 @@ class StoryTemplateCanvas extends StatelessWidget {
       case StoryTemplateLayoutType.threeColumns:
         return _buildThreeColumns(context, width, height);
 
-      // ── 4. FOUR PHOTOS ──
       case StoryTemplateLayoutType.fourGrid:
         return _buildFourGrid(context, width, height);
 
       case StoryTemplateLayoutType.fourHeroStrip:
         return _buildFourHeroStrip(context, width, height);
 
-      // ── 5. FIVE PHOTOS ──
       case StoryTemplateLayoutType.fiveHeroGrid:
         return _buildFiveHeroGrid(context, width, height);
 
@@ -149,7 +141,6 @@ class StoryTemplateCanvas extends StatelessWidget {
       case StoryTemplateLayoutType.fiveSplit:
         return _buildFiveSplit(context, width, height);
 
-      // ── 6. SIX PHOTOS ──
       case StoryTemplateLayoutType.sixGrid:
         return _buildSixGrid(context, width, height);
 
@@ -159,7 +150,6 @@ class StoryTemplateCanvas extends StatelessWidget {
       case StoryTemplateLayoutType.sixMosaic:
         return _buildSixMosaic(context, width, height);
 
-      // ── 7. PHOTO + TEXT ──
       case StoryTemplateLayoutType.photoTextPolaroid:
         return _buildPhotoTextPolaroid(context, width, height);
 
@@ -171,9 +161,6 @@ class StoryTemplateCanvas extends StatelessWidget {
     }
   }
 
-  // ─────────────────────────────────────────────
-  // 1. SINGLE PHOTO LAYOUTS
-  // ─────────────────────────────────────────────
 
   Widget _buildSinglePolaroid(BuildContext context, double width, double height) {
     final cardWidth = (width * 0.86).clamp(240.0, 380.0);
@@ -273,9 +260,6 @@ class StoryTemplateCanvas extends StatelessWidget {
     );
   }
 
-  // ─────────────────────────────────────────────
-  // 2. TWO PHOTOS LAYOUTS
-  // ─────────────────────────────────────────────
 
   Widget _buildSplitVertical(BuildContext context, double width, double height) {
     return Padding(
@@ -370,9 +354,6 @@ class StoryTemplateCanvas extends StatelessWidget {
     );
   }
 
-  // ─────────────────────────────────────────────
-  // 3. THREE PHOTOS LAYOUTS
-  // ─────────────────────────────────────────────
 
   Widget _buildThreeHeroBottom(BuildContext context, double width, double height) {
     return Padding(
@@ -480,9 +461,6 @@ class StoryTemplateCanvas extends StatelessWidget {
     );
   }
 
-  // ─────────────────────────────────────────────
-  // 4. FOUR PHOTOS LAYOUTS
-  // ─────────────────────────────────────────────
 
   Widget _buildFourGrid(BuildContext context, double width, double height) {
     return Padding(
@@ -578,9 +556,6 @@ class StoryTemplateCanvas extends StatelessWidget {
     );
   }
 
-  // ─────────────────────────────────────────────
-  // 5. FIVE PHOTOS LAYOUTS
-  // ─────────────────────────────────────────────
 
   Widget _buildFiveHeroGrid(BuildContext context, double width, double height) {
     return Padding(
@@ -768,9 +743,6 @@ class StoryTemplateCanvas extends StatelessWidget {
     );
   }
 
-  // ─────────────────────────────────────────────
-  // 6. SIX PHOTOS LAYOUTS
-  // ─────────────────────────────────────────────
 
   Widget _buildSixGrid(BuildContext context, double width, double height) {
     return Padding(
@@ -997,9 +969,6 @@ class StoryTemplateCanvas extends StatelessWidget {
     );
   }
 
-  // ─────────────────────────────────────────────
-  // 7. PHOTO + TEXT LAYOUTS
-  // ─────────────────────────────────────────────
 
   Widget _buildPhotoTextPolaroid(
     BuildContext context,
@@ -1234,7 +1203,6 @@ class StoryTemplateCanvas extends StatelessWidget {
   }
 }
 
-/// Internal widget handling a single slot: empty state or interactive filled photo with contextual controls.
 class _TemplateSlotBox extends StatefulWidget {
   final StoryTemplateSlot slot;
   final int slotIndex;
@@ -1323,7 +1291,6 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
         }
       },
       onError: (exception, stackTrace) {
-        // Fallback gracefully on decode failure
       },
     );
     _imageStream?.addListener(_imageStreamListener!);
@@ -1392,7 +1359,6 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
   Widget build(BuildContext context) {
     final mediaPath = widget.slot.mediaPath;
 
-    // ── EMPTY SLOT ──
     if (mediaPath == null || mediaPath.trim().isEmpty) {
       return GestureDetector(
         key: ValueKey('empty_slot_${widget.slotIndex}'),
@@ -1441,7 +1407,6 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
       );
     }
 
-    // ── FILLED SLOT (Interactive Editor or Viewer/Canvas Mode) ──
     return LayoutBuilder(
       builder: (context, constraints) {
         final slotWidth = constraints.maxWidth;
@@ -1451,7 +1416,6 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
           return const SizedBox.shrink();
         }
 
-        // 1. Determine natural or rotated image dimensions
         final bool isSideways = ((widget.slot.rotation / 90).round() % 2 != 0);
         final double rawWidth =
             (_naturalImageSize != null && _naturalImageSize!.width > 0)
@@ -1465,7 +1429,6 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
         final double imgWidth = isSideways ? rawHeight : rawWidth;
         final double imgHeight = isSideways ? rawWidth : rawHeight;
 
-        // 2. Base cover scale strictly relative to this individual slot dimensions
         final double coverScale = math.max(
           slotWidth / imgWidth,
           slotHeight / imgHeight,
@@ -1474,26 +1437,22 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
         final double baseDisplayWidth = imgWidth * coverScale;
         final double baseDisplayHeight = imgHeight * coverScale;
 
-        // 3. User scale (clamped to [1.0, 5.0] so photo ALWAYS 100% covers the slot)
         final double userScale = widget.slot.scale.clamp(1.0, 5.0);
 
         final double finalDisplayWidth = baseDisplayWidth * userScale;
         final double finalDisplayHeight = baseDisplayHeight * userScale;
 
-        // 4. Maximum pan bounds to guarantee zero empty margins
         final double maxPanX =
             math.max(0.0, (finalDisplayWidth - slotWidth) / 2.0);
         final double maxPanY =
             math.max(0.0, (finalDisplayHeight - slotHeight) / 2.0);
 
-        // 5. Clamped user offset
         final double clampedOffsetX =
             widget.slot.offset.dx.clamp(-maxPanX, maxPanX);
         final double clampedOffsetY =
             widget.slot.offset.dy.clamp(-maxPanY, maxPanY);
         final Offset effectiveOffset = Offset(clampedOffsetX, clampedOffsetY);
 
-        // 6. Center positioning + offset
         final double left =
             (slotWidth - finalDisplayWidth) / 2.0 + effectiveOffset.dx;
         final double top =
@@ -1525,7 +1484,6 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
           ],
         );
 
-        // ── VIEWER / NON-INTERACTIVE MODE ──
         if (!widget.isInteractive) {
           return Container(
             color: Colors.black,
@@ -1535,10 +1493,8 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
           );
         }
 
-        // ── INTERACTIVE COMPOSER MODE ──
         return Stack(
           children: [
-            // Pan & Pinch Gesture Detector
             Positioned.fill(
               child: ClipRect(
                 child: GestureDetector(
@@ -1594,7 +1550,6 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
               ),
             ),
 
-            // Active Selection Outline
             if (widget.isSelected)
               Positioned.fill(
                 child: IgnorePointer(
@@ -1609,7 +1564,6 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
                 ),
               ),
 
-            // Contextual Toolbar Pill (Shown ONLY when this slot is selected)
             if (widget.isSelected)
               Positioned(
                 top: 8,
@@ -1635,7 +1589,6 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Replace photo
                       GestureDetector(
                         onTap: () {
                           if (widget.onReplaceSlot != null) {
@@ -1675,7 +1628,6 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
                         color: Colors.white24,
                         margin: const EdgeInsets.symmetric(horizontal: 2),
                       ),
-                      // Rotate 90° photo
                       GestureDetector(
                         onTap: () {
                           final nextRot = (widget.slot.rotation + 90.0) % 360.0;
@@ -1703,7 +1655,6 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
                         color: Colors.white24,
                         margin: const EdgeInsets.symmetric(horizontal: 2),
                       ),
-                      // Reset photo transform
                       GestureDetector(
                         onTap: () => widget.onUpdateSlot?.call(
                           widget.slotIndex,
@@ -1728,7 +1679,6 @@ class _TemplateSlotBoxState extends State<_TemplateSlotBox> {
                         color: Colors.white24,
                         margin: const EdgeInsets.symmetric(horizontal: 2),
                       ),
-                      // Remove photo
                       GestureDetector(
                         onTap: () => widget.onClearSlot?.call(widget.slotIndex),
                         behavior: HitTestBehavior.opaque,

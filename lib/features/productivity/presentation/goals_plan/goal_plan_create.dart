@@ -11,11 +11,9 @@ class CreateGoalScreen extends StatefulWidget {
 }
 
 class _CreateGoalScreenState extends State<CreateGoalScreen> {
-  // CONTROLLERS
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
   final motivationController = TextEditingController();
-  // STATE
   String selectedGoalType = 'Personal';
 
   DateTime? selectedDeadline;
@@ -27,7 +25,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     TextEditingController(text: 'Build first project'),
   ];
 
-  // DISPOSE
   @override
   void dispose() {
     titleController.dispose();
@@ -41,7 +38,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     super.dispose();
   }
 
-  // BUILD
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -84,7 +80,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // HEADER
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -110,7 +105,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
               ),
             ),
 
-            // CONTENT
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -118,7 +112,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // GOAL TYPE
                     Text(
                       'Goal Type',
                       style: TextStyle(
@@ -180,7 +173,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
                     const SizedBox(height: 20),
 
-                    // TITLE
                     Text(
                       'Goal Title',
                       style: TextStyle(
@@ -224,7 +216,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
                     const SizedBox(height: 18),
 
-                    // DESCRIPTION
                     Text(
                       'Description',
                       style: TextStyle(
@@ -263,7 +254,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
                     const SizedBox(height: 18),
 
-                    // DEADLINE
                     Text(
                       'Deadline',
                       style: TextStyle(
@@ -344,7 +334,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
                     const SizedBox(height: 20),
 
-                    // MILESTONES
                     Row(
                       children: [
                         Text(
@@ -503,7 +492,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
                     const SizedBox(height: 20),
 
-                    // MOTIVATION
                     Text(
                       'Motivation Note',
                       style: TextStyle(
@@ -542,7 +530,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
                     const SizedBox(height: 18),
 
-                    // COMMUNITY SUPPORT
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 13,
@@ -618,7 +605,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
                     const SizedBox(height: 24),
 
-                    // SAVE
                     SizedBox(
                       width: double.infinity,
                       height: 48,
@@ -675,7 +661,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     );
   }
 
-  // MONTH
   String _monthName(int month) {
     const months = [
       'Jan',
@@ -696,7 +681,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
   }
 }
 
-// GOAL MODEL
 class GoalModel {
   final String category;
   final String title;

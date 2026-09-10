@@ -87,9 +87,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 36),
           children: [
-            // =========================================================
-            // HEADER
-            // =========================================================
             Row(
               children: [
                 const AppBackButton(),
@@ -127,9 +124,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
 
             const SizedBox(height: 20),
 
-            // =========================================================
-            // GOAL INFORMATION
-            // =========================================================
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(18),
@@ -227,9 +221,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
 
             const SizedBox(height: 20),
 
-            // =========================================================
-            // PROGRESS
-            // =========================================================
             Row(
               children: [
                 Text(
@@ -302,9 +293,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
 
             const SizedBox(height: 20),
 
-            // =========================================================
-            // MILESTONES
-            // =========================================================
             Row(
               children: [
                 Text(
@@ -417,9 +405,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
 
             const SizedBox(height: 20),
 
-            // =========================================================
-            // ACTIONS
-            // =========================================================
             Row(
               children: [
                 Expanded(
@@ -469,9 +454,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
 
             const SizedBox(height: 12),
 
-            // =========================================================
-            // STATUS
-            // =========================================================
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(

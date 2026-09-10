@@ -1,9 +1,5 @@
 import '../../domain/entities/finance_entities.dart';
 
-/// Formats Finance amounts without converting between currencies.
-///
-/// USD is rendered with two fractional digits. KHR is rendered as a whole
-/// amount, which matches the dashboard's user-facing currency convention.
 abstract final class FinanceMoneyFormatter {
   const FinanceMoneyFormatter._();
 

@@ -10,11 +10,9 @@ class CreateTaskPage extends StatefulWidget {
 }
 
 class _CreateTaskPageState extends State<CreateTaskPage> {
-  // CONTROLLERS
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
-  // STATE
   TaskPriorityOption _priority = TaskPriorityOption.high;
   TaskCategoryOption _category = TaskCategoryOption.study;
 
@@ -23,7 +21,6 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
 
   List<CreateSubtaskData> _subtasks = [];
 
-  // DATE
   Future<void> _pickDueDate() async {
     final now = DateTime.now();
 
@@ -41,7 +38,6 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
     });
   }
 
-  // REMINDER
   Future<void> _pickReminder() async {
     final picked = await showTimePicker(
       context: context,
@@ -55,7 +51,6 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
     });
   }
 
-  // ADD SUBTASK
   void _addSubtask(String title) {
     final value = title.trim();
 
@@ -66,21 +61,18 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
     });
   }
 
-  // TOGGLE SUBTASK
   void _toggleSubtask(int index, bool completed) {
     setState(() {
       _subtasks[index] = _subtasks[index].copyWith(completed: completed);
     });
   }
 
-  // DELETE SUBTASK
   void _deleteSubtask(int index) {
     setState(() {
       _subtasks.removeAt(index);
     });
   }
 
-  // SAVE
   void _saveTask() {
     final title = _titleController.text.trim();
 
@@ -104,7 +96,6 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
     Navigator.of(context).pop();
   }
 
-  // DISPOSE
   @override
   void dispose() {
     _titleController.dispose();
@@ -113,7 +104,6 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
     super.dispose();
   }
 
-  // BUILD
   @override
   Widget build(BuildContext context) {
     return CreateTaskLayout(

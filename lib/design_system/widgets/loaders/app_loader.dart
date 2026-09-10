@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../spacing/app_spacing.dart';
 
-/// Centered progress indicator for full-screen and in-card loading states.
 class AppLoader extends StatelessWidget {
   const AppLoader({super.key, this.message, this.size = 28});
 
@@ -38,7 +37,6 @@ class AppLoader extends StatelessWidget {
   }
 }
 
-/// Placeholder for an empty list or an unloaded section.
 class AppEmptyState extends StatelessWidget {
   const AppEmptyState({
     super.key,

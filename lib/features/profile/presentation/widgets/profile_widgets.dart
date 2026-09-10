@@ -7,7 +7,6 @@ import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../domain/entities/profile_entity.dart';
 
-/// Avatar inside a gradient ring, with a small edit affordance.
 class RingedAvatar extends StatelessWidget {
   const RingedAvatar({
     super.key,
@@ -88,7 +87,6 @@ class RingedAvatar extends StatelessWidget {
   }
 }
 
-/// Pill with a leading accent dot, used for the work-status label.
 class StatusChip extends StatelessWidget {
   const StatusChip({super.key, required this.label});
 
@@ -128,7 +126,6 @@ class StatusChip extends StatelessWidget {
   }
 }
 
-/// Progress bar that fades from the text colour into the premium accent.
 class GradientProgressBar extends StatelessWidget {
   const GradientProgressBar({super.key, required this.value, this.height = 8});
 
@@ -167,7 +164,6 @@ class GradientProgressBar extends StatelessWidget {
   }
 }
 
-/// Section title with an optional trailing action.
 class SectionHeader extends StatelessWidget {
   const SectionHeader({super.key, required this.title, this.trailing});
 
@@ -204,10 +200,6 @@ class MutedText extends StatelessWidget {
   }
 }
 
-/// One achievement: a circular icon plus its name.
-///
-/// Locked badges are dimmed and show a padlock instead of their icon, so
-/// the row communicates what is still available without a second section.
 class BadgeTile extends StatelessWidget {
   const BadgeTile({super.key, required this.badge});
 
@@ -258,8 +250,6 @@ class BadgeTile extends StatelessWidget {
     );
   }
 
-  /// The catalog ships an `iconUrl`; fall back to a generic medal when it
-  /// is missing so an unseeded badge still renders.
   Widget _icon(Color color) {
     final url = badge.iconUrl;
     if (url == null || url.isEmpty) {
@@ -278,7 +268,6 @@ class BadgeTile extends StatelessWidget {
   }
 }
 
-/// An interest rendered as an expertise chip.
 class ExpertiseChip extends StatelessWidget {
   const ExpertiseChip({
     super.key,
@@ -316,7 +305,6 @@ class ExpertiseChip extends StatelessWidget {
   }
 }
 
-/// The "+" affordance at the end of the expertise chips.
 class AddChipButton extends StatelessWidget {
   const AddChipButton({super.key, this.onPressed});
 
@@ -340,7 +328,6 @@ class AddChipButton extends StatelessWidget {
   }
 }
 
-/// A saved item tile: cover image with the category and title over it.
 class SavedItemCard extends StatelessWidget {
   const SavedItemCard({super.key, required this.item});
 
@@ -351,7 +338,6 @@ class SavedItemCard extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    // saved_items is polymorphic, so a row can outlive what it points at.
     if (!item.available) {
       return Container(
         width: 150,
@@ -389,7 +375,6 @@ class SavedItemCard extends StatelessWidget {
               )
             else
               ColoredBox(color: scheme.surfaceContainerHighest),
-            // Scrim so the label stays readable over any cover.
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(

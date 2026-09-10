@@ -24,8 +24,6 @@ class NotificationController extends GetxController {
   final selectedCategory = 'All'.obs;
   final isLoading = false.obs;
 
-  /// Categories according to the Unified Notification Center specification:
-  /// All, Social, Finance, Events, Reminders, Updates
   final categories = const [
     'All',
     'Social',
@@ -35,7 +33,6 @@ class NotificationController extends GetxController {
     'Updates',
   ];
 
-  /// Backward-compatible alias for existing tests and call-sites
   String get selectedTab => selectedCategory.value;
   set selectedTab(String val) => selectCategory(val);
   List<String> get tabs => categories;
@@ -96,7 +93,6 @@ class NotificationController extends GetxController {
   }
 
   Future<void> addActivityNotification(NotificationModel notif) async {
-    // Deduplication check: prevent creating duplicate entries within short window
     final isDuplicate = notifications.any(
       (n) =>
           n.id == notif.id ||
@@ -136,7 +132,6 @@ class NotificationController extends GetxController {
   }
 
   void selectCategory(String category) {
-    // Handle backwards-compatible aliases
     if (category == 'Mentions') {
       selectedCategory.value = 'Social';
       return;
@@ -154,12 +149,10 @@ class NotificationController extends GetxController {
 
   void selectTab(String tab) => selectCategory(tab);
 
-  /// Safe Navigation when tapping a notification item to its corresponding feature.
   Future<void> handleNotificationTap(
     NotificationModel notif,
     BuildContext context,
   ) async {
-    // Mark ONLY this notification as read
     await markAsRead(notif.id);
 
     if (!context.mounted) return;
@@ -167,7 +160,6 @@ class NotificationController extends GetxController {
     final targetType = notif.targetType?.toLowerCase();
     final targetId = notif.targetId;
 
-    // 1. Social / Friend Requests / Posts
     if (notif.category == NotificationCategory.social ||
         notif.type == NotificationType.friendRequest ||
         targetType == 'friend_request') {
@@ -199,7 +191,6 @@ class NotificationController extends GetxController {
         return;
       }
 
-      // Safe fallback / banner for posts & comments
       AppNotificationBanner.showInfo(
         context: context,
         title: notif.title,
@@ -208,7 +199,6 @@ class NotificationController extends GetxController {
       return;
     }
 
-    // 2. Finance
     if (notif.category == NotificationCategory.finance) {
       if (notif.type == NotificationType.savingGoal ||
           targetType == 'saving_goal') {
@@ -225,7 +215,6 @@ class NotificationController extends GetxController {
       return;
     }
 
-    // 3. Events
     if (notif.category == NotificationCategory.events ||
         notif.type == NotificationType.eventReminder ||
         notif.type == NotificationType.eventRsvp ||
@@ -235,7 +224,6 @@ class NotificationController extends GetxController {
       return;
     }
 
-    // 4. Reminders / Productivity
     if (notif.category == NotificationCategory.reminders) {
       if (notif.type == NotificationType.habitReminder ||
           targetType == 'habit') {
@@ -256,7 +244,6 @@ class NotificationController extends GetxController {
       return;
     }
 
-    // 5. Updates / Entertainment / Quiz
     if (notif.category == NotificationCategory.updates) {
       if (notif.type == NotificationType.quizResult || targetType == 'quiz') {
         Get.toNamed(AppRoutes.quizDashboard);
@@ -269,7 +256,6 @@ class NotificationController extends GetxController {
       }
     }
 
-    // Safe fallback for forum, chat, system and other notification types
     AppNotificationBanner.showInfo(
       context: context,
       title: notif.title.isNotEmpty ? notif.title : 'GenLink KH',

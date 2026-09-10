@@ -75,8 +75,6 @@ HomeEntity _fullHome() => HomeEntity(
       ],
     );
 
-/// A brand-new account: every nullable card null, every list empty,
-/// totals zero — the divide-by-zero and empty-state paths.
 const _emptyHome = HomeEntity(
   user: HomeUser(userId: 'u1', fullName: 'Ren Makara', level: 1, totalXp: 0),
   todayProgress: TodayProgress(

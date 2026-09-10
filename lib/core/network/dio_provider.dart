@@ -5,23 +5,11 @@ import '../config/app_config.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/error_interceptor.dart';
 
-/// Creates and configures the shared [Dio] instance.
-///
-/// All HTTP communication goes through this provider so interceptors are
-/// applied consistently.
 class DioProvider {
   const DioProvider._();
 
-  /// Base URL for the GenLink KH API.
-  ///
-  /// Comes from `AppConfig`, which reads the `API_BASE_URL` dart-define so
-  /// a physical device can point at the host's LAN IP without a code edit.
   static const defaultBaseUrl = AppConfig.apiBaseUrl;
 
-  /// Create a fully-configured [Dio] instance.
-  ///
-  /// [authInterceptor] handles Bearer token injection and refresh-token retry.
-  /// [errorInterceptor] maps Dio errors to [AppError].
   static Dio create({
     String? baseUrl,
     AuthInterceptor? authInterceptor,
@@ -47,9 +35,6 @@ class DioProvider {
     }
 
     if (kDebugMode) {
-      // One readable line per request/failure. Without this a failed call
-      // is invisible in the console and the UI can only say "something
-      // went wrong". Debug builds only — never log tokens in release.
       dio.interceptors.add(
         InterceptorsWrapper(
           onRequest: (options, handler) {

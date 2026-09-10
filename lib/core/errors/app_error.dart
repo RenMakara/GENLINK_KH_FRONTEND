@@ -1,11 +1,5 @@
 import 'package:dio/dio.dart';
 
-/// Centralized error model matching backend ApiResponse error format.
-///
-/// Every backend error response is wrapped in:
-/// `{ success, message, data, errorCode, timestamp }`
-///
-/// [AppError] represents the failure side of that contract.
 class AppError implements Exception {
   const AppError({
     required this.message,
@@ -32,7 +26,6 @@ class AppError implements Exception {
   bool get isOtpExpired => errorCode == 'OTP_EXPIRED';
   bool get isValidation => errorCode == 'VALIDATION_ERROR';
 
-  /// Whether this error should trigger a logout / session clear.
   bool get shouldLogout =>
       isTokenExpired ||
       isTokenRevoked ||
@@ -42,7 +35,6 @@ class AppError implements Exception {
   @override
   String toString() => 'AppError($errorCode): $message';
 
-  /// Parse an [AppError] from a backend JSON response body.
   factory AppError.fromResponse(Map<String, dynamic> json, int statusCode) {
     return AppError(
       message: json['message'] as String? ?? 'Unknown error',
@@ -51,13 +43,6 @@ class AppError implements Exception {
     );
   }
 
-  /// Unwrap the [AppError] that `ErrorInterceptor` stashed on a
-  /// [DioException].
-  ///
-  /// Dio always throws a [DioException]; the interceptor puts the parsed
-  /// backend error in its `error` field. Without this conversion the
-  /// domain layer's `on AppError` clauses never match and every failure —
-  /// wrong password, offline, 500 — collapses into one generic message.
   factory AppError.fromDio(DioException exception) {
     final inner = exception.error;
     if (inner is AppError) return inner;
@@ -70,10 +55,6 @@ class AppError implements Exception {
   }
 }
 
-/// Runs a Dio call and normalises its failure to [AppError].
-///
-/// Every network boundary goes through this, so nothing above the data
-/// layer ever has to know Dio's exception type.
 Future<T> guardDio<T>(Future<T> Function() request) async {
   try {
     return await request();

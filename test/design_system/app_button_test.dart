@@ -3,16 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:genlink_frontend/design_system/theme/app_theme.dart';
 import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
 
-/// Regression tests for the button label colour.
-///
-/// The label used to be styled with `textTheme.labelLarge`, which carries an
-/// explicit colour from `TextTheme.apply(bodyColor:)`. An explicit `Text`
-/// colour beats the button's `foregroundColor`, so the label rendered
-/// black-on-black in light mode and white-on-white in dark mode. The style
-/// now goes through `ButtonStyle.textStyle` instead, letting the button
-/// overlay its own foreground colour.
 void main() {
-  /// The colour the label is actually painted in.
   Color resolvedLabelColor(WidgetTester tester, String label) {
     final style = tester.widget<RichText>(
       find.descendant(
@@ -23,8 +14,6 @@ void main() {
     return style.text.style!.color!;
   }
 
-  /// [enabled] matters: a button with no `onPressed` resolves the *disabled*
-  /// foreground colour, which is a different code path.
   Future<void> pumpButton(
     WidgetTester tester,
     ThemeData theme, {

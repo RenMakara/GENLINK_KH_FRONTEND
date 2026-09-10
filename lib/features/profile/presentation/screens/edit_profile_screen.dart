@@ -21,7 +21,6 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  /// Backend WorkStatus enum — shown as "Role" in the design.
   static const _workStatuses = <String>[
     'STUDENT',
     'FRESH_GRADUATE',
@@ -32,8 +31,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     'OTHER',
   ];
 
-  /// Platforms surfaced under "Social Presence". The backend supports more;
-  /// these two match the design and cover the common cases.
   static const _linkedIn = 'LINKEDIN';
   static const _website = 'WEBSITE';
   static const _github = 'GITHUB';
@@ -112,7 +109,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
     if (!saved) return;
 
-    // Avatar has its own endpoint; only call it when it actually changed.
     final avatar = _avatarUrl.text.trim();
     if (avatar != previousAvatar && avatar.isNotEmpty) {
       await _controller.updateAvatar(avatar);
@@ -126,7 +122,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     Get.back<void>();
   }
 
-  /// Upsert when there is a URL, delete when the field was cleared.
   Future<void> _saveSocialLink(String platform, String url) async {
     final existing = _existingLink(platform);
     if (url == existing) return;
@@ -310,15 +305,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 }
 
-/// Dashed drop-zone for the avatar.
-///
-/// Tapping picks a photo from the gallery or camera, uploads it, and sets it
-/// as the avatar in one step — the picture is chosen from the device, never
-/// pasted as a URL. The upload progress replaces the icon while it runs.
 class _AvatarPicker extends StatelessWidget {
   const _AvatarPicker({required this.controller, required this.onChanged});
 
-  /// Mirrors the avatar url so the parent form can tell whether it changed.
   final TextEditingController controller;
   final VoidCallback onChanged;
 
@@ -354,8 +343,6 @@ class _AvatarPicker extends StatelessWidget {
                     height: 44,
                     width: 44,
                     child: CircularProgressIndicator(
-                      // Determinate: a large photo on a slow connection
-                      // deserves a real bar, not an endless spinner.
                       value: progress > 0 ? progress : null,
                       strokeWidth: 3,
                     ),
@@ -393,8 +380,6 @@ class _AvatarPicker extends StatelessWidget {
     });
   }
 
-  /// Gallery or camera, then upload. Cancelling at either step is silent —
-  /// backing out of a picker is not an error.
   Future<void> _pickSource(BuildContext context) async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
@@ -420,7 +405,6 @@ class _AvatarPicker extends StatelessWidget {
 
     final uploaded = await _profile.pickAndUploadAvatar(source: source);
     if (uploaded) {
-      // Keep the form's copy in step so _submit does not re-send the avatar.
       controller.text = _profile.profile.value?.avatarUrl ?? '';
       onChanged();
     }

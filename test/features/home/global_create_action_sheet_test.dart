@@ -23,15 +23,12 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Verify Title
     expect(find.text('Quick Create'), findsOneWidget);
 
-    // Verify Daily Life Quick Actions
     expect(find.text('To-Do'), findsOneWidget);
     expect(find.text('Goal'), findsOneWidget);
     expect(find.text('Expense'), findsOneWidget);
 
-    // Verify Community creation is NOT present in Home Create
     expect(find.text('Post'), findsNothing);
     expect(find.text('Event'), findsNothing);
     expect(find.text('Habit'), findsNothing);

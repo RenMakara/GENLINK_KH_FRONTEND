@@ -2,23 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/story_gallery_controller.dart';
+import '../screens/create_discussion_screen.dart';
 import '../screens/create_event_screen.dart';
 import '../screens/create_post_screen.dart';
 import '../screens/story_gallery_screen.dart';
 import 'community_creation_bottom_sheet.dart';
 import 'story_creation_picker_sheet.dart';
 
-/// Centralized creation flow helper for GenLink KH Community.
-///
-/// Ensures consistent behavior and navigation across all entry points
-/// (Home dashboard, Community screen, and Global '+' center nav button).
 abstract final class CommunityCreationFlow {
-  /// Opens the central Creation Menu bottom sheet.
-  ///
-  /// Presents options:
-  /// - Create Post -> Navigates to [CreatePostScreen]
-  /// - Create Story -> Navigates to [StoryCreationPickerSheet]
-  /// - Create Event -> Navigates to [CreateEventScreen]
   static Future<void> openCreateMenu([BuildContext? context]) async {
     final ctx = context ?? Get.context;
     if (ctx == null) return;
@@ -43,7 +34,6 @@ abstract final class CommunityCreationFlow {
     );
   }
 
-  /// Navigates directly to the Create Post composer screen.
   static Future<T?> openCreatePost<T>([BuildContext? context]) async {
     return Get.to<T>(
       () => const CreatePostScreen(),
@@ -52,7 +42,6 @@ abstract final class CommunityCreationFlow {
     );
   }
 
-  /// Opens the Story creation choices (Camera, Gallery, Text Story).
   static Future<T?> openCreateStory<T>([BuildContext? context]) async {
     final ctx = context ?? Get.context;
     if (ctx != null) {
@@ -81,7 +70,14 @@ abstract final class CommunityCreationFlow {
     );
   }
 
-  /// Navigates directly to the Create Event screen.
+  static Future<T?> openCreateDiscussion<T>([BuildContext? context]) async {
+    return Get.to<T>(
+      () => const CreateDiscussionScreen(),
+      routeName: '/CreateDiscussionScreen',
+      transition: Transition.cupertino,
+    );
+  }
+
   static Future<T?> openCreateEvent<T>([BuildContext? context]) async {
     return Get.to<T>(
       () => const CreateEventScreen(),

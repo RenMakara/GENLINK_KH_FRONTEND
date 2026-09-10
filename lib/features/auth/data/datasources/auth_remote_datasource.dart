@@ -6,16 +6,11 @@ import '../models/api_response_model.dart';
 import '../models/auth_response_model.dart';
 import '../models/user_response_model.dart';
 
-/// Remote datasource for auth endpoints.
-///
-/// Handles raw HTTP calls and parses the ApiResponse envelope. Throws
-/// [AppError] on any non-success response.
 class AuthRemoteDatasource {
   AuthRemoteDatasource(this._dio);
 
   final Dio _dio;
 
-  // ── Login ─────────────────────────────────────────────────────────────
 
   Future<AuthResponseModel> login({
     required String email,
@@ -28,7 +23,6 @@ class AuthRemoteDatasource {
     return _parseAuthResponse(response);
   }
 
-  // ── Register ──────────────────────────────────────────────────────────
 
   Future<String> register({
     required String fullName,
@@ -56,7 +50,6 @@ class AuthRemoteDatasource {
     return _parseMessage(response);
   }
 
-  // ── Google Login ──────────────────────────────────────────────────────
 
   Future<AuthResponseModel> googleLogin({required String idToken}) async {
     final response = await _post(
@@ -66,7 +59,6 @@ class AuthRemoteDatasource {
     return _parseAuthResponse(response);
   }
 
-  // ── Verify Email / OTP ───────────────────────────────────────────────
 
   Future<AuthResponseModel> verifyEmail({
     required String email,
@@ -90,7 +82,6 @@ class AuthRemoteDatasource {
     return _parseAuthResponse(response);
   }
 
-  // ── Resend OTP ───────────────────────────────────────────────────────
 
   Future<String> resendOtp({required String email}) async {
     final response = await _post(
@@ -108,7 +99,6 @@ class AuthRemoteDatasource {
     return _parseMessage(response);
   }
 
-  // ── Password Reset ───────────────────────────────────────────────────
 
   Future<String> forgotPassword({required String email}) async {
     final response = await _post(
@@ -130,7 +120,6 @@ class AuthRemoteDatasource {
     return _parseMessage(response);
   }
 
-  // ── Refresh Token ────────────────────────────────────────────────────
 
   Future<AuthResponseModel> refreshToken({required String refreshToken}) async {
     final response = await _post(
@@ -140,7 +129,6 @@ class AuthRemoteDatasource {
     return _parseAuthResponse(response);
   }
 
-  // ── Get Current User ─────────────────────────────────────────────────
 
   Future<UserResponseModel> getCurrentUser() async {
     final response = await _get(ApiEndpoints.me);
@@ -156,16 +144,12 @@ class AuthRemoteDatasource {
     return UserResponseModel.fromJson(api.data as Map<String, dynamic>);
   }
 
-  // ── Logout ───────────────────────────────────────────────────────────
 
   Future<void> logout() async {
     await _post(ApiEndpoints.logout);
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────
 
-  /// All requests funnel through these two so a Dio failure is converted
-  /// to [AppError] once, here, instead of leaking DioException upwards.
   Future<Response<dynamic>> _post(String path, {Object? data}) =>
       guardDio(() => _dio.post<dynamic>(path, data: data));
 

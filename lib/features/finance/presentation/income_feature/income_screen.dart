@@ -15,7 +15,6 @@ import 'package:genlink_frontend/features/finance/presentation/income_feature/in
 import 'package:genlink_frontend/features/finance/presentation/income_feature/income_detail_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/cash_flow_feature/cash_flow_screen.dart';
 
-/// Minimal backend-driven Income list and entry point for Income CRUD.
 class IncomeScreen extends StatefulWidget {
   const IncomeScreen({super.key});
 
@@ -65,18 +64,17 @@ class _IncomeScreenState extends State<IncomeScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Same colors as BudgetScreen
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
 
     final surface = isDark
         ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
 
-    final text = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
+    final secondary = isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightSurfaceSecondary;
 
-    final textPrimary = isDark
+    final text = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
 
@@ -99,7 +97,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
           final incomes = controller.incomes.toList(growable: false);
           final loading = controller.isInitialLoading.value;
           final error = controller.listErrorMessage.value;
-          final currency = controller.selectedCurrency.value;
 
           return RefreshIndicator(
             onRefresh: controller.refresh,
@@ -110,7 +107,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
               ),
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 36),
               children: [
-                // HEADER
                 Row(
                   children: [
                     AppBackButton(),
@@ -119,10 +115,9 @@ class _IncomeScreenState extends State<IncomeScreen> {
                       child: Text(
                         'finance.income.title'.tr,
                         style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
+                          color: text,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -162,20 +157,18 @@ class _IncomeScreenState extends State<IncomeScreen> {
 
                 const SizedBox(height: 14),
 
-                // CURRENCY BAR
-                // Same color setup as BudgetScreen
                 _CurrencyBar(
-                  currency: currency,
+                  value: controller.selectedCurrency.value,
                   onChanged: controller.selectCurrency,
-                  surface: surface,
-                  border: border,
                   text: text,
+                  muted: muted,
+                  secondary: secondary,
+                  border: border,
                   primary: primary,
                 ),
 
                 const SizedBox(height: 14),
 
-                // SOURCE FILTER
                 Row(
                   children: [
                     Expanded(
@@ -225,7 +218,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
 
                 const SizedBox(height: 8),
 
-                // CONTENT
                 if (loading && incomes.isEmpty)
                   const SizedBox(height: 280, child: AppLoader())
                 else if (error != null && incomes.isEmpty)
@@ -320,89 +312,94 @@ class _IncomeScreenState extends State<IncomeScreen> {
   }
 }
 
-// CURRENCY BAR
 class _CurrencyBar extends StatelessWidget {
   const _CurrencyBar({
-    required this.currency,
+    required this.value,
     required this.onChanged,
-    required this.surface,
-    required this.border,
     required this.text,
+    required this.muted,
+    required this.secondary,
+    required this.border,
     required this.primary,
   });
 
-  final FinanceCurrency currency;
+  final FinanceCurrency value;
   final ValueChanged<FinanceCurrency> onChanged;
-  final Color surface;
-  final Color border;
   final Color text;
+  final Color muted;
+  final Color secondary;
+  final Color border;
   final Color primary;
 
   @override
   Widget build(BuildContext context) {
-    final isUsd = currency == FinanceCurrency.usd;
+    final currencies = FinanceCurrency.values;
+    final selectedIndex = currencies.indexOf(value);
 
     return Container(
-      height: 48,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(14),
+        color: secondary,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: border),
       ),
-      child: Stack(
-        children: [
-          // Sliding background
-          AnimatedAlign(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOutCubic,
-            alignment: isUsd ? Alignment.centerLeft : Alignment.centerRight,
-            child: FractionallySizedBox(
-              widthFactor: 0.5,
-              child: Container(
-                height: 40,
-                decoration: BoxDecoration(
-                  color: primary,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-          ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final itemWidth = constraints.maxWidth / currencies.length;
 
-          // Currency buttons
-          Row(
-            children: FinanceCurrency.values.map((value) {
-              final selected = value == currency;
-
-              return Expanded(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: () => onChanged(value),
-                  child: Center(
-                    child: AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOut,
-                      style: TextStyle(
-                        color: selected
-                            ? Theme.of(context).colorScheme.onPrimary
-                            : text,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
-                      child: Text(value.apiValue),
+          return SizedBox(
+            height: 40,
+            child: Stack(
+              children: [
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  left: selectedIndex * itemWidth,
+                  top: 0,
+                  bottom: 0,
+                  width: itemWidth,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: primary,
+                      borderRadius: BorderRadius.circular(9),
                     ),
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-        ],
+
+                Row(
+                  children: currencies.map((currency) {
+                    final selected = currency == value;
+
+                    return Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onChanged(currency),
+                        child: Center(
+                          child: Text(
+                            currency.apiValue,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: selected
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : muted,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 }
 
-// PAGINATION ERROR
 
 class _PaginationError extends StatelessWidget {
   const _PaginationError({
@@ -433,7 +430,6 @@ class _PaginationError extends StatelessWidget {
   }
 }
 
-// INCOME ICON
 IconData _sourceIcon() {
   return Icons.trending_up_rounded;
 }

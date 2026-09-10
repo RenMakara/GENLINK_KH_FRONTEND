@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
+import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import 'event_register_screen.dart';
@@ -10,29 +12,66 @@ import 'event_register_screen.dart';
 class EventDetailsScreen extends StatefulWidget {
   final EventModel event;
   final String? heroTag;
+  final bool isLoading;
+  final String? errorMessage;
+  final VoidCallback? onRetry;
 
   const EventDetailsScreen({
     super.key,
     required this.event,
     this.heroTag,
+    this.isLoading = false,
+    this.errorMessage,
+    this.onRetry,
   });
 
   @override
   State<EventDetailsScreen> createState() => _EventDetailsScreenState();
 }
 
-class _EventDetailsScreenState extends State<EventDetailsScreen> {
+class _EventDetailsScreenState extends State<EventDetailsScreen>
+    with SingleTickerProviderStateMixin {
   bool _isBookmarked = false;
+  bool _isDescriptionExpanded = false;
+  bool _isButtonPressed = false;
+  double _bookmarkScale = 1.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _isBookmarked = widget.event.isBookmarked;
+  }
+
+  void _triggerBookmarkAnimation() {
+    setState(() => _bookmarkScale = 1.25);
+    Future.delayed(const Duration(milliseconds: 140), () {
+      if (mounted) {
+        setState(() => _bookmarkScale = 1.0);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final event = widget.event;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isKhmer = Get.locale?.languageCode == 'km';
+
+    // ── Error State ──────────────────────────────────────────────────────────
+    if (widget.errorMessage != null && widget.errorMessage!.isNotEmpty) {
+      return _buildErrorState(context, isDark);
+    }
+
+    // ── Loading Skeleton State ───────────────────────────────────────────────
+    if (widget.isLoading) {
+      return _buildLoadingSkeleton(context, isDark);
+    }
+
+    final event = widget.event;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
     final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
     final surfacePrimary = isDark ? const Color(0xFF141414) : Colors.white;
-    final tileBg = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF7F7F8);
-    final borderSubtle = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA);
+    final tileBg = isDark ? const Color(0xFF18181A) : const Color(0xFFF6F6F8);
+    final borderSubtle = isDark ? const Color(0xFF28282A) : const Color(0xFFE6E6EA);
     final bgPrimary = Theme.of(context).scaffoldBackgroundColor;
 
     final bool hasNetworkImage = event.imageUrl.isNotEmpty;
@@ -53,10 +92,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Cover Image with Back / Bookmark / Share ───────────────
+                // ── Cover Image with Overlay Controls ─────────────────────────
                 Stack(
                   children: [
-                    // Hero Image area
                     Hero(
                       tag: effectiveHeroTag,
                       child: SizedBox(
@@ -75,7 +113,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ),
                     ),
 
-                    // Subtle top & bottom gradient overlay for readability
+                    // Contrast gradient overlay
                     Container(
                       height: 290,
                       decoration: BoxDecoration(
@@ -88,144 +126,116 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                             Colors.transparent,
                             bgPrimary.withValues(alpha: 0.95),
                           ],
-                          stops: const [0.0, 0.25, 0.7, 1.0],
+                          stops: const [0.0, 0.28, 0.68, 1.0],
                         ),
                       ),
                     ),
 
-                    // Top Action Bar
+                    // Top Action Bar (Back, Bookmark, Share)
                     SafeArea(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         child: Row(
                           children: [
-                            // Back button
-                            CircleAvatar(
-                              radius: 20,
-                              backgroundColor: Colors.black.withValues(alpha: 0.55),
-                              child: IconButton(
-                                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
-                                onPressed: () => Navigator.pop(context),
-                              ),
+                            // Back Button
+                            _buildFrostedButton(
+                              icon: Icons.arrow_back_rounded,
+                              onTap: () => Navigator.pop(context),
                             ),
                             const Spacer(),
 
-                            // Bookmark button
+                            // Bookmark Button
                             if (controller != null)
                               Obx(() {
                                 final ev = controller.events.firstWhereOrNull(
                                   (e) => e.id == event.id,
                                 );
-                                final isBookmarked = ev?.isBookmarked ?? event.isBookmarked;
-                                return CircleAvatar(
-                                  radius: 20,
-                                  backgroundColor: Colors.black.withValues(alpha: 0.55),
-                                  child: IconButton(
-                                    icon: Icon(
-                                      isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                                      color: isBookmarked ? AppColors.communityAccent : Colors.white,
-                                      size: 20,
-                                    ),
-                                    onPressed: () {
+                                final isSaved = ev?.isBookmarked ?? _isBookmarked;
+                                return AnimatedScale(
+                                  scale: _bookmarkScale,
+                                  duration: const Duration(milliseconds: 140),
+                                  child: _buildFrostedButton(
+                                    icon: isSaved
+                                        ? Icons.bookmark_rounded
+                                        : Icons.bookmark_border_rounded,
+                                    iconColor: isSaved ? Colors.white : Colors.white,
+                                    onTap: () {
+                                      _triggerBookmarkAnimation();
                                       controller.toggleEventBookmark(event.id);
-                                      final nowSaved = !(isBookmarked);
-                                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            nowSaved ? 'community.savedToBookmarks'.tr : 'community.removedFromBookmarks'.tr,
-                                            style: TextStyle(color: textPrimary),
-                                          ),
-                                          duration: const Duration(seconds: 2),
-                                          backgroundColor: isDark ? const Color(0xFF222222) : Colors.white,
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                        ),
+                                      final nowSaved = !isSaved;
+                                      _showSnackBar(
+                                        context,
+                                        isDark,
+                                        nowSaved
+                                            ? 'community.savedToBookmarks'.tr
+                                            : 'community.removedFromBookmarks'.tr,
                                       );
                                     },
                                   ),
                                 );
                               })
                             else
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundColor: Colors.black.withValues(alpha: 0.55),
-                                child: IconButton(
-                                  icon: Icon(
-                                    _isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                                    color: _isBookmarked ? AppColors.communityAccent : Colors.white,
-                                    size: 20,
-                                  ),
-                                  onPressed: () {
+                              AnimatedScale(
+                                scale: _bookmarkScale,
+                                duration: const Duration(milliseconds: 140),
+                                child: _buildFrostedButton(
+                                  icon: _isBookmarked
+                                      ? Icons.bookmark_rounded
+                                      : Icons.bookmark_border_rounded,
+                                  iconColor: _isBookmarked ? Colors.white : Colors.white,
+                                  onTap: () {
+                                    _triggerBookmarkAnimation();
                                     setState(() => _isBookmarked = !_isBookmarked);
-                                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          _isBookmarked ? 'community.savedToBookmarks'.tr : 'community.removedFromBookmarks'.tr,
-                                          style: TextStyle(color: textPrimary),
-                                        ),
-                                        duration: const Duration(seconds: 2),
-                                        backgroundColor: isDark ? const Color(0xFF222222) : Colors.white,
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      ),
+                                    _showSnackBar(
+                                      context,
+                                      isDark,
+                                      _isBookmarked
+                                          ? 'community.savedToBookmarks'.tr
+                                          : 'community.removedFromBookmarks'.tr,
                                     );
                                   },
                                 ),
                               ),
                             const SizedBox(width: 8),
 
-                            // Share button
-                            CircleAvatar(
-                              radius: 20,
-                              backgroundColor: Colors.black.withValues(alpha: 0.55),
-                              child: IconButton(
-                                icon: const Icon(Icons.share_outlined, color: Colors.white, size: 20),
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'community.share'.tr,
-                                        style: TextStyle(color: textPrimary),
-                                      ),
-                                      duration: const Duration(seconds: 2),
-                                      backgroundColor: isDark ? const Color(0xFF222222) : Colors.white,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    ),
-                                  );
-                                },
-                              ),
+                            // Share Button
+                            _buildFrostedButton(
+                              icon: Icons.share_outlined,
+                              onTap: () {
+                                _showSnackBar(context, isDark, 'community.share'.tr);
+                              },
                             ),
                           ],
                         ),
                       ),
                     ),
 
-                    // Badges (Category & Format)
+                    // Event Badges (Category & Format Mode)
                     Positioned(
                       bottom: 12,
                       left: 16,
+                      right: 16,
                       child: Row(
                         children: [
                           if (event.category.isNotEmpty) ...[
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                               decoration: BoxDecoration(
-                                color: AppColors.communityAccent,
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.16)
+                                    : Colors.black.withValues(alpha: 0.75),
                                 borderRadius: BorderRadius.circular(AppRadius.sm),
+                                border: Border.all(
+                                  color: isDark ? Colors.white24 : Colors.transparent,
+                                  width: 0.8,
+                                ),
                               ),
                               child: Text(
-                                ('community.${event.category.toLowerCase()}'.tr.isNotEmpty &&
-                                        'community.${event.category.toLowerCase()}'.tr != 'community.${event.category.toLowerCase()}'
-                                    ? 'community.${event.category.toLowerCase()}'.tr
-                                    : event.category).toUpperCase(),
+                                _localizedCategory(event.category).toUpperCase(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 11,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w700,
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -235,13 +245,20 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              color: isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black87,
+                              color: event.isOnline
+                                  ? (isDark ? Colors.white.withValues(alpha: 0.22) : Colors.black)
+                                  : (isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFF1E1E24)),
                               borderRadius: BorderRadius.circular(AppRadius.sm),
+                              border: Border.all(
+                                color: isDark ? Colors.white24 : Colors.white12,
+                                width: 0.8,
+                              ),
                             ),
                             child: Text(
-                              (event.eventType.toLowerCase().contains('online')
-                                  ? ('community.onlineEvent'.tr.isNotEmpty && 'community.onlineEvent'.tr != 'community.onlineEvent' ? 'community.onlineEvent'.tr : 'ONLINE')
-                                  : ('community.inPerson'.tr.isNotEmpty && 'community.inPerson'.tr != 'community.inPerson' ? 'community.inPerson'.tr : 'IN PERSON')).toUpperCase(),
+                              (event.isOnline
+                                      ? (isKhmer ? 'community.onlineEvent'.tr : 'ONLINE EVENT')
+                                      : (isKhmer ? 'community.inPerson'.tr : 'IN PERSON'))
+                                  .toUpperCase(),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
@@ -256,18 +273,19 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   ],
                 ),
 
-                // ── Event Title & Subtitle ────────────────────────────────
+                // ── Main Event Content ────────────────────────────────────────
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Event Title
                       Text(
                         event.title,
                         style: TextStyle(
                           color: textPrimary,
                           fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                           height: 1.25,
                         ),
                       ),
@@ -282,14 +300,26 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           ),
                         ),
                       ],
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 18),
 
-                      // ── Quick Info Cards ──────────────────────────────
-                      // Date & Time
-                      _buildInfoRow(
-                        icon: Icons.calendar_today_rounded,
-                        line1: event.dateString.isNotEmpty ? event.dateString : 'Date TBC',
-                        line2: event.timeString.isNotEmpty ? event.timeString : null,
+                      // ── Organizer Row with Owner Controls ─────────────────
+                      _buildOrganizerCard(
+                        context: context,
+                        event: event,
+                        controller: controller,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        tileBg: tileBg,
+                        borderSubtle: borderSubtle,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 12),
+
+                      // ── Compact Event Info Rows ───────────────────────────
+                      // 1. Date and Time
+                      _buildDateInfoCard(
+                        event: event,
+                        isKhmer: isKhmer,
                         textPrimary: textPrimary,
                         textSecondary: textSecondary,
                         tileBg: tileBg,
@@ -297,35 +327,22 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ),
                       const SizedBox(height: 10),
 
-                      // Location OR Online Link
-                      if (event.eventType == 'In person' && event.location.isNotEmpty)
-                        _buildInfoRow(
-                          icon: Icons.location_on_rounded,
-                          line1: event.location,
-                          line2: 'community.physicalVenue'.tr.isNotEmpty && 'community.physicalVenue'.tr != 'community.physicalVenue'
-                              ? 'community.physicalVenue'.tr
-                              : 'Physical Venue',
-                          textPrimary: textPrimary,
-                          textSecondary: textSecondary,
-                          tileBg: tileBg,
-                          borderSubtle: borderSubtle,
-                        )
-                      else if (event.eventType == 'Online' && event.onlineLink.isNotEmpty)
-                        _buildInfoRow(
-                          icon: Icons.videocam_rounded,
-                          line1: 'community.onlineEvent'.tr.isNotEmpty && 'community.onlineEvent'.tr != 'community.onlineEvent'
-                              ? 'community.onlineEvent'.tr
-                              : 'Online Event',
-                          line2: event.onlineLink,
+                      // 2. Location (In-person) OR Online Meeting Link
+                      if (event.isOnline)
+                        _buildOnlineInfoCard(
+                          context: context,
+                          event: event,
+                          isDark: isDark,
                           textPrimary: textPrimary,
                           textSecondary: textSecondary,
                           tileBg: tileBg,
                           borderSubtle: borderSubtle,
                         )
                       else
-                        _buildInfoRow(
-                          icon: Icons.place_rounded,
-                          line1: 'Location TBC',
+                        _buildInPersonInfoCard(
+                          context: context,
+                          event: event,
+                          isDark: isDark,
                           textPrimary: textPrimary,
                           textSecondary: textSecondary,
                           tileBg: tileBg,
@@ -333,13 +350,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         ),
                       const SizedBox(height: 10),
 
-                      // Organizer
-                      _buildInfoRow(
-                        icon: Icons.hub_rounded,
-                        line1: event.organizerName.isNotEmpty ? event.organizerName : 'GenLink Community',
-                        line2: 'community.organizer'.tr.isNotEmpty && 'community.organizer'.tr != 'community.organizer'
-                            ? 'community.organizer'.tr
-                            : 'Event Organizer',
+                      // 3. Ticket / Price Info
+                      _buildPriceInfoCard(
+                        event: event,
+                        isKhmer: isKhmer,
                         textPrimary: textPrimary,
                         textSecondary: textSecondary,
                         tileBg: tileBg,
@@ -347,85 +361,33 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       ),
                       const SizedBox(height: 10),
 
-                      // Ticket / Price Info
-                      _buildInfoRow(
-                        icon: Icons.confirmation_number_outlined,
-                        line1: event.isPaid
-                            ? '${event.priceKhr.toInt()} KHR'
-                            : ('community.freeEntry'.tr.isNotEmpty && 'community.freeEntry'.tr != 'community.freeEntry'
-                                ? 'community.freeEntry'.tr
-                                : ('community.free'.tr.isNotEmpty && 'community.free'.tr != 'community.free' ? 'community.free'.tr : 'Free Entry')),
-                        line2: event.isPaid
-                            ? ('community.standardTicket'.tr.isNotEmpty && 'community.standardTicket'.tr != 'community.standardTicket'
-                                ? 'community.standardTicket'.tr
-                                : 'Standard Ticket')
-                            : ('community.noRegistrationFee'.tr.isNotEmpty && 'community.noRegistrationFee'.tr != 'community.noRegistrationFee'
-                                ? 'community.noRegistrationFee'.tr
-                                : 'No Registration Fee'),
+                      // 4. Attendees / Capacity
+                      _buildAttendeesInfoCard(
+                        context: context,
+                        event: event,
+                        controller: controller,
                         textPrimary: textPrimary,
                         textSecondary: textSecondary,
                         tileBg: tileBg,
                         borderSubtle: borderSubtle,
                       ),
-                      const SizedBox(height: 10),
-
-                      // Attendees (reactive)
-                      controller != null
-                          ? Obx(() {
-                              final ev = controller.events.firstWhereOrNull(
-                                (e) => e.id == event.id,
-                              );
-                              final count = ev?.attendeesCount ?? event.attendeesCount;
-                              final goingLabel = 'community.going'.tr.isNotEmpty && 'community.going'.tr != 'community.going'
-                                  ? 'community.going'.tr
-                                  : 'Going';
-                              final attendeesLabel = 'community.registeredAttendees'.tr.isNotEmpty && 'community.registeredAttendees'.tr != 'community.registeredAttendees'
-                                  ? 'community.registeredAttendees'.tr
-                                  : 'Registered Attendees';
-                              return _buildInfoRow(
-                                icon: Icons.people_alt_rounded,
-                                line1: '$count $goingLabel',
-                                line2: attendeesLabel,
-                                textPrimary: textPrimary,
-                                textSecondary: textSecondary,
-                                tileBg: tileBg,
-                                borderSubtle: borderSubtle,
-                              );
-                            })
-                          : _buildInfoRow(
-                              icon: Icons.people_alt_rounded,
-                              line1: '${event.attendeesCount} ${'community.going'.tr}',
-                              line2: 'community.registeredAttendees'.tr,
-                              textPrimary: textPrimary,
-                              textSecondary: textSecondary,
-                              tileBg: tileBg,
-                              borderSubtle: borderSubtle,
-                            ),
-
                       const SizedBox(height: 24),
 
-                      // ── About This Event ──────────────────────────────
+                      // ── About This Event (Expandable Description) ─────────
                       Text(
-                        'community.aboutThisEvent'.tr.isNotEmpty &&
-                                'community.aboutThisEvent'.tr != 'community.aboutThisEvent'
-                            ? 'community.aboutThisEvent'.tr
-                            : 'About This Event',
+                        'community.aboutThisEvent'.tr,
                         style: TextStyle(
                           color: textPrimary,
                           fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Text(
-                        event.description.isNotEmpty
-                            ? event.description
-                            : 'Discover opportunities, meet peers, and grow your skills with this student community event.',
-                        style: TextStyle(
-                          color: textSecondary,
-                          fontSize: 14,
-                          height: 1.6,
-                        ),
+                      _buildExpandableDescription(
+                        description: event.description,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        isDark: isDark,
                       ),
 
                       const SizedBox(height: 130),
@@ -436,7 +398,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
           ),
 
-          // ── Fixed Bottom RSVP Bar ─────────────────────────────────────
+          // ── Fixed Bottom RSVP Action Bar ─────────────────────────────────
           Positioned(
             bottom: 0,
             left: 0,
@@ -448,14 +410,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 16,
                 MediaQuery.of(context).padding.bottom > 0
                     ? MediaQuery.of(context).padding.bottom + 8
-                    : 20,
+                    : 18,
               ),
               decoration: BoxDecoration(
                 color: surfacePrimary,
                 border: Border(top: BorderSide(color: borderSubtle, width: 0.8)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.06),
+                    color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.06),
                     blurRadius: 16,
                     offset: const Offset(0, -4),
                   ),
@@ -466,40 +428,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       final ev = controller.events.firstWhereOrNull(
                         (e) => e.id == event.id,
                       );
-                      final isRsvped = ev?.isRsvped ?? event.isRsvped;
-                      final isOrganizer =
-                          (ev?.organizerName ?? event.organizerName).toLowerCase() == 'me';
-                      return _buildRsvpButton(
+                      return _buildBottomRsvpButton(
                         context: context,
-                        isRsvped: isRsvped,
-                        isOrganizer: isOrganizer,
+                        event: ev ?? event,
                         isDark: isDark,
-                        onTap: () {
-                          if (isOrganizer || isRsvped) return;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  EventRegisterScreen(event: ev ?? event),
-                            ),
-                          );
-                        },
                       );
                     })
-                  : _buildRsvpButton(
+                  : _buildBottomRsvpButton(
                       context: context,
-                      isRsvped: event.isRsvped,
-                      isOrganizer: event.organizerName.toLowerCase() == 'me',
+                      event: event,
                       isDark: isDark,
-                      onTap: () {
-                        if (event.organizerName.toLowerCase() == 'me' || event.isRsvped) return;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => EventRegisterScreen(event: event),
-                          ),
-                        );
-                      },
                     ),
             ),
           ),
@@ -508,113 +446,52 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  Widget _buildRsvpButton({
-    required BuildContext context,
-    required bool isRsvped,
-    required bool isOrganizer,
-    required bool isDark,
+  // ── Sub-Widgets ────────────────────────────────────────────────────────────
+
+  Widget _buildFrostedButton({
+    required IconData icon,
     required VoidCallback onTap,
+    Color iconColor = Colors.white,
   }) {
-    final String label;
-    final IconData? icon;
-    final Color? iconColor;
-
-    if (isOrganizer) {
-      label = 'community.youAreOrganizer'.tr.isNotEmpty &&
-              'community.youAreOrganizer'.tr != 'community.youAreOrganizer'
-          ? 'community.youAreOrganizer'.tr
-          : "You're the Organizer";
-      icon = Icons.stars_rounded;
-      iconColor = AppColors.communityAccent;
-    } else if (isRsvped) {
-      label = 'community.youAreRegistered'.tr.isNotEmpty &&
-              'community.youAreRegistered'.tr != 'community.youAreRegistered'
-          ? 'community.youAreRegistered'.tr
-          : "✓ You're Registered";
-      icon = Icons.check_circle_rounded;
-      iconColor = AppColors.success;
-    } else {
-      label = 'community.registerNow'.tr.isNotEmpty &&
-              'community.registerNow'.tr != 'community.registerNow'
-          ? 'community.registerNow'.tr
-          : 'Register Now';
-      icon = null;
-      iconColor = null;
-    }
-
-    final bool isInactive = isOrganizer || isRsvped;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOutCubic,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: isInactive ? null : onTap,
-        style: ElevatedButton.styleFrom(
-          disabledBackgroundColor: isDark
-              ? AppColors.darkSurfaceSecondary
-              : AppColors.lightSurfaceSecondary,
-          disabledForegroundColor: isDark
-              ? AppColors.darkTextPrimary
-              : AppColors.lightTextPrimary,
-          backgroundColor: isDark ? Colors.white : Colors.black,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            side: isInactive
-                ? BorderSide(
-                    color: isDark
-                        ? AppColors.darkBorderSubtle
-                        : AppColors.lightBorderSubtle,
-                    width: 1.0,
-                  )
-                : BorderSide.none,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.5),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.2),
+            width: 0.8,
           ),
-          elevation: 0,
         ),
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          transitionBuilder: (child, anim) => FadeTransition(
-            opacity: anim,
-            child: ScaleTransition(scale: anim, child: child),
-          ),
-          child: Row(
-            key: ValueKey<String>('$isOrganizer-$isRsvped'),
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (icon != null) ...[
-                Icon(
-                  icon,
-                  color: iconColor,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-              ],
-              Text(
-                label,
-                style: TextStyle(
-                  color: isInactive
-                      ? (isDark ? Colors.white : Colors.black87)
-                      : (isDark ? Colors.black : Colors.white),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15.5,
-                ),
-              ),
-            ],
-          ),
+        child: Center(
+          child: Icon(icon, color: iconColor, size: 19),
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow({
-    required IconData icon,
-    required String line1,
-    String? line2,
+  Widget _buildOrganizerCard({
+    required BuildContext context,
+    required EventModel event,
+    required CommunityController? controller,
     required Color textPrimary,
     required Color textSecondary,
     required Color tileBg,
     required Color borderSubtle,
+    required bool isDark,
   }) {
+    final currentUserId = CurrentUser.id;
+    final isOrganizer = event.organizerName.trim().toLowerCase() == 'me' ||
+        (currentUserId.isNotEmpty && event.organizerId == currentUserId);
+
+    final orgName = event.organizerName.isNotEmpty
+        ? event.organizerName
+        : 'GenLink Community';
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -624,13 +501,19 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: textSecondary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA),
+            backgroundImage: const AssetImage('assets/images/user_profile.png'),
+            onBackgroundImageError: (exception, stackTrace) {},
+            child: Text(
+              orgName.isNotEmpty ? orgName[0].toUpperCase() : 'G',
+              style: TextStyle(
+                color: textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
-            child: Icon(icon, color: textPrimary, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -638,7 +521,122 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  line1,
+                  orgName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  isOrganizer
+                      ? "You're the Organizer"
+                      : 'community.organizer'.tr,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isOrganizer
+                        ? (isDark ? Colors.white70 : Colors.black87)
+                        : textSecondary,
+                    fontSize: 12,
+                    fontWeight: isOrganizer ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isOrganizer)
+            PopupMenuButton<String>(
+              icon: Icon(
+                Icons.more_vert_rounded,
+                color: textPrimary,
+                size: 20,
+              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              color: isDark ? const Color(0xFF1E1E20) : Colors.white,
+              onSelected: (val) {
+                if (val == 'edit') {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('community.editEvent'.tr),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                } else if (val == 'delete') {
+                  if (controller != null) {
+                    controller.events.removeWhere((e) => e.id == event.id);
+                  }
+                  Navigator.pop(context);
+                }
+              },
+              itemBuilder: (ctx) => [
+                PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.edit_outlined, size: 18, color: textPrimary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'community.editEvent'.tr,
+                        style: TextStyle(color: textPrimary, fontSize: 13.5),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.danger),
+                      const SizedBox(width: 8),
+                      Text(
+                        'community.deleteEvent'.tr,
+                        style: const TextStyle(color: AppColors.danger, fontSize: 13.5),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateInfoCard({
+    required EventModel event,
+    required bool isKhmer,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color tileBg,
+    required Color borderSubtle,
+  }) {
+    final dateDisplay = event.formatLocalizedDateRange(isKhmer);
+    final timeDisplay = event.formatLocalizedTimeRange(isKhmer);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: tileBg,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: borderSubtle, width: 0.8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildIconBadge(Icons.calendar_today_rounded, textPrimary, textSecondary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  dateDisplay.isNotEmpty ? dateDisplay : 'community.dateTbc'.tr,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -647,13 +645,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                     fontSize: 14,
                   ),
                 ),
-                if (line2 != null) ...[
-                  const SizedBox(height: 2),
+                if (timeDisplay.isNotEmpty) ...[
+                  const SizedBox(height: 3),
                   Text(
-                    line2,
+                    timeDisplay,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: textSecondary, fontSize: 12),
+                    style: TextStyle(color: textSecondary, fontSize: 12.5),
                   ),
                 ],
               ],
@@ -662,6 +660,649 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildOnlineInfoCard({
+    required BuildContext context,
+    required EventModel event,
+    required bool isDark,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color tileBg,
+    required Color borderSubtle,
+  }) {
+    final hasMeetingUrl = event.effectiveMeetingUrl.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: tileBg,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: borderSubtle, width: 0.8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _buildIconBadge(Icons.language_rounded, textPrimary, textSecondary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'community.onlineEvent'.tr,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                if (hasMeetingUrl) ...[
+                  const SizedBox(height: 6),
+                  InkWell(
+                    onTap: () {
+                      _showSnackBar(
+                        context,
+                        isDark,
+                        'Joining ${event.title}...',
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: isDark ? Colors.white24 : Colors.black12,
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'community.joinOnlineEvent'.tr,
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.arrow_forward_rounded, size: 13, color: textPrimary),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInPersonInfoCard({
+    required BuildContext context,
+    required EventModel event,
+    required bool isDark,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color tileBg,
+    required Color borderSubtle,
+  }) {
+    final locationName = event.effectiveLocationName.isNotEmpty
+        ? event.effectiveLocationName
+        : 'community.locationTbc'.tr;
+
+    final hasCoordinates = event.latitude != null && event.longitude != null;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: tileBg,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: borderSubtle, width: 0.8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildIconBadge(Icons.location_on_rounded, textPrimary, textSecondary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  locationName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'community.physicalVenue'.tr,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: textSecondary, fontSize: 12),
+                ),
+                if (hasCoordinates) ...[
+                  const SizedBox(height: 6),
+                  InkWell(
+                    onTap: () => _showMapModal(context, event, isDark),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: isDark ? Colors.white24 : Colors.black12,
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'community.viewOnMap'.tr,
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.arrow_forward_rounded, size: 13, color: textPrimary),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriceInfoCard({
+    required EventModel event,
+    required bool isKhmer,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color tileBg,
+    required Color borderSubtle,
+  }) {
+    final String line1;
+    final String line2;
+
+    if (!event.isPaid) {
+      line1 = 'community.freeEntry'.tr;
+      line2 = 'community.noRegistrationFee'.tr;
+    } else {
+      line1 = event.displayPriceString;
+      line2 = 'community.standardTicket'.tr;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: tileBg,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: borderSubtle, width: 0.8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildIconBadge(Icons.confirmation_number_outlined, textPrimary, textSecondary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  line1,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  line2,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: textSecondary, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAttendeesInfoCard({
+    required BuildContext context,
+    required EventModel event,
+    required CommunityController? controller,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color tileBg,
+    required Color borderSubtle,
+  }) {
+    Widget content(int count, int? limit, bool isFull) {
+      final String line1;
+      final String line2;
+
+      if (limit != null && limit > 0) {
+        line1 = '$count / $limit ${'community.joined'.tr}';
+      } else {
+        line1 = '$count ${'community.joined'.tr}';
+      }
+
+      if (isFull || (limit != null && count >= limit)) {
+        line2 = 'community.eventFull'.tr;
+      } else {
+        line2 = 'community.registeredAttendees'.tr;
+      }
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: tileBg,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: borderSubtle, width: 0.8),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildIconBadge(Icons.people_alt_rounded, textPrimary, textSecondary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    line1,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    line2,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: (isFull || (limit != null && count >= limit))
+                          ? AppColors.danger
+                          : textSecondary,
+                      fontSize: 12,
+                      fontWeight: (isFull || (limit != null && count >= limit))
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (controller != null) {
+      return Obx(() {
+        final ev = controller.events.firstWhereOrNull((e) => e.id == event.id);
+        final count = ev?.attendeesCount ?? event.attendeesCount;
+        final limit = ev?.attendeeLimit ?? event.attendeeLimit;
+        final full = ev?.isFull ?? event.isFull;
+        return content(count, limit, full);
+      });
+    }
+
+    return content(event.attendeesCount, event.attendeeLimit, event.isFull);
+  }
+
+  Widget _buildExpandableDescription({
+    required String description,
+    required Color textPrimary,
+    required Color textSecondary,
+    required bool isDark,
+  }) {
+    final text = description.isNotEmpty
+        ? description
+        : 'Discover opportunities, meet peers, and grow your skills with this student community event.';
+
+    final bool isLong = text.length > 170 || text.split('\n').length > 3;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AnimatedCrossFade(
+          duration: const Duration(milliseconds: 200),
+          crossFadeState: (_isDescriptionExpanded || !isLong)
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          firstChild: Text(
+            text,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: textSecondary,
+              fontSize: 14,
+              height: 1.6,
+            ),
+          ),
+          secondChild: Text(
+            text,
+            style: TextStyle(
+              color: textSecondary,
+              fontSize: 14,
+              height: 1.6,
+            ),
+          ),
+        ),
+        if (isLong) ...[
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: () {
+              setState(() => _isDescriptionExpanded = !_isDescriptionExpanded);
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                _isDescriptionExpanded ? 'community.readLess'.tr : 'community.readMore'.tr,
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13.5,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBottomRsvpButton({
+    required BuildContext context,
+    required EventModel event,
+    required bool isDark,
+  }) {
+    final currentUserId = CurrentUser.id;
+    final isOrganizer = event.organizerName.trim().toLowerCase() == 'me' ||
+        (currentUserId.isNotEmpty && event.organizerId == currentUserId);
+
+    final isFull = event.isFull ||
+        (event.attendeeLimit != null && event.attendeesCount >= event.attendeeLimit!);
+
+    final isEnded = event.status.toUpperCase() == 'ENDED' ||
+        (event.endDateTime != null && event.endDateTime!.isBefore(DateTime.now()));
+
+    final String label;
+    final IconData? icon;
+    final Color? iconColor;
+
+    if (isOrganizer) {
+      label = "You're the Organizer";
+      icon = Icons.stars_rounded;
+      iconColor = isDark ? Colors.white : Colors.black87;
+    } else if (event.isRsvped) {
+      label = 'community.youAreRegistered'.tr;
+      icon = Icons.check_circle_rounded;
+      iconColor = AppColors.success;
+    } else if (isEnded) {
+      label = 'community.eventEnded'.tr;
+      icon = Icons.schedule_rounded;
+      iconColor = textDisabled(isDark);
+    } else if (isFull) {
+      label = 'community.eventFull'.tr;
+      icon = Icons.block_rounded;
+      iconColor = AppColors.danger;
+    } else {
+      label = 'community.registerNow'.tr;
+      icon = null;
+      iconColor = null;
+    }
+
+    final bool isInactive = isOrganizer || event.isRsvped || isFull || isEnded;
+
+    return GestureDetector(
+      onTapDown: isInactive ? null : (_) => setState(() => _isButtonPressed = true),
+      onTapUp: isInactive ? null : (_) => setState(() => _isButtonPressed = false),
+      onTapCancel: isInactive ? null : () => setState(() => _isButtonPressed = false),
+      child: AnimatedScale(
+        scale: _isButtonPressed ? 0.98 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: SizedBox(
+          height: 52,
+          child: ElevatedButton(
+            onPressed: isInactive
+                ? null
+                : () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EventRegisterScreen(event: event),
+                      ),
+                    ).then((_) {
+                      if (mounted) {
+                        setState(() {});
+                      }
+                    });
+                  },
+            style: ElevatedButton.styleFrom(
+              disabledBackgroundColor: isDark
+                  ? const Color(0xFF222224)
+                  : const Color(0xFFEEEEF0),
+              disabledForegroundColor: isDark
+                  ? Colors.white70
+                  : Colors.black87,
+              backgroundColor: isDark ? Colors.white : Colors.black,
+              foregroundColor: isDark ? Colors.black : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                side: isInactive
+                    ? BorderSide(
+                        color: isDark ? const Color(0xFF333336) : const Color(0xFFDDDDE0),
+                        width: 0.8,
+                      )
+                    : BorderSide.none,
+              ),
+              elevation: 0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, color: iconColor, size: 18),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isInactive
+                        ? (isDark ? Colors.white70 : Colors.black87)
+                        : (isDark ? Colors.black : Colors.white),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color textDisabled(bool isDark) => isDark ? Colors.white38 : Colors.black38;
+
+  Widget _buildIconBadge(IconData icon, Color textPrimary, Color textSecondary) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: textSecondary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(icon, color: textPrimary, size: 18),
+    );
+  }
+
+  void _showMapModal(BuildContext context, EventModel event, bool isDark) {
+    final lat = event.latitude!;
+    final lng = event.longitude!;
+    final latDirection = lat >= 0 ? 'N' : 'S';
+    final lngDirection = lng >= 0 ? 'E' : 'W';
+    final latFormatted = '${lat.abs().toStringAsFixed(4)}° $latDirection';
+    final lngFormatted = '${lng.abs().toStringAsFixed(4)}° $lngDirection';
+    final coordsText = '$latFormatted, $lngFormatted';
+    final locName = event.effectiveLocationName.isNotEmpty
+        ? event.effectiveLocationName
+        : 'Physical Venue';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.black12,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.map_rounded,
+                        color: isDark ? Colors.white : Colors.black87,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            locName,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            coordsText,
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: '$locName ($coordsText)'));
+                      Navigator.pop(ctx);
+                      _showSnackBar(context, isDark, 'community.copyLocation'.tr);
+                    },
+                    icon: const Icon(Icons.copy_rounded, size: 18),
+                    label: Text(
+                      'community.copyLocation'.tr,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark ? Colors.white : Colors.black,
+                      foregroundColor: isDark ? Colors.black : Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSnackBar(BuildContext context, bool isDark, String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+        ),
+        duration: const Duration(seconds: 2),
+        backgroundColor: isDark ? const Color(0xFF222222) : Colors.white,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  String _localizedCategory(String cat) {
+    final key = 'community.${cat.toLowerCase()}';
+    final tr = key.tr;
+    if (tr.isNotEmpty && tr != key) return tr;
+    return cat;
   }
 
   Widget _placeholderCover(bool isDark) {
@@ -673,6 +1314,192 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           size: 64,
           color: isDark ? Colors.white24 : Colors.black12,
         ),
+      ),
+    );
+  }
+
+  // ── Error State Widget ─────────────────────────────────────────────────────
+  Widget _buildErrorState(BuildContext context, bool isDark) {
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_rounded, color: textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.05),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.error_outline_rounded,
+                  size: 48,
+                  color: textPrimary,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'community.unableToLoadEvent'.tr,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (widget.errorMessage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  widget.errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+              if (widget.onRetry != null)
+                SizedBox(
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: widget.onRetry,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark ? Colors.white : Colors.black,
+                      foregroundColor: isDark ? Colors.black : Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'community.tryAgain'.tr,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Skeleton Shimmer Loading State ─────────────────────────────────────────
+  Widget _buildLoadingSkeleton(BuildContext context, bool isDark) {
+    final shimmerBase = isDark ? const Color(0xFF222224) : const Color(0xFFE8E8EC);
+
+    Widget box({required double width, required double height, double radius = 6}) {
+      return Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: shimmerBase,
+          borderRadius: BorderRadius.circular(radius),
+        ),
+      );
+    }
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Cover placeholder
+                Container(
+                  height: 290,
+                  width: double.infinity,
+                  color: isDark ? const Color(0xFF1A1A1C) : const Color(0xFFDFDFE3),
+                  child: SafeArea(
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: CircleAvatar(
+                          radius: 19,
+                          backgroundColor: Colors.black.withValues(alpha: 0.3),
+                          child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 19),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Badges placeholder
+                      Row(
+                        children: [
+                          box(width: 80, height: 24, radius: 4),
+                          const SizedBox(width: 8),
+                          box(width: 90, height: 24, radius: 4),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Title placeholder
+                      box(width: double.infinity, height: 26, radius: 6),
+                      const SizedBox(height: 8),
+                      box(width: 220, height: 20, radius: 6),
+                      const SizedBox(height: 20),
+
+                      // Organizer placeholder
+                      box(width: double.infinity, height: 60, radius: 12),
+                      const SizedBox(height: 12),
+
+                      // Info rows placeholders
+                      box(width: double.infinity, height: 56, radius: 12),
+                      const SizedBox(height: 10),
+                      box(width: double.infinity, height: 56, radius: 12),
+                      const SizedBox(height: 10),
+                      box(width: double.infinity, height: 56, radius: 12),
+                      const SizedBox(height: 24),
+
+                      // Description placeholders
+                      box(width: 120, height: 20, radius: 4),
+                      const SizedBox(height: 10),
+                      box(width: double.infinity, height: 14, radius: 4),
+                      const SizedBox(height: 6),
+                      box(width: double.infinity, height: 14, radius: 4),
+                      const SizedBox(height: 6),
+                      box(width: 260, height: 14, radius: 4),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Bottom bar placeholder
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              color: isDark ? const Color(0xFF141414) : Colors.white,
+              child: box(width: double.infinity, height: 52, radius: 12),
+            ),
+          ),
+        ],
       ),
     );
   }

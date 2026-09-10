@@ -6,6 +6,11 @@ import 'package:genlink_frontend/features/community/domain/models/community_post
 import 'package:genlink_frontend/features/community/domain/repositories/community_repository.dart';
 import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/create_post_screen.dart';
+import 'package:genlink_frontend/features/community/presentation/screens/create_event_screen.dart';
+import 'package:genlink_frontend/features/community/presentation/screens/create_discussion_screen.dart';
+import 'package:genlink_frontend/features/productivity/presentation/screens/create_task_screen.dart';
+import 'package:genlink_frontend/features/productivity/presentation/screens/create_habit_screen.dart';
+import 'package:genlink_frontend/features/productivity/presentation/goals_plan/goal_plan_create.dart' as productivity_goal;
 import 'package:genlink_frontend/shared/widgets/bottom_nav_bar.dart';
 import 'package:genlink_frontend/shared/widgets/global_create_sheet.dart';
 
@@ -169,18 +174,15 @@ void main() {
         ),
       );
 
-      // Verify "+" button exists on BottomNavBar
-      expect(find.byIcon(Icons.add), findsNothing); // Uses CupertinoIcons.plus
+      expect(find.byIcon(Icons.add), findsNothing);
       expect(find.byType(BottomNavBar), findsOneWidget);
 
-      // Tap center "+" button
       final centerBtnFinder = find.byWidgetPredicate(
-        (widget) => widget is Icon && (widget.icon == Icons.add || widget.icon?.codePoint == 0xf489),
+        (widget) => widget is Icon && (widget.icon == Icons.add || widget.icon == Icons.add_rounded || widget.icon?.codePoint == 0xf489),
       );
       if (centerBtnFinder.evaluate().isNotEmpty) {
         await tester.tap(centerBtnFinder.first);
       } else {
-        // Fallback tap center of BottomNavBar
         await tester.tap(find.byType(BottomNavBar));
       }
 
@@ -202,14 +204,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify hint and close button
       expect(find.text("What's on your mind?"), findsOneWidget);
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
       expect(find.text('Public'), findsOneWidget);
       expect(find.byIcon(Icons.schedule_outlined), findsOneWidget);
       expect(find.text('Post'), findsOneWidget);
 
-      // Verify bottom toolbar icons
       expect(find.byIcon(Icons.image_outlined), findsOneWidget);
       expect(find.byIcon(Icons.gif_box_outlined), findsOneWidget);
       expect(find.byIcon(Icons.sentiment_satisfied_alt_outlined), findsOneWidget);
@@ -232,22 +232,18 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Type some text to test state preservation
       await tester.enterText(
         find.byType(TextField).first,
         'Preserve this draft text during modal open/close',
       );
       await tester.pump();
 
-      // Tap "+" button in composer toolbar
       await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pumpAndSettle();
 
-      // Verify Global Create sheet opens
       expect(find.byType(GlobalCreateSheet), findsOneWidget);
       expect(find.text('What would you like to create?'), findsOneWidget);
 
-      // Verify initial visible categories and features
       expect(find.text('COMMUNITY'), findsOneWidget);
       expect(find.text('PRODUCTIVITY'), findsOneWidget);
       expect(find.text('Post'), findsWidgets);
@@ -258,7 +254,6 @@ void main() {
       expect(find.text('To-Do'), findsOneWidget);
       expect(find.text('Habit'), findsOneWidget);
 
-      // Scroll down to verify Financial and Entertainment categories
       await tester.drag(find.byType(ListView).last, const Offset(0, -350));
       await tester.pumpAndSettle();
 
@@ -271,11 +266,9 @@ void main() {
       expect(find.text('Challenge'), findsOneWidget);
       expect(find.text('Short Content'), findsOneWidget);
 
-      // Close create menu by tapping close button 'X' inside GlobalCreateSheet
       await tester.tap(find.byIcon(Icons.close_rounded).last);
       await tester.pumpAndSettle();
 
-      // Verify sheet is closed and post text is preserved
       expect(find.byType(GlobalCreateSheet), findsNothing);
       expect(find.text('Preserve this draft text during modal open/close'), findsOneWidget);
     });
@@ -294,18 +287,126 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap "+" in composer toolbar
       await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pumpAndSettle();
       expect(find.byType(GlobalCreateSheet), findsOneWidget);
 
-      // Tap "Post" card in the Community grid
       await tester.tap(find.text('Post').last);
       await tester.pumpAndSettle();
 
-      // Verify sheet closed and we are still on the same CreatePostScreen
       expect(find.byType(GlobalCreateSheet), findsNothing);
       expect(find.byType(CreatePostScreen), findsOneWidget);
     });
+
+    testWidgets('Tapping "Event" inside Create menu routes to CreateEventScreen', (tester) async {
+      final repo = MockCommunityRepository();
+      Get.put<CommunityController>(CommunityController(repository: repo));
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CreatePostScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Event').last);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CreateEventScreen), findsOneWidget);
+    });
+
+    testWidgets('Tapping "Discussion" inside Create menu routes to CreateDiscussionScreen', (tester) async {
+      final repo = MockCommunityRepository();
+      Get.put<CommunityController>(CommunityController(repository: repo));
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CreatePostScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Discussion'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CreateDiscussionScreen), findsOneWidget);
+    });
+
+    testWidgets('Tapping "Goal" inside Create menu routes to productivity CreateGoalScreen', (tester) async {
+      final repo = MockCommunityRepository();
+      Get.put<CommunityController>(CommunityController(repository: repo));
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CreatePostScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Goal'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(productivity_goal.CreateGoalScreen), findsOneWidget);
+    });
+
+    testWidgets('Tapping "To-Do" inside Create menu routes to CreateTaskScreen', (tester) async {
+      final repo = MockCommunityRepository();
+      Get.put<CommunityController>(CommunityController(repository: repo));
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CreatePostScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('To-Do'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CreateTaskScreen), findsOneWidget);
+    });
+
+    testWidgets('Tapping "Habit" inside Create menu routes to CreateHabitScreen', (tester) async {
+      final repo = MockCommunityRepository();
+      Get.put<CommunityController>(CommunityController(repository: repo));
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CreatePostScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Habit'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CreateHabitScreen), findsOneWidget);
+    });
   });
 }
+

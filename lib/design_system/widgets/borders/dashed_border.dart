@@ -2,10 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-/// Rounded-rectangle border drawn as a dashed outline.
-///
-/// Flutter has no dashed `BoxDecoration`, so the path is walked with
-/// `PathMetrics` and painted in alternating on/off runs.
 class DashedBorder extends StatelessWidget {
   const DashedBorder({
     super.key,
@@ -61,8 +57,6 @@ class _DashedBorderPainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke;
 
-    // Inset by half the stroke so the dashes sit inside the bounds rather
-    // than being clipped in half at the edges.
     final inset = strokeWidth / 2;
     final path = Path()
       ..addRRect(
@@ -79,8 +73,6 @@ class _DashedBorderPainter extends CustomPainter {
 
     final step = dashLength + gapLength;
     for (final metric in path.computeMetrics()) {
-      // Spread the remainder across the dashes so the loop closes cleanly
-      // instead of leaving a long or stubby final segment.
       final count = math.max(1, (metric.length / step).round());
       final actualStep = metric.length / count;
       final actualDash = dashLength * (actualStep / step);

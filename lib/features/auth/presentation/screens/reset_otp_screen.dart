@@ -11,15 +11,6 @@ import '../controllers/auth_controller.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/otp_keypad.dart';
 
-/// Step 2 of password reset: enter the emailed code.
-///
-/// The backend has no standalone endpoint for verifying a
-/// `FORGOT_PASSWORD` OTP — it is checked inside `POST /auth/reset-password`
-/// alongside the new password. (`/auth/verify-otp` is for `REGISTER` and
-/// returns a session, so it cannot be reused here.)
-///
-/// So this screen collects the code and carries it to the next screen; a
-/// wrong code surfaces there, which sends the user back here.
 class ResetOtpScreen extends StatefulWidget {
   const ResetOtpScreen({super.key});
 
@@ -30,7 +21,6 @@ class ResetOtpScreen extends StatefulWidget {
 class _ResetOtpScreenState extends State<ResetOtpScreen> {
   String _otp = '';
 
-  /// Brief confirmation beat once the code is complete, before moving on.
   bool _verifying = false;
 
   AuthController get _auth => Get.find<AuthController>();
@@ -54,17 +44,11 @@ class _ResetOtpScreenState extends State<ResetOtpScreen> {
   Future<void> _continue() async {
     if (!_isComplete || _verifying) return;
 
-    // A one-second hold so the filled code registers before the screen
-    // changes — the same reassurance a real verification call would give.
-    // The code is only checked on the reset-password screen (the backend has
-    // no standalone verify step for FORGOT_PASSWORD), so this is a UX beat,
-    // not a network wait.
     setState(() => _verifying = true);
     await Future<void>.delayed(const Duration(seconds: 1));
     if (!mounted) return;
 
     await Get.toNamed<void>(AppRoutes.resetPassword, arguments: _otp);
-    // Reachable when the user backs out of reset-password to retry the code.
     if (mounted) setState(() => _verifying = false);
   }
 

@@ -77,7 +77,6 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Tap on the image layer to select it
       final imageFinder = find.byType(ClipRRect);
       expect(imageFinder, findsWidgets);
       await tester.tap(imageFinder.first);
@@ -85,7 +84,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
 
-      // Ensure NO floating toolbar buttons appear ("Edit", "Duplicate", "Delete" tooltip)
       expect(find.byTooltip("Duplicate"), findsNothing);
       expect(find.byTooltip("Delete"), findsNothing);
     });
@@ -116,7 +114,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
 
-      // Ensure NO floating toolbar buttons appear
       expect(find.byTooltip("Duplicate"), findsNothing);
       expect(find.byTooltip("Delete"), findsNothing);
     });
@@ -182,7 +179,6 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Tap on each
       await tester.tap(find.text('🎉'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
@@ -212,13 +208,11 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Tap text to edit
       await tester.tap(find.text('Editable Text'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
-      // TextField should appear for in-place editing
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('Done'), findsOneWidget);
 
@@ -229,7 +223,6 @@ void main() {
     });
 
     testWidgets('Test 6: Responsive check across small and large phones with zero overflow', (tester) async {
-      // Small screen (360x640)
       const smallSize = Size(360, 640);
       tester.view.physicalSize = smallSize;
       tester.view.devicePixelRatio = 1.0;

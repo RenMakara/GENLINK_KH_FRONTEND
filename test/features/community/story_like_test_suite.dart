@@ -123,7 +123,6 @@ void main() {
       expect(story.isLiked, false);
       expect(story.likesCount, 10);
 
-      // Tap Like button
       await tester.tap(find.byType(StoryInteractiveLikeButton));
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
@@ -168,7 +167,6 @@ void main() {
       expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
       expect(story.isLiked, true);
 
-      // Tap to unlike
       await tester.tap(find.byType(StoryInteractiveLikeButton));
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
@@ -210,7 +208,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Double-tap the story canvas
       final centerFinder = find.byType(StoryViewerScreen);
       await tester.tap(centerFinder);
       await tester.pump(const Duration(milliseconds: 50));
@@ -255,7 +252,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Bottom interactive like button must NOT be rendered for own story
       expect(find.byType(StoryInteractiveLikeButton), findsNothing);
       expect(ownStory.isLiked, false);
       expect(ownStory.likesCount, 0);
@@ -348,17 +344,14 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Story A is liked
       expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
       expect(find.byIcon(Icons.favorite_border_rounded), findsNothing);
 
-      // Move to next story
       final nextZone = find.byWidgetPredicate((w) => w is GestureDetector && w.behavior == HitTestBehavior.translucent).last;
       await tester.tap(nextZone);
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Story B is unliked
       expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
       expect(find.byIcon(Icons.favorite_rounded), findsNothing);
     });
@@ -400,12 +393,10 @@ void main() {
       expect(story.isLiked, false);
       expect(story.likesCount, 7);
 
-      // Tap like with simulated failure
       await tester.tap(find.byType(StoryInteractiveLikeButton));
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
 
-      // State remains safely unliked with count 7
       expect(story.isLiked, false);
       expect(story.likesCount, 7);
       expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
@@ -443,7 +434,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap like button and rapid taps
       await tester.tap(find.byType(StoryInteractiveLikeButton));
       await tester.pump(const Duration(milliseconds: 50));
       await tester.tap(find.byType(StoryInteractiveLikeButton));
@@ -451,7 +441,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
 
-      // Exactly 1 state transition occurred safely
       expect(story.isLiked, true);
       expect(story.likesCount, 6);
     });

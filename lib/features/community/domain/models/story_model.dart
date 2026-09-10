@@ -46,7 +46,7 @@ class MovableStoryLayer {
     required this.id,
     required this.type,
     required this.text,
-    this.offset = const Offset(0.5, 0.5), // Center by default (Normalized)
+    this.offset = const Offset(0.5, 0.5),
     this.scale = 1.0,
     this.rotation = 0.0,
     this.color = Colors.white,
@@ -58,14 +58,11 @@ class MovableStoryLayer {
     this.fontSize = 28.0,
   });
 
-  /// Computes the pixel offset relative to a target canvas size.
-  /// offset is always stored as normalized [0.0..1.0]
   Offset getCanvasOffset(Size canvasSize) {
     if (canvasSize.width <= 0 || canvasSize.height <= 0) return offset;
     return Offset(offset.dx * canvasSize.width, offset.dy * canvasSize.height);
   }
 
-  /// Sets position from actual canvas pixels while converting to normalized coordinates.
   void setFromCanvasOffset(Offset screenOffset, Size canvasSize) {
     if (canvasSize.width <= 0 || canvasSize.height <= 0) {
       return;

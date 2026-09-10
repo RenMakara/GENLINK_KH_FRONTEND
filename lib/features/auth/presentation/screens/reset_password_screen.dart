@@ -10,12 +10,6 @@ import '../../../../design_system/widgets/inputs/app_input.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/auth_scaffold.dart';
 
-/// Step 3 of password reset: choose the new password.
-///
-/// The OTP arrives via `Get.arguments` from [ResetOtpScreen]; the backend
-/// validates it here, together with the password. An invalid or expired
-/// code therefore fails at this step, so the user is sent back to re-enter
-/// it rather than being stuck on a screen they cannot complete.
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
 
@@ -33,8 +27,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   late final String _email = _auth.pendingEmail.value;
   late final String _otp = Get.arguments as String? ?? '';
 
-  /// Error codes that mean "the code is wrong", as opposed to "the password
-  /// is not acceptable" — only the former should bounce the user back.
   static const _otpErrorCodes = {
     'OTP_INVALID',
     'OTP_EXPIRED',

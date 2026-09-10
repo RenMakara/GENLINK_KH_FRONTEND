@@ -8,7 +8,6 @@ import '../../data/repositories/settings_repository_impl.dart';
 import '../../domain/repositories/settings_repository.dart';
 import '../controllers/settings_controller.dart';
 
-/// Feature-level dependency registration for Settings routes.
 class SettingsBinding extends Bindings {
   @override
   void dependencies() {
@@ -19,8 +18,6 @@ class SettingsBinding extends Bindings {
       );
     }
 
-    // The hub and its four sub-pages share one controller. Fenix revives it
-    // after route disposal while retaining the lightweight repository.
     Get.lazyPut<SettingsController>(
       () => SettingsController(
         repository: Get.find<SettingsRepository>(),

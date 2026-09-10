@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
-// DATA MODELS
 class ProductivityTaskData {
   final String title;
   final String subtitle;
@@ -52,7 +51,6 @@ class ProductivityActivityData {
   });
 }
 
-// THEME COLORS
 class _ProductivityColors {
   final bool isDark;
 
@@ -79,7 +77,6 @@ class _ProductivityColors {
       isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 }
 
-// HEADER
 class ProductivityHeader extends StatelessWidget {
   final String title;
   final String profileText;
@@ -182,7 +179,6 @@ class _HeaderButton extends StatelessWidget {
   }
 }
 
-// DAILY SUMMARY
 class ProductivitySummary extends StatelessWidget {
   final String date;
   final String greeting;
@@ -319,7 +315,6 @@ class _SummaryStat extends StatelessWidget {
   }
 }
 
-// CARD
 class ProductivityCard extends StatefulWidget {
   final String title;
   final String? actionText;
@@ -447,7 +442,6 @@ class _ProductivityCardState extends State<ProductivityCard> {
   }
 }
 
-// SECTION TITLE
 class ProductivitySectionTitle extends StatelessWidget {
   final String title;
 
@@ -470,7 +464,6 @@ class ProductivitySectionTitle extends StatelessWidget {
   }
 }
 
-// TASK LIST
 class ProductivityTaskList extends StatelessWidget {
   final List<ProductivityTaskData> tasks;
   final double progress;
@@ -610,7 +603,6 @@ class _TaskItem extends StatelessWidget {
   }
 }
 
-// QUICK ACTIONS
 class ProductivityQuickActions extends StatelessWidget {
   final List<ProductivityActionData> actions;
 
@@ -791,7 +783,6 @@ class _QuickActionState extends State<_QuickAction> {
   }
 }
 
-// WEEKLY PROGRESS
 class ProductivityProgress extends StatelessWidget {
   final String valueText;
   final String goalText;
@@ -873,7 +864,6 @@ class ProductivityProgress extends StatelessWidget {
   }
 }
 
-// GOALS
 class ProductivityGoals extends StatelessWidget {
   final List<ProductivityGoalData> goals;
 
@@ -971,7 +961,6 @@ class _GoalItem extends StatelessWidget {
   }
 }
 
-// SMART INSIGHT
 class ProductivityInsight extends StatelessWidget {
   final String title;
   final String message;
@@ -1051,7 +1040,6 @@ class ProductivityInsight extends StatelessWidget {
   }
 }
 
-// RECENT ACTIVITIES
 class ProductivityActivities extends StatelessWidget {
   final List<ProductivityActivityData> activities;
 

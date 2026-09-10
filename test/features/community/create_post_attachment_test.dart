@@ -158,16 +158,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify composer hint
       expect(find.text("What's on your mind?"), findsOneWidget);
 
-      // Verify audience selector exists
       expect(find.text('Public'), findsOneWidget);
 
-      // Verify "+" button is present in the toolbar
       expect(find.byTooltip('Create'), findsOneWidget);
 
-      // Verify toolbar buttons
       expect(find.byTooltip('Media / Image'), findsOneWidget);
       expect(find.byTooltip('GIF'), findsOneWidget);
       expect(find.byTooltip('Feeling / Activity'), findsOneWidget);
@@ -196,21 +192,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap "+" button in composer toolbar
       await tester.tap(find.byTooltip('Create'));
       await tester.pumpAndSettle();
 
-      // Verify Global Create sheet opens
       expect(find.byType(GlobalCreateSheet), findsOneWidget);
       expect(find.text('What would you like to create?'), findsOneWidget);
 
-      // Verify all 4 categories exist
       expect(find.text('COMMUNITY'), findsOneWidget);
       expect(find.text('PRODUCTIVITY'), findsOneWidget);
       expect(find.text('FINANCIAL'), findsOneWidget);
       expect(find.text('ENTERTAINMENT'), findsOneWidget);
 
-      // Verify key creation features exist
       expect(find.text('Post'), findsWidgets);
       expect(find.text('Story'), findsOneWidget);
       expect(find.text('Event'), findsWidgets);
@@ -240,7 +232,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Type draft text
       await tester.enterText(
         find.byType(TextField).first,
         'Had a great day at university!',
@@ -248,19 +239,15 @@ void main() {
       await tester.pump();
       expect(find.text('Had a great day at university!'), findsOneWidget);
 
-      // Tap Location toolbar button
       await tester.tap(find.byTooltip('Location'));
       await tester.pumpAndSettle();
 
-      // Pick a location
       expect(find.text('CADT Innovation Center, Phnom Penh'), findsOneWidget);
       await tester.tap(find.text('CADT Innovation Center, Phnom Penh'));
       await tester.pumpAndSettle();
 
-      // Verify text is still intact
       expect(find.text('Had a great day at university!'), findsOneWidget);
 
-      // Verify location preview badge is attached
       expect(find.text('CADT Innovation Center, Phnom Penh'), findsWidgets);
     });
 
@@ -278,26 +265,21 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Type draft text
       await tester.enterText(
         find.byType(TextField).first,
         'Coding my Flutter project!',
       );
       await tester.pump();
 
-      // Tap Feeling / Activity toolbar button
       await tester.tap(find.byTooltip('Feeling / Activity'));
       await tester.pumpAndSettle();
 
-      // Select feeling "😊 Happy"
       expect(find.text('😊 Happy'), findsOneWidget);
       await tester.tap(find.text('😊 Happy'));
       await tester.pumpAndSettle();
 
-      // Verify text is preserved
       expect(find.text('Coding my Flutter project!'), findsOneWidget);
 
-      // Verify feeling preview badge is attached
       expect(find.text('😊 Happy'), findsWidgets);
     });
 
@@ -315,26 +297,21 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Type draft text
       await tester.enterText(
         find.byType(TextField).first,
         'Study session with friends',
       );
       await tester.pump();
 
-      // Tap Audience selector capsule
       await tester.tap(find.text('Public'));
       await tester.pumpAndSettle();
 
-      // Select "Friends only"
       expect(find.text('Friends only'), findsOneWidget);
       await tester.tap(find.text('Friends only'));
       await tester.pumpAndSettle();
 
-      // Verify text is preserved
       expect(find.text('Study session with friends'), findsOneWidget);
 
-      // Verify capsule shows Friends only
       expect(find.text('Friends only'), findsOneWidget);
     });
 
@@ -352,35 +329,29 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Enter post text
       await tester.enterText(
         find.byType(TextField).first,
         'Campus hackathon launch day!',
       );
       await tester.pump();
 
-      // 1. Attach Location
       await tester.tap(find.byTooltip('Location'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('RUPP Campus 1, Phnom Penh'));
       await tester.pumpAndSettle();
 
-      // 2. Attach Feeling
       await tester.tap(find.byTooltip('Feeling / Activity'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('🤩 Excited'));
       await tester.pumpAndSettle();
 
-      // Verify all items are simultaneously present in draft
       expect(find.text('Campus hackathon launch day!'), findsOneWidget);
       expect(find.text('RUPP Campus 1, Phnom Penh'), findsWidgets);
       expect(find.text('🤩 Excited'), findsWidgets);
 
-      // 3. Tap Post button to submit
       await tester.tap(find.text('Post'));
       await tester.pumpAndSettle();
 
-      // Verify post was successfully created with text and location
       expect(repo.createdPost, isNotNull);
       expect(repo.createdPost!.content, 'Campus hackathon launch day!');
     });
@@ -390,7 +361,6 @@ void main() {
       final controller = CommunityController(repository: repo);
       Get.put<CommunityController>(controller);
 
-      // Dark Mode
       await tester.pumpWidget(
         GetMaterialApp(
           theme: ThemeData.dark(),
@@ -402,17 +372,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
 
-      // Open "+" in Dark Mode
       await tester.tap(find.byTooltip('Create'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(find.text('What would you like to create?'), findsOneWidget);
 
-      // Dismiss sheet
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
 
-      // Light Mode
       await tester.pumpWidget(
         GetMaterialApp(
           theme: ThemeData.light(),
@@ -424,7 +391,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
 
-      // Open "+" in Light Mode
       await tester.tap(find.byTooltip('Create'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
@@ -454,7 +420,6 @@ void main() {
 
       expect(tester.takeException(), isNull);
 
-      // Tap "+" button on narrow screen
       await tester.tap(find.byTooltip('Create'));
       await tester.pumpAndSettle();
 
@@ -485,10 +450,8 @@ void main() {
 
       expect(tester.takeException(), isNull);
 
-      // Verify Khmer hint text
       expect(find.text('តើអ្នកកំពុងគិតអ្វី?'), findsOneWidget);
 
-      // Open "+" menu
       await tester.tap(find.byTooltip('បង្កើត'));
       await tester.pumpAndSettle();
 

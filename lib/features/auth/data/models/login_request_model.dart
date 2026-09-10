@@ -1,4 +1,3 @@
-/// Login request body matching backend LoginRequest record.
 class LoginRequestModel {
   const LoginRequestModel({required this.email, required this.password});
 

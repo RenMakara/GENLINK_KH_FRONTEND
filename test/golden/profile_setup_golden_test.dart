@@ -13,7 +13,6 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
-/// Mirrors the seeded catalog in 0017-add-interests-and-social-links.sql.
 final _catalog = <InterestEntity>[
   const InterestEntity(
     interestId: '1',

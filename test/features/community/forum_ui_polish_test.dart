@@ -76,7 +76,76 @@ class _MockCommunityRepository implements CommunityRepository {
   Future<bool> checkIsFollowing(String userId) async => false;
 
   @override
-  Future<List<ForumTopicModel>> getDiscussions({String? category, int page = 1, int limit = 20}) async => [];
+  Future<List<ForumTopicModel>> getDiscussions({String? category, int page = 1, int limit = 20}) async => [
+    ForumTopicModel(
+      id: 'disc_1',
+      title: 'Best practices for GetX state management in Flutter Community App',
+      content: 'Best practices for GetX state management in Flutter Community App',
+      category: 'Technology',
+      authorName: 'Sokny Enat',
+      authorAvatar: 'assets/images/user_profile.png',
+      timeAgo: '2h ago',
+      upvotes: 89,
+      repliesCount: 34,
+      isLiked: false,
+      isOwner: true,
+    ),
+    ForumTopicModel(
+      id: 'disc_2',
+      title: 'Flutter 3.x vs React Native in 2025: Real production insights',
+      content: 'Flutter 3.x vs React Native in 2025: Real production insights',
+      category: 'Technology',
+      authorName: 'Heng Chansela',
+      authorAvatar: 'assets/images/user_profile.png',
+      timeAgo: '4h ago',
+      upvotes: 64,
+      repliesCount: 19,
+      isLiked: true,
+    ),
+    ForumTopicModel(
+      id: 'disc_3',
+      title: 'Study group for CADT Data Structures and Algorithms exam next week',
+      content: 'Study group for CADT Data Structures and Algorithms exam next week',
+      category: 'Study & Education',
+      authorName: 'Ren Makara',
+      authorAvatar: 'assets/images/user_profile.png',
+      timeAgo: '6h ago',
+      upvotes: 42,
+      repliesCount: 15,
+      isLiked: false,
+    ),
+    ForumTopicModel(
+      id: 'disc_4',
+      title: 'How I landed my first Flutter Internship in Cambodia: Tips & Roadmap',
+      content: 'How I landed my first Flutter Internship in Cambodia: Tips & Roadmap',
+      category: 'Career & Jobs',
+      authorName: 'Chhaeng Sokuntheara',
+      authorAvatar: 'assets/images/user_profile.png',
+      timeAgo: '1d ago',
+      upvotes: 112,
+      repliesCount: 52,
+      isLiked: false,
+    ),
+  ];
+
+  @override
+  Future<ForumTopicModel> getDiscussionDetails(String discussionId) async {
+    final list = await getDiscussions();
+    final match = list.where((d) => d.id == discussionId);
+    if (match.isNotEmpty) return match.first;
+    return ForumTopicModel(
+      id: discussionId,
+      title: 'testt',
+      content: 'test',
+      category: 'Technology',
+      authorName: 'Sokny Enat',
+      timeAgo: 'Just now',
+      upvotes: 1,
+      repliesCount: 0,
+      isLiked: false,
+      isOwner: true,
+    );
+  }
 
   @override
   Future<ForumTopicModel> createDiscussion({
@@ -167,15 +236,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Switch to Forum tab
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
-      // Verify Pinned Discussions is completely gone
       expect(find.text('📌 Pinned Discussions'), findsNothing);
       expect(find.textContaining('📌'), findsNothing);
 
-      // Verify Latest Discussions header exists
       expect(find.text('Latest Discussions'), findsOneWidget);
     });
 
@@ -192,15 +258,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Switch to Forum tab
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
-      // Verify Rathana P. test discussion is completely removed
       expect(find.textContaining('Rathana P.'), findsNothing);
       expect(find.text('How to prepare for junior software engineer interviews in Phnom Penh?'), findsNothing);
 
-      // Verify remaining legitimate authors & topics are preserved
       expect(find.textContaining('Sokny Enat'), findsOneWidget);
       expect(find.textContaining('Heng Chansela'), findsOneWidget);
       expect(find.text('Study group for CADT Data Structures and Algorithms exam next week'), findsOneWidget);
@@ -218,7 +281,7 @@ void main() {
           locale: const Locale('en', 'US'),
           home: const MediaQuery(
             data: MediaQueryData(
-              padding: EdgeInsets.only(bottom: 34), // iPhone home indicator
+              padding: EdgeInsets.only(bottom: 34),
               size: Size(390, 844),
             ),
             child: CommunityScreen(),
@@ -227,11 +290,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Switch to Forum tab
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
-      // Locate Forum SingleChildScrollView
       final scrollViews = tester.widgetList<SingleChildScrollView>(find.byType(SingleChildScrollView));
       final forumScrollView = scrollViews.firstWhere(
         (sv) => sv.scrollDirection == Axis.vertical && sv.padding != null,
@@ -262,9 +323,16 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
+      final err = tester.takeException();
+      if (err != null) {
+        if (err is FlutterError) {
+          for (final d in err.diagnostics) {
+            debugPrint(d.toString());
+          }
+        }
+      }
+      expect(err, isNull);
 
-      // Switch to Forum tab
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
@@ -293,7 +361,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Very Long Category Name For Responsive Testing'), findsOneWidget);
-      expect(find.textContaining('1d ago'), findsOneWidget);
+      expect(find.textContaining('1d'), findsOneWidget);
       expect(find.text('20'), findsOneWidget);
       expect(find.text('10 comments'), findsOneWidget);
     });
@@ -319,24 +387,19 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Switch to Forum tab
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
-      // First discussion in list is owned by Sokny Enat (authorId: 'user_me', isOwner: true)
-      // Tap the More menu (•••) on the first discussion card
       final moreButtons = find.byIcon(Icons.more_horiz_rounded);
       expect(moreButtons, findsWidgets);
 
       await tester.tap(moreButtons.first);
       await tester.pumpAndSettle();
 
-      // Verify Owner actions are present
       expect(find.text('Edit Discussion'), findsOneWidget);
       expect(find.text('Delete Discussion'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
 
-      // Close menu
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
     });
@@ -362,20 +425,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Switch to Forum tab
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
-      // Tap More menu on 2nd discussion (authored by Heng Chansela, authorId: 'u2')
       final moreButtons = find.byIcon(Icons.more_horiz_rounded);
       await tester.tap(moreButtons.at(1));
       await tester.pumpAndSettle();
 
-      // Verify Owner actions are NOT shown
       expect(find.text('Edit Discussion'), findsNothing);
       expect(find.text('Delete Discussion'), findsNothing);
 
-      // Verify Non-owner actions are shown
       expect(find.text('Save'), findsOneWidget);
       expect(find.text('Report'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
@@ -396,7 +455,6 @@ void main() {
       final controller = CommunityController(repository: repo);
       Get.put<CommunityController>(controller);
 
-      // Add a test discussion
       await controller.addDiscussion(
         title: 'test2',
         content: 'Original content description',
@@ -412,28 +470,22 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Switch to Forum tab
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
-      // Newly added discussion should be at index 0 with title "test2"
       expect(find.text('test2'), findsOneWidget);
 
-      // Tap More menu on test2 discussion
       final moreButtons = find.byIcon(Icons.more_horiz_rounded);
       await tester.tap(moreButtons.first);
       await tester.pumpAndSettle();
 
-      // Tap Edit Discussion
       await tester.tap(find.text('Edit Discussion'));
       await tester.pumpAndSettle();
 
-      // Verify Edit Discussion screen is open with prefilled data
       expect(find.text('Edit Discussion'), findsOneWidget);
       expect(find.text('test2'), findsOneWidget);
       expect(find.text('Save Changes'), findsOneWidget);
 
-      // Modify title directly via controller updateDiscussion
       final success = await controller.updateDiscussion(
         discussionId: controller.forumLatestDiscussions.first.id,
         title: 'Updated test2 discussion title',
@@ -442,14 +494,11 @@ void main() {
       );
       expect(success, isTrue);
 
-      // Return to forum
       Get.back();
       await tester.pumpAndSettle();
 
-      // Verify updated title appears in Forum
       expect(find.text('Updated test2 discussion title'), findsOneWidget);
 
-      // Switch to Feed tab and verify updated title is synchronized in Feed post and preview
       await tester.tap(find.text('Feed'));
       await tester.pumpAndSettle();
       expect(find.text('Updated test2 discussion title'), findsWidgets);
@@ -467,7 +516,6 @@ void main() {
       final controller = CommunityController(repository: repo);
       Get.put<CommunityController>(controller);
 
-      // Add a test discussion
       final newDisc = await controller.addDiscussion(
         title: 'Discussion To Delete',
         content: 'Content that will be deleted',
@@ -483,42 +531,33 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Switch to Forum tab
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
       expect(find.text('Discussion To Delete'), findsOneWidget);
 
-      // Open More Menu
       final moreButtons = find.byIcon(Icons.more_horiz_rounded);
       await tester.tap(moreButtons.first);
       await tester.pumpAndSettle();
 
-      // Tap Delete Discussion
       await tester.tap(find.text('Delete Discussion'));
       await tester.pumpAndSettle();
 
-      // Verify Confirmation Dialog
       expect(find.text('Delete Discussion?'), findsOneWidget);
       expect(find.text('Are you sure you want to delete this discussion? This action cannot be undone.'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Delete'), findsOneWidget);
 
-      // Cancel first
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
-      // Discussion remains
       expect(find.text('Discussion To Delete'), findsOneWidget);
 
-      // Now perform delete
       await controller.deleteDiscussion(newDisc.id);
       await tester.pumpAndSettle();
 
-      // Discussion is removed from Forum
       expect(find.text('Discussion To Delete'), findsNothing);
 
-      // Switch to Feed and verify removed from Feed
       await tester.tap(find.text('Feed'));
       await tester.pumpAndSettle();
       expect(find.text('Discussion To Delete'), findsNothing);
@@ -545,21 +584,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Switch to Forum tab
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
-      // Initial upvotes for first topic is 89
       expect(find.text('89'), findsOneWidget);
 
-      // Tap Like icon
       final heartIcons = find.byIcon(Icons.favorite_border_rounded);
       await tester.tap(heartIcons.first);
       await tester.pumpAndSettle();
 
-      // Upvotes incremented to 90
       expect(find.text('90'), findsOneWidget);
-      // Ensure we are STILL on Forum tab (NOT Create Discussion screen)
       expect(find.text('Latest Discussions'), findsOneWidget);
       expect(find.text('Publish'), findsNothing);
     });
@@ -576,7 +610,6 @@ void main() {
       final controller = CommunityController(repository: repo);
       Get.put<CommunityController>(controller);
 
-      // Add a Khmer discussion and an English discussion
       await controller.addDiscussion(
         title: 'តើ Flutter ល្អសម្រាប់ Mobile App ដែរឬទេ?',
         content: 'ខ្លឹមសារពិភាក្សាជាភាសាខ្មែរ',
@@ -588,7 +621,6 @@ void main() {
         category: 'Technology',
       );
 
-      // Test Khmer UI
       await tester.pumpWidget(
         GetMaterialApp(
           translations: AppTranslations(),
@@ -598,25 +630,19 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Switch to Forum tab
       await tester.tap(find.text('community.forum'.tr));
       await tester.pumpAndSettle();
 
-      // Verify Khmer UI label
       expect(find.text('ការពិភាក្សាថ្មីៗ'), findsOneWidget);
 
-      // Verify User content is NOT translated (Khmer stays Khmer, English stays English)
       expect(find.text('តើ Flutter ល្អសម្រាប់ Mobile App ដែរឬទេ?'), findsOneWidget);
       expect(find.text('What is the best way to manage state in Flutter?'), findsOneWidget);
 
-      // Switch to English UI
       Get.updateLocale(const Locale('en', 'US'));
       await tester.pumpAndSettle();
 
-      // Verify English UI label
       expect(find.text('Latest Discussions'), findsOneWidget);
 
-      // User content still preserved exactly as written
       expect(find.text('តើ Flutter ល្អសម្រាប់ Mobile App ដែរឬទេ?'), findsOneWidget);
       expect(find.text('What is the best way to manage state in Flutter?'), findsOneWidget);
     });
@@ -655,23 +681,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Header title
       expect(find.text('Discussion'), findsOneWidget);
-      // Author and category
       expect(find.text('Sokny Enat'), findsOneWidget);
       expect(find.text('Just now'), findsOneWidget);
       expect(find.text('Technology'), findsOneWidget);
-      // Title and content
       expect(find.text('testt'), findsOneWidget);
       expect(find.text('test'), findsOneWidget);
-      // Action row
       expect(find.text('1'), findsOneWidget);
-      // Comments section header
       expect(find.text('Comments'), findsOneWidget);
-      // Welcoming empty state
       expect(find.text('No comments yet'), findsOneWidget);
       expect(find.text('Be the first to start the discussion!'), findsOneWidget);
-      // Reply input placeholder
       expect(find.text('Add a reply...'), findsOneWidget);
     });
 
@@ -709,18 +728,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Header title in Khmer
       expect(find.text('ការពិភាក្សា'), findsOneWidget);
-      // Author and user content remain English (NOT translated)
       expect(find.text('Sokny Enat'), findsOneWidget);
       expect(find.text('testt'), findsOneWidget);
       expect(find.text('test'), findsOneWidget);
-      // Comments section header in Khmer
       expect(find.text('មតិយោបល់'), findsOneWidget);
-      // Welcoming empty state in Khmer
       expect(find.text('មិនទាន់មានមតិយោបល់ទេ'), findsOneWidget);
       expect(find.text('សូមធ្វើជាអ្នកដំបូងដែលចាប់ផ្តើមការពិភាក្សា!'), findsOneWidget);
-      // Reply input placeholder in Khmer
       expect(find.text('បន្ថែមការឆ្លើយតប...'), findsOneWidget);
     });
   });

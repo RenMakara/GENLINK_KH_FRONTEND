@@ -3,11 +3,6 @@ import '../../domain/repositories/finance_repository.dart';
 import '../datasources/finance_remote_datasource.dart';
 import '../models/finance_models.dart';
 
-/// Finance repository implementation.
-///
-/// The remote data source already converts Dio failures into the shared
-/// [AppError] type through [ApiClient], so this layer remains a typed,
-/// UI-independent pass-through and does not swallow backend error codes.
 class FinanceRepositoryImpl implements FinanceRepository {
   const FinanceRepositoryImpl(this._remote);
 

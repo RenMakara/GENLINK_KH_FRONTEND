@@ -1,15 +1,3 @@
-/// Generic backend ApiResponse wrapper.
-///
-/// Every endpoint returns:
-/// ```json
-/// {
-///   "success": true,
-///   "message": "...",
-///   "data": { ... },
-///   "errorCode": null,
-///   "timestamp": "2024-01-01T00:00:00Z"
-/// }
-/// ```
 class ApiResponseModel<T> {
   const ApiResponseModel({
     required this.success,

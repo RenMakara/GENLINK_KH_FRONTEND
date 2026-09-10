@@ -1,6 +1,5 @@
 import '../entities/profile_entity.dart';
 
-/// Profile identity, interests, portfolio, badges, saved items and links.
 abstract class ProfileRepository {
   Future<ProfileEntity> getMyProfile();
 
@@ -20,21 +19,17 @@ abstract class ProfileRepository {
 
   Future<ProfileEntity> updateAvatar(String avatarUrl);
 
-  /// Set the avatar from a confirmed media upload, resolved server-side.
   Future<ProfileEntity> updateAvatarFromMedia(String mediaId);
 
   Future<PublicProfileEntity> getPublicProfile(String username);
 
-  // ── Interests ─────────────────────────────────────────────────────────
 
   Future<List<InterestEntity>> getInterestCatalog();
 
   Future<List<InterestEntity>> getMyInterests();
 
-  /// Replaces the entire selection.
   Future<List<InterestEntity>> replaceInterests(List<String> interestIds);
 
-  // ── Portfolio ─────────────────────────────────────────────────────────
 
   Future<List<PortfolioItemEntity>> getPortfolio();
 
@@ -55,13 +50,11 @@ abstract class ProfileRepository {
 
   Future<void> deletePortfolioItem(String portfolioId);
 
-  // ── Badges & saved ────────────────────────────────────────────────────
 
   Future<List<BadgeEntity>> getBadges();
 
   Future<List<SavedItemEntity>> getSavedItems();
 
-  // ── Social links ──────────────────────────────────────────────────────
 
   Future<List<SocialLinkEntity>> getSocialLinks();
 

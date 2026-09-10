@@ -215,7 +215,7 @@ class _OwnerProfile extends StatelessWidget {
         AppSpacing.md,
         AppSpacing.sm,
         AppSpacing.md,
-        120, // Bottom padding for floating navbar
+        120,
       ),
       children: [
         Center(
@@ -499,7 +499,7 @@ class _PublicProfile extends StatelessWidget {
         AppSpacing.md,
         0,
         AppSpacing.md,
-        120, // Bottom padding for floating navbar
+        120,
       ),
       children: [
         _PublicHeader(profile: profile, cover: cover),

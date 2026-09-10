@@ -80,7 +80,6 @@ class EWalletScreen extends GetView<EWalletController> {
             return SafeArea(
               child: Column(
                 children: [
-                  // HEADER
                   Container(
                     color: bg,
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -118,7 +117,6 @@ class EWalletScreen extends GetView<EWalletController> {
                     ),
                   ),
 
-                  // WALLET CONTENT
                   Expanded(
                     child: RefreshIndicator(
                       onRefresh: controller.refresh,

@@ -8,7 +8,6 @@ import '../models/media_models.dart';
 
 import 'package:flutter/foundation.dart';
 
-/// Talks to the media endpoints, and to the storage provider for the upload.
 class MediaRemoteDatasource {
   MediaRemoteDatasource(this._client, {Dio? uploadClient})
       : _uploadClient = uploadClient ??
@@ -22,13 +21,6 @@ class MediaRemoteDatasource {
 
   final ApiClient _client;
 
-  /// A bare [Dio] for the direct upload — deliberately **not** the app's
-  /// configured client.
-  ///
-  /// The presigned URL is absolute (so a baseUrl would corrupt it) and carries
-  /// its own authorisation in the query string. Sending our `Authorization`
-  /// header alongside it makes the storage provider reject the request, and the
-  /// auth interceptor's 401 refresh logic has no meaning here.
   final Dio _uploadClient;
 
   Future<PresignedUpload> presign({
@@ -65,11 +57,6 @@ class MediaRemoteDatasource {
     }
   }
 
-  /// PUT the bytes straight to storage.
-  ///
-  /// [PresignedUpload.requiredHeaders] is sent verbatim: the signature covers
-  /// those headers, so altering `Content-Type` (Dio likes to append a charset)
-  /// or dropping one is a 403.
   Future<void> uploadBytes({
     required PresignedUpload target,
     required Uint8List bytes,
@@ -89,8 +76,6 @@ class MediaRemoteDatasource {
             ...target.requiredHeaders,
             Headers.contentLengthHeader: bytes.length,
           },
-          // Stop Dio from inferring a content type; the signed one is already
-          // in requiredHeaders and must survive untouched.
           contentType: null,
           followRedirects: true,
         ),

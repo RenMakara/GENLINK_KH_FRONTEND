@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
-// TRANSACTION
 class Transaction extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -101,7 +100,6 @@ class Transaction extends StatelessWidget {
   }
 }
 
-// LEGEND
 class Legend extends StatelessWidget {
   final Color color;
   final String title;
@@ -133,7 +131,6 @@ class Legend extends StatelessWidget {
   }
 }
 
-// DONUT CHART
 class DonutSegment {
   final double value;
   final Color color;
@@ -171,7 +168,6 @@ class DonutChart extends StatelessWidget {
   }
 }
 
-// DONUT PAINTER
 class _DonutPainter extends CustomPainter {
   final Color backgroundColor;
   final double strokeWidth;
@@ -221,7 +217,6 @@ class _DonutPainter extends CustomPainter {
   }
 }
 
-// QUICK ACTION
 class QuickAction extends StatefulWidget {
   final IconData icon;
   final String title;
@@ -341,7 +336,6 @@ class _QuickActionState extends State<QuickAction> {
   }
 }
 
-// APP CARD
 class AppCard extends StatelessWidget {
   final Widget child;
   final Color color;
@@ -369,7 +363,6 @@ class AppCard extends StatelessWidget {
   }
 }
 
-// BALANCE CARD
 class BalanceCard extends StatelessWidget {
   final bool isDark;
   final Color surfaceSecondary;

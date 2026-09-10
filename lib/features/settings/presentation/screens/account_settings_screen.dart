@@ -6,11 +6,6 @@ import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 
-/// Account: the identity facts of the signed-in account, read-only.
-///
-/// Email and phone are changed through Edit Profile (the backend has no
-/// separate account endpoints), and the design's archive/delete actions
-/// have no backend at all, so neither is rendered here.
 class AccountSettingsScreen extends StatelessWidget {
   const AccountSettingsScreen({super.key});
 

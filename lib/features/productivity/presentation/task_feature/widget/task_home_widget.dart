@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
-// ============================================================
-// TASK DATA
-// ============================================================
-
 enum TaskPriority { high, medium, low }
 
 class TaskData {
@@ -20,25 +16,7 @@ class TaskData {
     required this.priority,
     this.completed = false,
   });
-
-  TaskData copyWith({
-    String? title,
-    String? dueText,
-    TaskPriority? priority,
-    bool? completed,
-  }) {
-    return TaskData(
-      title: title ?? this.title,
-      dueText: dueText ?? this.dueText,
-      priority: priority ?? this.priority,
-      completed: completed ?? this.completed,
-    );
-  }
 }
-
-// ============================================================
-// TASK THEME COLORS
-// ============================================================
 
 class TaskThemeColors {
   final bool isDark;
@@ -66,10 +44,6 @@ class TaskThemeColors {
   Color get border =>
       isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 }
-
-// ============================================================
-// TOP BAR
-// ============================================================
 
 class TasksTopBar extends StatelessWidget {
   final String title;
@@ -150,10 +124,6 @@ class TasksTopBar extends StatelessWidget {
   }
 }
 
-// ============================================================
-// ICON BUTTON
-// ============================================================
-
 class _TaskIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
@@ -196,10 +166,6 @@ class _TaskIconButton extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// SEARCH FIELD
-// ============================================================
 
 class TasksSearchField extends StatefulWidget {
   final String hintText;
@@ -264,9 +230,7 @@ class _TasksSearchFieldState extends State<TasksSearchField> {
 
   void _clearSearch() {
     _controller.clear();
-
     widget.onChanged?.call('');
-
     _focusNode.requestFocus();
   }
 
@@ -449,10 +413,6 @@ class _TasksSearchFieldState extends State<TasksSearchField> {
   }
 }
 
-// ============================================================
-// TASK HEADER
-// ============================================================
-
 class TasksHeader extends StatelessWidget {
   final String title;
   final int count;
@@ -546,33 +506,25 @@ class TasksHeader extends StatelessWidget {
   }
 }
 
-// ============================================================
-// TASK LIST
-// ============================================================
-
 class TasksList extends StatelessWidget {
   final List<TaskData> tasks;
   final String emptyTitle;
   final String emptyMessage;
-
-  // CALLBACK TO OPEN DETAIL PAGE
-  final ValueChanged<TaskData> onTaskTap;
 
   const TasksList({
     super.key,
     required this.tasks,
     required this.emptyTitle,
     required this.emptyMessage,
-    required this.onTaskTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (tasks.isEmpty) {
-      final colors = TaskThemeColors(
-        Theme.of(context).brightness == Brightness.dark,
-      );
+    final colors = TaskThemeColors(
+      Theme.of(context).brightness == Brightness.dark,
+    );
 
+    if (tasks.isEmpty) {
       return _EmptyTasksState(
         colors: colors,
         title: emptyTitle,
@@ -583,58 +535,26 @@ class TasksList extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: TaskThemeColors(
-          Theme.of(context).brightness == Brightness.dark,
-        ).surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: TaskThemeColors(
-            Theme.of(context).brightness == Brightness.dark,
-          ).border,
-        ),
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.border),
       ),
-      child: Column(
-        children: [
-          for (int i = 0; i < tasks.length; i++) ...[
-            // ==================================================
-            // TASK
-            // ==================================================
-            _TaskTile(
-              task: tasks[i],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Column(
+          children: [
+            for (int i = 0; i < tasks.length; i++) ...[
+              _TaskTile(task: tasks[i]),
 
-              // TAP WHOLE TASK
-              onDetail: () {
-                onTaskTap(tasks[i]);
-              },
-            ),
-
-            // ==================================================
-            // DIVIDER
-            // ==================================================
-            if (i != tasks.length - 1)
-              Builder(
-                builder: (context) {
-                  final colors = TaskThemeColors(
-                    Theme.of(context).brightness == Brightness.dark,
-                  );
-
-                  return Container(
-                    height: 1,
-                    margin: const EdgeInsets.only(left: 47),
-                    color: colors.border,
-                  );
-                },
-              ),
+              if (i != tasks.length - 1)
+                Divider(height: 1, thickness: 1, color: colors.border),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
 }
-
-// ============================================================
-// EMPTY STATE
-// ============================================================
 
 class _EmptyTasksState extends StatelessWidget {
   final TaskThemeColors colors;
@@ -701,17 +621,10 @@ class _EmptyTasksState extends StatelessWidget {
   }
 }
 
-// ============================================================
-// TASK TILE
-// ============================================================
-
 class _TaskTile extends StatefulWidget {
   final TaskData task;
 
-  // DETAIL CALLBACK
-  final VoidCallback? onDetail;
-
-  const _TaskTile({required this.task, this.onDetail});
+  const _TaskTile({required this.task});
 
   @override
   State<_TaskTile> createState() => _TaskTileState();
@@ -723,33 +636,8 @@ class _TaskTileState extends State<_TaskTile> {
   @override
   void initState() {
     super.initState();
-
     completed = widget.task.completed;
   }
-
-  @override
-  void didUpdateWidget(covariant _TaskTile oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (oldWidget.task.completed != widget.task.completed) {
-      completed = widget.task.completed;
-    }
-  }
-
-  // ============================================================
-  // TOGGLE COMPLETED
-  // ============================================================
-
-  void _toggleCompleted() {
-    setState(() {
-      completed = !completed;
-    });
-
-  }
-
-  // ============================================================
-  // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -762,32 +650,21 @@ class _TaskTileState extends State<_TaskTile> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        // TAP THE WHOLE TASK
-        onTap: widget.onDetail,
-
-        borderRadius: BorderRadius.circular(16),
-
+        onTap: _toggleCompleted,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
           child: Row(
             children: [
-              // ==================================================
-              // CHECKBOX
-              // ==================================================
               _TaskCheckbox(completed: completed, onTap: _toggleCompleted),
 
               const SizedBox(width: 12),
 
-              // ==================================================
-              // TASK CONTENT
-              // ==================================================
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        // PRIORITY DOT
                         Container(
                           width: 7,
                           height: 7,
@@ -799,7 +676,6 @@ class _TaskTileState extends State<_TaskTile> {
 
                         const SizedBox(width: 7),
 
-                        // TITLE
                         Expanded(
                           child: Text(
                             widget.task.title,
@@ -823,7 +699,6 @@ class _TaskTileState extends State<_TaskTile> {
 
                     const SizedBox(height: 7),
 
-                    // DUE DATE
                     Row(
                       children: [
                         Icon(
@@ -856,17 +731,7 @@ class _TaskTileState extends State<_TaskTile> {
 
               const SizedBox(width: 10),
 
-              // ==================================================
-              // PRIORITY
-              // ==================================================
               _PriorityLabel(priority: widget.task.priority),
-
-              const SizedBox(width: 7),
-
-              // ==================================================
-              // DETAIL BUTTON
-              // ==================================================
-              _TaskDetailButton(onTap: widget.onDetail),
             ],
           ),
         ),
@@ -874,9 +739,11 @@ class _TaskTileState extends State<_TaskTile> {
     );
   }
 
-  // ============================================================
-  // PRIORITY COLOR
-  // ============================================================
+  void _toggleCompleted() {
+    setState(() {
+      completed = !completed;
+    });
+  }
 
   Color _priorityColor(TaskPriority priority) {
     switch (priority) {
@@ -891,96 +758,6 @@ class _TaskTileState extends State<_TaskTile> {
     }
   }
 }
-
-// ============================================================
-// DETAIL BUTTON
-// ============================================================
-
-class _TaskDetailButton extends StatelessWidget {
-  final VoidCallback? onTap;
-
-  const _TaskDetailButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = TaskThemeColors(
-      Theme.of(context).brightness == Brightness.dark,
-    );
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: SizedBox(
-          width: 32,
-          height: 32,
-          child: Center(
-            child: Icon(
-              Icons.chevron_right_rounded,
-              size: 22,
-              color: colors.textMuted,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// CHECKBOX
-// ============================================================
-
-class _TaskCheckbox extends StatelessWidget {
-  final bool completed;
-  final VoidCallback onTap;
-
-  const _TaskCheckbox({required this.completed, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = TaskThemeColors(
-      Theme.of(context).brightness == Brightness.dark,
-    );
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Padding(
-          padding: const EdgeInsets.all(2),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            width: 21,
-            height: 21,
-            decoration: BoxDecoration(
-              color: completed ? colors.textPrimary : Colors.transparent,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: completed ? colors.textPrimary : colors.textMuted,
-                width: 1.3,
-              ),
-            ),
-            child: completed
-                ? Icon(
-                    Icons.check_rounded,
-                    size: 13,
-                    color: colors.isDark ? Colors.black : Colors.white,
-                  )
-                : null,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// PRIORITY LABEL
-// ============================================================
 
 class _PriorityLabel extends StatelessWidget {
   final TaskPriority priority;
@@ -1028,9 +805,45 @@ class _PriorityLabel extends StatelessWidget {
   }
 }
 
-// ============================================================
-// BOTTOM TIP
-// ============================================================
+
+class _TaskCheckbox extends StatelessWidget {
+  final bool completed;
+  final VoidCallback onTap;
+
+  const _TaskCheckbox({required this.completed, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = TaskThemeColors(
+      Theme.of(context).brightness == Brightness.dark,
+    );
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        width: 21,
+        height: 21,
+        decoration: BoxDecoration(
+          color: completed ? colors.textPrimary : Colors.transparent,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: completed ? colors.textPrimary : colors.textMuted,
+            width: 1.3,
+          ),
+        ),
+        child: completed
+            ? Icon(
+                Icons.check_rounded,
+                size: 13,
+                color: colors.isDark ? Colors.black : Colors.white,
+              )
+            : null,
+      ),
+    );
+  }
+}
 
 class TasksBottomTip extends StatelessWidget {
   final String text;
@@ -1064,10 +877,6 @@ class TasksBottomTip extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// FILTER SHEET
-// ============================================================
 
 class TasksFilterSheet extends StatelessWidget {
   final String title;
@@ -1125,7 +934,6 @@ class TasksFilterSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // HANDLE
             Center(
               child: Container(
                 width: 38,
@@ -1139,7 +947,6 @@ class TasksFilterSheet extends StatelessWidget {
 
             const SizedBox(height: 22),
 
-            // HEADER
             Row(
               children: [
                 Container(
@@ -1205,7 +1012,6 @@ class TasksFilterSheet extends StatelessWidget {
 
             const SizedBox(height: 26),
 
-            // STATUS
             _FilterTitle(title: statusTitle, colors: colors),
 
             const SizedBox(height: 10),
@@ -1219,7 +1025,6 @@ class TasksFilterSheet extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // PRIORITY
             _FilterTitle(title: priorityTitle, colors: colors),
 
             const SizedBox(height: 10),
@@ -1233,7 +1038,6 @@ class TasksFilterSheet extends StatelessWidget {
 
             const SizedBox(height: 28),
 
-            // APPLY
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -1249,10 +1053,7 @@ class TasksFilterSheet extends StatelessWidget {
                 ),
                 child: Text(
                   applyText,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                 ),
               ),
             ),
@@ -1262,10 +1063,6 @@ class TasksFilterSheet extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// FILTER TITLE
-// ============================================================
 
 class _FilterTitle extends StatelessWidget {
   final String title;
@@ -1286,10 +1083,6 @@ class _FilterTitle extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// FILTER GROUP
-// ============================================================
 
 class _FilterOptionGroup extends StatelessWidget {
   final List<String> options;
@@ -1321,10 +1114,6 @@ class _FilterOptionGroup extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// FILTER OPTION
-// ============================================================
 
 class _FilterOption extends StatelessWidget {
   final String label;
@@ -1360,7 +1149,9 @@ class _FilterOption extends StatelessWidget {
             label,
             style: TextStyle(
               color: selected
-                  ? (colors.isDark ? Colors.black : Colors.white)
+                  ? colors.isDark
+                        ? Colors.black
+                        : Colors.white
                   : colors.textSecondary,
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -1369,99 +1160,5 @@ class _FilterOption extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-// ============================================================
-// TASK CARD
-// ============================================================
-//
-// This is kept as a public widget so TasksList can use it.
-// ============================================================
-
-class TaskCard extends StatelessWidget {
-  final TaskData task;
-
-  const TaskCard({super.key, required this.task});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = TaskThemeColors(
-      Theme.of(context).brightness == Brightness.dark,
-    );
-
-    final priorityColor = _priorityColor(task.priority);
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: priorityColor,
-              shape: BoxShape.circle,
-            ),
-          ),
-
-          const SizedBox(width: 10),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: task.completed
-                        ? colors.textMuted
-                        : colors.textPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    decoration: task.completed
-                        ? TextDecoration.lineThrough
-                        : null,
-                  ),
-                ),
-
-                const SizedBox(height: 5),
-
-                Text(
-                  task.dueText,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: colors.textMuted, fontSize: 9),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
-          Icon(Icons.chevron_right_rounded, size: 20, color: colors.textMuted),
-        ],
-      ),
-    );
-  }
-
-  Color _priorityColor(TaskPriority priority) {
-    switch (priority) {
-      case TaskPriority.high:
-        return AppColors.financeAccent;
-
-      case TaskPriority.medium:
-        return AppColors.productivityAccent;
-
-      case TaskPriority.low:
-        return AppColors.growthAccent;
-    }
   }
 }

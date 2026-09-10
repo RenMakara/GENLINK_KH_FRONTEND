@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
+import '../../../../main_controller.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import 'event_details_screen.dart';
@@ -25,7 +26,6 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
-  // Staggered animation intervals
   late final Animation<double> _iconScaleAnim;
   late final Animation<double> _checkmarkAnim;
   late final Animation<double> _particlesAnim;
@@ -45,7 +45,6 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
       duration: const Duration(milliseconds: 1050),
     );
 
-    // 150ms - 380ms: Success icon scale (0.7 -> 1.0)
     _iconScaleAnim = Tween<double>(begin: 0.7, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
@@ -53,7 +52,6 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
       ),
     );
 
-    // 280ms - 480ms: Checkmark draw progress (0.0 -> 1.0)
     _checkmarkAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
@@ -61,7 +59,6 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
       ),
     );
 
-    // 400ms - 720ms: Celebration particles expand & fade away
     _particlesAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
@@ -69,7 +66,6 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
       ),
     );
 
-    // 480ms - 680ms: Title fade & slide up
     _titleFadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
@@ -86,7 +82,6 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
       ),
     );
 
-    // 600ms - 760ms: Description fade
     _descFadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
@@ -94,7 +89,6 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
       ),
     );
 
-    // 720ms - 880ms: Event summary card fade & slide up
     _cardFadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
@@ -111,7 +105,6 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
       ),
     );
 
-    // 860ms - 1050ms: Buttons fade in
     _buttonsFadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
@@ -130,7 +123,6 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
 
   void _onViewEvent(BuildContext context) {
     HapticFeedback.lightImpact();
-    // Replace current success screen with EventDetailsScreen so user cannot accidentally return
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -144,11 +136,13 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
 
   void _onDone(BuildContext context) {
     HapticFeedback.lightImpact();
-    // Switch to Community -> Event tab and pop to root
     final ctrl = Get.isRegistered<CommunityController>()
         ? Get.find<CommunityController>()
         : null;
     ctrl?.setCategory('Event');
+    if (Get.isRegistered<MainController>()) {
+      Get.find<MainController>().changeIndex(0);
+    }
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
@@ -168,6 +162,11 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
             'community.registrationSuccessful'.tr != 'community.registrationSuccessful'
         ? 'community.registrationSuccessful'.tr
         : 'Registration Successful!';
+
+    final subLabel = 'community.youAreRegisteredFor'.tr.isNotEmpty &&
+            'community.youAreRegisteredFor'.tr != 'community.youAreRegisteredFor'
+        ? 'community.youAreRegisteredFor'.tr
+        : ("You're registered for:");
 
     final primaryBtnLabel = 'community.viewEvent'.tr.isNotEmpty &&
             'community.viewEvent'.tr != 'community.viewEvent'
@@ -193,232 +192,218 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
             animation: _controller,
             builder: (context, _) {
               return Center(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 12),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 440),
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 8),
 
-                      // ── 1. Animated Success Icon & Celebration Particles ──
-                      SizedBox(
-                        width: 130,
-                        height: 130,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Celebration particles radiating outward
-                            if (_particlesAnim.value > 0.0)
-                              CustomPaint(
-                                size: const Size(130, 130),
-                                painter: _CelebrationParticlesPainter(
-                                  progress: _particlesAnim.value,
-                                  isDark: isDark,
-                                ),
-                              ),
-
-                            // Soft outer halo ring
-                            Transform.scale(
-                              scale: _iconScaleAnim.value,
-                              child: Container(
-                                width: 84,
-                                height: 84,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.success.withValues(
-                                    alpha: isDark ? 0.16 : 0.12,
+                        // Checkmark animation
+                        SizedBox(
+                          width: 120,
+                          height: 120,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              if (_particlesAnim.value > 0.0)
+                                CustomPaint(
+                                  size: const Size(120, 120),
+                                  painter: _CelebrationParticlesPainter(
+                                    progress: _particlesAnim.value,
+                                    isDark: isDark,
                                   ),
                                 ),
-                              ),
-                            ),
 
-                            // Primary circular icon with animated checkmark
-                            Transform.scale(
-                              scale: _iconScaleAnim.value,
-                              child: Container(
-                                width: 68,
-                                height: 68,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.success,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.success.withValues(
-                                        alpha: isDark ? 0.35 : 0.25,
-                                      ),
-                                      blurRadius: 18,
-                                      offset: const Offset(0, 5),
+                              Transform.scale(
+                                scale: _iconScaleAnim.value,
+                                child: Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.success.withValues(
+                                      alpha: isDark ? 0.16 : 0.12,
                                     ),
-                                  ],
-                                ),
-                                child: CustomPaint(
-                                  size: const Size(68, 68),
-                                  painter: _CheckmarkPainter(
-                                    progress: _checkmarkAnim.value,
-                                    color: Colors.white,
-                                    strokeWidth: 3.8,
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
+
+                              Transform.scale(
+                                scale: _iconScaleAnim.value,
+                                child: Container(
+                                  width: 64,
+                                  height: 64,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.success,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.success.withValues(
+                                          alpha: isDark ? 0.35 : 0.22,
+                                        ),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: CustomPaint(
+                                    size: const Size(64, 64),
+                                    painter: _CheckmarkPainter(
+                                      progress: _checkmarkAnim.value,
+                                      color: Colors.white,
+                                      strokeWidth: 3.6,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
 
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 20),
 
-                      // ── 2. Success Title ────────────────────────────────
-                      FadeTransition(
-                        opacity: _titleFadeAnim,
-                        child: SlideTransition(
-                          position: _titleSlideAnim,
+                        // Registration Successful!
+                        FadeTransition(
+                          opacity: _titleFadeAnim,
+                          child: SlideTransition(
+                            position: _titleSlideAnim,
+                            child: Text(
+                              titleLabel,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.3,
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 6),
+
+                        // You're registered for:
+                        FadeTransition(
+                          opacity: _descFadeAnim,
                           child: Text(
-                            titleLabel,
+                            subLabel,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: textPrimary,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.3,
-                              height: 1.25,
+                              color: textSecondary,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w500,
+                              height: 1.4,
                             ),
                           ),
                         ),
-                      ),
 
-                      const SizedBox(height: 10),
+                        const SizedBox(height: 22),
 
-                      // ── 3. Personalized Event Description ───────────────
-                      FadeTransition(
-                        opacity: _descFadeAnim,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: RichText(
-                            textAlign: TextAlign.center,
-                            text: TextSpan(
-                              style: TextStyle(
-                                color: textSecondary,
-                                fontSize: 14,
-                                height: 1.45,
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: widget.event.title.isNotEmpty
-                                      ? ('community.registeredSuccessfullyFor'.tr.isNotEmpty &&
-                                              'community.registeredSuccessfullyFor'.tr !=
-                                                  'community.registeredSuccessfullyFor'
-                                          ? '${'community.registeredSuccessfullyFor'.tr}\n'
-                                          : 'You are successfully registered for\n')
-                                      : ('community.registeredSuccessfullySub'.tr.isNotEmpty &&
-                                              'community.registeredSuccessfullySub'.tr !=
-                                                  'community.registeredSuccessfullySub'
-                                          ? 'community.registeredSuccessfullySub'.tr
-                                          : 'You are successfully registered for this event.'),
-                                ),
-                                if (widget.event.title.isNotEmpty)
-                                  TextSpan(
-                                    text: widget.event.title,
+                        // Event Summary Card [Event Title, date/time, mode/location]
+                        FadeTransition(
+                          opacity: _cardFadeAnim,
+                          child: SlideTransition(
+                            position: _cardSlideAnim,
+                            child: _buildEventSummaryCard(
+                              context: context,
+                              isDark: isDark,
+                              cardBg: cardBg,
+                              borderSubtle: borderSubtle,
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                              textMuted: textMuted,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 28),
+
+                        // Action Buttons
+                        FadeTransition(
+                          opacity: _buttonsFadeAnim,
+                          child: Column(
+                            children: [
+                              // Primary: [ View Event ]
+                              // Black filled in Light Mode, GenLink dark theme in Dark Mode
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: ElevatedButton(
+                                  onPressed: () => _onViewEvent(context),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isDark
+                                        ? AppColors.darkPrimary
+                                        : Colors.black,
+                                    foregroundColor: isDark
+                                        ? AppColors.darkTextInverse
+                                        : Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.md),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  child: Text(
+                                    primaryBtnLabel,
                                     style: TextStyle(
-                                      color: textPrimary,
-                                      fontWeight: FontWeight.w600,
+                                      color: isDark
+                                          ? AppColors.darkTextInverse
+                                          : Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      letterSpacing: 0.1,
                                     ),
                                   ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 28),
-
-                      // ── 4. Compact Event Summary Card ───────────────────
-                      FadeTransition(
-                        opacity: _cardFadeAnim,
-                        child: SlideTransition(
-                          position: _cardSlideAnim,
-                          child: _buildEventSummaryCard(
-                            context: context,
-                            isDark: isDark,
-                            cardBg: cardBg,
-                            borderSubtle: borderSubtle,
-                            textPrimary: textPrimary,
-                            textSecondary: textSecondary,
-                            textMuted: textMuted,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // ── 5. Action Buttons ───────────────────────────────
-                      FadeTransition(
-                        opacity: _buttonsFadeAnim,
-                        child: Column(
-                          children: [
-                            // Primary CTA: View Event
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: () => _onViewEvent(context),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: isDark
-                                      ? AppColors.darkPrimary
-                                      : AppColors.lightPrimary,
-                                  foregroundColor: isDark
-                                      ? AppColors.darkTextInverse
-                                      : AppColors.lightTextInverse,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.md),
-                                  ),
-                                  elevation: 0,
                                 ),
-                                child: Text(
-                                  primaryBtnLabel,
-                                  style: TextStyle(
-                                    color: isDark
-                                        ? AppColors.darkTextInverse
-                                        : AppColors.lightTextInverse,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
+                              ),
+
+                              const SizedBox(height: 10),
+
+                              // Secondary: [ Done ]
+                              // Outlined / minimal black / white button (no yellow, no gradients)
+                              SizedBox(
+                                width: double.infinity,
+                                height: 48,
+                                child: OutlinedButton(
+                                  onPressed: () => _onDone(context),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor:
+                                        isDark ? Colors.white : Colors.black87,
+                                    side: BorderSide(
+                                      color: isDark
+                                          ? Colors.white24
+                                          : Colors.black.withValues(alpha: 0.22),
+                                      width: 1.0,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.md),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    secondaryBtnLabel,
+                                    style: TextStyle(
+                                      color:
+                                          isDark ? Colors.white : Colors.black87,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-
-                            const SizedBox(height: 10),
-
-                            // Secondary CTA: Done
-                            SizedBox(
-                              width: double.infinity,
-                              height: 44,
-                              child: TextButton(
-                                onPressed: () => _onDone(context),
-                                style: TextButton.styleFrom(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.md),
-                                  ),
-                                ),
-                                child: Text(
-                                  secondaryBtnLabel,
-                                  style: TextStyle(
-                                    color: textSecondary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
 
-                      const SizedBox(height: 12),
-                    ],
+                        const SizedBox(height: 8),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -429,7 +414,6 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
     );
   }
 
-  // ── Compact Event Summary Card ─────────────────────────────────────────
   Widget _buildEventSummaryCard({
     required BuildContext context,
     required bool isDark,
@@ -462,12 +446,11 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: borderSubtle, width: 0.8),
+        border: Border.all(color: borderSubtle, width: 1.0),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Event Thumbnail
           ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.md),
             child: SizedBox(
@@ -478,7 +461,6 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
           ),
           const SizedBox(width: 14),
 
-          // Event Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -491,8 +473,8 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
                   style: TextStyle(
                     color: textPrimary,
                     fontWeight: FontWeight.bold,
-                    fontSize: 14.5,
-                    height: 1.25,
+                    fontSize: 15,
+                    height: 1.3,
                   ),
                 ),
                 if (dateDisplay.isNotEmpty) ...[
@@ -503,19 +485,19 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: textSecondary,
-                      fontSize: 12,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(
                   locationDisplay,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: textMuted,
-                    fontSize: 11.5,
+                    fontSize: 12,
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -559,7 +541,6 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
   }
 }
 
-/// Draws an animated checkmark path using progress (0.0 to 1.0)
 class _CheckmarkPainter extends CustomPainter {
   final double progress;
   final Color color;
@@ -615,7 +596,6 @@ class _CheckmarkPainter extends CustomPainter {
   }
 }
 
-/// Paints subtle celebration particles (dots & sparkles) around the icon
 class _CelebrationParticlesPainter extends CustomPainter {
   final double progress;
   final bool isDark;
@@ -626,18 +606,18 @@ class _CelebrationParticlesPainter extends CustomPainter {
   });
 
   static const List<_ParticleConfig> _configs = [
-    _ParticleConfig(angle: 0.0, baseRadius: 46, maxOffset: 18, size: 3.5, type: 0, colorIdx: 0),
-    _ParticleConfig(angle: 0.52, baseRadius: 48, maxOffset: 22, size: 4.0, type: 1, colorIdx: 1),
-    _ParticleConfig(angle: 1.05, baseRadius: 44, maxOffset: 16, size: 3.0, type: 0, colorIdx: 2),
-    _ParticleConfig(angle: 1.57, baseRadius: 47, maxOffset: 20, size: 4.5, type: 1, colorIdx: 0),
-    _ParticleConfig(angle: 2.09, baseRadius: 45, maxOffset: 18, size: 3.2, type: 0, colorIdx: 1),
-    _ParticleConfig(angle: 2.62, baseRadius: 48, maxOffset: 24, size: 4.0, type: 1, colorIdx: 2),
-    _ParticleConfig(angle: 3.14, baseRadius: 46, maxOffset: 17, size: 3.5, type: 0, colorIdx: 0),
-    _ParticleConfig(angle: 3.67, baseRadius: 47, maxOffset: 22, size: 4.2, type: 1, colorIdx: 1),
-    _ParticleConfig(angle: 4.19, baseRadius: 44, maxOffset: 19, size: 3.0, type: 0, colorIdx: 2),
-    _ParticleConfig(angle: 4.71, baseRadius: 48, maxOffset: 23, size: 4.5, type: 1, colorIdx: 0),
-    _ParticleConfig(angle: 5.24, baseRadius: 45, maxOffset: 18, size: 3.2, type: 0, colorIdx: 1),
-    _ParticleConfig(angle: 5.76, baseRadius: 47, maxOffset: 20, size: 3.8, type: 1, colorIdx: 2),
+    _ParticleConfig(angle: 0.0, baseRadius: 42, maxOffset: 16, size: 3.5, type: 0, colorIdx: 0),
+    _ParticleConfig(angle: 0.52, baseRadius: 44, maxOffset: 20, size: 4.0, type: 1, colorIdx: 1),
+    _ParticleConfig(angle: 1.05, baseRadius: 40, maxOffset: 15, size: 3.0, type: 0, colorIdx: 2),
+    _ParticleConfig(angle: 1.57, baseRadius: 43, maxOffset: 18, size: 4.5, type: 1, colorIdx: 0),
+    _ParticleConfig(angle: 2.09, baseRadius: 41, maxOffset: 16, size: 3.2, type: 0, colorIdx: 1),
+    _ParticleConfig(angle: 2.62, baseRadius: 44, maxOffset: 22, size: 4.0, type: 1, colorIdx: 2),
+    _ParticleConfig(angle: 3.14, baseRadius: 42, maxOffset: 15, size: 3.5, type: 0, colorIdx: 0),
+    _ParticleConfig(angle: 3.67, baseRadius: 43, maxOffset: 20, size: 4.2, type: 1, colorIdx: 1),
+    _ParticleConfig(angle: 4.19, baseRadius: 40, maxOffset: 17, size: 3.0, type: 0, colorIdx: 2),
+    _ParticleConfig(angle: 4.71, baseRadius: 44, maxOffset: 21, size: 4.5, type: 1, colorIdx: 0),
+    _ParticleConfig(angle: 5.24, baseRadius: 41, maxOffset: 16, size: 3.2, type: 0, colorIdx: 1),
+    _ParticleConfig(angle: 5.76, baseRadius: 43, maxOffset: 18, size: 3.8, type: 1, colorIdx: 2),
   ];
 
   @override
@@ -663,11 +643,9 @@ class _CelebrationParticlesPainter extends CustomPainter {
       paint.color = colors[cfg.colorIdx];
 
       if (cfg.type == 0) {
-        // Small circular dot
         final r = cfg.size * (1.0 - (progress * 0.35));
         canvas.drawCircle(Offset(px, py), r, paint);
       } else {
-        // Subtle 4-point sparkle star
         final s = cfg.size * (1.0 - (progress * 0.3));
         final starPath = Path()
           ..moveTo(px, py - s)
@@ -692,7 +670,7 @@ class _ParticleConfig {
   final double baseRadius;
   final double maxOffset;
   final double size;
-  final int type; // 0: dot, 1: sparkle
+  final int type;
   final int colorIdx;
 
   const _ParticleConfig({

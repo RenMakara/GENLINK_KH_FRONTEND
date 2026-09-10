@@ -44,7 +44,6 @@ void main() {
       final controller = Get.put(StoryController());
       await controller.fetchStories();
 
-      // Publish a new story
       final success = await controller.publishStory(
         type: StoryType.text,
         textContent: 'Hello CampusLink KH!',
@@ -103,34 +102,26 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Tap more options button (3 vertical dots)
       final moreButtonFinder = find.byIcon(Icons.more_vert);
       expect(moreButtonFinder, findsOneWidget);
       await tester.tap(moreButtonFinder);
       await tester.pumpAndSettle();
 
-      // Verify Header
       expect(find.text('Manage Your Story'), findsOneWidget);
 
-      // Verify "Edit Story" is NOT present
       expect(find.text('Edit Story'), findsNothing);
 
-      // Verify "Story Insights" is NOT present
       expect(find.text('Story Insights'), findsNothing);
 
-      // Verify "Story Privacy" IS present
       expect(find.text('Story Privacy'), findsOneWidget);
       expect(find.text('Who can see your story'), findsOneWidget);
 
-      // Verify "Save to Device" IS present
       expect(find.text('Save to Device'), findsOneWidget);
       expect(find.text('Save story photo/video to your phone gallery'), findsOneWidget);
 
-      // Verify "Delete Story" IS present
       expect(find.text('Delete Story'), findsOneWidget);
       expect(find.text('Permanently remove this story'), findsOneWidget);
 
-      // Clean up
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 500));
     });
@@ -166,30 +157,25 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Open Manage Your Story
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
 
-      // Tap Delete Story option
       final deleteTile = find.widgetWithText(ListTile, 'Delete Story');
       expect(deleteTile, findsOneWidget);
       await tester.tap(deleteTile);
       await tester.pumpAndSettle();
 
-      // Verify confirmation dialog
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(find.text('Delete Story?'), findsOneWidget);
       expect(find.text('Are you sure you want to permanently delete this story?'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Delete'), findsOneWidget);
 
-      // Tap Cancel -> Dialog dismisses and story is kept
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
       expect(controller.storyGroups.first.stories.length, 1);
 
-      // Clean up
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 500));
     });

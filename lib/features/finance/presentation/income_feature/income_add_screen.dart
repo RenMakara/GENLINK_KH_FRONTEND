@@ -7,7 +7,6 @@ import 'package:genlink_frontend/features/finance/domain/entities/finance_entiti
 import 'package:genlink_frontend/features/finance/presentation/controllers/income_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_add_widget.dart';
 
-/// Add/edit Income form using the documented full-replacement PUT contract.
 class IncomeAddScreen extends StatefulWidget {
   const IncomeAddScreen({super.key, this.income});
 

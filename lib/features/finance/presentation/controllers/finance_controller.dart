@@ -4,16 +4,11 @@ import '../../../../core/errors/app_error.dart';
 import '../../domain/entities/finance_entities.dart';
 import '../../domain/repositories/finance_repository.dart';
 
-/// Loads and owns the state for the Finance dashboard.
-///
-/// Requests are tagged so a slower response from a previous currency cannot
-/// overwrite the dashboard currently selected by the user.
 class FinanceController extends GetxController {
   FinanceController({required this._repository});
 
   final FinanceRepository _repository;
 
-  /// The backend defaults aggregate Finance reads to USD.
   final selectedCurrency = FinanceCurrency.usd.obs;
   final isLoading = false.obs;
   final errorMessage = RxnString();
@@ -35,9 +30,6 @@ class FinanceController extends GetxController {
     final requestedCurrency = selectedCurrency.value;
     final requestId = ++_requestSequence;
 
-    // Clear the previous aggregate before a new currency is requested. This
-    // prevents a USD snapshot from being rendered while KHR is loading (and
-    // vice versa), including when a refresh fails.
     dashboard.value = null;
     isLoading.value = true;
     errorMessage.value = null;
@@ -62,7 +54,6 @@ class FinanceController extends GetxController {
     }
   }
 
-  /// Reload the dashboard for a different currency.
   Future<void> selectCurrency(FinanceCurrency currency) {
     if (currency == selectedCurrency.value && dashboard.value != null) {
       return Future<void>.value();
@@ -70,7 +61,6 @@ class FinanceController extends GetxController {
     return loadDashboard(currency: currency);
   }
 
-  /// Pull-to-refresh entry point (`refresh()` belongs to GetxController).
   Future<void> reload() => loadDashboard();
 
   void _validateCurrencyScope(

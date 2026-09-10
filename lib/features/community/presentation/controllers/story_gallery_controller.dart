@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:photo_manager/photo_manager.dart';
 import '../../../../core/storage/local_storage.dart';
 import '../../domain/models/story_template_model.dart';
@@ -18,18 +21,99 @@ class StoryGalleryController extends GetxController {
   final RxBool hasDraft = false.obs;
   final RxBool isMultiSelectMode = false.obs;
 
-  /// Target number of photos required by the selected template (e.g. 1, 2, 3, 4).
   final RxInt requiredPhotosCount = 0.obs;
 
-  /// Max selection limit for template selection.
   final RxInt maxSelectionCount = 0.obs;
 
-  /// Active template configuration preset (if in template mode).
   final Rx<StoryTemplateConfig?> selectedTemplate = Rx<StoryTemplateConfig?>(null);
+  bool _isCheckingPermission = false;
 
-  /// Safely configures template photo limits and selection mode.
-  /// Should be called from user actions (e.g. template selection, slot replacement)
-  /// BEFORE navigation or widget building.
+  static const int pageSize = 60;
+  final RxBool hasMore = true.obs;
+  final RxBool isLoadingMore = false.obs;
+  int _currentPage = 0;
+
+  static PMFilter get storyFilter {
+    try {
+      if (Platform.isAndroid) {
+        return CustomFilter.sql(
+          where: '',
+          orderBy: [
+            OrderByItem.named(
+              column: CustomColumns.android.dateTaken,
+              isAsc: false,
+            ),
+            OrderByItem.named(
+              column: CustomColumns.android.createDate,
+              isAsc: false,
+            ),
+            OrderByItem.named(
+              column: CustomColumns.android.modifiedDate,
+              isAsc: false,
+            ),
+          ],
+        );
+      } else if (Platform.isIOS || Platform.isMacOS) {
+        return CustomFilter.sql(
+          where: '',
+          orderBy: [
+            OrderByItem.named(
+              column: CustomColumns.base.createDate,
+              isAsc: false,
+            ),
+            OrderByItem.named(
+              column: CustomColumns.base.modifiedDate,
+              isAsc: false,
+            ),
+          ],
+        );
+      }
+    } catch (_) {}
+    return storyFilterOptionGroup;
+  }
+
+  static FilterOptionGroup get storyFilterOptionGroup => FilterOptionGroup(
+    orders: const [
+      OrderOption(
+        type: OrderOptionType.createDate,
+        asc: false,
+      ),
+      OrderOption(
+        type: OrderOptionType.updateDate,
+        asc: false,
+      ),
+    ],
+    createTimeCond: DateTimeCond.def().copyWith(ignore: true),
+    updateTimeCond: DateTimeCond.def().copyWith(ignore: true),
+  );
+
+  static int getAssetTimestamp(AssetEntity asset) {
+    final createSec = asset.createDateSecond ?? 0;
+    if (createSec > 0) return createSec;
+    final createMs = asset.createDateTime.millisecondsSinceEpoch ~/ 1000;
+    if (createMs > 0) return createMs;
+    final modSec = asset.modifiedDateSecond ?? 0;
+    if (modSec > 0) return modSec;
+    final modMs = asset.modifiedDateTime.millisecondsSinceEpoch ~/ 1000;
+    if (modMs > 0) return modMs;
+    return 0;
+  }
+
+  static int compareAssetsNewestFirst(AssetEntity a, AssetEntity b) {
+    final aTime = getAssetTimestamp(a);
+    final bTime = getAssetTimestamp(b);
+    if (aTime != bTime) {
+      // Descending: newer (larger timestamp) first
+      return bTime.compareTo(aTime);
+    }
+    final aMod = a.modifiedDateSecond ?? 0;
+    final bMod = b.modifiedDateSecond ?? 0;
+    if (aMod != bMod) {
+      return bMod.compareTo(aMod);
+    }
+    return b.id.compareTo(a.id);
+  }
+
   void configureForTemplate({
     StoryTemplateConfig? template,
     int requiredPhotos = 0,
@@ -87,6 +171,8 @@ class StoryGalleryController extends GetxController {
   }
 
   Future<void> checkAndRequestPermission() async {
+    if (_isCheckingPermission) return;
+    _isCheckingPermission = true;
     if (!isLoading.value) {
       isLoading.value = true;
     }
@@ -96,31 +182,66 @@ class StoryGalleryController extends GetxController {
         hasPermission.value = true;
         isPermanentlyDenied.value = false;
         await fetchAlbumsAndMedia();
-      } else if (ps == PermissionState.denied ||
-          ps == PermissionState.restricted) {
-        hasPermission.value = false;
-        isPermanentlyDenied.value = true;
-        isLoading.value = false;
       } else {
         hasPermission.value = false;
-        isPermanentlyDenied.value = false;
+        final bool permDenied = await _isMediaPermissionPermanentlyDenied(ps);
+        isPermanentlyDenied.value = permDenied;
         isLoading.value = false;
       }
     } catch (_) {
       hasPermission.value = false;
       isPermanentlyDenied.value = false;
       isLoading.value = false;
+    } finally {
+      _isCheckingPermission = false;
     }
+  }
+
+  Future<bool> _isMediaPermissionPermanentlyDenied(PermissionState ps) async {
+    if (Get.testMode) return false;
+    if (ps == PermissionState.restricted) {
+      return true;
+    }
+    try {
+      if (Platform.isAndroid) {
+        final androidInfo = await DeviceInfoPlugin().androidInfo;
+        if (androidInfo.version.sdkInt >= 33) {
+          final isPhotosPermanentlyDenied =
+              await Permission.photos.isPermanentlyDenied;
+          return isPhotosPermanentlyDenied;
+        } else {
+          return await Permission.storage.isPermanentlyDenied;
+        }
+      } else if (Platform.isIOS) {
+        return await Permission.photos.isPermanentlyDenied;
+      }
+    } catch (_) {
+      return false;
+    }
+    return false;
   }
 
   Future<void> openSettings() async {
     try {
-      await PhotoManager.openSetting();
-    } catch (_) {}
+      final opened = await openAppSettings();
+      if (!opened) {
+        await PhotoManager.openSetting();
+      }
+    } catch (_) {
+      try {
+        await PhotoManager.openSetting();
+      } catch (_) {}
+    }
   }
 
   Future<void> fetchAlbumsAndMedia() async {
+    if (Get.testMode) {
+      isLoading.value = false;
+      return;
+    }
     isLoading.value = true;
+    _currentPage = 0;
+    hasMore.value = true;
     try {
       final isTemplate = selectedTemplate.value != null || requiredPhotosCount.value > 0;
       final requestType = isTemplate ? RequestType.image : RequestType.common;
@@ -128,19 +249,30 @@ class StoryGalleryController extends GetxController {
           await PhotoManager.getAssetPathList(
             type: requestType,
             onlyAll: false,
+            filterOption: storyFilter,
           );
       albums.assignAll(fetchedAlbums);
 
       if (fetchedAlbums.isNotEmpty) {
-        currentAlbum.value = fetchedAlbums.first;
-        final List<AssetEntity> recentMedia = await fetchedAlbums.first
-            .getAssetListPaged(page: 0, size: 150);
+        final targetAlbum = fetchedAlbums.firstWhere(
+          (a) => a.isAll,
+          orElse: () => fetchedAlbums.first,
+        );
+        currentAlbum.value = targetAlbum;
+        final List<AssetEntity> recentMedia = await targetAlbum
+            .getAssetListPaged(page: 0, size: pageSize);
+        recentMedia.sort(compareAssetsNewestFirst);
         mediaAssets.assignAll(recentMedia);
+        if (recentMedia.length < pageSize) {
+          hasMore.value = false;
+        }
       } else {
         mediaAssets.clear();
+        hasMore.value = false;
       }
     } catch (_) {
       mediaAssets.clear();
+      hasMore.value = false;
     } finally {
       isLoading.value = false;
     }
@@ -149,16 +281,55 @@ class StoryGalleryController extends GetxController {
   Future<void> selectAlbum(AssetPathEntity album) async {
     currentAlbum.value = album;
     isLoading.value = true;
+    _currentPage = 0;
+    hasMore.value = true;
     try {
       final List<AssetEntity> media = await album.getAssetListPaged(
         page: 0,
-        size: 150,
+        size: pageSize,
       );
+      media.sort(compareAssetsNewestFirst);
       mediaAssets.assignAll(media);
+      if (media.length < pageSize) {
+        hasMore.value = false;
+      }
     } catch (_) {
       mediaAssets.clear();
+      hasMore.value = false;
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> loadMoreMedia() async {
+    if (isLoading.value || isLoadingMore.value || !hasMore.value || currentAlbum.value == null) {
+      return;
+    }
+    isLoadingMore.value = true;
+    try {
+      final nextPage = _currentPage + 1;
+      final List<AssetEntity> nextPageMedia = await currentAlbum.value!.getAssetListPaged(
+        page: nextPage,
+        size: pageSize,
+      );
+      if (nextPageMedia.isEmpty) {
+        hasMore.value = false;
+      } else {
+        nextPageMedia.sort(compareAssetsNewestFirst);
+        final existingIds = mediaAssets.map((e) => e.id).toSet();
+        final filteredNew = nextPageMedia.where((e) => !existingIds.contains(e.id)).toList();
+        if (filteredNew.isNotEmpty) {
+          mediaAssets.addAll(filteredNew);
+        }
+        _currentPage = nextPage;
+        if (nextPageMedia.length < pageSize) {
+          hasMore.value = false;
+        }
+      }
+    } catch (_) {
+      hasMore.value = false;
+    } finally {
+      isLoadingMore.value = false;
     }
   }
 

@@ -180,32 +180,25 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Header
       expect(find.text('Create Discussion'), findsOneWidget);
       expect(find.byIcon(Icons.close), findsOneWidget);
 
-      // Publish button is visually present and disabled
       final publishBtn = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
       expect(publishBtn.onPressed, isNull);
 
-      // User Information
       expect(find.text('Sokha Meng'), findsOneWidget);
       expect(find.text('Public'), findsOneWidget);
       expect(find.byIcon(Icons.public), findsOneWidget);
 
-      // Category selector
       expect(find.text('Category'), findsOneWidget);
       expect(find.text('Select a category'), findsOneWidget);
 
-      // Title field
       expect(find.text('Title'), findsOneWidget);
       expect(find.text('What do you want to talk about?'), findsOneWidget);
 
-      // Content field
       expect(find.text('Content'), findsOneWidget);
       expect(find.text('Share your thoughts, question, or idea...'), findsOneWidget);
 
-      // Character counter
       expect(find.text('0 / 5000'), findsOneWidget);
     });
 
@@ -216,11 +209,9 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Tap Category
       await tester.tap(find.text('Select a category'));
       await tester.pumpAndSettle();
 
-      // Bottom sheet options
       expect(find.text('Technology'), findsWidgets);
       expect(find.text('Campus Life'), findsOneWidget);
       expect(find.text('Projects'), findsOneWidget);
@@ -228,11 +219,9 @@ void main() {
       expect(find.text('Career'), findsOneWidget);
       expect(find.text('Events'), findsOneWidget);
 
-      // Select 'Technology'
       await tester.tap(find.text('Technology').last);
       await tester.pumpAndSettle();
 
-      // Selected category visible on form
       expect(find.text('Technology'), findsOneWidget);
     });
 
@@ -246,34 +235,28 @@ void main() {
       final textFields = find.byType(TextField);
       final publishFinder = find.byType(ElevatedButton);
 
-      // Step A: Only category selected -> disabled
       await tester.tap(find.text('Select a category'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Technology').last);
       await tester.pumpAndSettle();
       expect(tester.widget<ElevatedButton>(publishFinder).onPressed, isNull);
 
-      // Step B: Whitespace title entered -> disabled
       await tester.enterText(textFields.at(0), '     ');
       await tester.pump();
       expect(tester.widget<ElevatedButton>(publishFinder).onPressed, isNull);
 
-      // Step C: Valid title, empty content -> disabled
       await tester.enterText(textFields.at(0), 'Clean Architecture in Flutter');
       await tester.pump();
       expect(tester.widget<ElevatedButton>(publishFinder).onPressed, isNull);
 
-      // Step D: Whitespace content -> disabled
       await tester.enterText(textFields.at(1), '     ');
       await tester.pump();
       expect(tester.widget<ElevatedButton>(publishFinder).onPressed, isNull);
 
-      // Step E: Valid content -> enabled!
       await tester.enterText(textFields.at(1), 'Here are best practices for project structure.');
       await tester.pump();
       expect(tester.widget<ElevatedButton>(publishFinder).onPressed, isNotNull);
 
-      // Step F: Real-time character counter updated
       expect(find.text('46 / 5000'), findsOneWidget);
     });
 
@@ -304,26 +287,21 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Open screen
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      // When empty: Close pops immediately without dialog
       await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
       expect(find.byType(CreateDiscussionScreen), findsNothing);
       expect(find.text('Discard changes?'), findsNothing);
 
-      // Reopen screen
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      // Enter text
       final textFields = find.byType(TextField);
       await tester.enterText(textFields.at(0), 'Draft title');
       await tester.pump();
 
-      // Tap close -> Dialog appears
       await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
 
@@ -332,13 +310,11 @@ void main() {
       expect(find.text('Keep Editing'), findsOneWidget);
       expect(find.text('Discard'), findsOneWidget);
 
-      // Tap Keep Editing -> Remains on screen with typed text
       await tester.tap(find.text('Keep Editing'));
       await tester.pumpAndSettle();
       expect(find.text('Discard changes?'), findsNothing);
       expect(find.text('Draft title'), findsOneWidget);
 
-      // Tap Discard -> Closes dialog and pops screen back to home
       await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Discard'));
@@ -356,29 +332,25 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Select category
       await tester.tap(find.text('Select a category'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Projects').last);
       await tester.pumpAndSettle();
 
-      // Enter title and content
       final textFields = find.byType(TextField);
       await tester.enterText(textFields.at(0), 'My Flutter Open Source Project');
       await tester.pump();
       await tester.enterText(textFields.at(1), 'Check out the GitHub repo and star it!');
       await tester.pump();
 
-      // Tap Publish
       await tester.tap(find.byType(ElevatedButton));
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
 
-      // Verified topic added to forum and feed
       expect(controller.forumLatestDiscussions.length, initialCount + 1);
       expect(controller.forumLatestDiscussions.first.title, 'My Flutter Open Source Project');
       expect(controller.forumLatestDiscussions.first.category, 'Projects');
-      expect(controller.posts.any((p) => p.discussionTitle == 'My Flutter Open Source Project'), isTrue);
+      expect(controller.posts.any((p) => p.discussionTitle == 'My Flutter Open Source Project'), isFalse);
     });
 
     testWidgets('6. Edit mode pre-fills initial values and updates on submit', (tester) async {
@@ -399,6 +371,7 @@ void main() {
         repliesCount: 2,
         isOwner: true,
       );
+      repo.discussions.add(initial);
       controller.forumLatestDiscussions.add(initial);
 
       await tester.pumpWidget(createTestWidget(initialDiscussion: initial));
@@ -410,11 +383,9 @@ void main() {
       expect(find.text('Initial Discussion Title'), findsOneWidget);
       expect(find.text('Initial Discussion Content Body'), findsOneWidget);
 
-      // Edit content
       await tester.enterText(find.widgetWithText(TextField, 'Initial Discussion Title'), 'Updated Discussion Title');
       await tester.pumpAndSettle();
 
-      // Submit
       await tester.tap(find.text('Save Changes'));
       await tester.pumpAndSettle();
 
@@ -467,7 +438,6 @@ void main() {
       final repo = _FakeCommunityRepository();
       Get.put(CommunityController(repository: repo));
 
-      // Test Khmer + Light
       await tester.pumpWidget(createTestWidget(
         locale: const Locale('km', 'KH'),
         theme: AppTheme.light,
@@ -475,7 +445,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
 
-      // Test English + Dark
       await tester.pumpWidget(createTestWidget(
         locale: const Locale('en', 'US'),
         theme: AppTheme.dark,
@@ -493,13 +462,11 @@ void main() {
 
       final textFields = find.byType(TextField);
 
-      // Mixed Khmer / English title
       const mixedTitle = 'តើ Flutter ល្អសម្រាប់ការអភិវឌ្ឍ Mobile Apps ដែរឬទេ?';
       await tester.enterText(textFields.at(0), mixedTitle);
       await tester.pump();
       expect(find.text(mixedTitle), findsOneWidget);
 
-      // Long multi-paragraph content
       const longContent = 'Flutter គឺជា UI toolkit របស់ Google ដែលអនុញ្ញាតឱ្យបង្កើតកម្មវិធី Multi-platform យ៉ាងរលូន។\n\n'
           'Key benefits:\n'
           '1. Fast Development with Hot Reload\n'

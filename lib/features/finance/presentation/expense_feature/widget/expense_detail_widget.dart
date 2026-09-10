@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
-// HEADER BUTTON
 class ExpenseHeaderButton extends StatelessWidget {
   final IconData icon;
   final Color background;
@@ -41,7 +40,6 @@ class ExpenseHeaderButton extends StatelessWidget {
   }
 }
 
-// EXPENSE SUMMARY CARD
 class ExpenseSummaryCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
@@ -140,7 +138,6 @@ class ExpenseSummaryCard extends StatelessWidget {
   }
 }
 
-// CARD CONTAINER
 class ExpenseCardContainer extends StatelessWidget {
   final Color surface;
   final Color border;
@@ -168,7 +165,6 @@ class ExpenseCardContainer extends StatelessWidget {
   }
 }
 
-// CARD TITLE
 class ExpenseCardTitle extends StatelessWidget {
   final String title;
   final Color textPrimary;
@@ -192,7 +188,6 @@ class ExpenseCardTitle extends StatelessWidget {
   }
 }
 
-// DETAIL ITEM
 class ExpenseDetailItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -259,7 +254,6 @@ class ExpenseDetailItem extends StatelessWidget {
   }
 }
 
-// NOTE
 class ExpenseNoteItem extends StatelessWidget {
   final String note;
 
@@ -324,7 +318,6 @@ class ExpenseNoteItem extends StatelessWidget {
   }
 }
 
-// DIVIDER
 class ExpenseDetailDivider extends StatelessWidget {
   final Color border;
 
@@ -339,7 +332,6 @@ class ExpenseDetailDivider extends StatelessWidget {
   }
 }
 
-// BEAUTIFUL CLOSE BUTTON
 class ExpenseCloseButton extends StatelessWidget {
   final String text;
   final Color background;
@@ -394,7 +386,6 @@ class ExpenseCloseButton extends StatelessWidget {
   }
 }
 
-// BOTTOM SHEET ITEM
 class ExpenseSheetItem extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -441,7 +432,6 @@ class ExpenseSheetItem extends StatelessWidget {
   }
 }
 
-// BEAUTIFUL CLOSE BOTTOM SHEET ITEM
 class ExpenseSheetCloseItem extends StatelessWidget {
   final String title;
   final Color color;

@@ -1,8 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// Encrypted storage for tokens and sensitive session data.
-///
-/// Uses [FlutterSecureStorage] backed by iOS Keychain / Android Keystore.
 class SecureStorage {
   SecureStorage({FlutterSecureStorage? storage})
       : _storage = storage ?? const FlutterSecureStorage();
@@ -10,7 +7,6 @@ class SecureStorage {
   final FlutterSecureStorage _storage;
   final Map<String, String> _memoryFallback = {};
 
-  // Keys
   static const _kAccessToken = 'genlink_access_token';
   static const _kRefreshToken = 'genlink_refresh_token';
   static const _kTokenExpiry = 'genlink_token_expiry';
@@ -65,7 +61,6 @@ class SecureStorage {
 
   Future<String?> readUserId() => _read(_kUserId);
 
-  /// Store the full token pair from an auth response.
   Future<void> saveTokenPair({
     required String accessToken,
     required String refreshToken,
@@ -77,7 +72,6 @@ class SecureStorage {
     ]);
   }
 
-  /// Clear all stored session data.
   Future<void> clearAll() async {
     await _delete(_kAccessToken);
     await _delete(_kRefreshToken);

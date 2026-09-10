@@ -114,7 +114,6 @@ enum StoryBgMode { none, solid, gradient }
 class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   final List<MovableStoryLayer> _layers = [];
 
-  // ── Template Story Mode State ──
   late StoryTemplateConfig _selectedTemplate;
   List<StoryTemplateSlot> _templateSlots = [];
   String? _templateCustomText;
@@ -173,7 +172,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     });
   }
 
-  // Full-Screen Immersive Text Editor State
   bool _isFullScreenTextEditing = false;
   bool get isEditingText => _isFullScreenTextEditing;
   MovableStoryLayer? _editingTextLayer;
@@ -187,7 +185,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   TextEffectType _activeTextEffect = TextEffectType.none;
   TextAlign _activeTextAlign = TextAlign.center;
 
-  // Font size controlled by vertical slider (14–72pt)
   double _activeFontSize = 28.0;
 
   int _selectedTemplateIdx = 0;
@@ -199,32 +196,32 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   static const List<Color> _curatedColors = [
     Colors.white,
     Colors.black,
-    Color(0xFFFACC15), // Amber
-    Color(0xFFF43F5E), // Rose
-    Color(0xFF38BDF8), // Sky Blue
-    Color(0xFFA855F7), // Violet
-    Color(0xFF34D399), // Emerald Green
-    Color(0xFFFB923C), // Vibrant Orange
-    Color(0xFFE879F9), // Fuchsia Pink
-    Color(0xFF4ADE80), // Mint Lime
-    Color(0xFF64748B), // Soft Slate
+    Color(0xFFFACC15),
+    Color(0xFFF43F5E),
+    Color(0xFF38BDF8),
+    Color(0xFFA855F7),
+    Color(0xFF34D399),
+    Color(0xFFFB923C),
+    Color(0xFFE879F9),
+    Color(0xFF4ADE80),
+    Color(0xFF64748B),
   ];
 
   static const List<Color> _solidBgColors = [
     Colors.white,
     Colors.black,
-    Color(0xFFA855F7), // Purple / Violet
-    Color(0xFF34D399), // Emerald Green
-    Color(0xFF38BDF8), // Sky Blue
-    Color(0xFFF43F5E), // Pink / Rose
-    Color(0xFFFACC15), // Yellow / Amber
-    Color(0xFFFB923C), // Vibrant Orange
-    Color(0xFFE879F9), // Fuchsia Pink
-    Color(0xFF4ADE80), // Mint Lime
-    Color(0xFF1E293B), // Slate Blue
-    Color(0xFF4C1D95), // Deep Violet
-    Color(0xFF064E3B), // Forest Green
-    Color(0xFF312E81), // Midnight Indigo
+    Color(0xFFA855F7),
+    Color(0xFF34D399),
+    Color(0xFF38BDF8),
+    Color(0xFFF43F5E),
+    Color(0xFFFACC15),
+    Color(0xFFFB923C),
+    Color(0xFFE879F9),
+    Color(0xFF4ADE80),
+    Color(0xFF1E293B),
+    Color(0xFF4C1D95),
+    Color(0xFF064E3B),
+    Color(0xFF312E81),
   ];
 
   static const List<(TextStyleType, String)> _fontPresets = [
@@ -237,10 +234,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     (TextStyleType.coding, 'Code'),
   ];
 
-  // Selected background category for filter tabs
   String _selectedBgCategory = 'Gradients';
 
-  // Curated cute, aesthetic, and trending TikTok / Instagram backgrounds for text stories
   final List<
     ({
       String name,
@@ -252,7 +247,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     })
   >
   _bgPresets = [
-    // 🌸 PASTEL & CUTE
     (
       name: 'Barbie Dream',
       category: 'Pastel',
@@ -294,7 +288,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       end: Alignment.bottomCenter,
     ),
 
-    // 🔥 TIKTOK TRENDING
     (
       name: 'Golden Hour',
       category: 'Trending',
@@ -344,7 +337,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       end: Alignment.bottomCenter,
     ),
 
-    // ✨ HOLOGRAPHIC & FAIRY
     (
       name: 'Aurora Fairy',
       category: 'Fairy',
@@ -378,7 +370,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       end: Alignment.bottomCenter,
     ),
 
-    // ☕ AESTHETIC & MOOD
     (
       name: 'Warm Mocha',
       category: 'Aesthetic',
@@ -420,7 +411,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       end: Alignment.bottomCenter,
     ),
 
-    // 🖤 CLEAN & MINIMAL
     (
       name: 'Pure OLED',
       category: 'Minimal',
@@ -455,7 +445,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     ),
   ];
 
-  // Keep _gradients for backward compat with other screens
   List<List<Color>> get _gradients => _bgPresets.map((p) => p.colors).toList();
 
   static const List<StoryTemplateModel> _storyTemplates = [
@@ -644,7 +633,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     ),
   ];
 
-  // Exclusive GenLink Campus Stickers
   final Map<String, List<String>> _stickerCategories = {
     '🐱 Cute Cats': ['🐱 Playful Kittens', '🎩 Winter Cat', '😻 Hugging Cats'],
     '🎓 Campus': [
@@ -700,7 +688,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   void initState() {
     super.initState();
 
-    // ── 1. Initialize Story Template Mode ──
     _isTemplateApplied = widget.type == StoryType.template || (widget.existingStory?.templateId != null);
     final targetTemplateId = widget.templateId ?? widget.existingStory?.templateId;
     if (targetTemplateId != null) {
@@ -785,7 +772,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     }
   }
 
-  // ── Template Slot Operations ──
   Future<void> _pickPhotosForTemplate(StoryTemplateConfig template) async {
     try {
       final galleryCtrl = Get.isRegistered<StoryGalleryController>()
@@ -892,7 +878,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   }
 
   Future<void> _onTapTemplateSlot(int slotIndex) async {
-    // If slot already has image, select it to reveal contextual toolbar
     if (slotIndex < _templateSlots.length &&
         _templateSlots[slotIndex].mediaPath != null &&
         _templateSlots[slotIndex].mediaPath!.isNotEmpty) {
@@ -902,7 +887,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       return;
     }
 
-    // If slot is empty, open gallery in single-photo mode for this slot
     await _onReplaceTemplateSlot(slotIndex);
   }
 
@@ -934,7 +918,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   }
 
   void _onSelectTemplate(StoryTemplateConfig newTemplate) {
-    // Collect all available media: from template slots, image layers, active image, and initial mediaPaths
     final existingMedia = <String>[];
     for (final s in _templateSlots) {
       if (s.mediaPath != null && s.mediaPath!.trim().isNotEmpty) {
@@ -963,7 +946,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       }
     }
 
-    // 1. Single Photo template: automatically use currently selected image with no extra picker
     if (newTemplate.slotCount == 1) {
       setState(() {
         _isTemplateApplied = true;
@@ -982,7 +964,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       return;
     }
 
-    // 2. Multi-photo template: reuse all existing loaded photos immediately
     if (existingMedia.isNotEmpty) {
       setState(() {
         _isTemplateApplied = true;
@@ -1001,7 +982,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       return;
     }
 
-    // 3. Multi-photo template without any photos: open Gallery in multi-select mode
     _pickPhotosForTemplate(newTemplate);
   }
 
@@ -1322,12 +1302,11 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     });
   }
 
-  // Immersive Full-Screen Text Editor — clean canvas and natural typing
   void _openFloatingTextEditor([MovableStoryLayer? existingLayer]) {
     setState(() {
       _editingTextLayer = existingLayer;
       _isFullScreenTextEditing = true;
-      _activeContextTool = ActiveContextTool.none; // Clean canvas by default
+      _activeContextTool = ActiveContextTool.none;
       if (existingLayer != null) {
         _fullScreenTextController.text = existingLayer.text;
         _activeTextColor = existingLayer.color;
@@ -1342,15 +1321,14 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         _fullScreenTextController.clear();
         _activeTextColor = Colors.white;
         _activeTextBgColor = null;
-        _activeFontStyle = TextStyleType.classic; // Normal/Classic by default
-        _activeTextBgStyle = TextBgStyle.none; // transparent by default
-        _activeTextEffect = TextEffectType.none; // No shadow / flat by default
+        _activeFontStyle = TextStyleType.classic;
+        _activeTextBgStyle = TextBgStyle.none;
+        _activeTextEffect = TextEffectType.none;
         _activeTextAlign = TextAlign.center;
         _activeFontSize = 28.0;
         _activeTextScale = 1.0;
       }
     });
-    // Small delay so the overlay is built before requesting focus
     Future.delayed(const Duration(milliseconds: 80), () {
       if (mounted) _fullScreenTextFocusNode.requestFocus();
     });
@@ -1524,7 +1502,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header Row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -1548,7 +1525,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Minimal Input Field
                       TextField(
                         controller: inputCtrl,
                         autofocus: true,
@@ -1595,7 +1571,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         ),
                       ),
 
-                      // Live Preview Banner
                       if (formattedLiveTag.isNotEmpty) ...[
                         const SizedBox(height: 14),
                         Row(
@@ -1632,7 +1607,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
                       const SizedBox(height: 18),
 
-                      // Section 1: Suggested
                       const Text(
                         "SUGGESTED",
                         style: TextStyle(
@@ -1689,7 +1663,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
                       const SizedBox(height: 16),
 
-                      // Section 2: Trending Today
                       const Text(
                         "TRENDING TODAY 🔥",
                         style: TextStyle(
@@ -1746,7 +1719,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
                       const SizedBox(height: 16),
 
-                      // Section 3: Recent
                       const Text(
                         "RECENT",
                         style: TextStyle(
@@ -1803,7 +1775,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
                       const SizedBox(height: 24),
 
-                      // White Pill-Shaped Primary Button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -2307,7 +2278,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           ),
         ),
 
-        // Video Timeline Controls Overlay
         Positioned(
           bottom: 90,
           left: 20,
@@ -2443,12 +2413,10 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       },
       onScaleUpdate: (details) {
         setState(() {
-          // 1. Smooth Pinch-to-Zoom (0.1x to 4.0x)
           if (details.scale != 1.0) {
             _bgImageScale = (_bgBaseScale * details.scale).clamp(0.10, 4.0);
           }
 
-          // 2. Smooth 360° Multi-Directional Pan (Left, Right, Up, Down)
           final delta = details.focalPoint - _bgBaseFocalPoint;
           final maxPanX = size.width * 0.85;
           final maxPanY = size.height * 0.85;
@@ -2842,7 +2810,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   ),
                 ),
 
-                // Small Top-Right Checkmark Badge for Selected Card
                 if (isSel)
                   Positioned(
                     top: -3,
@@ -2875,7 +2842,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
         const SizedBox(height: 6),
 
-        // Smaller & Lighter Template Label
         Text(
           tpl.name,
           style: TextStyle(
@@ -3006,7 +2972,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   Future<void> _publishStory() async {
     if (_isPublishing) return;
 
-    // 1. If user is currently typing in the full-screen text editor, commit the text into layers first
     if (_isFullScreenTextEditing) {
       _closeFullScreenTextEditor(save: true);
     }
@@ -3018,7 +2983,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     );
     final hasOtherLayer = _layers.any((l) => l.type != LayerType.text);
 
-    // 2. Validate non-empty story for text mode
     if (widget.type == StoryType.text &&
         !hasTextLayer &&
         !hasOtherLayer &&
@@ -3034,7 +2998,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       return;
     }
 
-    // Validate template story slots
     final isTemplateStory = widget.type == StoryType.template || _isTemplateApplied;
     final hasTemplateSlotImage = _templateSlots.any(
       (s) => s.mediaPath != null && s.mediaPath!.trim().isNotEmpty,
@@ -3077,7 +3040,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           ? Get.find<StoryController>()
           : Get.put(StoryController(), permanent: true);
 
-      // Extract primary text content
       String? textContent;
       if (_templateCustomText != null && _templateCustomText!.isNotEmpty) {
         textContent = _templateCustomText;
@@ -3089,7 +3051,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         textContent = textFromInput;
       }
 
-      // Extract active canvas background colors for Text Story mode
       String startHex;
       String endHex;
       if (_storyBgMode == StoryBgMode.solid && _selectedSolidBgColor != null) {
@@ -3171,7 +3132,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
       if (mounted) {
         if (success) {
-          // 1. Show notification banner immediately
           AppNotificationBanner.showSuccess(
             context: context,
             title: "Story posted successfully!",
@@ -3180,14 +3140,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             duration: const Duration(seconds: 3),
           );
 
-          // 2. Clear gallery draft
           if (Get.isRegistered<StoryGalleryController>()) {
             try {
               Get.find<StoryGalleryController>().clearDraft();
             } catch (_) {}
           }
 
-          // 3. Return to Community screen smoothly
           if (widget.existingStory != null) {
             Get.back(result: true);
           } else {
@@ -3251,29 +3209,29 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         weight = FontWeight.w600;
         letterSpacing = 0.2;
         break;
-      case TextStyleType.elegant: // Deco
+      case TextStyleType.elegant:
         style = FontStyle.italic;
         weight = FontWeight.w600;
         letterSpacing = 0.8;
         break;
-      case TextStyleType.bold: // Bubble
+      case TextStyleType.bold:
         weight = FontWeight.w900;
         letterSpacing = -0.3;
         break;
-      case TextStyleType.modern: // Modern
+      case TextStyleType.modern:
         weight = FontWeight.w800;
         letterSpacing = 0.8;
         break;
-      case TextStyleType.minimal: // Minimal Clean
+      case TextStyleType.minimal:
         weight = FontWeight.w700;
         letterSpacing = 1.2;
         break;
-      case TextStyleType.handwriting: // Script
+      case TextStyleType.handwriting:
         weight = FontWeight.w500;
         style = FontStyle.italic;
         letterSpacing = 0.5;
         break;
-      case TextStyleType.coding: // Code
+      case TextStyleType.coding:
         weight = FontWeight.w600;
         fontFamily = 'monospace';
         letterSpacing = -0.2;
@@ -3283,7 +3241,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         break;
     }
 
-    // Explicit Text Effects system (Independent from Font Styles)
     switch (effect) {
       case TextEffectType.shadow:
         textShadows = [
@@ -3316,7 +3273,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         break;
       case TextEffectType.outline:
       case TextEffectType.none:
-        textShadows = null; // Clean, flat, NO shadow by default
+        textShadows = null;
         break;
     }
 
@@ -3539,18 +3496,36 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       case LayerType.hashtag:
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
             decoration: BoxDecoration(
               color: AppColors.communityAccent.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.25),
+                width: 0.8,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.communityAccent.withValues(alpha: 0.35),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Text(
               layer.text,
+              softWrap: true,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                fontSize: 14.5,
+                letterSpacing: -0.1,
+                height: 1.25,
               ),
             ),
           ),
@@ -3570,6 +3545,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               color: layer.bgStyle == TextBgStyle.filled
@@ -3591,14 +3567,15 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                     ]
                   : null,
             ),
-            child: Text(
-              cleanMention,
+            child: AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
               style: TextStyle(
                 color: textColor,
                 fontWeight: FontWeight.w900,
                 fontSize: 18,
                 letterSpacing: 0.5,
               ),
+              child: Text(cleanMention),
             ),
           ),
         );
@@ -3615,6 +3592,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
               color: layer.bgStyle == TextBgStyle.filled
@@ -3697,7 +3675,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
     final isTextStory = widget.type == StoryType.text;
 
-    // For Text-Only stories: text layer is always centered on canvas and not draggable
     if (isTextStory && layer.type == LayerType.text) {
       return Positioned.fill(
         child: Align(
@@ -3742,7 +3719,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 setState(() {
                   _selectedLayer = layer;
 
-                  // Cycle color style variant on tap for Mention and Location tags
                   if (layer.type == LayerType.mention ||
                       layer.type == LayerType.location) {
                     if (layer.bgStyle == TextBgStyle.rounded) {
@@ -3890,7 +3866,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // Rounded Search Bar
                     TextField(
                       controller: searchController,
                       style: const TextStyle(color: Colors.white, fontSize: 14),
@@ -4126,7 +4101,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // 1. Font Style (Aa)
                 IconButton(
                   icon: Text(
                     "Aa",
@@ -4141,7 +4115,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   onPressed: () => setState(() => _activeTextToolbarTab = 0),
                 ),
 
-                // 2. Text Color (🎨)
                 IconButton(
                   icon: Icon(
                     Icons.palette_outlined,
@@ -4153,7 +4126,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   onPressed: () => setState(() => _activeTextToolbarTab = 1),
                 ),
 
-                // 3. Background Style (⬛)
                 IconButton(
                   icon: Icon(
                     Icons.subtitles_rounded,
@@ -4165,7 +4137,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   onPressed: () => setState(() => _activeTextToolbarTab = 2),
                 ),
 
-                // 4. Alignment Toggle (☰)
                 IconButton(
                   icon: Icon(
                     layer.alignment == TextAlign.left
@@ -4333,17 +4304,13 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   bool _shouldShowObjectToolbar(MovableStoryLayer? layer) {
     if (layer == null) return false;
-    // TEXT: No floating toolbar (handled via in-place / bottom text editor)
     if (layer.type == LayerType.text) return false;
-    // STICKER & EMOJI: No floating toolbar
     if (layer.type == LayerType.sticker) return false;
-    // IMAGE: No floating toolbar
     if (layer.type == LayerType.image) return false;
     return false;
   }
 
   Widget _buildObjectToolbar(MovableStoryLayer layer) {
-    // Only render floating toolbar for STICKERS and IMAGES (never TEXT or EMOJIS)
     if (!_shouldShowObjectToolbar(layer)) {
       return const SizedBox.shrink();
     }
@@ -4625,7 +4592,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title (Left-aligned)
                       const Text(
                         "Discard Story?",
                         textAlign: TextAlign.left,
@@ -4638,7 +4604,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       ),
                       const SizedBox(height: 10),
 
-                      // Description (Left-aligned)
                       const Text(
                         "You have unsaved changes. If you leave now, your story draft will be lost.",
                         textAlign: TextAlign.left,
@@ -4650,10 +4615,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Horizontal Equal-Width & Fixed Height Action Buttons (12px spacing)
                       Row(
                         children: [
-                          // Safe Action: Keep Editing (Dark Surface + White Border)
                           Expanded(
                             child: SizedBox(
                               height: 46,
@@ -4691,7 +4654,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                           ),
                           const SizedBox(width: 12),
 
-                          // Destructive Action: Discard Draft (Filled Red Button)
                           Expanded(
                             child: SizedBox(
                               height: 46,
@@ -4775,7 +4737,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Background Gradients Row
               const Text(
                 "Background Gradient",
                 style: TextStyle(color: Colors.white70, fontSize: 13),
@@ -4817,7 +4778,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
               const SizedBox(height: 20),
 
-              // Font Style & Alignment Controls Row
               Row(
                 children: [
                   Expanded(
@@ -5340,7 +5300,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       if (text.isNotEmpty) {
         setState(() {
           if (_editingTextLayer != null) {
-            // ONLY update text content and styles — PRESERVE existing offset, scale, rotation
             _editingTextLayer!.text = text;
             _editingTextLayer!.color = _activeTextColor;
             _editingTextLayer!.bgColor = _activeTextBgColor;
@@ -5389,7 +5348,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     final screenWidth = mq.size.width;
     final screenHeight = mq.size.height;
 
-    // Live text style
     final baseTextStyle = _getLayerTextStyle(
       _activeFontStyle,
       _activeTextColor,
@@ -5499,13 +5457,11 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           color: Colors.transparent,
           child: Stack(
             children: [
-              // ── Column layout: top bar → canvas input → contextual bar → bottom controls ──
               SafeArea(
                 top: true,
                 bottom: false,
                 child: Column(
                   children: [
-                    // ── TOP BAR (Clean Responsive Header) ──
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
@@ -5513,7 +5469,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       ),
                       child: Row(
                         children: [
-                          // LEFT: Close / Back Button
                           Tooltip(
                             message: 'Close',
                             child: GestureDetector(
@@ -5542,11 +5497,9 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
                           const Spacer(),
 
-                          // RIGHT: [ @ ] [ Emoji ] [ Audio ] [ Done ]
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // 1. @ Mention Button
                               Tooltip(
                                 message: 'Mention',
                                 child: GestureDetector(
@@ -5575,7 +5528,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                               ),
                               const SizedBox(width: 8),
 
-                              // 2. Emoji / Sticker Button
                               Tooltip(
                                 message: 'Stickers',
                                 child: GestureDetector(
@@ -5604,7 +5556,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                               ),
                               const SizedBox(width: 8),
 
-                              // 3. Audio / Music Button
                               Tooltip(
                                 message: 'Music',
                                 child: GestureDetector(
@@ -5633,7 +5584,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                               ),
                               const SizedBox(width: 10),
 
-                              // 4. Done Button
                               Tooltip(
                                 message: 'Done',
                                 child: GestureDetector(
@@ -5675,11 +5625,9 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         ],
                       ),
                     ),
-                    // ── CANVAS AREA (Natural Text Editing) ──
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
-                          // Tapping empty area closes secondary panel if open, otherwise closes editor
                           if (_activeContextTool != ActiveContextTool.none) {
                             setState(
                               () => _activeContextTool = ActiveContextTool.none,
@@ -5708,14 +5656,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       ),
                     ),
 
-                    // ── CONTEXTUAL SECONDARY CONTROL BAR (Shown ONLY when an option is selected) ──
                     if (_activeContextTool != ActiveContextTool.none)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: _buildContextualControlBar(),
                       ),
 
-                    // ── PRIMARY TOOLBAR CAPSULE (Compact, simplified icons) ──
                     Padding(
                       padding: EdgeInsets.only(
                         left: 16,
@@ -5751,7 +5697,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              // 1. Color / Background Control
                               _buildPrimaryEditorToolBtn(
                                 active:
                                     _activeContextTool == ActiveContextTool.color,
@@ -5783,7 +5728,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                 }),
                               ),
 
-                              // 2. Alignment Toggle (☰)
                               _buildPrimaryEditorToolBtn(
                                 active: false,
                                 tooltip: 'Alignment',
@@ -5812,7 +5756,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                 }),
                               ),
 
-                              // 3. Font Family (Aa)
                               _buildPrimaryEditorToolBtn(
                                 active:
                                     _activeContextTool == ActiveContextTool.font,
@@ -5834,7 +5777,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                 }),
                               ),
 
-                              // 4. Text Effects (✨)
                               _buildPrimaryEditorToolBtn(
                                 active:
                                     _activeContextTool ==
@@ -5854,7 +5796,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                 }),
                               ),
 
-                              // 5. Dedicated Canvas Background Control (if in Text story mode)
                               if (widget.type == StoryType.text)
                                 _buildPrimaryEditorToolBtn(
                                   active:
@@ -5871,7 +5812,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                   }),
                                 ),
 
-                              // 6. Text Box Background style toggle [Aa]
                               _buildPrimaryEditorToolBtn(
                                 active: _activeTextBgStyle != TextBgStyle.none,
                                 tooltip: 'Text Background',
@@ -5930,7 +5870,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 ),
               ),
 
-              // ── IN-PLACE TEXT EDITING (For existing text layers on image stories) ──
               if (isEditingExistingImageText)
                 Positioned(
                   left: _editingTextLayer!
@@ -5951,7 +5890,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   ),
                 ),
 
-              // ── LEFT SIDE: Vertical Font Size Slider ──
               Positioned(
                 left: 0,
                 top: topPadding + 60,
@@ -6023,7 +5961,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row with Title + Close button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -6064,7 +6001,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           ),
           const SizedBox(height: 6),
 
-          // Contextual Body
           if (_activeContextTool == ActiveContextTool.color)
             _buildContextualColorPicker()
           else if (_activeContextTool == ActiveContextTool.font)
@@ -6509,7 +6445,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Category Filter Tabs
         SizedBox(
           height: 28,
           child: ListView.separated(
@@ -6560,7 +6495,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         ),
         const SizedBox(height: 6),
 
-        // Content Swatches (Solid / Gradients)
         contentWidget,
       ],
     );
@@ -6688,7 +6622,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 1. Drag Handle
                   Center(
                     child: Container(
                       width: 36,
@@ -6701,11 +6634,9 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                     ),
                   ),
 
-                  // 2. Header: [ ← ]  Story Settings  [ Done ]
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Back / Close Icon Button (Discards uncommitted changes)
                       IconButton(
                         onPressed: () => Navigator.pop(ctx),
                         icon: const Icon(
@@ -6720,7 +6651,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         ),
                       ),
 
-                      // Centered Title
                       const Text(
                         "Story Settings",
                         style: TextStyle(
@@ -6731,7 +6661,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         ),
                       ),
 
-                      // Done Button (Confirm & Save Settings)
                       GestureDetector(
                         onTap: () {
                           setState(() {
@@ -6773,14 +6702,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // 3. Scrollable Body
                   Flexible(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // ── Privacy Section ──
                           const Text(
                             "Who can see your story?",
                             style: TextStyle(
@@ -6799,7 +6726,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                           ),
                           const SizedBox(height: 14),
 
-                          // Option 1: Public
                           _buildPrivacyOptionTile(
                             icon: Icons.public_rounded,
                             iconColor: const Color(0xFF38BDF8),
@@ -6812,7 +6738,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                           ),
                           const SizedBox(height: 8),
 
-                          // Option 2: Friends
                           _buildPrivacyOptionTile(
                             icon: Icons.people_alt_rounded,
                             iconColor: const Color(0xFF34D399),
@@ -6825,7 +6750,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                           ),
                           const SizedBox(height: 8),
 
-                          // Option 3: Only Me
                           _buildPrivacyOptionTile(
                             icon: Icons.lock_rounded,
                             iconColor: const Color(0xFFF43F5E),
@@ -6838,7 +6762,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                           ),
                           const SizedBox(height: 8),
 
-                          // Option 4: Custom (Coming Soon)
                           _buildPrivacyOptionTile(
                             icon: Icons.settings_suggest_rounded,
                             iconColor: const Color(0xFFA855F7),
@@ -6860,7 +6783,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                           const Divider(color: Colors.white12, height: 1),
                           const SizedBox(height: 16),
 
-                          // ── Story Interactions Section ──
                           const Text(
                             "Story Interactions",
                             style: TextStyle(
@@ -6879,7 +6801,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                           ),
                           const SizedBox(height: 10),
 
-                          // Segmented Control: [ Everyone ] [ Friends ] [ Off ]
                           Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
@@ -6957,7 +6878,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
                           const SizedBox(height: 16),
 
-                          // ── Allow Reactions Toggle Row ──
                           InkWell(
                             onTap: () => setSheetState(
                               () => tempAllowReactions = !tempAllowReactions,
@@ -7154,7 +7074,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     );
   }
 
-  /// Small circular icon button for the editor tool row
   Widget _buildToolIcon({
     required IconData icon,
     required bool active,
@@ -7183,7 +7102,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     );
   }
 
-  /// Circular icon button used in the text editor top bar.
   Widget _buildEditorIconBtn({
     required IconData icon,
     required bool active,
@@ -7325,7 +7243,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             ),
             const SizedBox(height: 14),
 
-            // 1. Rotate Image
             ListTile(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 8,
@@ -7362,7 +7279,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               },
             ),
 
-            // 2. Remove Photo
             ListTile(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 8,
@@ -7404,7 +7320,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
             const SizedBox(height: 8),
 
-            // Cancel Button
             SizedBox(
               width: double.infinity,
               height: 44,
@@ -7432,14 +7347,14 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     const textColors = [
       Colors.white,
       Colors.black,
-      Color(0xFFFACC15), // Amber
-      Color(0xFFF43F5E), // Rose
-      Color(0xFF38BDF8), // Sky
-      Color(0xFFA855F7), // Violet
-      Color(0xFF34D399), // Emerald
-      Color(0xFFFB923C), // Orange
-      Color(0xFFE879F9), // Fuchsia
-      Color(0xFF4ADE80), // Green
+      Color(0xFFFACC15),
+      Color(0xFFF43F5E),
+      Color(0xFF38BDF8),
+      Color(0xFFA855F7),
+      Color(0xFF34D399),
+      Color(0xFFFB923C),
+      Color(0xFFE879F9),
+      Color(0xFF4ADE80),
     ];
 
     const fontPresets = [
@@ -7469,7 +7384,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Font Presets Row ──
           SizedBox(
             height: 34,
             child: ListView.separated(
@@ -7525,7 +7439,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
           const SizedBox(height: 10),
 
-          // ── Color Swatches Row ──
           SizedBox(
             height: 32,
             child: ListView.separated(
@@ -7601,7 +7514,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
-            // 1. Primary Full-Screen Immersive Canvas (Media / Text)
             Positioned.fill(
               child: Stack(
                 children: [
@@ -7625,22 +7537,18 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                     ),
                   ),
 
-                  // Movable Overlays (Text / Stickers)
                   ..._layers.map((layer) => _buildLayerWidget(layer)),
 
-                  // Object action toolbar (Edit / Duplicate / Delete) — shows ONLY for STICKERS and IMAGES (never TEXT or EMOJI)
                   if (_selectedLayer != null &&
                       !_isFullScreenTextEditing &&
                       _shouldShowObjectToolbar(_selectedLayer))
                     _buildObjectToolbar(_selectedLayer!),
 
-                  // Full-Screen Immersive Text Editor Overlay
                   _buildFullScreenTextEditorOverlay(),
                 ],
               ),
             ),
 
-            // 2. Top Header Overlay Bar (Floating gradient header)
             if (!_isFullScreenTextEditing)
               Positioned(
                 top: 0,
@@ -7669,7 +7577,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Row 1: Header (Close X button)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -7741,12 +7648,10 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                 const SizedBox(width: 4),
                               ],
 
-                              // RIGHT ACTION BUTTONS: [ @ ] [ Emoji ] [ Audio ] [ Done ]
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   if (!(widget.type == StoryType.template || _isTemplateApplied)) ...[
-                                    // 1. @ Mention Button
                                     GestureDetector(
                                       onTap: _showMentionSheet,
                                       behavior: HitTestBehavior.opaque,
@@ -7770,7 +7675,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                     ),
                                     const SizedBox(width: 8),
 
-                                    // 2. Emoji / Sticker Button
                                     GestureDetector(
                                       onTap: _openEmojiPicker,
                                       behavior: HitTestBehavior.opaque,
@@ -7794,7 +7698,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                     ),
                                     const SizedBox(width: 8),
 
-                                    // 3. Audio / Music Button
                                     GestureDetector(
                                       onTap: _showMusicSheet,
                                       behavior: HitTestBehavior.opaque,
@@ -7819,7 +7722,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                     const SizedBox(width: 10),
                                   ],
 
-                                  // 4. Done Button (Posts story directly from canvas)
                                   Tooltip(
                                     message: 'Done',
                                     child: GestureDetector(
@@ -7869,7 +7771,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                             ],
                           ),
 
-                          // Text editing controls removed from header; they are now exclusively in the bottom contextual toolbar.
                         ],
                       ),
                     ),
@@ -7877,7 +7778,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                 ),
               ),
 
-            // 2.5 Animated Floating Trash Delete Target (Active ONLY while dragging elements)
             AnimatedPositioned(
               duration: const Duration(milliseconds: 240),
               curve: Curves.easeOutCubic,
@@ -7940,7 +7840,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
               ),
             ),
 
-            // 3. Bottom Control Deck Overlay (Floating over canvas bottom)
             if (!_isFullScreenTextEditing)
               Positioned(
                 bottom: 0,
@@ -7971,14 +7870,12 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Contextual Control Panel (if active)
                             if (_activeContextTool !=
                                 ActiveContextTool.none) ...[
                               _buildContextualControlBar(),
                               const SizedBox(height: 6),
                             ],
 
-                            // Unified Glassmorphic Toolbar Capsule (Icon Buttons with 44px Touch Targets)
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 10,
@@ -8004,7 +7901,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                 physics: const BouncingScrollPhysics(),
                                 child: Row(
                                   children: [
-                                    // 1. Template Layout Switcher
                                     _buildHorizontalToolItem(
                                       icon: Icons.dashboard_customize_outlined,
                                       label: "Template",
@@ -8012,7 +7908,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                       onTap: _openTemplatePickerSheet,
                                     ),
 
-                                    // 1.5 Template Slot Reorder (Template Mode)
                                     if (widget.type == StoryType.template || _isTemplateApplied)
                                       _buildHorizontalToolItem(
                                         icon: Icons.swap_horiz_rounded,
@@ -8021,7 +7916,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                         onTap: _showTemplateReorderSheet,
                                       ),
 
-                                    // 2. Add Text Overlay
                                     _buildHorizontalToolItem(
                                       icon: Icons.title_rounded,
                                       label: "Text",
@@ -8029,7 +7923,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                       onTap: () => _openFloatingTextEditor(),
                                     ),
 
-                                    // 3. Stickers & Emojis (Unified single action)
                                     _buildHorizontalToolItem(
                                       icon: Icons.sentiment_satisfied_alt_outlined,
                                       label: "Stickers",
@@ -8037,7 +7930,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                       onTap: _openEmojiPicker,
                                     ),
 
-                                    // 4. Location Tag
                                     _buildHorizontalToolItem(
                                       icon: Icons.location_on_outlined,
                                       label: "Location",
@@ -8045,7 +7937,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                       onTap: _openLocationPicker,
                                     ),
 
-                                    // 5. Mention Tag (@)
                                     _buildHorizontalToolItem(
                                       icon: Icons.alternate_email_rounded,
                                       label: "Mention",
@@ -8053,7 +7944,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                       onTap: _showMentionSheet,
                                     ),
 
-                                    // 6. Add Photo / Gallery (For Image / Video / Template Stories)
                                     if (widget.type != StoryType.text)
                                       _buildHorizontalToolItem(
                                         icon: Icons.photo_library_outlined,
@@ -8067,7 +7957,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                             : _showAddImagePicker,
                                       ),
 
-                                    // 7. Music
                                     _buildHorizontalToolItem(
                                       icon: Icons.music_note_rounded,
                                       label: "Music",
@@ -8075,7 +7964,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
                                       onTap: _showMusicSheet,
                                     ),
 
-                                    // 8. Dedicated Canvas Background Control (Text & Template Story Modes)
                                     if (widget.type == StoryType.text || widget.type == StoryType.template || _isTemplateApplied)
                                       _buildHorizontalToolItem(
                                         icon: Icons.palette_outlined,
@@ -8098,10 +7986,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
                             const SizedBox(height: 8),
 
-                            // 2. Story Privacy Indicator & Settings Entry Bar
                             _buildStoryPrivacyBar(),
 
-                            // 3. Interactive Apple-Grade "Post Story" Call-To-Action Pill Button
                             _AnimatedPostStoryButton(
                               isPublishing: _isPublishing,
                               onPost: _publishStory,

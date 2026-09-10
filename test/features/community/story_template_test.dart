@@ -38,7 +38,6 @@ void main() {
   });
 
   group('Story Template Feature Tests', () {
-    // ── 1. Template Presets & Model Validation ──
     test('Test 1: Preset library contains presets for all requested categories', () {
       final categories = storyTemplatePresets.map((t) => t.category).toSet();
       expect(categories.contains('Single'), isTrue);
@@ -47,7 +46,6 @@ void main() {
       expect(categories.contains('Four Photos'), isTrue);
       expect(categories.contains('Photo + Text'), isTrue);
 
-      // Verify specific required templates
       expect(storyTemplatePresets.any((t) => t.id == 'single_polaroid' && t.slotCount == 1), isTrue);
       expect(storyTemplatePresets.any((t) => t.id == 'single_card' && t.slotCount == 1), isTrue);
       expect(storyTemplatePresets.any((t) => t.id == 'two_split_v' && t.slotCount == 2), isTrue);
@@ -86,7 +84,6 @@ void main() {
       expect(fromJson.text, 'Sample Note');
     });
 
-    // ── 2. Canvas Rendering of Template Layouts ──
     testWidgets('Test 3: StoryTemplateCanvas renders Single Photo layout (Polaroid)', (tester) async {
       final preset = storyTemplatePresets.firstWhere((t) => t.id == 'single_polaroid');
       final slots = [StoryTemplateSlot(id: 'slot_0', mediaPath: 'assets/images/user_profile.png')];
@@ -225,7 +222,6 @@ void main() {
       expect(find.byIcon(Icons.format_quote_rounded), findsOneWidget);
     });
 
-    // ── 3. Empty Slot Interaction ──
     testWidgets('Test 8: Empty slot shows Tap to add photo and triggers onTap callback', (tester) async {
       final preset = storyTemplatePresets.firstWhere((t) => t.id == 'two_split_v');
       final slots = [
@@ -262,7 +258,6 @@ void main() {
       expect(tappedIndex, 1);
     });
 
-    // ── 4. Story Template Picker Sheet ──
     testWidgets('Test 9: StoryTemplatePickerSheet allows category filtering and selection', (tester) async {
       await tester.binding.setSurfaceSize(const Size(390, 844));
       StoryTemplateConfig? chosen;
@@ -284,19 +279,16 @@ void main() {
       expect(find.text('Two Photos'), findsOneWidget);
       expect(find.text('Three Photos'), findsOneWidget);
 
-      // Tap 'Two Photos' filter chip
       await tester.tap(find.text('Two Photos'));
       await tester.pumpAndSettle();
 
       expect(find.text('Split Vertical'), findsOneWidget);
 
-      // Select 'Split Vertical'
       await tester.ensureVisible(find.text('Split Vertical'));
       await tester.tap(find.text('Split Vertical'));
       expect(chosen?.id, 'two_split_v');
     });
 
-    // ── 5. Story Creator Screen in Template Mode ──
     testWidgets('Test 10: StoryCreatorScreen opens in template mode with template tools', (tester) async {
       Get.put(StoryController());
 
@@ -317,7 +309,6 @@ void main() {
       expect(find.byTooltip('Stickers'), findsOneWidget);
     });
 
-    // ── 6. Publishing Flow for Templates ──
     test('Test 11: StoryController.publishStory publishes template story correctly', () async {
       final controller = Get.put(StoryController());
       await controller.fetchStories();
@@ -344,7 +335,6 @@ void main() {
       expect(published.templateSlots.length, 2);
     });
 
-    // ── 7. StoryCanvasRenderer Support ──
     testWidgets('Test 12: StoryCanvasRenderer renders template story correctly', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -372,13 +362,12 @@ void main() {
       expect(find.text('Quote text on canvas renderer'), findsOneWidget);
     });
 
-    // ── 8. Responsive Layouts across Screen Sizes (Zero Overflow) ──
     testWidgets('Test 13: Template Canvas renders across small (320x568), normal (390x844), and large (430x932) devices without overflow', (tester) async {
       final testSizes = [
-        const Size(320, 568), // Small iPhone SE / Android compact
-        const Size(360, 640), // Android normal
-        const Size(390, 844), // iPhone 13/14
-        const Size(430, 932), // Large Pro Max
+        const Size(320, 568),
+        const Size(360, 640),
+        const Size(390, 844),
+        const Size(430, 932),
       ];
 
       for (final size in testSizes) {
@@ -412,7 +401,6 @@ void main() {
       }
     });
 
-    // ── 9. Contextual Controls on Slot Selection ──
     testWidgets('Test 14: Contextual slot toolbar appears only when a slot is selected, with Replace, Reset, and Remove actions', (tester) async {
       final slot = StoryTemplateSlot(
         id: 'slot_0',
@@ -421,7 +409,6 @@ void main() {
         offset: Offset.zero,
       );
 
-      // Unselected state -> NO floating buttons over image
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -432,7 +419,7 @@ void main() {
                 template: storyTemplatePresets.firstWhere((t) => t.id == 'single_polaroid'),
                 slots: [slot],
                 isInteractive: true,
-                selectedSlotIndex: null, // Nothing selected
+                selectedSlotIndex: null,
               ),
             ),
           ),
@@ -443,7 +430,6 @@ void main() {
       expect(find.text('Replace'), findsNothing);
       expect(find.byIcon(Icons.restart_alt_rounded), findsNothing);
 
-      // Selected state -> Contextual toolbar appears
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -454,7 +440,7 @@ void main() {
                 template: storyTemplatePresets.firstWhere((t) => t.id == 'single_polaroid'),
                 slots: [slot],
                 isInteractive: true,
-                selectedSlotIndex: 0, // Slot 0 selected
+                selectedSlotIndex: 0,
               ),
             ),
           ),
@@ -467,7 +453,6 @@ void main() {
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     });
 
-    // ── 10. Initial Create Story Sheet contains Camera, Gallery, and Text Story (Templates removed from initial sheet) ──
     testWidgets('Test 15: Create Story sheet contains Camera, Gallery, and Text Story without top-level Templates', (tester) async {
       await tester.pumpWidget(
         GetMaterialApp(
@@ -490,11 +475,9 @@ void main() {
       expect(find.text('community.camera'.tr), findsOneWidget);
       expect(find.text('community.gallery'.tr), findsOneWidget);
       expect(find.text('community.textStory'.tr), findsOneWidget);
-      // Templates MUST NOT appear as a top-level option in initial Create Story bottom sheet
       expect(find.text('Templates'), findsNothing);
     });
 
-    // ── 11. Story Gallery Screen Smart Multi-Select for Templates ──
     testWidgets('Test 16: StoryGalleryScreen auto-enables multi-select for 3-photo template and shows target count banner', (tester) async {
       final template3 = storyTemplatePresets.firstWhere((t) => t.id == 'three_columns');
 
@@ -513,13 +496,11 @@ void main() {
       expect(galleryCtrl.requiredPhotosCount.value, 3);
       expect(galleryCtrl.maxSelectionCount.value, 3);
 
-      // Verify instruction banner and counter
       expect(find.text('3 Columns'), findsOneWidget);
       expect(find.text('0/3 selected'), findsOneWidget);
       expect(find.text('Select 3 photos for 3 Columns.'), findsOneWidget);
     });
 
-    // ── 12. Single Photo Template in Story Creator auto-applies active image with NO extra picker ──
     testWidgets('Test 17: In Image Story Editor, selecting a Single Photo template immediately uses active image without extra picker', (tester) async {
       Get.put(StoryController());
 
@@ -535,23 +516,19 @@ void main() {
 
       expect(find.byTooltip('Template'), findsOneWidget);
 
-      // Tap Template toolbar button
       await tester.tap(find.byTooltip('Template'));
       await tester.pumpAndSettle();
 
       expect(find.byType(StoryTemplatePickerSheet), findsOneWidget);
 
-      // Tap Polaroid Classic (Single Photo template)
       await tester.ensureVisible(find.text('Polaroid Classic'));
       await tester.tap(find.text('Polaroid Classic'));
       await tester.pumpAndSettle();
 
-      // Verify Polaroid template is applied immediately on canvas with image
       expect(find.byType(StoryTemplateCanvas), findsOneWidget);
       expect(find.byType(Image), findsOneWidget);
     });
 
-    // ── 13. Image Story Editor Toolbar contains all required creation tools including Template ──
     testWidgets('Test 18: Image Story Editor toolbar contains Template, Photo, Text, Stickers, Location, Mention tools', (tester) async {
       Get.put(StoryController());
 
@@ -565,7 +542,6 @@ void main() {
       );
       await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
-      // Verify all tools are accessible in editor toolbar
       expect(find.byTooltip('Template'), findsOneWidget);
       expect(find.byTooltip('Photo'), findsOneWidget);
       expect(find.byTooltip('Text'), findsOneWidget);
@@ -574,7 +550,6 @@ void main() {
       expect(find.byTooltip('Mention'), findsOneWidget);
     });
 
-    // ── 14. Multi-photo Template auto-applies when enough photos are already present ──
     testWidgets('Test 19: When 2 photos are present, selecting Two Photos template reuses them immediately', (tester) async {
       Get.put(StoryController());
 
@@ -591,26 +566,21 @@ void main() {
       );
       await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
-      // Open template picker
       await tester.tap(find.byTooltip('Template'));
       await tester.pumpAndSettle();
 
       expect(find.byType(StoryTemplatePickerSheet), findsOneWidget);
 
-      // Filter by Two Photos
       await tester.tap(find.text('Two Photos'));
       await tester.pumpAndSettle();
 
-      // Tap Split Vertical (now at the top of the grid)
       await tester.tap(find.text('Split Vertical').first);
       await tester.pumpAndSettle();
 
-      // Verify template canvas has 2 images loaded
       expect(find.byType(StoryTemplateCanvas), findsOneWidget);
       expect(find.byType(Image), findsNWidgets(2));
     });
 
-    // ── 15. Slot transformation state is isolated per slot ──
     test('Test 20: Slot transformation state is isolated per slot', () {
       final slot0 = StoryTemplateSlot(
         id: 'slot_0',
@@ -637,7 +607,6 @@ void main() {
       expect(slot1.rotation, 0.0);
     });
 
-    // ── 16. Five & Six Photo Layout Rendering Tests ──
     testWidgets('Test 21: StoryTemplateCanvas renders Five Photos 1 Top + 4 Grid layout', (tester) async {
       final preset = storyTemplatePresets.firstWhere((t) => t.id == 'five_hero_grid');
       final slots = List.generate(
@@ -719,7 +688,6 @@ void main() {
       Get.put(StoryController());
       final galleryCtrl = Get.put(StoryGalleryController());
 
-      // 1. Single photo template
       final singleTemplate = storyTemplatePresets.firstWhere((t) => t.category == 'Single');
       galleryCtrl.configureForTemplate(
         template: singleTemplate,
@@ -732,7 +700,6 @@ void main() {
       expect(galleryCtrl.requiredPhotosCount.value, 1);
       expect(galleryCtrl.isMultiSelectMode.value, false);
 
-      // 2. Two photos template
       final twoTemplate = storyTemplatePresets.firstWhere((t) => t.category == 'Two Photos');
       galleryCtrl.configureForTemplate(
         template: twoTemplate,
@@ -745,7 +712,6 @@ void main() {
       expect(galleryCtrl.requiredPhotosCount.value, 2);
       expect(galleryCtrl.isMultiSelectMode.value, true);
 
-      // 3. Three photos template
       final threeTemplate = storyTemplatePresets.firstWhere((t) => t.category == 'Three Photos');
       galleryCtrl.configureForTemplate(
         template: threeTemplate,
@@ -758,7 +724,6 @@ void main() {
       expect(galleryCtrl.requiredPhotosCount.value, 3);
       expect(galleryCtrl.isMultiSelectMode.value, true);
 
-      // 4. Four photos template
       final fourTemplate = storyTemplatePresets.firstWhere((t) => t.category == 'Four Photos');
       galleryCtrl.configureForTemplate(
         template: fourTemplate,
@@ -795,7 +760,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify no exception occurred during build / startup
       expect(tester.takeException(), isNull);
       expect(galleryCtrl.isMultiSelectMode.value, isTrue);
       expect(galleryCtrl.requiredPhotosCount.value, 3);
@@ -829,7 +793,6 @@ void main() {
 
       expect(find.text('Replace'), findsOneWidget);
 
-      // Simulate slot replacement
       slots[0].mediaPath = 'assets/images/cat_stickers.png';
 
       await tester.pumpWidget(
@@ -914,7 +877,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(Image), findsNWidgets(3));
-      // Each slot has its own independent ClipRect
       expect(find.byType(ClipRect), findsWidgets);
     });
 
@@ -942,14 +904,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Zoom in via pinch gesture
       final gesture = await tester.createGesture();
       await gesture.down(const Offset(195, 400));
       await gesture.moveBy(const Offset(20, 20));
       await gesture.up();
       await tester.pumpAndSettle();
 
-      // Double tap resets to 1.0 and zero offset
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pump(const Duration(milliseconds: 50));
       await tester.tap(find.byType(GestureDetector).first);
@@ -991,18 +951,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify all actions are present in the contextual pill
       expect(find.text('Replace'), findsOneWidget);
       expect(find.byIcon(Icons.rotate_90_degrees_cw_rounded), findsOneWidget);
       expect(find.byIcon(Icons.restart_alt_rounded), findsOneWidget);
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
 
-      // Tap Rotate
       await tester.tap(find.byIcon(Icons.rotate_90_degrees_cw_rounded));
       await tester.pumpAndSettle();
       expect(rotatedDegrees, 90.0);
 
-      // Tap Reset
       await tester.tap(find.byIcon(Icons.restart_alt_rounded));
       await tester.pumpAndSettle();
       expect(resetScale, 1.0);
@@ -1018,12 +975,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 1. Text story opens in full-screen text editing mode
       expect(find.byType(TextField), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'test');
       await tester.pumpAndSettle();
 
-      // 2. Formatting controls: Color, Alignment, Font
       expect(find.byTooltip('Color'), findsOneWidget);
       await tester.tap(find.byTooltip('Color'));
       await tester.pumpAndSettle();
@@ -1036,41 +991,35 @@ void main() {
       await tester.tap(find.byTooltip('Font'));
       await tester.pumpAndSettle();
 
-      // 3. Press Done -> return to normal Story editor
       expect(find.text('Done'), findsOneWidget);
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
 
-      // 4. Verify normal Story editor toolbar has unique actions without duplicated Emoji
       expect(find.byTooltip('Template'), findsOneWidget);
       expect(find.byTooltip('Text'), findsOneWidget);
       expect(find.byTooltip('Stickers'), findsOneWidget);
       expect(find.byTooltip('Location'), findsOneWidget);
       expect(find.byTooltip('Mention'), findsOneWidget);
-      expect(find.byTooltip('Emoji'), findsNothing); // No duplicate Emoji button
+      expect(find.byTooltip('Emoji'), findsNothing);
 
-      // 5. Tap Text again -> verify text editing controls re-appear
       await tester.tap(find.byTooltip('Text'));
       await tester.pumpAndSettle();
       expect(find.text('Done'), findsOneWidget);
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
 
-      // 6. Tap Stickers -> verify sticker/emoji sheet opens
       await tester.tap(find.byTooltip('Stickers'));
       await tester.pumpAndSettle();
       expect(find.byType(BottomSheet), findsOneWidget);
       Navigator.pop(tester.element(find.byType(BottomSheet)));
       await tester.pumpAndSettle();
 
-      // 7. Tap Location -> verify location tag sheet opens
       await tester.tap(find.byTooltip('Location'));
       await tester.pumpAndSettle();
       expect(find.text('Add Location Tag'), findsOneWidget);
       Navigator.pop(tester.element(find.byType(BottomSheet)));
       await tester.pumpAndSettle();
 
-      // 8. Post Story
       expect(find.text('Post Story'), findsOneWidget);
       await tester.tap(find.text('Post Story'));
       await tester.pumpAndSettle();
@@ -1090,34 +1039,29 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 1. Verify normal Story editor toolbar
       expect(find.byTooltip('Template'), findsOneWidget);
       expect(find.byTooltip('Text'), findsOneWidget);
       expect(find.byTooltip('Stickers'), findsOneWidget);
       expect(find.byTooltip('Location'), findsOneWidget);
       expect(find.byTooltip('Mention'), findsOneWidget);
       expect(find.byTooltip('Photo'), findsOneWidget);
-      expect(find.byTooltip('Emoji'), findsNothing); // Zero duplicates
+      expect(find.byTooltip('Emoji'), findsNothing);
 
-      // 2. Add text
       await tester.tap(find.byTooltip('Text'));
       await tester.pumpAndSettle();
       expect(find.byType(TextField), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'photo caption');
       await tester.pumpAndSettle();
 
-      // 3. Tap Done
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
 
-      // 4. Open Stickers sheet
       await tester.tap(find.byTooltip('Stickers'));
       await tester.pumpAndSettle();
       expect(find.byType(BottomSheet), findsOneWidget);
       Navigator.pop(tester.element(find.byType(BottomSheet)));
       await tester.pumpAndSettle();
 
-      // 5. Verify toolbar remains clean with 0 duplicate buttons
       expect(find.byTooltip('Template'), findsOneWidget);
       expect(find.byTooltip('Text'), findsOneWidget);
       expect(find.byTooltip('Stickers'), findsOneWidget);

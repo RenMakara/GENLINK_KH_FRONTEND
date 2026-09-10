@@ -3,7 +3,6 @@ import '../../domain/models/story_model.dart';
 
 export '../../domain/models/story_model.dart' show StoryAuthor;
 
-/// Established demo authors whose identities are consistent with the GenLink Feed.
 abstract final class DemoStoryAuthors {
   static const renMakara = StoryAuthor(
     id: 'user_makara',
@@ -22,10 +21,6 @@ abstract final class DemoStoryAuthors {
   );
 }
 
-/// Temporary frontend demo story model for evaluating the Stories UI.
-///
-/// NOTE: Uses a complete [StoryAuthor] as the single source of truth for
-/// user identity across Feed, Stories, and Profile.
 class DemoStoryModel {
   final StoryAuthor author;
   final String storyContent;
@@ -53,7 +48,6 @@ class DemoStoryModel {
     this.isViewed = false,
   });
 
-  // Source-of-truth author properties
   String get userId => author.id;
   String get userName => author.name;
   String get avatarUrl => author.avatarUrl;
@@ -61,8 +55,6 @@ class DemoStoryModel {
   String get userAvatar => author.avatarUrl;
   String get content => storyContent;
 
-  /// Converts this demo story model into a [StoryGroupModel] compatible with
-  /// the shared Story Viewer and tray components.
   StoryGroupModel toStoryGroup() {
     final startHex = gradientColors.isNotEmpty
         ? '0x${gradientColors.first.toARGB32().toRadixString(16).padLeft(8, '0')}'
@@ -101,7 +93,6 @@ class DemoStoryModel {
   }
 }
 
-/// Pre-populated list of demo stories using established Feed authors.
 final List<DemoStoryModel> kDemoStories = [
   DemoStoryModel(
     author: DemoStoryAuthors.renMakara,
@@ -129,12 +120,10 @@ final List<DemoStoryModel> kDemoStories = [
   ),
 ];
 
-/// Returns all demo stories formatted as [StoryGroupModel]s.
 List<StoryGroupModel> getDemoStoryGroups() {
   return kDemoStories.map((d) => d.toStoryGroup()).toList();
 }
 
-/// Finds a demo story by story id, author id, or author name.
 DemoStoryModel? getDemoStoryById(String storyId) {
   final normalized = storyId.replaceFirst('demo_', '').toLowerCase();
   for (final story in kDemoStories) {
@@ -152,7 +141,6 @@ DemoStoryModel? getDemoStoryById(String storyId) {
   return null;
 }
 
-/// Updates the local like state for a demo story.
 void updateDemoStoryLike(String storyId, bool isLiked, int likesCount) {
   final demo = getDemoStoryById(storyId);
   if (demo != null) {
@@ -161,7 +149,6 @@ void updateDemoStoryLike(String storyId, bool isLiked, int likesCount) {
   }
 }
 
-/// Marks a demo story as viewed.
 void markDemoStoryViewed(String storyId) {
   final demo = getDemoStoryById(storyId);
   if (demo != null) {

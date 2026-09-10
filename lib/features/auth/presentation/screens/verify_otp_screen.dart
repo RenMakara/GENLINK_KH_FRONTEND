@@ -11,10 +11,6 @@ import '../controllers/auth_controller.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/otp_keypad.dart';
 
-/// Email verification via the 6-digit OTP.
-///
-/// The backend returns a full token pair from `/auth/verify-email`, so a
-/// successful verification signs the user in — there is no second login step.
 class VerifyOtpScreen extends StatefulWidget {
   const VerifyOtpScreen({super.key});
 
@@ -27,8 +23,6 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
 
   AuthController get _auth => Get.find<AuthController>();
 
-  /// Email comes from the register/forgot step; `Get.arguments` is a
-  /// fallback for deep links into this screen.
   late final String _email = _auth.pendingEmail.value.isNotEmpty
       ? _auth.pendingEmail.value
       : (Get.arguments as String? ?? '');
@@ -48,8 +42,6 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   Future<void> _submit() async {
     if (!_isComplete) return;
     final success = await _auth.verifyEmail(email: _email, otp: _otp);
-    // Verification returns a session, so the account is live from here.
-    // New accounts go through profile setup first; it is skippable.
     if (success) Get.offAllNamed<void>(AppRoutes.profileSetup);
   }
 
@@ -62,8 +54,6 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // No `title`: this screen renders its own header so the email address
-    // can be emphasised inside the subtitle line.
     return AuthScaffold(
       backBottomSpacing: AppSpacing.md,
       children: [
@@ -139,8 +129,6 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
         OtpNumericKeypad(
           onDigitPressed: _appendDigit,
           onBackspacePressed: _deleteDigit,
-          // Verification codes are numeric. The design keeps the symbol key
-          // visible, while a null callback makes its disabled state explicit.
           onSymbolPressed: null,
         ),
         const SizedBox(height: AppSpacing.md),
@@ -156,7 +144,6 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     );
   }
 
-  /// `m:ss`, matching the design's `0:47`.
   static String _formatCountdown(int seconds) =>
       '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
 }

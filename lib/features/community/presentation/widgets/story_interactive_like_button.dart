@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
-/// Clean, minimal, and friendly Story Like Button.
-///
-/// Fast 180ms subtle micro-scale transition (0.95 → 1.06 → 1.0) with zero glow,
-/// zero bounce, and zero particle clutter, matching GenLink's clean black/white UI.
 class StoryInteractiveLikeButton extends StatefulWidget {
   final bool isLiked;
   final int likesCount;
@@ -36,13 +32,11 @@ class _StoryInteractiveLikeButtonState
   void initState() {
     super.initState();
 
-    // Fast, crisp 220ms micro-interaction animation
     _popController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 220),
     );
 
-    // Smooth, satisfying 1.0 -> 1.22 -> 1.0 micro-bounce scale animation
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
         tween: Tween<double>(begin: 1.0, end: 1.22)
@@ -60,7 +54,6 @@ class _StoryInteractiveLikeButtonState
   @override
   void didUpdateWidget(covariant StoryInteractiveLikeButton oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Trigger smooth micro-animation on like / unlike transitions
     if (oldWidget.isLiked != widget.isLiked) {
       _popController.forward(from: 0.0);
     }

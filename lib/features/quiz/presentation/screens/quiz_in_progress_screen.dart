@@ -3,9 +3,11 @@ import 'package:get/get.dart';
 
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../controllers/quiz_controller.dart';
 import '../quiz_colors.dart';
 import '../widgets/quiz_option_tile.dart';
+import '../widgets/quiz_custom_card.dart';
 
 class QuizInProgressScreen extends GetView<QuizController> {
   const QuizInProgressScreen({super.key});
@@ -32,7 +34,7 @@ class QuizInProgressScreen extends GetView<QuizController> {
         if (controller.quizError.value != null) {
           return Center(
             child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -106,7 +108,7 @@ class QuizInProgressScreen extends GetView<QuizController> {
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: Column(
                   children: [
-                    _buildQuestionCard(),
+                    _buildQuestionCard(context),
                     const SizedBox(height: 20),
                     _buildOptionsList(),
                     const SizedBox(height: 20),
@@ -236,7 +238,7 @@ class QuizInProgressScreen extends GetView<QuizController> {
     });
   }
 
-  Widget _buildQuestionCard() {
+  Widget _buildQuestionCard(BuildContext context) {
     return Obx(() {
       if (controller.questions.isEmpty) {
         return Padding(
@@ -248,20 +250,11 @@ class QuizInProgressScreen extends GetView<QuizController> {
       }
       final question =
           controller.questions[controller.currentQuestionIndex.value];
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: QuizThemeColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(color: QuizThemeColors.border),
-          boxShadow: QuizThemeColors.cardShadow,
-        ),
+      return QuizCustomCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Text(
           question.question,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
             color: QuizThemeColors.heading,
             height: 1.4,
           ),
@@ -318,67 +311,28 @@ class QuizInProgressScreen extends GetView<QuizController> {
           child: Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: AppButton.secondary(
+                  label: 'common.skip'.tr,
+                  height: 52,
+                  radius: AppRadius.pill,
                   onPressed: () => controller.skipQuestion(),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: QuizThemeColors.body,
-                    side: BorderSide(color: QuizThemeColors.border),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    minimumSize: const Size(0, 52),
-                  ),
-                  child: Text(
-                    'common.skip'.tr,
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                  ),
                 ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 flex: 2,
-                child: Container(
+                child: AppButton(
+                  label: isLast ? 'quiz.review'.tr : 'common.next'.tr,
+                  icon: isLast ? null : Icons.arrow_forward,
                   height: 52,
-                  decoration: BoxDecoration(
-                    gradient: QuizThemeColors.gradient,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        if (isLast) {
-                          Get.toNamed('/quiz/review');
-                        } else {
-                          controller.nextQuestion();
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      child: Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              isLast ? 'quiz.review'.tr : 'common.next'.tr,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: QuizThemeColors.onPrimary,
-                              ),
-                            ),
-                            if (!isLast) ...[
-                              const SizedBox(width: 6),
-                              Icon(
-                                Icons.arrow_forward,
-                                color: QuizThemeColors.onPrimary,
-                                size: 20,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                  radius: AppRadius.pill,
+                  onPressed: () {
+                    if (isLast) {
+                      Get.toNamed('/quiz/review');
+                    } else {
+                      controller.nextQuestion();
+                    }
+                  },
                 ),
               ),
             ],

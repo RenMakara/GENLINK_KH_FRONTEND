@@ -8,6 +8,7 @@ import '../quiz_colors.dart';
 import '../../domain/models/quiz_models.dart';
 import '../widgets/quiz_custom_card.dart';
 import '../widgets/quiz_gradient_button.dart';
+import '../widgets/quiz_icon_container.dart';
 
 class ClaimRewardScreen extends GetView<QuizController> {
   const ClaimRewardScreen({super.key});
@@ -44,9 +45,9 @@ class ClaimRewardScreen extends GetView<QuizController> {
               const SizedBox(height: 6),
               Text(
                 'quiz.rewardSubtitle'.tr,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: QuizThemeColors.body,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: QuizThemeColors.body),
               ),
               const SizedBox(height: 24),
               _buildRewardBreakdown(result),
@@ -84,23 +85,16 @@ class ClaimRewardScreen extends GetView<QuizController> {
 
   Widget _buildGiftBox() {
     return QuizCustomCard(
-      glass: true,
       padding: const EdgeInsets.all(32),
       borderRadius: AppRadius.xl,
       child: Column(
         children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              color: QuizThemeColors.primaryLight,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Icon(
-              Icons.card_giftcard,
-              color: QuizThemeColors.primary,
-              size: 52,
-            ),
+          QuizIconContainer(
+            icon: Icons.card_giftcard,
+            accentColor: QuizThemeColors.primary,
+            size: 100,
+            iconSize: 52,
+            borderRadius: AppRadius.xl,
           ),
           const SizedBox(height: 14),
           Text(
@@ -129,7 +123,6 @@ class ClaimRewardScreen extends GetView<QuizController> {
           'quiz.xpValue'.trParams({'xp': '${quizResult.xpEarned}'}),
           'quiz.experiencePoints'.tr,
           QuizThemeColors.primary,
-          QuizThemeColors.primarySoft,
         ),
         const SizedBox(height: 12),
         _buildRewardRow(
@@ -137,7 +130,6 @@ class ClaimRewardScreen extends GetView<QuizController> {
           'quiz.coinsValue'.trParams({'coins': '${quizResult.coinsEarned}'}),
           'quiz.quizCoins'.tr,
           QuizThemeColors.gold,
-          QuizThemeColors.warningSoft,
         ),
       ],
     );
@@ -148,7 +140,6 @@ class ClaimRewardScreen extends GetView<QuizController> {
     String value,
     String label,
     Color color,
-    Color bgColor,
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -160,14 +151,12 @@ class ClaimRewardScreen extends GetView<QuizController> {
       ),
       child: Row(
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 22),
+          QuizIconContainer(
+            icon: icon,
+            accentColor: color,
+            size: 42,
+            iconSize: 22,
+            borderRadius: AppRadius.md,
           ),
           const SizedBox(width: 14),
           Expanded(

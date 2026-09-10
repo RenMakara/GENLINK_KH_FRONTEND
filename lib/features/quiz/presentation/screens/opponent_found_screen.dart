@@ -7,6 +7,7 @@ import '../controllers/quiz_controller.dart';
 import '../quiz_colors.dart';
 import '../widgets/quiz_custom_card.dart';
 import '../widgets/quiz_gradient_button.dart';
+import '../widgets/quiz_icon_container.dart';
 
 class OpponentFoundScreen extends GetView<QuizController> {
   const OpponentFoundScreen({super.key});
@@ -60,7 +61,6 @@ class OpponentFoundScreen extends GetView<QuizController> {
       final user = controller.userStats.value;
 
       return QuizCustomCard(
-        glass: true,
         padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
         child: Column(
           children: [
@@ -151,23 +151,23 @@ class OpponentFoundScreen extends GetView<QuizController> {
         const SizedBox(height: 10),
         Text(
           name,
-          style: Theme.of(Get.context!).textTheme.titleMedium?.copyWith(
-            color: QuizThemeColors.heading,
-          ),
+          style: Theme.of(
+            Get.context!,
+          ).textTheme.titleMedium?.copyWith(color: QuizThemeColors.heading),
         ),
         const SizedBox(height: 4),
         Text(
           level,
-          style: Theme.of(Get.context!).textTheme.labelMedium?.copyWith(
-            color: QuizThemeColors.body,
-          ),
+          style: Theme.of(
+            Get.context!,
+          ).textTheme.labelMedium?.copyWith(color: QuizThemeColors.body),
         ),
         const SizedBox(height: 2),
         Text(
           stat,
-          style: Theme.of(Get.context!).textTheme.labelSmall?.copyWith(
-            color: QuizThemeColors.body,
-          ),
+          style: Theme.of(
+            Get.context!,
+          ).textTheme.labelSmall?.copyWith(color: QuizThemeColors.body),
         ),
       ],
     );
@@ -209,14 +209,12 @@ class OpponentFoundScreen extends GetView<QuizController> {
   Widget _buildRuleRow(IconData icon, String text) {
     return Row(
       children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: QuizThemeColors.primaryLight,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: QuizThemeColors.primary, size: 18),
+        QuizIconContainer(
+          icon: icon,
+          accentColor: QuizThemeColors.primary,
+          size: 32,
+          iconSize: 18,
+          borderRadius: AppRadius.sm,
         ),
         const SizedBox(width: 12),
         Text(text, style: TextStyle(fontSize: 14, color: QuizThemeColors.body)),

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../controllers/quiz_controller.dart';
 import '../quiz_colors.dart';
 import '../widgets/quiz_custom_card.dart';
 import '../widgets/quiz_gradient_button.dart';
+import '../widgets/quiz_icon_container.dart';
 
 class RewardClaimedScreen extends GetView<QuizController> {
   const RewardClaimedScreen({super.key});
@@ -31,9 +33,9 @@ class RewardClaimedScreen extends GetView<QuizController> {
               const SizedBox(height: 6),
               Text(
                 'quiz.rewardsAdded'.tr,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: QuizThemeColors.body,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: QuizThemeColors.body),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 28),
@@ -87,7 +89,6 @@ class RewardClaimedScreen extends GetView<QuizController> {
 
   Widget _buildSuccessBadge() {
     return QuizCustomCard(
-      glass: true,
       padding: const EdgeInsets.all(32),
       child: Column(
         children: [
@@ -181,7 +182,13 @@ class RewardClaimedScreen extends GetView<QuizController> {
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 24),
+            QuizIconContainer(
+              icon: icon,
+              accentColor: color,
+              size: 36,
+              iconSize: 20,
+              borderRadius: AppRadius.md,
+            ),
             const SizedBox(height: 6),
             Text(
               value,

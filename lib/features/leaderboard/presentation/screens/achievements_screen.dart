@@ -4,6 +4,9 @@ import 'package:get/get.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
+import '../../../../design_system/widgets/buttons/app_button.dart';
+import '../../../../design_system/widgets/surfaces/app_surface.dart';
+import '../../../../features/quiz/presentation/widgets/quiz_icon_container.dart';
 import '../controllers/leaderboard_controller.dart';
 import '../../domain/models/leaderboard_models.dart';
 
@@ -24,9 +27,9 @@ class AchievementsScreen extends GetView<LeaderboardController> {
         ),
         title: Text(
           'leaderboard.allAchievements'.tr,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: scheme.onSurface,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(color: scheme.onSurface),
         ),
       ),
       body: Obx(() {
@@ -48,37 +51,11 @@ class AchievementsScreen extends GetView<LeaderboardController> {
                     .toList(),
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
+              AppButton(
+                label: 'leaderboard.backToLeaderboard'.tr,
                 height: 54,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        scheme.primary,
-                        scheme.primary.withValues(alpha: 0.78),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => Get.back(),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Center(
-                        child: Text(
-                          'leaderboard.backToLeaderboard'.tr,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: scheme.onPrimary,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                radius: AppRadius.pill,
+                onPressed: () => Get.back(),
               ),
               const SizedBox(height: 20),
             ],
@@ -89,37 +66,18 @@ class AchievementsScreen extends GetView<LeaderboardController> {
   }
 
   Widget _buildAchievementCard(Achievement a, ColorScheme scheme) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(AppRadius.squircle),
-        border: Border.all(color: scheme.outlineVariant),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.shadow.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return AppSurface(
+      padding: const EdgeInsets.all(AppSpacing.md + 2),
+      radius: AppRadius.lg,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: a.isUnlocked
-                  ? a.color.withValues(alpha: 0.12)
-                  : scheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              a.icon,
-              color: a.isUnlocked ? a.color : scheme.outline,
-              size: 26,
-            ),
+          QuizIconContainer(
+            icon: a.icon,
+            accentColor: a.isUnlocked ? a.color : scheme.outline,
+            size: 52,
+            iconSize: 26,
+            borderRadius: AppRadius.lg,
           ),
           const SizedBox(height: 12),
           Text(
@@ -138,9 +96,7 @@ class AchievementsScreen extends GetView<LeaderboardController> {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: a.isUnlocked
-                  ? scheme.onSurfaceVariant
-                  : scheme.outline,
+              color: a.isUnlocked ? scheme.onSurfaceVariant : scheme.outline,
             ),
           ),
           if (!a.isUnlocked) ...[

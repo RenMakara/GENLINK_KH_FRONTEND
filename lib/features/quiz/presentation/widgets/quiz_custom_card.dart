@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
-import '../../../../design_system/widgets/surfaces/app_glass_surface.dart';
-import '../quiz_colors.dart';
+import '../../../../design_system/widgets/surfaces/app_surface.dart';
 
 class QuizCustomCard extends StatelessWidget {
   const QuizCustomCard({
@@ -14,7 +13,6 @@ class QuizCustomCard extends StatelessWidget {
     this.margin,
     this.onTap,
     this.border,
-    this.glass = false,
   });
 
   final Widget child;
@@ -23,28 +21,27 @@ class QuizCustomCard extends StatelessWidget {
   final EdgeInsetsGeometry? margin;
   final VoidCallback? onTap;
   final BoxBorder? border;
-  final bool glass;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final radius = borderRadius ?? AppRadius.squircle;
-    final card = glass
-        ? AppGlassSurface(
+    final theme = Theme.of(context);
+    final radius = borderRadius ?? AppRadius.xl;
+    final card = border == null
+        ? Container(
             margin: margin,
-            padding: padding ?? const EdgeInsets.all(AppSpacing.md),
-            radius: radius,
-            border: border,
-            child: child,
+            child: AppSurface(
+              padding: padding ?? const EdgeInsets.all(AppSpacing.md),
+              radius: radius,
+              child: child,
+            ),
           )
         : Container(
             margin: margin,
             padding: padding ?? const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: scheme.surface,
+              color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(radius),
-              border: border ?? Border.all(color: scheme.outlineVariant),
-              boxShadow: QuizThemeColors.cardShadow,
+              border: border,
             ),
             child: child,
           );
@@ -56,8 +53,8 @@ class QuizCustomCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(radius),
-        hoverColor: scheme.primary.withValues(alpha: 0.04),
-        splashColor: scheme.primary.withValues(alpha: 0.08),
+        hoverColor: theme.colorScheme.primary.withValues(alpha: 0.04),
+        splashColor: theme.colorScheme.primary.withValues(alpha: 0.08),
         child: card,
       ),
     );

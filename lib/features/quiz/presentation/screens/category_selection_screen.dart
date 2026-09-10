@@ -3,10 +3,12 @@ import 'package:get/get.dart';
 
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../controllers/quiz_controller.dart';
 import '../../domain/models/quiz_models.dart';
 import '../quiz_colors.dart';
 import '../widgets/quiz_custom_card.dart';
+import '../widgets/quiz_icon_container.dart';
 import '../widgets/quiz_section_header.dart';
 
 class CategorySelectionScreen extends GetView<QuizController> {
@@ -136,9 +138,9 @@ class CategorySelectionScreen extends GetView<QuizController> {
         ),
         title: Text(
           'quiz.chooseQuizCategory'.tr,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: QuizThemeColors.heading,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(color: QuizThemeColors.heading),
         ),
       ),
       body: Obx(() {
@@ -184,7 +186,7 @@ class CategorySelectionScreen extends GetView<QuizController> {
   Widget _buildRetryState(String message, VoidCallback onRetry) {
     return Center(
       child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -193,9 +195,9 @@ class CategorySelectionScreen extends GetView<QuizController> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(Get.context!).textTheme.titleMedium?.copyWith(
-                color: QuizThemeColors.heading,
-              ),
+              style: Theme.of(
+                Get.context!,
+              ).textTheme.titleMedium?.copyWith(color: QuizThemeColors.heading),
             ),
             const SizedBox(height: 16),
             TextButton(onPressed: onRetry, child: Text('common.retry'.tr)),
@@ -231,46 +233,43 @@ class CategorySelectionScreen extends GetView<QuizController> {
       itemCount: controller.categories.length,
       itemBuilder: (context, index) {
         final cat = controller.categories[index];
-        final bgColor = QuizThemeColors.categoryColors[cat.colorIndex];
         final iconColor = QuizThemeColors.categoryIconColors[cat.colorIndex];
         return QuizCustomCard(
-            padding: const EdgeInsets.all(AppSpacing.md + 2),
-            onTap: () {
-              controller.selectCategory(cat);
-              _navigateAfterCategory();
-            },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                  child: Icon(Icons.category, color: iconColor, size: 26),
+          padding: const EdgeInsets.all(AppSpacing.md + 2),
+          onTap: () {
+            controller.selectCategory(cat);
+            _navigateAfterCategory();
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              QuizIconContainer(
+                icon: Icons.category,
+                accentColor: iconColor,
+                size: 50,
+                iconSize: 26,
+                borderRadius: AppRadius.lg,
+              ),
+              const SizedBox(height: 14),
+              Text(
+                cat.name,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: QuizThemeColors.heading,
                 ),
-                const SizedBox(height: 14),
-                Text(
-                  cat.name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: QuizThemeColors.heading,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'quiz.questionsCount'.trParams({
-                    'count': '${cat.questionCount}',
-                  }),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: QuizThemeColors.body,
-                  ),
-                ),
-              ],
-            ),
-          );
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'quiz.questionsCount'.trParams({
+                  'count': '${cat.questionCount}',
+                }),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: QuizThemeColors.body),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
@@ -279,7 +278,6 @@ class CategorySelectionScreen extends GetView<QuizController> {
     return Obx(() {
       return Column(
         children: controller.recentCategories.map((cat) {
-          final bgColor = QuizThemeColors.categoryColors[cat.colorIndex];
           final iconColor = QuizThemeColors.categoryIconColors[cat.colorIndex];
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
@@ -287,14 +285,12 @@ class CategorySelectionScreen extends GetView<QuizController> {
               padding: const EdgeInsets.all(AppSpacing.sm + 6),
               child: Row(
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: bgColor,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.star, color: iconColor, size: 22),
+                  QuizIconContainer(
+                    icon: Icons.star,
+                    accentColor: iconColor,
+                    size: 44,
+                    iconSize: 22,
+                    borderRadius: AppRadius.md,
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -303,9 +299,8 @@ class CategorySelectionScreen extends GetView<QuizController> {
                       children: [
                         Text(
                           cat.name,
-                          style: Theme.of(Get.context!).textTheme.titleSmall?.copyWith(
-                            color: QuizThemeColors.heading,
-                          ),
+                          style: Theme.of(Get.context!).textTheme.titleSmall
+                              ?.copyWith(color: QuizThemeColors.heading),
                         ),
                         const SizedBox(height: 4),
                         ClipRRect(
@@ -323,27 +318,15 @@ class CategorySelectionScreen extends GetView<QuizController> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () {
+                  AppButton(
+                    label: 'common.continue'.tr,
+                    expanded: false,
+                    height: 44,
+                    radius: AppRadius.pill,
+                    onPressed: () {
                       controller.selectCategory(cat);
                       _navigateAfterCategory();
                     },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: QuizThemeColors.gradient,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'common.continue'.tr,
-                        style: Theme.of(Get.context!).textTheme.labelMedium?.copyWith(
-                          color: QuizThemeColors.onPrimary,
-                        ),
-                      ),
-                    ),
                   ),
                 ],
               ),

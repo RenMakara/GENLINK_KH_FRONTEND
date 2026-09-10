@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
@@ -9,6 +10,7 @@ import '../../domain/models/quiz_models.dart';
 import '../quiz_colors.dart';
 import '../widgets/quiz_custom_card.dart';
 import '../widgets/quiz_gradient_button.dart';
+import '../widgets/quiz_icon_container.dart';
 import '../widgets/quiz_section_header.dart';
 import '../../../../app/routes/app_routes.dart';
 
@@ -80,20 +82,35 @@ class QuizDashboardScreen extends GetView<QuizController> {
       final stats = controller.userStats.value;
       final textTheme = Theme.of(context).textTheme;
       return QuizCustomCard(
-        glass: true,
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                SizedBox(
+                Container(
                   width: 52,
                   height: 52,
-                  child: AppAvatar(
-                    imageUrl: stats.avatarUrl,
-                    name: stats.name,
-                    size: 52,
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: QuizThemeColors.primary.withValues(alpha: 0.34),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: QuizThemeColors.primary.withValues(alpha: 0.14),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: AppAvatar(
+                      imageUrl: stats.avatarUrl,
+                      name: stats.name,
+                      size: 48,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -144,9 +161,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
             const SizedBox(height: 6),
             Text(
               '${stats.xp} / ${stats.xpToNextLevel} XP',
-              style: textTheme.bodySmall?.copyWith(
-                color: QuizThemeColors.body,
-              ),
+              style: textTheme.bodySmall?.copyWith(color: QuizThemeColors.body),
             ),
           ],
         ),
@@ -159,7 +174,6 @@ class QuizDashboardScreen extends GetView<QuizController> {
       final stats = controller.userStats.value;
       final textTheme = Theme.of(context).textTheme;
       return QuizCustomCard(
-        glass: true,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.md,
@@ -169,10 +183,12 @@ class QuizDashboardScreen extends GetView<QuizController> {
             Expanded(
               child: Row(
                 children: [
-                  Icon(
-                    Icons.local_fire_department,
-                    color: QuizThemeColors.gold,
-                    size: 26,
+                  QuizIconContainer(
+                    icon: Icons.local_fire_department,
+                    accentColor: QuizThemeColors.gold,
+                    size: 38,
+                    iconSize: 21,
+                    borderRadius: AppRadius.md,
                   ),
                   const SizedBox(width: 10),
                   Column(
@@ -206,10 +222,12 @@ class QuizDashboardScreen extends GetView<QuizController> {
             Expanded(
               child: Row(
                 children: [
-                  Icon(
-                    Icons.monetization_on,
-                    color: QuizThemeColors.gold,
-                    size: 26,
+                  QuizIconContainer(
+                    icon: Icons.monetization_on,
+                    accentColor: QuizThemeColors.gold,
+                    size: 38,
+                    iconSize: 21,
+                    borderRadius: AppRadius.md,
                   ),
                   const SizedBox(width: 10),
                   Column(
@@ -283,14 +301,11 @@ class QuizDashboardScreen extends GetView<QuizController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(icon, color: color, size: 24),
+            QuizIconContainer(
+              icon: icon,
+              accentColor: color,
+              size: 44,
+              iconSize: 24,
             ),
             const SizedBox(height: 12),
             Text(
@@ -314,26 +329,19 @@ class QuizDashboardScreen extends GetView<QuizController> {
 
   Widget _buildLearningProgress(BuildContext context) {
     return QuizCustomCard(
-      glass: true,
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: QuizThemeColors.correctSoft,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              Icons.trending_up,
-              color: QuizThemeColors.correct,
-              size: 24,
-            ),
+          QuizIconContainer(
+            icon: Icons.trending_up,
+            accentColor: QuizThemeColors.correct,
+            size: 46,
+            iconSize: 24,
+            borderRadius: AppRadius.lg,
           ),
           const SizedBox(width: 14),
           Expanded(
-          child: Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -357,9 +365,9 @@ class QuizDashboardScreen extends GetView<QuizController> {
                 const SizedBox(height: 4),
                 Text(
                   'quiz.percentComplete'.trParams({'percent': '72'}),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: QuizThemeColors.body,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: QuizThemeColors.body),
                 ),
               ],
             ),
@@ -415,9 +423,9 @@ class QuizDashboardScreen extends GetView<QuizController> {
         );
       }
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           QuizSectionHeader(
             title: 'quiz.categories'.tr,
             actionLabel: 'quiz.seeAll'.tr,
@@ -432,7 +440,6 @@ class QuizDashboardScreen extends GetView<QuizController> {
               separatorBuilder: (_, _) => const SizedBox(width: 12),
               itemBuilder: (context, index) {
                 final cat = controller.categories[index];
-                final bgColor = QuizThemeColors.categoryColors[cat.colorIndex];
                 final iconColor =
                     QuizThemeColors.categoryIconColors[cat.colorIndex];
                 return SizedBox(
@@ -453,14 +460,12 @@ class QuizDashboardScreen extends GetView<QuizController> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: bgColor,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(Icons.star, color: iconColor, size: 20),
+                        QuizIconContainer(
+                          icon: Icons.star,
+                          accentColor: iconColor,
+                          size: 38,
+                          iconSize: 20,
+                          borderRadius: AppRadius.md,
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -488,61 +493,48 @@ class QuizDashboardScreen extends GetView<QuizController> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return QuizCustomCard(
-      glass: true,
       padding: const EdgeInsets.all(AppSpacing.lg),
       onTap: () => Get.toNamed(AppRoutes.leaderboard),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: QuizThemeColors.gold.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                Icons.emoji_events,
-                color: QuizThemeColors.gold,
-                size: 26,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'quiz.viewLeaderboard'.tr,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: scheme.primary,
-                    ),
+      child: Row(
+        children: [
+          QuizIconContainer(
+            icon: Icons.emoji_events,
+            accentColor: QuizThemeColors.gold,
+            size: 48,
+            iconSize: 26,
+            borderRadius: AppRadius.lg,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'quiz.viewLeaderboard'.tr,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: scheme.primary,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'quiz.rankGlobally'.tr,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'quiz.rankGlobally'.tr,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.arrow_forward,
-                color: scheme.primary,
-                size: 20,
-              ),
-            ),
-          ],
-        ),
-      );
+          ),
+          QuizIconContainer(
+            icon: Icons.arrow_forward,
+            accentColor: scheme.primary,
+            size: 36,
+            iconSize: 20,
+            borderRadius: AppRadius.md,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildBottomAction() {

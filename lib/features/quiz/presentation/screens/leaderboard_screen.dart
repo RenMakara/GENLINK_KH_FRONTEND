@@ -17,12 +17,12 @@ class LeaderboardScreen extends GetView<QuizController> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
+          icon: Icon(Icons.arrow_back, color: QuizColors.heading),
           onPressed: () => Get.back(),
         ),
         title: Text(
           'quiz.leaderboard'.tr,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: QuizColors.heading,
@@ -53,7 +53,7 @@ class LeaderboardScreen extends GetView<QuizController> {
               ),
               child: Text(
                 'quiz.backToDashboard'.tr,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: QuizColors.body,
@@ -129,7 +129,7 @@ class LeaderboardScreen extends GetView<QuizController> {
         const SizedBox(height: 8),
         Text(
           entry.name,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
             color: QuizColors.heading,
@@ -138,7 +138,7 @@ class LeaderboardScreen extends GetView<QuizController> {
         ),
         Text(
           '${entry.xp} XP',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
             color: QuizColors.primary,
@@ -189,7 +189,7 @@ class LeaderboardScreen extends GetView<QuizController> {
                 Container(
                   width: 40,
                   height: 40,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: QuizColors.gradient,
                   ),
@@ -214,7 +214,7 @@ class LeaderboardScreen extends GetView<QuizController> {
                       ),
                       Text(
                         '${entry.xp} XP',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           color: QuizColors.body,
                         ),

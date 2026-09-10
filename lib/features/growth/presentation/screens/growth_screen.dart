@@ -413,6 +413,8 @@ class _TimelineActivityItem {
     required this.accentColor,
     required this.onTap,
     this.onToggle,
+    // Reserved for activity sources that award XP (for example challenges).
+    // ignore: unused_element_parameter
     this.xpReward,
   });
 

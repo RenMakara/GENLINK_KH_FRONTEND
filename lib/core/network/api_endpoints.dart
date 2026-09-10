@@ -178,6 +178,9 @@ abstract final class ApiEndpoints {
       '$_base/community/discussions/comments/$commentId/like';
   static String communityDiscussionComment(String commentId) =>
       '$_base/community/discussions/comments/$commentId';
+  // Compatibility name used by the merged discussion datasource.
+  static String communityDiscussionCommentDetail(String commentId) =>
+      communityDiscussionComment(commentId);
 
   static String communityEventRsvp(String eventId) =>
       '$_base/community/events/$eventId/rsvp';

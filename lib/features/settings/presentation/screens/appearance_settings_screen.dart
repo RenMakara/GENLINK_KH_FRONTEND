@@ -234,7 +234,7 @@ class _PreviewContent extends StatelessWidget {
         ? AppColors.darkPrimary.withValues(alpha: 0.20)
         : Colors.black.withValues(alpha: 0.06);
     final barColor = isDark
-        ? AppColors.darkAccentCyan.withValues(alpha: 0.40)
+        ? Theme.of(context).colorScheme.secondary.withValues(alpha: 0.40)
         : Colors.black.withValues(alpha: 0.1);
 
     return Container(

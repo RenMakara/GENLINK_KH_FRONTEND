@@ -102,3 +102,6 @@ abstract final class QuizThemeColors {
     _scheme.tertiary,
   ];
 }
+
+/// Backwards-compatible name for screens from the previous Quiz palette.
+typedef QuizColors = QuizThemeColors;

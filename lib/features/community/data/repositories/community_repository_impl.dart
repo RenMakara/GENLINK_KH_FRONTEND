@@ -126,6 +126,11 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<ForumTopicModel> getDiscussionDetails(String discussionId) {
+    return remoteDataSource.getDiscussionDetails(discussionId);
+  }
+
+  @override
   Future<ForumTopicModel> updateDiscussion(
     String discussionId, {
     required String title,
@@ -146,8 +151,27 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
-  Future<bool> toggleDiscussionLike(String discussionId) {
-    return remoteDataSource.toggleDiscussionLike(discussionId);
+  Future<bool> toggleDiscussionLike(
+    String discussionId, {
+    bool isCurrentlyLiked = false,
+  }) {
+    return remoteDataSource.toggleDiscussionLike(
+      discussionId,
+      isCurrentlyLiked: isCurrentlyLiked,
+    );
+  }
+
+  @override
+  Future<bool> reportDiscussion(
+    String discussionId, {
+    String reason = 'INAPPROPRIATE_CONTENT',
+    String? details,
+  }) {
+    return remoteDataSource.reportDiscussion(
+      discussionId,
+      reason: reason,
+      details: details,
+    );
   }
 
   @override
@@ -169,6 +193,22 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<bool> toggleDiscussionCommentLike(
+    String commentId, {
+    required bool isCurrentlyLiked,
+  }) {
+    return remoteDataSource.toggleDiscussionCommentLike(
+      commentId,
+      isCurrentlyLiked: isCurrentlyLiked,
+    );
+  }
+
+  @override
+  Future<bool> deleteDiscussionComment(String commentId) {
+    return remoteDataSource.deleteDiscussionComment(commentId);
+  }
+
+  @override
   Future<bool> followUser(String userId) {
     return remoteDataSource.followUser(userId);
   }
@@ -181,5 +221,13 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<bool> checkIsFollowing(String userId) {
     return remoteDataSource.checkIsFollowing(userId);
+  }
+
+  @override
+  Future<RsvpResponseModel> rsvpEvent(
+    String eventId, {
+    EventRegistrationRequest? request,
+  }) {
+    return remoteDataSource.rsvpEvent(eventId, request: request);
   }
 }

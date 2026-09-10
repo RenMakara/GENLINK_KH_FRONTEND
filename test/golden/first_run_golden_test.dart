@@ -12,10 +12,6 @@ import 'package:genlink_frontend/features/onboarding/presentation/screens/onboar
 import 'package:genlink_frontend/features/splash/presentation/screens/splash_screen.dart';
 import 'package:get/get.dart';
 
-/// Golden tests for the first-run flow.
-///
-/// These exist to check the rendered result against the design, not to
-/// gate CI — regenerate with `flutter test --update-goldens`.
 void main() {
   const phone = Size(390, 844);
 
@@ -36,7 +32,6 @@ void main() {
     WidgetTester tester,
     Widget child, {
     Brightness brightness = Brightness.light,
-    // Splash runs an indeterminate progress animation that never settles.
     bool settle = true,
   }) async {
     tester.view

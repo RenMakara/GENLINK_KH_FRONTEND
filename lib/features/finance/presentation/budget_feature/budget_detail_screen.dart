@@ -8,11 +8,6 @@ import 'package:genlink_frontend/features/finance/presentation/budget_feature/bu
 import 'package:genlink_frontend/features/finance/presentation/controllers/budget_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
 
-/// Detail view for one backend Budget response.
-///
-/// The API does not return individual expense rows from a budget detail, so
-/// this screen only presents documented totals and category allocations. It
-/// never fabricates transaction history or local status calculations.
 class BudgetDetailScreen extends StatelessWidget {
   const BudgetDetailScreen({super.key, required this.budget});
 
@@ -44,7 +39,6 @@ class BudgetDetailScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 30),
           children: [
-            // Header
             Row(
               children: [
                 AppBackButton(),
@@ -59,7 +53,6 @@ class BudgetDetailScreen extends StatelessWidget {
                   ),
                 ),
 
-                // Edit
                 InkWell(
                   onTap: () => _edit(context),
                   borderRadius: BorderRadius.circular(10),
@@ -78,7 +71,6 @@ class BudgetDetailScreen extends StatelessWidget {
 
                 const SizedBox(width: 8),
 
-                // Delete
                 InkWell(
                   onTap: () => _delete(context),
                   borderRadius: BorderRadius.circular(10),
@@ -165,8 +157,6 @@ class BudgetDetailScreen extends StatelessWidget {
   }
 
   void _edit(BuildContext context) {
-    // The detail route is closed before editing so its snapshot cannot remain
-    // visible underneath a newly saved response.
     Navigator.pop(context);
     Navigator.push<void>(
       context,

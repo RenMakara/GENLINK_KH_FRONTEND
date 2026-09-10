@@ -7,11 +7,6 @@ import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/entities/user_settings_entity.dart';
 import '../controllers/settings_controller.dart';
 
-/// Language chooser — Khmer featured first, per the design.
-///
-/// Selection applies immediately (the whole app re-renders in the chosen
-/// language) and persists optimistically through [SettingsController], so
-/// there is no separate save button to forget.
 class LanguageSettingsScreen extends GetView<SettingsController> {
   const LanguageSettingsScreen({super.key});
 
@@ -47,8 +42,6 @@ class LanguageSettingsScreen extends GetView<SettingsController> {
             ),
             const SizedBox(height: AppSpacing.lg),
             _LanguageCard(
-              // Always shown in its own script, so a user who cannot read
-              // the current language still finds theirs.
               title: 'ភាសាខ្មែរ',
               subtitle: 'Khmer',
               selected: current == UserSettingsEntity.languageKhmer,

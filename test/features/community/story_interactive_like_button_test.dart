@@ -96,19 +96,16 @@ void main() {
         ),
       );
 
-      // Tap the like button
       await tester.tap(find.byType(StoryInteractiveLikeButton));
       expect(tapped, isTrue);
 
-      // Advance animation halfway
       await tester.pump(const Duration(milliseconds: 250));
       expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
-      expect(find.text('25'), findsNothing); // Count remains hidden
+      expect(find.text('25'), findsNothing);
 
-      // Complete full celebration
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
-      expect(find.text('25'), findsNothing); // Count remains hidden
+      expect(find.text('25'), findsNothing);
     });
 
     testWidgets('Test 5: Tapping liked button in viewer mode unlikes smoothly without errors', (tester) async {
@@ -141,7 +138,6 @@ void main() {
 
       expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
 
-      // Tap to unlike
       await tester.tap(find.byType(StoryInteractiveLikeButton));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
@@ -181,7 +177,6 @@ void main() {
         ),
       );
 
-      // Rapidly tap 6 times
       for (int i = 0; i < 6; i++) {
         await tester.tap(find.byType(StoryInteractiveLikeButton));
         await tester.pump(const Duration(milliseconds: 50));

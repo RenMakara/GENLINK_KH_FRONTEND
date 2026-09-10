@@ -1,8 +1,3 @@
-/// User settings, from `GET /api/v1/profile/settings`.
-///
-/// One row per user, created on first read. Every field is nullable on the
-/// wire (the update request is a partial patch), so defaults are applied
-/// here rather than forcing every caller to null-check.
 class UserSettingsEntity {
   const UserSettingsEntity({
     this.settingsId,

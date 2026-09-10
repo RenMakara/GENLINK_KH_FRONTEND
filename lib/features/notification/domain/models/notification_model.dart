@@ -8,7 +8,6 @@ enum NotificationCategory {
 }
 
 enum NotificationType {
-  // Social
   like,
   comment,
   reply,
@@ -16,22 +15,18 @@ enum NotificationType {
   friendRequest,
   follow,
   group,
-  // Finance
   budgetWarning,
   budgetExceeded,
   savingGoal,
   financeUpdate,
-  // Events
   eventReminder,
   eventUpdate,
   eventRsvp,
   event,
-  // Reminders
   habitReminder,
   taskReminder,
   goalReminder,
   streakMilestone,
-  // Updates
   quizResult,
   achievement,
   system,

@@ -5,10 +5,6 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../core/storage/local_storage.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 
-/// Decides the app's first real screen.
-///
-/// Order matters: the preference chooser is shown only until it is completed,
-/// while onboarding is shown until its own independent completion flag is set.
 class SplashController extends GetxController {
   SplashController({
     required AuthController authController,
@@ -19,7 +15,6 @@ class SplashController extends GetxController {
   final AuthController _auth;
   final LocalStorage _storage;
 
-  /// Minimum time the splash stays up, so a fast restore does not flash.
   static const _minimumDisplay = Duration(milliseconds: 600);
 
   @override

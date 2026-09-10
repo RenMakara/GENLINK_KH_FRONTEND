@@ -44,9 +44,6 @@ void main() {
         statusCode: 409,
       );
 
-      // Regression guard: before this existed, Dio threw a DioException,
-      // the domain layer's `on AppError` clause never matched, and every
-      // failure surfaced as the generic "Something went wrong".
       expect(
         () => guardDio<void>(
           () async => throw DioException(

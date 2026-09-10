@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../../../../shared/utils/current_user.dart';
 
-/// Shared author identity row for Community creation screens.
-///
-/// Displays the authenticated user's avatar + fullName.
-/// Used in: CreateDiscussionScreen, CreateOpportunityScreen, CreateEventScreen.
 class AuthorRow extends StatelessWidget {
   final bool isDark;
   final Color textPrimary;
@@ -21,7 +18,6 @@ class AuthorRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String? avatarUrl = CurrentUser.avatarUrl;
-    final bool hasNetwork = avatarUrl != null && avatarUrl.isNotEmpty;
     final String name = CurrentUser.name;
 
     final String publicLabel = 'community.public'.tr.isNotEmpty &&
@@ -31,15 +27,10 @@ class AuthorRow extends StatelessWidget {
 
     return Row(
       children: [
-        CircleAvatar(
-          radius: 20,
-          backgroundColor: isDark
-              ? const Color(0xFF2B313A)
-              : const Color(0xFFE2E4E8),
-          backgroundImage: hasNetwork
-              ? NetworkImage(avatarUrl) as ImageProvider
-              : const AssetImage('assets/images/user_profile.png'),
-          onBackgroundImageError: hasNetwork ? (e, s) {} : null,
+        AppAvatar(
+          imageUrl: avatarUrl,
+          name: name,
+          size: 40,
         ),
         const SizedBox(width: 12),
         Column(

@@ -70,7 +70,7 @@ void main() {
         id: 'layer_center',
         type: LayerType.text,
         text: 'Center Text',
-        offset: const Offset(0.5, 0.5), // Center
+        offset: const Offset(0.5, 0.5),
         fontSize: 28.0,
       );
 
@@ -80,22 +80,18 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Display mode: Find text widget center
       final textFinder = find.text('Center Text');
       expect(textFinder, findsOneWidget);
       final displayCenter = tester.getCenter(textFinder);
 
-      // Expected center should be screen center (195, 422)
       expect((displayCenter.dx - 195.0).abs() < 1.0, true);
       expect((displayCenter.dy - 422.0).abs() < 1.0, true);
 
-      // Tap on text to enter edit mode
       await tester.tap(textFinder);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pump();
 
-      // In edit mode: TextField center must match displayCenter
       final editFieldFinder = find.byType(TextField);
       expect(editFieldFinder, findsOneWidget);
       final editCenter = tester.getCenter(editFieldFinder);
@@ -103,11 +99,9 @@ void main() {
       expect((editCenter.dx - displayCenter.dx).abs() < 2.0, true);
       expect((editCenter.dy - displayCenter.dy).abs() < 2.0, true);
 
-      // Tap Done
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
 
-      // Returned to display mode: Position remains unchanged
       final finalCenter = tester.getCenter(find.text('Center Text'));
       expect((finalCenter.dx - displayCenter.dx).abs() < 2.0, true);
       expect((finalCenter.dy - displayCenter.dy).abs() < 2.0, true);
@@ -123,7 +117,7 @@ void main() {
         id: 'layer_left',
         type: LayerType.text,
         text: 'Left Text',
-        offset: const Offset(0.2, 0.4), // Left side
+        offset: const Offset(0.2, 0.4),
         fontSize: 24.0,
       );
 
@@ -135,7 +129,6 @@ void main() {
 
       final displayCenter = tester.getCenter(find.text('Left Text'));
 
-      // Tap to edit
       await tester.tap(find.text('Left Text'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -156,7 +149,7 @@ void main() {
         id: 'layer_right',
         type: LayerType.text,
         text: 'Right Text',
-        offset: const Offset(0.8, 0.4), // Right side
+        offset: const Offset(0.8, 0.4),
         fontSize: 24.0,
       );
 
@@ -168,7 +161,6 @@ void main() {
 
       final displayCenter = tester.getCenter(find.text('Right Text'));
 
-      // Tap to edit
       await tester.tap(find.text('Right Text'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -189,7 +181,7 @@ void main() {
         id: 'layer_top',
         type: LayerType.text,
         text: 'Top Text',
-        offset: const Offset(0.5, 0.15), // Near top
+        offset: const Offset(0.5, 0.15),
         fontSize: 24.0,
       );
 
@@ -201,7 +193,6 @@ void main() {
 
       final displayCenter = tester.getCenter(find.text('Top Text'));
 
-      // Tap to edit
       await tester.tap(find.text('Top Text'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -222,7 +213,7 @@ void main() {
         id: 'layer_bottom',
         type: LayerType.text,
         text: 'Bottom Text',
-        offset: const Offset(0.5, 0.65), // Lower canvas
+        offset: const Offset(0.5, 0.65),
         fontSize: 24.0,
       );
 
@@ -234,7 +225,6 @@ void main() {
 
       final displayCenter = tester.getCenter(find.text('Bottom Text'));
 
-      // Tap to edit
       await tester.tap(find.text('Bottom Text'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -268,7 +258,6 @@ void main() {
 
       final displayCenter = tester.getCenter(find.text('Scaled Text'));
 
-      // Tap to edit
       await tester.tap(find.text('Scaled Text'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -290,7 +279,7 @@ void main() {
         type: LayerType.text,
         text: 'Rotated Text',
         offset: const Offset(0.5, 0.4),
-        rotation: 0.35, // ~20 degrees
+        rotation: 0.35,
         fontSize: 24.0,
       );
 
@@ -302,7 +291,6 @@ void main() {
 
       final displayCenter = tester.getCenter(find.text('Rotated Text'));
 
-      // Tap to edit
       await tester.tap(find.text('Rotated Text'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -335,17 +323,14 @@ void main() {
 
       final initialCenter = tester.getCenter(find.text('Old Text'));
 
-      // Tap to edit
       await tester.tap(find.text('Old Text'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pump();
 
-      // Enter new text
       await tester.enterText(find.byType(TextField), 'New Updated Text');
       await tester.pump();
 
-      // Tap Done
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
 
@@ -369,7 +354,6 @@ void main() {
         fontSize: 24.0,
       );
 
-      // Without keyboard
       await tester.pumpWidget(buildStoryCreatorScreen(
         screenSize: screenSize,
         initialLayers: [layer],
@@ -379,7 +363,6 @@ void main() {
 
       final displayCenter = tester.getCenter(find.text('Keyboard Test'));
 
-      // With keyboard (viewInsets.bottom = 300)
       await tester.pumpWidget(buildStoryCreatorScreen(
         screenSize: screenSize,
         initialLayers: [layer],
@@ -387,7 +370,6 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Tap to edit
       await tester.tap(find.text('Keyboard Test'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));

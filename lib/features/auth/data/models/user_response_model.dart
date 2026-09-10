@@ -1,29 +1,5 @@
 import '../../domain/entities/user_entity.dart';
 
-/// Backend UserResponse DTO.
-///
-/// Matches the Java record:
-/// ```json
-/// {
-///   "userId": "uuid",
-///   "fullName": "...",
-///   "username": "...",
-///   "email": "...",
-///   "phoneNumber": "...",
-///   "avatarUrl": "...",
-///   "bio": "...",
-///   "universityName": "...",
-///   "workStatus": "STUDENT",
-///   "location": "...",
-///   "emailVerified": true,
-///   "accountStatus": "ACTIVE",
-///   "totalXp": 0,
-///   "level": 1,
-///   "preferredLanguage": "ENGLISH",
-///   "role": "USER",
-///   "active": true
-/// }
-/// ```
 class UserResponseModel {
   const UserResponseModel({
     required this.userId,

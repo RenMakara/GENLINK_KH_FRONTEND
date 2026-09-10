@@ -13,11 +13,6 @@ import '../controllers/budget_controller.dart';
 import '../controllers/saving_goal_controller.dart';
 import '../controllers/finance_learning_controller.dart';
 
-/// Binding for Finance dependencies.
-///
-/// The repository is permanent like the existing Profile repository. The
-/// controller remains lazy so the dashboard request starts when the Finance
-/// tab is first built rather than during application bootstrap.
 class FinanceBinding extends Bindings {
   @override
   void dependencies() {
@@ -57,10 +52,6 @@ class FinanceBinding extends Bindings {
       () => IncomeController(
         repository: Get.find<FinanceRepository>(),
         financeController: Get.find<FinanceController>(),
-        // An uninitialized lazy CashFlowController will load current data in
-        // onInit when its screen is first opened.  Do not instantiate it here
-        // just to refresh it after an Income mutation, which would otherwise
-        // cause an unnecessary duplicate request.
         refreshCashFlow: () => Get.isPrepared<CashFlowController>()
             ? Future<void>.value()
             : Get.find<CashFlowController>().refresh(),
@@ -78,8 +69,6 @@ class FinanceBinding extends Bindings {
       () => SavingGoalController(
         repository: Get.find<FinanceRepository>(),
         financeController: Get.find<FinanceController>(),
-        // A wallet-funded contribution is confirmed by the backend first;
-        // refresh the wallet snapshot only after that confirmation.
         refreshWalletState: () => Get.isRegistered<EWalletController>()
             ? Get.find<EWalletController>().loadInitial()
             : Future<void>.value(),

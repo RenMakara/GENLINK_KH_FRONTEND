@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// WALLET ACTION
 class WalletAction extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -58,7 +57,6 @@ class WalletAction extends StatelessWidget {
   }
 }
 
-// WALLET INFO CARD
 class WalletInfoCard extends StatelessWidget {
   final String title;
   final String value;
@@ -147,7 +145,6 @@ class WalletInfoCard extends StatelessWidget {
   }
 }
 
-// TRANSACTION DATA
 class WalletTransactionData {
   final String title;
   final String subtitle;
@@ -167,7 +164,6 @@ class WalletTransactionData {
   });
 }
 
-// WALLET TRANSACTION
 class WalletTransaction extends StatelessWidget {
   final WalletTransactionData data;
 
@@ -190,7 +186,6 @@ class WalletTransaction extends StatelessWidget {
 
       child: Row(
         children: [
-          // Icon
           Container(
             width: 38,
             height: 38,
@@ -205,7 +200,6 @@ class WalletTransaction extends StatelessWidget {
 
           const SizedBox(width: 11),
 
-          // Text
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -239,7 +233,6 @@ class WalletTransaction extends StatelessWidget {
 
           const SizedBox(width: 10),
 
-          // Amount
           Text(
             data.amount,
             style: TextStyle(

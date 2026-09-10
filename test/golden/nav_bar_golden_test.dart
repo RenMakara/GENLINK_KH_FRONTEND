@@ -6,8 +6,6 @@ import 'package:genlink_frontend/design_system/theme/app_theme.dart';
 import 'package:genlink_frontend/shared/widgets/bottom_nav_bar.dart';
 import 'package:get/get.dart';
 
-/// Renders the bottom nav in both themes with the Community tab active,
-/// matching the reference design frame.
 void main() {
   const size = Size(390, 200);
 

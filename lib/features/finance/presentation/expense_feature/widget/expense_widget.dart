@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-// PERIOD BUTTON
 class PeriodButton extends StatelessWidget {
   final String title;
   final bool selected;
@@ -44,7 +43,6 @@ class PeriodButton extends StatelessWidget {
   }
 }
 
-// SURFACE CARD
 
 class SurfaceCard extends StatelessWidget {
   final Widget child;
@@ -77,7 +75,6 @@ class SurfaceCard extends StatelessWidget {
   }
 }
 
-// DONUT SEGMENT
 class DonutSegment {
   final double value;
   final Color color;
@@ -85,7 +82,6 @@ class DonutSegment {
   const DonutSegment({required this.value, required this.color});
 }
 
-// EXPENSE DONUT
 class ExpenseDonut extends StatelessWidget {
   final double size;
   final double strokeWidth;
@@ -169,7 +165,6 @@ class _DonutPainter extends CustomPainter {
   }
 }
 
-// CATEGORY ROW
 class CategoryRow extends StatelessWidget {
   final String title;
   final String amount;
@@ -277,7 +272,6 @@ class CategoryRow extends StatelessWidget {
   }
 }
 
-// EXPENSE ITEM
 class ExpenseItem extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -387,7 +381,6 @@ class ExpenseItem extends StatelessWidget {
   }
 }
 
-// SECTION HEADER
 class ExpenseSectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -471,7 +464,6 @@ class ExpenseSectionHeader extends StatelessWidget {
   }
 }
 
-// BACK BUTTON
 class ExpenseBackButton extends StatelessWidget {
   final Color background;
   final Color iconColor;
@@ -512,7 +504,6 @@ class ExpenseBackButton extends StatelessWidget {
   }
 }
 
-// ADD BUTTON
 class ExpenseAddButton extends StatelessWidget {
   final Color background;
   final Color iconColor;
@@ -546,7 +537,6 @@ class ExpenseAddButton extends StatelessWidget {
   }
 }
 
-// SPENDING STATUS
 class SpendingStatus extends StatelessWidget {
   final String title;
   final String remaining;
@@ -610,7 +600,6 @@ class SpendingStatus extends StatelessWidget {
   }
 }
 
-// FILTER CHIP
 class ExpenseFilterChip extends StatelessWidget {
   final String title;
   final bool selected;
@@ -658,7 +647,6 @@ class ExpenseFilterChip extends StatelessWidget {
   }
 }
 
-// AMOUNT TEXT
 class ExpenseAmount extends StatelessWidget {
   final String amount;
   final bool positive;

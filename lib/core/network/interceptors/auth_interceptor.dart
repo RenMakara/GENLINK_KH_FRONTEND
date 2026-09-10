@@ -7,16 +7,6 @@ import '../../../core/errors/app_error.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../../../features/auth/domain/repositories/auth_repository.dart';
 
-/// Interceptor that injects the Bearer token and handles refresh-token retry.
-///
-/// Behavior:
-/// 1. Attaches `Authorization: Bearer <token>` to every protected request.
-/// 2. On 401, refreshes once using the stored refresh token.
-/// 3. Retries the original request through the *configured* Dio instance.
-/// 4. If refresh fails, clears the session and invokes [onSessionExpired]
-///    so the app can route to login; the error still propagates.
-/// 5. Concurrent failures share a single in-flight refresh via a
-///    [Completer] instead of being dropped.
 class AuthInterceptor extends Interceptor {
   AuthInterceptor({
     required SecureStorage secureStorage,
@@ -27,27 +17,15 @@ class AuthInterceptor extends Interceptor {
   final SecureStorage _storage;
   final AuthRepository _authRepository;
 
-  /// Called once when refresh fails so app state and stored credentials can
-  /// be cleared before the failed request continues through the Dio chain.
   final FutureOr<void> Function()? onSessionExpired;
 
-  /// The configured client, used to replay a request after refresh.
-  ///
-  /// Assigned after construction because the Dio instance and this
-  /// interceptor are mutually dependent. A bare `Dio()` cannot be used
-  /// here: it has no `baseUrl`, so replaying a relative path would fail
-  /// to resolve a host.
   Dio? _client;
   // ignore: avoid_setters_without_getters
   set client(Dio dio) => _client = dio;
 
-  /// Marks a request that has already been replayed, so a second 401 on
-  /// the retry cannot start a refresh loop.
   static const _retriedFlag = 'genlink_auth_retried';
   static const _missingSessionFlag = 'genlink_auth_missing_session';
 
-  /// Shared in-flight refresh. Concurrent 401s await this instead of
-  /// each firing their own refresh call.
   Completer<bool>? _refreshCompleter;
 
   @override
@@ -55,7 +33,6 @@ class AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // Skip token injection for auth endpoints (login, register, refresh).
     if (_isAuthEndpoint(options.path)) {
       handler.next(options);
       return;
@@ -116,14 +93,10 @@ class AuthInterceptor extends Interceptor {
     final isDemoToken = token != null && _isDemoToken(token);
 
     if (isDemoToken) {
-      // Demo session: backend API failures must not wipe demo state or bounce to login.
       handler.next(err);
       return;
     }
 
-    // A 403 means the authenticated user lacks permission; refreshing does
-    // not change authorization and must never turn a forbidden operation
-    // into a logout. Only a 401 is a token-authentication failure.
     final shouldRefresh =
         statusCode == 401 &&
         !_isAuthEndpoint(options.path) &&
@@ -138,14 +111,11 @@ class AuthInterceptor extends Interceptor {
     final refreshed = await _refresh();
 
     if (!refreshed) {
-      // Refresh failed — the session is unrecoverable.
       final callback = onSessionExpired;
       if (callback != null) {
         try {
           await callback();
         } catch (_) {
-          // A routing/state callback must not prevent local token cleanup or
-          // leave Dio's interceptor queue unresolved.
           await _storage.clearAll();
         }
       } else {
@@ -163,7 +133,6 @@ class AuthInterceptor extends Interceptor {
 
     final client = _client;
     if (client == null) {
-      // Never wired up — fail loudly rather than silently dropping the retry.
       handler.next(err);
       return;
     }
@@ -175,9 +144,6 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
-  /// Refresh the access token, coalescing concurrent callers.
-  ///
-  /// Returns `true` if a new token pair was obtained.
   Future<bool> _refresh() {
     final inFlight = _refreshCompleter;
     if (inFlight != null) return inFlight.future;

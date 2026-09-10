@@ -1,4 +1,3 @@
-/// Verify email / OTP request matching backend VerifyEmailRequest record.
 class VerifyEmailRequestModel {
   const VerifyEmailRequestModel({required this.email, required this.otp});
 

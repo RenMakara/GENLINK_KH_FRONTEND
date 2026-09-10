@@ -8,10 +8,6 @@ import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import 'widgets/author_row.dart';
 
-/// Create / Edit Discussion Screen — Forum tab creation & editing flow.
-///
-/// Production-ready, theme-aware, Khmer/English typography friendly.
-/// Fields: Author identity, Category selector, Title, Auto-expanding Content, Character counter.
 class CreateDiscussionScreen extends StatefulWidget {
   final ForumTopicModel? initialDiscussion;
 
@@ -545,7 +541,6 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Author identity row ────────────────────────────────────
               AuthorRow(
                 isDark: isDark,
                 textPrimary: textPrimary,
@@ -553,7 +548,6 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ── Category Selector ──────────────────────────────────────
               Text(
                 'community.discussionCategory'.tr.isNotEmpty &&
                         'community.discussionCategory'.tr !=
@@ -611,7 +605,6 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
 
               const SizedBox(height: 20),
 
-              // ── Title ──────────────────────────────────────────────────
               Text(
                 'community.discussionTitle'.tr.isNotEmpty &&
                         'community.discussionTitle'.tr !=
@@ -682,7 +675,6 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
 
               const SizedBox(height: 20),
 
-              // ── Content ────────────────────────────────────────────────
               Text(
                 'community.discussionContent'.tr.isNotEmpty &&
                         'community.discussionContent'.tr !=
@@ -751,7 +743,6 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                 ),
               ),
 
-              // ── Character counter ──────────────────────────────────────
               Align(
                 alignment: Alignment.centerRight,
                 child: Padding(

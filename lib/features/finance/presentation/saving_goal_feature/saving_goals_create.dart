@@ -7,8 +7,6 @@ import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/saving_goal_controller.dart';
 
-/// Create form for a backend saving goal. When [goal] is supplied the same
-/// form is used for an update, keeping the edit contract identical to create.
 class CreateGoalScreen extends StatefulWidget {
   const CreateGoalScreen({super.key, this.goal});
 
@@ -52,8 +50,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _targetDate ?? now,
-      // targetDate is optional and the backend does not require it to be in
-      // the future, so do not impose a client-only business rule here.
       firstDate: DateTime(2000),
       lastDate: DateTime(now.year + 20),
     );
@@ -116,9 +112,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(18, 12, 18, 30),
             children: [
-              // ============================================================
-              // HEADER
-              // ============================================================
               Row(
                 children: [
                   AppBackButton(),
@@ -143,17 +136,11 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
               const SizedBox(height: 20),
 
-              // ============================================================
-              // ERROR
-              // ============================================================
               if (error != null) ...[
                 _ErrorBanner(message: error),
                 const SizedBox(height: 14),
               ],
 
-              // ============================================================
-              // GOAL NAME
-              // ============================================================
               TextField(
                 controller: _titleController,
                 enabled: !submitting,
@@ -167,9 +154,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
               const SizedBox(height: 16),
 
-              // ============================================================
-              // TARGET AMOUNT
-              // ============================================================
               TextField(
                 controller: _amountController,
                 enabled: !submitting,
@@ -187,9 +171,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
               const SizedBox(height: 16),
 
-              // ============================================================
-              // DEADLINE
-              // ============================================================
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 enabled: !submitting,
@@ -205,9 +186,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
               const SizedBox(height: 12),
 
-              // ============================================================
-              // CURRENCY
-              // ============================================================
               Text(
                 '${'finance.goal.currency'.tr}: ${formCurrency.apiValue}',
                 style: TextStyle(color: muted, fontWeight: FontWeight.w600),
@@ -215,9 +193,6 @@ class _CreateGoalScreenState extends State<CreateGoalScreen> {
 
               const SizedBox(height: 28),
 
-              // ============================================================
-              // SAVE / UPDATE
-              // ============================================================
               AppButton(
                 label:
                     (widget.isEditing

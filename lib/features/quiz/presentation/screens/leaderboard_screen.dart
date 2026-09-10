@@ -77,13 +77,10 @@ class LeaderboardScreen extends GetView<QuizController> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // 2nd place
             Expanded(
               child: _buildPodiumItem(entries[1], 56, Colors.grey[400]!),
             ),
-            // 1st place
             Expanded(child: _buildPodiumItem(entries[0], 72, QuizColors.gold)),
-            // 3rd place
             Expanded(
               child: _buildPodiumItem(entries[2], 48, const Color(0xFFCD7F32)),
             ),

@@ -8,11 +8,6 @@ import '../../../../design_system/widgets/loaders/app_loader.dart';
 import '../controllers/profile_controller.dart';
 import '../widgets/profile_widgets.dart';
 
-/// Achievements: the level card (level · XP · badges earned) and the full
-/// badge grid, earned first, locked greyed with their unlock requirement.
-///
-/// The design's "completed challenges" list has no history endpoint and is
-/// not rendered.
 class AchievementsScreen extends GetView<ProfileController> {
   const AchievementsScreen({super.key});
 
@@ -44,7 +39,6 @@ class AchievementsScreen extends GetView<ProfileController> {
         return ListView(
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
-            // ── Level card (dark, like the design) ──────────────────────
             Container(
               padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
@@ -99,7 +93,6 @@ class AchievementsScreen extends GetView<ProfileController> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // ── Badge grid ─────────────────────────────────────────────
             Text(
               'achievements.myBadges'.tr,
               style: theme.textTheme.titleMedium,
@@ -121,7 +114,6 @@ class AchievementsScreen extends GetView<ProfileController> {
                 children: [
                   for (final badge in badges)
                     Tooltip(
-                      // The unlock requirement surfaces on long-press.
                       message: badge.earned
                           ? (badge.description ?? badge.name)
                           : (badge.requirement ?? badge.name),

@@ -9,16 +9,6 @@ import '../design_system/theme/app_theme.dart';
 import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
 
-/// Root application shell for GenLink KH.
-///
-/// Hosts the GetX configuration: routes, translations, and theme mode.
-/// Theme and locale are read reactively so a change in Settings takes
-/// effect immediately, without a restart.
-///
-/// Dependencies are registered by `bootstrap()` *before* this widget is
-/// built — not via `initialBinding` — because the two `Get.find` calls
-/// below run during `build`, which happens before `GetMaterialApp` would
-/// have had a chance to run its own binding.
 class GenLinkKhApp extends StatelessWidget {
   const GenLinkKhApp({super.key, this.initialRoute = AppRoutes.splash});
 
@@ -34,26 +24,14 @@ class GenLinkKhApp extends StatelessWidget {
         title: AppConfig.appName,
         debugShowCheckedModeBanner: false,
 
-        // Theme — Khmer and English each get their own text theme.
         theme: AppTheme.lightFor(localization.languageCode),
         darkTheme: AppTheme.darkFor(localization.languageCode),
         themeMode: themeController.themeMode.value,
 
-        // Localization.
-        //
-        // `supportedLocales` is deliberately left at its default: Material's
-        // own strings (date picker, text-selection menu) need
-        // `flutter_localizations` to render in Khmer, which is not a
-        // dependency yet. GetX `.tr` is independent of those delegates, so
-        // every app-authored label still follows the selected language.
         translations: AppTranslations(),
         locale: localization.locale,
         fallbackLocale: LocalizationService.fallbackLocale,
 
-        // Routing
-        // Splash, not home: it is what restores the session and decides where
-        // the user actually belongs (home / onboarding / login). Starting at
-        // home skips that decision and shows the app to a signed-out user.
         initialRoute: initialRoute,
         getPages: AppPages.pages,
         unknownRoute: AppPages.unknownRoute,

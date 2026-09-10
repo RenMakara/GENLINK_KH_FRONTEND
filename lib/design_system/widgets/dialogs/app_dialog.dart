@@ -4,9 +4,7 @@ import 'package:get/get.dart';
 import '../../radius/app_radius.dart';
 import '../buttons/app_button.dart';
 
-/// Reusable confirmation dialogs and transient feedback.
 abstract final class AppDialog {
-  /// Ask the user to confirm an action. Resolves to `true` only on confirm.
   static Future<bool> confirm({
     required String title,
     String? message,
@@ -50,8 +48,6 @@ abstract final class AppDialog {
   }
 }
 
-/// Transient feedback. Routed through `ScaffoldMessenger` so messages
-/// survive route changes and stack correctly.
 abstract final class AppSnackbar {
   static void show(String message) => _show(message, isError: false);
 

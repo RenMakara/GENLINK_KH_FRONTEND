@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui' as ui;
@@ -12,6 +11,7 @@ import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../chat/presentation/bindings/chat_binding.dart';
 import '../../../chat/presentation/controllers/chat_controller.dart';
+import '../../../chat/presentation/screens/chat_detail_screen.dart';
 import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/story_model.dart';
 import '../../domain/repositories/story_repository.dart';
@@ -128,6 +128,7 @@ class _CompactReplyToastWidgetState extends State<_CompactReplyToastWidget>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return FadeTransition(
       opacity: _fadeAnim,
       child: SlideTransition(
@@ -135,12 +136,17 @@ class _CompactReplyToastWidgetState extends State<_CompactReplyToastWidget>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E1E1E),
+            color: isDark
+                ? const Color(0xFF1E1E1E)
+                : AppColors.lightSurfacePrimary,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white12, width: 1.0),
+            border: Border.all(
+              color: isDark ? Colors.white12 : AppColors.lightBorderSubtle,
+              width: 1.0,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.45),
+                color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
                 blurRadius: 14,
                 offset: const Offset(0, 5),
               ),
@@ -149,41 +155,45 @@ class _CompactReplyToastWidgetState extends State<_CompactReplyToastWidget>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Small Recipient Avatar
               CircleAvatar(
                 radius: 11,
-                backgroundColor: Colors.white.withValues(alpha: 0.15),
+                backgroundColor: isDark
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : AppColors.lightBorderSubtle,
                 backgroundImage: widget.recipientAvatar.isNotEmpty
                     ? (widget.recipientAvatar.startsWith('assets/')
                           ? AssetImage(widget.recipientAvatar) as ImageProvider
                           : NetworkImage(widget.recipientAvatar))
                     : null,
                 child: widget.recipientAvatar.isEmpty
-                    ? const Icon(
+                    ? Icon(
                         Icons.person_rounded,
-                        color: Colors.white70,
+                        color: isDark
+                            ? Colors.white70
+                            : AppColors.lightTextMuted,
                         size: 12,
                       )
                     : null,
               ),
               const SizedBox(width: 8),
 
-              // Text: "Reply sent to [Recipient Name]"
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     "Reply sent ",
                     style: TextStyle(
-                      color: Colors.white,
+                      color: isDark ? Colors.white : AppColors.lightTextPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
                   ),
                   Text(
                     "to ${widget.recipientName}",
-                    style: const TextStyle(
-                      color: Colors.white60,
+                    style: TextStyle(
+                      color: isDark
+                          ? Colors.white60
+                          : AppColors.lightTextSecondary,
                       fontSize: 13,
                       fontWeight: FontWeight.normal,
                     ),
@@ -192,7 +202,6 @@ class _CompactReplyToastWidgetState extends State<_CompactReplyToastWidget>
               ),
               const SizedBox(width: 8),
 
-              // Small Green Checkmark Badge Icon
               Container(
                 padding: const EdgeInsets.all(2),
                 decoration: const BoxDecoration(
@@ -466,13 +475,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       return;
     }
 
-    // Safety: Prevent user from liking their own story
     if (_isOwnStory) {
       debugPrint('[StoryViewer] Blocked reaction: User owns this story.');
       return;
     }
 
-    // Debounce: prevent rapid multi-touch hardware jitter (<120ms)
     final now = DateTime.now();
     if (_lastLikeTapTime != null &&
         now.difference(_lastLikeTapTime!).inMilliseconds < 120) {
@@ -492,7 +499,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       'Target liked state: $targetLiked',
     );
 
-    // 1. Immediate optimistic UI update (0ms latency for smooth micro-interaction)
     story.isLiked = targetLiked;
     story.likesCount = targetLikesCount;
     if (mounted) setState(() {});
@@ -503,7 +509,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       'New likes count: ${story.likesCount}',
     );
 
-    // For demo stories, update local demo state and skip backend API call
     final isDemo = story.id.startsWith('demo_') ||
         (_currentGroup?.userId.startsWith('demo_') ?? false);
     if (isDemo) {
@@ -511,7 +516,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       return;
     }
 
-    // 2. Sync with backend in background with rollback on error
     if (Get.isRegistered<StoryController>()) {
       final ctrl = Get.find<StoryController>();
       try {
@@ -533,7 +537,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       }
     }
 
-    // Create activity notification if story is liked
     if (story.isLiked && Get.isRegistered<NotificationController>()) {
       final notifCtrl = Get.find<NotificationController>();
       final group = _currentGroup;
@@ -559,7 +562,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     final story = _currentStory;
     if (story == null || !story.allowReactions) return;
 
-    // Safety: Prevent user from liking their own story
     if (_isOwnStory) return;
 
     if (!story.isLiked) {
@@ -568,12 +570,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     }
   }
 
-  Widget _buildStoryReplyThumbnail(StoryItemModel story) {
+  Widget _buildStoryReplyThumbnail(StoryItemModel story, [bool isDark = true]) {
     const double thumbSize = 38.0;
     final mediaUrl = story.mediaUrl;
     final isVideo = mediaUrl != null && _isVideoFile(mediaUrl);
+    final borderColor = isDark ? Colors.white24 : AppColors.lightBorderSubtle;
 
-    // 1. Text Story Thumbnail (Gradient / Solid color + "Aa")
     if (mediaUrl == null || mediaUrl.trim().isEmpty) {
       Color bgStart = const Color(0xFF1E293B);
       Color bgEnd = const Color(0xFF0F172A);
@@ -593,7 +595,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             colors: [bgStart, bgEnd],
           ),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white24, width: 1.0),
+          border: Border.all(color: borderColor, width: 1.0),
         ),
         child: const Center(
           child: Text(
@@ -608,20 +610,23 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       );
     }
 
-    // 2. Video Story Thumbnail (Dark container + Play Icon overlay)
     if (isVideo) {
       return Container(
         width: thumbSize,
         height: thumbSize,
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
+          color: isDark ? const Color(0xFF1E1E1E) : AppColors.lightBgSecondary,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white24, width: 1.0),
+          border: Border.all(color: borderColor, width: 1.0),
         ),
         child: Stack(
           alignment: Alignment.center,
           children: [
-            const Icon(Icons.movie_rounded, color: Colors.white38, size: 18),
+            Icon(
+              Icons.movie_rounded,
+              color: isDark ? Colors.white38 : AppColors.lightTextMuted,
+              size: 18,
+            ),
             Container(
               width: 20,
               height: 20,
@@ -640,7 +645,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       );
     }
 
-    // 3. Image Story Thumbnail
     Widget imageContent;
     if (mediaUrl.startsWith('assets/')) {
       imageContent = Image.asset(
@@ -656,9 +660,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         width: thumbSize,
         height: thumbSize,
         fit: BoxFit.cover,
-        errorBuilder: (c, e, s) => const Icon(
+        errorBuilder: (c, e, s) => Icon(
           Icons.image_not_supported_rounded,
-          color: Colors.white54,
+          color: isDark ? Colors.white54 : AppColors.lightTextMuted,
           size: 16,
         ),
       );
@@ -677,9 +681,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           width: thumbSize,
           height: thumbSize,
           fit: BoxFit.cover,
-          errorBuilder: (c, e, s) => const Icon(
+          errorBuilder: (c, e, s) => Icon(
             Icons.image_not_supported_rounded,
-            color: Colors.white54,
+            color: isDark ? Colors.white54 : AppColors.lightTextMuted,
             size: 16,
           ),
         );
@@ -692,7 +696,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         width: thumbSize,
         height: thumbSize,
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.white24, width: 1.0),
+          border: Border.all(color: borderColor, width: 1.0),
           borderRadius: BorderRadius.circular(10),
         ),
         child: imageContent,
@@ -711,362 +715,419 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     }
 
     final replyTextController = TextEditingController();
+    final inputFocusNode = FocusNode();
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
-          decoration: const BoxDecoration(
-            color: Color(0xFF141414),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF141414)
+                  : AppColors.lightSurfacePrimary,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border(
+                top: BorderSide(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.10)
+                      : AppColors.lightBorderSubtle,
+                  width: 1.0,
                 ),
               ),
-              const SizedBox(height: 12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.08),
+                  blurRadius: 18,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : AppColors.lightBorderStrong,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
 
-              // Story Reference Preview Header Card (Smooth Fade-in Animation & Reduced Height)
-              TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOut,
-                builder: (context, opacity, child) {
-                  return Opacity(opacity: opacity, child: child);
-                },
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.15),
+                // Reply preview card header (clean single-layer container without BackdropFilter ghosting)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : AppColors.lightBgSecondary,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.12)
+                          : AppColors.lightBorderSubtle,
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: isDark
+                            ? Colors.white.withValues(alpha: 0.15)
+                            : AppColors.lightBorderSubtle,
+                        backgroundImage: group.userAvatar.isNotEmpty
+                            ? (group.userAvatar.startsWith('assets/')
+                                  ? AssetImage(group.userAvatar) as ImageProvider
+                                  : NetworkImage(group.userAvatar))
+                            : null,
+                        child: group.userAvatar.isEmpty
+                            ? Icon(
+                                Icons.person_rounded,
+                                color: isDark
+                                    ? Colors.white70
+                                    : AppColors.lightTextMuted,
+                                size: 20,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Replying to ${group.userName}'s Story",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.white
+                                    : AppColors.lightTextPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              story.textContent != null &&
+                                      story.textContent!.trim().isNotEmpty
+                                  ? story.textContent!.trim()
+                                  : (story.mediaUrl != null &&
+                                            _isVideoFile(story.mediaUrl!)
+                                        ? "Video Story"
+                                        : "Photo Story"),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.7)
+                                    : AppColors.lightTextSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundColor: Colors.white.withValues(
-                              alpha: 0.15,
+                      const SizedBox(width: 12),
+                      _buildStoryReplyThumbnail(story, isDark),
+                    ],
+                  ),
+                ),
+
+                if (story.allowReactions) ...[
+                  const SizedBox(height: 12),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: ['❤️', '🔥', '😂', '😮', '😢', '👏'].map((emoji) {
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _sendStoryReaction(group, story, emoji);
+                        },
+                        child: Text(emoji, style: const TextStyle(fontSize: 26)),
+                      );
+                    }).toList(),
+                  ),
+                ],
+
+                const SizedBox(height: 14),
+
+                StatefulBuilder(
+                  builder: (context, setInputState) {
+                    bool isSending = false;
+                    bool isSuccess = false;
+                    bool isPressed = false;
+                    bool isFocused = false;
+
+                    return StatefulBuilder(
+                      builder: (context, setInnerState) {
+                        final hasText = replyTextController.text
+                            .trim()
+                            .isNotEmpty;
+
+                        return Focus(
+                          onFocusChange: (focused) {
+                            setInnerState(() => isFocused = focused);
+                            if (focused) {
+                              _pauseStory();
+                            } else {
+                              _resumeStory();
+                            }
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOut,
+                            height: 50,
+                            padding: const EdgeInsets.only(left: 18, right: 5),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? (isFocused
+                                      ? Colors.white.withValues(alpha: 0.12)
+                                      : Colors.white.withValues(alpha: 0.07))
+                                  : (isFocused
+                                      ? AppColors.lightSurfacePrimary
+                                      : AppColors.lightBgSecondary),
+                              borderRadius: BorderRadius.circular(25),
+                              border: Border.all(
+                                color: isDark
+                                    ? (isFocused
+                                        ? Colors.white60
+                                        : Colors.white.withValues(alpha: 0.16))
+                                    : (isFocused
+                                        ? AppColors.lightTextPrimary
+                                        : AppColors.lightBorderStrong),
+                                width: isFocused ? 1.4 : 1.0,
+                              ),
                             ),
-                            backgroundImage: group.userAvatar.isNotEmpty
-                                ? (group.userAvatar.startsWith('assets/')
-                                      ? AssetImage(group.userAvatar)
-                                            as ImageProvider
-                                      : NetworkImage(group.userAvatar))
-                                : null,
-                            child: group.userAvatar.isEmpty
-                                ? const Icon(
-                                    Icons.person_rounded,
-                                    color: Colors.white70,
-                                    size: 20,
-                                  )
-                                : null,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Text(
-                                  "Replying to ${group.userName}'s Story",
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
+                                Expanded(
+                                  child: TextField(
+                                    controller: replyTextController,
+                                    focusNode: inputFocusNode,
+                                    autofocus: true,
+                                    textAlignVertical:
+                                        TextAlignVertical.center,
+                                    cursorColor: isDark
+                                        ? Colors.white
+                                        : AppColors.lightTextPrimary,
+                                    cursorWidth: 2.0,
+                                    cursorRadius: const Radius.circular(2),
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.white
+                                          : AppColors.lightTextPrimary,
+                                      fontSize: 15.5,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    onChanged: (_) {
+                                      setInnerState(() {});
+                                    },
+                                    onSubmitted: (text) async {
+                                      if (text.trim().isNotEmpty &&
+                                          !isSending &&
+                                          !isSuccess) {
+                                        setInnerState(() => isSending = true);
+                                        await Future.delayed(
+                                          const Duration(milliseconds: 160),
+                                        );
+                                        if (context.mounted) {
+                                          setInnerState(() {
+                                            isSending = false;
+                                            isSuccess = true;
+                                          });
+                                        }
+                                        await Future.delayed(
+                                          const Duration(milliseconds: 220),
+                                        );
+                                        if (ctx.mounted) {
+                                          Navigator.pop(ctx);
+                                          _sendStoryReplyMessage(
+                                            group,
+                                            story,
+                                            text.trim(),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    decoration: InputDecoration(
+                                      hintText: "Send a message...",
+                                      hintStyle: TextStyle(
+                                        color: isDark
+                                            ? Colors.white54
+                                            : AppColors.lightTextMuted,
+                                        fontSize: 15.5,
+                                        fontWeight: FontWeight.normal,
+                                      ),
+                                      border: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                      errorBorder: InputBorder.none,
+                                      focusedErrorBorder: InputBorder.none,
+                                      disabledBorder: InputBorder.none,
+                                      filled: false,
+                                      fillColor: Colors.transparent,
+                                      contentPadding: EdgeInsets.zero,
+                                      isCollapsed: true,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  story.textContent != null &&
-                                          story.textContent!.trim().isNotEmpty
-                                      ? story.textContent!.trim()
-                                      : (story.mediaUrl != null &&
-                                                _isVideoFile(story.mediaUrl!)
-                                            ? "Video Story"
-                                            : "Photo Story"),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.7),
-                                    fontSize: 12,
+                                const SizedBox(width: 6),
+
+                                GestureDetector(
+                                  onTapDown: (_) {
+                                    if (hasText && !isSending && !isSuccess) {
+                                      setInnerState(() => isPressed = true);
+                                    }
+                                  },
+                                  onTapUp: (_) {
+                                    if (isPressed) {
+                                      setInnerState(() => isPressed = false);
+                                    }
+                                  },
+                                  onTapCancel: () {
+                                    if (isPressed) {
+                                      setInnerState(() => isPressed = false);
+                                    }
+                                  },
+                                  onTap: (hasText && !isSending && !isSuccess)
+                                      ? () async {
+                                          final text = replyTextController.text
+                                              .trim();
+                                          if (text.isNotEmpty) {
+                                            setInnerState(
+                                              () => isSending = true,
+                                            );
+                                            await Future.delayed(
+                                              const Duration(milliseconds: 160),
+                                            );
+                                            if (context.mounted) {
+                                              setInnerState(() {
+                                                isSending = false;
+                                                isSuccess = true;
+                                              });
+                                            }
+                                            await Future.delayed(
+                                              const Duration(milliseconds: 220),
+                                            );
+                                            if (ctx.mounted) {
+                                              Navigator.pop(ctx);
+                                              _sendStoryReplyMessage(
+                                                group,
+                                                story,
+                                                text,
+                                              );
+                                            }
+                                          }
+                                        }
+                                      : null,
+                                  child: AnimatedScale(
+                                    scale: isPressed ? 0.93 : 1.0,
+                                    duration: const Duration(milliseconds: 120),
+                                    curve: Curves.easeOut,
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 180,
+                                      ),
+                                      curve: Curves.easeInOut,
+                                      width: 34,
+                                      height: 34,
+                                      decoration: BoxDecoration(
+                                        color: isSuccess
+                                            ? const Color(0xFF16A34A)
+                                            : (hasText
+                                                  ? (isDark
+                                                        ? Colors.white
+                                                        : AppColors
+                                                              .lightTextPrimary)
+                                                  : Colors.transparent),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Center(
+                                        child: AnimatedSwitcher(
+                                          duration: const Duration(
+                                            milliseconds: 180,
+                                          ),
+                                          transitionBuilder: (child, anim) =>
+                                              ScaleTransition(
+                                                scale: anim,
+                                                child: FadeTransition(
+                                                  opacity: anim,
+                                                  child: child,
+                                                ),
+                                              ),
+                                          child: isSending
+                                              ? SizedBox(
+                                                  key: const ValueKey(
+                                                    'loading',
+                                                  ),
+                                                  width: 14,
+                                                  height: 14,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                        color: isDark
+                                                            ? Colors.black
+                                                            : Colors.white,
+                                                      ),
+                                                )
+                                              : isSuccess
+                                              ? const Icon(
+                                                  Icons.check_rounded,
+                                                  key: ValueKey('success'),
+                                                  color: Colors.white,
+                                                  size: 18,
+                                                )
+                                              : Icon(
+                                                  Icons.send_rounded,
+                                                  key: ValueKey<bool>(hasText),
+                                                  color: hasText
+                                                      ? (isDark
+                                                            ? Colors.black
+                                                            : Colors.white)
+                                                      : (isDark
+                                                            ? Colors.white30
+                                                            : AppColors
+                                                                  .lightTextMuted),
+                                                  size: 16,
+                                                ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          _buildStoryReplyThumbnail(story),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              if (story.allowReactions) ...[
-                const SizedBox(height: 12),
-
-                // Quick Emoji Reaction Bar
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: ['❤️', '🔥', '😂', '😮', '😢', '👏'].map((emoji) {
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        _sendStoryReaction(group, story, emoji);
+                        );
                       },
-                      child: Text(emoji, style: const TextStyle(fontSize: 26)),
                     );
-                  }).toList(),
+                  },
                 ),
               ],
-
-              const SizedBox(height: 14),
-
-              // Premium Production-Grade Story Reply Input (Focus Animation, Press Scale Compression, Paper Plane Icon)
-              StatefulBuilder(
-                builder: (context, setInputState) {
-                  bool isSending = false;
-                  bool isSuccess = false;
-                  bool isPressed = false;
-                  bool isFocused = false;
-                  final FocusNode inputFocusNode = FocusNode();
-
-                  return StatefulBuilder(
-                    builder: (context, setInnerState) {
-                      final hasText = replyTextController.text
-                          .trim()
-                          .isNotEmpty;
-
-                      return Focus(
-                        onFocusChange: (focused) {
-                          setInnerState(() => isFocused = focused);
-                          if (focused) {
-                            _pauseStory();
-                          } else {
-                            _resumeStory();
-                          }
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeOut,
-                          height: 50,
-                          padding: const EdgeInsets.only(left: 18, right: 5),
-                          decoration: BoxDecoration(
-                            color: isFocused
-                                ? Colors.white.withValues(alpha: 0.10)
-                                : Colors.white.withValues(alpha: 0.07),
-                            borderRadius: BorderRadius.circular(25),
-                            border: Border.all(
-                              color: isFocused
-                                  ? Colors.white38
-                                  : Colors.white.withValues(alpha: 0.14),
-                              width: isFocused ? 1.2 : 1.0,
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: replyTextController,
-                                  focusNode: inputFocusNode,
-                                  autofocus: true,
-                                  textAlignVertical: TextAlignVertical.center,
-                                  cursorColor: Colors.white,
-                                  cursorWidth: 2.0,
-                                  cursorRadius: const Radius.circular(2),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15.5,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  onChanged: (_) {
-                                    setInnerState(() {});
-                                  },
-                                  onSubmitted: (text) async {
-                                    if (text.trim().isNotEmpty &&
-                                        !isSending &&
-                                        !isSuccess) {
-                                      setInnerState(() => isSending = true);
-                                      await Future.delayed(
-                                        const Duration(milliseconds: 160),
-                                      );
-                                      if (context.mounted) {
-                                        setInnerState(() {
-                                          isSending = false;
-                                          isSuccess = true;
-                                        });
-                                      }
-                                      await Future.delayed(
-                                        const Duration(milliseconds: 220),
-                                      );
-                                      if (ctx.mounted) {
-                                        Navigator.pop(ctx);
-                                        _sendStoryReplyMessage(
-                                          group,
-                                          story,
-                                          text.trim(),
-                                        );
-                                      }
-                                    }
-                                  },
-                                  decoration: const InputDecoration(
-                                    hintText: "Send a message...",
-                                    hintStyle: TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 15.5,
-                                      fontWeight: FontWeight.normal,
-                                    ),
-                                    border: InputBorder.none,
-                                    isCollapsed: true,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-
-                              // Send Button (Size 34x34, Press Scale 0.93, Paper Plane Icon, Micro Interactions)
-                              GestureDetector(
-                                onTapDown: (_) {
-                                  if (hasText && !isSending && !isSuccess) {
-                                    setInnerState(() => isPressed = true);
-                                  }
-                                },
-                                onTapUp: (_) {
-                                  if (isPressed) {
-                                    setInnerState(() => isPressed = false);
-                                  }
-                                },
-                                onTapCancel: () {
-                                  if (isPressed) {
-                                    setInnerState(() => isPressed = false);
-                                  }
-                                },
-                                onTap: (hasText && !isSending && !isSuccess)
-                                    ? () async {
-                                        final text = replyTextController.text
-                                            .trim();
-                                        if (text.isNotEmpty) {
-                                          setInnerState(() => isSending = true);
-                                          await Future.delayed(
-                                            const Duration(milliseconds: 160),
-                                          );
-                                          if (context.mounted) {
-                                            setInnerState(() {
-                                              isSending = false;
-                                              isSuccess = true;
-                                            });
-                                          }
-                                          await Future.delayed(
-                                            const Duration(milliseconds: 220),
-                                          );
-                                          if (ctx.mounted) {
-                                            Navigator.pop(ctx);
-                                            _sendStoryReplyMessage(
-                                              group,
-                                              story,
-                                              text,
-                                            );
-                                          }
-                                        }
-                                      }
-                                    : null,
-                                child: AnimatedScale(
-                                  scale: isPressed ? 0.93 : 1.0,
-                                  duration: const Duration(milliseconds: 120),
-                                  curve: Curves.easeOut,
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 180),
-                                    curve: Curves.easeInOut,
-                                    width: 34,
-                                    height: 34,
-                                    decoration: BoxDecoration(
-                                      color: isSuccess
-                                          ? const Color(0xFF16A34A)
-                                          : (hasText
-                                                ? Colors.white
-                                                : Colors.transparent),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Center(
-                                      child: AnimatedSwitcher(
-                                        duration: const Duration(
-                                          milliseconds: 180,
-                                        ),
-                                        transitionBuilder: (child, anim) =>
-                                            ScaleTransition(
-                                              scale: anim,
-                                              child: FadeTransition(
-                                                opacity: anim,
-                                                child: child,
-                                              ),
-                                            ),
-                                        child: isSending
-                                            ? const SizedBox(
-                                                key: ValueKey('loading'),
-                                                width: 14,
-                                                height: 14,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: Colors.black,
-                                                    ),
-                                              )
-                                            : isSuccess
-                                            ? const Icon(
-                                                Icons.check_rounded,
-                                                key: ValueKey('success'),
-                                                color: Colors.white,
-                                                size: 18,
-                                              )
-                                            : Icon(
-                                                Icons.send_rounded,
-                                                key: ValueKey<bool>(hasText),
-                                                color: hasText
-                                                    ? Colors.black
-                                                    : Colors.white30,
-                                                size: 16,
-                                              ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
-    ).then((_) => _resumeStory());
+        );
+      },
+    ).then((_) {
+      replyTextController.dispose();
+      inputFocusNode.dispose();
+      _resumeStory();
+    });
   }
 
   void _sendStoryReplyMessage(
@@ -1074,35 +1135,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     StoryItemModel story,
     String message,
   ) async {
-    final isDemo = story.id.startsWith('demo_') ||
-        group.userId.startsWith('demo_');
-
-    if (isDemo) {
-      if (Get.isRegistered<NotificationController>()) {
-        final notifCtrl = Get.find<NotificationController>();
-        notifCtrl.addActivityNotification(
-          NotificationModel(
-            id: 'notif_reply_${story.id}_${DateTime.now().millisecondsSinceEpoch}',
-            type: NotificationType.comment,
-            title: 'Story Reply',
-            body: '${group.userName} replied: "$message"',
-            senderName: group.userName,
-            senderAvatar: group.userAvatar,
-            timeAgo: 'Just now',
-            timestamp: DateTime.now(),
-            isRead: false,
-            targetId: story.id,
-            targetType: 'story',
-          ),
-        );
-      }
-
-      if (mounted) {
-        _showCompactReplyToast(context, group.userName, group.userAvatar);
-        _resumeStory();
-      }
-      return;
-    }
+    _pauseStory();
 
     try {
       if (!Get.isRegistered<ChatController>()) {
@@ -1111,15 +1144,15 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
       final chatController = Get.find<ChatController>();
 
-      // Call ChatController's sendStoryReply pipeline which calls ChatRepositoryImpl & ChatRemoteDataSource
       await chatController.sendStoryReply(
         userName: group.userName,
         userAvatar: group.userAvatar,
         message: message,
         mediaUrl: story.mediaUrl,
+        storyId: story.id,
+        userId: group.userId,
       );
 
-      // Create real activity notification for Story Owner
       if (Get.isRegistered<NotificationController>()) {
         final notifCtrl = Get.find<NotificationController>();
         notifCtrl.addActivityNotification(
@@ -1139,10 +1172,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         );
       }
 
-      // Show Compact Floating Toast Notification & Resume Story Playback
       if (mounted) {
         _showCompactReplyToast(context, group.userName, group.userAvatar);
-        _resumeStory();
+        await Get.to(() => const ChatDetailScreen());
+        if (mounted) {
+          _resumeStory();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -1153,6 +1188,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               "Could not send message to ${group.userName}. Please try again.",
           icon: Icons.error_outline_rounded,
         );
+        _resumeStory();
       }
     }
   }
@@ -1206,7 +1242,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   ) {
     _pauseStory();
 
-    // Mock joined campus groups list
     final List<_CampusGroupItem> joinedGroups = [
       const _CampusGroupItem(
         id: 'cg_1',
@@ -1246,7 +1281,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Drag handle
                 Center(
                   child: Container(
                     width: 36,
@@ -1282,7 +1316,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 ),
 
                 if (joinedGroups.isEmpty) ...[
-                  // ── Edge Case: User has not joined any campus groups ──
                   const SizedBox(height: 24),
                   Center(
                     child: Column(
@@ -1349,7 +1382,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                   ),
                   const SizedBox(height: 14),
 
-                  // ── Scrollable List of Joined Campus Groups ──
                   ConstrainedBox(
                     constraints: BoxConstraints(
                       maxHeight: MediaQuery.of(context).size.height * 0.40,
@@ -1386,7 +1418,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                               ),
                               child: Row(
                                 children: [
-                                  // Group Avatar
                                   Container(
                                     width: 42,
                                     height: 42,
@@ -1460,7 +1491,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                                     ),
                                   ),
                                   const SizedBox(width: 10),
-                                  // Selection Indicator
                                   Icon(
                                     isSelected
                                         ? Icons.radio_button_checked
@@ -1481,7 +1511,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
                   const SizedBox(height: 20),
 
-                  // ── Share Story Action Button (Enabled only when group is selected) ──
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -1504,7 +1533,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                               final targetGroup = selectedGroup!;
                               Navigator.pop(ctx);
 
-                              // ── Confirmation Dialog ──
                               final bool? confirmed = await showDialog<bool>(
                                 context: context,
                                 builder: (dialogCtx) => AlertDialog(
@@ -1649,7 +1677,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             ),
             const SizedBox(height: 16),
 
-            // 1. Copy Story Link
             _StoryMenuActionTile(
               icon: Icons.link_rounded,
               title: "Copy Story Link",
@@ -1668,7 +1695,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               },
             ),
 
-            // 2. Share to Campus Group
             _StoryMenuActionTile(
               icon: Icons.groups_rounded,
               title: "Share to Campus Group",
@@ -1963,7 +1989,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               subtitle: "Coming Soon",
               icon: Icons.settings,
               isSelected: false,
-              onTap: null, // Disabled
+              onTap: null,
             ),
           ],
         ),
@@ -2030,7 +2056,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Drag handle
                 Center(
                   child: Container(
                     width: 36,
@@ -2388,7 +2413,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 12),
-              // Drag Handle
               Center(
                 child: Container(
                   width: 38,
@@ -2400,7 +2424,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 ),
               ),
               const SizedBox(height: 16),
-              // Sheet Header Title
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
@@ -2421,7 +2444,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               const Divider(color: Colors.white10, height: 1),
               const SizedBox(height: 8),
 
-              // Scrollable Options List
               Flexible(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -2429,7 +2451,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                   child: Column(
                     children: [
                       if (_isOwnStory) ...[
-                        // ── MY STORY OPTIONS ──
                         _buildMenuOptionTile(
                           ctx: ctx,
                           icon: Icons.lock_outline_rounded,
@@ -2459,7 +2480,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           },
                         ),
                       ] else ...[
-                        // ── OTHER USER'S STORY OPTIONS ──
                         _buildMenuOptionTile(
                           ctx: ctx,
                           icon: Icons.near_me_outlined,
@@ -2937,29 +2957,29 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         weight = FontWeight.w600;
         letterSpacing = 0.2;
         break;
-      case TextStyleType.elegant: // Deco
+      case TextStyleType.elegant:
         style = FontStyle.italic;
         weight = FontWeight.w600;
         letterSpacing = 0.8;
         break;
-      case TextStyleType.bold: // Bubble
+      case TextStyleType.bold:
         weight = FontWeight.w900;
         letterSpacing = -0.3;
         break;
-      case TextStyleType.modern: // Modern
+      case TextStyleType.modern:
         weight = FontWeight.w800;
         letterSpacing = 0.8;
         break;
-      case TextStyleType.minimal: // Minimal Clean
+      case TextStyleType.minimal:
         weight = FontWeight.w700;
         letterSpacing = 1.2;
         break;
-      case TextStyleType.handwriting: // Script
+      case TextStyleType.handwriting:
         weight = FontWeight.w500;
         style = FontStyle.italic;
         letterSpacing = 0.5;
         break;
-      case TextStyleType.coding: // Code
+      case TextStyleType.coding:
         weight = FontWeight.w600;
         fontFamily = 'monospace';
         letterSpacing = -0.2;
@@ -2969,7 +2989,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         break;
     }
 
-    // Explicit Text Effects system (Independent from Font Styles)
     switch (effect) {
       case TextEffectType.shadow:
         textShadows = [
@@ -3002,7 +3021,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         break;
       case TextEffectType.outline:
       case TextEffectType.none:
-        textShadows = null; // Clean, flat, NO shadow
+        textShadows = null;
         break;
     }
 
@@ -3149,18 +3168,36 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       case LayerType.hashtag:
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
             decoration: BoxDecoration(
               color: AppColors.communityAccent.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.25),
+                width: 0.8,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.communityAccent.withValues(alpha: 0.35),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Text(
               layer.text,
+              softWrap: true,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                fontSize: 14.5,
+                letterSpacing: -0.1,
+                height: 1.25,
               ),
             ),
           ),
@@ -3180,6 +3217,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               color: layer.bgStyle == TextBgStyle.filled
@@ -3201,14 +3239,15 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                     ]
                   : null,
             ),
-            child: Text(
-              cleanMention,
+            child: AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
               style: TextStyle(
                 color: textColor,
                 fontWeight: FontWeight.w900,
                 fontSize: 18,
                 letterSpacing: 0.5,
               ),
+              child: Text(cleanMention),
             ),
           ),
         );
@@ -3225,6 +3264,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
               color: layer.bgStyle == TextBgStyle.filled
@@ -3252,14 +3292,17 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 Icon(Icons.location_on_rounded, color: textColor, size: 16),
                 const SizedBox(width: 6),
                 Flexible(
-                  child: Text(
-                    cleanLocation,
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
                     style: TextStyle(
                       color: textColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
-                    overflow: TextOverflow.ellipsis,
+                    child: Text(
+                      cleanLocation,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ],
@@ -3384,7 +3427,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           key: _storyContentKey,
           child: Stack(
             children: [
-            // Full Screen Story Content with Ultra-Comfortable 90ms Anchored Pure Crossfade (Instagram / WhatsApp Comfort Standard)
             Positioned.fill(
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 90),
@@ -3402,7 +3444,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               ),
             ),
 
-            // Top Gradient Overlay for Header Readability
             Positioned(
               top: 0,
               left: 0,
@@ -3422,7 +3463,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               ),
             ),
 
-            // Bottom Gradient Overlay for Reply Bar Readability
             Positioned(
               bottom: 0,
               left: 0,
@@ -3442,7 +3482,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               ),
             ),
 
-            // Left/Right Touch Gesture Detection Zones
             Positioned.fill(
               child: Row(
                 children: [
@@ -3462,7 +3501,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               ),
             ),
 
-            // Top Header: Segmented Progress Bar & Clean User Avatar Header Row
             Positioned(
               top: 0,
               left: 0,
@@ -3477,7 +3515,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Segmented Progress Bar
                       AnimatedBuilder(
                         animation: _progressAnimController,
                         builder: (ctx, child) {
@@ -3520,7 +3557,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
                       const SizedBox(height: 12),
 
-                      // Clean Header Row (Avatar, User Name, Timestamp, Location, Menu, Close)
                       Row(
                         children: [
                           GestureDetector(
@@ -3636,7 +3672,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               ),
             ),
 
-            // Floating Bottom Action Bar: Conditional Owner vs Viewer Controls
             Positioned(
               left: 0,
               right: 0,
@@ -3653,7 +3688,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       if (_isOwnStory) ...[
-                        // ── Owner Actions: Viewers & Likes Engagement Pill Button ──
                         InkWell(
                           borderRadius: BorderRadius.circular(22),
                           onTap: _showViewersSheet,
@@ -3710,7 +3744,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           ),
                         ),
                       ] else ...[
-                        // ── Viewer Actions: Ultra-Lightweight Comment Capsule ──
                         if (story.storyReplyPermission !=
                             StoryReplyPermission.off)
                           Expanded(
@@ -3767,7 +3800,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                         if (story.allowReactions && !_isOwnStory) ...[
                           const SizedBox(width: 8),
 
-                          // ── Interactive Like Button ──
                           StoryInteractiveLikeButton(
                             key: ValueKey('story_like_${story.id}'),
                             isLiked: story.isLiked,
@@ -3779,7 +3811,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
                         const SizedBox(width: 8),
 
-                        // More Menu Button (42x42 with 48x48 hit target)
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTapDown: (_) =>

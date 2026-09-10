@@ -2,8 +2,6 @@ import 'package:dio/dio.dart';
 
 import '../../../core/storage/secure_storage.dart';
 
-/// Intercepts requests when using the Demo Login to provide fake data
-/// and prevent 401 Unauthorized errors from breaking the UI.
 class MockInterceptor extends Interceptor {
   MockInterceptor(this.storage);
   final SecureStorage storage;
@@ -24,7 +22,6 @@ class MockInterceptor extends Interceptor {
       return;
     }
 
-    // Auth endpoints still pass through so logout/login logic works
     if (options.path.contains('/auth/')) {
       handler.next(options);
       return;
@@ -71,12 +68,11 @@ class MockInterceptor extends Interceptor {
     } else if (path.contains('/community/posts')) {
       data = {'content': [], 'totalPages': 0, 'totalElements': 0};
     } else if (path.contains('/community')) {
-      data = []; // Some community endpoints expect lists
+      data = [];
     } else {
-      data = {}; // default empty object
+      data = {};
     }
 
-    // Resolve immediately with fake data (Status 200 OK)
     handler.resolve(
       Response(
         requestOptions: options,
@@ -85,7 +81,7 @@ class MockInterceptor extends Interceptor {
           'success': true,
           'data': data,
           if (path.contains('/posts') && data is Map)
-            ...data, // Some paginated responses use root
+            ...data,
         },
       ),
     );

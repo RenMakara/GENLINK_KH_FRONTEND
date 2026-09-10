@@ -7,11 +7,6 @@ import '../../../../design_system/widgets/dialogs/app_dialog.dart';
 import '../../domain/entities/user_settings_entity.dart';
 import '../../domain/repositories/settings_repository.dart';
 
-/// Owns `/api/v1/profile/settings`.
-///
-/// Theme and language are applied locally *first* so the UI responds
-/// immediately, then persisted. If the server rejects the change the local
-/// value is rolled back, so the two never silently disagree.
 class SettingsController extends GetxController {
   SettingsController({
     required this._repository,
@@ -46,9 +41,6 @@ class SettingsController extends GetxController {
       final loaded = await _repository.getSettings();
       final current = settings.value;
 
-      // Merge: prefer backend if it's NOT the default, otherwise stay with
-      // current local state. This prevents backend defaults from
-      // clobbering a user's manual choice when opening the settings page.
       final merged = loaded.copyWith(
         theme: loaded.theme == UserSettingsEntity.themeSystem
             ? current.theme
@@ -60,7 +52,6 @@ class SettingsController extends GetxController {
 
       settings.value = merged;
 
-      // Only apply to the app if it actually changed from current local state.
       if (merged.theme != current.theme) {
         await _theme.applyBackendTheme(merged.theme);
       }
@@ -76,7 +67,6 @@ class SettingsController extends GetxController {
     }
   }
 
-  // ── Appearance ────────────────────────────────────────────────────────
 
   Future<void> setTheme(String theme) async {
     final previous = settings.value;
@@ -104,7 +94,6 @@ class SettingsController extends GetxController {
     }
   }
 
-  // ── Toggles ───────────────────────────────────────────────────────────
 
   Future<void> setNotificationEnabled(bool value) => _toggle(
     (s) => s.copyWith(notificationEnabled: value),
@@ -131,9 +120,7 @@ class SettingsController extends GetxController {
     () => _patch(privacyProfile: value),
   );
 
-  // ── Helpers ───────────────────────────────────────────────────────────
 
-  /// Optimistic update: apply locally, then roll back if the save fails.
   Future<void> _toggle(
     UserSettingsEntity Function(UserSettingsEntity) apply,
     Future<bool> Function() save,
@@ -165,10 +152,6 @@ class SettingsController extends GetxController {
         biometricEnabled: biometricEnabled,
       );
 
-      // If the backend returns a default/different value for a field we just
-      // changed, keep the optimistic value until the backend catches up. If
-      // the response already matches, retain the exact response instance so
-      // callers can rely on server-owned fields and identity.
       final mergedLanguage = language != null && updated.language != language
           ? language
           : updated.language;

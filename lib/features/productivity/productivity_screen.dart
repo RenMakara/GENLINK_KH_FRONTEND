@@ -19,7 +19,6 @@ class ProductivityPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // HEADER
               ProductivityHeader(
                 title: 'productivity.title'.tr,
                 profileText: 'R',
@@ -33,7 +32,6 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 18),
 
-              // DAILY SUMMARY
               const ProductivitySummary(
                 date: 'Wednesday, July 2',
                 greeting: 'Good morning, Ratha 👋',
@@ -44,7 +42,6 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // TODAY PLAN
               ProductivityCard(
                 title: 'productivity.todayplan'.tr,
                 actionText: 'productivity.seeall'.tr,
@@ -79,7 +76,6 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // QUICK ACTIONS
               ProductivitySectionTitle(title: 'productivity.quickActions'.tr),
 
               const SizedBox(height: 12),
@@ -135,7 +131,6 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // WEEKLY FOCUS
               ProductivityCard(
                 title: 'productivity.weeklyFocus'.tr,
                 actionText: 'productivity.thisWeek'.tr,
@@ -157,7 +152,6 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // GOAL PROGRESS
               ProductivityCard(
                 title: 'productivity.goalProgress'.tr,
                 actionText: 'productivity.seeall'.tr,
@@ -194,7 +188,6 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // SMART INSIGHT
               ProductivityInsight(
                 title: 'productivity.smartInsight'.tr,
                 message:
@@ -204,7 +197,6 @@ class ProductivityPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // RECENT ACTIVITY
               ProductivityCard(
                 title: 'productivity.recentActivity'.tr,
                 child: const ProductivityActivities(

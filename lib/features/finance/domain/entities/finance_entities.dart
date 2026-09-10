@@ -1,19 +1,12 @@
-/// Domain values returned by the Finance API.
-///
-/// These entities deliberately keep the currency next to every aggregate that
-/// represents money.  The backend has no exchange-rate conversion, so callers
-/// must never combine values whose [FinanceCurrency] differs.
 enum FinanceCurrency { usd, khr }
 
 extension FinanceCurrencyWire on FinanceCurrency {
-  /// Exact enum value expected by the Spring Boot API.
   String get apiValue => switch (this) {
     FinanceCurrency.usd => 'USD',
     FinanceCurrency.khr => 'KHR',
   };
 }
 
-/// Parses a backend currency without silently falling back to USD.
 FinanceCurrency parseFinanceCurrency(Object? raw) {
   if (raw is String) {
     switch (raw.toUpperCase()) {
@@ -124,7 +117,6 @@ class FinanceWalletSummary {
   final double balanceKhr;
 }
 
-/// Stable pagination shape used by the backend's PageResponse.
 class FinancePage<T> {
   const FinancePage({
     required this.content,
@@ -253,7 +245,6 @@ class FinanceBudgetEntity {
   final List<FinanceCategoryBudget> categories;
 }
 
-/// Domain input for one budget category allocation.
 class FinanceBudgetAllocation {
   const FinanceBudgetAllocation({
     required this.category,
@@ -316,7 +307,6 @@ class FinanceSavingDepositEntity {
   final String depositDate;
 }
 
-/// Financial-literacy dashboard progress returned by the backend.
 class FinanceLearningDashboardEntity {
   const FinanceLearningDashboardEntity({
     required this.totalLessons,

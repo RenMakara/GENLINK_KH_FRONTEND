@@ -4,9 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
 
-/// Fixed background layer with a foreground child that can scroll or resize
-/// independently. This is the single shared composition used by auth pages
-/// and the post-registration profile setup flow.
 class AuthBackgroundShell extends StatelessWidget {
   const AuthBackgroundShell({super.key, required this.child});
 
@@ -24,12 +21,6 @@ class AuthBackgroundShell extends StatelessWidget {
   }
 }
 
-/// Calm, theme-aware decorative background shared by the Auth flow.
-///
-/// A single slow controller drives the blue top wave and lavender bottom wave.
-/// The painter is connected directly to the controller, so only this layer
-/// repaints; the authentication content above it is never rebuilt by the
-/// animation.
 class AnimatedAuthBackground extends StatefulWidget {
   const AnimatedAuthBackground({super.key});
 
@@ -125,8 +116,6 @@ class _AuthBackgroundPainter extends CustomPainter {
     final phase = _tau * progress.value;
     final lightFactor = isDark ? 0.52 : 1.0;
 
-    // The waves are deliberately oversized and extend beyond both sides of
-    // the viewport, so their curves stay organic on narrow and wide phones.
     final topShift = Offset(math.sin(phase) * 10, math.cos(phase) * 5);
     final bottomShift = Offset(math.cos(phase) * -12, math.sin(phase) * 6);
 

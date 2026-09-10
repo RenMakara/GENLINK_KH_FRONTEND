@@ -5,9 +5,6 @@ import '../datasources/auth_remote_datasource.dart';
 import '../models/auth_response_model.dart';
 import '../models/user_response_model.dart';
 
-/// Concrete auth repository backed by [AuthRemoteDatasource].
-///
-/// Maps between data-layer models and domain entities at the boundary.
 class AuthRepositoryImpl implements AuthRepository {
   const AuthRepositoryImpl(this._remote);
 
@@ -114,7 +111,6 @@ class AuthRepositoryImpl implements AuthRepository {
     await _remote.logout();
   }
 
-  // ── Mappers ──────────────────────────────────────────────────────────
 
   AuthSession _mapToSession(AuthResponseModel model) {
     return AuthSession(

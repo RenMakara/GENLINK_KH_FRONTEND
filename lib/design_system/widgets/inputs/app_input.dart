@@ -5,10 +5,6 @@ import 'package:get/get.dart';
 import '../../radius/app_radius.dart';
 import '../../spacing/app_spacing.dart';
 
-/// The app's text field.
-///
-/// Decoration comes from `InputDecorationTheme`, so this widget only adds
-/// the label row, the obscure-text toggle, and sane keyboard defaults.
 class AppInput extends StatefulWidget {
   const AppInput({
     super.key,
@@ -33,7 +29,6 @@ class AppInput extends StatefulWidget {
     this.radius,
   });
 
-  /// Email field with the right keyboard and no autocapitalisation.
   const AppInput.email({
     super.key,
     required this.label,
@@ -56,7 +51,6 @@ class AppInput extends StatefulWidget {
        textCapitalization = TextCapitalization.none,
        inputFormatters = null;
 
-  /// Password field with the obscure toggle enabled.
   const AppInput.password({
     super.key,
     required this.label,
@@ -145,9 +139,6 @@ class _AppInputState extends State<AppInput> {
     );
   }
 
-  /// Single-line fields are pills; multi-line ones fall back to the
-  /// squircle, because a pill around four lines of text reads as a blob
-  /// and wastes the corners.
   InputDecorationThemeData _decorationTheme(ThemeData theme) {
     final base = theme.inputDecorationTheme;
 

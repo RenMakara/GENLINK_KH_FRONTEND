@@ -88,7 +88,6 @@ class StoryController extends GetxController {
         templateSlots: templateSlots,
       );
 
-      // Update owner story group in reactive tray list (preventing duplicates)
       final ownerGroupIdx = storyGroups.indexWhere((g) =>
           g.isOwner || (CurrentUser.id.isNotEmpty && g.userId == CurrentUser.id));
       if (ownerGroupIdx != -1) {
@@ -108,13 +107,13 @@ class StoryController extends GetxController {
         storyGroups.insert(
           0,
           StoryGroupModel(
-            userId: CurrentUser.id.isNotEmpty ? CurrentUser.id : 'user_me',
+            userId: CurrentUser.id.isNotEmpty ? CurrentUser.id : 'current_user',
             userName: CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
                 ? CurrentUser.name
-                : 'Sokny Enat',
+                : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'You'),
             userAvatar: CurrentUser.avatarUrl?.isNotEmpty == true
                 ? CurrentUser.avatarUrl!
-                : 'assets/images/user_profile.png',
+                : '',
             isOwner: true,
             hasUnseen: false,
             stories: [newStory],
@@ -149,7 +148,7 @@ class StoryController extends GetxController {
           (CurrentUser.id.isNotEmpty && group.userId == CurrentUser.id);
       for (final story in group.stories) {
         if (story.id == storyId) {
-          if (isOwn) return; // Prevent liking own story
+          if (isOwn) return;
           final previousLiked = story.isLiked;
           final previousCount = story.likesCount;
           story.isLiked = !story.isLiked;
@@ -170,9 +169,6 @@ class StoryController extends GetxController {
     await _repository.toggleLikeStory(storyId);
   }
 
-  /// Sends the like/unlike API call without toggling local state.
-  /// Used by StoryViewerScreen which already toggles the local story
-  /// object directly (same reference as storyGroups entries).
   Future<void> syncLikeToBackend(String storyId) async {
     bool foundInGroups = false;
     for (final group in storyGroups) {
@@ -180,7 +176,7 @@ class StoryController extends GetxController {
           (CurrentUser.id.isNotEmpty && group.userId == CurrentUser.id);
       for (final story in group.stories) {
         if (story.id == storyId) {
-          if (isOwn) return; // Prevent backend API call for own story
+          if (isOwn) return;
           foundInGroups = true;
           break;
         }
@@ -196,10 +192,8 @@ class StoryController extends GetxController {
     if (isUploading.value) return false;
     isUploading.value = true;
     try {
-      // 1. Backend API call
       await _repository.updateStory(storyId, updatedStory);
 
-      // 2. Local state update
       final ownerGroup = storyGroups.firstWhere((g) => g.isOwner);
       final index = ownerGroup.stories.indexWhere((s) => s.id == storyId);
       if (index != -1) {

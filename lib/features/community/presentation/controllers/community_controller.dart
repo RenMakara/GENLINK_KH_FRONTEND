@@ -1,8 +1,12 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../media/domain/entities/media_entity.dart';
+import '../../../media/domain/media_upload_service.dart';
 import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
+import '../../../../shared/utils/current_user.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../core/network/dio_provider.dart';
@@ -26,28 +30,30 @@ class CommunityController extends GetxController {
 
   final ScrollController scrollController = ScrollController();
 
-  /// Resolved current user ID from AuthController if available
   String? get currentUserId {
+    final id = CurrentUser.id;
+    if (id.isNotEmpty) return id;
     if (Get.isRegistered<AuthController>()) {
       return Get.find<AuthController>().currentUser.value?.id;
     }
     return null;
   }
 
-  /// Resolved current user full name from AuthController if available
   String get currentUserName {
     if (Get.isRegistered<AuthController>()) {
-      final name = Get.find<AuthController>().currentUser.value?.fullName;
-      if (name != null && name.isNotEmpty) return name;
+      final user = Get.find<AuthController>().currentUser.value;
+      if (user != null) {
+        if (user.fullName.isNotEmpty) return user.fullName;
+        if (user.username.isNotEmpty) return user.username;
+      }
     }
-    return 'Sokny Enat';
+    return '';
   }
 
   final selectedCategory = 'Feed'.obs;
   final selectedForumCategory = 'All'.obs;
   final categories = ['Feed', 'Forum', 'Event'];
 
-  // Feed State & Pagination
   final isLoadingFeed = false.obs;
   final isRefreshingFeed = false.obs;
   final isLoadingMore = false.obs;
@@ -114,8 +120,6 @@ class CommunityController extends GetxController {
     ),
   ].obs;
 
-  // ── Event State ───────────────────────────────────────────────────────────
-  /// Local-first reactive event list. Prepend newly created events at index 0.
   final events = <EventModel>[
     EventModel(
       id: 'ev1',
@@ -220,12 +224,10 @@ class CommunityController extends GetxController {
     ),
   ].obs;
 
-  /// Prepends a newly created event to the top of [events].
   void createEvent(EventModel event) {
     events.insert(0, event);
   }
 
-  /// Toggles RSVP state for the event with [eventId].
   void toggleRsvp(String eventId) {
     final idx = events.indexWhere((e) => e.id == eventId);
     if (idx == -1) return;
@@ -235,7 +237,31 @@ class CommunityController extends GetxController {
     events.refresh();
   }
 
-  /// Toggles bookmark/saved state for the event with [eventId].
+  final isRegisteringEvent = false.obs;
+
+  Future<RsvpResponseModel> registerForEvent(
+    String eventId,
+    EventRegistrationRequest request,
+  ) async {
+    isRegisteringEvent.value = true;
+    try {
+      final response = await repository.rsvpEvent(eventId, request: request);
+      final idx = events.indexWhere((e) => e.id == eventId);
+      if (idx != -1) {
+        final ev = events[idx];
+        ev.isRsvped = true;
+        ev.attendeesCount = response.attendeeCount > 0
+            ? response.attendeeCount
+            : ev.attendeesCount + 1;
+        ev.myRsvpStatus = response.status;
+        events.refresh();
+      }
+      return response;
+    } finally {
+      isRegisteringEvent.value = false;
+    }
+  }
+
   void toggleEventBookmark(String eventId) {
     final idx = events.indexWhere((e) => e.id == eventId);
     if (idx == -1) return;
@@ -244,28 +270,23 @@ class CommunityController extends GetxController {
     events.refresh();
   }
 
-  /// Refreshes the events list
   Future<void> refreshEvents() async {
     events.refresh();
   }
 
-  // ── Event Filter State ──────────────────────────────────────────────────
   final selectedEventDate = 'All'.obs;
   final selectedEventCategories = <String>{}.obs;
-  final selectedEventMode = 'All'.obs; // 'All', 'In person', 'Online'
-  final selectedEventPrice = 'All'.obs; // 'All', 'Free', 'Paid'
+  final selectedEventMode = 'All'.obs;
+  final selectedEventPrice = 'All'.obs;
 
-  /// Whether any non-default filter is currently applied
   bool get isEventFilterActive =>
       (selectedEventDate.value != 'All' && selectedEventDate.value.isNotEmpty) ||
       selectedEventCategories.isNotEmpty ||
       selectedEventMode.value != 'All' ||
       selectedEventPrice.value != 'All';
 
-  /// Returns events filtered by the current filter criteria
   List<EventModel> get filteredEvents {
     return events.where((e) {
-      // 1. Category filter
       if (selectedEventCategories.isNotEmpty) {
         final catLower = e.category.toLowerCase();
         final matchesCategory = selectedEventCategories.any((cat) {
@@ -276,7 +297,6 @@ class CommunityController extends GetxController {
           return false;
         }
       }
-      // 2. Format / Mode filter (In person vs Online)
       if (selectedEventMode.value != 'All') {
         final isOnline = e.eventType.toLowerCase().contains('online');
         final filterModeLower = selectedEventMode.value.toLowerCase();
@@ -287,14 +307,12 @@ class CommunityController extends GetxController {
           return false;
         }
       }
-      // 3. Price filter
       if (selectedEventPrice.value == 'Free' && e.isPaid) {
         return false;
       }
       if (selectedEventPrice.value == 'Paid' && !e.isPaid) {
         return false;
       }
-      // 4. Date filter
       if (selectedEventDate.value != 'All' && selectedEventDate.value.isNotEmpty) {
         final dateLower = e.dateString.toLowerCase();
         if (selectedEventDate.value == 'Today') {
@@ -307,7 +325,6 @@ class CommunityController extends GetxController {
     }).toList();
   }
 
-  /// Clears all applied event filters
   void resetEventFilter() {
     selectedEventDate.value = 'All';
     selectedEventCategories.clear();
@@ -316,7 +333,6 @@ class CommunityController extends GetxController {
     events.refresh();
   }
 
-  /// Sets event filter criteria and triggers reactivity
   void applyEventFilter({
     String date = 'All',
     Set<String> categories = const {},
@@ -330,80 +346,22 @@ class CommunityController extends GetxController {
     events.refresh();
   }
 
-  // ── Forum State ───────────────────────────────────────────────────────────
   final forumPinnedDiscussions = <ForumTopicModel>[].obs;
 
-  final forumLatestDiscussions = <ForumTopicModel>[
-    ForumTopicModel(
-      id: 'latest_1',
-      authorId: 'user_me',
-      title: 'Best practices for GetX state management in Flutter Community App',
-      authorName: 'Sokny Enat',
-      authorAvatar: 'assets/images/user_profile.png',
-      timeAgo: '2h ago',
-      category: 'Technology',
-      content:
-          'When structuring large Flutter apps with GetX, prefer domain separation, avoid calling Get.put inside build methods, and use bindings for deterministic lifecycle management.',
-      repliesCount: 24,
-      upvotes: 89,
-      isLiked: false,
-      isOwner: true,
-    ),
-    ForumTopicModel(
-      id: 'latest_3',
-      authorId: 'u2',
-      title: 'Study group for CADT Data Structures and Algorithms exam next week',
-      authorName: 'Heng Chansela',
-      authorAvatar: 'assets/images/heng_chansela_profile.png',
-      timeAgo: '5h ago',
-      category: 'Study & Education',
-      content:
-          'We are organizing an online and on-campus study session for DSA. Topics include Dynamic Programming, Graph Traversals, and Complexity Analysis.',
-      repliesCount: 31,
-      upvotes: 67,
-      isLiked: false,
-      isOwner: false,
-    ),
-    ForumTopicModel(
-      id: 'latest_4',
-      authorId: 'u3',
-      title: 'Sharing my AI project built with Python and Flutter Web',
-      authorName: 'Ren Makara',
-      authorAvatar: 'assets/images/ren_makara_profile.png',
-      timeAgo: '7h ago',
-      category: 'Projects',
-      content:
-          'Hey everyone! I just published my open-source project combining Flutter frontend with a FastAPI backend. Check out the demo and repo.',
-      repliesCount: 14,
-      upvotes: 53,
-      isLiked: false,
-      isOwner: false,
-    ),
-    ForumTopicModel(
-      id: 'latest_5',
-      authorId: 'u4',
-      title: 'Campus Hackathon 2026 registration is officially open!',
-      authorName: 'Chhaeng Sokuntheara',
-      authorAvatar: 'assets/images/sokuntheara_profile.png',
-      timeAgo: '12h ago',
-      category: 'Events',
-      content:
-          'Excited to announce GenLink KH Campus Hackathon 2026! Over 50 teams will compete over 48 hours to solve real community challenges.',
-      repliesCount: 42,
-      upvotes: 110,
-      isLiked: false,
-      isOwner: false,
-    ),
-  ].obs;
+  final forumLatestDiscussions = <ForumTopicModel>[].obs;
 
-  // ── Forum Loading & Error States ──────────────────────────────────────────
   final isLoadingForumDiscussions = false.obs;
+  RxBool get isLoadingDiscussions => isLoadingForumDiscussions;
+
   final isRefreshingForumDiscussions = false.obs;
   final hasForumError = false.obs;
   final forumErrorMessage = ''.obs;
-  final inFlightDiscussionLikes = <String>{}.obs;
+  RxString get discussionsError => forumErrorMessage;
 
-  /// Fetches discussions from backend repository
+  final isPublishingDiscussion = false.obs;
+  final inFlightDiscussionLikes = <String>{}.obs;
+  final inFlightCommentLikes = <String>{}.obs;
+
   Future<void> fetchDiscussions({bool isRefresh = false}) async {
     if (isRefresh) {
       isRefreshingForumDiscussions.value = true;
@@ -422,232 +380,165 @@ class CommunityController extends GetxController {
         page: 1,
         limit: 20,
       );
-      if (fetched.isNotEmpty) {
-        forumLatestDiscussions.assignAll(fetched);
-      }
+      forumLatestDiscussions.assignAll(fetched);
     } catch (e) {
-      if (forumLatestDiscussions.isEmpty) {
-        hasForumError.value = true;
-        forumErrorMessage.value = e is AppError
-            ? e.message
-            : 'Couldn\'t load discussions. Try again.';
-      }
+      hasForumError.value = true;
+      forumErrorMessage.value = e is AppError
+          ? e.message
+          : 'Couldn\'t load discussions. Try again.';
     } finally {
       isLoadingForumDiscussions.value = false;
       isRefreshingForumDiscussions.value = false;
     }
   }
 
-  /// Optimistically toggle like on a forum discussion with in-flight deduplication,
-  /// Feed synchronization, and graceful error rollback
   Future<bool> toggleDiscussionLike(String discussionId) async {
     if (inFlightDiscussionLikes.contains(discussionId)) return false;
     inFlightDiscussionLikes.add(discussionId);
 
-    bool? newLikedState;
-    int? newLikesCount;
-
     final latestIdx =
         forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+    bool prevLiked = false;
+    int prevUpvotes = 0;
+
     if (latestIdx != -1) {
       final item = forumLatestDiscussions[latestIdx];
-      item.isLiked = !item.isLiked;
+      prevLiked = item.isLiked;
+      prevUpvotes = item.upvotes;
+
+      item.isLiked = !prevLiked;
       item.upvotes += item.isLiked ? 1 : -1;
-      newLikedState = item.isLiked;
-      newLikesCount = item.upvotes;
       forumLatestDiscussions[latestIdx] = item.copyWith();
       forumLatestDiscussions.refresh();
     }
 
-    // Sync with Feed post with same ID
-    final postIdx = posts.indexWhere((p) => p.id == discussionId);
-    if (postIdx != -1) {
-      final post = posts[postIdx];
-      if (newLikedState != null) {
-        post.isLiked = newLikedState;
-        post.likesCount = newLikesCount ?? post.likesCount;
-      } else {
-        post.isLiked = !post.isLiked;
-        post.likesCount += post.isLiked ? 1 : -1;
-      }
-      posts[postIdx] = post.copyWith();
-      posts.refresh();
-    }
-
     try {
-      final success = await repository.toggleDiscussionLike(discussionId);
+      final success = await repository.toggleDiscussionLike(
+        discussionId,
+        isCurrentlyLiked: prevLiked,
+      );
       if (!success) {
-        _rollbackDiscussionLike(discussionId);
+        _rollbackDiscussionLike(discussionId, prevLiked, prevUpvotes);
       }
       return success;
     } catch (_) {
-      _rollbackDiscussionLike(discussionId);
+      _rollbackDiscussionLike(discussionId, prevLiked, prevUpvotes);
       return false;
     } finally {
       inFlightDiscussionLikes.remove(discussionId);
     }
   }
 
-  void _rollbackDiscussionLike(String discussionId) {
+  void _rollbackDiscussionLike(
+    String discussionId,
+    bool prevLiked,
+    int prevUpvotes,
+  ) {
     final latestIdx =
         forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
     if (latestIdx != -1) {
       final item = forumLatestDiscussions[latestIdx];
-      item.isLiked = !item.isLiked;
-      item.upvotes += item.isLiked ? 1 : -1;
+      item.isLiked = prevLiked;
+      item.upvotes = prevUpvotes;
       forumLatestDiscussions[latestIdx] = item.copyWith();
       forumLatestDiscussions.refresh();
     }
-    final postIdx = posts.indexWhere((p) => p.id == discussionId);
-    if (postIdx != -1) {
-      final post = posts[postIdx];
-      post.isLiked = !post.isLiked;
-      post.likesCount += post.isLiked ? 1 : -1;
-      posts[postIdx] = post.copyWith();
-      posts.refresh();
-    }
   }
 
-  /// Adds a new discussion (with backend sync and Feed sync)
   Future<ForumTopicModel> addDiscussion({
     required String title,
     required String content,
     required String category,
+    bool anonymous = false,
   }) async {
-    final uid = currentUserId ?? 'user_me';
-    final uname = currentUserName;
+    if (isPublishingDiscussion.value) {
+      throw AppError(
+        message: 'Publishing already in progress',
+        errorCode: 'DUPLICATE_PUBLISH',
+      );
+    }
 
-    ForumTopicModel createdTopic;
+    isPublishingDiscussion.value = true;
     try {
-      createdTopic = await repository.createDiscussion(
+      final createdTopic = await repository.createDiscussion(
         title: title,
         content: content,
         category: category,
+        anonymous: anonymous,
       );
-    } catch (_) {
-      createdTopic = ForumTopicModel(
-        id: 'disc_${DateTime.now().millisecondsSinceEpoch}',
-        authorId: uid,
-        title: title,
-        authorName: uname,
-        authorAvatar: 'assets/images/user_profile.png',
-        category: category,
-        content: content,
-        timeAgo: 'Just now',
-        upvotes: 0,
-        repliesCount: 0,
-        isLiked: false,
-        isPinned: false,
-        isOwner: true,
-      );
+
+      forumLatestDiscussions.insert(0, createdTopic);
+      forumLatestDiscussions.refresh();
+
+      return createdTopic;
+    } finally {
+      isPublishingDiscussion.value = false;
     }
-
-    // Ensure ownership flag
-    if (createdTopic.authorId == null || isOwnUserId(createdTopic.authorId!)) {
-      createdTopic = createdTopic.copyWith(isOwner: true, authorId: uid);
-    }
-
-    forumLatestDiscussions.insert(0, createdTopic);
-    forumLatestDiscussions.refresh();
-
-    // Synchronize to Feed
-    final feedPost = CommunityPostModel(
-      id: createdTopic.id,
-      userId: uid,
-      authorName: createdTopic.authorName,
-      authorTag: '@${uname.toLowerCase().replaceAll(' ', '')}',
-      authorAvatar: createdTopic.authorAvatar,
-      isVerified: false,
-      timeAgo: createdTopic.timeAgo,
-      content: createdTopic.content,
-      likesCount: createdTopic.upvotes,
-      commentsCount: createdTopic.repliesCount,
-      sharesCount: 0,
-      isLiked: createdTopic.isLiked,
-      isOwner: true,
-      visibility: 'Public',
-      community: 'All GenLink',
-      postType: 'DISCUSSION',
-      discussionTitle: createdTopic.title,
-      category: createdTopic.category,
-    );
-
-    final existingIdx = posts.indexWhere((p) => p.id == createdTopic.id);
-    if (existingIdx == -1) {
-      posts.insert(0, feedPost);
-    } else {
-      posts[existingIdx] = feedPost;
-    }
-    posts.refresh();
-
-    return createdTopic;
   }
 
-  /// Updates an existing discussion (with backend sync and Feed sync)
   Future<bool> updateDiscussion({
     required String discussionId,
     required String title,
     required String content,
     required String category,
   }) async {
-    // 1. Update in Forum
-    final forumIdx = forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
-    if (forumIdx != -1) {
-      final current = forumLatestDiscussions[forumIdx];
-      forumLatestDiscussions[forumIdx] = current.copyWith(
-        title: title,
-        content: content,
-        category: category,
-      );
-      forumLatestDiscussions.refresh();
-    }
-
-    // 2. Synchronize update to Feed
-    final feedIdx = posts.indexWhere((p) => p.id == discussionId);
-    if (feedIdx != -1) {
-      final currentPost = posts[feedIdx];
-      posts[feedIdx] = currentPost.copyWith(
-        content: content,
-        discussionTitle: title,
-        category: category,
-      );
-      posts.refresh();
-    }
-
-    // 3. Network update
     try {
-      await repository.updateDiscussion(
+      final updatedTopic = await repository.updateDiscussion(
         discussionId,
         title: title,
         content: content,
         category: category,
       );
+
+      final forumIdx =
+          forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+      if (forumIdx != -1) {
+        forumLatestDiscussions[forumIdx] = updatedTopic;
+        forumLatestDiscussions.refresh();
+      }
       return true;
-    } catch (_) {
-      return true;
+    } catch (e) {
+      rethrow;
     }
   }
 
-  /// Deletes a discussion (with backend sync and Feed sync)
   Future<bool> deleteDiscussion(String discussionId) async {
-    // 1. Remove from Forum
-    forumLatestDiscussions.removeWhere((d) => d.id == discussionId);
-    forumLatestDiscussions.refresh();
-
-    // 2. Synchronize removal from Feed
-    posts.removeWhere((p) => p.id == discussionId);
-    posts.refresh();
-
-    // 3. Network delete
     try {
-      await repository.deleteDiscussion(discussionId);
-      return true;
-    } catch (_) {
-      return true;
+      final success = await repository.deleteDiscussion(discussionId);
+      if (success) {
+        forumLatestDiscussions.removeWhere((d) => d.id == discussionId);
+        forumLatestDiscussions.refresh();
+      }
+      return success;
+    } catch (e) {
+      rethrow;
     }
   }
 
-  /// Retrieves discussion topic by id if present
+  final isLoadingDiscussionDetail = false.obs;
+  final discussionDetailError = ''.obs;
+
+  Future<ForumTopicModel?> fetchDiscussionDetails(String discussionId) async {
+    isLoadingDiscussionDetail.value = true;
+    discussionDetailError.value = '';
+    try {
+      final detail = await repository.getDiscussionDetails(discussionId);
+      final idx =
+          forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+      if (idx != -1) {
+        forumLatestDiscussions[idx] = detail;
+        forumLatestDiscussions.refresh();
+      }
+      return detail;
+    } catch (e) {
+      discussionDetailError.value =
+          e is AppError ? e.message : 'Failed to load discussion details';
+      return null;
+    } finally {
+      isLoadingDiscussionDetail.value = false;
+    }
+  }
+
   ForumTopicModel? getDiscussionById(String id) {
     return forumLatestDiscussions.firstWhereOrNull((d) => d.id == id);
   }
@@ -694,7 +585,6 @@ class CommunityController extends GetxController {
     selectedCategory.value = cat;
   }
 
-  /// Initial or fresh load of posts
   Future<void> fetchPosts({bool isRefresh = false}) async {
     if (isRefresh) {
       isRefreshingFeed.value = true;
@@ -723,7 +613,6 @@ class CommunityController extends GetxController {
     }
   }
 
-  /// Pagination: load next page of posts
   Future<void> loadMorePosts() async {
     if (isLoadingMore.value || !hasMorePosts.value) return;
 
@@ -745,21 +634,69 @@ class CommunityController extends GetxController {
         hasMorePosts.value = false;
       }
     } catch (_) {
-      // Keep existing posts on pagination error
     } finally {
       isLoadingMore.value = false;
     }
   }
 
-  /// Pull-to-refresh handler
   Future<void> refreshFeed() async {
     if (Get.isRegistered<StoryController>()) {
       Get.find<StoryController>().fetchStories();
     }
-    await fetchPosts(isRefresh: true);
+    await Future.wait([
+      fetchPosts(isRefresh: true),
+      fetchDiscussions(isRefresh: true),
+    ]);
   }
 
-  /// Optimistic post creation: Inserts at TOP of feed immediately
+  Future<List<String>> _resolveImageUrls(List<String> rawUrls) async {
+    final resolved = <String>[];
+    final total = rawUrls.length;
+    int index = 0;
+
+    for (final img in rawUrls) {
+      if (img.startsWith('http://') ||
+          img.startsWith('https://') ||
+          img.startsWith('assets/')) {
+        resolved.add(img);
+      } else {
+        final file = File(img);
+        if (await file.exists()) {
+          final bytes = await file.readAsBytes();
+          final ext = img.split('.').last.toLowerCase();
+          final contentType = (ext == 'png')
+              ? 'image/png'
+              : (ext == 'webp')
+                  ? 'image/webp'
+                  : 'image/jpeg';
+
+          if (Get.isRegistered<MediaUploadService>()) {
+            final uploadService = Get.find<MediaUploadService>();
+            final media = await uploadService.upload(
+              bytes: bytes,
+              contentType: contentType,
+              purpose: MediaPurpose.post,
+              onProgress: (frac) {
+                if (total > 0) {
+                  final base = index / total;
+                  final step = 1.0 / total;
+                  uploadProgress.value = 0.2 + (base + frac * step) * 0.6;
+                }
+              },
+            );
+            resolved.add(media.url);
+          } else {
+            resolved.add(img);
+          }
+        } else {
+          resolved.add(img);
+        }
+      }
+      index++;
+    }
+    return resolved;
+  }
+
   Future<bool> addNewPost({
     required String content,
     List<String> imageUrls = const [],
@@ -776,20 +713,21 @@ class CommunityController extends GetxController {
     EventModel? attachedEvent,
   }) async {
     isUploadingPost.value = true;
-    uploadProgress.value = 0.3;
-
-    await Future.delayed(const Duration(milliseconds: 150));
-    uploadProgress.value = 0.7;
+    uploadProgress.value = 0.1;
 
     try {
+      final resolvedImageUrls = await _resolveImageUrls(imageUrls);
+      uploadProgress.value = 0.8;
+
       final createdPost = await repository.createPost(
         content: content,
-        imageUrls: imageUrls,
+        imageUrls: resolvedImageUrls,
         visibility: visibility,
         community: community,
       );
 
       final richPost = createdPost.copyWith(
+        imageUrls: resolvedImageUrls.isNotEmpty ? resolvedImageUrls : createdPost.imageUrls,
         location: location,
         linkUrl: linkUrl,
         linkPreviewTitle: linkPreviewTitle,
@@ -799,7 +737,9 @@ class CommunityController extends GetxController {
         pollDuration: pollDuration,
         allowMultipleAnswers: allowMultipleAnswers,
         attachedEvent: attachedEvent,
-        postType: attachedEvent != null ? 'event' : createdPost.postType,
+        postType: attachedEvent != null
+            ? 'event'
+            : (resolvedImageUrls.isNotEmpty ? 'IMAGE' : createdPost.postType),
       );
 
       posts.insert(0, richPost);
@@ -820,7 +760,6 @@ class CommunityController extends GetxController {
     }
   }
 
-  /// Optimistic toggle like with network sync
   void toggleLike(String postId) {
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
@@ -832,18 +771,7 @@ class CommunityController extends GetxController {
       p.likesCount += p.isLiked ? 1 : -1;
       posts[idx] = p.copyWith();
 
-      // Synchronize with Forum discussion if matching ID exists
-      final forumIdx = forumLatestDiscussions.indexWhere((d) => d.id == postId);
-      if (forumIdx != -1) {
-        final forumTopic = forumLatestDiscussions[forumIdx];
-        forumTopic.isLiked = p.isLiked;
-        forumTopic.upvotes = p.likesCount;
-        forumLatestDiscussions[forumIdx] = forumTopic.copyWith();
-        forumLatestDiscussions.refresh();
-      }
-
       repository.toggleLike(postId).catchError((_) {
-        // Revert on error
         final currentIdx = posts.indexWhere((item) => item.id == postId);
         if (currentIdx != -1) {
           final item = posts[currentIdx];
@@ -851,21 +779,11 @@ class CommunityController extends GetxController {
           item.likesCount = previousCount;
           posts[currentIdx] = item.copyWith();
         }
-        final currentForumIdx =
-            forumLatestDiscussions.indexWhere((d) => d.id == postId);
-        if (currentForumIdx != -1) {
-          final item = forumLatestDiscussions[currentForumIdx];
-          item.isLiked = previousState;
-          item.upvotes = previousCount;
-          forumLatestDiscussions[currentForumIdx] = item.copyWith();
-          forumLatestDiscussions.refresh();
-        }
         return false;
       });
     }
   }
 
-  /// Optimistic toggle bookmark with network sync
   void toggleBookmark(String postId) {
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
@@ -880,7 +798,6 @@ class CommunityController extends GetxController {
   CommunityPostModel? _recentlyDeletedPost;
   int _recentlyDeletedIndex = 0;
 
-  /// Delete post with optimistic removal & instant undo support
   void deletePost(String postId) {
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
@@ -889,7 +806,6 @@ class CommunityController extends GetxController {
       posts.removeAt(idx);
 
       repository.deletePost(postId).catchError((_) {
-        // Revert on deletion failure
         if (_recentlyDeletedPost != null) {
           posts.insert(
             _recentlyDeletedIndex.clamp(0, posts.length),
@@ -933,11 +849,12 @@ class CommunityController extends GetxController {
     bool? allowMultipleAnswers,
     EventModel? attachedEvent,
   }) async {
+    final resolvedImageUrls = await _resolveImageUrls(imageUrls);
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
       posts[idx] = posts[idx].copyWith(
         content: content,
-        imageUrls: imageUrls,
+        imageUrls: resolvedImageUrls,
         visibility: visibility,
         location: location,
         linkUrl: linkUrl,
@@ -1014,29 +931,25 @@ class CommunityController extends GetxController {
     attachedEvent: attachedEvent,
   );
 
-  /// Repost another user's post without creating duplicate copies in feed
   void repostPost(String postId, {String? caption}) {
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
       final original = posts[idx];
 
-      // 1. Current user must NOT repost their own post
       if (original.checkIsOwner(currentUserId)) {
         return;
       }
 
-      // 2. Prevent duplicate reposts of the same original post
       if (original.isRepostedByMe) {
         return;
       }
 
-      // 3. Update the original post in-place as a repost reference
       final updated = original.copyWith(
         sharesCount: original.sharesCount + 1,
         isRepostedByMe: true,
         repostedBy: currentUserName,
         repostCaption: caption,
-        reposterId: currentUserId ?? 'user_me',
+        reposterId: currentUserId,
         originalPostId: original.id,
       );
       posts[idx] = updated;
@@ -1044,12 +957,11 @@ class CommunityController extends GetxController {
       repository.repostPost(
         postId,
         caption: caption,
-        reposterId: currentUserId ?? 'user_me',
+        reposterId: currentUserId,
       ).catchError((_) => false);
     }
   }
 
-  /// Remove a repost made by the current user
   void unrepostPost(String postId) {
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
@@ -1064,12 +976,11 @@ class CommunityController extends GetxController {
 
       repository.unrepostPost(
         postId,
-        reposterId: currentUserId ?? 'user_me',
+        reposterId: currentUserId,
       ).catchError((_) => false);
     }
   }
 
-  /// Report a post for moderation review
   Future<bool> reportPost(
     String postId, {
     String reason = 'INAPPROPRIATE_CONTENT',
@@ -1081,23 +992,18 @@ class CommunityController extends GetxController {
     }
   }
 
-  /// Returns posts authored by or reposted by the specified user for Profile viewing
   List<CommunityPostModel> getUserPosts(String userId, {String? username}) {
     return posts.where((p) {
-      // 1. Authored by user
-      if (p.userId == userId ||
-          (p.isOwner &&
-              (userId == 'user_me' ||
-                  userId == 'demo_user_1' ||
-                  userId == 'current_user'))) {
+      if (userId.isNotEmpty && p.userId == userId) {
         return true;
       }
-      // 2. Reposted by user
+      if (username != null &&
+          username.isNotEmpty &&
+          p.authorName.trim().toLowerCase() == username.trim().toLowerCase()) {
+        return true;
+      }
       if (p.reposterId == userId ||
-          (p.isRepostedByMe &&
-              (userId == 'user_me' ||
-                  userId == 'demo_user_1' ||
-                  userId == 'current_user')) ||
+          (p.isRepostedByMe && userId.isNotEmpty && userId == currentUserId) ||
           (p.repostedBy != null &&
               username != null &&
               p.repostedBy!.trim().toLowerCase() == username.trim().toLowerCase())) {
@@ -1140,8 +1046,9 @@ class CommunityController extends GetxController {
 
   Future<CommentModel?> addDiscussionComment(
     String discussionId,
-    String content,
-  ) async {
+    String content, {
+    String? parentCommentId,
+  }) async {
     final trimmed = content.trim();
     if (trimmed.isEmpty || isSendingDiscussionComment.value) return null;
 
@@ -1150,6 +1057,7 @@ class CommunityController extends GetxController {
       final comment = await repository.addDiscussionComment(
         discussionId,
         trimmed,
+        parentCommentId: parentCommentId,
       );
       final current = List<CommentModel>.from(
         discussionComments[discussionId] ?? [],
@@ -1158,7 +1066,6 @@ class CommunityController extends GetxController {
       discussionComments[discussionId] = current;
       discussionComments.refresh();
 
-      // Update reply count in forum
       final forumIdx =
           forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
       if (forumIdx != -1) {
@@ -1168,20 +1075,106 @@ class CommunityController extends GetxController {
         forumLatestDiscussions.refresh();
       }
 
-      // Update comment count in feed
-      final postIdx = posts.indexWhere((p) => p.id == discussionId);
-      if (postIdx != -1) {
-        final post = posts[postIdx];
-        post.commentsCount += 1;
-        posts[postIdx] = post.copyWith();
-        posts.refresh();
-      }
-
       return comment;
     } catch (e) {
       rethrow;
     } finally {
       isSendingDiscussionComment.value = false;
+    }
+  }
+
+  Future<bool> toggleDiscussionCommentLike(
+    String discussionId,
+    String commentId,
+  ) async {
+    if (inFlightCommentLikes.contains(commentId)) return false;
+    inFlightCommentLikes.add(commentId);
+
+    final comments = discussionComments[discussionId];
+    if (comments == null) {
+      inFlightCommentLikes.remove(commentId);
+      return false;
+    }
+
+    final cIdx = comments.indexWhere((c) => c.id == commentId);
+    if (cIdx == -1) {
+      inFlightCommentLikes.remove(commentId);
+      return false;
+    }
+
+    final comment = comments[cIdx];
+    final prevLiked = comment.isLiked;
+    final prevLikesCount = comment.likesCount;
+
+    comment.isLiked = !prevLiked;
+    comment.likesCount += comment.isLiked ? 1 : -1;
+    discussionComments.refresh();
+
+    try {
+      final success = await repository.toggleDiscussionCommentLike(
+        commentId,
+        isCurrentlyLiked: prevLiked,
+      );
+      if (!success) {
+        comment.isLiked = prevLiked;
+        comment.likesCount = prevLikesCount;
+        discussionComments.refresh();
+      }
+      return success;
+    } catch (_) {
+      comment.isLiked = prevLiked;
+      comment.likesCount = prevLikesCount;
+      discussionComments.refresh();
+      return false;
+    } finally {
+      inFlightCommentLikes.remove(commentId);
+    }
+  }
+
+  Future<bool> deleteDiscussionComment(
+    String discussionId,
+    String commentId,
+  ) async {
+    try {
+      final success = await repository.deleteDiscussionComment(commentId);
+      if (success) {
+        final current = List<CommentModel>.from(
+          discussionComments[discussionId] ?? [],
+        );
+        current.removeWhere((c) => c.id == commentId);
+        discussionComments[discussionId] = current;
+        discussionComments.refresh();
+
+        final forumIdx =
+            forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+        if (forumIdx != -1) {
+          final topic = forumLatestDiscussions[forumIdx];
+          if (topic.repliesCount > 0) {
+            topic.repliesCount -= 1;
+            forumLatestDiscussions[forumIdx] = topic.copyWith();
+            forumLatestDiscussions.refresh();
+          }
+        }
+      }
+      return success;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<bool> reportDiscussion(
+    String discussionId, {
+    String reason = 'INAPPROPRIATE_CONTENT',
+    String? details,
+  }) async {
+    try {
+      return await repository.reportDiscussion(
+        discussionId,
+        reason: reason,
+        details: details,
+      );
+    } catch (_) {
+      return false;
     }
   }
 
@@ -1196,16 +1189,6 @@ class CommunityController extends GetxController {
         final p = posts[idx];
         p.commentsCount += 1;
         posts[idx] = p.copyWith();
-      }
-
-      // Synchronize with Forum discussion if matching ID exists
-      final forumIdx =
-          forumLatestDiscussions.indexWhere((d) => d.id == postId);
-      if (forumIdx != -1) {
-        final topic = forumLatestDiscussions[forumIdx];
-        topic.repliesCount += 1;
-        forumLatestDiscussions[forumIdx] = topic.copyWith();
-        forumLatestDiscussions.refresh();
       }
     } catch (_) {}
   }
@@ -1231,11 +1214,8 @@ class CommunityController extends GetxController {
 
   bool isOwnUserId(String userId) {
     final currentId = currentUserId;
-    if (currentId != null && currentId.isNotEmpty && currentId == userId) {
-      return true;
-    }
-    if (userId == 'user_me' || userId == 'current_user' || userId == 'demo_user_1') {
-      return true;
+    if (currentId != null && currentId.isNotEmpty) {
+      return currentId == userId;
     }
     return false;
   }
@@ -1284,12 +1264,10 @@ class CommunityController extends GetxController {
   Future<bool> toggleFollowUser(String userId) async {
     if (userId.isEmpty) return false;
 
-    // Current user should never be able to follow themselves
     if (isOwnUserId(userId)) {
       return false;
     }
 
-    // Prevent rapid duplicate requests
     if (followLoadingUserIds.contains(userId)) {
       return false;
     }
@@ -1299,7 +1277,6 @@ class CommunityController extends GetxController {
 
     followLoadingUserIds.add(userId);
 
-    // Optimistic UI state update
     _setFollowStateForUser(userId, targetState);
 
     try {
@@ -1315,7 +1292,6 @@ class CommunityController extends GetxController {
       }
       return true;
     } catch (e) {
-      // Revert state on failure
       _setFollowStateForUser(userId, currentlyFollowing);
 
       final errorMsg = e is AppError ? e.message : 'common.error'.tr;

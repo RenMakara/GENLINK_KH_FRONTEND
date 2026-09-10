@@ -97,7 +97,6 @@ void main() {
       expect(story.isLiked, false);
       expect(story.likesCount, 12);
 
-      // Tap Like button and wait for gesture arena + 180ms pop animation
       await tester.tap(find.byType(StoryInteractiveLikeButton));
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
@@ -143,7 +142,6 @@ void main() {
       expect(story.isLiked, true);
       expect(story.likesCount, 20);
 
-      // Tap to Unlike and wait for gesture arena + settle
       await tester.tap(find.byType(StoryInteractiveLikeButton));
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
@@ -188,13 +186,11 @@ void main() {
       expect(story.isLiked, false);
       expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
 
-      // Double tap anywhere on story canvas
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pump(const Duration(milliseconds: 50));
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pumpAndSettle();
 
-      // Liked state updated
       expect(story.isLiked, true);
       expect(story.likesCount, 9);
       expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
@@ -214,7 +210,7 @@ void main() {
 
       final groups = [
         StoryGroupModel(
-          userId: 'current_user_123', // Matches CurrentUser.id
+          userId: 'current_user_123',
           userName: 'Current User',
           userAvatar: 'assets/images/user_profile.png',
           isOwner: true,
@@ -232,18 +228,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Like button should be hidden for own story
       expect(find.byType(StoryInteractiveLikeButton), findsNothing);
       expect(ownStory.isLiked, false);
       expect(ownStory.likesCount, 15);
 
-      // Double tap on own story
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pump(const Duration(milliseconds: 50));
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pumpAndSettle();
 
-      // Remains strictly unchanged
       expect(ownStory.isLiked, false);
       expect(ownStory.likesCount, 15);
     });
@@ -292,17 +285,14 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // On Story A: Liked
       expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
       expect(find.byIcon(Icons.favorite_border_rounded), findsNothing);
 
-      // Move to next story
       final nextZone = find.byWidgetPredicate((w) => w is GestureDetector && w.behavior == HitTestBehavior.translucent).last;
       await tester.tap(nextZone);
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pump(const Duration(milliseconds: 100));
 
-      // On Story B: Unliked
       expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
       expect(find.byIcon(Icons.favorite_rounded), findsNothing);
     });
@@ -347,12 +337,10 @@ void main() {
         ),
       ]);
 
-      // Toggling own story is blocked
       controller.toggleLike('story_own_test');
       expect(ownStory.isLiked, false);
       expect(ownStory.likesCount, 20);
 
-      // Toggling other story succeeds
       controller.toggleLike('story_error_test');
       expect(story.isLiked, true);
       expect(story.likesCount, 11);
@@ -390,7 +378,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Double tap on story canvas rapidly 4 times
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pump(const Duration(milliseconds: 50));
       await tester.tap(find.byType(GestureDetector).first);
@@ -400,7 +387,6 @@ void main() {
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pumpAndSettle();
 
-      // Debounce allowed only 1 toggle to liked
       expect(story.isLiked, true);
       expect(story.likesCount, 6);
       expect(find.byType(StoryInteractiveLikeButton), findsOneWidget);

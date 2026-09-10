@@ -1,6 +1,7 @@
 // ignore: depend_on_referenced_packages
 import 'dart:io';
 
+import '../../../../core/utils/date_formatter.dart';
 export 'event_requests.dart';
 import 'event_requests.dart';
 
@@ -540,6 +541,7 @@ class ForumTopicModel {
   int upvotes;
   int repliesCount;
   final String timeAgo;
+  final DateTime? createdAt;
   bool isLiked;
   final bool isPinned;
   final bool isOwner;
@@ -555,6 +557,7 @@ class ForumTopicModel {
     this.upvotes = 0,
     this.repliesCount = 0,
     required this.timeAgo,
+    this.createdAt,
     this.isLiked = false,
     this.isPinned = false,
     this.isOwner = false,
@@ -583,6 +586,7 @@ class ForumTopicModel {
     int? upvotes,
     int? repliesCount,
     String? timeAgo,
+    DateTime? createdAt,
     bool? isLiked,
     bool? isPinned,
     bool? isOwner,
@@ -598,6 +602,7 @@ class ForumTopicModel {
       upvotes: upvotes ?? this.upvotes,
       repliesCount: repliesCount ?? this.repliesCount,
       timeAgo: timeAgo ?? this.timeAgo,
+      createdAt: createdAt ?? this.createdAt,
       isLiked: isLiked ?? this.isLiked,
       isPinned: isPinned ?? this.isPinned,
       isOwner: isOwner ?? this.isOwner,
@@ -619,6 +624,10 @@ class ForumTopicModel {
         json['authorId'] as String? ??
         json['userId'] as String?;
 
+    final rawDate = json['createdAt'] as String? ?? json['timeAgo'] as String?;
+    final parsedUtc = CommunityDateFormatter.parseToUtc(rawDate);
+    final formattedTime = formatCommunityTimestamp(parsedUtc ?? rawDate ?? 'Just now');
+
     return ForumTopicModel(
       id: json['discussionId'] as String? ?? json['id'] as String? ?? '',
       authorId: authorId,
@@ -637,9 +646,8 @@ class ForumTopicModel {
           json['repliesCount'] as int? ??
           json['commentsCount'] as int? ??
           0,
-      timeAgo: json['timeAgo'] as String? ??
-          json['createdAt'] as String? ??
-          'Just now',
+      timeAgo: formattedTime.isNotEmpty ? formattedTime : 'Just now',
+      createdAt: parsedUtc?.toLocal(),
       isLiked: json['reactedByMe'] as bool? ??
           json['isLiked'] as bool? ??
           false,
@@ -660,6 +668,7 @@ class ForumTopicModel {
       'upvotes': upvotes,
       'repliesCount': repliesCount,
       'timeAgo': timeAgo,
+      if (createdAt != null) 'createdAt': createdAt!.toUtc().toIso8601String(),
       'isLiked': isLiked,
       'isPinned': isPinned,
       'isOwner': isOwner,

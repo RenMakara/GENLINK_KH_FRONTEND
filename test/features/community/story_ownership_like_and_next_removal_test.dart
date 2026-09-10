@@ -51,7 +51,6 @@ void main() {
     Get.reset();
     Get.put<LocalStorage>(_MockLocalStorage(), permanent: true);
 
-    // Setup AuthController with current user
     final authController = _FakeAuthController();
     authController.currentUser.value = _testCurrentUser;
     Get.put<AuthController>(authController, permanent: true);
@@ -95,18 +94,15 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Bottom like button should be present for other user's story
       expect(find.byType(StoryInteractiveLikeButton), findsOneWidget);
       expect(otherUserStory.isLiked, false);
       expect(otherUserStory.likesCount, 5);
 
-      // Perform double tap on the screen
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pump(const Duration(milliseconds: 50));
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pumpAndSettle();
 
-      // Story should now be liked and count incremented
       expect(otherUserStory.isLiked, true);
       expect(otherUserStory.likesCount, 6);
     });
@@ -125,7 +121,7 @@ void main() {
 
       final groups = [
         StoryGroupModel(
-          userId: 'current_user_123', // Matches CurrentUser.id
+          userId: 'current_user_123',
           userName: 'Current User',
           userAvatar: 'assets/images/user_profile.png',
           isOwner: true,
@@ -144,18 +140,15 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Bottom interactive like button should be HIDDEN for own story
       expect(find.byType(StoryInteractiveLikeButton), findsNothing);
       expect(myStory.isLiked, false);
       expect(myStory.likesCount, 10);
 
-      // Attempt double tap on own story
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pump(const Duration(milliseconds: 50));
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pumpAndSettle();
 
-      // Story should remain UNLIKED and count should NOT change
       expect(myStory.isLiked, false);
       expect(myStory.likesCount, 10);
     });
@@ -183,14 +176,14 @@ void main() {
 
       storyController.storyGroups.assignAll([
         StoryGroupModel(
-          userId: 'current_user_123', // Own group
+          userId: 'current_user_123',
           userName: 'Current User',
           userAvatar: 'assets/images/user_profile.png',
           isOwner: true,
           stories: [ownStory],
         ),
         StoryGroupModel(
-          userId: 'other_user_777', // Other user's group
+          userId: 'other_user_777',
           userName: 'Friend',
           userAvatar: 'assets/images/user_profile.png',
           isOwner: false,
@@ -198,17 +191,14 @@ void main() {
         ),
       ]);
 
-      // 1. Attempt toggleLike on own story -> should NOT toggle
       storyController.toggleLike('own_story_99');
       expect(ownStory.isLiked, false);
       expect(ownStory.likesCount, 3);
 
-      // 2. Attempt syncLikeToBackend on own story -> should NOT throw or change
       storyController.syncLikeToBackend('own_story_99');
       expect(ownStory.isLiked, false);
       expect(ownStory.likesCount, 3);
 
-      // 3. Attempt toggleLike on other user's story -> should toggle successfully
       storyController.toggleLike('other_story_88');
       expect(otherStory.isLiked, true);
       expect(otherStory.likesCount, 8);

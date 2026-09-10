@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:genlink_frontend/core/utils/date_formatter.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/radius/app_radius.dart';
 import 'package:genlink_frontend/design_system/spacing/app_spacing.dart';
 import '../community_search_screen.dart';
 
-// FORUM CATEGORY CARD
 class ForumCategoryCard extends StatelessWidget {
   final String title;
   final String count;
@@ -111,7 +111,6 @@ class ForumCategoryCard extends StatelessWidget {
   }
 }
 
-// FORUM THREAD CARD
 class ForumThreadCard extends StatefulWidget {
   final String title;
   final String author;
@@ -209,6 +208,8 @@ class _ForumThreadCardState extends State<ForumThreadCard>
         ? const Color(0xFF262626)
         : AppColors.lightBorderSubtle;
 
+    final formattedTime = formatCommunityTimestamp(widget.timeAgo);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12.0),
       decoration: BoxDecoration(
@@ -230,7 +231,6 @@ class _ForumThreadCardState extends State<ForumThreadCard>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header Author & Category Row with More Options
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -270,17 +270,18 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                           fontWeight: FontWeight.bold,
                                         ),
                                   ),
-                                  TextSpan(
-                                    text: " · ${widget.timeAgo}",
-                                    style: theme.textTheme.labelMedium?.copyWith(
-                                          color: textMuted,
-                                          fontSize: 11.5,
-                                        ) ??
-                                        TextStyle(
-                                          color: textMuted,
-                                          fontSize: 11.5,
-                                        ),
-                                  ),
+                                  if (formattedTime.isNotEmpty)
+                                    TextSpan(
+                                      text: " · $formattedTime",
+                                      style: theme.textTheme.labelMedium?.copyWith(
+                                            color: textMuted,
+                                            fontSize: 11.5,
+                                          ) ??
+                                          TextStyle(
+                                            color: textMuted,
+                                            fontSize: 11.5,
+                                          ),
+                                    ),
                                 ],
                               ),
                               maxLines: 1,
@@ -347,7 +348,6 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                 ),
                 const SizedBox(height: AppSpacing.sm + 2),
 
-                // Discussion Title
                 Text(
                   widget.title,
                   maxLines: 3,
@@ -367,10 +367,8 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                 ),
                 const SizedBox(height: AppSpacing.sm + 4),
 
-                // Action Bar (Like & Comment buttons with isolated hit targets)
                 Row(
                   children: [
-                    // Like Action Target
                     Material(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -430,7 +428,6 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                     ),
                     const SizedBox(width: 12),
 
-                    // Comment Action Target
                     Material(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -477,7 +474,6 @@ class _ForumThreadCardState extends State<ForumThreadCard>
   }
 }
 
-// JOB CARD
 class JobCard extends StatelessWidget {
   final String title;
   final String company;
@@ -608,7 +604,6 @@ class JobCard extends StatelessWidget {
   }
 }
 
-// MENTOR CARD
 class MentorCard extends StatelessWidget {
   final String name;
   final String role;
@@ -690,8 +685,6 @@ class MentorCard extends StatelessWidget {
   }
 }
 
-/// Career & Networking Tab View component
-/// Preserved as a standalone widget for Career feature entry points.
 class CareerTabView extends StatelessWidget {
   const CareerTabView({super.key});
 
@@ -710,7 +703,6 @@ class CareerTabView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Context-Aware Career Search Bar
             InkWell(
               onTap: () => Get.to(
                 () => const CommunitySearchScreen(activeTab: 'Career'),
@@ -744,7 +736,6 @@ class CareerTabView extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Recommended Opportunities Hero List
             Text(
               'community.recommendedOpportunities'.tr,
               style: theme.textTheme.titleMedium?.copyWith(
@@ -775,7 +766,6 @@ class CareerTabView extends StatelessWidget {
 
             const SizedBox(height: AppSpacing.lg),
 
-            // Campus Alumni Mentors
             Text(
               'community.campusAlumniMentors'.tr,
               style: theme.textTheme.titleMedium?.copyWith(

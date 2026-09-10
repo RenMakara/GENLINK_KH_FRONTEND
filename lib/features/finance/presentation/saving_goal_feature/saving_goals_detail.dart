@@ -10,7 +10,6 @@ import 'package:genlink_frontend/features/finance/presentation/controllers/savin
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
 import 'saving_goals_update.dart';
 
-/// Backend-backed Saving Goal detail, contribution, and history view.
 class GoalDetailScreen extends StatefulWidget {
   const GoalDetailScreen({super.key, required this.goal});
 
@@ -58,7 +57,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
 
           return Column(
             children: [
-              // HEADER
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: Row(
@@ -79,7 +77,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                       ),
                     ),
 
-                    // Edit
                     Obx(
                       () => IconButton(
                         onPressed: controller.isUpdateSubmitting.value
@@ -102,7 +99,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                       ),
                     ),
 
-                    // Delete
                     Obx(
                       () => IconButton(
                         onPressed: controller.isDeleteSubmitting.value
@@ -116,7 +112,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
                 ),
               ),
 
-              // CONTENT
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: () async {
@@ -251,10 +246,6 @@ class _GoalDetailScreenState extends State<GoalDetailScreen> {
   }
 }
 
-/// Owns contribution form controllers for the lifetime of the bottom-sheet
-/// route. The route future may complete before its reverse animation finishes,
-/// so disposing these controllers in the parent after `showModalBottomSheet`
-/// returns can race with a final rebuild of the sheet.
 class _ContributionSheet extends StatefulWidget {
   const _ContributionSheet({required this.controller, required this.goal});
 

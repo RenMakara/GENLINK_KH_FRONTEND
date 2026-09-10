@@ -8,7 +8,6 @@ import 'package:genlink_frontend/features/finance/domain/entities/finance_entiti
 import 'package:genlink_frontend/features/finance/presentation/controllers/cash_flow_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
 
-/// Currency- and month-scoped cash-flow aggregate from the backend.
 class CashFlowScreen extends StatelessWidget {
   const CashFlowScreen({super.key});
 

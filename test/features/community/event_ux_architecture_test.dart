@@ -171,29 +171,21 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Section title
       expect(find.textContaining('FEATURED EVENTS'), findsOneWidget);
 
-      // Top event title and subtitle
       expect(find.text('Flutter Workshop 2026'), findsOneWidget);
       expect(find.text('Build real-world mobile apps with Flutter from scratch.'), findsOneWidget);
 
-      // Category badge
       expect(find.text('WORKSHOP'), findsOneWidget);
 
-      // Date & Time
       expect(find.textContaining('25 Jul 2026 · 9:00 AM – 4:00 PM'), findsOneWidget);
 
-      // Location
       expect(find.textContaining('ACLEDA University, Phnom Penh'), findsOneWidget);
 
-      // Attendees count
       expect(find.textContaining('120'), findsOneWidget);
 
-      // View details CTA
       expect(find.text('View details'), findsOneWidget);
 
-      // Tapping card navigates to EventDetailsScreen
       await tester.tap(find.text('Flutter Workshop 2026'));
       await tester.pumpAndSettle();
       expect(find.byType(EventDetailsScreen), findsOneWidget);
@@ -257,11 +249,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Post Author & Caption
       expect(find.text('AUB Digital Academy'), findsOneWidget);
       expect(find.text('🚀 Excited to host our upcoming workshop! Check out details 👇'), findsOneWidget);
 
-      // Event Preview Card
       expect(find.text('WORKSHOP'), findsOneWidget);
       expect(find.text('Flutter Workshop 2026'), findsOneWidget);
       expect(find.textContaining('25 Jul 2026 · 9:00 AM – 4:00 PM'), findsOneWidget);
@@ -269,12 +259,10 @@ void main() {
       expect(find.textContaining('120'), findsOneWidget);
       expect(find.text('View Event'), findsOneWidget);
 
-      // Social interaction actions (likes, comments, shares, bookmark)
       expect(find.text('88'), findsOneWidget);
       expect(find.text('16'), findsOneWidget);
       expect(find.text('12'), findsOneWidget);
 
-      // Tapping preview card navigates to EventDetailsScreen
       await tester.tap(find.text('View Event'));
       await tester.pumpAndSettle();
       expect(find.byType(EventDetailsScreen), findsOneWidget);
@@ -301,30 +289,23 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Switch to Event Tab (index 2)
       controller.setCategory('Event');
       await tester.pumpAndSettle();
 
-      // Header is a simple section title "Upcoming Events"
       expect(find.text('Upcoming Events'), findsOneWidget);
 
-      // NO large Featured Events carousel or duplicate header on Event screen
       expect(find.byType(HomeFeaturedEventsCarousel), findsNothing);
       expect(find.text('Featured Events'), findsNothing);
 
-      // NO filter buttons / sorting buttons on Event screen
       expect(find.text('Filter'), findsNothing);
       expect(find.text('Filter Events'), findsNothing);
 
-      // Compact cards rendered
       expect(find.text('Flutter Workshop 2026'), findsOneWidget);
       expect(find.text('AI in Everyday Life'), findsOneWidget);
 
-      // Distinct Online indicator for online event vs physical location for in-person event
       expect(find.textContaining('ACLEDA University, Phnom Penh'), findsOneWidget);
       expect(find.text('🌐 Online Event'), findsWidgets);
 
-      // Independent Bookmark button on card toggles state without navigating
       expect(controller.events[0].isBookmarked, isFalse);
       final bookmarkButtons = find.byIcon(Icons.bookmark_border_rounded);
       expect(bookmarkButtons, findsWidgets);
@@ -332,7 +313,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.events[0].isBookmarked, isTrue);
 
-      // Tapping card navigates to EventDetailsScreen
       await tester.tap(find.text('Flutter Workshop 2026'));
       await tester.pumpAndSettle();
       expect(find.byType(EventDetailsScreen), findsOneWidget);
@@ -361,16 +341,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Full event details rendered
       expect(find.text(event.title), findsOneWidget);
       expect(find.text(event.subtitle), findsOneWidget);
       expect(find.text('Register Now'), findsOneWidget);
 
-      // Tap Register Now
       await tester.tap(find.text('Register Now'));
       await tester.pumpAndSettle();
 
-      // Opens EventRegisterScreen
       expect(find.byType(EventRegisterScreen), findsOneWidget);
     });
 
@@ -395,14 +372,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Switch to Event Tab in Khmer
       controller.setCategory('Event');
       await tester.pumpAndSettle();
 
-      // Upcoming Events in Khmer
       expect(find.text('ព្រឹត្តិការណ៍នាពេលខាងមុខ'), findsOneWidget);
 
-      // Online Event in Khmer
       expect(find.text('🌐 ព្រឹត្តិការណ៍អនឡាញ'), findsWidgets);
     });
   });

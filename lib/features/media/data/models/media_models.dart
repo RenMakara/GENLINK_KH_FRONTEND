@@ -1,8 +1,5 @@
 import '../../domain/entities/media_entity.dart';
 
-/// Wire models for the media endpoints.
-///
-/// Kept separate from the entities so a backend rename never reaches the UI.
 abstract final class MediaMapper {
   static PresignedUpload presignFrom(Map<String, dynamic> json) {
     final headers =

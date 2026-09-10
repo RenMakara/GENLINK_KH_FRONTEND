@@ -106,7 +106,6 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
         },
         child: Stack(
           children: [
-            // Full Screen Image PageView with Pinch Zoom & Double Tap
             PageView.builder(
               controller: _pageController,
               itemCount: widget.images.length,
@@ -133,7 +132,6 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
               },
             ),
 
-            // Top Control Bar: Close (✕) Button & Counter Indicator
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -143,7 +141,6 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Close Button
                     IconButton(
                       icon: const Icon(
                         Icons.close_rounded,
@@ -157,7 +154,6 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
                       ),
                     ),
 
-                    // Page Indicator Badge (e.g., "2 / 5")
                     if (widget.images.length > 1)
                       Container(
                         padding: const EdgeInsets.symmetric(

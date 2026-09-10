@@ -105,7 +105,10 @@ class _MockTestCommunityRepository implements CommunityRepository {
   }
 
   @override
-  Future<bool> toggleDiscussionLike(String discussionId) async => true;
+  Future<bool> toggleDiscussionLike(
+    String discussionId, {
+    bool isCurrentlyLiked = false,
+  }) async => true;
 
   @override
   Future<bool> toggleLike(String postId) async => true;
@@ -157,25 +160,22 @@ void main() {
         repliesCount: 2,
       );
 
-      // Same ID -> Owner
       expect(topic.checkIsOwner('user_123'), isTrue);
 
-      // Different ID even with same or different name -> NOT owner
       expect(topic.checkIsOwner('user_456'), isFalse);
       expect(topic.checkIsOwner(null), isFalse);
       expect(topic.checkIsOwner(''), isFalse);
     });
 
-    test('2. Two-way synchronization: Creating discussion updates Forum list and Feed posts list', () async {
+    test('2. Forum discussion lifecycle: Creating discussion updates Forum list and keeps Feed posts isolated', () async {
       final repo = _MockTestCommunityRepository();
       final controller = CommunityController(repository: repo);
 
-      expect(controller.forumLatestDiscussions.length, equals(4)); // Initial latest (Rathana P. test discussion removed)
-      expect(controller.forumPinnedDiscussions.isEmpty, isTrue); // Pinned discussions bypass
+      expect(controller.forumLatestDiscussions.isEmpty, isTrue);
+      expect(controller.forumPinnedDiscussions.isEmpty, isTrue);
 
       final initialFeedCount = controller.posts.length;
 
-      // Add a discussion
       final created = await controller.addDiscussion(
         title: 'New AI Architecture in Flutter',
         content: 'Discussing GetX and clean state handling.',
@@ -186,15 +186,12 @@ void main() {
       expect(controller.forumLatestDiscussions.first.title, equals('New AI Architecture in Flutter'));
       expect(controller.forumLatestDiscussions.first.id, equals(created.id));
 
-      // Feed posts list must also contain the discussion with matching ID
-      expect(controller.posts.length, equals(initialFeedCount + 1));
-      final feedPost = controller.posts.firstWhere((p) => p.id == created.id);
-      expect(feedPost.postType, equals('DISCUSSION'));
-      expect(feedPost.discussionTitle, equals('New AI Architecture in Flutter'));
-      expect(feedPost.category, equals('Technology'));
+      // Forum discussions belong to forumLatestDiscussions, NOT synthetic posts in Feed
+      expect(controller.posts.length, equals(initialFeedCount));
+      expect(controller.posts.any((p) => p.id == created.id), isFalse);
     });
 
-    test('3. Two-way synchronization: Editing discussion updates both Forum topic and Feed post', () async {
+    test('3. Forum discussion lifecycle: Editing discussion updates Forum topic without polluting Feed', () async {
       final repo = _MockTestCommunityRepository();
       final controller = CommunityController(repository: repo);
 
@@ -206,7 +203,6 @@ void main() {
 
       expect(created, isNotNull);
 
-      // Update discussion
       final updated = await controller.updateDiscussion(
         discussionId: created.id,
         title: 'Updated Title',
@@ -217,14 +213,10 @@ void main() {
       expect(updated, isTrue);
       expect(controller.forumLatestDiscussions.firstWhere((d) => d.id == created.id).title, equals('Updated Title'));
       expect(controller.forumLatestDiscussions.firstWhere((d) => d.id == created.id).category, equals('Career'));
-
-      final feedPost = controller.posts.firstWhere((p) => p.id == created.id);
-      expect(feedPost.discussionTitle, equals('Updated Title'));
-      expect(feedPost.content, equals('Updated Content Body'));
-      expect(feedPost.category, equals('Career'));
+      expect(controller.posts.any((p) => p.id == created.id), isFalse);
     });
 
-    test('4. Two-way synchronization: Deleting discussion removes from both Forum and Feed', () async {
+    test('4. Forum discussion lifecycle: Deleting discussion removes from Forum list', () async {
       final repo = _MockTestCommunityRepository();
       final controller = CommunityController(repository: repo);
 
@@ -236,17 +228,14 @@ void main() {
 
       expect(created, isNotNull);
       expect(controller.forumLatestDiscussions.any((d) => d.id == created.id), isTrue);
-      expect(controller.posts.any((p) => p.id == created.id), isTrue);
 
-      // Delete discussion
       final success = await controller.deleteDiscussion(created.id);
       expect(success, isTrue);
 
       expect(controller.forumLatestDiscussions.any((d) => d.id == created.id), isFalse);
-      expect(controller.posts.any((p) => p.id == created.id), isFalse);
     });
 
-    test('5. Two-way synchronization: Toggling like in Forum syncs with Feed, and vice versa', () async {
+    test('5. Forum discussion reactions: Toggling like updates Forum discussion independently without post cross-talk', () async {
       final repo = _MockTestCommunityRepository();
       final controller = CommunityController(repository: repo);
 
@@ -258,25 +247,29 @@ void main() {
 
       final topicId = created.id;
       expect(controller.forumLatestDiscussions.firstWhere((d) => d.id == topicId).upvotes, equals(0));
-      expect(controller.posts.firstWhere((p) => p.id == topicId).likesCount, equals(0));
 
-      // Like in forum
-      controller.toggleDiscussionLike(topicId);
+      await controller.toggleDiscussionLike(topicId);
       expect(controller.forumLatestDiscussions.firstWhere((d) => d.id == topicId).isLiked, isTrue);
       expect(controller.forumLatestDiscussions.firstWhere((d) => d.id == topicId).upvotes, equals(1));
-      expect(controller.posts.firstWhere((p) => p.id == topicId).isLiked, isTrue);
-      expect(controller.posts.firstWhere((p) => p.id == topicId).likesCount, equals(1));
 
-      // Unlike in feed
-      controller.toggleLike(topicId);
+      await controller.toggleDiscussionLike(topicId);
       expect(controller.forumLatestDiscussions.firstWhere((d) => d.id == topicId).isLiked, isFalse);
       expect(controller.forumLatestDiscussions.firstWhere((d) => d.id == topicId).upvotes, equals(0));
-      expect(controller.posts.firstWhere((p) => p.id == topicId).isLiked, isFalse);
-      expect(controller.posts.firstWhere((p) => p.id == topicId).likesCount, equals(0));
     });
 
     testWidgets('6. Forum UI starts with Latest Discussions and has zero pinned sections', (tester) async {
       final repo = _MockTestCommunityRepository();
+      repo.discussions.add(ForumTopicModel(
+        id: 'disc_sample_1',
+        title: 'Sample Discussion Title',
+        content: 'Sample Content',
+        category: 'Technology',
+        authorName: 'Test Author',
+        authorAvatar: '',
+        timeAgo: 'now',
+        upvotes: 0,
+        repliesCount: 0,
+      ));
       final controller = CommunityController(repository: repo);
       Get.put<CommunityController>(controller);
 
@@ -292,19 +285,14 @@ void main() {
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
-      // Zero pinned elements
       expect(find.text('📌 Pinned Discussions'), findsNothing);
       expect(find.textContaining('📌'), findsNothing);
 
-      // Latest Discussions exists
       expect(find.text('Latest Discussions'), findsOneWidget);
     });
 
     testWidgets('7. CreateDiscussionScreen in edit mode pre-fills fields and updates on submit', (tester) async {
       final repo = _MockTestCommunityRepository();
-      final controller = CommunityController(repository: repo);
-      Get.put<CommunityController>(controller);
-
       final initialTopic = ForumTopicModel(
         id: 'disc_edit_1',
         authorId: 'user_current',
@@ -317,6 +305,9 @@ void main() {
         upvotes: 0,
         repliesCount: 0,
       );
+      repo.discussions.insert(0, initialTopic);
+      final controller = CommunityController(repository: repo);
+      Get.put<CommunityController>(controller);
       controller.forumLatestDiscussions.insert(0, initialTopic);
 
       await tester.pumpWidget(
@@ -328,21 +319,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Check pre-populated title and content
       expect(find.text('Edit Discussion'), findsOneWidget);
       expect(find.text('Original Title To Edit'), findsOneWidget);
       expect(find.text('Original Content Body To Edit'), findsOneWidget);
       expect(find.text('Save Changes'), findsOneWidget);
 
-      // Edit title
       await tester.enterText(find.widgetWithText(TextField, 'Original Title To Edit'), 'Brand New Edited Title');
       await tester.pumpAndSettle();
 
-      // Tap Save Changes
       await tester.tap(find.text('Save Changes'));
       await tester.pumpAndSettle();
 
-      // Check controller state updated
       expect(controller.forumLatestDiscussions.first.title, equals('Brand New Edited Title'));
     });
   });

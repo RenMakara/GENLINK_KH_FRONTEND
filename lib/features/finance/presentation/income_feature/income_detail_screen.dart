@@ -8,7 +8,6 @@ import 'package:genlink_frontend/features/finance/presentation/controllers/incom
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_detail_widget.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
 
-/// Detail view backed by the complete Income list payload.
 class IncomeDetailScreen extends StatelessWidget {
   const IncomeDetailScreen({
     super.key,

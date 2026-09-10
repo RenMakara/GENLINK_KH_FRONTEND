@@ -160,11 +160,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Stories row renders cleanly without chevron
       expect(find.byType(StoryTrayWidget), findsOneWidget);
       expect(find.text('Stories >'), findsNothing);
 
-      // Redundant Feed Post Composer is removed from feed
       expect(find.text("What's on your mind?"), findsNothing);
       expect(find.text('Photo'), findsNothing);
       expect(find.text('Video'), findsNothing);
@@ -192,20 +190,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Header on Feed
       expect(find.text('✨'), findsOneWidget);
       expect(find.text('Suggested Events'), findsOneWidget);
       expect(find.text('See all'), findsWidgets);
 
-      // Date block
       expect(find.text('25'), findsOneWidget);
       expect(find.text('JUL'), findsWidgets);
 
-      // Event title and location
       expect(find.text('Flutter Workshop 2026'), findsOneWidget);
       expect(find.textContaining('ACLEDA University'), findsWidgets);
 
-      // Join button
       expect(find.text('Join'), findsWidgets);
     });
 
@@ -237,7 +231,6 @@ void main() {
       await tester.tap(joinButtons.first);
       await tester.pumpAndSettle();
 
-      // Does not immediately RSVP; navigates to EventDetailsScreen
       expect(controller.events[0].isRsvped, isFalse);
       expect(find.byType(EventDetailsScreen), findsOneWidget);
     });
@@ -265,7 +258,6 @@ void main() {
 
       expect(controller.selectedCategory.value, equals('Feed'));
 
-      // Tap first "See all" (Suggested Events)
       final seeAllFinders = find.text('See all');
       await tester.tap(seeAllFinders.first);
       await tester.pumpAndSettle();
@@ -328,7 +320,6 @@ void main() {
         findsOneWidget,
       );
 
-      // Tap second "See all" (Trending Discussions)
       final seeAllFinders = find.text('See all');
       await tester.tap(seeAllFinders.last);
       await tester.pumpAndSettle();
@@ -396,19 +387,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Initial state: + Follow
       expect(find.text('Follow'), findsOneWidget);
       expect(find.byIcon(Icons.add_rounded), findsOneWidget);
 
-      // Tap to follow
       await tester.tap(find.text('Follow'));
       await tester.pumpAndSettle();
 
-      // Following state: ✓ Following
       expect(find.text('Following'), findsOneWidget);
       expect(find.byIcon(Icons.check_rounded), findsOneWidget);
 
-      // Tap to unfollow
       await tester.tap(find.text('Following'));
       await tester.pumpAndSettle();
 
@@ -445,14 +432,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Initial inactive bookmark icon
       expect(find.byIcon(Icons.bookmark_border_rounded), findsOneWidget);
 
-      // Tap to bookmark
       await tester.tap(find.byIcon(Icons.bookmark_border_rounded));
       await tester.pumpAndSettle();
 
-      // Active saved icon with gold accent
       final iconFinder = find.byIcon(Icons.bookmark_rounded);
       expect(iconFinder, findsOneWidget);
       final Icon iconWidget = tester.widget(iconFinder);
@@ -480,14 +464,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Khmer stories & suggested events
       expect(find.byType(StoryTrayWidget), findsOneWidget);
       expect(find.text('✨'), findsOneWidget);
       expect(find.text('ព្រឹត្តិការណ៍ដែលបានណែនាំ'), findsOneWidget);
       expect(find.text('មើលទាំងអស់'), findsWidgets);
       expect(find.text('ចូលរួម'), findsWidgets);
 
-      // Redundant composer not present
       expect(find.text('តើអ្នកកំពុងគិតអ្វី?'), findsNothing);
       expect(find.text('រូបថត'), findsNothing);
     });
@@ -530,7 +512,6 @@ void main() {
       final controller = CommunityController(repository: repo);
       Get.put<CommunityController>(controller);
 
-      // 1. Light Mode
       await tester.pumpWidget(
         GetMaterialApp(
           theme: ThemeData.light(),
@@ -543,7 +524,6 @@ void main() {
       expect(find.text('✨'), findsOneWidget);
       expect(find.text('Suggested Events'), findsOneWidget);
 
-      // 2. Dark Mode
       await tester.pumpWidget(
         GetMaterialApp(
           theme: ThemeData.dark(),

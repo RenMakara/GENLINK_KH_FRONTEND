@@ -5,18 +5,12 @@ import '../../domain/entities/finance_entities.dart';
 import '../../domain/repositories/finance_repository.dart';
 import 'finance_controller.dart';
 
-/// Owns the state for the demo wallet screens.
-///
-/// Wallet operations are deliberately backend-confirmed.  The controller does
-/// not calculate a new authoritative balance locally; after a successful
-/// mutation it refreshes both wallet resources and the dashboard snapshot.
 class EWalletController extends GetxController {
   EWalletController(this._repository, this._financeController);
 
   final FinanceRepository _repository;
   final FinanceController _financeController;
 
-  /// The wallet follows the Finance dashboard's single currency selection.
   Rx<FinanceCurrency> get selectedCurrency =>
       _financeController.selectedCurrency;
 
@@ -45,15 +39,11 @@ class EWalletController extends GetxController {
     loadInitial();
   }
 
-  /// Loads balance and the first history page without displaying fake data.
   Future<void> loadInitial() async {
     final walletRequest = ++_walletRequestSequence;
     final historyRequest = ++_historyRequestSequence;
 
     isInitialLoading.value = true;
-    // A reload supersedes an in-flight next-page request. The stale request
-    // must not be allowed to leave pagination disabled in its guarded finally
-    // block.
     isLoadingMore.value = false;
     walletErrorMessage.value = null;
     historyErrorMessage.value = null;
@@ -62,9 +52,6 @@ class EWalletController extends GetxController {
     _currentPage = -1;
     hasNextPage.value = false;
 
-    // GET /finance/wallet creates the user's zero-balance wallet on first
-    // access.  Load it before history so the page-0 request cannot race that
-    // creation and incorrectly report a missing wallet.
     await _loadWallet(walletRequest);
     if (walletRequest == _walletRequestSequence) {
       await _loadHistory(historyRequest, reset: true);
@@ -76,7 +63,6 @@ class EWalletController extends GetxController {
     }
   }
 
-  /// Pull-to-refresh resets history pagination and reloads the current wallet.
   @override
   Future<void> refresh() => loadInitial();
 
@@ -120,15 +106,9 @@ class EWalletController extends GetxController {
     }
   }
 
-  /// Changes the shared Finance currency and reloads all currency-dependent
-  /// presentation state.  The wallet endpoint returns both balances, so no
-  /// conversion or cross-currency arithmetic is performed here.
   Future<void> selectCurrency(FinanceCurrency currency) async {
     if (currency == selectedCurrency.value) return;
     selectedCurrency.value = currency;
-    // Do not render the previous currency's snapshot while the new request is
-    // in flight.  The wallet endpoint returns both balances, but the selected
-    // view must still wait for a current authenticated response.
     wallet.value = null;
     walletErrorMessage.value = null;
     isLoadingMore.value = false;
@@ -245,8 +225,6 @@ class EWalletController extends GetxController {
     isOperationLoading.value = true;
     operationErrorMessage.value = null;
     try {
-      // The response is useful as an immediate backend-confirmed snapshot,
-      // but the follow-up reads keep history and dashboard state consistent.
       wallet.value = await operation();
       await Future.wait<void>([
         loadWallet(),

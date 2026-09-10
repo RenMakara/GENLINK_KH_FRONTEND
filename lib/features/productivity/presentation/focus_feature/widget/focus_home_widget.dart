@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
-// ============================================================
-// DATA MODELS
-// ============================================================
 
 class FocusModeData {
   final IconData icon;
@@ -40,9 +37,6 @@ class FocusSessionData {
   });
 }
 
-// ============================================================
-// COLORS
-// ============================================================
 
 class _FocusColors {
   final bool isDark;
@@ -71,9 +65,6 @@ class _FocusColors {
       isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 }
 
-// ============================================================
-// HEADER
-// ============================================================
 
 class FocusHeader extends StatelessWidget {
   final String title;
@@ -127,9 +118,6 @@ class FocusHeader extends StatelessWidget {
   }
 }
 
-// ============================================================
-// SECTION TITLE
-// ============================================================
 
 class FocusSectionTitle extends StatelessWidget {
   final String title;
@@ -153,9 +141,6 @@ class FocusSectionTitle extends StatelessWidget {
   }
 }
 
-// ============================================================
-// FOCUS MODES
-// ============================================================
 
 class FocusModes extends StatelessWidget {
   final List<FocusModeData> modes;
@@ -288,9 +273,6 @@ class _FocusModeCardState extends State<_FocusModeCard> {
   }
 }
 
-// ============================================================
-// AMBIENT SOUNDS
-// ============================================================
 
 class FocusAmbientSounds extends StatelessWidget {
   final List<AmbientSoundData> sounds;
@@ -405,9 +387,6 @@ class _AmbientSoundItemState extends State<_AmbientSoundItem> {
   }
 }
 
-// ============================================================
-// RECENT SESSIONS
-// ============================================================
 
 class FocusRecentSessions extends StatelessWidget {
   final List<FocusSessionData> sessions;
@@ -509,9 +488,6 @@ class _RecentSessionItem extends StatelessWidget {
   }
 }
 
-// ============================================================
-// START BUTTON
-// ============================================================
 
 class FocusStartButton extends StatefulWidget {
   final String text;

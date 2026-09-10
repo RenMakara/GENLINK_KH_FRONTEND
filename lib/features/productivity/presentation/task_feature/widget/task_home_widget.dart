@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
-// TASK DATA
 enum TaskPriority { high, medium, low }
 
 class TaskData {
@@ -19,7 +18,6 @@ class TaskData {
   });
 }
 
-// TASK THEME COLORS
 class TaskThemeColors {
   final bool isDark;
 
@@ -47,7 +45,6 @@ class TaskThemeColors {
       isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 }
 
-// TOP BAR
 class TasksTopBar extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -127,7 +124,6 @@ class TasksTopBar extends StatelessWidget {
   }
 }
 
-// ICON BUTTON
 class _TaskIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
@@ -171,7 +167,6 @@ class _TaskIconButton extends StatelessWidget {
   }
 }
 
-// SEARCH FIELD
 class TasksSearchField extends StatefulWidget {
   final String hintText;
   final TextEditingController? controller;
@@ -418,7 +413,6 @@ class _TasksSearchFieldState extends State<TasksSearchField> {
   }
 }
 
-// TASK HEADER
 class TasksHeader extends StatelessWidget {
   final String title;
   final int count;
@@ -512,7 +506,6 @@ class TasksHeader extends StatelessWidget {
   }
 }
 
-// TASK LIST
 class TasksList extends StatelessWidget {
   final List<TaskData> tasks;
   final String emptyTitle;
@@ -563,7 +556,6 @@ class TasksList extends StatelessWidget {
   }
 }
 
-// EMPTY STATE
 class _EmptyTasksState extends StatelessWidget {
   final TaskThemeColors colors;
   final String title;
@@ -629,7 +621,6 @@ class _EmptyTasksState extends StatelessWidget {
   }
 }
 
-// TASK TILE
 class _TaskTile extends StatefulWidget {
   final TaskData task;
 
@@ -768,7 +759,6 @@ class _TaskTileState extends State<_TaskTile> {
   }
 }
 
-// PRIORITY LABEL
 class _PriorityLabel extends StatelessWidget {
   final TaskPriority priority;
 
@@ -815,7 +805,6 @@ class _PriorityLabel extends StatelessWidget {
   }
 }
 
-// CHECKBOX
 
 class _TaskCheckbox extends StatelessWidget {
   final bool completed;
@@ -856,7 +845,6 @@ class _TaskCheckbox extends StatelessWidget {
   }
 }
 
-// BOTTOM TIP
 class TasksBottomTip extends StatelessWidget {
   final String text;
 
@@ -890,7 +878,6 @@ class TasksBottomTip extends StatelessWidget {
   }
 }
 
-// FILTER SHEET
 class TasksFilterSheet extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -947,7 +934,6 @@ class TasksFilterSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // HANDLE
             Center(
               child: Container(
                 width: 38,
@@ -961,7 +947,6 @@ class TasksFilterSheet extends StatelessWidget {
 
             const SizedBox(height: 22),
 
-            // HEADER
             Row(
               children: [
                 Container(
@@ -1079,7 +1064,6 @@ class TasksFilterSheet extends StatelessWidget {
   }
 }
 
-// FILTER TITLE
 class _FilterTitle extends StatelessWidget {
   final String title;
   final TaskThemeColors colors;
@@ -1100,7 +1084,6 @@ class _FilterTitle extends StatelessWidget {
   }
 }
 
-// FILTER GROUP
 class _FilterOptionGroup extends StatelessWidget {
   final List<String> options;
   final int selectedIndex;
@@ -1132,7 +1115,6 @@ class _FilterOptionGroup extends StatelessWidget {
   }
 }
 
-// FILTER OPTION
 class _FilterOption extends StatelessWidget {
   final String label;
   final bool selected;

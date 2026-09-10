@@ -237,7 +237,6 @@ class _PreviewContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Mock Header
           Container(
             height: 10,
             width: double.infinity,
@@ -248,7 +247,6 @@ class _PreviewContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          // Mock Content Row
           Row(
             children: [
               Container(
@@ -275,7 +273,7 @@ class _PreviewContent extends StatelessWidget {
                     const SizedBox(height: 4),
                     Container(
                       height: 5,
-                      width: '60%'.contains('%') ? 30 : 30, // Small line
+                      width: '60%'.contains('%') ? 30 : 30,
                       decoration: BoxDecoration(
                         color: accent,
                         borderRadius: BorderRadius.circular(1),
@@ -287,7 +285,6 @@ class _PreviewContent extends StatelessWidget {
             ],
           ),
           const Spacer(),
-          // Mock Tab Bar / Action
           Container(
             height: 12,
             width: double.infinity,

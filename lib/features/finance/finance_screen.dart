@@ -15,8 +15,6 @@ import 'package:genlink_frontend/features/finance/presentation/learn_finance_fea
 import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_screen.dart';
 import 'package:genlink_frontend/features/finance/widgets/finance_widget.dart';
 
-/// Finance home. The dashboard, Income, Cash Flow, and Expense flows are
-/// backed by the Finance API; other linked modules keep their phase boundaries.
 class FinanceScreen extends GetView<FinanceController> {
   const FinanceScreen({super.key});
 
@@ -43,7 +41,7 @@ class FinanceScreen extends GetView<FinanceController> {
                 16,
                 14,
                 16,
-                100, // space for bottom navigation
+                120,
               ),
               children: [
                 _FinanceHeader(
@@ -112,7 +110,6 @@ class _FinanceHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header
         Row(
           children: [
             Expanded(
@@ -127,7 +124,6 @@ class _FinanceHeader extends StatelessWidget {
               ),
             ),
 
-            // Notification
             Material(
               color: Colors.transparent,
               child: InkWell(
@@ -154,7 +150,6 @@ class _FinanceHeader extends StatelessWidget {
 
         const SizedBox(height: 14),
 
-        // Currency selector
         _CurrencySelector(
           selectedCurrency: selectedCurrency,
           onChanged: onCurrencyChanged,
@@ -203,7 +198,6 @@ class _CurrencySelector extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // Sliding selected background
             AnimatedAlign(
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOutCubic,
@@ -219,7 +213,6 @@ class _CurrencySelector extends StatelessWidget {
               ),
             ),
 
-            // Clickable currency buttons
             Row(
               children: [
                 Expanded(
@@ -828,8 +821,6 @@ class _QuickActions extends StatelessWidget {
       }
     }
 
-    // Learning is a separate destination and is not part of the dashboard
-    // quickActions response; keep its existing entry until that API phase.
     actions.add((
       Icons.trending_up_rounded,
       'finance.Income'.tr,

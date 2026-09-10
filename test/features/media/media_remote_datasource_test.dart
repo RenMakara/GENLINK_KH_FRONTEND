@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:genlink_frontend/core/errors/app_error.dart';
 import 'package:genlink_frontend/core/network/api_client.dart';
 import 'package:genlink_frontend/features/media/data/datasources/media_remote_datasource.dart';
-import 'package:genlink_frontend/features/media/data/models/media_models.dart';
 import 'package:genlink_frontend/features/media/domain/entities/media_entity.dart';
 
 class _FakeApiClient extends ApiClient {

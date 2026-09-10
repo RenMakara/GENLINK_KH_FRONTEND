@@ -55,7 +55,6 @@ void main() {
         'user': null,
       };
 
-      // Null user falls back to empty map, producing a default UserResponseModel.
       final model = AuthResponseModel.fromJson(json);
       expect(model.accessToken, 'token');
       expect(model.user.userId, '');

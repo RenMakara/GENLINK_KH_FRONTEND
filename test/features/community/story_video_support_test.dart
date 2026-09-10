@@ -125,7 +125,6 @@ void main() {
       expect(find.text('Phnom Penh'), findsOneWidget);
       expect(find.byIcon(Icons.play_arrow_rounded), findsWidgets);
 
-      // Clean up widget tree and pending frame timer
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 500));
     });
@@ -147,7 +146,6 @@ void main() {
       expect(find.byIcon(Icons.videocam_rounded), findsWidgets);
       expect(find.text('00:05'), findsOneWidget);
 
-      // Clean up widget tree and pending frame timer
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 500));
     });
@@ -155,11 +153,9 @@ void main() {
     test('Test 5: StoryGalleryController configures photo vs common request type correctly', () {
       final galleryController = Get.put(StoryGalleryController());
 
-      // Normal mode -> defaults to photo and video support
       expect(galleryController.requiredPhotosCount.value, equals(0));
       expect(galleryController.selectedTemplate.value, isNull);
 
-      // Template mode -> restricts to requiredPhotos
       galleryController.configureForTemplate(
         requiredPhotos: 3,
         isMultiSelect: true,

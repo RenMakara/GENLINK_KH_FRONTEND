@@ -23,8 +23,6 @@ class AppBackButton extends StatelessWidget {
         elevation: 0,
         child: InkWell(
           customBorder: const StadiumBorder(),
-          // Falls back to popping the current route so callers usually
-          // pass nothing.
           onTap: onPressed ?? () => Navigator.of(context).maybePop(),
           child: Icon(
             Icons.arrow_back,

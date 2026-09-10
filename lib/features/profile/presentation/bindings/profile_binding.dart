@@ -10,10 +10,6 @@ import '../../domain/repositories/profile_repository.dart';
 import '../controllers/profile_controller.dart';
 import '../controllers/profile_setup_controller.dart';
 
-/// Binding for the profile screens.
-///
-/// The repository is permanent (settings needs it too); the controller is
-/// lazy so it is rebuilt — and refetched — each time the user opens the tab.
 class ProfileBinding extends Bindings {
   @override
   void dependencies() {
@@ -31,22 +27,19 @@ class ProfileBinding extends Bindings {
       return;
     }
 
-    // Sub-screens (portfolio, saved, achievements, interests) share the
-    // tab's controller; fenix recreates it if GetX disposed it.
     Get.lazyPut<ProfileController>(
       () => ProfileController(
         repository: Get.find<ProfileRepository>(),
-        onOwnerProfileChanged: _syncCachedAuthUser,
+        onOwnerProfileChanged: syncCachedAuthUser,
       ),
       fenix: true,
     );
   }
 
-  static void _syncCachedAuthUser(ProfileEntity profile) {
+  static void syncCachedAuthUser(ProfileEntity profile) {
     if (!Get.isRegistered<AuthController>()) return;
     final auth = Get.find<AuthController>();
     final cached = auth.currentUser.value;
-    if (cached == null) return;
 
     auth.updateCachedUser(
       UserEntity(
@@ -65,13 +58,12 @@ class ProfileBinding extends Bindings {
         totalXp: profile.totalXp,
         level: profile.level,
         preferredLanguage: profile.preferredLanguage,
-        role: cached.role,
-        active: cached.active,
+        role: cached?.role ?? 'USER',
+        active: cached?.active ?? true,
       ),
     );
   }
 
-  /// Register the Profile repository once for the owner tab and sub-routes.
   static void _registerRepository() {
     if (Get.isRegistered<ProfileRepository>()) return;
     Get.put<ProfileRepository>(
@@ -81,7 +73,6 @@ class ProfileBinding extends Bindings {
   }
 }
 
-/// Binding for the post-registration profile setup flow.
 class ProfileSetupBinding extends Bindings {
   @override
   void dependencies() {

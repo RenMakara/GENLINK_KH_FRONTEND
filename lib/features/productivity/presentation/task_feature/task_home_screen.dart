@@ -12,16 +12,13 @@ class TasksPage extends StatefulWidget {
 }
 
 class _TasksPageState extends State<TasksPage> {
-  // CONTROLLERS
   final TextEditingController _searchController = TextEditingController();
 
-  // STATE
   String _searchText = '';
 
   int _selectedStatus = 0;
   int _selectedPriority = 0;
 
-  // TASK DATA
   final List<TaskData> _tasks = const [
     TaskData(
       title: 'Deep work — React TypeScript',
@@ -62,8 +59,6 @@ class _TasksPageState extends State<TasksPage> {
     ),
   ];
 
-  // FILTER OPTIONS
-  // Use getters so translations refresh correctly.
   List<String> get _statusOptions => [
     'tasks.filter.all'.tr,
     'tasks.filter.today'.tr,
@@ -78,11 +73,9 @@ class _TasksPageState extends State<TasksPage> {
     'tasks.filter.low'.tr,
   ];
 
-  // FILTERED TASKS
   List<TaskData> get _filteredTasks {
     var result = List<TaskData>.from(_tasks);
 
-    // SEARCH
     if (_searchText.trim().isNotEmpty) {
       final query = _searchText.trim().toLowerCase();
 
@@ -92,10 +85,8 @@ class _TasksPageState extends State<TasksPage> {
       }).toList();
     }
 
-    // STATUS
     switch (_selectedStatus) {
       case 1:
-        // TODAY
         result = result.where((task) {
           final due = task.dueText.toLowerCase();
 
@@ -106,7 +97,6 @@ class _TasksPageState extends State<TasksPage> {
         break;
 
       case 2:
-        // UPCOMING
         result = result.where((task) {
           return !task.completed &&
               task.dueText.toLowerCase().contains('tomorrow');
@@ -114,14 +104,12 @@ class _TasksPageState extends State<TasksPage> {
         break;
 
       case 3:
-        // COMPLETED
         result = result.where((task) {
           return task.completed;
         }).toList();
         break;
     }
 
-    // PRIORITY
     switch (_selectedPriority) {
       case 1:
         result = result
@@ -145,7 +133,6 @@ class _TasksPageState extends State<TasksPage> {
     return result;
   }
 
-  // ACTIVE FILTER COUNT
   int get _activeFilterCount {
     int count = 0;
 
@@ -155,7 +142,6 @@ class _TasksPageState extends State<TasksPage> {
     return count;
   }
 
-  // FILTER SHEET
   void _openFilterSheet() {
     int temporaryStatus = _selectedStatus;
     int temporaryPriority = _selectedPriority;
@@ -209,21 +195,18 @@ class _TasksPageState extends State<TasksPage> {
     );
   }
 
-  // CREATE TASK
   void _createTask() {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => const CreateTaskPage()));
   }
 
-  // DISPOSE
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
-  // BUILD
   @override
   Widget build(BuildContext context) {
     final colors = TaskThemeColors(

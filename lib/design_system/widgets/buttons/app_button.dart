@@ -3,21 +3,15 @@ import 'package:flutter/material.dart';
 import '../../radius/app_radius.dart';
 import '../../spacing/app_spacing.dart';
 
-/// Visual weight of an [AppButton].
 enum AppButtonVariant {
-  /// Filled with the primary colour — one per screen.
   primary,
 
-  /// Outlined — secondary actions.
   secondary,
 
-  /// Text only — tertiary/inline actions.
   text,
 
-  /// Filled with the error colour — destructive actions.
   danger,
 
-  /// Inverse filled action for use on a primary-colour surface.
   inverse,
 }
 
@@ -88,12 +82,6 @@ class AppButton extends StatelessWidget {
     final scheme = theme.colorScheme;
     final effectiveOnPressed = loading ? null : onPressed;
 
-    // Passed through ButtonStyle rather than set on the Text: the theme's
-    // labelLarge carries an explicit colour, and an explicit Text colour
-    // silently beats the button's foregroundColor — which rendered the
-    // label white-on-white in dark mode and black-on-black in light.
-    // ButtonStyleButton overlays foregroundColor onto textStyle, so routing
-    // it here also keeps the disabled and pressed states correct.
     final textStyle = theme.textTheme.labelLarge;
 
     final child = loading
@@ -108,8 +96,6 @@ class AppButton extends StatelessWidget {
         : _Label(
             label: label,
             icon: icon,
-            // Text buttons read as links in the design: underlined, and
-            // muted when they are the secondary way out of a screen.
             underline: variant == AppButtonVariant.text,
           );
 
@@ -202,8 +188,6 @@ class _Label extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // No colour here on purpose — the surrounding DefaultTextStyle, which
-    // the button builds from its own foregroundColor, supplies it.
     final text = Text(
       label,
       style: underline

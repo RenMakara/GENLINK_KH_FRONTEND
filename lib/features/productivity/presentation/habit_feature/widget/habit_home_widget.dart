@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
-// ============================================================
-// DATA MODELS
-// ============================================================
 
 class HabitStreakData {
   final int days;
@@ -31,9 +28,6 @@ class HabitData {
   });
 }
 
-// ============================================================
-// MAIN WIDGET
-// ============================================================
 
 class HabitHomeWidget extends StatefulWidget {
   final String title;
@@ -88,7 +82,6 @@ class _HabitHomeWidgetState extends State<HabitHomeWidget> {
     return Scaffold(
       backgroundColor: colors.background,
 
-      // No bottomNavigationBar.
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -132,9 +125,6 @@ class _HabitHomeWidgetState extends State<HabitHomeWidget> {
   }
 }
 
-// ============================================================
-// COLORS
-// ============================================================
 
 class _HabitColors {
   final bool isDark;
@@ -160,9 +150,6 @@ class _HabitColors {
       isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 }
 
-// ============================================================
-// HEADER
-// ============================================================
 
 class _HabitHeader extends StatelessWidget {
   final String title;
@@ -187,9 +174,6 @@ class _HabitHeader extends StatelessWidget {
   }
 }
 
-// ============================================================
-// STREAK CARD
-// ============================================================
 
 class _StreakCard extends StatelessWidget {
   final HabitStreakData data;
@@ -294,9 +278,6 @@ class _StreakCard extends StatelessWidget {
   }
 }
 
-// ============================================================
-// SECTION HEADER
-// ============================================================
 
 class _SectionHeader extends StatelessWidget {
   final String title;
@@ -333,9 +314,6 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ============================================================
-// TODAY HABITS
-// ============================================================
 
 class _TodayHabitsCard extends StatelessWidget {
   final List<HabitData> habits;
@@ -386,9 +364,6 @@ class _TodayHabitsCard extends StatelessWidget {
   }
 }
 
-// ============================================================
-// HABIT TILE
-// ============================================================
 
 class _HabitTile extends StatelessWidget {
   final HabitData data;
@@ -469,9 +444,6 @@ class _HabitTile extends StatelessWidget {
   }
 }
 
-// ============================================================
-// PROGRESS DOTS
-// ============================================================
 
 class _ProgressDots extends StatelessWidget {
   final int completedDays;
@@ -502,9 +474,6 @@ class _ProgressDots extends StatelessWidget {
   }
 }
 
-// ============================================================
-// STREAK BADGE
-// ============================================================
 
 class _StreakBadge extends StatelessWidget {
   final int days;
@@ -548,9 +517,6 @@ class _StreakBadge extends StatelessWidget {
   }
 }
 
-// ============================================================
-// WEEKLY OVERVIEW
-// ============================================================
 
 class _WeeklyOverviewCard extends StatelessWidget {
   final List<List<int>> data;

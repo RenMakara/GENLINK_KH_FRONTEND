@@ -11,10 +11,6 @@ import '../controllers/splash_controller.dart';
 class SplashBinding extends Bindings {
   @override
   void dependencies() {
-    // Eager, NOT lazyPut. SplashScreen is a plain widget that never calls
-    // Get.find, so a lazy registration would never be constructed and
-    // SplashController.onReady — which does the routing — would never run,
-    // leaving the app parked on the splash screen forever.
     Get.put<SplashController>(
       SplashController(
         authController: Get.find<AuthController>(),

@@ -5,7 +5,6 @@ import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 
-/// Habit Creation Screen for GenLink Productivity.
 class CreateHabitScreen extends StatefulWidget {
   const CreateHabitScreen({super.key});
 
@@ -82,7 +81,6 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
-            // Habit Name
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
@@ -105,7 +103,6 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
             const SizedBox(height: AppSpacing.lg),
 
-            // Frequency Selector
             Text(
               'Frequency',
               style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
@@ -135,7 +132,6 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
             const SizedBox(height: AppSpacing.lg),
 
-            // Time of Day
             Text(
               'Time of Day',
               style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
@@ -179,7 +175,6 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
             const SizedBox(height: AppSpacing.lg),
 
-            // Target Streak Card
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(

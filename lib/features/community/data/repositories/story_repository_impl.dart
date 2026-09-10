@@ -87,19 +87,16 @@ class StoryRepositoryImpl implements StoryRepository {
         }),
       );
 
-      // Ensure the owner's group is present at index 0 (so the user can always tap + to add a story)
       final ownerGroupIdx = remoteGroups.indexWhere((g) =>
           g.isOwner || (currentUserId.isNotEmpty && g.userId == currentUserId));
 
       if (ownerGroupIdx == -1) {
         final ownerGroup = StoryGroupModel(
-          userId: currentUserId.isNotEmpty ? currentUserId : 'user_me',
+          userId: currentUserId.isNotEmpty ? currentUserId : '',
           userName: currentUserName.isNotEmpty && currentUserName != 'Guest'
               ? currentUserName
-              : 'Sokny Enat',
-          userAvatar: currentUserAvatar?.isNotEmpty == true
-              ? currentUserAvatar!
-              : 'assets/images/user_profile.png',
+              : (currentUserId.isNotEmpty ? currentUserId : 'User'),
+          userAvatar: currentUserAvatar ?? '',
           isOwner: true,
           hasUnseen: false,
           stories: [],
@@ -110,11 +107,9 @@ class StoryRepositoryImpl implements StoryRepository {
         final updatedOwnerGroup = StoryGroupModel(
           userId: ownerGroup.userId,
           userName: ownerGroup.userName,
-          userAvatar: ownerGroup.userAvatar.isNotEmpty
-              ? ownerGroup.userAvatar
-              : (currentUserAvatar?.isNotEmpty == true
-                  ? currentUserAvatar!
-                  : 'assets/images/user_profile.png'),
+          userAvatar: currentUserAvatar?.isNotEmpty == true
+              ? currentUserAvatar!
+              : ownerGroup.userAvatar,
           isOwner: true,
           hasUnseen: ownerGroup.hasUnseen,
           stories: ownerGroup.stories,
@@ -137,13 +132,11 @@ class StoryRepositoryImpl implements StoryRepository {
     final currentUserName = CurrentUser.name;
     return [
       StoryGroupModel(
-        userId: currentUserId.isNotEmpty ? currentUserId : 'user_me',
+        userId: currentUserId.isNotEmpty ? currentUserId : '',
         userName: currentUserName.isNotEmpty && currentUserName != 'Guest'
             ? currentUserName
-            : 'Sokny Enat',
-        userAvatar: currentUserAvatar?.isNotEmpty == true
-            ? currentUserAvatar!
-            : 'assets/images/user_profile.png',
+            : (currentUserId.isNotEmpty ? currentUserId : 'User'),
+        userAvatar: currentUserAvatar ?? '',
         isOwner: true,
         hasUnseen: false,
         stories: [],
@@ -184,7 +177,6 @@ class StoryRepositoryImpl implements StoryRepository {
     bool isVideo = type == StoryType.video || (finalMediaUrl.isNotEmpty && _isVideoPath(finalMediaUrl));
     debugPrint('[StoryUpload] Starting Story creation (type: $type, initial mediaUrl: $finalMediaUrl, isVideo: $isVideo)');
 
-    // 1. If local file exists, upload to S3 first
     if (finalMediaUrl.isNotEmpty &&
         !finalMediaUrl.startsWith('http://') &&
         !finalMediaUrl.startsWith('https://')) {
@@ -205,7 +197,6 @@ class StoryRepositoryImpl implements StoryRepository {
         debugPrint('[StoryUpload] Upload completed. CDN media URL: $finalMediaUrl');
       }
     } else if (finalMediaUrl.isEmpty && (type == StoryType.text || layers?.isNotEmpty == true)) {
-      // 2. Text story with canvas / gradient — render in-memory PNG canvas and upload
       if (uploadService != null) {
         try {
           debugPrint('[StoryUpload] Rendering text story canvas to PNG and uploading...');
@@ -232,7 +223,6 @@ class StoryRepositoryImpl implements StoryRepository {
       }
     }
 
-    // 3. Post story to real backend API if client available
     if (client != null && finalMediaUrl.isNotEmpty) {
       debugPrint('[StoryUpload] Posting Story to ${ApiEndpoints.stories} with mediaUrl: $finalMediaUrl');
       final serverStory = await client.post(
@@ -246,11 +236,9 @@ class StoryRepositoryImpl implements StoryRepository {
       );
       debugPrint('[StoryUpload] Story successfully posted to backend, storyId: ${serverStory.id}');
 
-      // Adapt backend data to rich frontend models:
-      // Merge server-assigned metadata (id, createdAt, server mediaUrl) with full frontend properties
       return StoryItemModel(
         id: serverStory.id.isNotEmpty ? serverStory.id : 'story_${DateTime.now().millisecondsSinceEpoch}',
-        type: type, // Preserves exact StoryType (template, text, photo, video)
+        type: type,
         mediaUrl: serverStory.mediaUrl ?? (finalMediaUrl.isNotEmpty ? finalMediaUrl : null),
         textContent: textContent ?? serverStory.textContent,
         location: location,
@@ -268,10 +256,9 @@ class StoryRepositoryImpl implements StoryRepository {
       );
     }
 
-    // Fallback local representation if offline or client is null (e.g. testing)
     return StoryItemModel(
       id: 'story_${DateTime.now().millisecondsSinceEpoch}',
-      type: type, // Preserves exact StoryType (template, text, photo, video)
+      type: type,
       mediaUrl: (finalMediaUrl.isNotEmpty ? finalMediaUrl : (mediaUrl != null && mediaUrl.isNotEmpty ? mediaUrl : null)),
       textContent: textContent,
       location: location,
@@ -291,7 +278,6 @@ class StoryRepositoryImpl implements StoryRepository {
 
   @override
   Future<void> updateStory(String storyId, StoryItemModel updatedStory) async {
-    // Backend has no story update endpoint (stories are immutable 24h posts)
   }
 
   @override
@@ -374,12 +360,10 @@ class StoryRepositoryImpl implements StoryRepository {
 
   @override
   Future<void> toggleLikeStory(String storyId) async {
-    // Stories are viewed/reacted via Chat in backend; no separate story like endpoint
   }
 
   @override
   Future<void> replyToStory(String storyId, String message) async {
-    // Story replies are dispatched via ChatController
   }
 
   StoryItemModel _storyFromJson(Map<String, dynamic> json) {
@@ -468,7 +452,6 @@ class StoryRepositoryImpl implements StoryRepository {
       Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
     );
 
-    // 1. Background gradient
     final bgPaint = Paint()
       ..shader = ui.Gradient.linear(
         Offset.zero,
@@ -480,7 +463,6 @@ class StoryRepositoryImpl implements StoryRepository {
       bgPaint,
     );
 
-    // 2. Primary text content if provided
     final textToDraw = textContent.trim().isNotEmpty
         ? textContent.trim()
         : layers.where((l) => l.type == LayerType.text).map((l) => l.text).join('\n');

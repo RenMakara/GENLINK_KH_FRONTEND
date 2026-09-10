@@ -66,7 +66,6 @@ void main() {
       expect(find.text('Photos permission needed'), findsOneWidget);
       expect(find.text('Allow Photos'), findsOneWidget);
 
-      // Simulate permission granted
       galleryController.hasPermission.value = true;
       await tester.pumpAndSettle();
 
@@ -87,13 +86,11 @@ void main() {
 
       expect(find.text('Select multiple'), findsOneWidget);
 
-      // Tap Select multiple
       await tester.tap(find.text('Select multiple'));
       await tester.pumpAndSettle();
 
       expect(galleryController.isMultiSelectMode.value, true);
 
-      // Toggle off
       await tester.tap(find.text('Select multiple'));
       await tester.pumpAndSettle();
 
@@ -112,7 +109,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Post Story'), findsOneWidget);
-      // No floating toolbar
       expect(find.byTooltip('Duplicate'), findsNothing);
     });
 
@@ -133,21 +129,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Find image layers
       final clipRRects = find.byType(ClipRRect);
       expect(clipRRects, findsWidgets);
 
-      // Tap an image layer to select it
       await tester.tap(clipRRects.first, warnIfMissed: false);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
 
-      // Ensure NO floating toolbar appears
       expect(find.byTooltip('Duplicate'), findsNothing);
       expect(find.byTooltip('Delete'), findsNothing);
 
-      // Publishing button remains active
       expect(find.text('Post Story'), findsOneWidget);
     });
 

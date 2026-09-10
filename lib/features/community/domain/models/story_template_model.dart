@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Represents an individual media/image slot within a Story Template.
 class StoryTemplateSlot {
   final String id;
   String? mediaPath;
@@ -53,48 +52,39 @@ class StoryTemplateSlot {
       );
 }
 
-/// Supported template layout arrangements.
 enum StoryTemplateLayoutType {
-  // Single Photo
   singlePolaroid,
   singleCard,
   singleFramed,
 
-  // Two Photos
   splitVertical,
   splitHorizontal,
   twoDiptych,
 
-  // Three Photos
   threeHeroBottom,
   threeHeroLeft,
   threeColumns,
 
-  // Four Photos
   fourGrid,
   fourHeroStrip,
 
-  // Five Photos
   fiveHeroGrid,
   fiveHeroLeft,
   fiveSplit,
 
-  // Six Photos
   sixGrid,
   sixHeroGrid,
   sixMosaic,
 
-  // Photo + Text
   photoTextPolaroid,
   photoTextQuote,
   photoTextMagazine,
 }
 
-/// Configuration preset for a Story Template.
 class StoryTemplateConfig {
   final String id;
   final String name;
-  final String category; // 'Single', 'Two Photos', 'Three Photos', 'Four Photos', 'Photo + Text'
+  final String category;
   final StoryTemplateLayoutType layoutType;
   final int slotCount;
   final IconData icon;
@@ -117,9 +107,7 @@ class StoryTemplateConfig {
   });
 }
 
-/// Curated library of GenLink Story Templates across all 5 requested categories.
 const List<StoryTemplateConfig> storyTemplatePresets = [
-  // ── 1. SINGLE PHOTO ──
   StoryTemplateConfig(
     id: 'single_polaroid',
     name: 'Polaroid Classic',
@@ -151,7 +139,6 @@ const List<StoryTemplateConfig> storyTemplatePresets = [
     defaultBgColors: [Color(0xFF374151), Color(0xFF111827)],
   ),
 
-  // ── 2. TWO PHOTOS ──
   StoryTemplateConfig(
     id: 'two_split_v',
     name: 'Split Vertical',
@@ -183,7 +170,6 @@ const List<StoryTemplateConfig> storyTemplatePresets = [
     defaultBgColors: [Color(0xFF262626), Color(0xFF0A0A0A)],
   ),
 
-  // ── 3. THREE PHOTOS ──
   StoryTemplateConfig(
     id: 'three_hero_bottom',
     name: '1 Top, 2 Bottom',
@@ -215,7 +201,6 @@ const List<StoryTemplateConfig> storyTemplatePresets = [
     defaultBgColors: [Color(0xFF27272A), Color(0xFF18181B)],
   ),
 
-  // ── 4. FOUR PHOTOS ──
   StoryTemplateConfig(
     id: 'four_grid',
     name: '2x2 Grid',
@@ -237,7 +222,6 @@ const List<StoryTemplateConfig> storyTemplatePresets = [
     defaultBgColors: [Color(0xFF1F2937), Color(0xFF0F172A)],
   ),
 
-  // ── 5. FIVE PHOTOS ──
   StoryTemplateConfig(
     id: 'five_hero_grid',
     name: '1 Top + 4 Grid',
@@ -269,7 +253,6 @@ const List<StoryTemplateConfig> storyTemplatePresets = [
     defaultBgColors: [Color(0xFF27272A), Color(0xFF18181B)],
   ),
 
-  // ── 6. SIX PHOTOS ──
   StoryTemplateConfig(
     id: 'six_grid',
     name: '2x3 Grid',
@@ -301,7 +284,6 @@ const List<StoryTemplateConfig> storyTemplatePresets = [
     defaultBgColors: [Color(0xFF1E293B), Color(0xFF0F172A)],
   ),
 
-  // ── 7. PHOTO + TEXT ──
   StoryTemplateConfig(
     id: 'photo_text_polaroid',
     name: 'Polaroid Note',

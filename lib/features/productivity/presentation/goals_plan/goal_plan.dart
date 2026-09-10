@@ -116,9 +116,6 @@ class _PlanGoalScreenState extends State<PlanGoalScreen> {
             ),
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 36),
             children: [
-              // =========================================================
-              // HEADER
-              // =========================================================
               Row(
                 children: [
                   const AppBackButton(),
@@ -173,9 +170,6 @@ class _PlanGoalScreenState extends State<PlanGoalScreen> {
 
               const SizedBox(height: 18),
 
-              // =========================================================
-              // CATEGORY FILTER
-              // =========================================================
               SizedBox(
                 height: 38,
                 child: ListView.separated(
@@ -223,9 +217,6 @@ class _PlanGoalScreenState extends State<PlanGoalScreen> {
 
               const SizedBox(height: 20),
 
-              // =========================================================
-              // MY GOALS HEADER
-              // =========================================================
               Row(
                 children: [
                   Text(
@@ -248,9 +239,6 @@ class _PlanGoalScreenState extends State<PlanGoalScreen> {
 
               const SizedBox(height: 10),
 
-              // =========================================================
-              // GOALS
-              // =========================================================
               if (filteredGoals.isEmpty)
                 Container(
                   width: double.infinity,
@@ -406,9 +394,6 @@ class _PlanGoalScreenState extends State<PlanGoalScreen> {
 
               const SizedBox(height: 8),
 
-              // =========================================================
-              // UPCOMING MILESTONES
-              // =========================================================
               Row(
                 children: [
                   Text(
@@ -533,9 +518,6 @@ class _PlanGoalScreenState extends State<PlanGoalScreen> {
   }
 }
 
-// =============================================================
-// GOAL MODEL
-// =============================================================
 
 class GoalModel {
   final String category;
@@ -551,9 +533,6 @@ class GoalModel {
   });
 }
 
-// =============================================================
-// MILESTONE MODEL
-// =============================================================
 
 class MilestoneModel {
   final String title;

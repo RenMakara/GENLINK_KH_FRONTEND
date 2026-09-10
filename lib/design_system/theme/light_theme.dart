@@ -5,7 +5,6 @@ import '../radius/app_radius.dart';
 import '../spacing/app_spacing.dart';
 import '../typography/app_text_theme.dart';
 
-/// Light-mode Material tokens, built from design system values only.
 abstract final class LightTheme {
   static ThemeData data({TextTheme? textTheme}) {
     final text = textTheme ?? AppTextTheme.english;
@@ -96,8 +95,6 @@ abstract final class LightTheme {
       ),
       errorStyle: text.bodySmall?.copyWith(color: AppColors.danger),
       enabledBorder: border(AppColors.lightBorderSubtle),
-      // Focus is signalled by the fill, not the outline — the border stays
-      // identical so the field does not appear to grow on tap.
       focusedBorder: border(AppColors.lightBorderSubtle),
       errorBorder: border(AppColors.danger),
       focusedErrorBorder: border(AppColors.danger),

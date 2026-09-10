@@ -12,13 +12,6 @@ import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/services/google_auth_service.dart';
 
-/// Reactive auth state controller.
-///
-/// Manages the full auth lifecycle: login, register, verify, refresh,
-/// logout. Exposes observable state for the UI layer to bind to.
-///
-/// Every action returns a `bool` so screens can decide what to do next
-/// without reading [errorMessage] to infer success.
 class AuthController extends GetxController {
   AuthController({
     required this._authRepository,
@@ -35,30 +28,22 @@ class AuthController extends GetxController {
   final GoogleAuthService _google;
   final void Function()? onSessionCleared;
 
-  /// Seconds a user must wait before requesting another OTP.
   static const resendCooldownSeconds = 60;
 
-  // ── Observable State ──────────────────────────────────────────────────
 
   final isLoading = false.obs;
   final isAuthenticated = false.obs;
   final currentUser = Rxn<UserEntity>();
   final errorMessage = RxnString();
 
-  /// Error code of the last failure, so a screen can branch on the cause
-  /// (a bad OTP versus a rejected password) rather than parsing [errorMessage].
   final lastErrorCode = RxnString();
 
-  /// Email carried from register / forgot-password into the OTP screen,
-  /// so the user never has to retype it.
   final pendingEmail = ''.obs;
 
-  /// Remaining seconds before "resend code" becomes tappable again.
   final resendCooldown = 0.obs;
 
   Timer? _cooldownTimer;
 
-  // ── Lifecycle ─────────────────────────────────────────────────────────
 
   @override
   void onClose() {
@@ -66,14 +51,8 @@ class AuthController extends GetxController {
     super.onClose();
   }
 
-  /// Try to restore a session from secure storage.
-  ///
-  /// Returns `true` when a valid session was restored. Called by splash
-  /// before deciding where to route.
   Future<bool> restoreSession() async {
     try {
-      // Inside the try: a failing keystore read must not propagate, or the
-      // splash screen never reaches its navigation call.
       final token = await _storage.readAccessToken();
       if (token == null || token.isEmpty) return false;
       if (_isDemoToken(token)) {
@@ -83,32 +62,23 @@ class AuthController extends GetxController {
 
       final user = await _authRepository.getCurrentUser();
       if (!user.isActive) {
-        // PENDING / BANNED / DELETED cannot use the app.
         await _clearSession();
         return false;
       }
       currentUser.value = user;
       isAuthenticated.value = true;
-      // Sync, not setLanguage: adopting the account value must not lock
-      // the language against device-following.
       _localization.syncFromAccount(user.preferredLanguage);
       return true;
     } on AppError catch (e) {
-      // Only confirmed authentication/account failures invalidate the
-      // stored session. A timeout, offline launch, or 5xx response must not
-      // destroy a valid refresh token and force the user to sign in again.
       if (e.shouldLogout || e.isAccountBanned || e.isNotFound) {
         await _clearSession();
       }
       return false;
     } catch (_) {
-      // Preserve the stored session for transient or unexpected failures.
-      // Splash can fall back for this launch and retry restoration later.
       return false;
     }
   }
 
-  // ── Login ─────────────────────────────────────────────────────────────
 
   Future<bool> login({required String email, required String password}) {
     return _run(() async {
@@ -121,10 +91,7 @@ class AuthController extends GetxController {
     });
   }
 
-  // ── Register ──────────────────────────────────────────────────────────
 
-  /// Registers the account and sends an OTP. No session is returned —
-  /// the caller should route to the verify screen.
   Future<bool> register({
     required String fullName,
     required String username,
@@ -152,14 +119,7 @@ class AuthController extends GetxController {
     });
   }
 
-  // ── Google Login ──────────────────────────────────────────────────────
 
-  /// Full Google flow: obtain an ID token on device, then exchange it for a
-  /// session. The backend creates the account when the email is new, so this
-  /// is both "sign in" and "sign up".
-  ///
-  /// Returns `false` without setting an error when the user simply dismissed
-  /// the Google account picker — a cancel is not a failure.
   Future<bool> signInWithGoogle() async {
     isLoading.value = true;
     errorMessage.value = null;
@@ -184,7 +144,6 @@ class AuthController extends GetxController {
     }
   }
 
-  /// Exchanges an existing Google ID token for a GenLink session.
   Future<bool> googleLogin({required String idToken}) {
     return _run(() async {
       final session = await _authRepository.googleLogin(idToken: idToken);
@@ -193,10 +152,7 @@ class AuthController extends GetxController {
     });
   }
 
-  // ── Verify Email ──────────────────────────────────────────────────────
 
-  /// Verifies the OTP. The backend returns a full token pair here, so a
-  /// successful verification signs the user straight in.
   Future<bool> verifyEmail({required String email, required String otp}) {
     return _run(() async {
       final session = await _authRepository.verifyEmail(email: email, otp: otp);
@@ -205,7 +161,6 @@ class AuthController extends GetxController {
     });
   }
 
-  // ── Resend OTP ────────────────────────────────────────────────────────
 
   Future<bool> resendOtp({required String email}) {
     return _run(() async {
@@ -223,7 +178,6 @@ class AuthController extends GetxController {
     });
   }
 
-  // ── Password Reset ────────────────────────────────────────────────────
 
   Future<bool> forgotPassword({required String email}) {
     return _run(() async {
@@ -249,24 +203,17 @@ class AuthController extends GetxController {
     });
   }
 
-  // ── Logout ───────────────────────────────────────────────────────────
 
   Future<void> logout() async {
     try {
-      // Clear the cached Google account too, otherwise the next sign-in
-      // silently reuses it and the account picker never appears.
       await _google.signOut();
       await _authRepository.logout();
     } catch (_) {
-      // Always clear local state, even if the server call fails —
-      // otherwise a network blip would trap the user in the session.
     }
     await _clearSession();
     Get.offAllNamed<void>(AppRoutes.login);
   }
 
-  /// Called by the network layer when a token refresh fails and the
-  /// session is unrecoverable.
   Future<void> onSessionExpired() async {
     isAuthenticated.value = false;
     currentUser.value = null;
@@ -274,12 +221,9 @@ class AuthController extends GetxController {
     Get.offAllNamed<void>(AppRoutes.login);
   }
 
-  // ── Profile sync ─────────────────────────────────────────────────────
 
-  /// Keep the cached user in step after a profile or settings update.
   void updateCachedUser(UserEntity user) => currentUser.value = user;
 
-  // ── Cooldown ─────────────────────────────────────────────────────────
 
   void startResendCooldown() {
     _cooldownTimer?.cancel();
@@ -294,10 +238,7 @@ class AuthController extends GetxController {
     });
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────
 
-  /// Runs [action] with loading + error handling, returning `false` on
-  /// any failure.
   Future<bool> _run(Future<bool> Function() action) async {
     isLoading.value = true;
     errorMessage.value = null;
@@ -331,8 +272,6 @@ class AuthController extends GetxController {
       refreshToken: session.refreshToken.trim(),
     );
 
-    // Read back the value so a successful HTTP response cannot be mistaken
-    // for an authenticated session when persistence silently fails.
     final savedAccessToken = await _storage.readAccessToken();
     final tokenSaved = savedAccessToken == accessToken;
     if (kDebugMode) {
@@ -355,9 +294,6 @@ class AuthController extends GetxController {
     currentUser.value = session.user;
     isAuthenticated.value = true;
     pendingEmail.value = '';
-    // Adopt the account's language so system content comes back localized —
-    // as a sync, so device-following keeps working for users who never
-    // explicitly chose.
     _localization.syncFromAccount(session.user.preferredLanguage);
   }
 

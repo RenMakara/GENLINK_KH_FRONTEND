@@ -6,7 +6,6 @@ import '../../domain/repositories/finance_repository.dart';
 import '../formatters/finance_localization.dart';
 import 'finance_controller.dart';
 
-/// Loads the backend's currency- and month-scoped cash-flow aggregate.
 class CashFlowController extends GetxController {
   CashFlowController({
     required this._repository,
@@ -51,8 +50,6 @@ class CashFlowController extends GetxController {
   Future<void> load() async {
     final request = ++_requestSequence;
     isLoading.value = true;
-    // A scoped load supersedes an in-flight refresh. The stale refresh cannot
-    // clear its guarded indicator after this request sequence changes.
     isRefreshing.value = false;
     errorMessage.value = null;
     cashFlow.value = null;
@@ -64,8 +61,6 @@ class CashFlowController extends GetxController {
   Future<void> refresh() async {
     final request = ++_requestSequence;
     isRefreshing.value = true;
-    // A refresh supersedes an in-flight scoped load. Clear its indicator now
-    // because the stale load will not clear it after being invalidated.
     isLoading.value = false;
     errorMessage.value = null;
     try {

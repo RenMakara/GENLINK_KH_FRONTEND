@@ -6,13 +6,6 @@ import '../../domain/repositories/finance_repository.dart';
 import '../formatters/finance_localization.dart';
 import 'finance_controller.dart';
 
-/// Owns the server-backed Expense list and its CRUD operations.
-///
-/// The selected currency is shared with the dashboard.  Every list request
-/// therefore carries the currently selected currency and category to the
-/// backend, while pagination is kept local to this controller.  Mutation
-/// methods only update state after the backend confirms the operation and then
-/// reload both the list and the dashboard.
 class ExpenseController extends GetxController {
   ExpenseController({
     required this._repository,
@@ -66,17 +59,10 @@ class ExpenseController extends GetxController {
     super.onClose();
   }
 
-  /// Loads page zero for the current currency/category combination.
   Future<void> loadInitial() async {
     final request = ++_requestSequence;
     isInitialLoading.value = true;
-    // A new initial load supersedes an in-flight refresh. Clear that stale
-    // indicator now because the superseded refresh will not clear it in its
-    // guarded finally block.
     isRefreshing.value = false;
-    // A reset supersedes any in-flight page request. Clear the indicator here
-    // because the stale request must not clear a newer request's state in its
-    // finally block.
     isLoadingMore.value = false;
     listErrorMessage.value = null;
     paginationErrorMessage.value = null;
@@ -89,25 +75,15 @@ class ExpenseController extends GetxController {
     }
   }
 
-  /// Pull-to-refresh keeps the active filters and replaces page zero.
   @override
   Future<void> refresh() async {
     final request = ++_requestSequence;
     isRefreshing.value = true;
-    // A refresh supersedes an in-flight initial load. Clear that stale
-    // indicator now because the superseded load will not clear it after its
-    // request sequence is invalidated.
     isInitialLoading.value = false;
-    // Refresh invalidates an in-flight next-page request. Without resetting
-    // this flag, that stale request's guarded finally block can leave
-    // pagination disabled forever.
     isLoadingMore.value = false;
     listErrorMessage.value = null;
     paginationErrorMessage.value = null;
     try {
-      // Keep the currently rendered rows until the replacement page succeeds;
-      // a transient refresh failure must not turn a usable list into an empty
-      // screen.
       await _loadPage(request, page: 0, replace: true);
     } finally {
       if (request == _requestSequence) isRefreshing.value = false;
@@ -119,8 +95,6 @@ class ExpenseController extends GetxController {
     _suppressCurrencyWorker = true;
     try {
       selectedCurrency.value = currency;
-      // The dashboard is currency-scoped too; reload it through its existing
-      // controller while this controller resets the filtered list.
       await Future.wait<void>([
         _financeController.loadDashboard(currency: currency),
         loadInitial(),

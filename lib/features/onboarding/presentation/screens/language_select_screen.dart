@@ -7,7 +7,6 @@ import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../controllers/language_select_controller.dart';
 
-/// "Choose your language" — step 1 of the first-run flow.
 class LanguageSelectScreen extends GetView<LanguageSelectController> {
   const LanguageSelectScreen({super.key});
 
@@ -57,9 +56,6 @@ class LanguageSelectScreen extends GetView<LanguageSelectController> {
                       () => Column(
                         children: [
                           _LanguageOption(
-                            // Always shown in its own script — a user who
-                            // cannot read the current language still
-                            // recognises theirs.
                             title: 'ភាសាខ្មែរ',
                             subtitle: 'Khmer',
                             selected:
@@ -177,8 +173,6 @@ class LanguageSelectScreen extends GetView<LanguageSelectController> {
   }
 }
 
-/// A selectable language card: filled and checked when active, quiet
-/// surface with an empty ring when not.
 class _LanguageOption extends StatelessWidget {
   const _LanguageOption({
     required this.title,

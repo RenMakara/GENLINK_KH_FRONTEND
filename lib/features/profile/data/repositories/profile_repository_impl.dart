@@ -54,7 +54,6 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Future<PublicProfileEntity> getPublicProfile(String username) =>
       _remote.getPublicProfile(username);
 
-  // ── Interests ─────────────────────────────────────────────────────────
 
   @override
   Future<List<InterestEntity>> getInterestCatalog() =>
@@ -67,7 +66,6 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Future<List<InterestEntity>> replaceInterests(List<String> interestIds) =>
       _remote.replaceInterests(interestIds);
 
-  // ── Portfolio ─────────────────────────────────────────────────────────
 
   @override
   Future<List<PortfolioItemEntity>> getPortfolio() => _remote.getPortfolio();
@@ -112,7 +110,6 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Future<void> deletePortfolioItem(String portfolioId) =>
       _remote.deletePortfolioItem(portfolioId);
 
-  // ── Badges & saved ────────────────────────────────────────────────────
 
   @override
   Future<List<BadgeEntity>> getBadges() => _remote.getBadges();
@@ -120,7 +117,6 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<List<SavedItemEntity>> getSavedItems() => _remote.getSavedItems();
 
-  // ── Social links ──────────────────────────────────────────────────────
 
   @override
   Future<List<SocialLinkEntity>> getSocialLinks() => _remote.getSocialLinks();
@@ -137,8 +133,6 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Future<void> deleteSocialLink(String platform) =>
       _remote.deleteSocialLink(platform);
 
-  /// `title` is required by the backend; the rest are dropped when blank so
-  /// an empty text field clears rather than storing "".
   static Map<String, dynamic> _portfolioBody({
     required String title,
     String? description,

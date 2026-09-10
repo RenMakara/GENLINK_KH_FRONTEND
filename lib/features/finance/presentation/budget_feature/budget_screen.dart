@@ -11,11 +11,6 @@ import 'package:genlink_frontend/features/finance/presentation/budget_feature/bu
 import 'package:genlink_frontend/features/finance/presentation/controllers/budget_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
 
-/// Backend-backed monthly budget view.
-///
-/// The API exposes the current budget as a currency/month/year-scoped
-/// resource. This screen intentionally does not use the unfiltered historical
-/// list endpoint, so USD and KHR can never appear together.
 class BudgetScreen extends GetView<BudgetController> {
   const BudgetScreen({super.key});
 
@@ -200,7 +195,6 @@ class _CurrencyBar extends StatelessWidget {
             height: 40,
             child: Stack(
               children: [
-                // Sliding selected background
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeInOut,
@@ -216,7 +210,6 @@ class _CurrencyBar extends StatelessWidget {
                   ),
                 ),
 
-                // Currency buttons
                 Row(
                   children: currencies.map((currency) {
                     final selected = currency == value;

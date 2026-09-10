@@ -6,13 +6,10 @@ abstract final class AppTextTheme {
   static TextTheme english = _build(AppTypography.englishFontFamily, isKhmer: false);
   static TextTheme khmer = _build(AppTypography.khmerFontFamily, isKhmer: true);
 
-  /// Resolve the text theme for a locale code (`en` / `km`).
   static TextTheme forLanguageCode(String code) =>
       code == 'km' ? khmer : english;
 
   static TextTheme _build(String family, {required bool isKhmer}) {
-    // Khmer characters are visually heavier and smaller than Latin ones.
-    // We increase size, increase line height, and reduce weight for Khmer.
     double size(double s) => isKhmer ? s + 2.0 : s;
     double height(double h) => isKhmer ? h + 0.15 : h;
     

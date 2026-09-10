@@ -9,10 +9,6 @@ import '../../../../design_system/widgets/inputs/app_input.dart';
 import '../controllers/auth_controller.dart';
 import '../widgets/auth_scaffold.dart';
 
-/// Step 1 of password reset: request an OTP.
-///
-/// The backend is deliberately anti-enumeration here — the response is the
-/// same whether or not the email exists, so the UI must not imply either.
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -37,7 +33,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     FocusScope.of(context).unfocus();
 
     final success = await _auth.forgotPassword(email: _email.text.trim());
-    // Straight to code entry; the new password comes after that.
     if (success) Get.toNamed<void>(AppRoutes.resetOtp);
   }
 

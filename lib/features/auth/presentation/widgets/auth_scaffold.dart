@@ -4,13 +4,6 @@ import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import 'animated_auth_background.dart';
 
-/// Shared frame for every auth screen: floating back button, an optional
-/// title/subtitle block, a scrollable body that survives the keyboard, and
-/// a pinned footer.
-///
-/// Pass [title] for the standard header. Screens that need a custom header
-/// (an icon badge, a rich subtitle) leave it null and render their own as
-/// the first entry in [children].
 class AuthScaffold extends StatelessWidget {
   const AuthScaffold({
     super.key,
@@ -49,8 +42,6 @@ class AuthScaffold extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // The back control floats over the page instead of
-                      // living in an app bar, as in the design.
                       if (showBack) ...[
                         const Align(
                           alignment: Alignment.centerLeft,
@@ -96,7 +87,6 @@ class AuthScaffold extends StatelessWidget {
   }
 }
 
-/// Circular badge holding a single icon, used above a screen's title.
 class AuthBadgeIcon extends StatelessWidget {
   const AuthBadgeIcon({super.key, required this.icon, this.size = 72});
 
@@ -122,7 +112,6 @@ class AuthBadgeIcon extends StatelessWidget {
   }
 }
 
-/// "or" separator between the primary action and the social sign-in.
 class AuthOrDivider extends StatelessWidget {
   const AuthOrDivider({super.key, this.label = 'or'});
 
@@ -149,7 +138,6 @@ class AuthOrDivider extends StatelessWidget {
   }
 }
 
-/// Inline error banner for a failed auth request.
 class AuthErrorBanner extends StatelessWidget {
   const AuthErrorBanner({super.key, required this.message});
 

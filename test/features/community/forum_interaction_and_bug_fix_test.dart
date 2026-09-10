@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
+import 'package:genlink_frontend/features/community/domain/models/community_models.dart';
 import 'package:genlink_frontend/features/community/domain/models/community_post_model.dart';
 import 'package:genlink_frontend/features/community/domain/repositories/community_repository.dart';
 import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
@@ -76,8 +77,53 @@ class _MockCommunityRepository implements CommunityRepository {
   @override
   Future<bool> checkIsFollowing(String userId) async => false;
 
+  final List<ForumTopicModel> discussionsStore = [
+    ForumTopicModel(
+      id: 'disc_1',
+      title: 'Best practices for GetX state management in Flutter Community App',
+      content: 'Best practices for GetX state management in Flutter Community App content body',
+      category: 'Technology',
+      authorName: 'Sokny Enat',
+      authorAvatar: 'assets/images/user_profile.png',
+      timeAgo: '2h ago',
+      upvotes: 89,
+      repliesCount: 34,
+      isLiked: false,
+    ),
+  ];
+
   @override
-  Future<bool> toggleDiscussionLike(String discussionId) async => true;
+  Future<List<ForumTopicModel>> getDiscussions({String? category, int page = 1, int limit = 20}) async =>
+      List.from(discussionsStore);
+
+  @override
+  Future<ForumTopicModel> createDiscussion({
+    required String title,
+    required String content,
+    required String category,
+    bool anonymous = false,
+  }) async {
+    final newTopic = ForumTopicModel(
+      id: 'disc_${DateTime.now().millisecondsSinceEpoch}',
+      authorId: 'user_1',
+      authorName: 'Test User',
+      authorAvatar: '',
+      title: title,
+      content: content,
+      category: category,
+      timeAgo: 'Just now',
+      upvotes: 0,
+      repliesCount: 0,
+    );
+    discussionsStore.insert(0, newTopic);
+    return newTopic;
+  }
+
+  @override
+  Future<bool> toggleDiscussionLike(
+    String discussionId, {
+    bool isCurrentlyLiked = false,
+  }) async => true;
 
   @override
   Future<List<CommentModel>> getDiscussionComments(String discussionId) async =>
@@ -137,35 +183,27 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Switch to Forum tab
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
-      // Initial first discussion like count is 89
       expect(find.text('89'), findsOneWidget);
       expect(find.byType(CreateDiscussionScreen), findsNothing);
 
-      // Tap on the Like icon of the first discussion card
       final firstLikeIcon = find.byIcon(Icons.favorite_border_rounded).first;
       await tester.tap(firstLikeIcon);
       await tester.pumpAndSettle();
 
-      // Like count should increment to 90
       expect(find.text('90'), findsOneWidget);
 
-      // Verify CreateDiscussionScreen did NOT open
       expect(find.byType(CreateDiscussionScreen), findsNothing);
       expect(find.byType(CommunityScreen), findsOneWidget);
 
-      // Tap on the Like icon again to unlike
       final firstLikedIcon = find.byIcon(Icons.favorite_rounded).first;
       await tester.tap(firstLikedIcon);
       await tester.pumpAndSettle();
 
-      // Like count should decrement back to 89
       expect(find.text('89'), findsOneWidget);
 
-      // Still no CreateDiscussionScreen opened
       expect(find.byType(CreateDiscussionScreen), findsNothing);
     });
 
@@ -189,17 +227,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Switch to Forum tab
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
-      // Tap on a discussion title
       final titleFinder = find.text('Best practices for GetX state management in Flutter Community App');
       expect(titleFinder, findsOneWidget);
       await tester.tap(titleFinder);
       await tester.pumpAndSettle();
 
-      // Should open ForumDiscussionScreen (Discussion Details)
       expect(find.byType(ForumDiscussionScreen), findsOneWidget);
       expect(find.byType(CreateDiscussionScreen), findsNothing);
     });
@@ -224,16 +259,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Switch to Forum tab
       await tester.tap(find.text('Forum'));
       await tester.pumpAndSettle();
 
-      // Tap on comments row
       final commentsRowFinder = find.byIcon(Icons.chat_bubble_outline_rounded).first;
       await tester.tap(commentsRowFinder);
       await tester.pumpAndSettle();
 
-      // Should open ForumDiscussionScreen
       expect(find.byType(ForumDiscussionScreen), findsOneWidget);
       expect(find.byType(CreateDiscussionScreen), findsNothing);
     });
@@ -251,38 +283,32 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Find Publish button
       final publishButtonFinder = find.byType(ElevatedButton);
       expect(publishButtonFinder, findsOneWidget);
 
       final initialButton = tester.widget<ElevatedButton>(publishButtonFinder);
-      expect(initialButton.onPressed, isNull); // Disabled when fields are empty
+      expect(initialButton.onPressed, isNull);
 
-      // Select Category
       await tester.tap(find.text('community.selectCategory'.tr));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Technology').last);
       await tester.pumpAndSettle();
 
-      // Enter Title
       final textFields = find.byType(TextField);
       await tester.enterText(textFields.at(0), 'New Flutter Topic');
       await tester.pump();
 
-      // Enter Content
       await tester.enterText(textFields.at(1), 'Detailed content about Flutter architecture.');
       await tester.pump();
 
       final enabledButton = tester.widget<ElevatedButton>(publishButtonFinder);
-      expect(enabledButton.onPressed, isNotNull); // Enabled when valid
+      expect(enabledButton.onPressed, isNotNull);
     });
 
     testWidgets('TEST 6: Submitting CreateDiscussionScreen adds topic to controller', (tester) async {
       final controller = CommunityController(repository: _MockCommunityRepository());
       Get.put<CommunityController>(controller);
-
-      final initialLatestCount = controller.forumLatestDiscussions.length;
 
       await tester.pumpWidget(
         GetMaterialApp(
@@ -293,14 +319,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Select Category
+      final initialLatestCount = controller.forumLatestDiscussions.length;
+
       await tester.tap(find.text('community.selectCategory'.tr));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Technology').last);
       await tester.pumpAndSettle();
 
-      // Enter Title & Content
       final textFields = find.byType(TextField);
       await tester.enterText(textFields.at(0), 'Created from Test');
       await tester.pump();
@@ -308,12 +334,10 @@ void main() {
       await tester.enterText(textFields.at(1), 'Content body here.');
       await tester.pump();
 
-      // Tap Publish
       await tester.tap(find.byType(ElevatedButton));
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
-      // Controller should have 1 more latest discussion at index 0
       expect(controller.forumLatestDiscussions.length, initialLatestCount + 1);
       expect(controller.forumLatestDiscussions.first.title, 'Created from Test');
       expect(controller.forumLatestDiscussions.first.category, 'Technology');

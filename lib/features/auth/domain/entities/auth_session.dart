@@ -1,6 +1,5 @@
 import 'user_entity.dart';
 
-/// Represents the authenticated session after a successful login.
 class AuthSession {
   const AuthSession({
     required this.accessToken,

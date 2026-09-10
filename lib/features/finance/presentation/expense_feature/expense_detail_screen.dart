@@ -8,8 +8,6 @@ import 'package:genlink_frontend/features/finance/presentation/controllers/expen
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_detail_widget.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
 
-/// Expense detail view.  The legacy string-based constructor remains
-/// available for compatibility; backend-backed lists use [fromEntity].
 class ExpenseDetailScreen extends StatelessWidget {
   const ExpenseDetailScreen({
     super.key,

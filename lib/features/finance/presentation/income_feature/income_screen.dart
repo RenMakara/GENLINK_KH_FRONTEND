@@ -15,7 +15,6 @@ import 'package:genlink_frontend/features/finance/presentation/income_feature/in
 import 'package:genlink_frontend/features/finance/presentation/income_feature/income_detail_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/cash_flow_feature/cash_flow_screen.dart';
 
-/// Minimal backend-driven Income list and entry point for Income CRUD.
 class IncomeScreen extends StatefulWidget {
   const IncomeScreen({super.key});
 
@@ -65,7 +64,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Same colors as BudgetScreen
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
 
     final surface = isDark
@@ -109,7 +107,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
               ),
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 36),
               children: [
-                // HEADER
                 Row(
                   children: [
                     AppBackButton(),
@@ -160,8 +157,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
 
                 const SizedBox(height: 14),
 
-                // CURRENCY BAR
-                // Same color setup as BudgetScreen
                 _CurrencyBar(
                   value: controller.selectedCurrency.value,
                   onChanged: controller.selectCurrency,
@@ -174,7 +169,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
 
                 const SizedBox(height: 14),
 
-                // SOURCE FILTER
                 Row(
                   children: [
                     Expanded(
@@ -224,7 +218,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
 
                 const SizedBox(height: 8),
 
-                // CONTENT
                 if (loading && incomes.isEmpty)
                   const SizedBox(height: 280, child: AppLoader())
                 else if (error != null && incomes.isEmpty)
@@ -319,7 +312,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
   }
 }
 
-// CURRENCY BAR
 class _CurrencyBar extends StatelessWidget {
   const _CurrencyBar({
     required this.value,
@@ -359,7 +351,6 @@ class _CurrencyBar extends StatelessWidget {
             height: 40,
             child: Stack(
               children: [
-                // SLIDING SELECTED BACKGROUND
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeInOut,
@@ -375,7 +366,6 @@ class _CurrencyBar extends StatelessWidget {
                   ),
                 ),
 
-                // CURRENCY OPTIONS
                 Row(
                   children: currencies.map((currency) {
                     final selected = currency == value;
@@ -410,7 +400,6 @@ class _CurrencyBar extends StatelessWidget {
   }
 }
 
-// PAGINATION ERROR
 
 class _PaginationError extends StatelessWidget {
   const _PaginationError({
@@ -441,7 +430,6 @@ class _PaginationError extends StatelessWidget {
   }
 }
 
-// INCOME ICON
 IconData _sourceIcon() {
   return Icons.trending_up_rounded;
 }

@@ -9,11 +9,6 @@ import '../../../../design_system/widgets/loaders/app_loader.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../controllers/profile_controller.dart';
 
-/// Backend-backed expertise and interests editor.
-///
-/// The visual grouping follows the supplied design, while every selectable
-/// value still comes from the server catalog. Arbitrary text is never sent as
-/// a fabricated interest id.
 class InterestsScreen extends StatefulWidget {
   const InterestsScreen({super.key});
 

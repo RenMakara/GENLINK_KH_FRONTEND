@@ -7,8 +7,6 @@ import 'package:genlink_frontend/features/finance/domain/entities/finance_entiti
 import 'package:genlink_frontend/features/finance/presentation/controllers/expense_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_add_widget.dart';
 
-/// Add and edit Expense form.  The same screen is used for both operations so
-/// update semantics stay identical to the backend's PUT contract.
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key, this.expense});
 

@@ -23,9 +23,6 @@ class _FocusPageState extends State<FocusPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ==================================================
-              // HEADER
-              // ==================================================
               FocusHeader(
                 title: 'Focus',
                 onBack: () {
@@ -35,9 +32,6 @@ class _FocusPageState extends State<FocusPage> {
 
               const SizedBox(height: 12),
 
-              // ==================================================
-              // FOCUS MODES
-              // ==================================================
               FocusModes(
                 modes: [
                   FocusModeData(
@@ -77,16 +71,10 @@ class _FocusPageState extends State<FocusPage> {
 
               const SizedBox(height: 10),
 
-              // ==================================================
-              // AMBIENT SOUNDS TITLE
-              // ==================================================
               const FocusSectionTitle(title: 'Ambient Sounds'),
 
               const SizedBox(height: 7),
 
-              // ==================================================
-              // AMBIENT SOUNDS
-              // ==================================================
               FocusAmbientSounds(
                 selectedIndex: selectedSound,
                 sounds: [
@@ -116,9 +104,6 @@ class _FocusPageState extends State<FocusPage> {
 
               const SizedBox(height: 12),
 
-              // ==================================================
-              // RECENT SESSIONS
-              // ==================================================
               const FocusSectionTitle(title: 'Recent Sessions'),
 
               const SizedBox(height: 7),
@@ -150,9 +135,6 @@ class _FocusPageState extends State<FocusPage> {
 
               const SizedBox(height: 10),
 
-              // ==================================================
-              // START BUTTON
-              // ==================================================
               FocusStartButton(
                 text: 'Start Focus Session',
                 onTap: () async {
@@ -162,8 +144,6 @@ class _FocusPageState extends State<FocusPage> {
 
                   if (!mounted) return;
 
-                  // TODO:
-                  // Navigate to Focus Timer screen
                 },
               ),
             ],

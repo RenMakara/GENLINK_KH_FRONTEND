@@ -33,14 +33,11 @@ class _PollWidgetState extends State<PollWidget> {
 
     int totalVotes = widget.options.fold(0, (sum, opt) => sum + opt.votes);
 
-    // Formatting plural for vote count dynamically as requested
     final String voteText = totalVotes == 1 ? "1 vote" : "$totalVotes votes";
     final String durationText = widget.duration != null
         ? "Ends ${widget.duration}"
         : "Ended";
 
-    // Check expiration based on duration string (e.g. if we map it visually to Ended)
-    // We treat "Ended" as a state that blocks voting.
     final bool isEnded = widget.duration?.toLowerCase() == 'ended';
     final bool canVote = !hasVoted && !isEnded;
 
@@ -52,7 +49,6 @@ class _PollWidgetState extends State<PollWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Question Title
           Text(
             widget.question,
             style:
@@ -71,7 +67,6 @@ class _PollWidgetState extends State<PollWidget> {
           ),
           const SizedBox(height: 16),
 
-          // 2. Poll Option Progress Cards
           ...widget.options.map((opt) {
             final double pctRatio = totalVotes > 0
                 ? (opt.votes / totalVotes).clamp(0.0, 1.0)
@@ -100,7 +95,6 @@ class _PollWidgetState extends State<PollWidget> {
 
           const SizedBox(height: 8),
 
-          // 3. Footer Subtitle
           Text(
             "$voteText • $durationText",
             style:
@@ -190,7 +184,6 @@ class _PollOptionWidgetState extends State<PollOptionWidget>
     final theme = Theme.of(context);
     final isVoted = widget.option.isVoted;
 
-    // Strict Monochrome Styling
     final Color unselectedBg = widget.isDark
         ? const Color(0xFF1E1E1E)
         : const Color(0xFFF3F4F6);
@@ -236,7 +229,6 @@ class _PollOptionWidgetState extends State<PollOptionWidget>
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Smooth Fill Animation Bar
                 if (widget.showResults)
                   Positioned.fill(
                     child: Align(
@@ -251,14 +243,13 @@ class _PollOptionWidgetState extends State<PollOptionWidget>
                             color: isVoted ? selectedFill : unselectedFill,
                             borderRadius: BorderRadius.circular(
                               13,
-                            ), // 1px less than 14 for border inset
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
 
-                // Option Title & Percentage Row
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(

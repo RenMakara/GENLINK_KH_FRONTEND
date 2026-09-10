@@ -8,8 +8,6 @@ import 'package:genlink_frontend/features/media/domain/media_upload_service.dart
 import 'package:genlink_frontend/features/media/domain/repositories/media_repository.dart';
 import 'package:genlink_frontend/features/media/presentation/media_picker.dart';
 
-/// Records what the service asked for, so the orchestration can be asserted
-/// without a network or a filesystem.
 class _FakeMediaRepository implements MediaRepository {
   String? presignedContentType;
   int? presignedSize;
@@ -57,8 +55,6 @@ class _FakeMediaRepository implements MediaRepository {
     onProgress?.call(bytes.length, bytes.length);
   }
 
-  /// Emit a progress event with an unknown total, as Dio does when the
-  /// content length is not known up front.
   void emitUnknownTotal(int sent) => _progressSink?.call(sent, -1);
 
   @override
@@ -118,8 +114,6 @@ void main() {
         purpose: MediaPurpose.avatar,
       );
 
-      // The checksum must describe what actually lands in storage, so it is
-      // computed after any compression the caller applied.
       expect(repository.presignedChecksum, sha256.convert(payload).toString());
       expect(repository.presignedChecksum, hasLength(64));
       expect(repository.uploadedBytes, same(payload));
@@ -230,8 +224,6 @@ void main() {
     });
 
     test('allows a video larger than the image cap', () async {
-      // Video gets the 50 MB ceiling, so a 6 MB clip must not be rejected by
-      // the image rule.
       await service.upload(
         bytes: bytes(MediaUploadService.maxImageBytes + 1),
         contentType: 'video/mp4',
@@ -258,7 +250,6 @@ void main() {
 
   group('MediaPicker', () {
     test('maps video extensions to the container type', () {
-      // The presigned URL signs this value, so it has to match the real file.
       expect(MediaPicker.videoTypeFor('/tmp/a.mp4'), 'video/mp4');
       expect(MediaPicker.videoTypeFor('/tmp/a.MOV'), 'video/quicktime');
       expect(MediaPicker.videoTypeFor('/tmp/a.webm'), 'video/webm');

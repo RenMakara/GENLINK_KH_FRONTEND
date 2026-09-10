@@ -3,13 +3,10 @@ import 'package:get/get.dart';
 
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 
-// PRIORITY
 enum TaskPriorityOption { high, medium, low }
 
-// CATEGORY
 enum TaskCategoryOption { study, work, personal, health, other }
 
-// SUBTASK DATA
 class CreateSubtaskData {
   final String title;
   final bool completed;
@@ -24,7 +21,6 @@ class CreateSubtaskData {
   }
 }
 
-// COLORS
 class CreateTaskColors {
   final bool isDark;
 
@@ -63,7 +59,6 @@ class CreateTaskColors {
       isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse;
 }
 
-// CREATE TASK LAYOUT
 class CreateTaskLayout extends StatelessWidget {
   final TextEditingController titleController;
   final TextEditingController descriptionController;
@@ -132,7 +127,6 @@ class CreateTaskLayout extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // TITLE
                     _SectionLabel(
                       text: 'task.create.taskTitle'.tr,
                       colors: colors,
@@ -147,7 +141,6 @@ class CreateTaskLayout extends StatelessWidget {
 
                     const SizedBox(height: 18),
 
-                    // DESCRIPTION
                     _SectionLabel(
                       text: 'task.create.description'.tr,
                       colors: colors,
@@ -162,7 +155,6 @@ class CreateTaskLayout extends StatelessWidget {
 
                     const SizedBox(height: 20),
 
-                    // PRIORITY
                     _SectionLabel(
                       text: 'task.create.priority'.tr,
                       colors: colors,
@@ -180,7 +172,6 @@ class CreateTaskLayout extends StatelessWidget {
 
                     const SizedBox(height: 20),
 
-                    // CATEGORY
                     _SectionLabel(
                       text: 'task.create.category'.tr,
                       colors: colors,
@@ -200,7 +191,6 @@ class CreateTaskLayout extends StatelessWidget {
 
                     const SizedBox(height: 20),
 
-                    // DUE DATE
                     _SectionLabel(
                       text: 'task.create.dueDate'.tr,
                       colors: colors,
@@ -218,7 +208,6 @@ class CreateTaskLayout extends StatelessWidget {
 
                     const SizedBox(height: 18),
 
-                    // REMINDER
                     _SectionLabel(
                       text: 'task.create.reminder'.tr,
                       colors: colors,
@@ -236,7 +225,6 @@ class CreateTaskLayout extends StatelessWidget {
 
                     const SizedBox(height: 20),
 
-                    // SUBTASKS
                     _SectionLabel(
                       text: 'task.create.subtasks'.tr,
                       colors: colors,
@@ -254,7 +242,6 @@ class CreateTaskLayout extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
-                    // SAVE
                     CreateTaskSaveButton(
                       text: 'task.create.save'.tr,
                       onTap: onSave,
@@ -274,7 +261,6 @@ class CreateTaskLayout extends StatelessWidget {
   }
 }
 
-// TOP BAR
 class CreateTaskTopBar extends StatelessWidget {
   final String title;
   final VoidCallback onBack;
@@ -343,7 +329,6 @@ class CreateTaskTopBar extends StatelessWidget {
   }
 }
 
-// SECTION LABEL
 class _SectionLabel extends StatelessWidget {
   final String text;
   final CreateTaskColors colors;
@@ -364,7 +349,6 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// TITLE FIELD
 class CreateTaskTitleField extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
@@ -399,7 +383,6 @@ class CreateTaskTitleField extends StatelessWidget {
           fontWeight: FontWeight.w500,
         ),
 
-        // Clean icon - NO background
         prefixIcon: Icon(
           Icons.title_rounded,
           size: 19,
@@ -429,7 +412,6 @@ class CreateTaskTitleField extends StatelessWidget {
           borderSide: BorderSide(color: colors.border),
         ),
 
-        // Focus stays monochrome
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
           borderSide: BorderSide(color: colors.borderStrong, width: 1.2),
@@ -439,7 +421,6 @@ class CreateTaskTitleField extends StatelessWidget {
   }
 }
 
-// DESCRIPTION FIELD
 class CreateTaskDescriptionField extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
@@ -502,7 +483,6 @@ class CreateTaskDescriptionField extends StatelessWidget {
   }
 }
 
-// PRIORITY SELECTOR
 class CreatePrioritySelector extends StatelessWidget {
   final TaskPriorityOption selected;
 
@@ -560,7 +540,6 @@ class CreatePrioritySelector extends StatelessWidget {
   }
 }
 
-// PRIORITY OPTION
 class _PriorityOption extends StatelessWidget {
   final String label;
   final Color color;
@@ -636,7 +615,6 @@ class _PriorityOption extends StatelessWidget {
   }
 }
 
-// CATEGORY SELECTOR
 class CreateCategorySelector extends StatelessWidget {
   final TaskCategoryOption selected;
 
@@ -674,10 +652,8 @@ class CreateCategorySelector extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
 
-        // Nice mobile scrolling
         physics: const BouncingScrollPhysics(),
 
-        // Prevent unwanted extra padding
         padding: EdgeInsets.zero,
 
         itemCount: categories.length,
@@ -702,7 +678,6 @@ class CreateCategorySelector extends StatelessWidget {
   }
 }
 
-// CATEGORY ITEM
 class _CategoryItem {
   final TaskCategoryOption type;
   final String label;
@@ -710,7 +685,6 @@ class _CategoryItem {
   const _CategoryItem({required this.type, required this.label});
 }
 
-// CATEGORY CHIP
 class _CategoryChip extends StatelessWidget {
   final String label;
   final bool selected;
@@ -740,9 +714,6 @@ class _CategoryChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
 
           decoration: BoxDecoration(
-            // Selected:
-            // Light -> Black
-            // Dark  -> White
             color: selected ? colors.textPrimary : colors.surfaceSecondary,
 
             borderRadius: BorderRadius.circular(24),
@@ -758,9 +729,6 @@ class _CategoryChip extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                // Selected:
-                // Light -> White
-                // Dark  -> Black
                 color: selected ? colors.inverse : colors.textSecondary,
 
                 fontSize: 11,
@@ -775,7 +743,6 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
-// PICKER FIELD
 class CreateTaskPickerField extends StatelessWidget {
   final String text;
   final IconData icon;
@@ -847,7 +814,6 @@ class CreateTaskPickerField extends StatelessWidget {
   }
 }
 
-// SUBTASK LIST
 class CreateSubtaskList extends StatelessWidget {
   final List<CreateSubtaskData> subtasks;
 
@@ -909,7 +875,6 @@ class CreateSubtaskList extends StatelessWidget {
   }
 }
 
-// SUBTASK ITEM
 class _SubtaskItem extends StatelessWidget {
   final CreateSubtaskData subtask;
 
@@ -998,7 +963,6 @@ class _SubtaskItem extends StatelessWidget {
   }
 }
 
-// ADD SUBTASK FIELD
 class _AddSubtaskField extends StatefulWidget {
   final String hintText;
   final ValueChanged<String> onAdded;
@@ -1032,23 +996,18 @@ class _AddSubtaskFieldState extends State<_AddSubtaskField> {
     });
   }
 
-  // CREATE SUBTASK
   void _submit() {
     final value = _controller.text.trim();
 
-    // Nothing typed
     if (value.isEmpty) {
       _focusNode.requestFocus();
       return;
     }
 
-    // SEND TO PARENT
     widget.onAdded(value);
 
-    // CLEAR CURRENT INPUT
     _controller.clear();
 
-    // KEEP INPUT FOCUSED
     _focusNode.requestFocus();
   }
 
@@ -1072,18 +1031,15 @@ class _AddSubtaskFieldState extends State<_AddSubtaskField> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       child: Row(
         children: [
-          // PLUS ICON - SAME STYLE
           Icon(Icons.add_rounded, size: 18, color: colors.textMuted),
 
           const SizedBox(width: 10),
 
-          // TEXT FIELD
           Expanded(
             child: TextField(
               controller: _controller,
               focusNode: _focusNode,
 
-              // Don't use keyboard Enter to create
               textInputAction: TextInputAction.none,
 
               maxLines: 1,
@@ -1124,7 +1080,6 @@ class _AddSubtaskFieldState extends State<_AddSubtaskField> {
 
           const SizedBox(width: 8),
 
-          // CREATE SUBTASK BUTTON
           Material(
             color: Colors.transparent,
             child: InkWell(
@@ -1151,7 +1106,6 @@ class _AddSubtaskFieldState extends State<_AddSubtaskField> {
   }
 }
 
-// SAVE BUTTON
 class CreateTaskSaveButton extends StatelessWidget {
   final String text;
   final VoidCallback onTap;
@@ -1176,12 +1130,8 @@ class CreateTaskSaveButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           elevation: 0,
 
-          // Light = black
-          // Dark  = white
           backgroundColor: colors.textPrimary,
 
-          // Light = white
-          // Dark  = black
           foregroundColor: colors.inverse,
 
           shadowColor: Colors.transparent,

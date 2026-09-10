@@ -1,6 +1,5 @@
 import '../models/community_models.dart';
 import '../models/community_post_model.dart';
-import '../models/event_requests.dart';
 
 abstract class CommunityRepository {
   Future<List<CommunityPostModel>> getPosts({int page = 1, int limit = 10});

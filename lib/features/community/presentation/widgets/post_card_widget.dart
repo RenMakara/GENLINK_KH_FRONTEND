@@ -2,9 +2,11 @@ import 'dart:io';
 import 'poll_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/shadows/app_shadows.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
@@ -37,6 +39,17 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 
   late AnimationController _bookmarkAnimController;
   late Animation<double> _bookmarkScaleAnim;
+
+  bool _isContentExpanded = false;
+  int _currentImageIndex = 0;
+
+  @override
+  void didUpdateWidget(covariant PostCardWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.post.id != widget.post.id) {
+      _currentImageIndex = 0;
+    }
+  }
 
   @override
   void initState() {
@@ -74,24 +87,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
   }
 
   String _formatTimeAgo(String raw) {
-    final trimmed = raw.trim();
-    if (trimmed == 'Just now' || trimmed.toLowerCase().contains('just now')) {
-      return 'community.justNow'.tr;
-    } else if (trimmed == 'Yesterday') {
-      return 'community.yesterday'.tr;
-    } else if (trimmed == 'Today') {
-      return 'community.today'.tr;
-    } else if (trimmed.endsWith('m ago')) {
-      final min = trimmed.replaceAll('m ago', '').trim();
-      return 'community.minAgo'.trParams({'min': min});
-    } else if (trimmed.endsWith('h ago')) {
-      final hour = trimmed.replaceAll('h ago', '').trim();
-      return 'community.hourAgo'.trParams({'hour': hour});
-    } else if (trimmed.endsWith('d ago')) {
-      final day = trimmed.replaceAll('d ago', '').trim();
-      return '$day ថ្ងៃមុន';
-    }
-    return raw;
+    return formatCommunityTimestamp(raw);
   }
 
   void _onLikeTap() {
@@ -171,10 +167,10 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
   void _confirmDeleteDiscussion(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface =
-        isDark ? const Color(0xFF1E2228) : Colors.white;
-    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+        isDark ? AppColors.darkSurfaceSecondary : Colors.white;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary =
-        isDark ? Colors.white70 : AppColors.lightTextSecondary;
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
     showDialog(
       context: context,
@@ -277,7 +273,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
   void _showMoreMenu(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final surface = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+    final surface = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
 
     final isDiscussion = widget.post.postType == 'DISCUSSION';
@@ -294,7 +290,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 1. Bookmark toggle (Always available)
             Material(
               color: Colors.transparent,
               child: ListTile(
@@ -322,7 +317,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               ),
             ),
 
-            // 2. OTHER USER'S POST OPTIONS: Repost / Unrepost, Report Post
             if (!_isOwnPost) ...[
               if (!isDiscussion)
                 Material(
@@ -384,7 +378,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               ),
             ],
 
-            // 3. OWN POST OPTIONS: Edit Post, Delete Post (NO REPOST)
             if (_isOwnPost) ...[
               Material(
                 color: Colors.transparent,
@@ -590,29 +583,25 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final surfaceSecondary = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
     final actionIconColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      margin: const EdgeInsets.only(bottom: 12.0),
       decoration: BoxDecoration(
         color: surfaceSecondary,
-        borderRadius: BorderRadius.circular(AppRadius.squircle),
-        border: Border.all(color: borderSubtle, width: 1.0),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: borderSubtle.withValues(alpha: isDark ? 0.45 : 0.75),
+          width: 0.6,
+        ),
         boxShadow: isDark
-            ? []
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+            ? AppShadows.cardDark
+            : AppShadows.cardLight,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Repost Header Banner
           if (widget.post.repostedBy != null)
             Padding(
               padding: const EdgeInsets.only(
@@ -623,7 +612,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.repeat_rounded, color: AppColors.darkTextSecondary, size: 16),
+                  Icon(Icons.repeat_rounded, color: textSecondary, size: 16),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -641,7 +630,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               ),
             ),
 
-          // Optional Repost Quote Caption
           if (widget.post.repostCaption != null && widget.post.repostCaption!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(
@@ -661,7 +649,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               ),
             ),
 
-          // Author Header Tile - Adaptive for 320px to 430px+
           LayoutBuilder(
             builder: (context, constraints) {
               final isNarrow = constraints.maxWidth < 360;
@@ -692,12 +679,19 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                             : (widget.post.authorAvatar.startsWith('http')
                                 ? NetworkImage(widget.post.authorAvatar)
                                 : null),
+                        onBackgroundImageError: widget.post.authorAvatar.startsWith('http')
+                            ? (_, _) {}
+                            : null,
                         backgroundColor: isDark
-                            ? const Color(0xFF242424)
+                            ? AppColors.darkSurfaceSecondary
                             : AppColors.lightBgSecondary,
                         child: (!widget.post.authorAvatar.startsWith('http') && !widget.post.authorAvatar.startsWith('assets/'))
                             ? Text(
-                                widget.post.authorAvatar.isNotEmpty ? widget.post.authorAvatar[0] : 'U',
+                                widget.post.authorAvatar.isNotEmpty
+                                    ? widget.post.authorAvatar[0]
+                                    : (widget.post.authorName.trim().isNotEmpty
+                                        ? widget.post.authorName.trim()[0].toUpperCase()
+                                        : 'U'),
                                 style: TextStyle(color: textSecondary, fontWeight: FontWeight.bold),
                               )
                             : null,
@@ -738,81 +732,89 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                               ),
                               if (widget.post.isVerified) ...[
                                 const SizedBox(width: 4),
-                                const Icon(Icons.verified, color: AppColors.darkTextSecondary, size: 14),
+                                Icon(Icons.verified, color: textSecondary, size: 14),
                               ],
                             ],
                           ),
                           const SizedBox(height: 2),
                           if (widget.post.attachedEvent != null || widget.post.postType?.toLowerCase() == 'event')
-                            Row(
-                              children: [
-                                Text(
-                                  'community.postedAnEvent'.tr.isNotEmpty &&
-                                          'community.postedAnEvent'.tr != 'community.postedAnEvent'
-                                      ? 'community.postedAnEvent'.tr
-                                      : 'Posted an event',
-                                  style: TextStyle(
-                                    color: textSecondary,
-                                    fontSize: isVeryNarrow ? 10.5 : 11.5,
-                                    fontWeight: FontWeight.w500,
-                                    height: 1.25,
+                            Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: 'community.postedAnEvent'.tr.isNotEmpty &&
+                                            'community.postedAnEvent'.tr != 'community.postedAnEvent'
+                                        ? 'community.postedAnEvent'.tr
+                                        : 'Posted an event',
+                                    style: TextStyle(
+                                      color: textSecondary,
+                                      fontSize: isVeryNarrow ? 10.5 : 11.5,
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.25,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 4),
-                                Text('·', style: TextStyle(color: textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    _formatTimeAgo(widget.post.timeAgo),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                          color: textMuted,
-                                          fontSize: isVeryNarrow ? 10.5 : 11.5,
-                                        ) ??
-                                        TextStyle(color: textMuted, fontSize: isVeryNarrow ? 10.5 : 11.5),
+                                  TextSpan(
+                                    text: ' · ${_formatTimeAgo(widget.post.timeAgo)}',
+                                    style: TextStyle(
+                                      color: textMuted,
+                                      fontSize: isVeryNarrow ? 10.5 : 11.5,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            )
+                          else if (widget.post.location != null && widget.post.location!.isNotEmpty)
+                            Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: widget.post.location!,
+                                    style: TextStyle(
+                                      color: textSecondary,
+                                      fontSize: isVeryNarrow ? 10.5 : 11.5,
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.25,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: ' · ${_formatTimeAgo(widget.post.timeAgo)}',
+                                    style: TextStyle(
+                                      color: textMuted,
+                                      fontSize: isVeryNarrow ? 10.5 : 11.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             )
                           else
-                            Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    _formatTimeAgo(widget.post.timeAgo),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                          color: textMuted,
-                                          fontSize: isVeryNarrow ? 10.5 : 11.5,
-                                        ) ??
-                                        TextStyle(color: textMuted, fontSize: isVeryNarrow ? 10.5 : 11.5),
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Text('·', style: TextStyle(color: textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    (widget.post.postType == 'DISCUSSION' || widget.post.category != null)
+                            Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: (widget.post.postType == 'DISCUSSION' || widget.post.category != null)
                                         ? '${widget.post.category ?? 'Technology'} · ${'community.discussion'.tr.isNotEmpty && 'community.discussion'.tr != 'community.discussion' ? 'community.discussion'.tr : 'Discussion'}'
                                         : widget.post.community,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                          color: textSecondary,
-                                          fontSize: isVeryNarrow ? 10.0 : 11.0,
-                                          fontWeight: FontWeight.w500,
-                                        ) ??
-                                        TextStyle(
-                                          color: textSecondary,
-                                          fontSize: isVeryNarrow ? 10.0 : 11.0,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                    style: TextStyle(
+                                      color: textSecondary,
+                                      fontSize: isVeryNarrow ? 10.5 : 11.5,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  TextSpan(
+                                    text: ' · ${_formatTimeAgo(widget.post.timeAgo)}',
+                                    style: TextStyle(
+                                      color: textMuted,
+                                      fontSize: isVeryNarrow ? 10.5 : 11.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                         ],
                       ),
@@ -908,7 +910,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
             },
           ),
 
-          // Discussion Title (if discussion post)
           if (widget.post.discussionTitle != null &&
               widget.post.discussionTitle!.isNotEmpty)
             Padding(
@@ -935,28 +936,58 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               ),
             ),
 
-          // Post Content Text
           if (widget.post.content.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(AppSpacing.md, 4, AppSpacing.md, 6),
-              child: Text(
-                widget.post.content,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                      color: textPrimary,
-                      fontSize: 14.5,
-                      height: 1.50,
-                      letterSpacing: 0.1,
-                    ) ??
-                    TextStyle(
-                      color: textPrimary,
-                      fontSize: 14.5,
-                      height: 1.50,
-                      letterSpacing: 0.1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.post.content,
+                    maxLines: (widget.post.content.length <= 220 || _isContentExpanded)
+                        ? null
+                        : 4,
+                    overflow: (widget.post.content.length <= 220 || _isContentExpanded)
+                        ? TextOverflow.visible
+                        : TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                          color: textPrimary,
+                          fontSize: 14.5,
+                          height: 1.55,
+                          letterSpacing: 0.15,
+                        ) ??
+                        TextStyle(
+                          color: textPrimary,
+                          fontSize: 14.5,
+                          height: 1.55,
+                          letterSpacing: 0.15,
+                        ),
+                  ),
+                  if (widget.post.content.length > 220) ...[
+                    const SizedBox(height: 4),
+                    GestureDetector(
+                      onTap: () => setState(() => _isContentExpanded = !_isContentExpanded),
+                      child: Text(
+                        _isContentExpanded
+                            ? ('common.seeLess'.tr.isNotEmpty && 'common.seeLess'.tr != 'common.seeLess'
+                                ? 'common.seeLess'.tr
+                                : 'See less')
+                            : ('common.seeMore'.tr.isNotEmpty && 'common.seeMore'.tr != 'common.seeMore'
+                                ? 'common.seeMore'.tr
+                                : '...See more'),
+                        style: TextStyle(
+                          color: textSecondary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          fontFamilyFallback: const ['KantumruyPro', 'Sora'],
+                        ),
+                      ),
                     ),
+                  ],
+                ],
               ),
             ),
 
-          // Location Tag Chip
           if (widget.post.location != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
@@ -979,10 +1010,8 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 
           const SizedBox(height: 8),
 
-          // Responsive Multi-Image Grid Layout
-          if (widget.post.imageUrls.isNotEmpty) _buildImageGrid(widget.post.imageUrls),
+          if (widget.post.imageUrls.isNotEmpty) _buildImageCarousel(widget.post.imageUrls),
 
-          // Modular Poll Widget Component
           if (widget.post.pollQuestion != null && widget.post.pollOptions != null)
             PollWidget(
               question: widget.post.pollQuestion!,
@@ -991,7 +1020,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               hideResultsUntilVote: widget.post.hideResultsUntilVote,
             ),
 
-          // Link Preview Card Component
           if (widget.post.linkUrl != null)
             _buildLinkPreviewCard(
               url: widget.post.linkUrl!,
@@ -999,22 +1027,19 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               domain: widget.post.linkPreviewDomain,
             ),
 
-          // Attached Event Card Component
           if (widget.post.attachedEvent != null)
             _buildAttachedEventCard(context, widget.post.attachedEvent!),
 
           const SizedBox(height: 2),
-          // Post Action Buttons Bar (Like, Comment, Repost, Bookmark)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             child: Row(
               children: [
-                // Animated Like Button
                 InkWell(
                   onTap: _onLikeTap,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                     child: Row(
                       children: [
                         ScaleTransition(
@@ -1051,7 +1076,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                 ),
                 const SizedBox(width: 4),
 
-                // Comment Button
                 InkWell(
                   onTap: () {
                     showModalBottomSheet(
@@ -1063,7 +1087,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                   },
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                     child: Row(
                       children: [
                         Icon(Icons.chat_bubble_outline_rounded, color: actionIconColor, size: 19),
@@ -1083,7 +1107,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                 ),
                 const SizedBox(width: 4),
 
-                // Repost Button
                 InkWell(
                   onTap: _isOwnPost
                       ? () {
@@ -1108,7 +1131,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                         },
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                     child: Row(
                       children: [
                         Icon(
@@ -1143,7 +1166,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 
                 const Spacer(),
 
-                // Bookmark Button
                 Obx(() {
                   final livePost = widget.controller.posts.firstWhereOrNull((p) => p.id == widget.post.id);
                   final isBookmarked = livePost?.isBookmarked ?? widget.post.isBookmarked;
@@ -1157,7 +1179,9 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                       scale: _bookmarkScaleAnim,
                       child: Icon(
                         isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                        color: isBookmarked ? const Color(0xFFF59E0B) : actionIconColor,
+                        color: isBookmarked
+                            ? AppColors.warning
+                            : actionIconColor,
                         size: 21,
                       ),
                     ),
@@ -1172,8 +1196,9 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     );
   }
 
-  Widget _buildImageGrid(List<String> images) {
+  Widget _buildImageCarousel(List<String> images) {
     final count = images.length;
+    if (count == 0) return const SizedBox.shrink();
 
     if (count == 1) {
       return Padding(
@@ -1181,7 +1206,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.lg - 2),
           child: SizedBox(
-            height: 230,
+            height: 240,
             width: double.infinity,
             child: _buildSingleImage(images[0], index: 0, allImages: images),
           ),
@@ -1189,98 +1214,84 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
       );
     }
 
-    if (count == 2) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.lg - 2),
-          child: SizedBox(
-            height: 200,
-            child: Row(
-              children: [
-                Expanded(child: _buildSingleImage(images[0], index: 0, allImages: images)),
-                const SizedBox(width: 4),
-                Expanded(child: _buildSingleImage(images[1], index: 1, allImages: images)),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
+    final activeIndex = _currentImageIndex.clamp(0, count - 1);
 
-    if (count == 3) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.lg - 2),
-          child: SizedBox(
-            height: 220,
-            child: Row(
-              children: [
-                Expanded(flex: 2, child: _buildSingleImage(images[0], index: 0, allImages: images)),
-                const SizedBox(width: 4),
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    children: [
-                      Expanded(child: _buildSingleImage(images[1], index: 1, allImages: images)),
-                      const SizedBox(height: 4),
-                      Expanded(child: _buildSingleImage(images[2], index: 2, allImages: images)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    final extraCount = count - 4;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.lg - 2),
         child: SizedBox(
-          height: 220,
-          child: GridView.builder(
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 4,
-              mainAxisSpacing: 4,
-              childAspectRatio: 1.6,
-            ),
-            itemCount: 4,
-            itemBuilder: (context, idx) {
-              if (idx == 3 && extraCount > 0) {
-                return Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    _buildSingleImage(images[idx], index: idx, allImages: images),
-                    GestureDetector(
-                      onTap: () => _openFullScreenViewer(idx, images),
-                      child: Container(
-                        color: (Theme.of(context).brightness == Brightness.dark
-                                ? AppColors.darkBgPrimary
-                                : AppColors.lightPrimary)
-                            .withValues(alpha: 0.65),
-                        alignment: Alignment.center,
-                        child: Text(
-                          "+$extraCount",
-                          style: const TextStyle(
-                            color: AppColors.darkTextPrimary,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+          height: 260,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              PageView.builder(
+                physics: const BouncingScrollPhysics(),
+                itemCount: count,
+                onPageChanged: (idx) {
+                  setState(() {
+                    _currentImageIndex = idx;
+                  });
+                },
+                itemBuilder: (context, idx) {
+                  return _buildSingleImage(images[idx], index: idx, allImages: images);
+                },
+              ),
+              // Subtle top-right index counter badge (e.g. "1/3")
+              Positioned(
+                top: 10,
+                right: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.65),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${activeIndex + 1}/$count',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
                     ),
-                  ],
-                );
-              }
-              return _buildSingleImage(images[idx], index: idx, allImages: images);
-            },
+                  ),
+                ),
+              ),
+              // Subtle bottom dot indicators
+              Positioned(
+                bottom: 10,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(count, (dotIdx) {
+                        final isSelected = dotIdx == activeIndex;
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                          width: isSelected ? 12 : 5,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.45),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1325,6 +1336,19 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
+        errorBuilder: (context, error, stackTrace) => Container(
+          color: (Theme.of(context).brightness == Brightness.dark
+              ? AppColors.darkSurfaceSecondary
+              : AppColors.lightBgSecondary),
+          alignment: Alignment.center,
+          child: Icon(
+            Icons.broken_image_outlined,
+            color: (Theme.of(context).brightness == Brightness.dark
+                ? AppColors.darkTextMuted
+                : AppColors.lightTextMuted),
+            size: 32,
+          ),
+        ),
       );
     } else {
       imgWidget = Image.file(
@@ -1351,7 +1375,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
   }) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final surface = isDark ? AppColors.darkSurfacePrimary : AppColors.lightBgSecondary;
+    final surface = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfaceSecondary;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
@@ -1364,14 +1388,14 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: borderSubtle),
+        border: Border.all(color: borderSubtle.withValues(alpha: 0.6), width: 0.8),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF232323) : AppColors.lightBgSecondary,
+              color: isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Icon(Icons.link, color: textSecondary, size: 20),
@@ -1444,11 +1468,11 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     final badgeBg = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
     final ctaBg = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
     final ctaText = isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse;
+    final isRsvped = event.isRsvped;
 
     final hasLocalCover = event.coverImageFile != null;
     final hasNetworkCover = event.imageUrl.isNotEmpty;
 
-    // Location / Online string resolution
     final isOnline = event.eventType.toLowerCase().contains('online');
     final String onlineLabel = 'community.onlineEvent'.tr.isNotEmpty &&
             'community.onlineEvent'.tr != 'community.onlineEvent'
@@ -1465,7 +1489,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 
     final locationIcon = isOnline ? Icons.videocam_outlined : Icons.location_on_outlined;
 
-    // Formatted date & time display with localization support
     final dateTimeDisplay = _formatEventDate(event.dateString, event.timeString);
 
     final rawCat = event.category.isNotEmpty ? event.category : 'Event';
@@ -1486,8 +1509,8 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
       child: Container(
         decoration: BoxDecoration(
           color: cardBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderSubtle, width: 1.0),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: borderSubtle.withValues(alpha: 0.6), width: 0.8),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
@@ -1503,7 +1526,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Event Cover Image Banner
                   SizedBox(
                     height: 150,
                     width: double.infinity,
@@ -1522,13 +1544,11 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                     ),
                   ),
 
-                  // 2. Event Info Details
                   Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Category Badge
                         Row(
                           children: [
                             Container(
@@ -1572,7 +1592,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 
                         const SizedBox(height: 8),
 
-                        // Event Title (Most Prominent)
                         Text(
                           event.title,
                           maxLines: 2,
@@ -1588,7 +1607,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 
                         const SizedBox(height: 8),
 
-                        // Date & Time
                         Row(
                           children: [
                             Icon(Icons.calendar_month_outlined, color: textSecondary, size: 14),
@@ -1611,7 +1629,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 
                         const SizedBox(height: 4),
 
-                        // Location OR Online Indicator
                         Row(
                           children: [
                             Icon(locationIcon, color: textSecondary, size: 14),
@@ -1632,7 +1649,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                           ],
                         ),
 
-                        // Short Description (if available)
                         if (event.description.trim().isNotEmpty &&
                             event.description.trim() != event.title) ...[
                           const SizedBox(height: 8),
@@ -1650,7 +1666,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 
                         const SizedBox(height: 12),
 
-                        // Bottom Row: Attendees count on left, View Event button on right
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -1666,18 +1681,57 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                             else
                               const SizedBox.shrink(),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                              decoration: BoxDecoration(
-                                color: ctaBg,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 7,
                               ),
-                              child: Text(
-                                viewEventLabel,
-                                style: TextStyle(
-                                  color: ctaText,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12.5,
-                                ),
+                              decoration: BoxDecoration(
+                                color: isRsvped
+                                    ? (isDark
+                                        ? Colors.white.withValues(alpha: 0.12)
+                                        : Colors.black.withValues(alpha: 0.08))
+                                    : ctaBg,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.pill),
+                                border: isRsvped
+                                    ? Border.all(
+                                        color: borderSubtle,
+                                        width: 0.8,
+                                      )
+                                    : null,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (isRsvped) ...[
+                                    Icon(
+                                      Icons.check_rounded,
+                                      size: 14,
+                                      color: isDark
+                                          ? AppColors.darkTextPrimary
+                                          : AppColors.lightTextPrimary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                  ],
+                                  Text(
+                                    isRsvped
+                                        ? ('community.joinedChecked'.tr.isNotEmpty &&
+                                                'community.joinedChecked'.tr !=
+                                                    'community.joinedChecked'
+                                            ? 'community.joinedChecked'.tr
+                                            : 'Joined ✓')
+                                        : viewEventLabel,
+                                    style: TextStyle(
+                                      color: isRsvped
+                                          ? (isDark
+                                              ? AppColors.darkTextPrimary
+                                              : AppColors.lightTextPrimary)
+                                          : ctaText,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12.5,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -1694,7 +1748,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     );
   }
 
-  /// Clean monochrome GenLink Event Placeholder when no cover image is available
   Widget _buildMonochromeEventPlaceholder(bool isDark, Color textSecondary) {
     final bg = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfaceSecondary;
     final iconColor = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;

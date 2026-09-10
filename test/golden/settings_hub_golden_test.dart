@@ -137,9 +137,6 @@ void main() {
   tearDown(Get.reset);
 
   Future<void> pumpScreen(WidgetTester tester, Widget child) async {
-    // Flush the controller's eager onInit load before mounting the app. This
-    // prevents its reactive completion from starting a second frame while
-    // pumpWidget is still handling the first one.
     await tester.pump();
 
     tester.view.physicalSize = phone;

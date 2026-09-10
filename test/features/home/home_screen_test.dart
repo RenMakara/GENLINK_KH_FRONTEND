@@ -205,7 +205,7 @@ void main() {
     expect(controller.isLoading.value, false);
     expect(controller.home.value, isNotNull);
     expect(controller.home.value?.user.safeLevel, 3);
-    expect(controller.home.value?.todayProgress.percent, 50); // 3 of 6 = 50%
+    expect(controller.home.value?.todayProgress.percent, 50);
     expect(controller.habits.length, 2);
   });
 
@@ -216,7 +216,6 @@ void main() {
     await controller.load();
     expect(controller.home.value?.todayProgress.habitsCompletedToday, 1);
 
-    // Toggle check-in for habit h-2 (checkedInToday: false -> true)
     await controller.toggleHabitCheckIn(habitId: 'h-2', targetState: true);
 
     expect(controller.home.value?.todayProgress.habitsCompletedToday, 2);
@@ -236,13 +235,11 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // 1. Header has "Home" text title, search, chat, notifications
     expect(find.text('Home'), findsOneWidget);
     expect(find.byIcon(Icons.search_rounded), findsOneWidget);
     expect(find.byIcon(Icons.forum_outlined), findsOneWidget);
     expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
 
-    // 2. Navigation tabs for Feed, Forum, Event are visible
     expect(find.text('Feed'), findsOneWidget);
     expect(find.text('Forum'), findsOneWidget);
     expect(find.text('Event'), findsOneWidget);
@@ -263,25 +260,20 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // 1. "Your Story" is present
     expect(find.text('Your Story'), findsOneWidget);
 
-    // 2. Demo users are present in the horizontal tray
     expect(find.text('Dara'), findsOneWidget);
     expect(find.text('Lina'), findsOneWidget);
     expect(find.text('Sokha'), findsOneWidget);
 
-    // 3. Tapping on a demo story opens DemoStoryViewerDialog
     await tester.tap(find.text('Dara'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // 4. Viewer displays user name, story content, and close button
     expect(find.text('Dara'), findsWidgets);
     expect(find.textContaining('Working on the Flutter mobile design system'), findsOneWidget);
     expect(find.byIcon(Icons.close_rounded), findsOneWidget);
 
-    // 5. Tapping close button closes the viewer
     await tester.tap(find.byIcon(Icons.close_rounded));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
@@ -303,33 +295,27 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // 1. Growth Header and Leaderboard icon
     expect(find.text('GROWTH'), findsOneWidget);
     expect(find.byIcon(Icons.emoji_events_outlined), findsOneWidget);
 
-    // 2. Personal Greeting
     expect(find.textContaining('Test'), findsOneWidget);
     expect(find.text("Here's what's important today."), findsOneWidget);
 
-    // 3. Level and XP progress
     expect(find.text('Level 3'), findsOneWidget);
     expect(find.textContaining('350'), findsWidgets);
     expect(find.textContaining('XP'), findsWidgets);
 
-    // 4. TODAY section with habits and tasks
     expect(find.text('TODAY'), findsOneWidget);
     expect(find.text('Check in your habits'), findsOneWidget);
     expect(find.text("Finish today's tasks"), findsOneWidget);
     expect(find.text('Daily progress'), findsOneWidget);
 
-    // 5. Productivity Tools
     expect(find.text('PRODUCTIVITY TOOLS'), findsOneWidget);
     expect(find.text('Habits'), findsOneWidget);
     expect(find.text('Tasks'), findsOneWidget);
     expect(find.text('Focus'), findsOneWidget);
     expect(find.text('Goals'), findsOneWidget);
 
-    // 6. For You recommendations
     await tester.scrollUntilVisible(find.text('RECOMMENDED FOR YOU'), 300);
     expect(find.text('RECOMMENDED FOR YOU'), findsOneWidget);
     expect(find.text('Solve 5 Math Quizzes'), findsOneWidget);
@@ -359,11 +345,9 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Habit empty state
     expect(find.text('No habits for today'), findsOneWidget);
     expect(find.text('Start building a routine.'), findsOneWidget);
 
-    // Task empty state
     expect(find.text('No tasks for today'), findsOneWidget);
     expect(find.text("You're all caught up."), findsOneWidget);
   });

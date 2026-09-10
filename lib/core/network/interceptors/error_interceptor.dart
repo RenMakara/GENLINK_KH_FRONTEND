@@ -2,15 +2,12 @@ import 'package:dio/dio.dart';
 
 import '../../../core/errors/app_error.dart';
 
-/// Interceptor that converts Dio exceptions and non-2xx responses into
-/// [AppError] instances for consistent upstream error handling.
 class ErrorInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     final statusCode = err.response?.statusCode;
     final body = err.response?.data;
 
-    // Try to parse the backend ApiResponse error format.
     if (body is Map<String, dynamic>) {
       handler.next(
         DioException(
@@ -24,7 +21,6 @@ class ErrorInterceptor extends Interceptor {
       return;
     }
 
-    // Fallback for non-JSON errors (network timeout, etc.).
     handler.next(
       DioException(
         requestOptions: err.requestOptions,

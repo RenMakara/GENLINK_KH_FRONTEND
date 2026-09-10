@@ -1,3 +1,150 @@
+class StoryReference {
+  final String? storyId;
+  final String? mediaUrl;
+  final bool isExpired;
+
+  const StoryReference({
+    this.storyId,
+    this.mediaUrl,
+    this.isExpired = false,
+  });
+
+  factory StoryReference.fromJson(Map<String, dynamic> json) {
+    return StoryReference(
+      storyId: json['storyId']?.toString(),
+      mediaUrl: json['mediaUrl'] as String?,
+      isExpired: json['isExpired'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        if (storyId != null) 'storyId': storyId,
+        if (mediaUrl != null) 'mediaUrl': mediaUrl,
+        'isExpired': isExpired,
+      };
+}
+
+class ChatFinanceTransaction {
+  final String transactionId;
+  final String type;
+  final double amount;
+  final String currency;
+  final String status;
+  final String? note;
+  final DateTime timestamp;
+
+  const ChatFinanceTransaction({
+    required this.transactionId,
+    required this.type,
+    required this.amount,
+    this.currency = 'USD',
+    this.status = 'completed',
+    this.note,
+    required this.timestamp,
+  });
+
+  bool get isCompleted => status == 'completed';
+  bool get isPending => status == 'pending';
+  bool get isSend => type == 'send';
+
+  factory ChatFinanceTransaction.fromJson(Map<String, dynamic> json) {
+    return ChatFinanceTransaction(
+      transactionId: (json['transactionId'] as String?) ?? '',
+      type: (json['type'] as String?) ?? 'send',
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      currency: (json['currency'] as String?) ?? 'USD',
+      status: (json['status'] as String?) ?? 'completed',
+      note: json['note'] as String?,
+      timestamp: DateTime.tryParse(json['timestamp']?.toString() ?? '') ??
+          DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'transactionId': transactionId,
+        'type': type,
+        'amount': amount,
+        'currency': currency,
+        'status': status,
+        if (note != null) 'note': note,
+        'timestamp': timestamp.toIso8601String(),
+      };
+}
+
+class ChatReplyReference {
+  final String messageId;
+  final String senderName;
+  final String content;
+  final String messageType;
+  final String? mediaUrl;
+
+  const ChatReplyReference({
+    required this.messageId,
+    required this.senderName,
+    required this.content,
+    this.messageType = 'text',
+    this.mediaUrl,
+  });
+
+  factory ChatReplyReference.fromJson(Map<String, dynamic> json) {
+    return ChatReplyReference(
+      messageId: json['messageId']?.toString() ?? '',
+      senderName: (json['senderName'] as String?) ?? 'User',
+      content: (json['content'] as String?) ?? (json['snippet'] as String?) ?? '',
+      messageType: (json['messageType'] as String?) ??
+          (json['type'] as String?)?.toLowerCase() ??
+          'text',
+      mediaUrl: json['mediaUrl'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'messageId': messageId,
+        'senderName': senderName,
+        'content': content,
+        'messageType': messageType,
+        if (mediaUrl != null) 'mediaUrl': mediaUrl,
+      };
+}
+
+class ChatReactionModel {
+  final String emoji;
+  final int count;
+  final bool hasReacted;
+
+  const ChatReactionModel({
+    required this.emoji,
+    this.count = 1,
+    this.hasReacted = false,
+  });
+
+  ChatReactionModel copyWith({
+    String? emoji,
+    int? count,
+    bool? hasReacted,
+  }) {
+    return ChatReactionModel(
+      emoji: emoji ?? this.emoji,
+      count: count ?? this.count,
+      hasReacted: hasReacted ?? this.hasReacted,
+    );
+  }
+
+  factory ChatReactionModel.fromJson(Map<String, dynamic> json) {
+    return ChatReactionModel(
+      emoji: (json['emoji'] as String?) ?? '👍',
+      count: (json['count'] as num?)?.toInt() ?? 1,
+      hasReacted: (json['hasReacted'] as bool?) ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'emoji': emoji,
+        'count': count,
+        'hasReacted': hasReacted,
+      };
+}
+
 class ChatMessageModel {
   final String id;
   final String conversationId;
@@ -9,8 +156,17 @@ class ChatMessageModel {
   final String timeAgo;
   final bool isMine;
   final bool isRead;
-  final String messageType; // 'text', 'image', 'voice', 'story_reply'
+  final String messageType;
   final String? mediaUrl;
+  final StoryReference? storyReference;
+  final ChatFinanceTransaction? financeTransaction;
+  final int? voiceDurationSeconds;
+  final String deliveryStatus;
+  final bool isSystemMessage;
+  final ChatReplyReference? replyTo;
+  final List<ChatReactionModel> reactions;
+  final bool isPinned;
+  final bool isDeleted;
 
   ChatMessageModel({
     required this.id,
@@ -25,6 +181,15 @@ class ChatMessageModel {
     this.isRead = true,
     this.messageType = 'text',
     this.mediaUrl,
+    this.storyReference,
+    this.financeTransaction,
+    this.voiceDurationSeconds,
+    this.deliveryStatus = 'read',
+    this.isSystemMessage = false,
+    this.replyTo,
+    this.reactions = const [],
+    this.isPinned = false,
+    this.isDeleted = false,
   });
 
   factory ChatMessageModel.fromJson(
@@ -55,6 +220,33 @@ class ChatMessageModel {
       isRead: json['isRead'] as bool? ?? true,
       messageType: backendType.toLowerCase(),
       mediaUrl: json['mediaUrl'] as String?,
+      storyReference: json['storyReference'] is Map<String, dynamic>
+          ? StoryReference.fromJson(
+              json['storyReference'] as Map<String, dynamic>,
+            )
+          : null,
+      financeTransaction: json['financeTransaction'] is Map<String, dynamic>
+          ? ChatFinanceTransaction.fromJson(
+              json['financeTransaction'] as Map<String, dynamic>,
+            )
+          : null,
+      voiceDurationSeconds: (json['voiceDurationSeconds'] as num?)?.toInt(),
+      deliveryStatus: (json['deliveryStatus'] as String?) ?? 'read',
+      isSystemMessage: (json['isSystemMessage'] as bool?) ??
+          (backendType.toUpperCase() == 'SYSTEM'),
+      replyTo: json['replyTo'] is Map<String, dynamic>
+          ? ChatReplyReference.fromJson(
+              json['replyTo'] as Map<String, dynamic>,
+            )
+          : null,
+      reactions: json['reactions'] is List
+          ? (json['reactions'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map(ChatReactionModel.fromJson)
+              .toList()
+          : const [],
+      isPinned: (json['isPinned'] as bool?) ?? false,
+      isDeleted: (json['isDeleted'] as bool?) ?? false,
     );
   }
 
@@ -71,6 +263,15 @@ class ChatMessageModel {
     bool? isRead,
     String? messageType,
     String? mediaUrl,
+    StoryReference? storyReference,
+    ChatFinanceTransaction? financeTransaction,
+    int? voiceDurationSeconds,
+    String? deliveryStatus,
+    bool? isSystemMessage,
+    ChatReplyReference? replyTo,
+    List<ChatReactionModel>? reactions,
+    bool? isPinned,
+    bool? isDeleted,
   }) {
     return ChatMessageModel(
       id: id ?? this.id,
@@ -85,6 +286,15 @@ class ChatMessageModel {
       isRead: isRead ?? this.isRead,
       messageType: messageType ?? this.messageType,
       mediaUrl: mediaUrl ?? this.mediaUrl,
+      storyReference: storyReference ?? this.storyReference,
+      financeTransaction: financeTransaction ?? this.financeTransaction,
+      voiceDurationSeconds: voiceDurationSeconds ?? this.voiceDurationSeconds,
+      deliveryStatus: deliveryStatus ?? this.deliveryStatus,
+      isSystemMessage: isSystemMessage ?? this.isSystemMessage,
+      replyTo: replyTo ?? this.replyTo,
+      reactions: reactions ?? this.reactions,
+      isPinned: isPinned ?? this.isPinned,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 
@@ -102,6 +312,18 @@ class ChatMessageModel {
       'isRead': isRead,
       'messageType': messageType,
       'mediaUrl': mediaUrl,
+      if (storyReference != null) 'storyReference': storyReference!.toJson(),
+      if (financeTransaction != null)
+        'financeTransaction': financeTransaction!.toJson(),
+      if (voiceDurationSeconds != null)
+        'voiceDurationSeconds': voiceDurationSeconds,
+      'deliveryStatus': deliveryStatus,
+      'isSystemMessage': isSystemMessage,
+      if (replyTo != null) 'replyTo': replyTo!.toJson(),
+      if (reactions.isNotEmpty)
+        'reactions': reactions.map((r) => r.toJson()).toList(),
+      'isPinned': isPinned,
+      'isDeleted': isDeleted,
     };
   }
 }
@@ -116,6 +338,11 @@ class ChatConversationModel {
   String lastMessageTime;
   int unreadCount;
   final int membersCount;
+  final bool isEventChat;
+  final bool isPinned;
+  final bool isArchived;
+  final bool isMuted;
+  final ChatMessageModel? pinnedMessage;
 
   ChatConversationModel({
     required this.id,
@@ -127,15 +354,20 @@ class ChatConversationModel {
     required this.lastMessageTime,
     this.unreadCount = 0,
     this.membersCount = 2,
+    this.isEventChat = false,
+    this.isPinned = false,
+    this.isArchived = false,
+    this.isMuted = false,
+    this.pinnedMessage,
   });
 
   factory ChatConversationModel.fromJson(Map<String, dynamic> json) {
     final type = (json['type'] as String?) ?? 'PRIVATE';
-    final counterpart = json['counterpart'] is Map<String, dynamic>
-        ? json['counterpart'] as Map<String, dynamic>
+    final counterpart = json['counterpart'] is Map
+        ? (json['counterpart'] as Map).cast<String, dynamic>()
         : const <String, dynamic>{};
-    final lastMessage = json['lastMessage'] is Map<String, dynamic>
-        ? json['lastMessage'] as Map<String, dynamic>
+    final lastMessage = json['lastMessage'] is Map
+        ? (json['lastMessage'] as Map).cast<String, dynamic>()
         : null;
     final lastCreatedAt = lastMessage != null
         ? DateTime.tryParse(lastMessage['createdAt']?.toString() ?? '')
@@ -170,6 +402,10 @@ class ChatConversationModel {
           : _timeAgo(lastActivity),
       unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
       membersCount: (json['membersCount'] as num?)?.toInt() ?? 2,
+      isEventChat: (json['isEventChat'] as bool?) ?? (type == 'EVENT'),
+      isPinned: (json['isPinned'] as bool?) ?? false,
+      isArchived: (json['isArchived'] as bool?) ?? false,
+      isMuted: (json['isMuted'] as bool?) ?? false,
     );
   }
 
@@ -205,6 +441,10 @@ class ChatConversationModel {
       lastMessageTime: 'Just now',
       unreadCount: 0,
       membersCount: members.length,
+      isEventChat: (json['isEventChat'] as bool?) ?? (type == 'EVENT'),
+      isPinned: (json['isPinned'] as bool?) ?? false,
+      isArchived: (json['isArchived'] as bool?) ?? false,
+      isMuted: (json['isMuted'] as bool?) ?? false,
     );
   }
 
@@ -218,6 +458,11 @@ class ChatConversationModel {
     String? lastMessageTime,
     int? unreadCount,
     int? membersCount,
+    bool? isEventChat,
+    bool? isPinned,
+    bool? isArchived,
+    bool? isMuted,
+    ChatMessageModel? pinnedMessage,
   }) {
     return ChatConversationModel(
       id: id ?? this.id,
@@ -229,6 +474,11 @@ class ChatConversationModel {
       lastMessageTime: lastMessageTime ?? this.lastMessageTime,
       unreadCount: unreadCount ?? this.unreadCount,
       membersCount: membersCount ?? this.membersCount,
+      isEventChat: isEventChat ?? this.isEventChat,
+      isPinned: isPinned ?? this.isPinned,
+      isArchived: isArchived ?? this.isArchived,
+      isMuted: isMuted ?? this.isMuted,
+      pinnedMessage: pinnedMessage ?? this.pinnedMessage,
     );
   }
 
@@ -243,6 +493,11 @@ class ChatConversationModel {
       'lastMessageTime': lastMessageTime,
       'unreadCount': unreadCount,
       'membersCount': membersCount,
+      'isEventChat': isEventChat,
+      'isPinned': isPinned,
+      'isArchived': isArchived,
+      'isMuted': isMuted,
+      if (pinnedMessage != null) 'pinnedMessage': pinnedMessage!.toJson(),
     };
   }
 }

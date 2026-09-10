@@ -29,7 +29,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   final FocusNode _linkFocus = FocusNode();
 
   bool _isSubmitting = false;
-  String _eventType = 'Online'; // 'Online' or 'In person'
+  String _eventType = 'Online';
   File? _coverImage;
 
   String? _selectedCategory;
@@ -301,11 +301,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
     setState(() => _isSubmitting = true);
 
-    // Short UI feedback delay (local-first, no network)
     await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
 
-    // Build an EventModel from the form data
     final newEvent = EventModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
@@ -327,7 +325,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       attendeesCount: 0,
     );
 
-    // Register in controller so the Event list updates reactively
     final controller = Get.isRegistered<CommunityController>()
         ? Get.find<CommunityController>()
         : Get.put(CommunityController());
@@ -345,7 +342,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     if (widget.returnCreatedEvent) {
       Get.back(result: newEvent);
     } else {
-      // Navigate to the freshly-created event's detail screen
       Get.off(() => EventDetailsScreen(event: newEvent));
     }
   }
@@ -354,7 +350,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Strict Dark Theme based on instructions
     final bg = isDark ? Colors.black : Colors.white;
     final inputBg = isDark ? const Color(0xFF181818) : Colors.white;
     final textPrimary = isDark ? Colors.white : Colors.black87;
@@ -446,7 +441,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Banner Image Area ─────────────────────────────────────────
                   AspectRatio(
                     aspectRatio: 16 / 9,
                     child: Container(
@@ -541,7 +535,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ── Event Type ──────────────────────────────────────────
                         _buildLabel('Event type', textMuted),
                         const SizedBox(height: 8),
                         Row(
@@ -553,7 +546,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        // ── Event Name ──────────────────────────────────────────
                         _buildLabel('Event name*', textMuted),
                         const SizedBox(height: 8),
                         TextField(
@@ -576,7 +568,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        // ── Date and Time ───────────────────────────────────────
                         _buildLabel('Date & time*', textMuted),
                         const SizedBox(height: 8),
                         InkWell(
@@ -605,7 +596,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        // ── Dynamic Field (Location / Link) ─────────────────────
                         if (_eventType == 'Online') ...[
                           _buildLabel('Online event link*', textMuted),
                           const SizedBox(height: 8),
@@ -652,7 +642,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         ],
                         const SizedBox(height: 24),
 
-                        // ── Description ─────────────────────────────────────────
                         _buildLabel('Description', textMuted),
                         const SizedBox(height: 8),
                         TextField(
@@ -678,7 +667,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
                         const SizedBox(height: 24),
 
-                        // ── Category (Preserved GenLink Feature) ────────────────
                         _buildLabel(
                           'community.category'.tr.isNotEmpty &&
                                   'community.category'.tr !=
@@ -825,12 +813,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      counterStyle: const TextStyle(fontSize: 13), // for maxLength counter
+      counterStyle: const TextStyle(fontSize: 13),
     );
   }
 }
 
-/// Opens the modern custom GenLink time picker modal bottom sheet
 Future<TimeOfDay?> _showCustomTimePicker(
   BuildContext context, {
   required TimeOfDay initialTime,
@@ -843,7 +830,6 @@ Future<TimeOfDay?> _showCustomTimePicker(
   );
 }
 
-/// Custom GenLink Time Picker Modal Sheet with strict black/white/gray theme
 class _GenLinkTimePickerSheet extends StatefulWidget {
   final TimeOfDay initialTime;
 
@@ -855,9 +841,9 @@ class _GenLinkTimePickerSheet extends StatefulWidget {
 }
 
 class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
-  late int _selectedHour12; // 1 to 12
-  late int _selectedMinute; // 0 to 59
-  late DayPeriod _selectedPeriod; // AM or PM
+  late int _selectedHour12;
+  late int _selectedMinute;
+  late DayPeriod _selectedPeriod;
 
   @override
   void initState() {
@@ -918,7 +904,6 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Drag Handle Bar
             Center(
               child: Container(
                 width: 36,
@@ -931,7 +916,6 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
               ),
             ),
 
-            // Header Title
             Text(
               selectTimeTitle,
               style: TextStyle(
@@ -943,7 +927,6 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
 
             const SizedBox(height: 16),
 
-            // Prominent Selected Time Display
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -967,7 +950,6 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
 
             const SizedBox(height: 20),
 
-            // AM / PM Segmented Control Toggle
             Container(
               height: 42,
               padding: const EdgeInsets.all(3),
@@ -1036,7 +1018,6 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
 
             const SizedBox(height: 20),
 
-            // Hours Selection (1 to 12)
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -1097,7 +1078,6 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
 
             const SizedBox(height: 16),
 
-            // Minutes Selection (00 to 55 in 5 min increments)
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -1178,7 +1158,6 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
 
             const SizedBox(height: 24),
 
-            // Bottom Actions: Cancel and OK
             Row(
               children: [
                 Expanded(

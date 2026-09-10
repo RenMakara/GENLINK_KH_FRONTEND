@@ -6,13 +6,6 @@ import '../../domain/repositories/finance_repository.dart';
 import '../formatters/finance_localization.dart';
 import 'finance_controller.dart';
 
-/// Owns the currency- and month-scoped Budget screen.
-///
-/// The backend's historical `/budgets` endpoint is paginated but does not
-/// accept a currency filter.  The screen therefore uses the authoritative
-/// `/budgets/current` endpoint, which is explicitly scoped by currency,
-/// month, and year.  This prevents a partial page from ever mixing USD and
-/// KHR data in the UI.
 class BudgetController extends GetxController {
   BudgetController({
     required this._repository,
@@ -61,13 +54,9 @@ class BudgetController extends GetxController {
     super.onClose();
   }
 
-  /// Loads the current budget for the selected currency and period.
   Future<void> load() async {
     final request = ++_requestSequence;
     isLoading.value = true;
-    // A scoped load supersedes an in-flight refresh. Clear the stale refresh
-    // indicator because its guarded finally block will no longer run as the
-    // current request.
     isRefreshing.value = false;
     listErrorMessage.value = null;
     budget.value = null;
@@ -75,13 +64,10 @@ class BudgetController extends GetxController {
     if (request == _requestSequence) isLoading.value = false;
   }
 
-  /// Refreshes without blanking a usable budget while the request is pending.
   @override
   Future<void> refresh() async {
     final request = ++_requestSequence;
     isRefreshing.value = true;
-    // A refresh supersedes an in-flight scoped load. Clear its indicator now
-    // because the stale load will not clear it after its request is invalidated.
     isLoading.value = false;
     listErrorMessage.value = null;
     try {
@@ -200,7 +186,6 @@ class BudgetController extends GetxController {
         year: year ?? existing.year,
         totalBudget: totalBudget,
         categories: normalizedCategories,
-        // Currency is immutable in the edit form and remains explicit.
         currency: existing.currency,
       );
       await _refreshAfterMutation();

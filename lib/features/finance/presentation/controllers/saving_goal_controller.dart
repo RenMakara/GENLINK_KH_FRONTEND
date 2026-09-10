@@ -6,11 +6,6 @@ import '../../domain/repositories/finance_repository.dart';
 import '../formatters/finance_localization.dart';
 import 'finance_controller.dart';
 
-/// Owns the backend-backed Saving Goal feature.
-///
-/// Saving goals are deliberately scoped by the shared Finance currency. The
-/// backend returns an unpaginated list, so request sequencing is used instead
-/// of page state to prevent a late USD response from replacing KHR state.
 class SavingGoalController extends GetxController {
   SavingGoalController({
     required this.repository,
@@ -25,7 +20,6 @@ class SavingGoalController extends GetxController {
   Rx<FinanceCurrency> get selectedCurrency =>
       financeController.selectedCurrency;
 
-  /// Null means no status filter. Values are the exact backend enum values.
   final selectedStatus = RxnString();
   final goals = <FinanceSavingGoalEntity>[].obs;
   final selectedGoal = Rxn<FinanceSavingGoalEntity>();
@@ -75,9 +69,6 @@ class SavingGoalController extends GetxController {
   Future<void> loadGoals() async {
     final request = ++_listRequestSequence;
     isInitialLoading.value = true;
-    // A new list load supersedes an in-flight refresh. Clear the stale
-    // indicator because that refresh can no longer clear it in its guarded
-    // finally block.
     isRefreshing.value = false;
     listErrorMessage.value = null;
     goals.clear();
@@ -103,14 +94,11 @@ class SavingGoalController extends GetxController {
     }
   }
 
-  /// Refreshes the same status/currency scope while retaining rows on failure.
   @override
   Future<void> refresh() async {
     final request = ++_listRequestSequence;
     final previous = List<FinanceSavingGoalEntity>.from(goals);
     isRefreshing.value = true;
-    // A refresh supersedes an in-flight initial list load. Clear that stale
-    // indicator now because the superseded load cannot clear it afterwards.
     isInitialLoading.value = false;
     listErrorMessage.value = null;
     try {

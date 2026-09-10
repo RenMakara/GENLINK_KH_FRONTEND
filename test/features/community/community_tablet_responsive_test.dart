@@ -119,6 +119,9 @@ class _MockCommunityRepository implements CommunityRepository {
   }) async => throw UnimplementedError();
 
   @override
+  Future<ForumTopicModel> getDiscussionDetails(String discussionId) async => throw UnimplementedError();
+
+  @override
   Future<ForumTopicModel> updateDiscussion(
     String discussionId, {
     required String title,
@@ -130,7 +133,26 @@ class _MockCommunityRepository implements CommunityRepository {
   Future<bool> deleteDiscussion(String discussionId) async => true;
 
   @override
-  Future<bool> toggleDiscussionLike(String discussionId) async => true;
+  Future<bool> toggleDiscussionLike(
+    String discussionId, {
+    bool isCurrentlyLiked = false,
+  }) async => true;
+
+  @override
+  Future<bool> reportDiscussion(
+    String discussionId, {
+    String reason = 'INAPPROPRIATE_CONTENT',
+    String? details,
+  }) async => true;
+
+  @override
+  Future<bool> toggleDiscussionCommentLike(
+    String commentId, {
+    required bool isCurrentlyLiked,
+  }) async => true;
+
+  @override
+  Future<bool> deleteDiscussionComment(String commentId) async => true;
 
   @override
   Future<bool> followUser(String userId) async => true;
@@ -140,6 +162,9 @@ class _MockCommunityRepository implements CommunityRepository {
 
   @override
   Future<bool> checkIsFollowing(String userId) async => false;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
@@ -246,7 +271,6 @@ void main() {
       expect(find.text('Feed'), findsOneWidget);
       expect(find.text('Forum'), findsOneWidget);
       expect(find.text('Event'), findsOneWidget);
-      // Verify Bottom Navigation items and center '+' button
       expect(find.byType(BottomNavBar), findsOneWidget);
       expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(CupertinoIcons.house)), findsOneWidget);
       expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(CupertinoIcons.person_2_fill)), findsOneWidget);
@@ -276,7 +300,7 @@ void main() {
       expect(postCardSize.width, lessThanOrEqualTo(760.0));
 
       final postCardTopLeft = tester.getTopLeft(postCardFinder);
-      expect(postCardTopLeft.dx, greaterThan(100.0)); // Centered with side margins
+      expect(postCardTopLeft.dx, greaterThan(100.0));
     });
 
     testWidgets('5. Safe Area & Scrollability: Feed scrollview has safe bottom padding for floating bottom nav', (tester) async {

@@ -8,10 +8,6 @@ import '../../../../design_system/widgets/branding/app_logo.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../controllers/onboarding_controller.dart';
 
-/// Paged intro shown once, on a genuinely first run.
-///
-/// Each slide is a dark preview card of the product over the page
-/// background, then the headline, body, dots and actions.
 class OnboardingScreen extends GetView<OnboardingController> {
   const OnboardingScreen({super.key});
 
@@ -103,8 +99,6 @@ class _Slide extends StatelessWidget {
   }
 }
 
-/// The dark product preview. Always dark, in both themes — it stands for
-/// the app's own surface rather than the page it sits on.
 class _PreviewCard extends StatelessWidget {
   const _PreviewCard({required this.rows});
 

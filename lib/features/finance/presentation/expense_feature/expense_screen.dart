@@ -14,7 +14,6 @@ import 'package:genlink_frontend/features/finance/presentation/expense_feature/e
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/widget/expense_widget.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
 
-/// Expense overview backed by the Finance dashboard and Expense list APIs.
 class ExpenseScreen extends GetView<ExpenseController> {
   const ExpenseScreen({super.key});
 
@@ -346,7 +345,6 @@ class _CurrencyBar extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Sliding background
           AnimatedAlign(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOutCubic,
@@ -363,7 +361,6 @@ class _CurrencyBar extends StatelessWidget {
             ),
           ),
 
-          // Currency buttons
           Row(
             children: FinanceCurrency.values.map((value) {
               final selected = value == currency;

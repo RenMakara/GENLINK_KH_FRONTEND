@@ -6,11 +6,6 @@ import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/budget_controller.dart';
 
-/// Create/edit form for the backend Budget contract.
-///
-/// Category names are intentionally free text. The backend accepts no fixed
-/// category enum, so the client sends the exact user-entered value and only
-/// keeps icon/subtitle decoration local to this screen.
 class SetBudgetScreen extends StatefulWidget {
   const SetBudgetScreen({super.key, this.budget});
 
@@ -110,7 +105,6 @@ class _SetBudgetScreenState extends State<SetBudgetScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               child: Row(
@@ -134,7 +128,6 @@ class _SetBudgetScreenState extends State<SetBudgetScreen> {
               ),
             ),
 
-            // Body
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 30),
@@ -290,7 +283,6 @@ class _SetBudgetScreenState extends State<SetBudgetScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Save button
                   Obx(() {
                     final submitting =
                         controller.isCreateSubmitting.value ||

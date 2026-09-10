@@ -9,7 +9,6 @@ import 'package:genlink_frontend/features/finance/domain/entities/finance_entiti
 import 'package:genlink_frontend/features/finance/presentation/controllers/finance_learning_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/formatters/finance_money_formatter.dart';
 
-/// Quiz screen backed by the lesson quiz and submit endpoints.
 class InvestingQuizScreen extends StatefulWidget {
   const InvestingQuizScreen({super.key, required this.lessonId});
 
@@ -75,7 +74,6 @@ class _InvestingQuizScreenState extends State<InvestingQuizScreen> {
 
           return Column(
             children: [
-              // HEADER
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: Row(
@@ -97,7 +95,6 @@ class _InvestingQuizScreenState extends State<InvestingQuizScreen> {
                 ),
               ),
 
-              // QUIZ CONTENT
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _reload,

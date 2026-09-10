@@ -6,10 +6,6 @@ import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/entities/user_settings_entity.dart';
 import '../controllers/settings_controller.dart';
 
-/// Privacy: profile visibility radios plus the message/follow toggles.
-///
-/// Backed 1:1 by `user_settings` fields — the design rows with no field
-/// (online status, search visibility, data export) are not rendered.
 class PrivacySettingsScreen extends GetView<SettingsController> {
   const PrivacySettingsScreen({super.key});
 

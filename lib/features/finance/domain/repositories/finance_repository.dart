@@ -1,14 +1,10 @@
 import '../entities/finance_entities.dart';
 
-/// Finance use-case contract consumed by controllers and, later, screens.
-///
-/// Implementations keep HTTP and JSON details out of the presentation layer.
 abstract class FinanceRepository {
   Future<FinanceDashboardEntity> getFinanceDashboard({
     FinanceCurrency currency = FinanceCurrency.usd,
   });
 
-  // ── Expenses ─────────────────────────────────────────────────────────
 
   Future<FinancePage<FinanceExpenseEntity>> getExpenses({
     String? category,
@@ -52,7 +48,6 @@ abstract class FinanceRepository {
     int? year,
   });
 
-  // ── Income ───────────────────────────────────────────────────────────
 
   Future<FinancePage<FinanceIncomeEntity>> getIncomes({
     String? source,
@@ -92,7 +87,6 @@ abstract class FinanceRepository {
     int? year,
   });
 
-  // ── Wallet ───────────────────────────────────────────────────────────
 
   Future<FinanceWalletEntity> getWallet();
 
@@ -114,7 +108,6 @@ abstract class FinanceRepository {
     int? size,
   });
 
-  // ── Budgets ──────────────────────────────────────────────────────────
 
   Future<FinancePage<FinanceBudgetEntity>> getBudgets({int? page, int? size});
 
@@ -145,7 +138,6 @@ abstract class FinanceRepository {
 
   Future<void> deleteBudget(String budgetId);
 
-  // ── Saving goals ─────────────────────────────────────────────────────
 
   Future<List<FinanceSavingGoalEntity>> getSavingGoals({
     String? status,
@@ -183,7 +175,6 @@ abstract class FinanceRepository {
     String savingGoalId,
   );
 
-  // ── Financial literacy ──────────────────────────────────────────────
 
   Future<FinanceLearningDashboardEntity> getLearningDashboard();
 

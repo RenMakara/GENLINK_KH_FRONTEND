@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
@@ -88,7 +89,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
       ),
       child: Column(
         children: [
-          // Drag Handle & Header
           const SizedBox(height: 12),
           Container(
             width: 36,
@@ -130,7 +130,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           ),
           Divider(height: 1, color: borderSubtle),
 
-          // Comments List
           Expanded(
             child: Obx(() {
               if (controller.isLoadingComments.value) {
@@ -220,23 +219,27 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                   children: [
                                     Row(
                                       children: [
-                                        Text(
-                                          comment.userName,
-                                          style:
-                                              theme.textTheme.labelMedium
-                                                  ?.copyWith(
-                                                    color: textPrimary,
-                                                    fontWeight: FontWeight.bold,
-                                                  ) ??
-                                              TextStyle(
-                                                color: textPrimary,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 13,
-                                              ),
+                                        Flexible(
+                                          child: Text(
+                                            comment.userName,
+                                            style:
+                                                theme.textTheme.labelMedium
+                                                    ?.copyWith(
+                                                      color: textPrimary,
+                                                      fontWeight: FontWeight.bold,
+                                                    ) ??
+                                                TextStyle(
+                                                  color: textPrimary,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                         ),
                                         const SizedBox(width: AppSpacing.sm),
                                         Text(
-                                          comment.timeAgo,
+                                          formatCommunityTimestamp(comment.createdAt ?? comment.timeAgo),
                                           style:
                                               theme.textTheme.labelSmall
                                                   ?.copyWith(
@@ -349,7 +352,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             }),
           ),
 
-          // Replying-to Banner
           if (_replyingToUser != null)
             Container(
               padding: const EdgeInsets.symmetric(
@@ -385,7 +387,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               ),
             ),
 
-          // Comment Input Bar
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,

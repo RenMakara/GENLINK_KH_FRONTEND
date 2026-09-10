@@ -1,8 +1,5 @@
 import '../../domain/entities/finance_entities.dart';
 
-/// Maps the JSON wire format used by the Spring Boot Finance APIs into domain
-/// entities.  Required backend fields are validated instead of being given a
-/// misleading default (especially currency).
 abstract final class FinanceMapper {
   static FinanceDashboardEntity dashboard(Map<String, dynamic> json) {
     return FinanceDashboardEntity(

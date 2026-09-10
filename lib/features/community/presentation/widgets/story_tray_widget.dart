@@ -9,6 +9,7 @@ import '../controllers/story_controller.dart';
 import '../screens/story_viewer_screen.dart';
 import 'demo_stories_data.dart';
 import 'story_creation_picker_sheet.dart';
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
 
 class StoryTrayWidget extends StatefulWidget {
   const StoryTrayWidget({super.key});
@@ -85,20 +86,16 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
           ? StoryGroupModel(
               userId: rawOwnerGroup.userId,
               userName: rawOwnerGroup.userName,
-              userAvatar: rawOwnerGroup.userAvatar.isNotEmpty
-                  ? rawOwnerGroup.userAvatar
-                  : (currentUserAvatar != null && currentUserAvatar.isNotEmpty
-                      ? currentUserAvatar
-                      : 'assets/images/user_profile.png'),
+              userAvatar: (currentUserAvatar?.isNotEmpty == true)
+                  ? currentUserAvatar!
+                  : rawOwnerGroup.userAvatar,
               isOwner: true,
               stories: rawOwnerGroup.stories,
             )
           : StoryGroupModel(
               userId: currentUserId.isNotEmpty ? currentUserId : 'current_user',
               userName: 'community.yourStory'.tr,
-              userAvatar: (currentUserAvatar != null && currentUserAvatar.isNotEmpty)
-                  ? currentUserAvatar
-                  : 'assets/images/user_profile.png',
+              userAvatar: currentUserAvatar ?? '',
               isOwner: true,
               stories: [],
             );
@@ -261,17 +258,10 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                       ),
                       child: Hero(
                         tag: 'story_avatar_${group.userId}',
-                        child: CircleAvatar(
-                          radius: 26,
-                          backgroundImage: (group.userAvatar != null &&
-                                  (group.userAvatar as String).isNotEmpty)
-                              ? ((group.userAvatar as String).startsWith('assets/')
-                                  ? AssetImage(group.userAvatar as String)
-                                      as ImageProvider
-                                  : NetworkImage(group.userAvatar as String))
-                              : const AssetImage(
-                                  'assets/images/user_profile.png',
-                                ) as ImageProvider,
+                        child: AppAvatar(
+                          imageUrl: group.userAvatar,
+                          name: group.userName,
+                          size: 52,
                         ),
                       ),
                     ),
@@ -371,17 +361,10 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                     opacity: group.hasUnseen ? 1.0 : 0.80,
                     child: Hero(
                       tag: 'story_avatar_${group.userId}',
-                      child: CircleAvatar(
-                        radius: 26,
-                        backgroundImage: (group.userAvatar != null &&
-                                (group.userAvatar as String).isNotEmpty)
-                            ? ((group.userAvatar as String).startsWith('assets/')
-                                ? AssetImage(group.userAvatar as String)
-                                    as ImageProvider
-                                : NetworkImage(group.userAvatar as String))
-                            : const AssetImage(
-                                'assets/images/user_profile.png',
-                              ) as ImageProvider,
+                      child: AppAvatar(
+                        imageUrl: group.userAvatar,
+                        name: group.userName,
+                        size: 52,
                       ),
                     ),
                   ),

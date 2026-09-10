@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-// CATEGORY MODEL
 class ExpenseCategoryItem {
   final String name;
   final IconData? icon;
@@ -14,7 +13,6 @@ class ExpenseCategoryItem {
   });
 }
 
-// PAYMENT MODEL
 class ExpensePaymentItem {
   final String name;
   final IconData? icon;
@@ -22,7 +20,6 @@ class ExpensePaymentItem {
   const ExpensePaymentItem({required this.name, this.icon});
 }
 
-// BACK BUTTON
 class ExpenseBackButton extends StatelessWidget {
   final Color color;
   final Color iconColor;
@@ -63,13 +60,9 @@ class ExpenseBackButton extends StatelessWidget {
   }
 }
 
-// AMOUNT SECTION
 class ExpenseAmountSection extends StatelessWidget {
   final TextEditingController controller;
 
-  /// The API supports separate USD/KHR balances.  Keep the amount field's
-  /// affordance aligned with the selected currency instead of always showing
-  /// a dollar sign.  USD remains the default for existing callers.
   final String currencySymbol;
 
   final Color surface;
@@ -115,7 +108,6 @@ class ExpenseAmountSection extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // CURRENCY
               Container(
                 width: 60,
                 height: double.infinity,
@@ -139,7 +131,6 @@ class ExpenseAmountSection extends StatelessWidget {
 
               Container(width: 1, height: 36, color: border),
 
-              // AMOUNT INPUT
               Expanded(
                 child: TextField(
                   controller: controller,
@@ -176,7 +167,6 @@ class ExpenseAmountSection extends StatelessWidget {
                 ),
               ),
 
-              // ICON
               Padding(
                 padding: const EdgeInsets.only(right: 15),
                 child: Icon(
@@ -193,7 +183,6 @@ class ExpenseAmountSection extends StatelessWidget {
   }
 }
 
-// SECTION LABEL
 class ExpenseSectionLabel extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -240,7 +229,6 @@ class ExpenseSectionLabel extends StatelessWidget {
   }
 }
 
-// INPUT FIELD
 class ExpenseInputField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
@@ -337,7 +325,6 @@ class ExpenseInputField extends StatelessWidget {
   }
 }
 
-// CATEGORY SELECTOR
 class ExpenseCategorySelector extends StatelessWidget {
   final List<ExpenseCategoryItem> categories;
   final int selectedCategory;
@@ -423,7 +410,6 @@ class ExpenseCategorySelector extends StatelessWidget {
   }
 }
 
-// DATE SELECTOR
 class ExpenseDateSelector extends StatelessWidget {
   final String date;
 
@@ -513,7 +499,6 @@ class ExpenseDateSelector extends StatelessWidget {
   }
 }
 
-// PAYMENT SELECTOR
 class ExpensePaymentSelector extends StatelessWidget {
   final List<ExpensePaymentItem> payments;
   final int selectedPayment;
@@ -548,7 +533,6 @@ class ExpensePaymentSelector extends StatelessWidget {
           final item = payments[index];
           final bool selected = selectedPayment == index;
 
-          // Index 0 = Optional
           final bool isOptional = index == 0 && item.name == 'Optional';
 
           return Padding(

@@ -4,12 +4,6 @@ import '../../../../core/errors/app_error.dart';
 import '../../domain/entities/finance_entities.dart';
 import '../../domain/repositories/finance_repository.dart';
 
-/// Owns the server-backed Finance Learning state.
-///
-/// The learning API returns raw lists (not PageResponse) and has no currency
-/// dimension. Request sequencing still protects topic/detail/progress reads
-/// from late responses, while completion and quiz mutations only update state
-/// after the backend confirms them.
 class FinanceLearningController extends GetxController {
   FinanceLearningController({required this.repository});
 

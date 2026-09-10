@@ -13,11 +13,6 @@ import '../../../auth/presentation/widgets/animated_auth_background.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../controllers/profile_setup_controller.dart';
 
-/// Three-step profile setup, shown once after registration.
-///
-/// Every step is optional: the account is already active, so "Skip for now"
-/// goes straight to the app. Steps save as the user leaves them, so partial
-/// progress survives a drop-out.
 class ProfileSetupScreen extends GetView<ProfileSetupController> {
   const ProfileSetupScreen({super.key});
 
@@ -56,7 +51,6 @@ class ProfileSetupScreen extends GetView<ProfileSetupController> {
   }
 }
 
-/// Progress dashes on the left, "Step n of 3" on the right.
 class _StepHeader extends StatelessWidget {
   const _StepHeader({required this.step});
 
@@ -99,7 +93,6 @@ class _StepHeader extends StatelessWidget {
   }
 }
 
-/// Shared body frame: scrollable content, then Continue + Skip.
 class _StepBody extends StatelessWidget {
   const _StepBody({
     required this.title,
@@ -176,7 +169,6 @@ class _StepBody extends StatelessWidget {
   }
 }
 
-// ── Step 1 ──────────────────────────────────────────────────────────────
 
 class _StepOne extends StatelessWidget {
   const _StepOne();
@@ -228,7 +220,6 @@ class _StepOne extends StatelessWidget {
   }
 }
 
-/// Two-column grid of role pills.
 class _RoleGrid extends StatelessWidget {
   const _RoleGrid({required this.selected, required this.onSelected});
 
@@ -308,10 +299,6 @@ class _ChoicePill extends StatelessWidget {
   }
 }
 
-/// Circular dashed photo slot with a "+" badge.
-///
-/// There is no upload endpoint — the backend stores an `avatarUrl` — so
-/// this asks for a URL rather than opening a file picker it cannot honour.
 class _PhotoPicker extends StatelessWidget {
   const _PhotoPicker();
 
@@ -412,7 +399,6 @@ class _PhotoPicker extends StatelessWidget {
   }
 }
 
-// ── Step 2 ──────────────────────────────────────────────────────────────
 
 class _StepTwo extends StatelessWidget {
   const _StepTwo();
@@ -459,7 +445,6 @@ class _StepTwo extends StatelessWidget {
   }
 }
 
-// ── Step 3 ──────────────────────────────────────────────────────────────
 
 class _StepThree extends StatelessWidget {
   const _StepThree();
@@ -531,8 +516,6 @@ class _InterestChip extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  /// The dot colour keys off the interest's category, so related
-  /// interests read as a group without needing a per-interest colour.
   static const _categoryColors = <String, Color>{
     'CAREER': AppColors.brandPrimary,
     'FINANCE': AppColors.financeAccent,
@@ -575,7 +558,6 @@ class _InterestChip extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                // Already localized by the backend.
                 interest.name,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: selected ? scheme.onPrimary : scheme.onSurface,

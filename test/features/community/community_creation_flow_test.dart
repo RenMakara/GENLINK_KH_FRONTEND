@@ -36,28 +36,23 @@ void main() {
         ),
       );
 
-      // Verify header and 3 creation options exist
       expect(find.text('Create'), findsOneWidget);
       expect(find.text('Create Post'), findsOneWidget);
       expect(find.text('Create Story'), findsOneWidget);
       expect(find.text('Create Event'), findsOneWidget);
 
-      // Verify icons
       expect(find.byIcon(Icons.post_add_rounded), findsOneWidget);
       expect(find.byIcon(Icons.amp_stories_rounded), findsOneWidget);
       expect(find.byIcon(Icons.event_available_rounded), findsOneWidget);
 
-      // Tap Create Post
       await tester.tap(find.text('Create Post'));
       await tester.pumpAndSettle();
       expect(postSelected, isTrue);
 
-      // Tap Create Story
       await tester.tap(find.text('Create Story'));
       await tester.pumpAndSettle();
       expect(storySelected, isTrue);
 
-      // Tap Create Event
       await tester.tap(find.text('Create Event'));
       await tester.pumpAndSettle();
       expect(eventSelected, isTrue);
@@ -80,12 +75,10 @@ void main() {
         ),
       );
 
-      // Check text rendering
       expect(find.text("What's happening in your community?"), findsOneWidget);
       expect(find.text('Share something with your community.'), findsOneWidget);
       expect(find.byIcon(Icons.edit_note_rounded), findsOneWidget);
 
-      // Tap the card
       await tester.tap(find.byType(QuickCreatePostCard));
       await tester.pumpAndSettle();
       expect(tapped, isTrue);
@@ -128,7 +121,6 @@ void main() {
       await tester.tap(find.text('Open Menu'));
       await tester.pumpAndSettle();
 
-      // Verify bottom sheet is presented
       expect(find.byType(CommunityCreationBottomSheet), findsOneWidget);
       expect(find.text('Create Post'), findsOneWidget);
       expect(find.text('Create Story'), findsOneWidget);

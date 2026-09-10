@@ -21,8 +21,6 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
 
-/// Golden tests for the auth screens, used to check the rendered result
-/// against the design. Regenerate with `flutter test --update-goldens`.
 void main() {
   const phone = Size(390, 844);
 
@@ -117,8 +115,6 @@ void main() {
     );
   });
 
-  // Dark mode specifically: the button label used to inherit an explicit
-  // colour from the text theme and render white-on-white here.
   testWidgets('register (dark)', (tester) async {
     await pumpScreen(
       tester,

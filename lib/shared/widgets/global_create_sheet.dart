@@ -19,6 +19,7 @@ import 'package:genlink_frontend/features/productivity/presentation/goals_plan/g
     as productivity_goal;
 import '../../features/productivity/presentation/screens/create_habit_screen.dart';
 import '../../features/productivity/presentation/screens/create_task_screen.dart';
+import '../../features/productivity/productivity_screen.dart';
 
 class GlobalCreateSheet extends StatelessWidget {
   final bool fromPostComposer;
@@ -695,7 +696,7 @@ class GlobalCreateSheet extends StatelessWidget {
                                     isDark: isDark,
                                     onTap: () => _navigate(
                                       context,
-                                      const CreateGoalScreen(),
+                                      const ProductivityPage(),
                                       routeName: '/CreateGoalScreen',
                                     ),
                                   ),

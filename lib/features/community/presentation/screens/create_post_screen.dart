@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
@@ -29,6 +30,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   String _selectedAudience = 'Public';
   List<String> _attachedImages = [];
+  // ─── Step 3B-Frontend: Video state ────────────────────────────────────────
+  String? _attachedVideo;          // local file path of the selected video
+  VideoPlayerController? _previewVideoController; // preview controller
+  bool _videoInitialized = false;  // controller ready to render
+  bool _videoInitError = false;    // init failed (bad codec, corrupt, etc.)
+  // ──────────────────────────────────────────────────────────────────────────
+
   String? _selectedLocation;
   EventModel? _attachedEvent;
   String? _selectedFeeling;
@@ -75,12 +83,19 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   void dispose() {
     _textController.dispose();
     _editorFocusNode.dispose();
+    _previewVideoController?.dispose(); // Step 3B: no controller leak
     super.dispose();
   }
 
   final ImagePicker _picker = ImagePicker();
 
   Future<void> _pickGalleryImages() async {
+    // Step 3B: if a video is attached, ask user before replacing it with images
+    if (_attachedVideo != null) {
+      final replace = await _showMediaConflictDialog(videoReplacingImages: false);
+      if (!replace) return;
+      await _clearVideo();
+    }
     try {
       final List<XFile> selected = await _picker.pickMultiImage();
       if (selected.isNotEmpty) {
@@ -90,6 +105,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       }
     } on PlatformException catch (e) {
       // Permission denied or picker unavailable
+
       debugPrint('[CreatePostScreen] Gallery pick PlatformException: ${e.code} — ${e.message}');
       if (!mounted) return;
       final bool isPermissionError =
@@ -151,6 +167,155 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       }
     }
   }
+
+  // ─── Step 3B-Frontend: Video picking ──────────────────────────────────────
+
+  /// Picks a video from the gallery.
+  /// If images are already attached, asks the user to confirm replacement.
+  Future<void> _pickGalleryVideo() async {
+    // Conflict: images exist — ask user
+    if (_attachedImages.isNotEmpty) {
+      final replace = await _showMediaConflictDialog(videoReplacingImages: true);
+      if (!replace) return;
+    }
+
+    try {
+      final XFile? file = await _picker.pickVideo(
+        source: ImageSource.gallery,
+        maxDuration: const Duration(minutes: 5),
+      );
+      if (file == null) return; // user cancelled — not an error
+
+      await _setVideoFile(file.path);
+    } on PlatformException catch (e) {
+      debugPrint('[CreatePostScreen] Video pick PlatformException: ${e.code} — ${e.message}');
+      if (!mounted) return;
+      final bool isPermission =
+          e.code == 'photo_access_denied' ||
+          e.code == 'access_denied' ||
+          e.code == 'permission_denied' ||
+          (e.message ?? '').toLowerCase().contains('permission') ||
+          (e.message ?? '').toLowerCase().contains('denied');
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: 'community.videoPermissionDenied'.tr != 'community.videoPermissionDenied'
+            ? 'community.videoPermissionDenied'.tr
+            : isPermission ? 'Video Access Denied' : 'Video Unavailable',
+        message: 'community.videoPermissionDeniedMsg'.tr != 'community.videoPermissionDeniedMsg'
+            ? 'community.videoPermissionDeniedMsg'.tr
+            : 'Please allow video access in your device settings.',
+      );
+    } catch (e) {
+      // Cancellation / unexpected — do not crash or show error for simple cancel
+      debugPrint('[CreatePostScreen] Video pick: $e');
+    }
+  }
+
+  /// Initializes the [VideoPlayerController] for preview from [path].
+  /// Disposes any previous controller first to prevent leaks.
+  Future<void> _setVideoFile(String path) async {
+    // Dispose old controller cleanly
+    final old = _previewVideoController;
+    setState(() {
+      _attachedVideo = path;
+      _attachedImages = []; // clear any images — video/image mutual exclusion
+      _previewVideoController = null;
+      _videoInitialized = false;
+      _videoInitError = false;
+    });
+    await old?.dispose();
+
+    try {
+      final ctrl = VideoPlayerController.file(File(path));
+      await ctrl.initialize();
+      if (!mounted) {
+        await ctrl.dispose();
+        return;
+      }
+      setState(() {
+        _previewVideoController = ctrl;
+        _videoInitialized = true;
+      });
+    } catch (e) {
+      debugPrint('[CreatePostScreen] VideoPlayerController init error: $e');
+      if (mounted) setState(() => _videoInitError = true);
+    }
+  }
+
+  /// Removes the selected video and disposes its controller.
+  Future<void> _clearVideo() async {
+    final ctrl = _previewVideoController;
+    setState(() {
+      _attachedVideo = null;
+      _previewVideoController = null;
+      _videoInitialized = false;
+      _videoInitError = false;
+    });
+    await ctrl?.dispose();
+  }
+
+  /// Shows a conflict dialog when the user tries to switch between media types.
+  /// Returns true if the user confirms the replacement.
+  Future<bool> _showMediaConflictDialog({required bool videoReplacingImages}) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E2228) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            videoReplacingImages
+                ? ('community.videoReplaceImages'.tr != 'community.videoReplaceImages'
+                    ? 'community.videoReplaceImages'.tr
+                    : 'Replace photos with video?')
+                : ('community.imagesReplaceVideo'.tr != 'community.imagesReplaceVideo'
+                    ? 'community.imagesReplaceVideo'.tr
+                    : 'Replace video with photos?'),
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            videoReplacingImages
+                ? ('community.videoReplaceImagesMsg'.tr != 'community.videoReplaceImagesMsg'
+                    ? 'community.videoReplaceImagesMsg'.tr
+                    : 'Selecting a video will remove your selected photos. Continue?')
+                : ('community.imagesReplaceVideoMsg'.tr != 'community.imagesReplaceVideoMsg'
+                    ? 'community.imagesReplaceVideoMsg'.tr
+                    : 'Selecting photos will remove your selected video. Continue?'),
+            style: TextStyle(
+              color: isDark ? Colors.white70 : Colors.black54,
+              fontSize: 14,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(
+                'community.keepEditing'.tr != 'community.keepEditing'
+                    ? 'community.keepEditing'.tr
+                    : 'Cancel',
+                style: const TextStyle(color: Colors.white60),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(
+                'community.done'.tr != 'community.done' ? 'community.done'.tr : 'Replace',
+                style: const TextStyle(color: Colors.redAccent),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    return result == true;
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
 
   void _showMediaPickerSheet() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -242,6 +407,37 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   _pickCameraImage();
                 },
               ),
+              const SizedBox(height: 6),
+              // ─── Step 3B-Frontend: Video picker option ─────────────────
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF22262E) : const Color(0xFFF0F2F5),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.videocam_outlined, color: textPrimary, size: 20),
+                ),
+                title: Text(
+                  'community.selectVideo'.tr != 'community.selectVideo'
+                      ? 'community.selectVideo'.tr
+                      : 'Select Video',
+                  style: TextStyle(color: textPrimary, fontWeight: FontWeight.w600, fontSize: 14.5),
+                ),
+                subtitle: Text(
+                  'community.videoFromGallery'.tr != 'community.videoFromGallery'
+                      ? 'community.videoFromGallery'.tr
+                      : 'Choose a video from your gallery',
+                  style: TextStyle(color: textSecondary, fontSize: 12),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickGalleryVideo();
+                },
+              ),
+              // ──────────────────────────────────────────────────────────
             ],
           ),
         ),
@@ -881,6 +1077,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     final text = _textController.text.trim();
     return text.isNotEmpty ||
         _attachedImages.isNotEmpty ||
+        _attachedVideo != null || // Step 3B: video-only post is valid
         _pollQuestion != null ||
         _attachedEvent != null ||
         _selectedLocation != null ||
@@ -951,6 +1148,29 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     setState(() {
       _isSubmitting = true;
     });
+
+    // ─── Step 3B-Frontend: Video backend gate ─────────────────────────────
+    // Backend does not yet support VIDEO PostType or videoUrl field.
+    // When Step 3B-Backend is complete, replace this block with:
+    //   1. Await MediaUploadService.upload(bytes, contentType: 'video/mp4',
+    //        purpose: MediaPurpose.post) → MediaEntity.url (CDN URL)
+    //   2. Pass videoUrl to controller.createPost(videoUrl: cdnUrl)
+    if (_attachedVideo != null) {
+      if (mounted) {
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: 'community.videoBackendPending'.tr != 'community.videoBackendPending'
+              ? 'community.videoBackendPending'.tr
+              : 'Video posting is coming soon!',
+          message: 'community.videoBackendPendingMsg'.tr != 'community.videoBackendPendingMsg'
+              ? 'community.videoBackendPendingMsg'.tr
+              : 'Backend video support is not yet available. Your video was not uploaded.',
+        );
+        setState(() => _isSubmitting = false);
+      }
+      return;
+    }
+    // ──────────────────────────────────────────────────────────────────────
 
     final controller = Get.isRegistered<CommunityController>()
         ? Get.find<CommunityController>()
@@ -1251,7 +1471,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
                       const SizedBox(height: 12),
 
+                      // ─── Step 3B-Frontend: Video preview ────────────────────
+                      if (_attachedVideo != null) _buildVideoPreview(isDark, cardBg, cardBorder, textSecondary),
+                      if (_attachedVideo != null) const SizedBox(height: 12),
+                      // ────────────────────────────────────────────────────────
+
                       if (_attachedImages.isNotEmpty ||
+
                           _pollQuestion != null ||
                           _attachedEvent != null ||
                           _attachedLink != null ||
@@ -1662,6 +1888,122 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       ),
     );
   }
+
+  // ─── Step 3B-Frontend: Video preview widget ───────────────────────────────
+  Widget _buildVideoPreview(bool isDark, Color cardBg, Color cardBorder, Color textSecondary) {
+    final ctrl = _previewVideoController;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF16181C) : const Color(0xFFF2F4F7),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: cardBorder, width: 0.8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Video area ──────────────────────────────────────────────
+            AspectRatio(
+              aspectRatio: (ctrl != null && _videoInitialized)
+                  ? ctrl.value.aspectRatio
+                  : 16 / 9,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Video or placeholder background
+                  if (ctrl != null && _videoInitialized)
+                    VideoPlayer(ctrl)
+                  else
+                    Container(
+                      color: isDark ? const Color(0xFF0C0E12) : const Color(0xFFE0E0E0),
+                    ),
+
+                  // Loading spinner
+                  if (_attachedVideo != null && !_videoInitialized && !_videoInitError)
+                    const CircularProgressIndicator(strokeWidth: 2),
+
+                  // Error state
+                  if (_videoInitError)
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 32),
+                        const SizedBox(height: 6),
+                        Text(
+                          'community.videoLoadError'.tr != 'community.videoLoadError'
+                              ? 'community.videoLoadError'.tr
+                              : 'Unable to play video',
+                          style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                        ),
+                      ],
+                    ),
+
+                  // Play / pause overlay
+                  if (ctrl != null && _videoInitialized)
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          ctrl.value.isPlaying ? ctrl.pause() : ctrl.play();
+                        });
+                      },
+                      child: AnimatedOpacity(
+                        opacity: ctrl.value.isPlaying ? 0.0 : 1.0,
+                        duration: const Duration(milliseconds: 200),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0x88000000),
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(14),
+                          child: Icon(
+                            ctrl.value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // ── Footer: label + remove ─────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.videocam_outlined, size: 16, color: textSecondary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'community.videoReady'.tr != 'community.videoReady'
+                          ? 'community.videoReady'.tr
+                          : 'Video ready to post',
+                      style: TextStyle(color: textSecondary, fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _clearVideo,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Color(0xCC000000),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close, color: Colors.white, size: 14),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  // ──────────────────────────────────────────────────────────────────────────
 }
 
 class _ToolbarBtn extends StatefulWidget {

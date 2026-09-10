@@ -51,6 +51,12 @@ class CommunityPostModel {
   final String? postType;
   final String? discussionTitle;
   final String? category;
+  /// Step 3B-Frontend: prepared for backend VIDEO support.
+  /// Populated from JSON 'videoUrl' once backend returns it.
+  final String? videoUrl;
+
+  /// True when this post carries a video (not images).
+  bool get isVideoPost => videoUrl != null && videoUrl!.isNotEmpty;
 
   CommunityPostModel({
     required this.id,
@@ -90,6 +96,7 @@ class CommunityPostModel {
     this.postType,
     this.discussionTitle,
     this.category,
+    this.videoUrl,
   });
 
   bool checkIsOwner(String? currentUserId) {
@@ -138,6 +145,7 @@ class CommunityPostModel {
     String? postType,
     String? discussionTitle,
     String? category,
+    String? videoUrl,
   }) {
     return CommunityPostModel(
       id: id ?? this.id,
@@ -176,6 +184,7 @@ class CommunityPostModel {
       postType: postType ?? this.postType,
       discussionTitle: discussionTitle ?? this.discussionTitle,
       category: category ?? this.category,
+      videoUrl: videoUrl ?? this.videoUrl,
     );
   }
 
@@ -315,6 +324,8 @@ class CommunityPostModel {
       postType: json['postType'] as String?,
       discussionTitle: json['discussionTitle'] as String? ?? json['title'] as String?,
       category: json['category'] as String?,
+      // Step 3B-Frontend: read videoUrl — null-safe; returns null until backend supports it
+      videoUrl: json['videoUrl'] as String?,
       comments:
           (json['commentsList'] as List<dynamic>?)
               ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
@@ -353,6 +364,7 @@ class CommunityPostModel {
       'postType': postType,
       'discussionTitle': discussionTitle,
       'category': category,
+      'videoUrl': videoUrl,
     };
   }
 }

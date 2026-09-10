@@ -2,6 +2,7 @@ import 'dart:io';
 import 'poll_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:video_player/video_player.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
@@ -1010,6 +1011,16 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 
           const SizedBox(height: 8),
 
+          // ─── Step 3B-Frontend: Video rendering ───────────────────────
+          // isVideoPost is true only when videoUrl != null && non-empty.
+          // This fires ONLY for VIDEO posts. Image/text posts unaffected.
+          if (widget.post.isVideoPost)
+            VideoPostMedia(videoUrl: widget.post.videoUrl!),
+          // Integration point for Step 3B-Backend:
+          // When backend returns videoUrl in PostResponse, it will be parsed
+          // into CommunityPostModel.videoUrl and rendered here automatically.
+          // ─────────────────────────────────────────────────────────────
+
           if (widget.post.imageUrls.isNotEmpty) _buildImageCarousel(widget.post.imageUrls),
 
           if (widget.post.pollQuestion != null && widget.post.pollOptions != null)
@@ -1774,3 +1785,134 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     );
   }
 }
+
+// ─── Step 3B-Frontend: Feed video player ──────────────────────────────────────
+/// Renders a network video inside a PostCard.
+/// Lazy-initialized — controller created on first build, disposed on unmount.
+/// Gated in PostCardWidget: only shown when [CommunityPostModel.isVideoPost] == true.
+///
+/// Integration note (Step 3B-Backend):
+///   When backend starts returning videoUrl, [CommunityPostModel.videoUrl] will be
+///   non-null and this widget will auto-render without any further PostCard changes.
+class VideoPostMedia extends StatefulWidget {
+  const VideoPostMedia({super.key, required this.videoUrl});
+
+  final String videoUrl;
+
+  @override
+  State<VideoPostMedia> createState() => _VideoPostMediaState();
+}
+
+class _VideoPostMediaState extends State<VideoPostMedia> {
+  VideoPlayerController? _ctrl;
+  bool _initialized = false;
+  bool _error = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initController();
+  }
+
+  Future<void> _initController() async {
+    try {
+      final ctrl = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+      await ctrl.initialize();
+      if (!mounted) {
+        await ctrl.dispose();
+        return;
+      }
+      setState(() {
+        _ctrl = ctrl;
+        _initialized = true;
+      });
+    } catch (e) {
+      debugPrint('[VideoPostMedia] init error: $e');
+      if (mounted) setState(() => _error = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ctrl = _ctrl;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: AspectRatio(
+          aspectRatio: (ctrl != null && _initialized) ? ctrl.value.aspectRatio : 16 / 9,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Video or background
+              if (ctrl != null && _initialized)
+                VideoPlayer(ctrl)
+              else
+                Container(
+                  color: isDark ? const Color(0xFF0C0E12) : const Color(0xFFE0E0E0),
+                ),
+
+              // Loading
+              if (!_initialized && !_error)
+                const CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+
+              // Error
+              if (_error)
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 28),
+                    const SizedBox(height: 4),
+                    Text(
+                      'community.videoLoadError'.tr != 'community.videoLoadError'
+                          ? 'community.videoLoadError'.tr
+                          : 'Unable to play video',
+                      style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+                    ),
+                  ],
+                ),
+
+              // Play / pause overlay
+              if (ctrl != null && _initialized)
+                GestureDetector(
+                  onTap: () => setState(() {
+                    ctrl.value.isPlaying ? ctrl.pause() : ctrl.play();
+                  }),
+                  child: Container(
+                    color: Colors.transparent,
+                    child: Center(
+                      child: AnimatedOpacity(
+                        opacity: ctrl.value.isPlaying ? 0.0 : 1.0,
+                        duration: const Duration(milliseconds: 200),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0x88000000),
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: Icon(
+                            ctrl.value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+// ──────────────────────────────────────────────────────────────────────────────

@@ -1,39 +1,14 @@
-import 'dart:math' as math;
-import 'dart:ui';
+import 'dart:ui' show ImageFilter, lerpDouble;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
-import '../../design_system/colors/app_colors.dart';
 import '../../design_system/widgets/avatar/app_avatar.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../main_controller.dart';
 
-// ═══════════════════════════════════════════════════════════════════════
-//  BOTTOM NAV BAR — Moving Glass Active Item
-// ═══════════════════════════════════════════════════════════════════════
-//
-//  Architecture (3 layers in a Stack):
-//
-//  Layer 1 — Fixed glass bar (background pill)
-//  Layer 2 — 4 static inactive tabs (outline icons, opaque bkg)
-//             Tappable. Icon of the currently-active slot is hidden
-//             so the moving active item on Layer 3 is the sole visible
-//             content for that slot.
-//  Layer 3 — ONE animated Positioned widget that travels horizontally:
-//               ┌ GlassCapsule ─────────────────────┐
-//               │  ActiveIcon (filled)               │
-//               │  ActiveLabel                       │
-//               └────────────────────────────────────┘
-//             The icon and label switch (with AnimatedSwitcher crossfade)
-//             at the midpoint of each transition so they appear to "arrive"
-//             at the destination slot together with the glass.
-//
-//  The + button is completely separate (to the right, fixed).
-// ═══════════════════════════════════════════════════════════════════════
-
-// ─── Tab definition ──────────────────────────────────────────────────
+// ─── Tab definitions ──────────────────────────────────────────────────────────
 class _TabDef {
   final IconData outlineIcon;
   final IconData filledIcon;
@@ -68,14 +43,13 @@ const _kTabs = [
     labelFallback: 'Finance',
   ),
   _TabDef(
-    outlineIcon: Icons.person_outline_rounded,
+    outlineIcon: Icons.person_outline,
     filledIcon: Icons.person_rounded,
     labelKey: 'nav.profile',
     labelFallback: 'Profile',
   ),
 ];
 
-// ─── Public widget ────────────────────────────────────────────────────
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -88,26 +62,28 @@ class BottomNavBar extends StatelessWidget {
     this.onCenterTap,
   });
 
-  static String _tr(String key, String fallback) {
-    final v = key.tr;
-    return (v.isNotEmpty && v != key) ? v : fallback;
+  static String _label(String key, String fallback) {
+    final tr = key.tr;
+    return (tr.isNotEmpty && tr != key) ? tr : fallback;
   }
 
   @override
   Widget build(BuildContext context) {
-    final mainCtrl =
-        Get.isRegistered<MainController>() ? Get.find<MainController>() : null;
-    final authCtrl =
-        Get.isRegistered<AuthController>() ? Get.find<AuthController>() : null;
+    final mainController = Get.isRegistered<MainController>()
+        ? Get.find<MainController>()
+        : null;
+    final authController = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : null;
 
-    Widget buildBar(bool visible, String? avatarUrl) {
+    Widget buildBar(bool isVisible, String? avatarUrl) {
       return AnimatedSlide(
-        offset: visible ? Offset.zero : const Offset(0, 1.2),
-        duration: const Duration(milliseconds: 250),
+        offset: isVisible ? Offset.zero : const Offset(0, 1.0),
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOutCubic,
         child: AnimatedOpacity(
-          opacity: visible ? 1.0 : 0.0,
-          duration: const Duration(milliseconds: 250),
+          opacity: isVisible ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 300),
           child: _NavBarContent(
             currentIndex: currentIndex,
             onTap: onTap,
@@ -118,25 +94,22 @@ class BottomNavBar extends StatelessWidget {
       );
     }
 
-    if (mainCtrl == null && authCtrl == null) return buildBar(true, null);
+    if (mainController == null && authController == null) {
+      return buildBar(true, null);
+    }
 
     return Obx(() {
-      final visible = mainCtrl?.isNavBarVisible.value ?? true;
-      final user = authCtrl?.currentUser.value;
-      return buildBar(visible, user?.avatarUrl);
+      final isVisible = mainController?.isNavBarVisible.value ?? true;
+      final user = authController?.currentUser.value;
+      return buildBar(isVisible, user?.avatarUrl);
     });
   }
 
-  // ── Profile long-press menu (unchanged) ───────────────────────────
-  static void showProfileMenu(BuildContext context) {
-    final authCtrl = Get.isRegistered<AuthController>()
-        ? Get.find<AuthController>()
-        : null;
+  static void _showProfileMenu(BuildContext context) {
+    final authController = Get.find<AuthController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final surface = isDark ? const Color(0xFF161616) : Colors.white;
+    final textPrimary = isDark ? Colors.white : Colors.black87;
 
     showModalBottomSheet(
       context: context,
@@ -144,7 +117,8 @@ class BottomNavBar extends StatelessWidget {
       builder: (ctx) => Material(
         color: surface,
         clipBehavior: Clip.antiAlias,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(20)),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: Column(
@@ -156,35 +130,39 @@ class BottomNavBar extends StatelessWidget {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.darkBorderStrong
-                        : Colors.black12,
+                    color: isDark ? Colors.white24 : Colors.black12,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               ListTile(
-                leading: Icon(Icons.group_add_outlined, color: textPrimary),
+                leading:
+                    Icon(Icons.group_add_outlined, color: textPrimary),
                 title: Text('auth.switchAccount'.tr),
                 onTap: () {
                   Navigator.pop(ctx);
-                  Get.showSnackbar(const GetSnackBar(
-                    message: 'Coming soon',
-                    duration: Duration(seconds: 2),
-                  ));
+                  Get.showSnackbar(
+                    GetSnackBar(
+                      message: 'Coming soon',
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
                 },
               ),
-              if (authCtrl != null)
-                ListTile(
-                  leading: const Icon(Icons.exit_to_app_rounded,
-                      color: Colors.redAccent),
-                  title: Text('auth.logout'.tr,
-                      style: const TextStyle(color: Colors.redAccent)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _showLogoutConfirm(context, authCtrl);
-                  },
+              ListTile(
+                leading: const Icon(
+                  Icons.exit_to_app_rounded,
+                  color: Colors.redAccent,
                 ),
+                title: Text(
+                  'auth.logout'.tr,
+                  style: const TextStyle(color: Colors.redAccent),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showLogoutConfirm(context, authController);
+                },
+              ),
             ],
           ),
         ),
@@ -193,27 +171,33 @@ class BottomNavBar extends StatelessWidget {
   }
 
   static void _showLogoutConfirm(
-      BuildContext context, AuthController authCtrl) {
-    Get.dialog(AlertDialog(
-      title: Text('auth.logout'.tr),
-      content: Text('auth.logoutConfirm'.tr),
-      actions: [
-        TextButton(
-            onPressed: () => Get.back(), child: Text('common.cancel'.tr)),
-        TextButton(
-          onPressed: () {
-            Get.back();
-            authCtrl.logout();
-          },
-          child: Text('auth.logout'.tr,
-              style: const TextStyle(color: Colors.redAccent)),
-        ),
-      ],
-    ));
+      BuildContext context, AuthController authController) {
+    Get.dialog(
+      AlertDialog(
+        title: Text('auth.logout'.tr),
+        content: Text('auth.logoutConfirm'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('common.cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () {
+              Get.back();
+              authController.logout();
+            },
+            child: Text(
+              'auth.logout'.tr,
+              style: const TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-// ─── Internal stateful bar ────────────────────────────────────────────
+// ─── Internal Navigation Content (Glass Pill + Capsule + Separate +) ──────────
 class _NavBarContent extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -233,70 +217,31 @@ class _NavBarContent extends StatefulWidget {
 
 class _NavBarContentState extends State<_NavBarContent>
     with SingleTickerProviderStateMixin {
-  // ── Animation state ───────────────────────────────────────────────
   late final AnimationController _ctrl;
-
-  // _fromPos / _toPos are fractional tab indices (0.0, 1.0, 2.0, 3.0).
+  late final Animation<double> _anim;
   double _fromPos = 0.0;
   double _toPos = 0.0;
 
-  // Which tab's icon + label the glass currently shows.
-  // Switches to widget.currentIndex at animation midpoint.
-  int _displayedIndex = 0;
-
-  // ── Helpers ───────────────────────────────────────────────────────
-  static String _tr(String key, String fallback) =>
-      BottomNavBar._tr(key, fallback);
-
-  double get _curPos {
-    final t = Curves.easeOutCubic.transform(_ctrl.value);
-    return lerpDouble(_fromPos, _toPos, t)!;
-  }
-
-  // Given bar-content width and center-button width, returns the X centre
-  // of each of the 4 tab slots.
-  //
-  // Row layout:  [Tab0 flex] [Tab1 flex] [CenterBtn fixed] [Tab2 flex] [Tab3 flex]
-  static List<double> _tabCenters(double barW, double centerBtnW) {
-    final tabW = (barW - centerBtnW) / 4.0;
-    return [
-      tabW * 0.5,                              // Tab 0
-      tabW * 1.5,                              // Tab 1
-      tabW * 2.0 + centerBtnW + tabW * 0.5,   // Tab 2
-      tabW * 2.0 + centerBtnW + tabW * 1.5,   // Tab 3
-    ];
-  }
-
-  // ── Lifecycle ─────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
     _fromPos = widget.currentIndex.toDouble();
     _toPos = widget.currentIndex.toDouble();
-    _displayedIndex = widget.currentIndex;
-
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 340),
-    )
-      ..value = 1.0 // "completed" — _curPos == _toPos immediately
-      ..addListener(_onTick);
-  }
-
-  void _onTick() {
-    // Switch the icon + label at the animation midpoint so the content
-    // appears to "arrive" at the destination together with the glass.
-    final t = Curves.easeOutCubic.transform(_ctrl.value);
-    if (t >= 0.5 && _displayedIndex != widget.currentIndex) {
-      setState(() => _displayedIndex = widget.currentIndex);
-    }
+      duration: const Duration(milliseconds: 320),
+    );
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
+    _ctrl.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
-  void didUpdateWidget(_NavBarContent old) {
-    super.didUpdateWidget(old);
-    if (old.currentIndex != widget.currentIndex) {
-      _fromPos = _curPos; // continue from wherever the glass currently is
+  void didUpdateWidget(_NavBarContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentIndex != widget.currentIndex) {
+      _fromPos = currentPos;
       _toPos = widget.currentIndex.toDouble();
       _ctrl.forward(from: 0.0);
     }
@@ -304,413 +249,434 @@ class _NavBarContentState extends State<_NavBarContent>
 
   @override
   void dispose() {
-    _ctrl
-      ..removeListener(_onTick)
-      ..dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
-  // ── Build ─────────────────────────────────────────────────────────
+  double get currentPos {
+    return lerpDouble(_fromPos, _toPos, _anim.value) ?? _toPos;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return LayoutBuilder(builder: (context, constraints) {
-      final totalW = constraints.maxWidth;
-      final isVN = totalW < 340;
-      final isN = totalW < 370;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalWidth = constraints.maxWidth;
+        final isVeryNarrow = totalWidth < 340;
+        final isNarrow = totalWidth < 370;
 
-      // Sizing
-      final hMargin = isVN ? 10.0 : (isN ? 14.0 : 16.0);
-      final safeB = MediaQuery.of(context).padding.bottom;
-      final bottomM = safeB > 0 ? safeB + 4.0 : 16.0;
-      final barH = isVN ? 56.0 : 58.0;
-      final centerBtnSz = isVN ? 44.0 : 48.0;
-      final plusGap = isVN ? 8.0 : 10.0;
-      final iconSz = isVN ? 20.0 : (isN ? 21.0 : 22.0);
-      final fontSize = isVN ? 9.5 : (isN ? 10.0 : 10.5);
+        final horizontalMargin = isVeryNarrow ? 10.0 : (isNarrow ? 14.0 : 16.0);
+        final safeBottom = MediaQuery.of(context).padding.bottom;
+        final bottomMargin = safeBottom > 0 ? safeBottom + 4.0 : 16.0;
 
-      // Active glass capsule protrudes above the bar to create a floating lens.
-      const topProtrusion = 9.0;
-      const bottomProtrusion = 5.0;
-      final capH = barH + topProtrusion + bottomProtrusion;
+        // Heights
+        final barHeight = isVeryNarrow ? 60.0 : (isNarrow ? 64.0 : 68.0);
+        // No protrusion: capsule sits inside the bar with vertical inset
+        const topProtrusion = 0.0;
+        const bottomProtrusion = 0.0;
+        final totalBarHeight = barHeight + topProtrusion + bottomProtrusion;
 
-      // Bar content width (inside horizontal margins, excluding + button gap & button)
-      final barContentW = totalW - hMargin * 2 - plusGap - centerBtnSz;
-      final centers = _tabCenters(barContentW, 0 /* no center btn inside bar */);
+        // Plus button sizing
+        final plusSize = isVeryNarrow ? 44.0 : 48.0;
+        final plusIconSize = isVeryNarrow ? 20.0 : (isNarrow ? 21.0 : 22.0);
+        final plusGap = isVeryNarrow ? 8.0 : 10.0;
 
-      // Capsule width: fits comfortably in one tab slot
-      final tabSlotW = barContentW / _kTabs.length;
-      final capW = (tabSlotW - (isVN ? 4.0 : 6.0)).clamp(54.0, 76.0);
-      const capRadius = Radius.circular(24.0);
+        // Content sizes
+        final iconSize = isVeryNarrow ? 20.0 : (isNarrow ? 22.0 : 22.0);
+        final fontSize = isVeryNarrow ? 9.5 : (isNarrow ? 10.0 : 10.5);
 
-      // Colors
-      final barBg = isDark
-          ? const Color(0xB8121418)
-          : const Color(0xCCF7F9FC);
-      final barBorder = isDark
-          ? const Color(0x22FFFFFF)
-          : const Color(0x18000000);
-      final barShadow = [
-        BoxShadow(
-          color: isDark ? const Color(0x52000000) : const Color(0x14000000),
-          blurRadius: 20,
-          offset: const Offset(0, 6),
-          spreadRadius: -2,
-        ),
-        BoxShadow(
-          color: isDark ? const Color(0x2E000000) : const Color(0x0A000000),
-          blurRadius: 6,
-          offset: const Offset(0, 2),
-        ),
-      ];
-      final inactiveColor = isDark
-          ? const Color(0x75FFFFFF)
-          : const Color(0x66141517);
-      final activeColor = isDark ? Colors.white : const Color(0xFF141517);
+        // Glass bar styling
+        final pillBg = isDark
+            ? const Color(0xC0121418) // slightly more opaque for premium feel
+            : const Color(0xD4F5F7FA);
+        final pillBorder = isDark
+            ? const Color(0x30FFFFFF) // slightly more visible border
+            : const Color(0x20000000);
+        final pillShadow = [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.10),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+            spreadRadius: -4,
+          ),
+          // Subtle top highlight
+          BoxShadow(
+            color: (isDark ? Colors.white : Colors.white)
+                .withValues(alpha: isDark ? 0.04 : 0.60),
+            blurRadius: 1,
+            offset: const Offset(0, -1),
+          ),
+        ];
 
-      return Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(hMargin, 0, hMargin, bottomM),
-            child: SizedBox(
-              height: capH,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // ── Main glass bar  ──────────────────────────────
-                  Expanded(
-                    child: SizedBox(
-                      height: capH,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          // ─ Layer 1: Fixed glass pill bar ─────────
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            top: topProtrusion,
-                            height: barH,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                borderRadius:
-                                    BorderRadius.circular(barH / 2),
-                                boxShadow: barShadow,
-                              ),
-                              child: ClipRRect(
-                                borderRadius:
-                                    BorderRadius.circular(barH / 2),
-                                child: BackdropFilter(
-                                  filter: ImageFilter.blur(
-                                      sigmaX: 18, sigmaY: 18),
-                                  child: Container(
+        // Active capsule — premium frosted glass
+        final capsuleBg = isDark
+            ? const Color(0x48FFFFFF) // 28% white → clearly visible glass
+            : Colors.white;
+        final capsuleBorder = isDark
+            ? const Color(0x55FFFFFF) // crisp highlight on dark glass
+            : const Color(0x22000000);
+        final capsuleShadow = [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.12),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+            spreadRadius: -2,
+          ),
+          // Inner top highlight for glass depth
+          BoxShadow(
+            color: (isDark ? Colors.white : Colors.white)
+                .withValues(alpha: isDark ? 0.22 : 0.90),
+            blurRadius: 1,
+            offset: const Offset(0, -0.5),
+          ),
+        ];
+
+        // Text / Icon colors
+        final activeColor = isDark ? Colors.white : const Color(0xFF141517);
+        // Inactive: slightly more visible than before (0x80 → 0x99 dark / 0x66 → 0x88 light)
+        final inactiveColor = isDark
+            ? const Color(0x99FFFFFF) // 60% white
+            : const Color(0x88141517); // 53% dark
+
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 540),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalMargin,
+                0,
+                horizontalMargin,
+                bottomMargin,
+              ),
+              child: SizedBox(
+                height: totalBarHeight,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // ── Main Glass Pill Bar with 4 tabs ─────────────
+                    Expanded(
+                      child: SizedBox(
+                        height: totalBarHeight,
+                        child: LayoutBuilder(
+                          builder: (context, barConstraints) {
+                            final barWidth = barConstraints.maxWidth;
+                            final slotWidth = barWidth / _kTabs.length;
+                            // Capsule width = slot minus small H padding
+                            // Capsule height = barHeight minus vertical inset
+                            // → width > height → pill shape not circle
+                            final capsuleWidth = (slotWidth - 8.0)
+                                .clamp(56.0, 88.0);
+                            const verticalInset = 8.0;
+                            final capsuleHeight = barHeight - verticalInset * 2;
+                            const capsuleRadius = Radius.circular(24.0);
+
+                            final pos = currentPos;
+                            final capsuleCenter = (pos + 0.5) * slotWidth;
+                            final capsuleLeft = capsuleCenter - capsuleWidth / 2;
+
+                            return Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                // Layer 1: Fixed Glass Pill Background
+                                Positioned(
+                                  left: 0,
+                                  right: 0,
+                                  top: topProtrusion,
+                                  height: barHeight,
+                                  child: DecoratedBox(
                                     decoration: BoxDecoration(
-                                      color: barBg,
                                       borderRadius:
-                                          BorderRadius.circular(barH / 2),
-                                      border: Border.all(
-                                          color: barBorder, width: 1.0),
+                                          BorderRadius.circular(barHeight / 2),
+                                      boxShadow: pillShadow,
                                     ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          // ─ Layer 2: Static inactive tabs ─────────
-                          // Each tab shows ONLY its outline icon.
-                          // The slot whose index == _displayedIndex has its
-                          // icon hidden (opacity 0) because the moving glass
-                          // covers it with the filled version.
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            top: topProtrusion,
-                            height: barH,
-                            child: Row(
-                              children: List.generate(_kTabs.length, (i) {
-                                final tab = _kTabs[i];
-                                final isHidden = i == _displayedIndex;
-                                return Expanded(
-                                  child: Semantics(
-                                    button: true,
-                                    label: _tr(
-                                        tab.labelKey, tab.labelFallback),
-                                    selected: widget.currentIndex == i,
-                                    excludeSemantics: true,
-                                    child: GestureDetector(
-                                      behavior: HitTestBehavior.opaque,
-                                      onTap: () {
-                                        HapticFeedback.selectionClick();
-                                        widget.onTap(i);
-                                      },
-                                      onLongPress: i == 3
-                                          ? () => BottomNavBar
-                                              .showProfileMenu(context)
-                                          : null,
-                                      child: Center(
-                                        child: AnimatedOpacity(
-                                          opacity: isHidden ? 0.0 : 1.0,
-                                          duration: const Duration(
-                                              milliseconds: 160),
-                                          child: _StaticTabIcon(
-                                            tab: tab,
-                                            avatarUrl:
-                                                i == 3
-                                                    ? widget.avatarUrl
-                                                    : null,
-                                            color: inactiveColor,
-                                            size: iconSz,
+                                    child: ClipRRect(
+                                      borderRadius:
+                                          BorderRadius.circular(barHeight / 2),
+                                      child: BackdropFilter(
+                                        filter: ImageFilter.blur(
+                                          sigmaX: 18,
+                                          sigmaY: 18,
+                                        ),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: pillBg,
+                                            borderRadius:
+                                                BorderRadius.circular(barHeight / 2),
+                                            border: Border.all(
+                                              color: pillBorder,
+                                              width: 1.0,
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                );
-                              }),
-                            ),
-                          ),
-
-                          // ─ Layer 3: Moving glass active item ─────
-                          // ONE Positioned widget that travels horizontally.
-                          // Contains: glass capsule + filled icon + label.
-                          AnimatedBuilder(
-                            animation: _ctrl,
-                            builder: (context, _) {
-                              // Interpolated fractional tab position
-                              final pos = _curPos.clamp(0.0, 3.0);
-                              final idxF = pos.floor();
-                              final frac = pos - idxF;
-                              final i0 = idxF.clamp(0, 2);
-                              final i1 = (i0 + 1).clamp(0, 3);
-
-                              // Stretch effect: capsule widens slightly
-                              // during fast travel, then snaps back.
-                              final travelDist =
-                                  (_toPos - _fromPos).abs();
-                              final stretch = (travelDist * 7.0)
-                                      .clamp(0.0, 14.0) *
-                                  math.sin((_ctrl.value * math.pi)
-                                      .clamp(0.0, math.pi));
-                              final currentCapW = capW + stretch;
-
-                              // Horizontal centre of the glass
-                              final cx = lerpDouble(
-                                  centers[i0], centers[i1], frac)!;
-
-                              return Positioned(
-                                left: cx - currentCapW / 2,
-                                top: 0,
-                                width: currentCapW,
-                                height: capH,
-                                child: _MovingGlassItem(
-                                  isDark: isDark,
-                                  capRadius: capRadius,
-                                  capH: capH,
-                                  displayedIndex: _displayedIndex,
-                                  avatarUrl: widget.avatarUrl,
-                                  activeColor: activeColor,
-                                  iconSize: iconSz,
-                                  fontSize: fontSize,
                                 ),
-                              );
-                            },
-                          ),
-                        ],
+
+                                // Layer 2: ONE Shared Sliding Active Glass Capsule
+                                Positioned(
+                                  left: capsuleLeft,
+                                  top: verticalInset,
+                                  width: capsuleWidth,
+                                  height: capsuleHeight,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      borderRadius:
+                                          const BorderRadius.all(capsuleRadius),
+                                      boxShadow: capsuleShadow,
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius:
+                                          const BorderRadius.all(capsuleRadius),
+                                      child: BackdropFilter(
+                                        filter: ImageFilter.blur(
+                                          sigmaX: 14,
+                                          sigmaY: 14,
+                                        ),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: capsuleBg,
+                                            borderRadius: const BorderRadius.all(
+                                                capsuleRadius),
+                                            border: Border.all(
+                                              color: capsuleBorder,
+                                              width: 1.0,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // Layer 3: 4 Tab Items (Icons + Labels)
+                                // Each _TabItem has its own spring-bounce
+                                // animation that triggers when it becomes active.
+                                Positioned.fill(
+                                  child: Row(
+                                    children: List.generate(_kTabs.length, (i) {
+                                      final dist = (pos - i).abs();
+                                      final weight =
+                                          (1.0 - dist).clamp(0.0, 1.0);
+                                      return _TabItem(
+                                        tab: _kTabs[i],
+                                        isSelected: widget.currentIndex == i,
+                                        activeWeight: weight,
+                                        iconSize: iconSize,
+                                        fontSize: fontSize,
+                                        activeColor: activeColor,
+                                        inactiveColor: inactiveColor,
+                                        onTap: () => widget.onTap(i),
+                                        onLongPress: i == 3
+                                            ? () => BottomNavBar
+                                                ._showProfileMenu(context)
+                                            : null,
+                                        avatarUrl: widget.avatarUrl,
+                                        isProfile: i == 3,
+                                      );
+                                    }),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                       ),
                     ),
-                  ),
 
-                  SizedBox(width: plusGap),
+                    SizedBox(width: plusGap),
 
-                  // ── Separate + button ─────────────────────────────
-                  _SeparatePlusButton(
-                    size: centerBtnSz,
-                    iconSize: isVN ? 24.0 : 26.0,
-                    onTap: widget.onCenterTap,
-                    tooltip: _tr('nav.create', 'Create'),
-                    isDark: isDark,
-                  ),
-                ],
+                    // ── Separate + button on the RIGHT ──────────────
+                    _PlusButton(
+                      size: plusSize,
+                      iconSize: plusIconSize,
+                      isDark: isDark,
+                      onTap: widget.onCenterTap,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }
 
-// ─── Static inactive tab icon ─────────────────────────────────────────
-// Shows the outline (inactive) icon for a slot.
-// For profile (index 3) shows avatar when provided, else outline person.
-class _StaticTabIcon extends StatelessWidget {
-  final _TabDef tab;
-  final String? avatarUrl;
-  final Color color;
-  final double size;
-
-  const _StaticTabIcon({
+// ─── Individual tab item with spring-bounce on activation ────────────────────
+class _TabItem extends StatefulWidget {
+  const _TabItem({
     required this.tab,
-    required this.avatarUrl,
-    required this.color,
-    required this.size,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (avatarUrl != null && avatarUrl!.isNotEmpty) {
-      return SizedBox(
-        width: size + 2,
-        height: size + 2,
-        child: ClipOval(
-          child: AppAvatar(imageUrl: avatarUrl, size: size + 2),
-        ),
-      );
-    }
-    return Icon(tab.outlineIcon, size: size, color: color);
-  }
-}
-
-// ─── Moving glass active item ─────────────────────────────────────────
-// The ONE object that travels between tab slots.
-// Contains: glass capsule shell + filled icon + active label.
-// The icon + label switch via AnimatedSwitcher at the midpoint of each
-// transition (_displayedIndex changes in the state).
-class _MovingGlassItem extends StatelessWidget {
-  final bool isDark;
-  final Radius capRadius;
-  final double capH;
-  final int displayedIndex;
-  final String? avatarUrl;
-  final Color activeColor;
-  final double iconSize;
-  final double fontSize;
-
-  const _MovingGlassItem({
-    required this.isDark,
-    required this.capRadius,
-    required this.capH,
-    required this.displayedIndex,
-    required this.avatarUrl,
-    required this.activeColor,
+    required this.isSelected,
+    required this.activeWeight,
     required this.iconSize,
     required this.fontSize,
+    required this.activeColor,
+    required this.inactiveColor,
+    required this.onTap,
+    this.onLongPress,
+    this.avatarUrl,
+    required this.isProfile,
   });
+
+  final _TabDef tab;
+  final bool isSelected;
+  final double activeWeight; // 0.0 → 1.0 from capsule proximity
+  final double iconSize;
+  final double fontSize;
+  final Color activeColor;
+  final Color inactiveColor;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final String? avatarUrl;
+  final bool isProfile;
+
+  @override
+  State<_TabItem> createState() => _TabItemState();
+}
+
+class _TabItemState extends State<_TabItem>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _bounce;
+  late final Animation<double> _bounceAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _bounce = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 440),
+    );
+    // Spring sequence: grow → overshoot → settle
+    _bounceAnim = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.30)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 28,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.30, end: 0.88)
+            .chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 32,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.88, end: 1.0)
+            .chain(CurveTween(curve: Curves.elasticOut)),
+        weight: 40,
+      ),
+    ]).animate(_bounce);
+  }
+
+  @override
+  void didUpdateWidget(_TabItem old) {
+    super.didUpdateWidget(old);
+    // Fire bounce when this tab becomes the newly selected one
+    if (!old.isSelected && widget.isSelected) {
+      _bounce.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _bounce.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final tab = _kTabs[displayedIndex];
-    final label = BottomNavBar._tr(tab.labelKey, tab.labelFallback);
+    final labelText = BottomNavBar._label(
+      widget.tab.labelKey,
+      widget.tab.labelFallback,
+    );
+    final itemColor = Color.lerp(
+      widget.inactiveColor,
+      widget.activeColor,
+      widget.activeWeight,
+    )!;
+    final showActive = widget.isSelected || widget.activeWeight > 0.5;
 
-    // ── Glass capsule appearance ─────────────────────────────────────
-    // Dark-tinted translucent glass in both light and dark mode.
-    // Light mode: dark glass lens on white bar (premium, high contrast).
-    // Dark mode:  frosted lighter glass on dark bar.
-    final glassFill = isDark
-        ? const Color(0x3CFFFFFF)   // white 24% on dark
-        : const Color(0xE8111111);  // black 91% on light (dark glass capsule)
-    final glassBorder = isDark
-        ? const Color(0x50FFFFFF)   // white 31%
-        : const Color(0x28111111);  // black 16%
-    final capsuleShadow = [
-      BoxShadow(
-        color: isDark ? const Color(0x66000000) : const Color(0x44000000),
-        blurRadius: 14,
-        offset: const Offset(0, 5),
-        spreadRadius: -2,
-      ),
-      // Top rim specular gleam
-      BoxShadow(
-        color: isDark ? const Color(0x28FFFFFF) : const Color(0x55FFFFFF),
-        blurRadius: 4,
-        offset: const Offset(0, -1),
-      ),
-    ];
-
-    // Icon + label always white on the dark glass capsule.
-    const contentColor = Colors.white;
-
-    // ── Icon widget (switches with AnimatedSwitcher at midpoint) ────
-    Widget iconWidget;
-    if (displayedIndex == 3 && avatarUrl != null && avatarUrl!.isNotEmpty) {
-      iconWidget = Container(
-        key: ValueKey('avatar_$avatarUrl'),
-        width: iconSize + 2,
-        height: iconSize + 2,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: contentColor, width: 1.5),
-        ),
-        child: ClipOval(
-            child: AppAvatar(imageUrl: avatarUrl, size: iconSize + 2)),
-      );
-    } else {
-      iconWidget = Icon(
-        tab.filledIcon,
-        key: ValueKey(displayedIndex),
-        size: iconSize,
-        color: contentColor,
-      );
-    }
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.all(capRadius),
-        boxShadow: capsuleShadow,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.all(capRadius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            height: capH,
-            decoration: BoxDecoration(
-              color: glassFill,
-              borderRadius: BorderRadius.all(capRadius),
-              border: Border.all(color: glassBorder, width: 0.8),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // ── Filled icon ───────────────────────────────────
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  switchInCurve: Curves.easeOut,
-                  switchOutCurve: Curves.easeIn,
-                  transitionBuilder: (child, animation) =>
-                      FadeTransition(opacity: animation, child: child),
-                  child: iconWidget,
+    final Widget iconWidget =
+        (widget.isProfile && widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty)
+            ? Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: itemColor, width: 1.5),
                 ),
+                child: AppAvatar(
+                  imageUrl: widget.avatarUrl,
+                  size: widget.iconSize,
+                ),
+              )
+            : Icon(
+                showActive ? widget.tab.filledIcon : widget.tab.outlineIcon,
+                size: widget.iconSize,
+                color: itemColor,
+                semanticLabel: labelText,
+              );
 
-                const SizedBox(height: 2.5),
-
-                // ── Active label ──────────────────────────────────
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  switchInCurve: Curves.easeOut,
-                  switchOutCurve: Curves.easeIn,
-                  transitionBuilder: (child, animation) =>
-                      FadeTransition(opacity: animation, child: child),
-                  child: Text(
-                    label,
-                    key: ValueKey('label_$displayedIndex'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: fontSize,
-                      fontWeight: FontWeight.w700,
-                      color: contentColor,
-                      letterSpacing: -0.1,
-                      height: 1.15,
+    return Expanded(
+      child: Semantics(
+        button: true,
+        label: labelText,
+        selected: widget.isSelected,
+        excludeSemantics: true,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            HapticFeedback.selectionClick();
+            widget.onTap();
+          },
+          onLongPress: widget.onLongPress,
+          child: Center(
+            child: Transform.translate(
+              offset: Offset(0, -0.5 * widget.activeWeight), // subtle lift only
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Icon with combined weight-scale + spring-bounce
+                  AnimatedBuilder(
+                    animation: _bounceAnim,
+                    builder: (context, child) {
+                      final weightScale = 1.0 + 0.08 * widget.activeWeight;
+                      final springScale =
+                          _bounce.isAnimating ? _bounceAnim.value : 1.0;
+                      return Transform.scale(
+                        scale: weightScale * springScale,
+                        child: child,
+                      );
+                    },
+                    child: iconWidget,
+                  ),
+                  const SizedBox(height: 4.0),
+                  // Label
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        labelText,
+                        maxLines: 1,
+                        softWrap: false,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: itemColor,
+                          fontWeight:
+                              showActive ? FontWeight.w700 : FontWeight.w500,
+                          fontSize: widget.fontSize,
+                          letterSpacing: showActive ? 0.1 : -0.1,
+                          height: 1.15,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -719,27 +685,25 @@ class _MovingGlassItem extends StatelessWidget {
   }
 }
 
-// ─── Separate + button ────────────────────────────────────────────────
-class _SeparatePlusButton extends StatefulWidget {
+// ─── + Button (Separate on Right) ─────────────────────────────────────────────
+class _PlusButton extends StatefulWidget {
   final double size;
   final double iconSize;
-  final VoidCallback? onTap;
-  final String tooltip;
   final bool isDark;
+  final VoidCallback? onTap;
 
-  const _SeparatePlusButton({
+  const _PlusButton({
     required this.size,
     required this.iconSize,
-    required this.onTap,
-    required this.tooltip,
     required this.isDark,
+    required this.onTap,
   });
 
   @override
-  State<_SeparatePlusButton> createState() => _SeparatePlusButtonState();
+  State<_PlusButton> createState() => _PlusButtonState();
 }
 
-class _SeparatePlusButtonState extends State<_SeparatePlusButton>
+class _PlusButtonState extends State<_PlusButton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _press;
   late final Animation<double> _scale;
@@ -748,7 +712,9 @@ class _SeparatePlusButtonState extends State<_SeparatePlusButton>
   void initState() {
     super.initState();
     _press = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 140));
+      vsync: this,
+      duration: const Duration(milliseconds: 140),
+    );
     _scale = TweenSequence<double>([
       TweenSequenceItem(
         tween: Tween<double>(begin: 1.0, end: 0.92)
@@ -777,17 +743,15 @@ class _SeparatePlusButtonState extends State<_SeparatePlusButton>
 
   @override
   Widget build(BuildContext context) {
-    final bg = widget.isDark
-        ? const Color(0xFFF0F2F5)
-        : const Color(0xFF18191B);
-    final icon = widget.isDark ? const Color(0xFF141517) : Colors.white;
+    final bg = widget.isDark ? const Color(0xFFF0F2F5) : const Color(0xFF141517);
+    final iconColor = widget.isDark ? const Color(0xFF141517) : Colors.white;
     final border = widget.isDark
         ? const Color(0x33FFFFFF)
         : const Color(0x1F000000);
 
     return Semantics(
       button: true,
-      label: widget.tooltip,
+      label: 'nav.create'.tr,
       child: Center(
         child: ScaleTransition(
           scale: _scale,
@@ -814,8 +778,13 @@ class _SeparatePlusButtonState extends State<_SeparatePlusButton>
               child: InkWell(
                 customBorder: const CircleBorder(),
                 onTap: _handleTap,
-                child:
-                    Center(child: Icon(Icons.add_rounded, size: widget.iconSize, color: icon)),
+                child: Center(
+                  child: Icon(
+                    Icons.add_rounded,
+                    size: widget.iconSize,
+                    color: iconColor,
+                  ),
+                ),
               ),
             ),
           ),
@@ -824,3 +793,4 @@ class _SeparatePlusButtonState extends State<_SeparatePlusButton>
     );
   }
 }
+

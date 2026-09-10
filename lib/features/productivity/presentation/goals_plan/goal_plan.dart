@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
-import 'package:genlink_frontend/design_system/colors/app_colors.dart';
-import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
-import 'package:genlink_frontend/features/productivity/presentation/goals_plan/goal_plan_create.dart';
-import 'package:genlink_frontend/features/productivity/presentation/goals_plan/goal_plan_detail.dart';
+import '../../../../design_system/colors/app_colors.dart';
+import '../../domain/entities/productivity_entities.dart';
+import '../controllers/productivity_controller.dart';
+import '../productivity_scope.dart';
+import 'goal_plan_create.dart';
+import 'goal_plan_detail.dart';
 
 class PlanGoalScreen extends StatefulWidget {
   const PlanGoalScreen({super.key});
@@ -13,535 +16,304 @@ class PlanGoalScreen extends StatefulWidget {
 }
 
 class _PlanGoalScreenState extends State<PlanGoalScreen> {
-  String selectedCategory = 'All';
+  ProductivityController? _controller;
+  String _category = 'All';
 
-  final List<String> categories = [
-    'All',
-    'Personal',
-    'Career',
-    'Skill',
-    'Finance',
-  ];
+  static const _categories = ['All', 'Personal', 'Career', 'Skill', 'Finance'];
 
-  final List<GoalModel> goals = [
-    GoalModel(
-      category: 'Skill',
-      title: 'Master TypeScript',
-      progress: 0.62,
-      dueDate: 'Due Aug 15, 2026',
-    ),
-    GoalModel(
-      category: 'Career',
-      title: 'Launch Side Project',
-      progress: 0.28,
-      dueDate: 'Due Sep 30, 2026',
-    ),
-    GoalModel(
-      category: 'Personal',
-      title: 'Exercise 5x/week',
-      progress: 0.85,
-      dueDate: 'Ongoing',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _controller = ensureProductivityController();
+  }
 
-  final List<MilestoneModel> milestones = [
-    MilestoneModel(
-      title: 'Complete TypeScript generics module',
-      subtitle: 'Master TypeScript',
-      date: 'Jul 10',
-    ),
-    MilestoneModel(
-      title: 'Build MVP landing page',
-      subtitle: 'Launch Side Project',
-      date: 'Jul 20',
-    ),
-  ];
+  Future<void> _createGoal() async {
+    await Get.to(() => const CreateGoalScreen());
+    await _controller?.reload();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final controller = _controller;
+    if (controller == null) return const _UnavailableGoalsView();
 
-    final background = isDark
-        ? AppColors.darkBgPrimary
-        : AppColors.lightBgPrimary;
+    final colors = _GoalColors(context);
+    return Obx(() {
+      if (controller.isLoading.value && controller.goals.isEmpty) {
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      }
+      final goals = controller.goals
+          .where((goal) {
+            if (_category == 'All') return true;
+            return goal.goalType?.toUpperCase() == _category.toUpperCase();
+          })
+          .toList(growable: false);
 
-    final surface = isDark
-        ? AppColors.darkSurfacePrimary
-        : AppColors.lightSurfacePrimary;
-
-    final secondarySurface = isDark
-        ? AppColors.darkSurfaceSecondary
-        : AppColors.lightSurfaceSecondary;
-
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-
-    final textSecondary = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
-
-    final textMuted = isDark
-        ? AppColors.darkTextMuted
-        : AppColors.lightTextMuted;
-
-    final border = isDark
-        ? AppColors.darkBorderSubtle
-        : AppColors.lightBorderSubtle;
-
-    final inverseText = isDark
-        ? AppColors.darkTextInverse
-        : AppColors.lightTextInverse;
-
-    final filteredGoals = selectedCategory == 'All'
-        ? goals
-        : goals.where((goal) => goal.category == selectedCategory).toList();
-
-    return Scaffold(
-      backgroundColor: background,
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: textPrimary,
-          backgroundColor: surface,
-          onRefresh: () async {
-            await Future.delayed(const Duration(milliseconds: 500));
-
-            if (mounted) {
-              setState(() {});
-            }
-          },
+      return Scaffold(
+        backgroundColor: colors.background,
+        appBar: AppBar(
+          backgroundColor: colors.background,
+          foregroundColor: colors.textPrimary,
+          elevation: 0,
+          title: const Text('Goals Plan'),
+          actions: [
+            IconButton(
+              onPressed: _createGoal,
+              icon: const Icon(Icons.add_rounded),
+              tooltip: 'Create goal',
+            ),
+          ],
+        ),
+        body: RefreshIndicator(
+          onRefresh: controller.reload,
+          color: AppColors.productivityAccent,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 36),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
+              _CategoryChips(
+                selected: _category,
+                onChanged: (value) => setState(() => _category = value),
+              ),
+              const SizedBox(height: 18),
               Row(
                 children: [
-                  const AppBackButton(),
-
-                  const SizedBox(width: 12),
-
                   Expanded(
                     child: Text(
-                      'Goals Plan',
+                      'My goals',
                       style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
+                        color: colors.textPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-
-                  GestureDetector(
-                    onTap: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const CreateGoalScreen(),
-                        ),
-                      );
-
-                      if (!mounted) return;
-
-                      if (result is GoalModel) {
-                        setState(() {
-                          goals.add(result);
-                        });
-                      }
-                    },
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: textPrimary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.add_rounded,
-                        color: inverseText,
-                        size: 22,
-                      ),
-                    ),
+                  Text(
+                    '${goals.length}',
+                    style: TextStyle(color: colors.textMuted),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 18),
-
-              SizedBox(
-                height: 38,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: categories.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 8),
-                  itemBuilder: (_, index) {
-                    final category = categories[index];
-
-                    final selected = selectedCategory == category;
-
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedCategory = category;
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(horizontal: 15),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: selected ? textPrimary : secondarySurface,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: selected ? textPrimary : border,
-                          ),
-                        ),
-                        child: Text(
-                          category,
-                          style: TextStyle(
-                            color: selected ? inverseText : textSecondary,
-                            fontSize: 12,
-                            fontWeight: selected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              Row(
-                children: [
-                  Text(
-                    'My Goals',
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  Text(
-                    '${filteredGoals.length} goals',
-                    style: TextStyle(color: textMuted, fontSize: 11),
-                  ),
-                ],
-              ),
-
               const SizedBox(height: 10),
-
-              if (filteredGoals.isEmpty)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  decoration: BoxDecoration(
-                    color: surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: border),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(Icons.flag_outlined, size: 32, color: textMuted),
-
-                      const SizedBox(height: 10),
-
-                      Text(
-                        'No goals found',
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-
-                      const SizedBox(height: 4),
-
-                      Text(
-                        'Create a goal to get started.',
-                        style: TextStyle(color: textMuted, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                )
+              if (goals.isEmpty)
+                _EmptyGoals(onCreate: _createGoal)
               else
-                ...filteredGoals.map((goal) {
-                  final percentage = (goal.progress * 100).round();
-
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => GoalDetailScreen(goal: goal),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: surface,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: border),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      goal.category,
-                                      style: TextStyle(
-                                        color: textMuted,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 4),
-
-                                    Text(
-                                      goal.title,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: textPrimary,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              const SizedBox(width: 10),
-
-                              Text(
-                                '$percentage%',
-                                style: TextStyle(
-                                  color: textPrimary,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: LinearProgressIndicator(
-                              value: goal.progress,
-                              minHeight: 6,
-                              backgroundColor: isDark
-                                  ? AppColors.darkPrimarySoft
-                                  : AppColors.lightSurfaceSecondary,
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                AppColors.productivityAccent,
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 10),
-
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_today_outlined,
-                                size: 12,
-                                color: textMuted,
-                              ),
-
-                              const SizedBox(width: 5),
-
-                              Text(
-                                goal.dueDate,
-                                style: TextStyle(
-                                  color: textMuted,
-                                  fontSize: 10,
-                                ),
-                              ),
-
-                              const Spacer(),
-
-                              Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                size: 11,
-                                color: textMuted,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-
-              const SizedBox(height: 8),
-
-              Row(
-                children: [
-                  Text(
-                    'Upcoming Milestones',
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
+                ...goals.map(
+                  (goal) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _GoalTile(
+                      goal: goal,
+                      onTap: () async {
+                        await Get.to(() => GoalDetailScreen(goal: goal));
+                        await controller.reload();
+                      },
                     ),
                   ),
-
-                  const Spacer(),
-
-                  TextButton(
-                    onPressed: () {},
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Text(
-                      'See all',
-                      style: TextStyle(color: textMuted, fontSize: 11),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 8),
-
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: border),
                 ),
-                child: Column(
-                  children: [
-                    for (int i = 0; i < milestones.length; i++) ...[
-                      Padding(
-                        padding: const EdgeInsets.all(13),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: secondarySurface,
-                                borderRadius: BorderRadius.circular(9),
-                              ),
-                              child: Icon(
-                                Icons.flag_outlined,
-                                size: 16,
-                                color: textSecondary,
-                              ),
-                            ),
-
-                            const SizedBox(width: 10),
-
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    milestones[i].title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: textPrimary,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 3),
-
-                                  Text(
-                                    milestones[i].subtitle,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: textMuted,
-                                      fontSize: 9,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            const SizedBox(width: 8),
-
-                            Text(
-                              milestones[i].date,
-                              style: TextStyle(
-                                color: textMuted,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      if (i < milestones.length - 1)
-                        Divider(
-                          height: 1,
-                          thickness: 0.7,
-                          indent: 13,
-                          endIndent: 13,
-                          color: border,
-                        ),
-                    ],
-                  ],
-                ),
-              ),
             ],
           ),
+        ),
+      );
+    });
+  }
+}
+
+class _CategoryChips extends StatelessWidget {
+  const _CategoryChips({required this.selected, required this.onChanged});
+
+  final String selected;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: _PlanGoalScreenState._categories
+            .map((category) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(category),
+                  selected: selected == category,
+                  onSelected: (_) => onChanged(category),
+                  selectedColor: AppColors.productivityAccent,
+                ),
+              );
+            })
+            .toList(growable: false),
+      ),
+    );
+  }
+}
+
+class _GoalTile extends StatelessWidget {
+  const _GoalTile({required this.goal, required this.onTap});
+
+  final ProductivityGoal goal;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _GoalColors(context);
+    final progress = (goal.progressPercentage / 100).clamp(0.0, 1.0);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
+      child: Ink(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: colors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    goal.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${goal.progressPercentage.round()}%',
+                  style: TextStyle(
+                    color: AppColors.productivityAccent,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '${goal.goalType ?? 'Personal'} · ${_statusLabel(goal.status)}',
+              style: TextStyle(color: colors.textMuted, fontSize: 11),
+            ),
+            const SizedBox(height: 12),
+            LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              borderRadius: BorderRadius.circular(20),
+              color: AppColors.productivityAccent,
+              backgroundColor: colors.surfaceSecondary,
+            ),
+            if (goal.deadline != null) ...[
+              const SizedBox(height: 9),
+              Text(
+                'Due ${_formatDate(goal.deadline!)}',
+                style: TextStyle(color: colors.textMuted, fontSize: 10),
+              ),
+            ],
+          ],
         ),
       ),
     );
   }
 }
 
+class _EmptyGoals extends StatelessWidget {
+  const _EmptyGoals({required this.onCreate});
 
+  final VoidCallback onCreate;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _GoalColors(context);
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.flag_outlined, color: colors.textMuted, size: 30),
+          const SizedBox(height: 8),
+          Text(
+            'No goals yet',
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Create a goal and break it into milestones.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: colors.textSecondary, fontSize: 12),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton(onPressed: onCreate, child: const Text('Create goal')),
+        ],
+      ),
+    );
+  }
+}
+
+class _UnavailableGoalsView extends StatelessWidget {
+  const _UnavailableGoalsView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text('Sign in to manage goals.')),
+    );
+  }
+}
+
+class _GoalColors {
+  _GoalColors(BuildContext context)
+    : isDark = Theme.of(context).brightness == Brightness.dark;
+
+  final bool isDark;
+
+  Color get background =>
+      isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
+  Color get surface =>
+      isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+  Color get surfaceSecondary =>
+      isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfaceSecondary;
+  Color get textPrimary =>
+      isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+  Color get textSecondary =>
+      isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+  Color get textMuted =>
+      isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+  Color get border =>
+      isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+}
+
+String _statusLabel(String status) => switch (status) {
+  'COMPLETED' => 'Completed',
+  'IN_PROGRESS' => 'In progress',
+  _ => 'Not started',
+};
+
+String _formatDate(DateTime date) =>
+    '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+/// Kept for compatibility with older callers of the original mock screens.
 class GoalModel {
-  final String category;
-  final String title;
-  final double progress;
-  final String dueDate;
-
   GoalModel({
     required this.category,
     required this.title,
     required this.progress,
     required this.dueDate,
   });
-}
 
-
-class MilestoneModel {
+  final String category;
   final String title;
-  final String subtitle;
-  final String date;
-
-  MilestoneModel({
-    required this.title,
-    required this.subtitle,
-    required this.date,
-  });
+  final double progress;
+  final String dueDate;
 }

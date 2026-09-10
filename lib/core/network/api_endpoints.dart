@@ -86,8 +86,37 @@ abstract final class ApiEndpoints {
 
   // ── Productivity ──────────────────────────────────────────────────────
   static const habits = '$_base/productivity/habits';
+  static String habit(String habitId) => '$_base/productivity/habits/$habitId';
   static String habitCheckIn(String habitId) =>
       '$_base/productivity/habits/$habitId/check-in';
+
+  static const tasks = '$_base/productivity/tasks';
+  static String task(String taskId) => '$_base/productivity/tasks/$taskId';
+  static String taskComplete(String taskId) =>
+      '$_base/productivity/tasks/$taskId/complete';
+
+  static const goals = '$_base/productivity/goals';
+  static String goal(String goalId) => '$_base/productivity/goals/$goalId';
+  static String goalMilestones(String goalId) =>
+      '$_base/productivity/goals/$goalId/milestones';
+  static String goalMilestoneComplete(String goalId, String milestoneId) =>
+      '$_base/productivity/goals/$goalId/milestones/$milestoneId/complete';
+  static String goalMilestone(String goalId, String milestoneId) =>
+      '$_base/productivity/goals/$goalId/milestones/$milestoneId';
+
+  static const focusSessions = '$_base/productivity/focus-sessions';
+  static const focusSessionStart = '$_base/productivity/focus-sessions/start';
+  static String focusSessionComplete(String sessionId) =>
+      '$_base/productivity/focus-sessions/$sessionId/complete';
+  static const focusSessionStats = '$_base/productivity/focus-sessions/stats';
+
+  static const motivation = '$_base/productivity/motivation';
+  static const savedMotivation = '$_base/productivity/motivation/saved';
+  static String motivationItem(String motivationId) =>
+      '$_base/productivity/motivation/$motivationId';
+  static String motivationSave(String motivationId) =>
+      '$_base/productivity/motivation/$motivationId/save';
+
   // ── Finance ──────────────────────────────────────────────────────────
   static const financeWallet = '$_base/finance/wallet';
   static const financeWalletTopUp = '$_base/finance/wallet/top-up';

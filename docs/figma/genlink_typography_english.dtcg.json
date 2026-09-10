@@ -1,0 +1,28 @@
+{
+  "font": {
+    "family": {
+      "$type": "fontFamily",
+      "$value": "Sora",
+      "$description": "Locale-aware font family"
+    },
+    "weight": {
+      "regular": {
+        "$type": "string",
+        "$value": "400"
+      },
+      "medium": {
+        "$type": "string",
+        "$value": "500"
+      },
+      "semibold": {
+        "$type": "string",
+        "$value": "600"
+      },
+      "bold": {
+        "$type": "string",
+        "$value": "700"
+      }
+    }
+  }
+}
+

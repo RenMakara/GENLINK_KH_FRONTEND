@@ -1,0 +1,1462 @@
+{
+  "common": {
+    "continue": {
+      "$type": "string",
+      "$value": "Continue",
+      "$description": "app_translations.dart • common.continue • English"
+    },
+    "cancel": {
+      "$type": "string",
+      "$value": "Cancel",
+      "$description": "app_translations.dart • common.cancel • English"
+    },
+    "save": {
+      "$type": "string",
+      "$value": "Save",
+      "$description": "app_translations.dart • common.save • English"
+    },
+    "retry": {
+      "$type": "string",
+      "$value": "Retry",
+      "$description": "app_translations.dart • common.retry • English"
+    },
+    "skip": {
+      "$type": "string",
+      "$value": "Skip",
+      "$description": "app_translations.dart • common.skip • English"
+    },
+    "next": {
+      "$type": "string",
+      "$value": "Next",
+      "$description": "app_translations.dart • common.next • English"
+    },
+    "back": {
+      "$type": "string",
+      "$value": "Back",
+      "$description": "app_translations.dart • common.back • English"
+    },
+    "done": {
+      "$type": "string",
+      "$value": "Done",
+      "$description": "app_translations.dart • common.done • English"
+    },
+    "delete": {
+      "$type": "string",
+      "$value": "Delete",
+      "$description": "app_translations.dart • common.delete • English"
+    },
+    "edit": {
+      "$type": "string",
+      "$value": "Edit",
+      "$description": "app_translations.dart • common.edit • English"
+    },
+    "show": {
+      "$type": "string",
+      "$value": "Show",
+      "$description": "app_translations.dart • common.show • English"
+    },
+    "hide": {
+      "$type": "string",
+      "$value": "Hide",
+      "$description": "app_translations.dart • common.hide • English"
+    },
+    "loading": {
+      "$type": "string",
+      "$value": "Loading…",
+      "$description": "app_translations.dart • common.loading • English"
+    },
+    "loadingShort": {
+      "$type": "string",
+      "$value": "Loading",
+      "$description": "app_translations.dart • common.loadingShort • English"
+    },
+    "error": {
+      "$type": "string",
+      "$value": "Something went wrong",
+      "$description": "app_translations.dart • common.error • English"
+    },
+    "required": {
+      "$type": "string",
+      "$value": "This field is required",
+      "$description": "app_translations.dart • common.required • English"
+    },
+    "optional": {
+      "$type": "string",
+      "$value": "Optional",
+      "$description": "app_translations.dart • common.optional • English"
+    }
+  },
+  "onboarding": {
+    "stepOf": {
+      "$type": "string",
+      "$value": "Step @step of @total",
+      "$description": "app_translations.dart • onboarding.stepOf • English"
+    },
+    "chooseLanguage": {
+      "$type": "string",
+      "$value": "Choose your language",
+      "$description": "app_translations.dart • onboarding.chooseLanguage • English"
+    },
+    "chooseLanguageHint": {
+      "$type": "string",
+      "$value": "You can change this anytime in settings.",
+      "$description": "app_translations.dart • onboarding.chooseLanguageHint • English"
+    },
+    "bothLanguages": {
+      "$type": "string",
+      "$value": "Both languages are supported throughout the app.",
+      "$description": "app_translations.dart • onboarding.bothLanguages • English"
+    },
+    "getStarted": {
+      "$type": "string",
+      "$value": "Get started",
+      "$description": "app_translations.dart • onboarding.getStarted • English"
+    },
+    "skipForNow": {
+      "$type": "string",
+      "$value": "Skip for now",
+      "$description": "app_translations.dart • onboarding.skipForNow • English"
+    },
+    "networkTitle": {
+      "$type": "string",
+      "$value": "Your youth network,\nin one place",
+      "$description": "app_translations.dart • onboarding.networkTitle • English"
+    },
+    "networkBody": {
+      "$type": "string",
+      "$value": "Connect with communities, events, mentors, and opportunities built for Cambodian youth.",
+      "$description": "app_translations.dart • onboarding.networkBody • English"
+    },
+    "rowCommunity": {
+      "$type": "string",
+      "$value": "Community",
+      "$description": "app_translations.dart • onboarding.rowCommunity • English"
+    },
+    "rowCommunityDetail": {
+      "$type": "string",
+      "$value": "Design Guild · 380 members",
+      "$description": "app_translations.dart • onboarding.rowCommunityDetail • English"
+    },
+    "rowEvents": {
+      "$type": "string",
+      "$value": "Events",
+      "$description": "app_translations.dart • onboarding.rowEvents • English"
+    },
+    "rowEventsDetail": {
+      "$type": "string",
+      "$value": "3 upcoming near you",
+      "$description": "app_translations.dart • onboarding.rowEventsDetail • English"
+    },
+    "rowMentors": {
+      "$type": "string",
+      "$value": "Mentors",
+      "$description": "app_translations.dart • onboarding.rowMentors • English"
+    },
+    "rowMentorsDetail": {
+      "$type": "string",
+      "$value": "Connect with leaders",
+      "$description": "app_translations.dart • onboarding.rowMentorsDetail • English"
+    },
+    "growTitle": {
+      "$type": "string",
+      "$value": "Grow your money,\nfocus, and future",
+      "$description": "app_translations.dart • onboarding.growTitle • English"
+    },
+    "growBody": {
+      "$type": "string",
+      "$value": "Track goals, learn finance, complete challenges, and build your profile — one day at a time.",
+      "$description": "app_translations.dart • onboarding.growBody • English"
+    },
+    "rowFinance": {
+      "$type": "string",
+      "$value": "Finance",
+      "$description": "app_translations.dart • onboarding.rowFinance • English"
+    },
+    "rowFinanceDetail": {
+      "$type": "string",
+      "$value": "$1,240 saved",
+      "$description": "app_translations.dart • onboarding.rowFinanceDetail • English"
+    },
+    "rowFocus": {
+      "$type": "string",
+      "$value": "Focus Score",
+      "$description": "app_translations.dart • onboarding.rowFocus • English"
+    },
+    "rowFocusDetail": {
+      "$type": "string",
+      "$value": "2h 18m today",
+      "$description": "app_translations.dart • onboarding.rowFocusDetail • English"
+    },
+    "rowXp": {
+      "$type": "string",
+      "$value": "Growth XP",
+      "$description": "app_translations.dart • onboarding.rowXp • English"
+    },
+    "rowXpDetail": {
+      "$type": "string",
+      "$value": "Level 4 Builder",
+      "$description": "app_translations.dart • onboarding.rowXpDetail • English"
+    }
+  },
+  "auth": {
+    "login": {
+      "$type": "string",
+      "$value": "Log in",
+      "$description": "app_translations.dart • auth.login • English"
+    },
+    "welcomeTo": {
+      "$type": "string",
+      "$value": "Welcome to",
+      "$description": "app_translations.dart • auth.welcomeTo • English"
+    },
+    "choiceSubtitle": {
+      "$type": "string",
+      "$value": "Cambodia's digital passport for the next generation of youth.",
+      "$description": "app_translations.dart • auth.choiceSubtitle • English"
+    },
+    "continueWithMail": {
+      "$type": "string",
+      "$value": "Continue with Mail",
+      "$description": "app_translations.dart • auth.continueWithMail • English"
+    },
+    "encryptedNotice": {
+      "$type": "string",
+      "$value": "Your data is encrypted and never shared without consent.",
+      "$description": "app_translations.dart • auth.encryptedNotice • English"
+    },
+    "loginTitle": {
+      "$type": "string",
+      "$value": "Welcome back",
+      "$description": "app_translations.dart • auth.loginTitle • English"
+    },
+    "loginSubtitle": {
+      "$type": "string",
+      "$value": "Log in to continue where you left off.",
+      "$description": "app_translations.dart • auth.loginSubtitle • English"
+    },
+    "register": {
+      "$type": "string",
+      "$value": "Create account",
+      "$description": "app_translations.dart • auth.register • English"
+    },
+    "registerTitle": {
+      "$type": "string",
+      "$value": "Create your account",
+      "$description": "app_translations.dart • auth.registerTitle • English"
+    },
+    "registerSubtitle": {
+      "$type": "string",
+      "$value": "It takes less than a minute.",
+      "$description": "app_translations.dart • auth.registerSubtitle • English"
+    },
+    "email": {
+      "$type": "string",
+      "$value": "Email",
+      "$description": "app_translations.dart • auth.email • English"
+    },
+    "password": {
+      "$type": "string",
+      "$value": "Password",
+      "$description": "app_translations.dart • auth.password • English"
+    },
+    "confirmPassword": {
+      "$type": "string",
+      "$value": "Confirm password",
+      "$description": "app_translations.dart • auth.confirmPassword • English"
+    },
+    "fullName": {
+      "$type": "string",
+      "$value": "Full name",
+      "$description": "app_translations.dart • auth.fullName • English"
+    },
+    "username": {
+      "$type": "string",
+      "$value": "Username",
+      "$description": "app_translations.dart • auth.username • English"
+    },
+    "phoneNumber": {
+      "$type": "string",
+      "$value": "Phone number",
+      "$description": "app_translations.dart • auth.phoneNumber • English"
+    },
+    "forgotPassword": {
+      "$type": "string",
+      "$value": "Forgot password?",
+      "$description": "app_translations.dart • auth.forgotPassword • English"
+    },
+    "forgotTitle": {
+      "$type": "string",
+      "$value": "Reset your password",
+      "$description": "app_translations.dart • auth.forgotTitle • English"
+    },
+    "forgotSubtitle": {
+      "$type": "string",
+      "$value": "Enter your email and we'll send you a code.",
+      "$description": "app_translations.dart • auth.forgotSubtitle • English"
+    },
+    "newPasswordSubtitle": {
+      "$type": "string",
+      "$value": "Choose a password you have not used before.",
+      "$description": "app_translations.dart • auth.newPasswordSubtitle • English"
+    },
+    "passwordResetDone": {
+      "$type": "string",
+      "$value": "Password updated. Log in with your new password.",
+      "$description": "app_translations.dart • auth.passwordResetDone • English"
+    },
+    "resetTitle": {
+      "$type": "string",
+      "$value": "Choose a new password",
+      "$description": "app_translations.dart • auth.resetTitle • English"
+    },
+    "resetSubtitle": {
+      "$type": "string",
+      "$value": "Enter the code we emailed you and a new password.",
+      "$description": "app_translations.dart • auth.resetSubtitle • English"
+    },
+    "newPassword": {
+      "$type": "string",
+      "$value": "New password",
+      "$description": "app_translations.dart • auth.newPassword • English"
+    },
+    "sendCode": {
+      "$type": "string",
+      "$value": "Send code",
+      "$description": "app_translations.dart • auth.sendCode • English"
+    },
+    "resetPassword": {
+      "$type": "string",
+      "$value": "Reset password",
+      "$description": "app_translations.dart • auth.resetPassword • English"
+    },
+    "createAccount": {
+      "$type": "string",
+      "$value": "Create Account",
+      "$description": "app_translations.dart • auth.createAccount • English"
+    },
+    "verifyEmail": {
+      "$type": "string",
+      "$value": "Verify Email",
+      "$description": "app_translations.dart • auth.verifyEmail • English"
+    },
+    "fullNameHint": {
+      "$type": "string",
+      "$value": "Sok Kha",
+      "$description": "app_translations.dart • auth.fullNameHint • English"
+    },
+    "usernameHint": {
+      "$type": "string",
+      "$value": "username123",
+      "$description": "app_translations.dart • auth.usernameHint • English"
+    },
+    "emailHint": {
+      "$type": "string",
+      "$value": "example@email.com",
+      "$description": "app_translations.dart • auth.emailHint • English"
+    },
+    "passwordHint": {
+      "$type": "string",
+      "$value": "Enter password",
+      "$description": "app_translations.dart • auth.passwordHint • English"
+    },
+    "verifySentTo": {
+      "$type": "string",
+      "$value": "We sent a 6-digit code to",
+      "$description": "app_translations.dart • auth.verifySentTo • English"
+    },
+    "resendCodeIn": {
+      "$type": "string",
+      "$value": "Resend code in",
+      "$description": "app_translations.dart • auth.resendCodeIn • English"
+    },
+    "legalNotice": {
+      "$type": "string",
+      "$value": "By creating an account, you agree to our Terms of Service and Privacy Policy.",
+      "$description": "app_translations.dart • auth.legalNotice • English"
+    },
+    "verifyTitle": {
+      "$type": "string",
+      "$value": "Verify your email",
+      "$description": "app_translations.dart • auth.verifyTitle • English"
+    },
+    "verifySubtitle": {
+      "$type": "string",
+      "$value": "We sent a 6-digit code to @email.",
+      "$description": "app_translations.dart • auth.verifySubtitle • English"
+    },
+    "otpCode": {
+      "$type": "string",
+      "$value": "Verification code",
+      "$description": "app_translations.dart • auth.otpCode • English"
+    },
+    "otpEmptyDigit": {
+      "$type": "string",
+      "$value": "OTP digit @position, empty",
+      "$description": "app_translations.dart • auth.otpEmptyDigit • English"
+    },
+    "otpEnteredDigit": {
+      "$type": "string",
+      "$value": "OTP digit @position: @digit",
+      "$description": "app_translations.dart • auth.otpEnteredDigit • English"
+    },
+    "otpSymbol": {
+      "$type": "string",
+      "$value": "Symbol unavailable",
+      "$description": "app_translations.dart • auth.otpSymbol • English"
+    },
+    "otpHelp": {
+      "$type": "string",
+      "$value": "Didn't receive it? Check your spam folder or try a different email address.",
+      "$description": "app_translations.dart • auth.otpHelp • English"
+    },
+    "verify": {
+      "$type": "string",
+      "$value": "Verify",
+      "$description": "app_translations.dart • auth.verify • English"
+    },
+    "resendCode": {
+      "$type": "string",
+      "$value": "Resend code",
+      "$description": "app_translations.dart • auth.resendCode • English"
+    },
+    "resendIn": {
+      "$type": "string",
+      "$value": "Resend in @seconds s",
+      "$description": "app_translations.dart • auth.resendIn • English"
+    },
+    "continueWithGoogle": {
+      "$type": "string",
+      "$value": "Continue with Google",
+      "$description": "app_translations.dart • auth.continueWithGoogle • English"
+    },
+    "orDivider": {
+      "$type": "string",
+      "$value": "or",
+      "$description": "app_translations.dart • auth.orDivider • English"
+    },
+    "haveAccount": {
+      "$type": "string",
+      "$value": "Already have an account?",
+      "$description": "app_translations.dart • auth.haveAccount • English"
+    },
+    "noAccount": {
+      "$type": "string",
+      "$value": "Don't have an account?",
+      "$description": "app_translations.dart • auth.noAccount • English"
+    },
+    "logout": {
+      "$type": "string",
+      "$value": "Log out",
+      "$description": "app_translations.dart • auth.logout • English"
+    },
+    "logoutConfirm": {
+      "$type": "string",
+      "$value": "Log out of GenLink KH?",
+      "$description": "app_translations.dart • auth.logoutConfirm • English"
+    },
+    "switchAccount": {
+      "$type": "string",
+      "$value": "Switch account",
+      "$description": "app_translations.dart • auth.switchAccount • English"
+    },
+    "invalidEmail": {
+      "$type": "string",
+      "$value": "Enter a valid email address",
+      "$description": "app_translations.dart • auth.invalidEmail • English"
+    },
+    "passwordTooShort": {
+      "$type": "string",
+      "$value": "Password must be at least 8 characters",
+      "$description": "app_translations.dart • auth.passwordTooShort • English"
+    },
+    "passwordsDoNotMatch": {
+      "$type": "string",
+      "$value": "Passwords do not match",
+      "$description": "app_translations.dart • auth.passwordsDoNotMatch • English"
+    },
+    "usernameTooShort": {
+      "$type": "string",
+      "$value": "Username must be at least 3 characters",
+      "$description": "app_translations.dart • auth.usernameTooShort • English"
+    },
+    "otpLength": {
+      "$type": "string",
+      "$value": "Enter the 6-digit code",
+      "$description": "app_translations.dart • auth.otpLength • English"
+    },
+    "googleUnavailable": {
+      "$type": "string",
+      "$value": "Google Sign-In is not configured in this build yet.",
+      "$description": "app_translations.dart • auth.googleUnavailable • English"
+    }
+  },
+  "nav": {
+    "home": {
+      "$type": "string",
+      "$value": "Home",
+      "$description": "app_translations.dart • nav.home • English"
+    },
+    "community": {
+      "$type": "string",
+      "$value": "Community",
+      "$description": "app_translations.dart • nav.community • English"
+    },
+    "growth": {
+      "$type": "string",
+      "$value": "Growth",
+      "$description": "app_translations.dart • nav.growth • English"
+    },
+    "levelUp": {
+      "$type": "string",
+      "$value": "LevelUp",
+      "$description": "app_translations.dart • nav.levelUp • English"
+    },
+    "create": {
+      "$type": "string",
+      "$value": "Create",
+      "$description": "app_translations.dart • nav.create • English"
+    },
+    "finance": {
+      "$type": "string",
+      "$value": "Finance",
+      "$description": "app_translations.dart • nav.finance • English"
+    },
+    "financial": {
+      "$type": "string",
+      "$value": "Financial",
+      "$description": "app_translations.dart • nav.financial • English"
+    },
+    "profile": {
+      "$type": "string",
+      "$value": "Profile",
+      "$description": "app_translations.dart • nav.profile • English"
+    }
+  },
+  "profile": {
+    "title": {
+      "$type": "string",
+      "$value": "Profile",
+      "$description": "app_translations.dart • profile.title • English"
+    },
+    "edit": {
+      "$type": "string",
+      "$value": "Edit profile",
+      "$description": "app_translations.dart • profile.edit • English"
+    },
+    "bio": {
+      "$type": "string",
+      "$value": "Bio",
+      "$description": "app_translations.dart • profile.bio • English"
+    },
+    "location": {
+      "$type": "string",
+      "$value": "Location",
+      "$description": "app_translations.dart • profile.location • English"
+    },
+    "university": {
+      "$type": "string",
+      "$value": "University",
+      "$description": "app_translations.dart • profile.university • English"
+    },
+    "workStatus": {
+      "$type": "string",
+      "$value": "Status",
+      "$description": "app_translations.dart • profile.workStatus • English"
+    },
+    "dateOfBirth": {
+      "$type": "string",
+      "$value": "Date of birth",
+      "$description": "app_translations.dart • profile.dateOfBirth • English"
+    },
+    "gender": {
+      "$type": "string",
+      "$value": "Gender",
+      "$description": "app_translations.dart • profile.gender • English"
+    },
+    "avatarUrl": {
+      "$type": "string",
+      "$value": "Avatar URL",
+      "$description": "app_translations.dart • profile.avatarUrl • English"
+    },
+    "level": {
+      "$type": "string",
+      "$value": "Level @level",
+      "$description": "app_translations.dart • profile.level • English"
+    },
+    "xp": {
+      "$type": "string",
+      "$value": "@xp XP",
+      "$description": "app_translations.dart • profile.xp • English"
+    },
+    "interests": {
+      "$type": "string",
+      "$value": "Interests",
+      "$description": "app_translations.dart • profile.interests • English"
+    },
+    "portfolio": {
+      "$type": "string",
+      "$value": "Portfolio",
+      "$description": "app_translations.dart • profile.portfolio • English"
+    },
+    "socialLinks": {
+      "$type": "string",
+      "$value": "Social links",
+      "$description": "app_translations.dart • profile.socialLinks • English"
+    },
+    "saved": {
+      "$type": "string",
+      "$value": "Saved",
+      "$description": "app_translations.dart • profile.saved • English"
+    },
+    "emptyInterests": {
+      "$type": "string",
+      "$value": "No interests selected yet",
+      "$description": "app_translations.dart • profile.emptyInterests • English"
+    },
+    "emptyPortfolio": {
+      "$type": "string",
+      "$value": "No portfolio items yet",
+      "$description": "app_translations.dart • profile.emptyPortfolio • English"
+    },
+    "emptySocialLinks": {
+      "$type": "string",
+      "$value": "No social links yet",
+      "$description": "app_translations.dart • profile.emptySocialLinks • English"
+    },
+    "completion": {
+      "$type": "string",
+      "$value": "Profile completion",
+      "$description": "app_translations.dart • profile.completion • English"
+    },
+    "percentComplete": {
+      "$type": "string",
+      "$value": "@percent% Complete",
+      "$description": "app_translations.dart • profile.percentComplete • English"
+    },
+    "nextLevelHint": {
+      "$type": "string",
+      "$value": "Complete your profile to reach Level @level.",
+      "$description": "app_translations.dart • profile.nextLevelHint • English"
+    },
+    "achievements": {
+      "$type": "string",
+      "$value": "Achievements",
+      "$description": "app_translations.dart • profile.achievements • English"
+    },
+    "coreExpertise": {
+      "$type": "string",
+      "$value": "Core Expertise",
+      "$description": "app_translations.dart • profile.coreExpertise • English"
+    },
+    "savedContent": {
+      "$type": "string",
+      "$value": "Saved Content",
+      "$description": "app_translations.dart • profile.savedContent • English"
+    },
+    "viewAll": {
+      "$type": "string",
+      "$value": "View all",
+      "$description": "app_translations.dart • profile.viewAll • English"
+    },
+    "careerPath": {
+      "$type": "string",
+      "$value": "Career Path",
+      "$description": "app_translations.dart • profile.careerPath • English"
+    },
+    "currentTrack": {
+      "$type": "string",
+      "$value": "Current track",
+      "$description": "app_translations.dart • profile.currentTrack • English"
+    },
+    "editCareer": {
+      "$type": "string",
+      "$value": "Edit Career Profile",
+      "$description": "app_translations.dart • profile.editCareer • English"
+    },
+    "noCareerDetails": {
+      "$type": "string",
+      "$value": "Add your career path",
+      "$description": "app_translations.dart • profile.noCareerDetails • English"
+    },
+    "publicProfile": {
+      "$type": "string",
+      "$value": "Public profile",
+      "$description": "app_translations.dart • profile.publicProfile • English"
+    },
+    "professionalBio": {
+      "$type": "string",
+      "$value": "Professional Bio",
+      "$description": "app_translations.dart • profile.professionalBio • English"
+    },
+    "coreCompetencies": {
+      "$type": "string",
+      "$value": "Core Competencies",
+      "$description": "app_translations.dart • profile.coreCompetencies • English"
+    },
+    "portfolioPreview": {
+      "$type": "string",
+      "$value": "Portfolio Preview",
+      "$description": "app_translations.dart • profile.portfolioPreview • English"
+    },
+    "careerInterests": {
+      "$type": "string",
+      "$value": "Career Interests",
+      "$description": "app_translations.dart • profile.careerInterests • English"
+    },
+    "connect": {
+      "$type": "string",
+      "$value": "Connect",
+      "$description": "app_translations.dart • profile.connect • English"
+    },
+    "shareProfile": {
+      "$type": "string",
+      "$value": "Share Profile",
+      "$description": "app_translations.dart • profile.shareProfile • English"
+    },
+    "shareCopied": {
+      "$type": "string",
+      "$value": "Profile handle copied",
+      "$description": "app_translations.dart • profile.shareCopied • English"
+    },
+    "connectUnavailable": {
+      "$type": "string",
+      "$value": "Connections are not available yet.",
+      "$description": "app_translations.dart • profile.connectUnavailable • English"
+    },
+    "projects": {
+      "$type": "string",
+      "$value": "Projects",
+      "$description": "app_translations.dart • profile.projects • English"
+    },
+    "emptySaved": {
+      "$type": "string",
+      "$value": "Nothing saved yet",
+      "$description": "app_translations.dart • profile.emptySaved • English"
+    },
+    "savedUnavailable": {
+      "$type": "string",
+      "$value": "No longer available",
+      "$description": "app_translations.dart • profile.savedUnavailable • English"
+    },
+    "displayName": {
+      "$type": "string",
+      "$value": "Display Name",
+      "$description": "app_translations.dart • profile.displayName • English"
+    },
+    "role": {
+      "$type": "string",
+      "$value": "Role",
+      "$description": "app_translations.dart • profile.role • English"
+    },
+    "universityWorkplace": {
+      "$type": "string",
+      "$value": "University / Workplace",
+      "$description": "app_translations.dart • profile.universityWorkplace • English"
+    },
+    "socialPresence": {
+      "$type": "string",
+      "$value": "Social Presence",
+      "$description": "app_translations.dart • profile.socialPresence • English"
+    },
+    "linkedIn": {
+      "$type": "string",
+      "$value": "LinkedIn",
+      "$description": "app_translations.dart • profile.linkedIn • English"
+    },
+    "website": {
+      "$type": "string",
+      "$value": "Website",
+      "$description": "app_translations.dart • profile.website • English"
+    },
+    "saveChanges": {
+      "$type": "string",
+      "$value": "Save Changes",
+      "$description": "app_translations.dart • profile.saveChanges • English"
+    },
+    "updatePicture": {
+      "$type": "string",
+      "$value": "Update profile picture",
+      "$description": "app_translations.dart • profile.updatePicture • English"
+    },
+    "chooseFromGallery": {
+      "$type": "string",
+      "$value": "Choose from gallery",
+      "$description": "app_translations.dart • profile.chooseFromGallery • English"
+    },
+    "takePhoto": {
+      "$type": "string",
+      "$value": "Take a photo",
+      "$description": "app_translations.dart • profile.takePhoto • English"
+    },
+    "updated": {
+      "$type": "string",
+      "$value": "Profile updated",
+      "$description": "app_translations.dart • profile.updated • English"
+    },
+    "viewAvatar": {
+      "$type": "string",
+      "$value": "View profile picture",
+      "$description": "app_translations.dart • profile.viewAvatar • English"
+    },
+    "changeAvatar": {
+      "$type": "string",
+      "$value": "Change profile picture",
+      "$description": "app_translations.dart • profile.changeAvatar • English"
+    },
+    "addPortfolio": {
+      "$type": "string",
+      "$value": "Add item",
+      "$description": "app_translations.dart • profile.addPortfolio • English"
+    },
+    "portfolioTitle": {
+      "$type": "string",
+      "$value": "Title",
+      "$description": "app_translations.dart • profile.portfolioTitle • English"
+    },
+    "portfolioDescription": {
+      "$type": "string",
+      "$value": "Description",
+      "$description": "app_translations.dart • profile.portfolioDescription • English"
+    },
+    "portfolioLink": {
+      "$type": "string",
+      "$value": "Link",
+      "$description": "app_translations.dart • profile.portfolioLink • English"
+    },
+    "platform": {
+      "$type": "string",
+      "$value": "Platform",
+      "$description": "app_translations.dart • profile.platform • English"
+    },
+    "url": {
+      "$type": "string",
+      "$value": "URL",
+      "$description": "app_translations.dart • profile.url • English"
+    },
+    "xpStat": {
+      "$type": "string",
+      "$value": "Total XP",
+      "$description": "app_translations.dart • profile.xpStat • English"
+    }
+  },
+  "profileSetup": {
+    "stepOf": {
+      "$type": "string",
+      "$value": "Step @step of @total",
+      "$description": "app_translations.dart • profileSetup.stepOf • English"
+    },
+    "step1Title": {
+      "$type": "string",
+      "$value": "Set up your profile",
+      "$description": "app_translations.dart • profileSetup.step1Title • English"
+    },
+    "step1Subtitle": {
+      "$type": "string",
+      "$value": "Takes less than a minute.",
+      "$description": "app_translations.dart • profileSetup.step1Subtitle • English"
+    },
+    "uploadPhoto": {
+      "$type": "string",
+      "$value": "Upload photo",
+      "$description": "app_translations.dart • profileSetup.uploadPhoto • English"
+    },
+    "photoHint": {
+      "$type": "string",
+      "$value": "JPG, PNG or GIF",
+      "$description": "app_translations.dart • profileSetup.photoHint • English"
+    },
+    "iAmA": {
+      "$type": "string",
+      "$value": "I am a",
+      "$description": "app_translations.dart • profileSetup.iAmA • English"
+    },
+    "universityOptional": {
+      "$type": "string",
+      "$value": "University or workplace (optional)",
+      "$description": "app_translations.dart • profileSetup.universityOptional • English"
+    },
+    "universityHint": {
+      "$type": "string",
+      "$value": "e.g. Royal University of Phnom Penh",
+      "$description": "app_translations.dart • profileSetup.universityHint • English"
+    },
+    "locationOptional": {
+      "$type": "string",
+      "$value": "Location (optional)",
+      "$description": "app_translations.dart • profileSetup.locationOptional • English"
+    },
+    "locationHint": {
+      "$type": "string",
+      "$value": "e.g. Phnom Penh, Cambodia",
+      "$description": "app_translations.dart • profileSetup.locationHint • English"
+    },
+    "step2Title": {
+      "$type": "string",
+      "$value": "Tell us more about you",
+      "$description": "app_translations.dart • profileSetup.step2Title • English"
+    },
+    "step2Subtitle": {
+      "$type": "string",
+      "$value": "Help others understand who you are and what you do.",
+      "$description": "app_translations.dart • profileSetup.step2Subtitle • English"
+    },
+    "shortBio": {
+      "$type": "string",
+      "$value": "Short bio",
+      "$description": "app_translations.dart • profileSetup.shortBio • English"
+    },
+    "bioHint": {
+      "$type": "string",
+      "$value": "e.g. Final-year student passionate about design and tech…",
+      "$description": "app_translations.dart • profileSetup.bioHint • English"
+    },
+    "linksOptional": {
+      "$type": "string",
+      "$value": "Links (optional)",
+      "$description": "app_translations.dart • profileSetup.linksOptional • English"
+    },
+    "step3Title": {
+      "$type": "string",
+      "$value": "What do you want to grow?",
+      "$description": "app_translations.dart • profileSetup.step3Title • English"
+    },
+    "step3Subtitle": {
+      "$type": "string",
+      "$value": "We'll personalise your experience based on your focus areas. Select at least @count.",
+      "$description": "app_translations.dart • profileSetup.step3Subtitle • English"
+    },
+    "selectedCount": {
+      "$type": "string",
+      "$value": "@count selected",
+      "$description": "app_translations.dart • profileSetup.selectedCount • English"
+    },
+    "finish": {
+      "$type": "string",
+      "$value": "Finish setup",
+      "$description": "app_translations.dart • profileSetup.finish • English"
+    }
+  },
+  "role": {
+    "STUDENT": {
+      "$type": "string",
+      "$value": "Student",
+      "$description": "app_translations.dart • role.STUDENT • English"
+    },
+    "YOUNG_PROFESSIONAL": {
+      "$type": "string",
+      "$value": "Professional",
+      "$description": "app_translations.dart • role.YOUNG_PROFESSIONAL • English"
+    },
+    "CREATOR": {
+      "$type": "string",
+      "$value": "Creator",
+      "$description": "app_translations.dart • role.CREATOR • English"
+    },
+    "FREELANCER": {
+      "$type": "string",
+      "$value": "Freelancer",
+      "$description": "app_translations.dart • role.FREELANCER • English"
+    }
+  },
+  "achievements": {
+    "level": {
+      "$type": "string",
+      "$value": "Level",
+      "$description": "app_translations.dart • achievements.level • English"
+    },
+    "totalXp": {
+      "$type": "string",
+      "$value": "Total XP",
+      "$description": "app_translations.dart • achievements.totalXp • English"
+    },
+    "badges": {
+      "$type": "string",
+      "$value": "Badges",
+      "$description": "app_translations.dart • achievements.badges • English"
+    },
+    "toNextLevel": {
+      "$type": "string",
+      "$value": "@xp XP to Level @level",
+      "$description": "app_translations.dart • achievements.toNextLevel • English"
+    },
+    "myBadges": {
+      "$type": "string",
+      "$value": "My Badges",
+      "$description": "app_translations.dart • achievements.myBadges • English"
+    },
+    "empty": {
+      "$type": "string",
+      "$value": "No badges yet — start earning XP!",
+      "$description": "app_translations.dart • achievements.empty • English"
+    }
+  },
+  "saved": {
+    "all": {
+      "$type": "string",
+      "$value": "All",
+      "$description": "app_translations.dart • saved.all • English"
+    }
+  },
+  "savedType": {
+    "POST": {
+      "$type": "string",
+      "$value": "Posts",
+      "$description": "app_translations.dart • savedType.POST • English"
+    },
+    "DISCUSSION": {
+      "$type": "string",
+      "$value": "Discussions",
+      "$description": "app_translations.dart • savedType.DISCUSSION • English"
+    },
+    "EVENT": {
+      "$type": "string",
+      "$value": "Events",
+      "$description": "app_translations.dart • savedType.EVENT • English"
+    },
+    "OPPORTUNITY": {
+      "$type": "string",
+      "$value": "Opportunities",
+      "$description": "app_translations.dart • savedType.OPPORTUNITY • English"
+    },
+    "MOTIVATION": {
+      "$type": "string",
+      "$value": "Motivations",
+      "$description": "app_translations.dart • savedType.MOTIVATION • English"
+    },
+    "LESSON": {
+      "$type": "string",
+      "$value": "Lessons",
+      "$description": "app_translations.dart • savedType.LESSON • English"
+    },
+    "SHORT_CONTENT": {
+      "$type": "string",
+      "$value": "Videos",
+      "$description": "app_translations.dart • savedType.SHORT_CONTENT • English"
+    }
+  },
+  "portfolio": {
+    "add": {
+      "$type": "string",
+      "$value": "Add item",
+      "$description": "app_translations.dart • portfolio.add • English"
+    },
+    "edit": {
+      "$type": "string",
+      "$value": "Edit item",
+      "$description": "app_translations.dart • portfolio.edit • English"
+    },
+    "imageUrl": {
+      "$type": "string",
+      "$value": "Image URL",
+      "$description": "app_translations.dart • portfolio.imageUrl • English"
+    },
+    "deleteConfirm": {
+      "$type": "string",
+      "$value": "Delete \"@title\"?",
+      "$description": "app_translations.dart • portfolio.deleteConfirm • English"
+    }
+  },
+  "interests": {
+    "hint": {
+      "$type": "string",
+      "$value": "Pick the topics you care about — they personalise your feed and suggestions.",
+      "$description": "app_translations.dart • interests.hint • English"
+    },
+    "saveCount": {
+      "$type": "string",
+      "$value": "Save @count interests",
+      "$description": "app_translations.dart • interests.saveCount • English"
+    },
+    "title": {
+      "$type": "string",
+      "$value": "My Expertise",
+      "$description": "app_translations.dart • interests.title • English"
+    },
+    "subtitle": {
+      "$type": "string",
+      "$value": "Shape your profile by adding your professional skills and personal interests.",
+      "$description": "app_translations.dart • interests.subtitle • English"
+    },
+    "searchHint": {
+      "$type": "string",
+      "$value": "Search skills and interests…",
+      "$description": "app_translations.dart • interests.searchHint • English"
+    },
+    "add": {
+      "$type": "string",
+      "$value": "ADD",
+      "$description": "app_translations.dart • interests.add • English"
+    },
+    "technicalSkills": {
+      "$type": "string",
+      "$value": "Technical Skills",
+      "$description": "app_translations.dart • interests.technicalSkills • English"
+    },
+    "selectedCount": {
+      "$type": "string",
+      "$value": "@count SELECTED",
+      "$description": "app_translations.dart • interests.selectedCount • English"
+    },
+    "coreInterests": {
+      "$type": "string",
+      "$value": "Core Interests",
+      "$description": "app_translations.dart • interests.coreInterests • English"
+    },
+    "suggested": {
+      "$type": "string",
+      "$value": "Suggested for you",
+      "$description": "app_translations.dart • interests.suggested • English"
+    },
+    "selectionProgress": {
+      "$type": "string",
+      "$value": "@count / @max selections made",
+      "$description": "app_translations.dart • interests.selectionProgress • English"
+    },
+    "saveContinue": {
+      "$type": "string",
+      "$value": "Save & Continue",
+      "$description": "app_translations.dart • interests.saveContinue • English"
+    },
+    "limit": {
+      "$type": "string",
+      "$value": "Choose up to @max interests.",
+      "$description": "app_translations.dart • interests.limit • English"
+    },
+    "noResults": {
+      "$type": "string",
+      "$value": "No matching interests found.",
+      "$description": "app_translations.dart • interests.noResults • English"
+    }
+  },
+  "settings": {
+    "accountSettings": {
+      "$type": "string",
+      "$value": "Account Settings",
+      "$description": "app_translations.dart • settings.accountSettings • English"
+    },
+    "accountSettingsHint": {
+      "$type": "string",
+      "$value": "Email, username, phone",
+      "$description": "app_translations.dart • settings.accountSettingsHint • English"
+    },
+    "preferences": {
+      "$type": "string",
+      "$value": "Preferences",
+      "$description": "app_translations.dart • settings.preferences • English"
+    },
+    "privacySettings": {
+      "$type": "string",
+      "$value": "Privacy Settings",
+      "$description": "app_translations.dart • settings.privacySettings • English"
+    },
+    "privacySettingsHint": {
+      "$type": "string",
+      "$value": "Visibility, messages, follows",
+      "$description": "app_translations.dart • settings.privacySettingsHint • English"
+    },
+    "support": {
+      "$type": "string",
+      "$value": "Support",
+      "$description": "app_translations.dart • settings.support • English"
+    },
+    "about": {
+      "$type": "string",
+      "$value": "About GenLink KH",
+      "$description": "app_translations.dart • settings.about • English"
+    },
+    "aboutLegalese": {
+      "$type": "string",
+      "$value": "Connect. Grow. Thrive.",
+      "$description": "app_translations.dart • settings.aboutLegalese • English"
+    },
+    "languageHint": {
+      "$type": "string",
+      "$value": "Choose your app language. You can change this anytime.",
+      "$description": "app_translations.dart • settings.languageHint • English"
+    },
+    "appearanceHint": {
+      "$type": "string",
+      "$value": "Choose how GenLink KH looks on this device.",
+      "$description": "app_translations.dart • settings.appearanceHint • English"
+    },
+    "editProfileHint": {
+      "$type": "string",
+      "$value": "Name, bio, role, links",
+      "$description": "app_translations.dart • settings.editProfileHint • English"
+    },
+    "allowMessagesHint": {
+      "$type": "string",
+      "$value": "Others can message you directly",
+      "$description": "app_translations.dart • settings.allowMessagesHint • English"
+    },
+    "allowFollowRequestHint": {
+      "$type": "string",
+      "$value": "Others can request to follow you",
+      "$description": "app_translations.dart • settings.allowFollowRequestHint • English"
+    },
+    "title": {
+      "$type": "string",
+      "$value": "Settings",
+      "$description": "app_translations.dart • settings.title • English"
+    },
+    "appearance": {
+      "$type": "string",
+      "$value": "Appearance",
+      "$description": "app_translations.dart • settings.appearance • English"
+    },
+    "theme": {
+      "$type": "string",
+      "$value": "Theme",
+      "$description": "app_translations.dart • settings.theme • English"
+    },
+    "themeLight": {
+      "$type": "string",
+      "$value": "Light",
+      "$description": "app_translations.dart • settings.themeLight • English"
+    },
+    "themeDark": {
+      "$type": "string",
+      "$value": "Dark",
+      "$description": "app_translations.dart • settings.themeDark • English"
+    },
+    "themeSystem": {
+      "$type": "string",
+      "$value": "System default",
+      "$description": "app_translations.dart • settings.themeSystem • English"
+    },
+    "language": {
+      "$type": "string",
+      "$value": "Language",
+      "$description": "app_translations.dart • settings.language • English"
+    },
+    "languageEnglish": {
+      "$type": "string",
+      "$value": "English",
+      "$description": "app_translations.dart • settings.languageEnglish • English"
+    },
+    "languageKhmer": {
+      "$type": "string",
+      "$value": "ភាសាខ្មែរ",
+      "$description": "app_translations.dart • settings.languageKhmer • English"
+    },
+    "notifications": {
+      "$type": "string",
+      "$value": "Notifications",
+      "$description": "app_translations.dart • settings.notifications • English"
+    },
+    "notificationsEnabled": {
+      "$type": "string",
+      "$value": "Enable notifications",
+      "$description": "app_translations.dart • settings.notificationsEnabled • English"
+    },
+    "interface": {
+      "$type": "string",
+      "$value": "Interface",
+      "$description": "app_translations.dart • settings.interface • English"
+    },
+    "interfaceHint": {
+      "$type": "string",
+      "$value": "Customize your navigation and effects",
+      "$description": "app_translations.dart • settings.interfaceHint • English"
+    },
+    "glassmorphism": {
+      "$type": "string",
+      "$value": "Glassmorphism Effects",
+      "$description": "app_translations.dart • settings.glassmorphism • English"
+    },
+    "glassmorphismHint": {
+      "$type": "string",
+      "$value": "Enable blur and transparency",
+      "$description": "app_translations.dart • settings.glassmorphismHint • English"
+    },
+    "dynamicIslands": {
+      "$type": "string",
+      "$value": "Dynamic Islands",
+      "$description": "app_translations.dart • settings.dynamicIslands • English"
+    },
+    "dynamicIslandsHint": {
+      "$type": "string",
+      "$value": "Animated header interactions",
+      "$description": "app_translations.dart • settings.dynamicIslandsHint • English"
+    },
+    "privacy": {
+      "$type": "string",
+      "$value": "Privacy",
+      "$description": "app_translations.dart • settings.privacy • English"
+    },
+    "privacyProfile": {
+      "$type": "string",
+      "$value": "Profile visibility",
+      "$description": "app_translations.dart • settings.privacyProfile • English"
+    },
+    "allowMessages": {
+      "$type": "string",
+      "$value": "Allow messages",
+      "$description": "app_translations.dart • settings.allowMessages • English"
+    },
+    "allowFollowRequest": {
+      "$type": "string",
+      "$value": "Allow follow requests",
+      "$description": "app_translations.dart • settings.allowFollowRequest • English"
+    },
+    "security": {
+      "$type": "string",
+      "$value": "Security",
+      "$description": "app_translations.dart • settings.security • English"
+    },
+    "biometric": {
+      "$type": "string",
+      "$value": "Unlock with biometrics",
+      "$description": "app_translations.dart • settings.biometric • English"
+    },
+    "account": {
+      "$type": "string",
+      "$value": "Account",
+      "$description": "app_translations.dart • settings.account • English"
+    },
+    "saved": {
+      "$type": "string",
+      "$value": "Settings saved",
+      "$description": "app_translations.dart • settings.saved • English"
+    }
+  },
+  "privacy": {
+    "PUBLIC": {
+      "$type": "string",
+      "$value": "Public",
+      "$description": "app_translations.dart • privacy.PUBLIC • English"
+    },
+    "PUBLICHint": {
+      "$type": "string",
+      "$value": "Anyone can view your profile",
+      "$description": "app_translations.dart • privacy.PUBLICHint • English"
+    },
+    "FRIENDS": {
+      "$type": "string",
+      "$value": "Friends",
+      "$description": "app_translations.dart • privacy.FRIENDS • English"
+    },
+    "FRIENDSHint": {
+      "$type": "string",
+      "$value": "Only people you follow back",
+      "$description": "app_translations.dart • privacy.FRIENDSHint • English"
+    },
+    "PRIVATE": {
+      "$type": "string",
+      "$value": "Private",
+      "$description": "app_translations.dart • privacy.PRIVATE • English"
+    },
+    "PRIVATEHint": {
+      "$type": "string",
+      "$value": "Only you",
+      "$description": "app_translations.dart • privacy.PRIVATEHint • English"
+    }
+  },
+  "notification": {
+    "title": {
+      "$type": "string",
+      "$value": "Notifications",
+      "$description": "app_translations.dart • notification.title • English"
+    },
+    "markAllRead": {
+      "$type": "string",
+      "$value": "Mark all read",
+      "$description": "app_translations.dart • notification.markAllRead • English"
+    },
+    "tabAll": {
+      "$type": "string",
+      "$value": "All",
+      "$description": "app_translations.dart • notification.tabAll • English"
+    },
+    "tabMentions": {
+      "$type": "string",
+      "$value": "Mentions",
+      "$description": "app_translations.dart • notification.tabMentions • English"
+    },
+    "tabActivity": {
+      "$type": "string",
+      "$value": "Activity",
+      "$description": "app_translations.dart • notification.tabActivity • English"
+    },
+    "tabSystem": {
+      "$type": "string",
+      "$value": "System",
+      "$description": "app_translations.dart • notification.tabSystem • English"
+    },
+    "empty": {
+      "$type": "string",
+      "$value": "No notifications",
+      "$description": "app_translations.dart • notification.empty • English"
+    },
+    "emptyDesc": {
+      "$type": "string",
+      "$value": "You're all caught up. Reactions, comments and updates will appear here.",
+      "$description": "app_translations.dart • notification.emptyDesc • English"
+    },
+    "errorRetry": {
+      "$type": "string",
+      "$value": "Something went wrong. Pull to retry.",
+      "$description": "app_translations.dart • notification.errorRetry • English"
+    },
+    "typeLike": {
+      "$type": "string",
+      "$value": "Post Reaction",
+      "$description": "app_translations.dart • notification.typeLike • English"
+    },
+    "typeComment": {
+      "$type": "string",
+      "$value": "Comment",
+      "$description": "app_translations.dart • notification.typeComment • English"
+    },
+    "typeMention": {
+      "$type": "string",
+      "$value": "Mentioned You",
+      "$description": "app_translations.dart • notification.typeMention • English"
+    },
+    "typeFollow": {
+      "$type": "string",
+      "$value": "New Follower",
+      "$description": "app_translations.dart • notification.typeFollow • English"
+    },
+    "typeGroup": {
+      "$type": "string",
+      "$value": "Group Update",
+      "$description": "app_translations.dart • notification.typeGroup • English"
+    },
+    "typeEvent": {
+      "$type": "string",
+      "$value": "Event",
+      "$description": "app_translations.dart • notification.typeEvent • English"
+    },
+    "typeSystem": {
+      "$type": "string",
+      "$value": "System",
+      "$description": "app_translations.dart • notification.typeSystem • English"
+    },
+    "today": {
+      "$type": "string",
+      "$value": "TODAY",
+      "$description": "app_translations.dart • notification.today • English"
+    },
+    "earlier": {
+      "$type": "string",
+      "$value": "EARLIER",
+      "$description": "app_translations.dart • notification.earlier • English"
+    },
+    "justNow": {
+      "$type": "string",
+      "$value": "Just now",
+      "$description": "app_translations.dart • notification.justNow • English"
+    },
+    "back": {
+      "$type": "string",
+      "$value": "Back",
+      "$description": "app_translations.dart • notification.back • English"
+    },
+    "deleteHint": {
+      "$type": "string",
+      "$value": "Swipe left to delete",
+      "$description": "app_translations.dart • notification.deleteHint • English"
+    }
+  }
+}

@@ -172,6 +172,15 @@ abstract final class ApiEndpoints {
       '$_base/community/discussions/$discussionId/comments';
   static String communityDiscussionReact(String discussionId) =>
       '$_base/community/discussions/$discussionId/react';
+  static String communityDiscussionReport(String discussionId) =>
+      '$_base/community/discussions/$discussionId/report';
+  static String communityDiscussionCommentLike(String commentId) =>
+      '$_base/community/discussions/comments/$commentId/like';
+  static String communityDiscussionComment(String commentId) =>
+      '$_base/community/discussions/comments/$commentId';
+
+  static String communityEventRsvp(String eventId) =>
+      '$_base/community/events/$eventId/rsvp';
 
   // ── Stories ────────────────────────────────────────────────────────────
   static const stories = '$_base/community/stories';

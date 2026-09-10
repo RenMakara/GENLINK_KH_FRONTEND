@@ -496,6 +496,77 @@ class CommunityRemoteDataSource {
     );
   }
 
+  Future<bool> reportDiscussion(
+    String discussionId, {
+    String reason = 'INAPPROPRIATE_CONTENT',
+    String? details,
+  }) async {
+    try {
+      final response = await guardDio(
+        () => dio.post<dynamic>(
+          ApiEndpoints.communityDiscussionReport(discussionId),
+          data: {
+            'reason': reason,
+            if (details != null && details.trim().isNotEmpty) 'details': details,
+          },
+        ),
+      );
+      return response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> toggleDiscussionCommentLike(
+    String commentId, {
+    required bool isCurrentlyLiked,
+  }) async {
+    try {
+      final response = await guardDio(
+        () => isCurrentlyLiked
+            ? dio.delete<dynamic>(ApiEndpoints.communityDiscussionCommentLike(commentId))
+            : dio.post<dynamic>(ApiEndpoints.communityDiscussionCommentLike(commentId)),
+      );
+      return response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> deleteDiscussionComment(String commentId) async {
+    try {
+      final response = await guardDio(
+        () => dio.delete<dynamic>(ApiEndpoints.communityDiscussionComment(commentId)),
+      );
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<RsvpResponseModel> rsvpEvent(
+    String eventId, {
+    EventRegistrationRequest? request,
+  }) async {
+    try {
+      final response = await guardDio(
+        () => dio.post<dynamic>(
+          ApiEndpoints.communityEventRsvp(eventId),
+          data: request?.toJson(),
+        ),
+      );
+      final body = response.data;
+      final rawData = body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+      if (rawData is Map<String, dynamic>) {
+        return RsvpResponseModel.fromJson(rawData);
+      }
+    } catch (_) {}
+
+    // The existing datasource uses an in-memory fallback for offline/demo
+    // mode. Keep that behavior while preserving the API response shape.
+    return RsvpResponseModel(eventId: eventId, status: 'JOINED');
+  }
+
   final List<ForumTopicModel> _mockDiscussions = [
     ForumTopicModel(
       id: 'latest_1',

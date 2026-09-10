@@ -94,7 +94,10 @@ class _FakeCommunityRepository implements CommunityRepository {
   Future<bool> deleteDiscussion(String discussionId) async => true;
 
   @override
-  Future<bool> toggleDiscussionLike(String discussionId) async => true;
+  Future<bool> toggleDiscussionLike(
+    String discussionId, {
+    bool isCurrentlyLiked = false,
+  }) async => true;
 
   @override
   Future<List<CommentModel>> getDiscussionComments(String discussionId) async =>

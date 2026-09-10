@@ -1,0 +1,77 @@
+{
+  "format": "figma-variable-handoff-v1",
+  "name": "GenLink KH Design System",
+  "version": "1.0.0",
+  "source": "lib/design_system/colors/app_colors.dart and lib/design_system/typography/app_text_theme.dart",
+  "collections": [
+    {
+      "name": "GenLink / Colors",
+      "type": "COLOR",
+      "modes": ["Light", "Dark"],
+      "variables": [
+        {"name": "bg/primary", "values": {"Light": "#F7F7F5", "Dark": "#0B1020"}, "description": "App scaffold and page background"},
+        {"name": "bg/secondary", "values": {"Light": "#EFEFEB", "Dark": "#0F172A"}, "description": "Subtle background grouping"},
+        {"name": "surface/primary", "values": {"Light": "#FFFFFF", "Dark": "#121A2D"}, "description": "Cards, sheets, and primary containers"},
+        {"name": "surface/secondary", "values": {"Light": "#F2F2EF", "Dark": "#18243B"}, "description": "Inputs, chips, and secondary containers"},
+        {"name": "surface/elevated", "values": {"Light": "#FFFFFF", "Dark": "#1F2D47"}, "description": "Raised cards and popovers"},
+        {"name": "surface/glass", "values": {"Light": "#FFFFFFB8", "Dark": "#121A2DD6"}, "description": "Translucent glass surfaces; preserve alpha"},
+        {"name": "text/primary", "values": {"Light": "#111111", "Dark": "#F7F8FC"}, "description": "Headings and high-emphasis text"},
+        {"name": "text/secondary", "values": {"Light": "#666666", "Dark": "#B6C1D8"}, "description": "Supporting copy and labels"},
+        {"name": "text/muted", "values": {"Light": "#9A9A92", "Dark": "#7D8AA4"}, "description": "Hints, metadata, and disabled copy"},
+        {"name": "text/inverse", "values": {"Light": "#FFFFFF", "Dark": "#0B1020"}, "description": "Text on primary/accent surfaces"},
+        {"name": "border/subtle", "values": {"Light": "#11111114", "Dark": "#8196BE33"}, "description": "Low-emphasis dividers and outlines; preserve alpha"},
+        {"name": "border/strong", "values": {"Light": "#11111129", "Dark": "#526486"}, "description": "Focused or high-emphasis outlines"},
+        {"name": "brand/primary", "values": {"Light": "#111111", "Dark": "#9B8CFF"}, "description": "Primary action and selected state"},
+        {"name": "brand/primary-soft", "values": {"Light": "#E8E8E3", "Dark": "#2A2550"}, "description": "Soft selected state background"},
+        {"name": "brand/dark-cyan", "values": {"Light": "#56D9FF", "Dark": "#56D9FF"}, "description": "Dark theme highlight and gradient endpoint"},
+        {"name": "brand/dark-mint", "values": {"Light": "#43D8C6", "Dark": "#43D8C6"}, "description": "Dark theme secondary accent"},
+        {"name": "brand/dark-pink", "values": {"Light": "#FF78B7", "Dark": "#FF78B7"}, "description": "Dark theme tertiary accent"},
+        {"name": "accent/premium", "values": {"Light": "#C8BFAE", "Dark": "#C8BFAE"}, "description": "Premium and profile accent"},
+        {"name": "accent/liked", "values": {"Light": "#FF1640", "Dark": "#FF1640"}, "description": "Active social reaction only"},
+        {"name": "semantic/danger", "values": {"Light": "#E41414", "Dark": "#E41414"}, "description": "Validation, failed, destructive"},
+        {"name": "semantic/success", "values": {"Light": "#22C55E", "Dark": "#22C55E"}, "description": "Saved, confirmed, successful"},
+        {"name": "semantic/warning", "values": {"Light": "#F59E0B", "Dark": "#F59E0B"}, "description": "Warnings and pending states"},
+        {"name": "semantic/info", "values": {"Light": "#A0A0A0", "Dark": "#A0A0A0"}, "description": "Neutral information"},
+        {"name": "feature/brand", "values": {"Light": "#1F6FEB", "Dark": "#1F6FEB"}, "description": "General GenLink feature accent"},
+        {"name": "feature/community", "values": {"Light": "#5DADEC", "Dark": "#5DADEC"}, "description": "Community"},
+        {"name": "feature/productivity", "values": {"Light": "#8B7CF6", "Dark": "#8B7CF6"}, "description": "Productivity"},
+        {"name": "feature/finance", "values": {"Light": "#4BAE73", "Dark": "#4BAE73"}, "description": "Finance"},
+        {"name": "feature/growth", "values": {"Light": "#F2B84B", "Dark": "#F2B84B"}, "description": "Growth and LevelUp"},
+        {"name": "feature/profile", "values": {"Light": "#C8BFAE", "Dark": "#C8BFAE"}, "description": "Profile"}
+      ]
+    },
+    {
+      "name": "GenLink / Typography",
+      "type": "STRING",
+      "modes": ["English", "Khmer"],
+      "variables": [
+        {"name": "font/family", "values": {"English": "Sora", "Khmer": "KantumruyPro"}, "description": "Locale-aware font family"},
+        {"name": "font/weight/regular", "values": {"English": "400", "Khmer": "400"}},
+        {"name": "font/weight/medium", "values": {"English": "500", "Khmer": "400"}},
+        {"name": "font/weight/semibold", "values": {"English": "600", "Khmer": "500"}},
+        {"name": "font/weight/bold", "values": {"English": "700", "Khmer": "600"}}
+      ]
+    }
+  ],
+  "textStyles": [
+    {"name": "display/large", "fontFamily": {"English": "Sora", "Khmer": "KantumruyPro"}, "fontSize": {"English": 40, "Khmer": 42}, "fontWeight": {"English": 700, "Khmer": 600}, "lineHeightPx": {"English": 46, "Khmer": 54.6}, "letterSpacingPx": {"English": -0.5, "Khmer": 0}, "fillVariable": "text/primary"},
+    {"name": "display/medium", "fontFamily": {"English": "Sora", "Khmer": "KantumruyPro"}, "fontSize": {"English": 32, "Khmer": 34}, "fontWeight": {"English": 700, "Khmer": 600}, "lineHeightPx": {"English": 38.4, "Khmer": 45.9}, "letterSpacingPx": {"English": -0.4, "Khmer": 0}, "fillVariable": "text/primary"},
+    {"name": "display/small", "fontFamily": {"English": "Sora", "Khmer": "KantumruyPro"}, "fontSize": {"English": 24, "Khmer": 26}, "fontWeight": {"English": 700, "Khmer": 600}, "lineHeightPx": {"English": 28.8, "Khmer": 35.1}, "letterSpacingPx": {"English": 0, "Khmer": 0}, "fillVariable": "text/primary"},
+    {"name": "headline/large", "fontFamily": {"English": "Sora", "Khmer": "KantumruyPro"}, "fontSize": {"English": 28, "Khmer": 30}, "fontWeight": {"English": 600, "Khmer": 500}, "lineHeightPx": {"English": 35, "Khmer": 42}, "letterSpacingPx": {"English": 0, "Khmer": 0}, "fillVariable": "text/primary"},
+    {"name": "headline/medium", "fontFamily": {"English": "Sora", "Khmer": "KantumruyPro"}, "fontSize": {"English": 24, "Khmer": 26}, "fontWeight": {"English": 600, "Khmer": 500}, "lineHeightPx": {"English": 31.2, "Khmer": 37.7}, "letterSpacingPx": {"English": 0, "Khmer": 0}, "fillVariable": "text/primary"},
+    {"name": "headline/small", "fontFamily": {"English": "Sora", "Khmer": "KantumruyPro"}, "fontSize": {"English": 20, "Khmer": 22}, "fontWeight": {"English": 600, "Khmer": 500}, "lineHeightPx": {"English": 26, "Khmer": 31.9}, "letterSpacingPx": {"English": 0, "Khmer": 0}, "fillVariable": "text/primary"},
+    {"name": "title/large", "fontFamily": {"English": "Sora", "Khmer": "KantumruyPro"}, "fontSize": {"English": 20, "Khmer": 22}, "fontWeight": {"English": 600, "Khmer": 500}, "lineHeightPx": {"English": 26, "Khmer": 31.9}, "letterSpacingPx": {"English": 0, "Khmer": 0}, "fillVariable": "text/primary"},
+    {"name": "title/medium", "fontFamily": {"English": "Sora", "Khmer": "KantumruyPro"}, "fontSize": {"English": 16, "Khmer": 18}, "fontWeight": {"English": 600, "Khmer": 500}, "lineHeightPx": {"English": 22.4, "Khmer": 27.9}, "letterSpacingPx": {"English": 0, "Khmer": 0}, "fillVariable": "text/primary"},
+    {"name": "title/small", "fontFamily": {"English": "Sora", "Khmer": "KantumruyPro"}, "fontSize": {"English": 14, "Khmer": 16}, "fontWeight": {"English": 600, "Khmer": 500}, "lineHeightPx": {"English": 19.6, "Khmer": 24.8}, "letterSpacingPx": {"English": 0, "Khmer": 0}, "fillVariable": "text/primary"},
+    {"name": "body/large", "fontFamily": {"English": "Sora", "Khmer": "KantumruyPro"}, "fontSize": {"English": 16, "Khmer": 18}, "fontWeight": {"English": 400, "Khmer": 400}, "lineHeightPx": {"English": 24, "Khmer": 29.7}, "letterSpacingPx": {"English": 0, "Khmer": 0}, "fillVariable": "text/primary"},
+    {"name": "body/medium", "fontFamily": {"English": "Sora", "Khmer": "KantumruyPro"}, "fontSize": {"English": 14, "Khmer": 16}, "fontWeight": {"English": 400, "Khmer": 400}, "lineHeightPx": {"English": 21, "Khmer": 25.6}, "letterSpacingPx": {"English": 0, "Khmer": 0}, "fillVariable": "text/primary"},
+    {"name": "body/small", "fontFamily": {"English": "Sora", "Khmer": "KantumruyPro"}, "fontSize": {"English": 12, "Khmer": 14}, "fontWeight": {"English": 400, "Khmer": 400}, "lineHeightPx": {"English": 17.4, "Khmer": 22.4}, "letterSpacingPx": {"English": 0, "Khmer": 0}, "fillVariable": "text/secondary"},
+    {"name": "label/large", "fontFamily": {"English": "Sora", "Khmer": "KantumruyPro"}, "fontSize": {"English": 15, "Khmer": 17}, "fontWeight": {"English": 600, "Khmer": 500}, "lineHeightPx": {"English": 18, "Khmer": 20.25}, "letterSpacingPx": {"English": 0, "Khmer": 0}, "fillVariable": "text/primary"},
+    {"name": "label/medium", "fontFamily": {"English": "Sora", "Khmer": "KantumruyPro"}, "fontSize": {"English": 13, "Khmer": 15}, "fontWeight": {"English": 500, "Khmer": 400}, "lineHeightPx": {"English": 15.6, "Khmer": 20.25}, "letterSpacingPx": {"English": 0, "Khmer": 0}, "fillVariable": "text/secondary"},
+    {"name": "label/small", "fontFamily": {"English": "Sora", "Khmer": "KantumruyPro"}, "fontSize": {"English": 11, "Khmer": 13}, "fontWeight": {"English": 500, "Khmer": 400}, "lineHeightPx": {"English": 13.2, "Khmer": 17.55}, "letterSpacingPx": {"English": 0.3, "Khmer": 0}, "fillVariable": "text/secondary"}
+  ],
+  "assets": {
+    "englishFontFiles": "assets/fonts/Sora-*.ttf",
+    "khmerFontFiles": "assets/fonts/KantumruyPro-*.ttf"
+  }
+}

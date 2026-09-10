@@ -105,7 +105,10 @@ class _MockTestCommunityRepository implements CommunityRepository {
   }
 
   @override
-  Future<bool> toggleDiscussionLike(String discussionId) async => true;
+  Future<bool> toggleDiscussionLike(
+    String discussionId, {
+    bool isCurrentlyLiked = false,
+  }) async => true;
 
   @override
   Future<bool> toggleLike(String postId) async => true;

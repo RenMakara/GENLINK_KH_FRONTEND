@@ -708,12 +708,10 @@ class _EmptyTasksState extends StatelessWidget {
 class _TaskTile extends StatefulWidget {
   final TaskData task;
 
-  final VoidCallback? onCompleted;
-
   // DETAIL CALLBACK
   final VoidCallback? onDetail;
 
-  const _TaskTile({required this.task, this.onCompleted, this.onDetail});
+  const _TaskTile({required this.task, this.onDetail});
 
   @override
   State<_TaskTile> createState() => _TaskTileState();
@@ -747,7 +745,6 @@ class _TaskTileState extends State<_TaskTile> {
       completed = !completed;
     });
 
-    widget.onCompleted?.call();
   }
 
   // ============================================================

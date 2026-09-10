@@ -130,7 +130,36 @@ class _MockCommunityRepository implements CommunityRepository {
   Future<bool> deleteDiscussion(String discussionId) async => true;
 
   @override
-  Future<bool> toggleDiscussionLike(String discussionId) async => true;
+  Future<bool> toggleDiscussionLike(
+    String discussionId, {
+    bool isCurrentlyLiked = false,
+  }) async => true;
+
+  @override
+  Future<ForumTopicModel> getDiscussionDetails(String discussionId) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<bool> reportDiscussion(
+    String discussionId, {
+    String reason = 'INAPPROPRIATE_CONTENT',
+    String? details,
+  }) async => true;
+
+  @override
+  Future<bool> toggleDiscussionCommentLike(
+    String commentId, {
+    required bool isCurrentlyLiked,
+  }) async => true;
+
+  @override
+  Future<bool> deleteDiscussionComment(String commentId) async => true;
+
+  @override
+  Future<RsvpResponseModel> rsvpEvent(
+    String eventId, {
+    EventRegistrationRequest? request,
+  }) async => RsvpResponseModel(eventId: eventId, status: 'JOINED');
 
   @override
   Future<bool> followUser(String userId) async => true;

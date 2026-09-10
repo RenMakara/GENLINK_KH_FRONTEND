@@ -1,5 +1,6 @@
 import 'dart:ui' show ImageFilter, lerpDouble;
 
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -31,8 +32,8 @@ const _kTabs = [
     labelFallback: 'Home',
   ),
   _TabDef(
-    outlineIcon: Icons.emoji_events_outlined,
-    filledIcon: Icons.emoji_events_rounded,
+    outlineIcon: CupertinoIcons.flame,
+    filledIcon: CupertinoIcons.flame_fill,
     labelKey: 'nav.levelUp',
     labelFallback: 'LevelUp',
   ),

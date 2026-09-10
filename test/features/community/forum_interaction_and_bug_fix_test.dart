@@ -77,7 +77,10 @@ class _MockCommunityRepository implements CommunityRepository {
   Future<bool> checkIsFollowing(String userId) async => false;
 
   @override
-  Future<bool> toggleDiscussionLike(String discussionId) async => true;
+  Future<bool> toggleDiscussionLike(
+    String discussionId, {
+    bool isCurrentlyLiked = false,
+  }) async => true;
 
   @override
   Future<List<CommentModel>> getDiscussionComments(String discussionId) async =>

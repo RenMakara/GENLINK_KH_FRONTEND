@@ -25,6 +25,7 @@ import '../../features/settings/presentation/screens/language_settings_screen.da
 import '../../features/settings/presentation/screens/privacy_settings_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/chat/chat_feature.dart';
+import '../../features/community/presentation/screens/friend_requests_screen.dart';
 import '../../features/notification/notification_feature.dart';
 import '../../features/quiz/presentation/bindings/quiz_binding.dart';
 import '../../features/quiz/presentation/screens/quiz_dashboard_screen.dart';
@@ -117,6 +118,11 @@ abstract final class AppPages {
       name: AppRoutes.notifications,
       page: () => const NotificationScreen(),
       binding: NotificationBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.friendRequests,
+      page: () => const FriendRequestsScreen(),
       middlewares: [AuthMiddleware()],
     ),
     GetPage<dynamic>(

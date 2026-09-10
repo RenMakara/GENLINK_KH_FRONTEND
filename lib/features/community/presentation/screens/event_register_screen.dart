@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-
-import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/colors/app_colors.dart';
-import '../../../finance/domain/entities/finance_entities.dart';
-import '../../../finance/domain/repositories/finance_repository.dart';
-import '../../../finance/presentation/controllers/ewallet_controller.dart';
-import '../../../finance/presentation/formatters/finance_money_formatter.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import 'event_success_screen.dart';
@@ -15,7 +9,10 @@ import 'event_success_screen.dart';
 class EventRegisterScreen extends StatefulWidget {
   final EventModel event;
 
-  const EventRegisterScreen({super.key, required this.event});
+  const EventRegisterScreen({
+    super.key,
+    required this.event,
+  });
 
   @override
   State<EventRegisterScreen> createState() => _EventRegisterScreenState();
@@ -112,19 +109,13 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
       final phone = _phoneController.text.trim();
 
       _fullNameError = name.isEmpty ? 'community.fullNameRequired'.tr : null;
-      _universityError = _selectedUniversity == null
-          ? 'community.universityRequired'.tr
-          : null;
-      _facultyError = _selectedFaculty == null
-          ? 'community.facultyRequired'.tr
-          : null;
+      _universityError = _selectedUniversity == null ? 'community.universityRequired'.tr : null;
+      _facultyError = _selectedFaculty == null ? 'community.facultyRequired'.tr : null;
       _yearError = _selectedYear == null ? 'community.yearRequired'.tr : null;
 
       if (email.isEmpty) {
         _emailError = 'community.emailRequired'.tr;
-      } else if (!RegExp(
-        r'^[\w\.\-]+@([\w\-]+\.)+[\w\-]{2,6}$',
-      ).hasMatch(email)) {
+      } else if (!RegExp(r'^[\w\.\-]+@([\w\-]+\.)+[\w\-]{2,6}$').hasMatch(email)) {
         _emailError = 'community.invalidEmail'.tr;
       } else {
         _emailError = null;
@@ -151,148 +142,6 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
         _termsError == null;
   }
 
-  /// Checks the selected wallet balance before asking the backend to RSVP.
-  ///
-  /// This is only a user-facing pre-check. The backend still owns the final
-  /// debit and can reject a stale balance safely.
-  Future<bool> _confirmPaidEvent() async {
-    if (!widget.event.isPaid || widget.event.price <= 0) {
-      return true;
-    }
-
-    // Keep RSVP usable for an older shell that has not registered Finance yet;
-    // the backend remains authoritative in that case.
-    if (!Get.isRegistered<FinanceRepository>()) {
-      return true;
-    }
-
-    final currency = widget.event.currency;
-    final fee = widget.event.price;
-    final repository = Get.find<FinanceRepository>();
-
-    try {
-      final wallet = await repository.getWallet();
-      if (!mounted) return false;
-
-      final balance = currency == FinanceCurrency.usd
-          ? wallet.balanceUsd
-          : wallet.balanceKhr;
-      final feeLabel = FinanceMoneyFormatter.format(fee, currency);
-      final balanceLabel = FinanceMoneyFormatter.format(balance, currency);
-
-      if (balance < fee) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Insufficient ${currency.apiValue} wallet balance. '
-              'Need $feeLabel, available $balanceLabel.',
-            ),
-            backgroundColor: AppColors.danger,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        return false;
-      }
-
-      final afterLabel = FinanceMoneyFormatter.format(balance - fee, currency);
-      final confirmed = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) {
-          final isDark = Theme.of(dialogContext).brightness == Brightness.dark;
-          final textPrimary = isDark ? Colors.white : Colors.black87;
-          final textSecondary = isDark ? Colors.white70 : Colors.black54;
-
-          return AlertDialog(
-            title: Text(
-              'Confirm payment',
-              style: TextStyle(color: textPrimary),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'This paid event will use your ${currency.apiValue} wallet.',
-                  style: TextStyle(color: textSecondary),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Registration fee  $feeLabel',
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Balance after RSVP  $afterLabel',
-                  style: TextStyle(color: textSecondary),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Demo wallet payment',
-                  style: TextStyle(
-                    color: textSecondary,
-                    fontSize: 12,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('Pay & RSVP'),
-              ),
-            ],
-          );
-        },
-      );
-      return confirmed == true;
-    } on AppError catch (error) {
-      if (!mounted) return false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error.message),
-          backgroundColor: AppColors.danger,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return false;
-    } catch (_) {
-      if (!mounted) return false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to check your wallet balance.'),
-          backgroundColor: AppColors.danger,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return false;
-    }
-  }
-
-  String _registrationErrorMessage(Object error) {
-    if (error is AppError) {
-      switch (error.errorCode) {
-        case 'DEMO_WALLET_INSUFFICIENT_BALANCE':
-          return 'Your ${widget.event.currency.apiValue} wallet balance is not enough for this event.';
-        case 'DEMO_WALLET_NOT_FOUND':
-          return 'Please open your wallet before joining a paid event.';
-        case 'EVENT_CURRENCY_MISSING':
-          return 'This event has no valid payment currency configured.';
-        default:
-          if (error.message.trim().isNotEmpty) return error.message;
-      }
-    }
-    return 'Unable to complete registration. Please try again.';
-  }
-
   Future<void> _handleSubmit() async {
     if (_isSubmitting) return;
 
@@ -314,8 +163,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
         SnackBar(
           content: Text(
             'community.alreadyRegistered'.tr.isNotEmpty &&
-                    'community.alreadyRegistered'.tr !=
-                        'community.alreadyRegistered'
+                    'community.alreadyRegistered'.tr != 'community.alreadyRegistered'
                 ? 'community.alreadyRegistered'.tr
                 : 'You are already registered for this event.',
           ),
@@ -330,48 +178,33 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     HapticFeedback.mediumImpact();
 
     try {
-      if (!await _confirmPaidEvent()) {
-        if (mounted) setState(() => _isSubmitting = false);
-        return;
-      }
-
-      final ctrl = Get.isRegistered<CommunityController>()
-          ? Get.find<CommunityController>()
-          : Get.put(CommunityController());
-      final result = await ctrl.registerForEvent(
-        widget.event.id,
-        EventRegistrationInput(
-          fullName: _fullNameController.text.trim(),
-          email: _emailController.text.trim(),
-          phoneNumber: _phoneController.text.trim(),
-          university: _selectedUniversity!,
-          faculty: _selectedFaculty!,
-          studyYear: _selectedYear!,
-          termsAccepted: _agreedToTerms,
-        ),
-      );
+      // Small simulated network delay / API request
+      await Future.delayed(const Duration(milliseconds: 650));
 
       if (!mounted) return;
 
-      // The backend is authoritative for both RSVP state and attendee count.
-      widget.event.isRsvped = result.status.toUpperCase() == 'JOINED';
-      widget.event.attendeesCount = result.attendeeCount;
+      // Mark RSVP in model and controller so state persists reactively
+      widget.event.isRsvped = true;
+      widget.event.attendeesCount += 1;
 
-      // Refresh an already-open wallet screen after the backend confirms the
-      // debit. No local balance arithmetic is used as an authority.
-      if (widget.event.isPaid && Get.isRegistered<EWalletController>()) {
-        await Get.find<EWalletController>().loadWallet();
+      final ctrl = Get.isRegistered<CommunityController>() ? Get.find<CommunityController>() : null;
+      if (ctrl != null) {
+        final ev = ctrl.events.firstWhereOrNull((e) => e.id == widget.event.id);
+        if (ev != null) {
+          if (!ev.isRsvped) {
+            ev.isRsvped = true;
+            ev.attendeesCount += 1;
+          }
+          ctrl.events.refresh();
+        }
       }
-
-      if (!mounted) return;
 
       setState(() => _isSubmitting = false);
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) =>
-              EventSuccessScreen(event: widget.event, result: result),
+          builder: (_) => EventSuccessScreen(event: widget.event),
         ),
       );
     } catch (e) {
@@ -379,7 +212,12 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_registrationErrorMessage(e)),
+          content: Text(
+            'community.registrationFailed'.tr.isNotEmpty &&
+                    'community.registrationFailed'.tr != 'community.registrationFailed'
+                ? 'community.registrationFailed'.tr
+                : 'Unable to complete registration. Please try again.',
+          ),
           backgroundColor: AppColors.danger,
           behavior: SnackBarBehavior.floating,
         ),
@@ -449,17 +287,11 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF1E1E24) : Colors.white;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? Colors.white70
-        : AppColors.lightTextSecondary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
     final textMuted = isDark ? Colors.white38 : AppColors.lightTextMuted;
     final borderSubtle = isDark ? Colors.white12 : AppColors.lightBorderSubtle;
-    final searchBg = isDark
-        ? Colors.white.withValues(alpha: 0.06)
-        : AppColors.lightBgSecondary;
-    final selectedTileBg = isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : Colors.black.withValues(alpha: 0.05);
+    final searchBg = isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.lightBgSecondary;
+    final selectedTileBg = isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05);
 
     showModalBottomSheet<void>(
       context: context,
@@ -474,13 +306,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
           builder: (context, setSheetState) {
             final filtered = query.isEmpty
                 ? items
-                : items
-                      .where(
-                        (i) => i.toLowerCase().contains(
-                          query.toLowerCase().trim(),
-                        ),
-                      )
-                      .toList();
+                : items.where((i) => i.toLowerCase().contains(query.toLowerCase().trim())).toList();
 
             return SafeArea(
               child: Container(
@@ -524,11 +350,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                             ),
                           ),
                           IconButton(
-                            icon: Icon(
-                              Icons.close_rounded,
-                              color: textSecondary,
-                              size: 22,
-                            ),
+                            icon: Icon(Icons.close_rounded, color: textSecondary, size: 22),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                             onPressed: () => Navigator.pop(ctx),
@@ -540,10 +362,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                     // Search Field (if enabled)
                     if (isSearchable) ...[
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                         child: Container(
                           height: 44,
                           decoration: BoxDecoration(
@@ -553,23 +372,13 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                           ),
                           child: TextField(
                             style: TextStyle(color: textPrimary, fontSize: 14),
-                            onChanged: (val) =>
-                                setSheetState(() => query = val),
+                            onChanged: (val) => setSheetState(() => query = val),
                             decoration: InputDecoration(
                               hintText: searchHint,
-                              hintStyle: TextStyle(
-                                color: textMuted,
-                                fontSize: 13.5,
-                              ),
-                              prefixIcon: Icon(
-                                Icons.search_rounded,
-                                color: textMuted,
-                                size: 19,
-                              ),
+                              hintStyle: TextStyle(color: textMuted, fontSize: 13.5),
+                              prefixIcon: Icon(Icons.search_rounded, color: textMuted, size: 19),
                               border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 12,
-                              ),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
                         ),
@@ -582,19 +391,12 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                     Flexible(
                       child: filtered.isEmpty
                           ? Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 36,
-                                horizontal: 20,
-                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
                               child: Center(
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(
-                                      Icons.search_off_rounded,
-                                      color: textMuted,
-                                      size: 36,
-                                    ),
+                                    Icon(Icons.search_off_rounded, color: textMuted, size: 36),
                                     const SizedBox(height: 10),
                                     Text(
                                       emptyMessage,
@@ -610,14 +412,10 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                             )
                           : ListView.separated(
                               shrinkWrap: true,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
                               itemCount: filtered.length,
-                              separatorBuilder: (context, index) => Divider(
-                                height: 1,
-                                color: borderSubtle.withValues(alpha: 0.5),
-                              ),
+                              separatorBuilder: (context, index) =>
+                                  Divider(height: 1, color: borderSubtle.withValues(alpha: 0.5)),
                               itemBuilder: (context, idx) {
                                 final item = filtered[idx];
                                 final isSelected = item == selectedItem;
@@ -629,14 +427,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                                   },
                                   borderRadius: BorderRadius.circular(10),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 13,
-                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                                     decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? selectedTileBg
-                                          : Colors.transparent,
+                                      color: isSelected ? selectedTileBg : Colors.transparent,
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Row(
@@ -646,9 +439,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                                             item,
                                             style: TextStyle(
                                               color: textPrimary,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.w600
-                                                  : FontWeight.normal,
+                                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                                               fontSize: 14,
                                             ),
                                           ),
@@ -657,9 +448,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                                           const SizedBox(width: 8),
                                           Icon(
                                             Icons.check_rounded,
-                                            color: isDark
-                                                ? Colors.white
-                                                : Colors.black87,
+                                            color: isDark ? Colors.white : Colors.black87,
                                             size: 20,
                                           ),
                                         ],
@@ -685,9 +474,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF1E1E24) : Colors.white;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? Colors.white70
-        : AppColors.lightTextSecondary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
 
     showModalBottomSheet<void>(
       context: context,
@@ -739,13 +526,13 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isDark ? Colors.white : Colors.black87,
                     foregroundColor: isDark ? Colors.black : Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(
                     'community.understand'.tr,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -760,14 +547,10 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? Colors.white70
-        : AppColors.lightTextSecondary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
     final textMuted = isDark ? Colors.white54 : AppColors.lightTextMuted;
     final bgPrimary = Theme.of(context).scaffoldBackgroundColor;
-    final cardBg = isDark
-        ? Colors.white.withValues(alpha: 0.04)
-        : AppColors.lightSurfacePrimary;
+    final cardBg = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightSurfacePrimary;
     final borderSubtle = isDark ? Colors.white12 : AppColors.lightBorderSubtle;
 
     // Check if already registered
@@ -779,11 +562,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
         backgroundColor: bgPrimary,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: textPrimary,
-            size: 20,
-          ),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: textPrimary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -802,10 +581,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             Expanded(
               child: SingleChildScrollView(
                 controller: _scrollController,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -828,23 +604,15 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                         padding: const EdgeInsets.all(14),
                         margin: const EdgeInsets.only(bottom: 20),
                         decoration: BoxDecoration(
-                          color: const Color(
-                            0xFF22C55E,
-                          ).withValues(alpha: 0.12),
+                          color: const Color(0xFF22C55E).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: const Color(
-                              0xFF22C55E,
-                            ).withValues(alpha: 0.35),
+                            color: const Color(0xFF22C55E).withValues(alpha: 0.35),
                           ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
-                              Icons.check_circle_rounded,
-                              color: Color(0xFF22C55E),
-                              size: 22,
-                            ),
+                            const Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 22),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Column(
@@ -862,9 +630,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                                   Text(
                                     'community.alreadyRegisteredMsg'.tr,
                                     style: TextStyle(
-                                      color: isDark
-                                          ? Colors.white70
-                                          : AppColors.lightTextSecondary,
+                                      color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
                                       fontSize: 11.5,
                                     ),
                                   ),
@@ -909,10 +675,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                     const SizedBox(height: 22),
 
                     // ── SECTION 2: Academic Information ──────────────────
-                    _buildSectionHeader(
-                      'community.academicInformation'.tr,
-                      isDark,
-                    ),
+                    _buildSectionHeader('community.academicInformation'.tr, isDark),
                     const SizedBox(height: 10),
 
                     _buildModernSelectorTile(
@@ -937,10 +700,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                     const SizedBox(height: 22),
 
                     // ── SECTION 3: Contact Information ───────────────────
-                    _buildSectionHeader(
-                      'community.contactInformation'.tr,
-                      isDark,
-                    ),
+                    _buildSectionHeader('community.contactInformation'.tr, isDark),
                     const SizedBox(height: 10),
 
                     _buildModernTextField(
@@ -999,12 +759,8 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                               height: 24,
                               child: Checkbox(
                                 value: _agreedToTerms,
-                                activeColor: isDark
-                                    ? Colors.white
-                                    : Colors.black87,
-                                checkColor: isDark
-                                    ? Colors.black
-                                    : Colors.white,
+                                activeColor: isDark ? Colors.white : Colors.black87,
+                                checkColor: isDark ? Colors.black : Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(5),
                                 ),
@@ -1078,9 +834,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: _isSubmitting || isAlreadyRegistered
-                      ? null
-                      : _handleSubmit,
+                  onPressed: _isSubmitting || isAlreadyRegistered ? null : _handleSubmit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isAlreadyRegistered
                         ? (isDark ? Colors.white12 : Colors.grey.shade300)
@@ -1124,9 +878,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                               : 'community.registerNow'.tr,
                           style: TextStyle(
                             color: isAlreadyRegistered
-                                ? (isDark
-                                      ? Colors.white38
-                                      : Colors.grey.shade600)
+                                ? (isDark ? Colors.white38 : Colors.grey.shade600)
                                 : (isDark ? Colors.black : Colors.white),
                             fontWeight: FontWeight.bold,
                             fontSize: 15.5,
@@ -1171,9 +923,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
 
     final String dateDisplay = widget.event.timeString.isNotEmpty
         ? '📅 ${widget.event.dateString} · ${widget.event.timeString}'
-        : (widget.event.dateString.isNotEmpty
-              ? '📅 ${widget.event.dateString}'
-              : '');
+        : (widget.event.dateString.isNotEmpty ? '📅 ${widget.event.dateString}' : '');
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1305,12 +1055,8 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     ValueChanged<String>? onChanged,
   }) {
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? Colors.white70
-        : AppColors.lightTextSecondary;
-    final inputBg = isDark
-        ? Colors.white.withValues(alpha: 0.05)
-        : AppColors.lightBgSecondary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final inputBg = isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.lightBgSecondary;
     final borderSubtle = isDark ? Colors.white12 : AppColors.lightBorderSubtle;
 
     return Column(
@@ -1341,24 +1087,17 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             ),
             filled: true,
             fillColor: inputBg,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 13,
-            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: errorText != null
-                    ? const Color(0xFFEF4444)
-                    : borderSubtle,
+                color: errorText != null ? const Color(0xFFEF4444) : borderSubtle,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: errorText != null
-                    ? const Color(0xFFEF4444)
-                    : borderSubtle,
+                color: errorText != null ? const Color(0xFFEF4444) : borderSubtle,
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -1377,11 +1116,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             padding: const EdgeInsets.only(top: 4, left: 4),
             child: Row(
               children: [
-                const Icon(
-                  Icons.error_outline_rounded,
-                  color: Color(0xFFEF4444),
-                  size: 13,
-                ),
+                const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 13),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -1410,12 +1145,8 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     required VoidCallback onTap,
   }) {
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark
-        ? Colors.white70
-        : AppColors.lightTextSecondary;
-    final inputBg = isDark
-        ? Colors.white.withValues(alpha: 0.05)
-        : AppColors.lightBgSecondary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final inputBg = isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.lightBgSecondary;
     final borderSubtle = isDark ? Colors.white12 : AppColors.lightBorderSubtle;
 
     final isSelected = value != null && value.isNotEmpty;
@@ -1441,9 +1172,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
               color: inputBg,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: errorText != null
-                    ? const Color(0xFFEF4444)
-                    : borderSubtle,
+                color: errorText != null ? const Color(0xFFEF4444) : borderSubtle,
               ),
             ),
             child: Row(
@@ -1456,13 +1185,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                     style: TextStyle(
                       color: isSelected
                           ? textPrimary
-                          : (isDark
-                                ? Colors.white30
-                                : AppColors.lightTextMuted),
+                          : (isDark ? Colors.white30 : AppColors.lightTextMuted),
                       fontSize: 13.5,
-                      fontWeight: isSelected
-                          ? FontWeight.w500
-                          : FontWeight.normal,
+                      fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -1480,11 +1205,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             padding: const EdgeInsets.only(top: 4, left: 4),
             child: Row(
               children: [
-                const Icon(
-                  Icons.error_outline_rounded,
-                  color: Color(0xFFEF4444),
-                  size: 13,
-                ),
+                const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 13),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(

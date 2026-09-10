@@ -6,6 +6,7 @@ import '../../domain/models/chat_models.dart';
 import '../controllers/chat_controller.dart';
 import '../bindings/chat_binding.dart';
 import 'chat_detail_screen.dart';
+import 'create_group_screen.dart';
 
 class ChatListScreen extends GetView<ChatController> {
   const ChatListScreen({super.key});
@@ -41,19 +42,12 @@ class ChatListScreen extends GetView<ChatController> {
         actions: [
           IconButton(
             icon: const Icon(
-              Icons.edit_note_rounded,
+              Icons.group_add_outlined,
               color: AppColors.communityAccent,
-              size: 26,
+              size: 24,
             ),
-            onPressed: () {
-              Get.snackbar(
-                "New Message",
-                "Select a classmate or community group to start chatting.",
-                snackPosition: SnackPosition.TOP,
-                backgroundColor: AppColors.darkSurfaceSecondary,
-                colorText: Colors.white,
-              );
-            },
+            tooltip: 'New Group',
+            onPressed: () => Get.to(() => const CreateGroupScreen()),
           ),
           const SizedBox(width: 8),
         ],
@@ -64,7 +58,7 @@ class ChatListScreen extends GetView<ChatController> {
           child: Column(
             children: [
               // Online Friends Horizontal Scroll Row
-              _buildOnlineRow(),
+              _buildOnlineRow(chatController),
 
               const SizedBox(height: 12),
 
@@ -142,15 +136,11 @@ class ChatListScreen extends GetView<ChatController> {
     );
   }
 
-  Widget _buildOnlineRow() {
+  Widget _buildOnlineRow(ChatController controller) {
     final onlineList = [
-      {
-        'name': 'Sokuntheara',
-        'avatar': 'assets/images/sokuntheara_profile.png',
-      },
-      {'name': 'Sum Sambo', 'avatar': 'assets/images/sum_sambo_profile.png'},
-      {'name': 'Chansela', 'avatar': 'assets/images/heng_chansela_profile.png'},
-      {'name': 'Ren Makara', 'avatar': 'assets/images/ren_makara_profile.png'},
+      {'id': 'user_sokny', 'name': 'Sokny Enat', 'avatar': 'assets/images/user_profile.png'},
+      {'id': 'user_chansela', 'name': 'Chansela', 'avatar': 'assets/images/heng_chansela_profile.png'},
+      {'id': 'user_makara', 'name': 'Ren Makara', 'avatar': 'assets/images/ren_makara_profile.png'},
     ];
 
     return Container(
@@ -162,41 +152,51 @@ class ChatListScreen extends GetView<ChatController> {
         itemCount: onlineList.length,
         itemBuilder: (context, index) {
           final friend = onlineList[index];
-          return Container(
-            margin: const EdgeInsets.only(right: 14),
-            child: Column(
-              children: [
-                Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundImage: AssetImage(friend['avatar']!),
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: AppColors.success,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black, width: 2),
+          return GestureDetector(
+            onTap: () async {
+              await controller.openPrivateChat(
+                friend['id']!,
+                name: friend['name'],
+                avatar: friend['avatar'],
+              );
+              Get.to(() => const ChatDetailScreen());
+            },
+            child: Container(
+              margin: const EdgeInsets.only(right: 14),
+              child: Column(
+                children: [
+                  Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundImage: AssetImage(friend['avatar']!),
+                      ),
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: AppColors.success,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.black, width: 2),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  friend['name']!,
-                  style: const TextStyle(
-                    color: AppColors.darkTextSecondary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    friend['name']!,
+                    style: const TextStyle(
+                      color: AppColors.darkTextSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },

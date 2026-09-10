@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
-import '../../domain/models/chat_models.dart';
 import '../controllers/chat_controller.dart';
 import 'chat_detail_screen.dart';
 
@@ -19,16 +18,10 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
   final List<Map<String, String>> _contacts = [
     {
-      'id': 'user_sokuntheara',
-      'name': 'Chhaeng Sokuntheara',
-      'handle': '@sokuntheara',
-      'avatar': 'assets/images/sokuntheara_profile.png',
-    },
-    {
-      'id': 'user_sambo',
-      'name': 'Sum Sambo',
-      'handle': '@sumsambo',
-      'avatar': 'assets/images/sum_sambo_profile.png',
+      'id': 'user_sokny',
+      'name': 'Sokny Enat',
+      'handle': '@soknyenat',
+      'avatar': 'assets/images/user_profile.png',
     },
     {
       'id': 'user_chansela',
@@ -50,7 +43,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     super.dispose();
   }
 
-  void _onCreateGroup() {
+  Future<void> _onCreateGroup() async {
     final name = _groupNameController.text.trim();
     if (name.isEmpty) {
       Get.snackbar(
@@ -75,25 +68,15 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     }
 
     final chatController = Get.find<ChatController>();
-
-    final newGroup = ChatConversationModel(
-      id: 'grp_${DateTime.now().millisecondsSinceEpoch}',
-      name: name,
-      avatar:
-          'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200',
-      isGroup: true,
-      isOnline: true,
-      lastMessage: 'Group created by Sokny Enat',
-      lastMessageTime: 'Just now',
-      unreadCount: 0,
-      membersCount: _selectedUserIds.length + 1,
+    final newGroup = await chatController.createGroup(
+      name,
+      _selectedUserIds.toList(),
     );
 
-    chatController.conversations.insert(0, newGroup);
-    chatController.openConversation(newGroup);
-
-    Get.back(); // Close CreateGroupScreen
-    Get.to(() => const ChatDetailScreen());
+    if (newGroup != null) {
+      Get.back(); // Close CreateGroupScreen
+      Get.to(() => const ChatDetailScreen());
+    }
   }
 
   @override

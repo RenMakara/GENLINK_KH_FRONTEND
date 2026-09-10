@@ -283,5 +283,71 @@ void main() {
       expect(find.text('Post Story'), findsOneWidget);
       expect(find.text('Empty Story'), findsOneWidget);
     });
+
+    test('Test 7: Image Story publishing creates story and adds to owner group without duplicates', () async {
+      final controller = Get.put(StoryController());
+      await controller.fetchStories();
+
+      final success = await controller.publishStory(
+        type: StoryType.photo,
+        mediaUrl: 'assets/images/user_profile.png',
+        textContent: 'Fresh photo story from camera',
+        visibility: 'Public',
+      );
+
+      expect(success, true);
+      expect(controller.isUploading.value, false);
+
+      final ownerStories = controller.storyGroups.firstWhere((g) => g.isOwner).stories;
+      final createdStory = ownerStories.first;
+      expect(createdStory.type, StoryType.photo);
+      expect(createdStory.textContent, 'Fresh photo story from camera');
+      expect(createdStory.mediaUrl, 'assets/images/user_profile.png');
+
+      // Verify no duplicate IDs in owner group
+      final storyIds = ownerStories.map((s) => s.id).toList();
+      expect(storyIds.toSet().length, storyIds.length);
+    });
+
+    test('Test 8: Text Story without media publishes with background gradient and text', () async {
+      final controller = Get.put(StoryController());
+      await controller.fetchStories();
+
+      final success = await controller.publishStory(
+        type: StoryType.text,
+        textContent: 'Study session at ACLEDA Library!',
+        bgGradientStart: '0xFF0F172A',
+        bgGradientEnd: '0xFF3B82F6',
+        visibility: 'Public',
+      );
+
+      expect(success, true);
+      expect(controller.isUploading.value, false);
+
+      final ownerStories = controller.storyGroups.firstWhere((g) => g.isOwner).stories;
+      final createdStory = ownerStories.first;
+      expect(createdStory.type, StoryType.text);
+      expect(createdStory.textContent, 'Study session at ACLEDA Library!');
+      expect(createdStory.bgGradientStart, '0xFF0F172A');
+      expect(createdStory.bgGradientEnd, '0xFF3B82F6');
+    });
+
+    test('Test 9: Story containing a link publishes with link preserved in caption', () async {
+      final controller = Get.put(StoryController());
+      await controller.fetchStories();
+
+      const linkText = 'Check out this campus event: https://genlink.kh/event/hackathon-2026';
+      final success = await controller.publishStory(
+        type: StoryType.photo,
+        mediaUrl: 'assets/images/user_profile.png',
+        textContent: linkText,
+        visibility: 'Public',
+      );
+
+      expect(success, true);
+      final ownerStories = controller.storyGroups.firstWhere((g) => g.isOwner).stories;
+      final createdStory = ownerStories.first;
+      expect(createdStory.textContent, contains('https://genlink.kh/event/hackathon-2026'));
+    });
   });
 }

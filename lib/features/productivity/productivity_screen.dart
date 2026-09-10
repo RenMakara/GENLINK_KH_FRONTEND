@@ -3,7 +3,8 @@ import 'package:genlink_frontend/features/productivity/presentation/focus_featur
 import 'package:genlink_frontend/features/productivity/presentation/habit_feature/habit_screen.dart';
 import 'package:genlink_frontend/features/productivity/presentation/task_feature/task_home_screen.dart';
 import 'package:genlink_frontend/features/productivity/presentation/widget/productivity_widget.dart';
-import 'package:get/get_utils/src/extensions/internacionalization.dart';
+import 'package:genlink_frontend/app/routes/app_routes.dart';
+import 'package:get/get.dart';
 
 class ProductivityPage extends StatelessWidget {
   const ProductivityPage({super.key});
@@ -23,7 +24,7 @@ class ProductivityPage extends StatelessWidget {
                 title: 'productivity.title'.tr,
                 profileText: 'R',
                 onNotificationTap: () {
-                  debugPrint('Notification tapped');
+                  Get.toNamed(AppRoutes.notifications);
                 },
                 onProfileTap: () {
                   debugPrint('Profile tapped');

@@ -9,7 +9,7 @@ class ChatMessageModel {
   final String timeAgo;
   final bool isMine;
   final bool isRead;
-  final String messageType; // 'text', 'image', 'post_share'
+  final String messageType; // 'text', 'image', 'voice', 'story_reply'
   final String? mediaUrl;
 
   ChatMessageModel({
@@ -39,21 +39,52 @@ class ChatMessageModel {
         DateTime.now();
     final backendType = (json['type'] as String?) ?? 'TEXT';
     return ChatMessageModel(
-      id: json['messageId']?.toString() ?? '',
+      id: json['messageId']?.toString() ?? json['id']?.toString() ?? '',
       conversationId: conversationId,
-      senderId: sender['userId']?.toString() ?? '',
+      senderId: sender['userId']?.toString() ?? json['senderId']?.toString() ?? '',
       senderName:
           (sender['fullName'] as String?) ??
           (sender['username'] as String?) ??
+          (json['senderName'] as String?) ??
           'User',
-      senderAvatar: sender['avatarUrl'] as String?,
+      senderAvatar: (sender['avatarUrl'] as String?) ?? (json['senderAvatar'] as String?),
       content: json['content'] as String? ?? '',
       timestamp: createdAt,
       timeAgo: _timeAgo(createdAt),
-      isMine: json['mine'] as bool? ?? false,
-      isRead: true,
+      isMine: json['mine'] as bool? ?? json['isMine'] as bool? ?? false,
+      isRead: json['isRead'] as bool? ?? true,
       messageType: backendType.toLowerCase(),
       mediaUrl: json['mediaUrl'] as String?,
+    );
+  }
+
+  ChatMessageModel copyWith({
+    String? id,
+    String? conversationId,
+    String? senderId,
+    String? senderName,
+    String? senderAvatar,
+    String? content,
+    DateTime? timestamp,
+    String? timeAgo,
+    bool? isMine,
+    bool? isRead,
+    String? messageType,
+    String? mediaUrl,
+  }) {
+    return ChatMessageModel(
+      id: id ?? this.id,
+      conversationId: conversationId ?? this.conversationId,
+      senderId: senderId ?? this.senderId,
+      senderName: senderName ?? this.senderName,
+      senderAvatar: senderAvatar ?? this.senderAvatar,
+      content: content ?? this.content,
+      timestamp: timestamp ?? this.timestamp,
+      timeAgo: timeAgo ?? this.timeAgo,
+      isMine: isMine ?? this.isMine,
+      isRead: isRead ?? this.isRead,
+      messageType: messageType ?? this.messageType,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
     );
   }
 
@@ -114,27 +145,90 @@ class ChatConversationModel {
         lastCreatedAt;
     final lastType = (lastMessage?['type'] as String?) ?? 'TEXT';
     return ChatConversationModel(
-      id: json['roomId']?.toString() ?? '',
+      id: json['roomId']?.toString() ?? json['id']?.toString() ?? '',
       name:
           (json['title'] as String?) ??
           (counterpart['fullName'] as String?) ??
           (counterpart['username'] as String?) ??
+          (json['name'] as String?) ??
           'Chat',
       avatar:
           counterpart['avatarUrl'] as String? ??
+          (json['avatar'] as String?) ??
           'assets/images/user_profile.png',
-      isGroup: type == 'GROUP',
-      isOnline: false,
+      isGroup: type == 'GROUP' || (json['isGroup'] as bool? ?? false),
+      isOnline: json['isOnline'] as bool? ?? false,
       lastMessage: lastMessage == null
-          ? ''
+          ? (json['lastMessage'] as String? ?? '')
           : lastType == 'IMAGE'
           ? '[image]'
           : lastType == 'VOICE'
           ? '[voice message]'
           : (lastMessage['content'] as String? ?? ''),
-      lastMessageTime: lastActivity == null ? '' : _timeAgo(lastActivity),
+      lastMessageTime: lastActivity == null
+          ? (json['lastMessageTime'] as String? ?? '')
+          : _timeAgo(lastActivity),
       unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
-      membersCount: 0,
+      membersCount: (json['membersCount'] as num?)?.toInt() ?? 2,
+    );
+  }
+
+  factory ChatConversationModel.fromRoomResponse(Map<String, dynamic> json) {
+    final type = (json['type'] as String?) ?? 'PRIVATE';
+    final isGroup = type == 'GROUP';
+    final members = json['members'] is List ? json['members'] as List : const [];
+    
+    Map<String, dynamic> counterpart = const {};
+    if (members.isNotEmpty) {
+      for (final m in members) {
+        if (m is Map) {
+          counterpart = m.cast<String, dynamic>();
+          break;
+        }
+      }
+    }
+
+    final name = (json['name'] as String?) ??
+        (counterpart['fullName'] as String?) ??
+        (counterpart['username'] as String?) ??
+        'Chat';
+    final avatar = (counterpart['avatarUrl'] as String?) ??
+        'assets/images/user_profile.png';
+
+    return ChatConversationModel(
+      id: json['roomId']?.toString() ?? json['id']?.toString() ?? '',
+      name: name,
+      avatar: avatar,
+      isGroup: isGroup,
+      isOnline: false,
+      lastMessage: '',
+      lastMessageTime: 'Just now',
+      unreadCount: 0,
+      membersCount: members.length,
+    );
+  }
+
+  ChatConversationModel copyWith({
+    String? id,
+    String? name,
+    String? avatar,
+    bool? isGroup,
+    bool? isOnline,
+    String? lastMessage,
+    String? lastMessageTime,
+    int? unreadCount,
+    int? membersCount,
+  }) {
+    return ChatConversationModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      avatar: avatar ?? this.avatar,
+      isGroup: isGroup ?? this.isGroup,
+      isOnline: isOnline ?? this.isOnline,
+      lastMessage: lastMessage ?? this.lastMessage,
+      lastMessageTime: lastMessageTime ?? this.lastMessageTime,
+      unreadCount: unreadCount ?? this.unreadCount,
+      membersCount: membersCount ?? this.membersCount,
     );
   }
 

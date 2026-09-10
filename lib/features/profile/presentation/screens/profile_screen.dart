@@ -12,7 +12,9 @@ import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/loaders/app_loader.dart';
 import '../../../../design_system/widgets/surfaces/app_surface.dart';
 import '../../domain/entities/profile_entity.dart';
-import '../../../community/presentation/widgets/full_screen_image_viewer.dart';
+import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
+import 'package:genlink_frontend/features/community/presentation/widgets/full_screen_image_viewer.dart';
+import 'package:genlink_frontend/features/community/presentation/widgets/post_card_widget.dart';
 import '../controllers/profile_controller.dart';
 import '../widgets/profile_widgets.dart';
 
@@ -311,6 +313,37 @@ class _OwnerProfile extends StatelessWidget {
                   SavedItemCard(item: controller.savedItems[index]),
             ),
           ),
+        Builder(
+          builder: (context) {
+            final commCtrl = Get.isRegistered<CommunityController>()
+                ? Get.find<CommunityController>()
+                : null;
+            if (commCtrl == null) return const SizedBox.shrink();
+            return Obx(() {
+              final userPosts = commCtrl.getUserPosts(
+                profile.userId,
+                username: profile.fullName,
+              );
+              if (userPosts.isEmpty) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: AppSpacing.lg),
+                  SectionHeader(
+                    title: '${'community.post'.tr} & ${'community.repost'.tr}',
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  ...userPosts.map(
+                    (p) => PostCardWidget(
+                      post: p,
+                      controller: commCtrl,
+                    ),
+                  ),
+                ],
+              );
+            });
+          },
+        ),
       ],
     );
   }
@@ -576,6 +609,37 @@ class _PublicProfile extends StatelessWidget {
             ),
           ),
         ],
+        Builder(
+          builder: (context) {
+            final commCtrl = Get.isRegistered<CommunityController>()
+                ? Get.find<CommunityController>()
+                : null;
+            if (commCtrl == null) return const SizedBox.shrink();
+            return Obx(() {
+              final userPosts = commCtrl.getUserPosts(
+                profile.userId,
+                username: profile.fullName,
+              );
+              if (userPosts.isEmpty) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: AppSpacing.lg),
+                  SectionHeader(
+                    title: '${'community.post'.tr} & ${'community.repost'.tr}',
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  ...userPosts.map(
+                    (p) => PostCardWidget(
+                      post: p,
+                      controller: commCtrl,
+                    ),
+                  ),
+                ],
+              );
+            });
+          },
+        ),
       ],
     );
   }

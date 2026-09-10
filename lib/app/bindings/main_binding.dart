@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../features/chat/presentation/bindings/chat_binding.dart';
 import '../../features/community/presentation/bindings/community_binding.dart';
 import '../../features/finance/presentation/bindings/finance_binding.dart';
 import '../../features/home/presentation/bindings/home_binding.dart';
@@ -15,5 +16,6 @@ class MainBinding extends Bindings {
     CommunityBinding().dependencies();
     FinanceBinding().dependencies();
     ProfileBinding().dependencies();
+    ChatBinding().dependencies();
   }
 }

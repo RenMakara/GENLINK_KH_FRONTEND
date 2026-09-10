@@ -9,37 +9,6 @@ class CommunityRepositoryImpl implements CommunityRepository {
   CommunityRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<EventModel>> getEvents({
-    String? category,
-    int page = 1,
-    int limit = 20,
-  }) {
-    return remoteDataSource.fetchEvents(
-      category: category,
-      page: page,
-      limit: limit,
-    );
-  }
-
-  @override
-  Future<EventModel> createEvent(EventCreateInput input) {
-    return remoteDataSource.createEvent(input);
-  }
-
-  @override
-  Future<EventRsvpResult> registerForEvent(
-    String eventId,
-    EventRegistrationInput input,
-  ) {
-    return remoteDataSource.registerForEvent(eventId, input);
-  }
-
-  @override
-  Future<void> cancelEventRegistration(String eventId) {
-    return remoteDataSource.cancelEventRegistration(eventId);
-  }
-
-  @override
   Future<List<CommunityPostModel>> getPosts({int page = 1, int limit = 10}) {
     return remoteDataSource.fetchPosts(page: page, limit: limit);
   }
@@ -91,16 +60,8 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
-  Future<bool> repostPost(
-    String postId, {
-    String? caption,
-    String? reposterId,
-  }) {
-    return remoteDataSource.repostPost(
-      postId,
-      caption: caption,
-      reposterId: reposterId,
-    );
+  Future<bool> repostPost(String postId, {String? caption, String? reposterId}) {
+    return remoteDataSource.repostPost(postId, caption: caption, reposterId: reposterId);
   }
 
   @override
@@ -109,10 +70,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
-  Future<bool> reportPost(
-    String postId, {
-    String reason = 'INAPPROPRIATE_CONTENT',
-  }) {
+  Future<bool> reportPost(String postId, {String reason = 'INAPPROPRIATE_CONTENT'}) {
     return remoteDataSource.reportPost(postId, reason: reason);
   }
 

@@ -105,7 +105,7 @@ void main() {
 
     await controller.setTheme(UserSettingsEntity.themeDark);
 
-    expect(controller.settings.value, same(saved));
+    expect(controller.settings.value, saved);
     verify(
       () => themeController.applyBackendTheme(UserSettingsEntity.themeDark),
     ).called(1);

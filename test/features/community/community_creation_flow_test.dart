@@ -1,0 +1,138 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+import 'package:genlink_frontend/core/localization/app_translations.dart';
+import 'package:genlink_frontend/features/community/presentation/widgets/community_creation_bottom_sheet.dart';
+import 'package:genlink_frontend/features/community/presentation/widgets/community_creation_flow.dart';
+import 'package:genlink_frontend/features/community/presentation/widgets/quick_create_post_card.dart';
+
+void main() {
+  setUp(() {
+    Get.reset();
+    Get.testMode = true;
+  });
+
+  tearDown(() {
+    Get.reset();
+  });
+
+  group('CommunityCreationBottomSheet Widget Tests', () {
+    testWidgets('renders Create Post, Create Story, and Create Event options', (tester) async {
+      bool postSelected = false;
+      bool storySelected = false;
+      bool eventSelected = false;
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: Scaffold(
+            body: CommunityCreationBottomSheet(
+              onSelectCreatePost: () => postSelected = true,
+              onSelectCreateStory: () => storySelected = true,
+              onSelectCreateEvent: () => eventSelected = true,
+            ),
+          ),
+        ),
+      );
+
+      // Verify header and 3 creation options exist
+      expect(find.text('Create'), findsOneWidget);
+      expect(find.text('Create Post'), findsOneWidget);
+      expect(find.text('Create Story'), findsOneWidget);
+      expect(find.text('Create Event'), findsOneWidget);
+
+      // Verify icons
+      expect(find.byIcon(Icons.post_add_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.amp_stories_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.event_available_rounded), findsOneWidget);
+
+      // Tap Create Post
+      await tester.tap(find.text('Create Post'));
+      await tester.pumpAndSettle();
+      expect(postSelected, isTrue);
+
+      // Tap Create Story
+      await tester.tap(find.text('Create Story'));
+      await tester.pumpAndSettle();
+      expect(storySelected, isTrue);
+
+      // Tap Create Event
+      await tester.tap(find.text('Create Event'));
+      await tester.pumpAndSettle();
+      expect(eventSelected, isTrue);
+    });
+  });
+
+  group('QuickCreatePostCard Widget Tests', () {
+    testWidgets('renders generic What\'s happening in your community? when userName is null', (tester) async {
+      bool tapped = false;
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: Scaffold(
+            body: QuickCreatePostCard(
+              onTap: () => tapped = true,
+            ),
+          ),
+        ),
+      );
+
+      // Check text rendering
+      expect(find.text("What's happening in your community?"), findsOneWidget);
+      expect(find.text('Share something with your community.'), findsOneWidget);
+      expect(find.byIcon(Icons.edit_note_rounded), findsOneWidget);
+
+      // Tap the card
+      await tester.tap(find.byType(QuickCreatePostCard));
+      await tester.pumpAndSettle();
+      expect(tapped, isTrue);
+    });
+
+    testWidgets('renders personalized headline when userName is provided', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(
+            body: QuickCreatePostCard(
+              userName: 'Sokny',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text("What's happening in your community, Sokny?"), findsOneWidget);
+    });
+  });
+
+  group('CommunityCreationFlow Tests', () {
+    testWidgets('openCreateMenu displays bottom sheet with 3 creation actions', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => CommunityCreationFlow.openCreateMenu(context),
+                child: const Text('Open Menu'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Menu'));
+      await tester.pumpAndSettle();
+
+      // Verify bottom sheet is presented
+      expect(find.byType(CommunityCreationBottomSheet), findsOneWidget);
+      expect(find.text('Create Post'), findsOneWidget);
+      expect(find.text('Create Story'), findsOneWidget);
+      expect(find.text('Create Event'), findsOneWidget);
+    });
+  });
+}

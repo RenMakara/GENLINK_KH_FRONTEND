@@ -29,9 +29,6 @@ class CommunityScreen extends GetView<CommunityController> {
     this.onNavigateTab,
   });
 
-  /// Kept for source compatibility with older callers. The primary shell
-  /// now presents Community directly, so the header always uses Community.
-  @Deprecated('Community is always the primary shell experience.')
   final bool isHomeScreen;
   final ValueChanged<int>? onNavigateTab;
 

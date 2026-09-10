@@ -1,22 +1,8 @@
 import '../models/community_models.dart';
 import '../models/community_post_model.dart';
+import '../models/event_requests.dart';
 
 abstract class CommunityRepository {
-  Future<List<EventModel>> getEvents({
-    String? category,
-    int page = 1,
-    int limit = 20,
-  });
-
-  Future<EventModel> createEvent(EventCreateInput input);
-
-  Future<EventRsvpResult> registerForEvent(
-    String eventId,
-    EventRegistrationInput input,
-  );
-
-  Future<void> cancelEventRegistration(String eventId);
-
   Future<List<CommunityPostModel>> getPosts({int page = 1, int limit = 10});
 
   Future<CommunityPostModel> createPost({
@@ -40,10 +26,7 @@ abstract class CommunityRepository {
   Future<bool> toggleBookmark(String postId);
   Future<bool> repostPost(String postId, {String? caption, String? reposterId});
   Future<bool> unrepostPost(String postId, {String? reposterId});
-  Future<bool> reportPost(
-    String postId, {
-    String reason = 'INAPPROPRIATE_CONTENT',
-  });
+  Future<bool> reportPost(String postId, {String reason = 'INAPPROPRIATE_CONTENT'});
 
   Future<List<CommentModel>> getComments(String postId);
 
@@ -55,7 +38,6 @@ abstract class CommunityRepository {
 
   Future<bool> deleteComment(String postId, String commentId);
 
-  // ── Forum / Discussions ───────────────────────────────────────────────
   Future<List<ForumTopicModel>> getDiscussions({
     String? category,
     int page = 1,
@@ -69,6 +51,8 @@ abstract class CommunityRepository {
     bool anonymous = false,
   });
 
+  Future<ForumTopicModel> getDiscussionDetails(String discussionId);
+
   Future<ForumTopicModel> updateDiscussion(
     String discussionId, {
     required String title,
@@ -78,7 +62,16 @@ abstract class CommunityRepository {
 
   Future<bool> deleteDiscussion(String discussionId);
 
-  Future<bool> toggleDiscussionLike(String discussionId);
+  Future<bool> toggleDiscussionLike(
+    String discussionId, {
+    bool isCurrentlyLiked = false,
+  });
+
+  Future<bool> reportDiscussion(
+    String discussionId, {
+    String reason = 'INAPPROPRIATE_CONTENT',
+    String? details,
+  });
 
   Future<List<CommentModel>> getDiscussionComments(String discussionId);
 
@@ -88,7 +81,19 @@ abstract class CommunityRepository {
     String? parentCommentId,
   });
 
+  Future<bool> toggleDiscussionCommentLike(
+    String commentId, {
+    required bool isCurrentlyLiked,
+  });
+
+  Future<bool> deleteDiscussionComment(String commentId);
+
   Future<bool> followUser(String userId);
   Future<bool> unfollowUser(String userId);
   Future<bool> checkIsFollowing(String userId);
+
+  Future<RsvpResponseModel> rsvpEvent(
+    String eventId, {
+    EventRegistrationRequest? request,
+  });
 }

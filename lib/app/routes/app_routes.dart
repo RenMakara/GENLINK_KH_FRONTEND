@@ -25,6 +25,7 @@ abstract final class AppRoutes {
   static const home = '/home';
 
   static const notifications = '/notifications';
+  static const friendRequests = '/friend-requests';
   static const chat = '/chat';
   static const chatDetail = '/chat/detail';
 

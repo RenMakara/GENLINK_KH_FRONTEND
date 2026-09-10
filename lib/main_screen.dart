@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:genlink_frontend/features/finance/finance_screen.dart';
 import 'package:get/get.dart';
 
-import 'features/community/presentation/screens/community_screen.dart';
 import 'features/growth/presentation/screens/growth_screen.dart';
+import 'features/home/presentation/screens/home_screen.dart';
 import 'features/profile/presentation/screens/profile_screen.dart';
 import 'main_controller.dart';
 import 'shared/widgets/bottom_nav_bar.dart';
 import 'shared/widgets/global_create_sheet.dart';
 
 /// Signed-in shell. The tab order here must match [BottomNavBar]:
-/// Community (0), LevelUp (1), Finance (2), Profile (3).
+/// Home (0), Growth (1), Financial (2), Profile (3).
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -23,9 +23,7 @@ class _MainScreenState extends State<MainScreen> {
   int _lastIndex = 0;
 
   late final List<Widget> pages = [
-    CommunityScreen(
-      onNavigateTab: (index) => controller.changeIndex(index),
-    ),
+    HomeScreen(onNavigateTab: (index) => controller.changeIndex(index)),
     GrowthScreen(onNavigateTab: (index) => controller.changeIndex(index)),
     const FinanceScreen(),
     const ProfileScreen(),

@@ -88,7 +88,6 @@ abstract final class ApiEndpoints {
   static const habits = '$_base/productivity/habits';
   static String habitCheckIn(String habitId) =>
       '$_base/productivity/habits/$habitId/check-in';
-
   // ── Finance ──────────────────────────────────────────────────────────
   static const financeWallet = '$_base/finance/wallet';
   static const financeWalletTopUp = '$_base/finance/wallet/top-up';
@@ -141,26 +140,10 @@ abstract final class ApiEndpoints {
   static const communityFeed = '$_base/community/posts/feed';
   static const communityPosts = '$_base/community/posts';
 
-  // ── Community events ─────────────────────────────────────────────────
-  static const communityEvents = '$_base/community/events';
-  static const communityMyEvents = '$_base/community/events/mine';
-
-  static String communityEvent(String eventId) =>
-      '$_base/community/events/$eventId';
-
-  static String communityEventRsvp(String eventId) =>
-      '$_base/community/events/$eventId/rsvp';
-
-  static String communityEventAttendees(String eventId) =>
-      '$_base/community/events/$eventId/attendees';
-
   static String communityPostDetail(String postId) =>
       '$_base/community/posts/$postId';
 
   static String communityPostLike(String postId) =>
-      '$_base/community/posts/$postId/like';
-
-  static String communityPostUnlike(String postId) =>
       '$_base/community/posts/$postId/like';
 
   static String communityPostBookmark(String postId) =>

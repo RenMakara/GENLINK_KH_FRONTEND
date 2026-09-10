@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../core/network/api_endpoints.dart';
-import '../../../finance/domain/entities/finance_entities.dart';
 import '../../domain/models/community_models.dart';
 import '../../domain/models/community_post_model.dart';
 
@@ -134,8 +133,7 @@ class CommunityRemoteDataSource {
       attachedEvent: EventModel(
         id: 'ev2',
         title: 'AI in Everyday Life',
-        subtitle:
-            'Exploring practical AI applications for students & creators.',
+        subtitle: 'Exploring practical AI applications for students & creators.',
         organizerName: 'CADT Innovation Lab',
         eventType: 'Online',
         onlineLink: 'https://meet.google.com/genlink-ai-2026',
@@ -194,178 +192,6 @@ class CommunityRemoteDataSource {
       }
     } catch (_) {}
     return _mockPosts;
-  }
-
-  /// Fetches persisted events. Event reads intentionally do not fall back to
-  /// mock data here; the controller may keep its seeded cards when the API is
-  /// unavailable, but a successful response always reflects the backend.
-  Future<List<EventModel>> fetchEvents({
-    String? category,
-    int page = 1,
-    int limit = 20,
-  }) async {
-    final response = await guardDio(
-      () => dio.get<dynamic>(
-        ApiEndpoints.communityEvents,
-        queryParameters: {
-          'page': page - 1,
-          'size': limit,
-          if (category != null && category.isNotEmpty) 'category': category,
-        },
-      ),
-    );
-    final data = _responseData(response);
-    final content = data is Map ? data['content'] : data;
-    if (content is! List) return const [];
-    return content
-        .whereType<Map>()
-        .map((item) => _eventFromJson(Map<String, dynamic>.from(item)))
-        .toList();
-  }
-
-  Future<EventModel> createEvent(EventCreateInput input) async {
-    final isOnline = input.eventType.toLowerCase().contains('online');
-    final response = await guardDio(
-      () => dio.post<dynamic>(
-        ApiEndpoints.communityEvents,
-        data: {
-          'title': input.title,
-          'description': input.description,
-          'category': input.category,
-          'startDateTime': input.startDateTime.toIso8601String(),
-          'endDateTime': input.endDateTime.toIso8601String(),
-          'mode': isOnline ? 'ONLINE' : 'IN_PERSON',
-          'meetingUrl': isOnline ? input.meetingUrl : null,
-          'locationName': isOnline ? null : input.locationName,
-          'latitude': input.latitude,
-          'longitude': input.longitude,
-          'attendeeLimit': input.attendeeLimit,
-          'status': 'PUBLISHED',
-          'language': 'ENGLISH',
-          'paid': input.paid,
-          'price': input.paid ? input.price : null,
-          'currency': input.paid ? input.currency?.apiValue : null,
-        },
-      ),
-    );
-    final data = _responseData(response);
-    if (data is! Map) {
-      throw StateError('The event create response did not contain event data.');
-    }
-    return _eventFromJson(Map<String, dynamic>.from(data));
-  }
-
-  Future<EventRsvpResult> registerForEvent(
-    String eventId,
-    EventRegistrationInput input,
-  ) async {
-    final response = await guardDio(
-      () => dio.post<dynamic>(
-        ApiEndpoints.communityEventRsvp(eventId),
-        data: {
-          'fullName': input.fullName,
-          'email': input.email,
-          'phoneNumber': input.phoneNumber,
-          'university': input.university,
-          'faculty': input.faculty,
-          'studyYear': input.studyYear,
-          'termsAccepted': input.termsAccepted,
-        },
-      ),
-    );
-    final data = _responseData(response);
-    if (data is! Map) {
-      throw StateError('The RSVP response did not contain confirmation data.');
-    }
-    final json = Map<String, dynamic>.from(data);
-    return EventRsvpResult(
-      eventId: (json['eventId'] ?? eventId).toString(),
-      status: (json['status'] ?? 'JOINED').toString(),
-      attendeeCount: (json['attendeeCount'] as num?)?.toInt() ?? 0,
-      xpAwarded: (json['xpAwarded'] as num?)?.toInt() ?? 0,
-      chargedAmount: (json['amountPaid'] as num?)?.toDouble(),
-      paymentSimulated: json['simulatedPayment'] == true,
-    );
-  }
-
-  Future<void> cancelEventRegistration(String eventId) async {
-    await guardDio(
-      () => dio.delete<dynamic>(ApiEndpoints.communityEventRsvp(eventId)),
-    );
-  }
-
-  dynamic _responseData(Response<dynamic> response) {
-    final body = response.data;
-    if (body is Map) return body['data'] ?? body;
-    return body;
-  }
-
-  EventModel _eventFromJson(Map<String, dynamic> json) {
-    final start = _parseDate(json['startDateTime'] ?? json['dateTime']);
-    final end = _parseDate(json['endDateTime']);
-    final mode = (json['mode'] ?? 'IN_PERSON').toString().toUpperCase();
-    final organizer = json['organizer'] is Map
-        ? Map<String, dynamic>.from(json['organizer'] as Map)
-        : const <String, dynamic>{};
-    final rsvpStatus = (json['myRsvpStatus'] ?? '').toString().toUpperCase();
-
-    return EventModel(
-      id: (json['eventId'] ?? json['id']).toString(),
-      title: (json['title'] ?? '').toString(),
-      subtitle: (json['description'] ?? '').toString().split('\n').first,
-      organizerName: (organizer['fullName'] ?? '').toString(),
-      eventType: mode == 'ONLINE' ? 'Online' : 'In person',
-      location: (json['locationName'] ?? '').toString(),
-      onlineLink: (json['meetingUrl'] ?? '').toString(),
-      startDateTime: start,
-      endDateTime: end,
-      latitude: (json['latitude'] as num?)?.toDouble(),
-      longitude: (json['longitude'] as num?)?.toDouble(),
-      dateString: start == null ? '' : _formatEventDate(start),
-      timeString: start == null ? '' : _formatEventTime(start, end),
-      description: (json['description'] ?? '').toString(),
-      category: (json['category'] ?? '').toString(),
-      isPaid: json['paid'] == true,
-      price: (json['price'] as num?)?.toDouble() ?? 0,
-      currency: parseFinanceCurrency(json['currency'] ?? 'USD'),
-      imageUrl: (json['coverImageUrl'] ?? '').toString(),
-      attendeesCount: (json['attendeeCount'] as num?)?.toInt() ?? 0,
-      isRsvped: rsvpStatus == 'JOINED',
-    );
-  }
-
-  DateTime? _parseDate(dynamic value) {
-    return value is String ? DateTime.tryParse(value) : null;
-  }
-
-  String _formatEventDate(DateTime value) {
-    const months = <String>[
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${value.day} ${months[value.month - 1]} ${value.year}';
-  }
-
-  String _formatEventTime(DateTime start, DateTime? end) {
-    final startLabel = _formatClock(start);
-    return end == null ? startLabel : '$startLabel – ${_formatClock(end)}';
-  }
-
-  String _formatClock(DateTime value) {
-    final hour = value.hour % 12 == 0 ? 12 : value.hour % 12;
-    final minute = value.minute.toString().padLeft(2, '0');
-    final period = value.hour < 12 ? 'AM' : 'PM';
-    return '$hour:$minute $period';
   }
 
   Future<CommunityPostModel> createPost({
@@ -488,7 +314,9 @@ class CommunityRemoteDataSource {
   Future<bool> unrepostPost(String postId, {String? reposterId}) async {
     try {
       await guardDio(
-        () => dio.delete<dynamic>(ApiEndpoints.communityPostRepost(postId)),
+        () => dio.delete<dynamic>(
+          ApiEndpoints.communityPostRepost(postId),
+        ),
       );
     } catch (_) {}
     final idx = _mockPosts.indexWhere((p) => p.id == postId);
@@ -639,7 +467,10 @@ class CommunityRemoteDataSource {
     final response = await guardDio(
       () => dio.post<dynamic>(
         ApiEndpoints.communityDiscussionComments(discussionId),
-        data: {'content': content, 'parentCommentId': ?parentCommentId},
+        data: {
+          'content': content,
+          'parentCommentId': ?parentCommentId,
+        },
       ),
     );
 
@@ -669,8 +500,7 @@ class CommunityRemoteDataSource {
     ForumTopicModel(
       id: 'latest_1',
       authorId: 'user_me',
-      title:
-          'Best practices for GetX state management in Flutter Community App',
+      title: 'Best practices for GetX state management in Flutter Community App',
       authorName: 'Sokny Enat',
       authorAvatar: 'assets/images/user_profile.png',
       timeAgo: '2h ago',
@@ -685,8 +515,7 @@ class CommunityRemoteDataSource {
     ForumTopicModel(
       id: 'latest_3',
       authorId: 'u2',
-      title:
-          'Study group for CADT Data Structures and Algorithms exam next week',
+      title: 'Study group for CADT Data Structures and Algorithms exam next week',
       authorName: 'Heng Chansela',
       authorAvatar: 'assets/images/heng_chansela_profile.png',
       timeAgo: '5h ago',
@@ -736,7 +565,10 @@ class CommunityRemoteDataSource {
     int limit = 20,
   }) async {
     try {
-      final query = <String, dynamic>{'page': page - 1, 'size': limit};
+      final query = <String, dynamic>{
+        'page': page - 1,
+        'size': limit,
+      };
       if (category != null && category.isNotEmpty && category != 'All') {
         query['category'] = category;
       }
@@ -748,9 +580,8 @@ class CommunityRemoteDataSource {
       );
       if (response.statusCode == 200 && response.data != null) {
         final body = response.data;
-        dynamic rawData = body is Map<String, dynamic>
-            ? (body['data'] ?? body)
-            : body;
+        dynamic rawData =
+            body is Map<String, dynamic> ? (body['data'] ?? body) : body;
         List<dynamic> content = [];
         if (rawData is Map<String, dynamic>) {
           content = (rawData['content'] as List<dynamic>?) ?? [];
@@ -759,10 +590,8 @@ class CommunityRemoteDataSource {
         }
         if (content.isNotEmpty) {
           return content
-              .map(
-                (json) =>
-                    ForumTopicModel.fromJson(json as Map<String, dynamic>),
-              )
+              .map((json) =>
+                  ForumTopicModel.fromJson(json as Map<String, dynamic>))
               .toList();
         }
       }
@@ -810,9 +639,8 @@ class CommunityRemoteDataSource {
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
         final body = response.data;
-        final data = body is Map<String, dynamic>
-            ? (body['data'] ?? body)
-            : null;
+        final data =
+            body is Map<String, dynamic> ? (body['data'] ?? body) : null;
         if (data is Map<String, dynamic>) {
           return ForumTopicModel.fromJson(data);
         }
@@ -833,14 +661,17 @@ class CommunityRemoteDataSource {
       final response = await guardDio(
         () => dio.put<dynamic>(
           ApiEndpoints.communityDiscussionDetail(discussionId),
-          data: {'title': title, 'content': content, 'category': category},
+          data: {
+            'title': title,
+            'content': content,
+            'category': category,
+          },
         ),
       );
       if (response.statusCode == 200) {
         final body = response.data;
-        final data = body is Map<String, dynamic>
-            ? (body['data'] ?? body)
-            : null;
+        final data =
+            body is Map<String, dynamic> ? (body['data'] ?? body) : null;
         if (data is Map<String, dynamic>) {
           return ForumTopicModel.fromJson(data);
         }

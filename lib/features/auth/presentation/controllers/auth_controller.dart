@@ -234,6 +234,13 @@ class AuthController extends GetxController {
     });
   }
 
+  Future<bool> verifyResetOtp({required String email, required String otp}) {
+    return _run(() async {
+      await _authRepository.verifyResetOtp(email: email, otp: otp);
+      return true;
+    });
+  }
+
   Future<bool> resetPassword({
     required String email,
     required String otp,

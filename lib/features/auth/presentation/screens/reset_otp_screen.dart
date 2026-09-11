@@ -45,16 +45,21 @@ class _ResetOtpScreenState extends State<ResetOtpScreen> {
     if (!_isComplete || _verifying) return;
 
     setState(() => _verifying = true);
-    await Future<void>.delayed(const Duration(seconds: 1));
+    final success = await _auth.verifyResetOtp(email: _email, otp: _otp);
     if (!mounted) return;
 
-    await Get.toNamed<void>(AppRoutes.resetPassword, arguments: _otp);
-    if (mounted) setState(() => _verifying = false);
+    setState(() => _verifying = false);
+    if (success) {
+      await Get.toNamed<void>(AppRoutes.resetPassword, arguments: _otp);
+    }
   }
 
   Future<void> _resend() async {
     final success = await _auth.forgotPassword(email: _email);
-    if (success) AppSnackbar.show('auth.resendCode'.tr);
+    if (success && mounted) {
+      setState(() => _otp = '');
+      AppSnackbar.show('auth.resendCode'.tr);
+    }
   }
 
   @override

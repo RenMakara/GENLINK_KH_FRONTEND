@@ -19,6 +19,7 @@ abstract final class ApiEndpoints {
   static const resendOtp = '$_base/auth/resend-otp';
   static const resendVerificationOtp = '$_base/auth/resend-verification-otp';
   static const forgotPassword = '$_base/auth/forgot-password';
+  static const verifyResetOtp = '$_base/auth/verify-reset-otp';
   static const resetPassword = '$_base/auth/reset-password';
   static const refreshToken = '$_base/auth/refresh-token';
   static const me = '$_base/auth/me';

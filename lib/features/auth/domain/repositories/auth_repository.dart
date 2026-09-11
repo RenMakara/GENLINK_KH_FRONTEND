@@ -27,6 +27,8 @@ abstract class AuthRepository {
 
   Future<void> forgotPassword({required String email});
 
+  Future<void> verifyResetOtp({required String email, required String otp});
+
   Future<void> resetPassword({
     required String email,
     required String otp,

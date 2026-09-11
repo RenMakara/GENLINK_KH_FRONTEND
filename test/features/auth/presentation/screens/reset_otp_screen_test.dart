@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genlink_frontend/app/routes/app_routes.dart';
+import 'package:genlink_frontend/core/errors/app_error.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
 import 'package:genlink_frontend/core/localization/localization_service.dart';
 import 'package:genlink_frontend/core/storage/local_storage.dart';
@@ -20,10 +23,13 @@ class _MockSecureStorage extends Mock implements SecureStorage {}
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late _MockAuthRepository repository;
+
   setUp(() {
+    repository = _MockAuthRepository();
     final controller =
         AuthController(
-            authRepository: _MockAuthRepository(),
+            authRepository: repository,
             secureStorage: _MockSecureStorage(),
             localization: LocalizationService(localStorage: LocalStorage()),
           )
@@ -132,6 +138,14 @@ void main() {
   });
 
   testWidgets('carries the completed code to reset password', (tester) async {
+    final verification = Completer<void>();
+    when(
+      () => repository.verifyResetOtp(
+        email: 'makara.it@email.com',
+        otp: '123456',
+      ),
+    ).thenAnswer((_) => verification.future);
+
     await pumpScreen(tester);
 
     for (final digit in ['1', '2', '3', '4', '5', '6']) {
@@ -147,7 +161,7 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-    await tester.pump(const Duration(seconds: 1));
+    verification.complete();
     await tester.pumpAndSettle();
 
     expect(
@@ -155,5 +169,35 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('reset-password:123456'), findsOneWidget);
+  });
+
+  testWidgets('shows invalid OTP without navigating to the password screen', (
+    tester,
+  ) async {
+    when(
+      () => repository.verifyResetOtp(
+        email: 'makara.it@email.com',
+        otp: '123456',
+      ),
+    ).thenThrow(
+      const AppError(
+        message: 'Invalid verification code',
+        errorCode: 'OTP_INVALID',
+        statusCode: 400,
+      ),
+    );
+
+    await pumpScreen(tester);
+
+    for (final digit in ['1', '2', '3', '4', '5', '6']) {
+      await tapKey(tester, digit);
+    }
+
+    await tester.tap(find.byKey(const ValueKey('reset-otp-continue-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('reset-password-destination')), findsNothing);
+    expect(find.byKey(const ValueKey('otp-error')), findsOneWidget);
+    expect(find.text('Invalid verification code'), findsOneWidget);
   });
 }

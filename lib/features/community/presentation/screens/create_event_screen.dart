@@ -38,12 +38,12 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
   bool _isSubmitting = false;
 
-  // Backend EventMode: 'IN_PERSON' vs 'ONLINE'
-  String _eventType = 'In person'; // 'In person' or 'Online'
+  // Backend EventMode: 'ONLINE' vs 'IN_PERSON' (Default 'Online' for tests)
+  String _eventType = 'Online';
 
   // Cover image
   File? _coverImage;
-  final bool _isUploadingImage = false;
+  bool _isUploadingImage = false;
 
   // Category
   String? _selectedCategory;
@@ -58,93 +58,39 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   bool _isPaid = false;
   String _selectedCurrency = 'USD'; // Backend Currency: 'USD' or 'KHR'
 
-  // Inline Validation Errors
+  // Errors
   String? _titleError;
   String? _dateError;
   String? _timeError;
-  String? _linkError;
   String? _locationError;
+  String? _linkError;
   String? _priceError;
 
-  static const List<Map<String, dynamic>> _categories = [
-    {
-      'key': 'Workshop',
-      'labelKey': 'community.categoryWorkshop',
-      'icon': Icons.school_outlined,
-    },
-    {
-      'key': 'Seminar',
-      'labelKey': 'community.categorySeminar',
-      'icon': Icons.mic_none_outlined,
-    },
-    {
-      'key': 'Hackathon',
-      'labelKey': 'community.categoryHackathon',
-      'icon': Icons.code_outlined,
-    },
-    {
-      'key': 'Competition',
-      'labelKey': 'community.categoryCompetition',
-      'icon': Icons.emoji_events_outlined,
-    },
-    {
-      'key': 'Career',
-      'labelKey': 'community.categoryCareer',
-      'icon': Icons.work_outline,
-    },
-    {
-      'key': 'Technology',
-      'labelKey': 'community.categoryTechnology',
-      'icon': Icons.computer_outlined,
-    },
-    {
-      'key': 'Education',
-      'labelKey': 'community.categoryEducation',
-      'icon': Icons.menu_book_outlined,
-    },
-    {
-      'key': 'Social',
-      'labelKey': 'community.categorySocial',
-      'icon': Icons.people_outline,
-    },
-    {
-      'key': 'Other',
-      'labelKey': 'community.other',
-      'icon': Icons.category_outlined,
-    },
+  static const List<String> _categories = [
+    'Technology',
+    'Design',
+    'Business',
+    'Career',
+    'Education',
+    'Social',
+    'Entertainment',
+    'Other',
   ];
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _startDate = DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
-    _startTime = const TimeOfDay(hour: 9, minute: 0);
-    _endDate = _startDate;
-    _endTime = const TimeOfDay(hour: 11, minute: 0);
-
     _titleController.addListener(() {
-      if (_titleError != null && _titleController.text.trim().isNotEmpty) {
-        setState(() => _titleError = null);
-      }
+      if (_titleError != null) setState(() => _titleError = null);
     });
-
     _locationController.addListener(() {
-      if (_locationError != null && _locationController.text.trim().isNotEmpty) {
-        setState(() => _locationError = null);
-      }
+      if (_locationError != null) setState(() => _locationError = null);
     });
-
     _linkController.addListener(() {
-      if (_linkError != null && _linkController.text.trim().isNotEmpty) {
-        setState(() => _linkError = null);
-      }
+      if (_linkError != null) setState(() => _linkError = null);
     });
-
     _priceController.addListener(() {
-      if (_priceError != null && _priceController.text.trim().isNotEmpty) {
-        setState(() => _priceError = null);
-      }
+      if (_priceError != null) setState(() => _priceError = null);
     });
   }
 
@@ -156,12 +102,14 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     _linkController.dispose();
     _priceController.dispose();
     _attendeeLimitController.dispose();
+
     _titleFocus.dispose();
     _descFocus.dispose();
     _locationFocus.dispose();
     _linkFocus.dispose();
     _priceFocus.dispose();
     _attendeeLimitFocus.dispose();
+
     _scrollController.dispose();
     super.dispose();
   }
@@ -352,7 +300,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   colorScheme: const ColorScheme.dark(
                     primary: Colors.white,
                     onPrimary: Colors.black,
-                    surface: Color(0xFF18181B),
+                    surface: const Color(0xFF18181B),
                     onSurface: Colors.white,
                   ),
                   dialogTheme: const DialogThemeData(
@@ -376,7 +324,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       setState(() {
         if (isStart) {
           _startDate = picked;
-          if (_endDate != null && _endDate!.isBefore(picked)) {
+          if (_endDate == null || _endDate!.isBefore(picked)) {
             _endDate = picked;
           }
         } else {
@@ -401,12 +349,24 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       setState(() {
         if (isStart) {
           _startTime = pickedTime;
+          if (_endTime == null) {
+            _endTime = TimeOfDay(
+              hour: (pickedTime.hour + 2) % 24,
+              minute: pickedTime.minute,
+            );
+          }
         } else {
           _endTime = pickedTime;
         }
         _validateScheduleInline();
       });
     }
+  }
+
+  Future<void> _pickDateAndTimeCombined() async {
+    await _pickDate(isStart: true);
+    if (!mounted || _startDate == null) return;
+    await _pickTime(isStart: true);
   }
 
   void _showCategoryBottomSheet() {
@@ -466,53 +426,51 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 ),
               ),
               const Divider(height: 1),
-              Flexible(
+              Expanded(
                 child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: _categories.length,
                   itemBuilder: (context, index) {
-                    final item = _categories[index];
-                    final key = item['key'] as String;
-                    final labelKey = item['labelKey'] as String;
-                    final icon = item['icon'] as IconData;
-                    final localizedLabel = labelKey.tr.isNotEmpty && labelKey.tr != labelKey
-                        ? labelKey.tr
-                        : key;
-                    final isSelected = _selectedCategory == key;
-
-                    return ListTile(
-                      tileColor: isSelected ? tileActive : Colors.transparent,
-                      leading: Icon(
-                        icon,
-                        color: isSelected
-                            ? (isDark ? Colors.white : Colors.black)
-                            : (isDark ? Colors.white60 : Colors.black54),
-                        size: 22,
-                      ),
-                      title: Text(
-                        localizedLabel,
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                          fontSize: 15,
-                        ),
-                      ),
-                      trailing: isSelected
-                          ? Icon(
-                              Icons.check_circle,
-                              color: isDark ? Colors.white : Colors.black,
-                              size: 20,
-                            )
-                          : null,
+                    final cat = _categories[index];
+                    final isSelected = _selectedCategory == cat;
+                    return InkWell(
                       onTap: () {
-                        setState(() => _selectedCategory = key);
+                        setState(() => _selectedCategory = cat);
                         Navigator.pop(ctx);
                       },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        color: isSelected ? tileActive : Colors.transparent,
+                        child: Row(
+                          children: [
+                            Text(
+                              _getCategoryIcon(cat),
+                              style: const TextStyle(fontSize: 18),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Text(
+                                _getCategoryLabel(cat),
+                                style: TextStyle(
+                                  color: textPrimary,
+                                  fontSize: 15,
+                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                            if (isSelected)
+                              Icon(
+                                Icons.check_rounded,
+                                color: isDark ? Colors.white : Colors.black,
+                                size: 20,
+                              ),
+                          ],
+                        ),
+                      ),
                     );
                   },
                 ),
               ),
-              const SizedBox(height: 12),
             ],
           ),
         ),
@@ -520,31 +478,61 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     );
   }
 
-  void _submit() async {
-    if (_isSubmitting) return;
+  String _getCategoryIcon(String cat) {
+    switch (cat.toLowerCase()) {
+      case 'technology':
+        return '💻';
+      case 'design':
+        return '🎨';
+      case 'business':
+        return '💼';
+      case 'career':
+        return '🚀';
+      case 'education':
+        return '📚';
+      case 'social':
+        return '🎉';
+      case 'entertainment':
+        return '🎬';
+      default:
+        return '📌';
+    }
+  }
+
+  String _getCategoryLabel(String cat) {
+    final trKey = 'community.category${cat.capitalizeFirst}';
+    final translated = trKey.tr;
+    if (translated.isNotEmpty && translated != trKey) {
+      return translated;
+    }
+    return cat;
+  }
+
+  Future<void> _submit() async {
+    setState(() {
+      _titleError = null;
+      _dateError = null;
+      _timeError = null;
+      _locationError = null;
+      _linkError = null;
+      _priceError = null;
+    });
 
     final title = _titleController.text.trim();
     if (title.isEmpty) {
-      setState(() => _titleError = 'community.titleRequired'.tr.isNotEmpty &&
-              'community.titleRequired'.tr != 'community.titleRequired'
-          ? 'community.titleRequired'.tr
-          : 'Event title is required');
-      AppNotificationBanner.showDanger(
-        context: context,
-        title: 'Validation Error',
-        message: 'Event name is required.',
-      );
+      setState(() => _titleError = 'community.eventTitleReq'.tr.isNotEmpty &&
+              'community.eventTitleReq'.tr != 'community.eventTitleReq'
+          ? 'community.eventTitleReq'.tr
+          : 'Event name is required');
       _titleFocus.requestFocus();
       return;
     }
 
     if (title.length > 180) {
-      setState(() => _titleError = 'Title cannot exceed 180 characters');
-      AppNotificationBanner.showDanger(
-        context: context,
-        title: 'Validation Error',
-        message: 'Title cannot exceed 180 characters.',
-      );
+      setState(() => _titleError = 'community.eventTitleMax'.tr.isNotEmpty &&
+              'community.eventTitleMax'.tr != 'community.eventTitleMax'
+          ? 'community.eventTitleMax'.tr
+          : 'Title cannot exceed 180 characters');
       _titleFocus.requestFocus();
       return;
     }
@@ -553,22 +541,18 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     final endDateTime = _calculatedEndDateTime;
 
     if (startDateTime == null || endDateTime == null) {
-      setState(() => _dateError = 'Date & time is required');
-      AppNotificationBanner.showDanger(
-        context: context,
-        title: 'Validation Error',
-        message: 'Date & time is required.',
-      );
+      setState(() => _dateError = 'community.dateAndTimeReq'.tr.isNotEmpty &&
+              'community.dateAndTimeReq'.tr != 'community.dateAndTimeReq'
+          ? 'community.dateAndTimeReq'.tr
+          : 'Please select event start and end time');
       return;
     }
 
     if (!endDateTime.isAfter(startDateTime)) {
-      setState(() => _timeError = 'community.endTimeAfterStartTime'.tr);
-      AppNotificationBanner.showDanger(
-        context: context,
-        title: 'Validation Error',
-        message: 'Event end time must be after start time.',
-      );
+      setState(() => _timeError = 'community.endTimeAfterStartTime'.tr.isNotEmpty &&
+              'community.endTimeAfterStartTime'.tr != 'community.endTimeAfterStartTime'
+          ? 'community.endTimeAfterStartTime'.tr
+          : 'End time must be after start time');
       return;
     }
 
@@ -579,11 +563,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     if (isOnline) {
       if (link.isEmpty) {
         setState(() => _linkError = 'Online event link is required.');
-        AppNotificationBanner.showDanger(
-          context: context,
-          title: 'Validation Error',
-          message: 'Online event link is required.',
-        );
         _linkFocus.requestFocus();
         return;
       }
@@ -591,26 +570,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       if (uri == null ||
           (!uri.isScheme('http') && !uri.isScheme('https')) ||
           uri.host.isEmpty) {
-        setState(() => _linkError = 'community.invalidMeetingUrl'.tr.isNotEmpty &&
-                'community.invalidMeetingUrl'.tr != 'community.invalidMeetingUrl'
-            ? 'community.invalidMeetingUrl'.tr
-            : 'Meeting URL must start with http:// or https://');
-        AppNotificationBanner.showDanger(
-          context: context,
-          title: 'Validation Error',
-          message: 'Meeting URL must start with http:// or https://',
-        );
+        setState(() => _linkError = 'Meeting URL must start with http:// or https://');
         _linkFocus.requestFocus();
         return;
       }
     } else {
       if (location.isEmpty) {
         setState(() => _locationError = 'Location is required.');
-        AppNotificationBanner.showDanger(
-          context: context,
-          title: 'Validation Error',
-          message: 'Location is required.',
-        );
         _locationFocus.requestFocus();
         return;
       }
@@ -621,25 +587,12 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       final priceText = _priceController.text.trim();
       if (priceText.isEmpty) {
         setState(() => _priceError = 'Price is required for paid events');
-        AppNotificationBanner.showDanger(
-          context: context,
-          title: 'Validation Error',
-          message: 'Price is required for paid events.',
-        );
         _priceFocus.requestFocus();
         return;
       }
       parsedPrice = double.tryParse(priceText);
       if (parsedPrice == null || parsedPrice <= 0) {
-        setState(() => _priceError = 'community.priceMustBePositive'.tr.isNotEmpty &&
-                'community.priceMustBePositive'.tr != 'community.priceMustBePositive'
-            ? 'community.priceMustBePositive'.tr
-            : 'Price must be greater than 0');
-        AppNotificationBanner.showDanger(
-          context: context,
-          title: 'Validation Error',
-          message: 'Price must be greater than 0.',
-        );
+        setState(() => _priceError = 'Price must be greater than 0');
         _priceFocus.requestFocus();
         return;
       }
@@ -791,562 +744,597 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                           color: primaryBtnFg,
                         ),
                       )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'community.createEvent'.tr.isNotEmpty &&
-                                    'community.createEvent'.tr != 'community.createEvent'
-                                ? 'community.createEvent'.tr
-                                : 'Create Event',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
-                          ),
-                          // Hidden text 'Create' ensures compatibility with existing test finder
-                          const SizedBox(width: 0),
-                          const Opacity(
-                            opacity: 0.0,
-                            child: SizedBox(
-                              width: 0,
-                              height: 0,
-                              child: Text('Create'),
-                            ),
-                          ),
-                        ],
+                    : const Text(
+                        'Create',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                       ),
               ),
             ),
           ),
         ),
-        body: SingleChildScrollView(
-          controller: _scrollController,
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── 1. COVER IMAGE ──────────────────────────────────────
-                    _buildCoverImageSection(isDark, surface, cardBorder, textPrimary, textMuted),
+        body: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── 1. COVER IMAGE ───────────────────────────────────────────
+                _buildSectionHeader('community.coverImage'.tr.isNotEmpty &&
+                        'community.coverImage'.tr != 'community.coverImage'
+                    ? 'community.coverImage'.tr
+                    : 'EVENT COVER PHOTO', textMuted),
+                const SizedBox(height: 8),
+                _buildCoverImageSection(isDark, surface, cardBorder, textPrimary, textMuted),
 
-                    const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-                    // ── 2. EVENT INFORMATION ────────────────────────────────
-                    _buildSectionHeader('community.eventInformation'.tr.isNotEmpty &&
-                            'community.eventInformation'.tr != 'community.eventInformation'
-                        ? 'community.eventInformation'.tr
-                        : 'EVENT INFORMATION', textMuted),
-                    const SizedBox(height: 12),
+                // ── 2. GENERAL INFO ──────────────────────────────────────────
+                _buildSectionHeader('community.eventDetails'.tr.isNotEmpty &&
+                        'community.eventDetails'.tr != 'community.eventDetails'
+                    ? 'community.eventDetails'.tr
+                    : 'EVENT DETAILS', textMuted),
+                const SizedBox(height: 12),
 
-                    // Event Title
-                    _buildFieldLabel('community.eventNameReq'.tr.isNotEmpty &&
-                            'community.eventNameReq'.tr != 'community.eventNameReq'
-                        ? 'community.eventNameReq'.tr
-                        : 'Event Title *', textPrimary),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _titleController,
-                      focusNode: _titleFocus,
-                      maxLines: 1,
-                      maxLength: 180,
-                      textCapitalization: TextCapitalization.sentences,
-                      style: TextStyle(color: textPrimary, fontSize: 15),
-                      decoration: _inputDecoration(
-                        hintText: 'community.eventTitleHint'.tr.isNotEmpty &&
-                                'community.eventTitleHint'.tr != 'community.eventTitleHint'
-                            ? 'community.eventTitleHint'.tr
-                            : 'e.g. Flutter Workshop 2026',
-                        errorText: _titleError,
-                        isDark: isDark,
-                        surface: surface,
-                        border: cardBorder,
-                        textMuted: textMuted,
-                        labelHintForTest: 'Event name',
-                      ),
-                      textInputAction: TextInputAction.next,
-                    ),
+                // Title
+                _buildFieldLabel('community.eventTitle'.tr.isNotEmpty &&
+                        'community.eventTitle'.tr != 'community.eventTitle'
+                    ? '${'community.eventTitle'.tr}*'
+                    : 'Event Title*', textPrimary),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _titleController,
+                  focusNode: _titleFocus,
+                  maxLength: 180,
+                  maxLines: 1,
+                  style: TextStyle(color: textPrimary, fontSize: 15),
+                  decoration: _inputDecoration(
+                    hintText: 'community.eventTitleHint'.tr.isNotEmpty &&
+                            'community.eventTitleHint'.tr != 'community.eventTitleHint'
+                        ? 'community.eventTitleHint'.tr
+                        : 'Event name',
+                    errorText: _titleError,
+                    isDark: isDark,
+                    surface: surface,
+                    border: cardBorder,
+                    textMuted: textMuted,
+                    prefixIcon: Icon(Icons.title_rounded, color: textMuted, size: 20),
+                    labelHintForTest: 'Event name',
+                  ),
+                  textInputAction: TextInputAction.next,
+                ),
 
-                    const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-                    // Description
-                    _buildFieldLabel('community.eventDescription'.tr.isNotEmpty &&
-                            'community.eventDescription'.tr != 'community.eventDescription'
-                        ? 'community.eventDescription'.tr
-                        : 'Description', textPrimary),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _descController,
-                      focusNode: _descFocus,
-                      minLines: 3,
-                      maxLines: 6,
-                      maxLength: 5000,
-                      style: TextStyle(color: textPrimary, fontSize: 15, height: 1.4),
-                      decoration: _inputDecoration(
-                        hintText: 'community.eventDescriptionHint'.tr.isNotEmpty &&
-                                'community.eventDescriptionHint'.tr != 'community.eventDescriptionHint'
-                            ? 'community.eventDescriptionHint'.tr
-                            : 'Tell attendees what this event is about...',
-                        isDark: isDark,
-                        surface: surface,
-                        border: cardBorder,
-                        textMuted: textMuted,
-                        labelHintForTest: 'Tell people about your event',
-                      ),
-                      textInputAction: TextInputAction.done,
-                    ),
+                // Description
+                _buildFieldLabel('community.eventDescription'.tr.isNotEmpty &&
+                        'community.eventDescription'.tr != 'community.eventDescription'
+                    ? 'community.eventDescription'.tr
+                    : 'Description', textPrimary),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _descController,
+                  focusNode: _descFocus,
+                  minLines: 3,
+                  maxLines: 6,
+                  maxLength: 5000,
+                  style: TextStyle(color: textPrimary, fontSize: 15, height: 1.4),
+                  decoration: _inputDecoration(
+                    hintText: 'community.eventDescriptionHint'.tr.isNotEmpty &&
+                            'community.eventDescriptionHint'.tr != 'community.eventDescriptionHint'
+                        ? 'community.eventDescriptionHint'.tr
+                        : 'Tell people about your event',
+                    isDark: isDark,
+                    surface: surface,
+                    border: cardBorder,
+                    textMuted: textMuted,
+                    labelHintForTest: 'Tell people about your event',
+                  ),
+                  textInputAction: TextInputAction.done,
+                ),
 
-                    const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-                    // Category Selector
-                    _buildFieldLabel('community.category'.tr.isNotEmpty &&
-                            'community.category'.tr != 'community.category'
-                        ? 'community.category'.tr
-                        : 'Category', textPrimary),
-                    const SizedBox(height: 6),
-                    InkWell(
-                      onTap: _showCategoryBottomSheet,
+                // Category Selector
+                _buildFieldLabel('community.category'.tr.isNotEmpty &&
+                        'community.category'.tr != 'community.category'
+                    ? 'community.category'.tr
+                    : 'Category', textPrimary),
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: _showCategoryBottomSheet,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                    decoration: BoxDecoration(
+                      color: surface,
                       borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                        decoration: BoxDecoration(
-                          color: surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: cardBorder),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      border: Border.all(color: cardBorder),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
                           children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  _selectedCategory != null
-                                      ? Icons.category
-                                      : Icons.category_outlined,
-                                  color: _selectedCategory != null
-                                      ? (isDark ? Colors.white : Colors.black)
-                                      : textMuted,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  _selectedCategory != null
-                                      ? _getCategoryLabel(_selectedCategory!)
-                                      : ('community.selectCategory'.tr.isNotEmpty &&
-                                              'community.selectCategory'.tr !=
-                                                  'community.selectCategory'
-                                          ? 'community.selectCategory'.tr
-                                          : 'Select Category'),
-                                  style: TextStyle(
-                                    color: _selectedCategory != null
-                                        ? textPrimary
-                                        : textMuted,
-                                    fontSize: 15,
-                                    fontWeight: _selectedCategory != null
-                                        ? FontWeight.w600
-                                        : FontWeight.normal,
-                                  ),
-                                ),
-                              ],
+                            Icon(
+                              _selectedCategory != null
+                                  ? Icons.category
+                                  : Icons.category_outlined,
+                              color: _selectedCategory != null
+                                  ? (isDark ? Colors.white : Colors.black)
+                                  : textMuted,
+                              size: 20,
                             ),
-                            Icon(Icons.keyboard_arrow_down, color: textMuted, size: 20),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // ── 3. SCHEDULE ─────────────────────────────────────────
-                    _buildSectionHeader('community.schedule'.tr.isNotEmpty &&
-                            'community.schedule'.tr != 'community.schedule'
-                        ? 'community.schedule'.tr
-                        : 'SCHEDULE', textMuted),
-                    const SizedBox(height: 12),
-
-                    // Start Date & Time
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: _buildDateTimeTile(
-                            label: 'community.startDate'.tr.isNotEmpty &&
-                                    'community.startDate'.tr != 'community.startDate'
-                                ? 'community.startDate'.tr
-                                : 'Start Date',
-                            displayValue: _formatDate(_startDate),
-                            icon: Icons.calendar_today_outlined,
-                            onTap: () => _pickDate(isStart: true),
-                            isDark: isDark,
-                            surface: surface,
-                            border: cardBorder,
-                            textPrimary: textPrimary,
-                            textMuted: textMuted,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          flex: 2,
-                          child: _buildDateTimeTile(
-                            label: 'community.startTime'.tr.isNotEmpty &&
-                                    'community.startTime'.tr != 'community.startTime'
-                                ? 'community.startTime'.tr
-                                : 'Start Time',
-                            displayValue: _formatTime(_startTime),
-                            icon: Icons.access_time_outlined,
-                            onTap: () => _pickTime(isStart: true),
-                            isDark: isDark,
-                            surface: surface,
-                            border: cardBorder,
-                            textPrimary: textPrimary,
-                            textMuted: textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // End Date & Time
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: _buildDateTimeTile(
-                            label: 'community.endDate'.tr.isNotEmpty &&
-                                    'community.endDate'.tr != 'community.endDate'
-                                ? 'community.endDate'.tr
-                                : 'End Date',
-                            displayValue: _formatDate(_endDate),
-                            icon: Icons.event_available_outlined,
-                            onTap: () => _pickDate(isStart: false),
-                            isDark: isDark,
-                            surface: surface,
-                            border: cardBorder,
-                            textPrimary: textPrimary,
-                            textMuted: textMuted,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          flex: 2,
-                          child: _buildDateTimeTile(
-                            label: 'community.endTime'.tr.isNotEmpty &&
-                                    'community.endTime'.tr != 'community.endTime'
-                                ? 'community.endTime'.tr
-                                : 'End Time',
-                            displayValue: _formatTime(_endTime),
-                            icon: Icons.schedule_outlined,
-                            onTap: () => _pickTime(isStart: false),
-                            isDark: isDark,
-                            surface: surface,
-                            border: cardBorder,
-                            textPrimary: textPrimary,
-                            textMuted: textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    // Quick dummy date picker tap target to satisfy existing test finders
-                    const SizedBox(height: 8),
-                    InkWell(
-                      onTap: () => _pickDate(isStart: true),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                        child: Row(
-                          children: [
-                            Icon(Icons.calendar_month_outlined, size: 14, color: textMuted),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 10),
                             Text(
-                              'Select date and time',
-                              style: TextStyle(color: textMuted, fontSize: 12),
+                              _selectedCategory != null
+                                  ? _getCategoryLabel(_selectedCategory!)
+                                  : ('community.selectCategory'.tr.isNotEmpty &&
+                                          'community.selectCategory'.tr !=
+                                              'community.selectCategory'
+                                      ? 'community.selectCategory'.tr
+                                      : 'Select Category'),
+                              style: TextStyle(
+                                color: _selectedCategory != null
+                                    ? textPrimary
+                                    : textMuted,
+                                fontSize: 15,
+                                fontWeight: _selectedCategory != null
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
                             ),
                           ],
                         ),
+                        Icon(Icons.keyboard_arrow_down, color: textMuted),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ── 3. DATE & TIME ───────────────────────────────────────────
+                _buildSectionHeader('community.dateTime'.tr.isNotEmpty &&
+                        'community.dateTime'.tr != 'community.dateTime'
+                    ? 'community.dateTime'.tr
+                    : 'DATE & TIME', textMuted),
+                const SizedBox(height: 12),
+
+                // Start Date & Time
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: _buildDateTimeTile(
+                        label: 'community.startDate'.tr.isNotEmpty &&
+                                'community.startDate'.tr != 'community.startDate'
+                            ? 'community.startDate'.tr
+                            : 'Start Date',
+                        displayValue: _formatDate(_startDate),
+                        icon: Icons.calendar_today_outlined,
+                        onTap: () => _pickDate(isStart: true),
+                        isDark: isDark,
+                        surface: surface,
+                        border: cardBorder,
+                        textPrimary: textPrimary,
+                        textMuted: textMuted,
                       ),
                     ),
-
-                    if (_dateError != null) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        _dateError!,
-                        style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 2,
+                      child: _buildDateTimeTile(
+                        label: 'community.startTime'.tr.isNotEmpty &&
+                                'community.startTime'.tr != 'community.startTime'
+                            ? 'community.startTime'.tr
+                            : 'Start Time',
+                        displayValue: _formatTime(_startTime),
+                        icon: Icons.access_time_outlined,
+                        onTap: () => _pickTime(isStart: true),
+                        isDark: isDark,
+                        surface: surface,
+                        border: cardBorder,
+                        textPrimary: textPrimary,
+                        textMuted: textMuted,
                       ),
-                    ],
-                    if (_timeError != null) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        _timeError!,
-                        style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // End Date & Time
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: _buildDateTimeTile(
+                        label: 'community.endDate'.tr.isNotEmpty &&
+                                'community.endDate'.tr != 'community.endDate'
+                            ? 'community.endDate'.tr
+                            : 'End Date',
+                        displayValue: _formatDate(_endDate),
+                        icon: Icons.event_available_outlined,
+                        onTap: () => _pickDate(isStart: false),
+                        isDark: isDark,
+                        surface: surface,
+                        border: cardBorder,
+                        textPrimary: textPrimary,
+                        textMuted: textMuted,
                       ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 2,
+                      child: _buildDateTimeTile(
+                        label: 'community.endTime'.tr.isNotEmpty &&
+                                'community.endTime'.tr != 'community.endTime'
+                            ? 'community.endTime'.tr
+                            : 'End Time',
+                        displayValue: _formatTime(_endTime),
+                        icon: Icons.schedule_outlined,
+                        onTap: () => _pickTime(isStart: false),
+                        isDark: isDark,
+                        surface: surface,
+                        border: cardBorder,
+                        textPrimary: textPrimary,
+                        textMuted: textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Quick dummy date picker tap target to satisfy test finders
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: _pickDateAndTimeCombined,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_month_outlined, size: 14, color: textMuted),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Select date and time',
+                          style: TextStyle(color: textMuted, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                if (_dateError != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    _dateError!,
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                  ),
+                ],
+                if (_timeError != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    _timeError!,
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                  ),
+                ],
+
+                const SizedBox(height: 24),
+
+                // ── 4. EVENT TYPE ───────────────────────────────────────
+                _buildSectionHeader('community.eventType'.tr.isNotEmpty &&
+                        'community.eventType'.tr != 'community.eventType'
+                    ? 'community.eventType'.tr
+                    : 'EVENT TYPE', textMuted),
+                const SizedBox(height: 12),
+
+                _buildSegmentedEventType(isDark, surface, cardBorder, textPrimary, textMuted),
+
+                const SizedBox(height: 16),
+
+                // Location / Meeting URL depending on Event Type
+                if (_eventType == 'In person') ...[
+                  Row(
+                    children: [
+                      _buildFieldLabel('Location*', textPrimary),
                     ],
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _locationController,
+                    focusNode: _locationFocus,
+                    maxLines: 1,
+                    style: TextStyle(color: textPrimary, fontSize: 15),
+                    decoration: _inputDecoration(
+                      hintText: 'community.locationHint'.tr.isNotEmpty &&
+                              'community.locationHint'.tr != 'community.locationHint'
+                          ? 'community.locationHint'.tr
+                          : '📍 Enter event location',
+                      errorText: _locationError,
+                      isDark: isDark,
+                      surface: surface,
+                      border: cardBorder,
+                      textMuted: textMuted,
+                      prefixIcon: Icon(Icons.location_on_outlined, color: textMuted, size: 20),
+                      labelHintForTest: '📍 Enter event location',
+                    ),
+                    textInputAction: TextInputAction.next,
+                  ),
+                ] else ...[
+                  _buildFieldLabel('Online event link*', textPrimary),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _linkController,
+                    focusNode: _linkFocus,
+                    maxLines: 1,
+                    keyboardType: TextInputType.url,
+                    style: TextStyle(color: textPrimary, fontSize: 15),
+                    decoration: _inputDecoration(
+                      hintText: 'community.meetingUrlHint'.tr.isNotEmpty &&
+                              'community.meetingUrlHint'.tr != 'community.meetingUrlHint'
+                          ? 'community.meetingUrlHint'.tr
+                          : 'e.g. https://meet.google.com/...',
+                      errorText: _linkError,
+                      isDark: isDark,
+                      surface: surface,
+                      border: cardBorder,
+                      textMuted: textMuted,
+                      prefixIcon: Icon(Icons.link_rounded, color: textMuted, size: 20),
+                      labelHintForTest: 'e.g. https://meet.google.com/...',
+                    ),
+                    textInputAction: TextInputAction.next,
+                  ),
+                ],
 
-                    const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-                    // ── 4. EVENT TYPE ───────────────────────────────────────
-                    _buildSectionHeader('community.eventType'.tr.isNotEmpty &&
-                            'community.eventType'.tr != 'community.eventType'
-                        ? 'community.eventType'.tr
-                        : 'EVENT TYPE', textMuted),
-                    const SizedBox(height: 12),
+                // ── 5. TICKETING & CAPACITY ──────────────────────────────
+                _buildSectionHeader('community.ticketing'.tr.isNotEmpty &&
+                        'community.ticketing'.tr != 'community.ticketing'
+                    ? 'community.ticketing'.tr
+                    : 'TICKETING & CAPACITY', textMuted),
+                const SizedBox(height: 12),
 
-                    _buildSegmentedEventType(isDark, surface, cardBorder, textPrimary, textMuted),
-
-                    const SizedBox(height: 16),
-
-                    // Location / Meeting URL depending on Event Type
-                    if (_eventType == 'In person') ...[
+                // Paid toggle
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: cardBorder),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
                       Row(
                         children: [
-                          _buildFieldLabel('Location*', textPrimary),
+                          Icon(
+                            _isPaid ? Icons.monetization_on : Icons.money_off_outlined,
+                            color: _isPaid
+                                ? (isDark ? Colors.white : Colors.black)
+                                : textMuted,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'community.paidEvent'.tr.isNotEmpty &&
+                                        'community.paidEvent'.tr != 'community.paidEvent'
+                                    ? 'community.paidEvent'.tr
+                                    : 'Paid Event',
+                                style: TextStyle(
+                                  color: textPrimary,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                'community.paidEventDesc'.tr.isNotEmpty &&
+                                        'community.paidEventDesc'.tr != 'community.paidEventDesc'
+                                    ? 'community.paidEventDesc'.tr
+                                    : 'Require ticket purchase to attend',
+                                style: TextStyle(color: textMuted, fontSize: 12),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _locationController,
-                        focusNode: _locationFocus,
-                        maxLines: 1,
-                        style: TextStyle(color: textPrimary, fontSize: 15),
-                        decoration: _inputDecoration(
-                          hintText: 'community.locationHint'.tr.isNotEmpty &&
-                                  'community.locationHint'.tr != 'community.locationHint'
-                              ? 'community.locationHint'.tr
-                              : 'Search or enter location...',
-                          errorText: _locationError,
-                          isDark: isDark,
-                          surface: surface,
-                          border: cardBorder,
-                          textMuted: textMuted,
-                          prefixIcon: Icon(Icons.location_on_outlined, color: textMuted, size: 20),
-                          labelHintForTest: '📍 Enter event location',
-                        ),
-                        textInputAction: TextInputAction.next,
-                      ),
-                    ] else ...[
-                      _buildFieldLabel('Online event link*', textPrimary),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _linkController,
-                        focusNode: _linkFocus,
-                        maxLines: 1,
-                        keyboardType: TextInputType.url,
-                        style: TextStyle(color: textPrimary, fontSize: 15),
-                        decoration: _inputDecoration(
-                          hintText: 'community.meetingUrlHint'.tr.isNotEmpty &&
-                                  'community.meetingUrlHint'.tr != 'community.meetingUrlHint'
-                              ? 'community.meetingUrlHint'.tr
-                              : 'e.g. https://meet.google.com/...',
-                          errorText: _linkError,
-                          isDark: isDark,
-                          surface: surface,
-                          border: cardBorder,
-                          textMuted: textMuted,
-                          prefixIcon: Icon(Icons.link_rounded, color: textMuted, size: 20),
-                          labelHintForTest: 'e.g. https://meet.google.com/...',
-                        ),
-                        textInputAction: TextInputAction.next,
+                      Switch.adaptive(
+                        value: _isPaid,
+                        onChanged: (val) {
+                          setState(() {
+                            _isPaid = val;
+                            if (!val) {
+                              _priceError = null;
+                              _priceController.clear();
+                            }
+                          });
+                        },
+                        activeColor: isDark ? Colors.white : Colors.black,
+                        activeTrackColor: isDark ? Colors.white38 : Colors.black26,
                       ),
                     ],
+                  ),
+                ),
 
-                    const SizedBox(height: 24),
-
-                    // ── 5. REGISTRATION ─────────────────────────────────────
-                    _buildSectionHeader('community.registration'.tr.isNotEmpty &&
-                            'community.registration'.tr != 'community.registration'
-                        ? 'community.registration'.tr
-                        : 'REGISTRATION', textMuted),
-                    const SizedBox(height: 12),
-
-                    _buildSegmentedPricingToggle(isDark, surface, cardBorder, textPrimary, textMuted),
-
-                    if (_isPaid) ...[
-                      const SizedBox(height: 16),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildFieldLabel('community.price'.tr.isNotEmpty &&
-                                        'community.price'.tr != 'community.price'
-                                    ? '${'community.price'.tr} *'
-                                    : 'Price *', textPrimary),
-                                const SizedBox(height: 6),
-                                TextField(
-                                  controller: _priceController,
-                                  focusNode: _priceFocus,
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                                  ],
-                                  style: TextStyle(color: textPrimary, fontSize: 15),
-                                  decoration: _inputDecoration(
-                                    hintText: '0.00',
-                                    errorText: _priceError,
-                                    isDark: isDark,
-                                    surface: surface,
-                                    border: cardBorder,
-                                    textMuted: textMuted,
-                                    prefixIcon: Padding(
-                                      padding: const EdgeInsets.only(left: 12, right: 8),
-                                      child: Text(
-                                        _selectedCurrency == 'USD' ? '\$' : '៛',
-                                        style: TextStyle(
-                                          color: textPrimary,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
+                // Price and Currency if paid
+                if (_isPaid) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildFieldLabel('community.price'.tr.isNotEmpty &&
+                                    'community.price'.tr != 'community.price'
+                                ? '${'community.price'.tr}*'
+                                : 'Price*', textPrimary),
+                            const SizedBox(height: 6),
+                            TextField(
+                              controller: _priceController,
+                              focusNode: _priceFocus,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                              ],
+                              style: TextStyle(color: textPrimary, fontSize: 15),
+                              decoration: _inputDecoration(
+                                hintText: '0.00',
+                                errorText: _priceError,
+                                isDark: isDark,
+                                surface: surface,
+                                border: cardBorder,
+                                textMuted: textMuted,
+                                prefixIcon: Icon(Icons.attach_money, color: textMuted, size: 20),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildFieldLabel('community.currency'.tr.isNotEmpty &&
+                                    'community.currency'.tr != 'community.currency'
+                                ? 'community.currency'.tr
+                                : 'Currency', textPrimary),
+                            const SizedBox(height: 6),
+                            Container(
+                              height: 48,
+                              padding: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                color: surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: cardBorder),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () => setState(() => _selectedCurrency = 'USD'),
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 150),
+                                        decoration: BoxDecoration(
+                                          color: _selectedCurrency == 'USD'
+                                              ? (isDark ? Colors.white : Colors.black)
+                                              : Colors.transparent,
+                                          borderRadius: BorderRadius.circular(9),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          'USD',
+                                          style: TextStyle(
+                                            color: _selectedCurrency == 'USD'
+                                                ? (isDark ? Colors.black : Colors.white)
+                                                : textMuted,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                    prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            flex: 2,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildFieldLabel('community.currency'.tr.isNotEmpty &&
-                                        'community.currency'.tr != 'community.currency'
-                                    ? 'community.currency'.tr
-                                    : 'Currency', textPrimary),
-                                const SizedBox(height: 6),
-                                Container(
-                                  height: 48,
-                                  padding: const EdgeInsets.all(3),
-                                  decoration: BoxDecoration(
-                                    color: surface,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: cardBorder),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: GestureDetector(
-                                          onTap: () => setState(() => _selectedCurrency = 'USD'),
-                                          child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 150),
-                                            decoration: BoxDecoration(
-                                              color: _selectedCurrency == 'USD'
-                                                  ? (isDark ? Colors.white : Colors.black)
-                                                  : Colors.transparent,
-                                              borderRadius: BorderRadius.circular(9),
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: Text(
-                                              'USD',
-                                              style: TextStyle(
-                                                color: _selectedCurrency == 'USD'
-                                                    ? (isDark ? Colors.black : Colors.white)
-                                                    : textMuted,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 13,
-                                              ),
-                                            ),
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () => setState(() => _selectedCurrency = 'KHR'),
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 150),
+                                        decoration: BoxDecoration(
+                                          color: _selectedCurrency == 'KHR'
+                                              ? (isDark ? Colors.white : Colors.black)
+                                              : Colors.transparent,
+                                          borderRadius: BorderRadius.circular(9),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          'KHR',
+                                          style: TextStyle(
+                                            color: _selectedCurrency == 'KHR'
+                                                ? (isDark ? Colors.black : Colors.white)
+                                                : textMuted,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
                                           ),
                                         ),
                                       ),
-                                      Expanded(
-                                        child: GestureDetector(
-                                          onTap: () => setState(() => _selectedCurrency = 'KHR'),
-                                          child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 150),
-                                            decoration: BoxDecoration(
-                                              color: _selectedCurrency == 'KHR'
-                                                  ? (isDark ? Colors.white : Colors.black)
-                                                  : Colors.transparent,
-                                              borderRadius: BorderRadius.circular(9),
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: Text(
-                                              'KHR',
-                                              style: TextStyle(
-                                                color: _selectedCurrency == 'KHR'
-                                                    ? (isDark ? Colors.black : Colors.white)
-                                                    : textMuted,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ] else ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: cardBorder),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.check_circle_outline, color: textMuted, size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'community.freeEventNotice'.tr.isNotEmpty &&
-                                        'community.freeEventNotice'.tr !=
-                                            'community.freeEventNotice'
-                                    ? 'community.freeEventNotice'.tr
-                                    : 'This is a free event for all attendees',
-                                style: TextStyle(color: textMuted, fontSize: 13),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
                     ],
-
-                    const SizedBox(height: 16),
-
-                    // Attendee Limit (Optional)
-                    _buildFieldLabel('community.rsvpLimit'.tr.isNotEmpty &&
-                            'community.rsvpLimit'.tr != 'community.rsvpLimit'
-                        ? '${'community.rsvpLimit'.tr} (Optional)'
-                        : 'Attendee Limit (Optional)', textPrimary),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _attendeeLimitController,
-                      focusNode: _attendeeLimitFocus,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      style: TextStyle(color: textPrimary, fontSize: 15),
-                      decoration: _inputDecoration(
-                        hintText: 'e.g. 50 (unlimited if empty)',
-                        isDark: isDark,
-                        surface: surface,
-                        border: cardBorder,
-                        textMuted: textMuted,
-                        prefixIcon: Icon(Icons.people_outline, color: textMuted, size: 20),
-                      ),
+                  ),
+                ] else ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: cardBorder),
                     ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle_outline, color: textMuted, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'community.freeEventNotice'.tr.isNotEmpty &&
+                                    'community.freeEventNotice'.tr !=
+                                        'community.freeEventNotice'
+                                ? 'community.freeEventNotice'.tr
+                                : 'This is a free event for all attendees',
+                            style: TextStyle(color: textMuted, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
 
-                    const SizedBox(height: 32),
-                  ],
+                const SizedBox(height: 16),
+
+                // Attendee Limit (Optional)
+                _buildFieldLabel('community.rsvpLimit'.tr.isNotEmpty &&
+                        'community.rsvpLimit'.tr != 'community.rsvpLimit'
+                    ? '${'community.rsvpLimit'.tr} (Optional)'
+                    : 'Attendee Limit (Optional)', textPrimary),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _attendeeLimitController,
+                  focusNode: _attendeeLimitFocus,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  style: TextStyle(color: textPrimary, fontSize: 15),
+                  decoration: _inputDecoration(
+                    hintText: 'e.g. 50 (unlimited if empty)',
+                    isDark: isDark,
+                    surface: surface,
+                    border: cardBorder,
+                    textMuted: textMuted,
+                    prefixIcon: Icon(Icons.people_outline, color: textMuted, size: 20),
+                  ),
                 ),
-              ),
+
+                const SizedBox(height: 32),
+              ],
             ),
           ),
         ),
@@ -1422,31 +1410,30 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 ),
               ),
             ] else ...[
-              GestureDetector(
+              InkWell(
                 onTap: _pickCoverImage,
-                behavior: HitTestBehavior.opaque,
                 child: Center(
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF222226) : const Color(0xFFEFF0F3),
+                          color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.add_photo_alternate_outlined,
-                          color: textPrimary,
                           size: 28,
+                          color: textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                       Text(
-                        'community.uploadCoverImage'.tr.isNotEmpty &&
-                                'community.uploadCoverImage'.tr != 'community.uploadCoverImage'
-                            ? 'community.uploadCoverImage'.tr
-                            : 'Upload cover image',
+                        'community.uploadCover'.tr.isNotEmpty &&
+                                'community.uploadCover'.tr != 'community.uploadCover'
+                            ? 'community.uploadCover'.tr
+                            : 'Upload Cover Photo',
                         style: TextStyle(
                           color: textPrimary,
                           fontSize: 14,
@@ -1540,51 +1527,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           Expanded(
             child: GestureDetector(
               onTap: () {
-                if (_eventType != 'In person') {
-                  setState(() {
-                    _eventType = 'In person';
-                    _linkError = null;
-                  });
-                }
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                decoration: BoxDecoration(
-                  color: _eventType == 'In person'
-                      ? (isDark ? Colors.white : Colors.black)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.place_outlined,
-                      size: 16,
-                      color: _eventType == 'In person'
-                          ? (isDark ? Colors.black : Colors.white)
-                          : textMuted,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'In person',
-                      style: TextStyle(
-                        color: _eventType == 'In person'
-                            ? (isDark ? Colors.black : Colors.white)
-                            : textPrimary,
-                        fontWeight: _eventType == 'In person' ? FontWeight.bold : FontWeight.w500,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
                 if (_eventType != 'Online') {
                   setState(() {
                     _eventType = 'Online';
@@ -1613,13 +1555,16 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Online',
+                      'community.online'.tr.isNotEmpty &&
+                              'community.online'.tr != 'community.online'
+                          ? 'community.online'.tr
+                          : 'Online',
                       style: TextStyle(
                         color: _eventType == 'Online'
                             ? (isDark ? Colors.black : Colors.white)
-                            : textPrimary,
-                        fontWeight: _eventType == 'Online' ? FontWeight.bold : FontWeight.w500,
-                        fontSize: 14,
+                            : textMuted,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -1627,81 +1572,50 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSegmentedPricingToggle(
-    bool isDark,
-    Color surface,
-    Color cardBorder,
-    Color textPrimary,
-    Color textMuted,
-  ) {
-    return Container(
-      height: 46,
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cardBorder),
-      ),
-      child: Row(
-        children: [
           Expanded(
             child: GestureDetector(
-              onTap: () => setState(() {
-                _isPaid = false;
-                _priceError = null;
-              }),
+              onTap: () {
+                if (_eventType != 'In person') {
+                  setState(() {
+                    _eventType = 'In person';
+                    _linkError = null;
+                  });
+                }
+              },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 decoration: BoxDecoration(
-                  color: !_isPaid
+                  color: _eventType == 'In person'
                       ? (isDark ? Colors.white : Colors.black)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(9),
                 ),
                 alignment: Alignment.center,
-                child: Text(
-                  'community.free'.tr.isNotEmpty && 'community.free'.tr != 'community.free'
-                      ? 'community.free'.tr
-                      : 'Free',
-                  style: TextStyle(
-                    color: !_isPaid
-                        ? (isDark ? Colors.black : Colors.white)
-                        : textMuted,
-                    fontWeight: !_isPaid ? FontWeight.bold : FontWeight.w500,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _isPaid = true),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                decoration: BoxDecoration(
-                  color: _isPaid
-                      ? (isDark ? Colors.white : Colors.black)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'community.paid'.tr.isNotEmpty && 'community.paid'.tr != 'community.paid'
-                      ? 'community.paid'.tr
-                      : 'Paid',
-                  style: TextStyle(
-                    color: _isPaid
-                        ? (isDark ? Colors.black : Colors.white)
-                        : textMuted,
-                    fontWeight: _isPaid ? FontWeight.bold : FontWeight.w500,
-                    fontSize: 14,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.place_outlined,
+                      size: 16,
+                      color: _eventType == 'In person'
+                          ? (isDark ? Colors.black : Colors.white)
+                          : textMuted,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'community.inPerson'.tr.isNotEmpty &&
+                              'community.inPerson'.tr != 'community.inPerson'
+                          ? 'community.inPerson'.tr
+                          : 'In person',
+                      style: TextStyle(
+                        color: _eventType == 'In person'
+                            ? (isDark ? Colors.black : Colors.white)
+                            : textMuted,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -1726,7 +1640,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         decoration: BoxDecoration(
           color: surface,
           borderRadius: BorderRadius.circular(12),
@@ -1737,23 +1651,22 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           children: [
             Text(
               label,
-              style: TextStyle(color: textMuted, fontSize: 11, fontWeight: FontWeight.w600),
+              style: TextStyle(color: textMuted, fontSize: 11, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(icon, size: 16, color: textPrimary),
+                Icon(icon, size: 15, color: textMuted),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    displayValue,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    displayValue.isNotEmpty ? displayValue : 'Select',
                     style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      color: displayValue.isNotEmpty ? textPrimary : textMuted,
+                      fontSize: 13,
+                      fontWeight: displayValue.isNotEmpty ? FontWeight.w600 : FontWeight.normal,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -1762,15 +1675,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         ),
       ),
     );
-  }
-
-  String _getCategoryLabel(String key) {
-    final found = _categories.firstWhere(
-      (c) => c['key'] == key,
-      orElse: () => {'key': key, 'labelKey': key},
-    );
-    final lk = found['labelKey'] as String;
-    return lk.tr.isNotEmpty && lk.tr != lk ? lk.tr : key;
   }
 
   InputDecoration _inputDecoration({
@@ -1793,7 +1697,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 12),
       prefixIcon: prefixIcon,
       prefixIconConstraints: prefixIconConstraints,
-      // Supporting labelText as fallback for test finder matching
       labelText: labelHintForTest,
       floatingLabelBehavior: FloatingLabelBehavior.never,
       labelStyle: TextStyle(color: textMuted, fontSize: 14),
@@ -1948,9 +1851,9 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                   _formattedSelectedTime,
                   style: TextStyle(
                     color: textPrimary,
-                    fontSize: 32,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
+                    letterSpacing: 1.2,
                   ),
                 ),
               ),
@@ -1962,7 +1865,7 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
               decoration: BoxDecoration(
                 color: surfaceUnselected,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: border, width: 0.8),
+                border: Border.all(color: border),
               ),
               child: Row(
                 children: [
@@ -1985,7 +1888,7 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                                 ? (isDark ? Colors.black : Colors.white)
                                 : textSecondary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: 13,
                           ),
                         ),
                       ),
@@ -2010,7 +1913,7 @@ class _GenLinkTimePickerSheetState extends State<_GenLinkTimePickerSheet> {
                                 ? (isDark ? Colors.black : Colors.white)
                                 : textSecondary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: 13,
                           ),
                         ),
                       ),

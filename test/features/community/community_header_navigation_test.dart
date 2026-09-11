@@ -163,7 +163,7 @@ void main() {
           locale: const Locale('en', 'US'),
           home: const Scaffold(
             appBar: PreferredSize(
-              preferredSize: Size.fromHeight(64.0),
+              preferredSize: Size.fromHeight(52.0),
               child: CommunityHeaderWidget(activeCategory: 'Feed'),
             ),
           ),
@@ -173,7 +173,7 @@ void main() {
       expect(find.text('Community'), findsOneWidget);
 
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.forum_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.chat_bubble_outline_rounded), findsOneWidget);
       expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
     });
 
@@ -184,7 +184,7 @@ void main() {
           locale: const Locale('en', 'US'),
           home: const Scaffold(
             appBar: PreferredSize(
-              preferredSize: Size.fromHeight(64.0),
+              preferredSize: Size.fromHeight(52.0),
               child: CommunityHeaderWidget(activeCategory: 'Feed'),
             ),
           ),
@@ -211,7 +211,7 @@ void main() {
           locale: const Locale('en', 'US'),
           home: const Scaffold(
             appBar: PreferredSize(
-              preferredSize: Size.fromHeight(64.0),
+              preferredSize: Size.fromHeight(52.0),
               child: CommunityHeaderWidget(activeCategory: 'Feed', isHomeScreen: false),
             ),
           ),
@@ -232,7 +232,7 @@ void main() {
           locale: const Locale('en', 'US'),
           home: const Scaffold(
             appBar: PreferredSize(
-              preferredSize: Size.fromHeight(64.0),
+              preferredSize: Size.fromHeight(52.0),
               child: CommunityHeaderWidget(activeCategory: 'Feed', isHomeScreen: true),
             ),
           ),
@@ -261,7 +261,7 @@ void main() {
           locale: const Locale('en', 'US'),
           home: const Scaffold(
             appBar: PreferredSize(
-              preferredSize: Size.fromHeight(64.0),
+              preferredSize: Size.fromHeight(52.0),
               child: CommunityHeaderWidget(activeCategory: 'Feed'),
             ),
           ),
@@ -284,7 +284,7 @@ void main() {
           locale: const Locale('en', 'US'),
           home: const Scaffold(
             appBar: PreferredSize(
-              preferredSize: Size.fromHeight(64.0),
+              preferredSize: Size.fromHeight(52.0),
               child: CommunityHeaderWidget(activeCategory: 'Feed'),
             ),
           ),
@@ -306,7 +306,7 @@ void main() {
           locale: const Locale('en', 'US'),
           home: const Scaffold(
             appBar: PreferredSize(
-              preferredSize: Size.fromHeight(64.0),
+              preferredSize: Size.fromHeight(52.0),
               child: CommunityHeaderWidget(activeCategory: 'Feed'),
             ),
           ),

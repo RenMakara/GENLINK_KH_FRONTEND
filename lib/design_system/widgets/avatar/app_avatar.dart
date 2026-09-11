@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 class AppAvatar extends StatelessWidget {
@@ -10,14 +11,24 @@ class AppAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final url = imageUrl;
+    final url = imageUrl?.trim();
 
     ImageProvider? imageProvider;
-    if (url != null && url.isNotEmpty) {
+    if (url != null && url.isNotEmpty && url != 'null' && url != 'undefined') {
       if (url.startsWith('assets/')) {
         imageProvider = AssetImage(url);
-      } else {
-        imageProvider = NetworkImage(url);
+      } else if (url.startsWith('http://') || url.startsWith('https://')) {
+        final uri = Uri.tryParse(url);
+        if (uri != null && uri.hasScheme) {
+          imageProvider = NetworkImage(url);
+        }
+      } else if (url.startsWith('/') || url.startsWith('file://')) {
+        try {
+          final filePath = url.startsWith('file://')
+              ? Uri.parse(url).toFilePath()
+              : url;
+          imageProvider = FileImage(File(filePath));
+        } catch (_) {}
       }
     }
 
@@ -25,6 +36,11 @@ class AppAvatar extends StatelessWidget {
       radius: size / 2,
       backgroundColor: scheme.surfaceContainerHighest,
       foregroundImage: imageProvider,
+      onForegroundImageError: imageProvider != null
+          ? (exception, stackTrace) {
+              // Fall back gracefully to initials child
+            }
+          : null,
       child: Text(
         _initials(name),
         style: TextStyle(

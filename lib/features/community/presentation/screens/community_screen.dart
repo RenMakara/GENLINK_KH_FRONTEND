@@ -50,7 +50,7 @@ class CommunityScreen extends GetView<CommunityController> {
     return Scaffold(
       backgroundColor: bg,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64.0),
+        preferredSize: const Size.fromHeight(52.0),
         child: Obx(
           () => CommunityHeaderWidget(
             activeCategory: commController.selectedCategory.value,
@@ -63,7 +63,7 @@ class CommunityScreen extends GetView<CommunityController> {
           constraints: const BoxConstraints(maxWidth: 720),
           child: Column(
             children: [
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
 
               Obx(
                 () => Padding(
@@ -85,7 +85,7 @@ class CommunityScreen extends GetView<CommunityController> {
                               duration: const Duration(milliseconds: 180),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
-                                vertical: 8.0,
+                                vertical: 6.5,
                               ),
                               decoration: BoxDecoration(
                                 color: isSelected
@@ -126,7 +126,7 @@ class CommunityScreen extends GetView<CommunityController> {
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
               Expanded(
                 child: Obx(() {
@@ -206,15 +206,13 @@ class CommunityScreen extends GetView<CommunityController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 4),
-
             const StoryTrayWidget(),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             const QuickCreatePostCard(),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             Obx(() {
               if (controller.isLoadingFeed.value && controller.posts.isEmpty) {

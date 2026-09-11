@@ -4,6 +4,8 @@ abstract final class AppConfig {
 
   static const apiPort = 8888;
 
+  static const bool isDemoChatEnabled = true;
+
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://18.143.33.191',

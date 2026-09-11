@@ -20,7 +20,7 @@ class CommunityHeaderWidget extends StatelessWidget
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(64.0);
+  Size get preferredSize => const Size.fromHeight(52.0);
 
   @override
   Widget build(BuildContext context) {

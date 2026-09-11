@@ -220,10 +220,10 @@ void main() {
       expect(makaraStory.isLiked, true);
       expect(makaraStory.likesCount, initialLikes + 1);
       expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
-
       expect(mockRepo.likeCallCount, 0);
 
-      await Future.delayed(const Duration(milliseconds: 150));
+      // Wait beyond 120ms hardware debounce window
+      await tester.pump(const Duration(milliseconds: 150));
 
       await tester.tap(find.byType(StoryInteractiveLikeButton));
       await tester.pump(const Duration(milliseconds: 350));

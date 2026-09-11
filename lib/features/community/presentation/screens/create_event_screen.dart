@@ -43,7 +43,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
   // Cover image
   File? _coverImage;
-  bool _isUploadingImage = false;
+  final bool _isUploadingImage = false;
 
   // Category
   String? _selectedCategory;
@@ -158,26 +158,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     return '$h:$m $period';
   }
 
-  void _validateScheduleInline() {
-    final start = _calculatedStartDateTime;
-    final end = _calculatedEndDateTime;
-    if (start == null || end == null) {
-      _dateError = 'community.dateAndTimeReq'.tr;
-      return;
-    }
-
-    if (_endDate!.isBefore(_startDate!)) {
-      _dateError = 'community.endDateAfterStartDate'.tr;
-      return;
-    }
-
-    if (!end.isAfter(start)) {
-      _timeError = 'community.endTimeAfterStartTime'.tr;
-      return;
-    }
-
-    _dateError = null;
-    _timeError = null;
+  String get _formattedScheduleDisplay {
+    if (_startDate == null) return '';
+    final dateStr = _formatDate(_startDate);
+    final timeStr = _startTime != null ? ' at ${_formatTime(_startTime)}' : '';
+    return '$dateStr$timeStr';
   }
 
   void _onBackPress() {
@@ -278,20 +263,14 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     }
   }
 
-  Future<void> _pickDate({required bool isStart}) async {
+  Future<void> _pickDate() async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final initialDate = isStart
-        ? (_startDate ?? DateTime.now().add(const Duration(days: 1)))
-        : (_endDate ?? _startDate ?? DateTime.now().add(const Duration(days: 1)));
-
-    final firstDate = isStart
-        ? DateTime.now()
-        : (_startDate ?? DateTime.now());
+    final initialDate = _startDate ?? DateTime.now().add(const Duration(days: 1));
 
     final picked = await showDatePicker(
       context: context,
-      initialDate: initialDate.isBefore(firstDate) ? firstDate : initialDate,
-      firstDate: firstDate,
+      initialDate: initialDate,
+      firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
         return Theme(
@@ -300,11 +279,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   colorScheme: const ColorScheme.dark(
                     primary: Colors.white,
                     onPrimary: Colors.black,
-                    surface: const Color(0xFF18181B),
+                    surface: Color(0xFF161616),
                     onSurface: Colors.white,
                   ),
                   dialogTheme: const DialogThemeData(
-                    backgroundColor: Color(0xFF18181B),
+                    backgroundColor: Color(0xFF161616),
                   ),
                 )
               : ThemeData.light().copyWith(
@@ -322,51 +301,30 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
     if (picked != null) {
       setState(() {
-        if (isStart) {
-          _startDate = picked;
-          if (_endDate == null || _endDate!.isBefore(picked)) {
-            _endDate = picked;
-          }
-        } else {
-          _endDate = picked;
-        }
-        _validateScheduleInline();
+        _startDate = picked;
+        _endDate = picked;
+        _dateError = null;
       });
-    }
-  }
 
-  Future<void> _pickTime({required bool isStart}) async {
-    final initialTime = isStart
-        ? (_startTime ?? const TimeOfDay(hour: 9, minute: 0))
-        : (_endTime ?? const TimeOfDay(hour: 11, minute: 0));
+      if (!mounted) return;
 
-    final pickedTime = await _showCustomTimePicker(
-      context,
-      initialTime: initialTime,
-    );
+      final initialTime = _startTime ?? const TimeOfDay(hour: 9, minute: 0);
+      final pickedTime = await _showCustomTimePicker(
+        context,
+        initialTime: initialTime,
+      );
 
-    if (pickedTime != null) {
-      setState(() {
-        if (isStart) {
+      if (pickedTime != null) {
+        setState(() {
           _startTime = pickedTime;
-          if (_endTime == null) {
-            _endTime = TimeOfDay(
-              hour: (pickedTime.hour + 2) % 24,
-              minute: pickedTime.minute,
-            );
-          }
-        } else {
-          _endTime = pickedTime;
-        }
-        _validateScheduleInline();
-      });
+          _endTime = TimeOfDay(
+            hour: (pickedTime.hour + 2) % 24,
+            minute: pickedTime.minute,
+          );
+          _timeError = null;
+        });
+      }
     }
-  }
-
-  Future<void> _pickDateAndTimeCombined() async {
-    await _pickDate(isStart: true);
-    if (!mounted || _startDate == null) return;
-    await _pickTime(isStart: true);
   }
 
   void _showCategoryBottomSheet() {
@@ -509,6 +467,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) return;
+
     setState(() {
       _titleError = null;
       _dateError = null;
@@ -520,39 +480,48 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
     final title = _titleController.text.trim();
     if (title.isEmpty) {
-      setState(() => _titleError = 'community.eventTitleReq'.tr.isNotEmpty &&
-              'community.eventTitleReq'.tr != 'community.eventTitleReq'
-          ? 'community.eventTitleReq'.tr
-          : 'Event name is required');
+      setState(() => _titleError = 'Event name is required');
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: 'Validation Error',
+        message: 'Event name is required.',
+      );
       _titleFocus.requestFocus();
       return;
     }
 
     if (title.length > 180) {
-      setState(() => _titleError = 'community.eventTitleMax'.tr.isNotEmpty &&
-              'community.eventTitleMax'.tr != 'community.eventTitleMax'
-          ? 'community.eventTitleMax'.tr
-          : 'Title cannot exceed 180 characters');
+      setState(() => _titleError = 'Title cannot exceed 180 characters');
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: 'Validation Error',
+        message: 'Title cannot exceed 180 characters.',
+      );
       _titleFocus.requestFocus();
       return;
     }
 
-    final startDateTime = _calculatedStartDateTime;
-    final endDateTime = _calculatedEndDateTime;
-
-    if (startDateTime == null || endDateTime == null) {
-      setState(() => _dateError = 'community.dateAndTimeReq'.tr.isNotEmpty &&
-              'community.dateAndTimeReq'.tr != 'community.dateAndTimeReq'
-          ? 'community.dateAndTimeReq'.tr
-          : 'Please select event start and end time');
+    if (_startDate == null) {
+      setState(() => _dateError = 'Date & time is required');
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: 'Validation Error',
+        message: 'Date & time is required.',
+      );
       return;
     }
 
+    final startDateTime = _calculatedStartDateTime!;
+    final endDateTime = _calculatedEndDateTime ??
+        startDateTime.add(const Duration(hours: 2));
+
     if (!endDateTime.isAfter(startDateTime)) {
-      setState(() => _timeError = 'community.endTimeAfterStartTime'.tr.isNotEmpty &&
-              'community.endTimeAfterStartTime'.tr != 'community.endTimeAfterStartTime'
-          ? 'community.endTimeAfterStartTime'.tr
-          : 'End time must be after start time');
+      setState(() => _timeError = 'End time must be after start time');
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: 'Validation Error',
+        message: 'End time must be after start time.',
+      );
       return;
     }
 
@@ -562,7 +531,12 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
     if (isOnline) {
       if (link.isEmpty) {
-        setState(() => _linkError = 'Online event link is required.');
+        setState(() => _linkError = 'Online event link is required');
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: 'Validation Error',
+          message: 'Online event link is required.',
+        );
         _linkFocus.requestFocus();
         return;
       }
@@ -571,12 +545,22 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           (!uri.isScheme('http') && !uri.isScheme('https')) ||
           uri.host.isEmpty) {
         setState(() => _linkError = 'Meeting URL must start with http:// or https://');
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: 'Validation Error',
+          message: 'Meeting URL must start with http:// or https://',
+        );
         _linkFocus.requestFocus();
         return;
       }
     } else {
       if (location.isEmpty) {
-        setState(() => _locationError = 'Location is required.');
+        setState(() => _locationError = 'Location is required');
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: 'Validation Error',
+          message: 'Location is required.',
+        );
         _locationFocus.requestFocus();
         return;
       }
@@ -587,12 +571,22 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       final priceText = _priceController.text.trim();
       if (priceText.isEmpty) {
         setState(() => _priceError = 'Price is required for paid events');
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: 'Validation Error',
+          message: 'Price is required for paid events.',
+        );
         _priceFocus.requestFocus();
         return;
       }
       parsedPrice = double.tryParse(priceText);
       if (parsedPrice == null || parsedPrice <= 0) {
         setState(() => _priceError = 'Price must be greater than 0');
+        AppNotificationBanner.showDanger(
+          context: context,
+          title: 'Validation Error',
+          message: 'Price must be greater than 0.',
+        );
         _priceFocus.requestFocus();
         return;
       }
@@ -782,10 +776,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 const SizedBox(height: 12),
 
                 // Title
-                _buildFieldLabel('community.eventTitle'.tr.isNotEmpty &&
-                        'community.eventTitle'.tr != 'community.eventTitle'
-                    ? '${'community.eventTitle'.tr}*'
-                    : 'Event Title*', textPrimary),
+                _buildFieldLabel('Event name*', textPrimary),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _titleController,
@@ -794,17 +785,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   maxLines: 1,
                   style: TextStyle(color: textPrimary, fontSize: 15),
                   decoration: _inputDecoration(
-                    hintText: 'community.eventTitleHint'.tr.isNotEmpty &&
-                            'community.eventTitleHint'.tr != 'community.eventTitleHint'
-                        ? 'community.eventTitleHint'.tr
-                        : 'Event name',
+                    hintText: 'Event name',
                     errorText: _titleError,
                     isDark: isDark,
                     surface: surface,
                     border: cardBorder,
                     textMuted: textMuted,
                     prefixIcon: Icon(Icons.title_rounded, color: textMuted, size: 20),
-                    labelHintForTest: 'Event name',
                   ),
                   textInputAction: TextInputAction.next,
                 ),
@@ -825,15 +812,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   maxLength: 5000,
                   style: TextStyle(color: textPrimary, fontSize: 15, height: 1.4),
                   decoration: _inputDecoration(
-                    hintText: 'community.eventDescriptionHint'.tr.isNotEmpty &&
-                            'community.eventDescriptionHint'.tr != 'community.eventDescriptionHint'
-                        ? 'community.eventDescriptionHint'.tr
-                        : 'Tell people about your event',
+                    hintText: 'Tell people about your event',
                     isDark: isDark,
                     surface: surface,
                     border: cardBorder,
                     textMuted: textMuted,
-                    labelHintForTest: 'Tell people about your event',
                   ),
                   textInputAction: TextInputAction.done,
                 ),
@@ -900,123 +883,30 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 const SizedBox(height: 24),
 
                 // ── 3. DATE & TIME ───────────────────────────────────────────
-                _buildSectionHeader('community.dateTime'.tr.isNotEmpty &&
-                        'community.dateTime'.tr != 'community.dateTime'
-                    ? 'community.dateTime'.tr
-                    : 'DATE & TIME', textMuted),
-                const SizedBox(height: 12),
-
-                // Start Date & Time
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: _buildDateTimeTile(
-                        label: 'community.startDate'.tr.isNotEmpty &&
-                                'community.startDate'.tr != 'community.startDate'
-                            ? 'community.startDate'.tr
-                            : 'Start Date',
-                        displayValue: _formatDate(_startDate),
-                        icon: Icons.calendar_today_outlined,
-                        onTap: () => _pickDate(isStart: true),
-                        isDark: isDark,
-                        surface: surface,
-                        border: cardBorder,
-                        textPrimary: textPrimary,
-                        textMuted: textMuted,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      flex: 2,
-                      child: _buildDateTimeTile(
-                        label: 'community.startTime'.tr.isNotEmpty &&
-                                'community.startTime'.tr != 'community.startTime'
-                            ? 'community.startTime'.tr
-                            : 'Start Time',
-                        displayValue: _formatTime(_startTime),
-                        icon: Icons.access_time_outlined,
-                        onTap: () => _pickTime(isStart: true),
-                        isDark: isDark,
-                        surface: surface,
-                        border: cardBorder,
-                        textPrimary: textPrimary,
-                        textMuted: textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                // End Date & Time
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: _buildDateTimeTile(
-                        label: 'community.endDate'.tr.isNotEmpty &&
-                                'community.endDate'.tr != 'community.endDate'
-                            ? 'community.endDate'.tr
-                            : 'End Date',
-                        displayValue: _formatDate(_endDate),
-                        icon: Icons.event_available_outlined,
-                        onTap: () => _pickDate(isStart: false),
-                        isDark: isDark,
-                        surface: surface,
-                        border: cardBorder,
-                        textPrimary: textPrimary,
-                        textMuted: textMuted,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      flex: 2,
-                      child: _buildDateTimeTile(
-                        label: 'community.endTime'.tr.isNotEmpty &&
-                                'community.endTime'.tr != 'community.endTime'
-                            ? 'community.endTime'.tr
-                            : 'End Time',
-                        displayValue: _formatTime(_endTime),
-                        icon: Icons.schedule_outlined,
-                        onTap: () => _pickTime(isStart: false),
-                        isDark: isDark,
-                        surface: surface,
-                        border: cardBorder,
-                        textPrimary: textPrimary,
-                        textMuted: textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-
-                // Quick dummy date picker tap target to satisfy test finders
+                _buildSectionHeader('Date & time*', textMuted),
                 const SizedBox(height: 8),
+
                 InkWell(
-                  onTap: _pickDateAndTimeCombined,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                    child: Row(
-                      children: [
-                        Icon(Icons.calendar_month_outlined, size: 14, color: textMuted),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Select date and time',
-                          style: TextStyle(color: textMuted, fontSize: 12),
-                        ),
-                      ],
+                  onTap: _pickDate,
+                  child: IgnorePointer(
+                    child: TextField(
+                      controller: TextEditingController(
+                        text: _formattedScheduleDisplay,
+                      ),
+                      style: TextStyle(color: textPrimary, fontSize: 15),
+                      decoration: _inputDecoration(
+                        hintText: 'Select date and time',
+                        errorText: _dateError,
+                        isDark: isDark,
+                        surface: surface,
+                        border: cardBorder,
+                        textMuted: textMuted,
+                        prefixIcon: Icon(Icons.calendar_today_outlined, color: textMuted, size: 18),
+                      ),
                     ),
                   ),
                 ),
 
-                if (_dateError != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    _dateError!,
-                    style: const TextStyle(color: Colors.redAccent, fontSize: 12),
-                  ),
-                ],
                 if (_timeError != null) ...[
                   const SizedBox(height: 6),
                   Text(
@@ -1052,17 +942,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                     maxLines: 1,
                     style: TextStyle(color: textPrimary, fontSize: 15),
                     decoration: _inputDecoration(
-                      hintText: 'community.locationHint'.tr.isNotEmpty &&
-                              'community.locationHint'.tr != 'community.locationHint'
-                          ? 'community.locationHint'.tr
-                          : '📍 Enter event location',
+                      hintText: '📍 Enter event location',
                       errorText: _locationError,
                       isDark: isDark,
                       surface: surface,
                       border: cardBorder,
                       textMuted: textMuted,
                       prefixIcon: Icon(Icons.location_on_outlined, color: textMuted, size: 20),
-                      labelHintForTest: '📍 Enter event location',
                     ),
                     textInputAction: TextInputAction.next,
                   ),
@@ -1076,17 +962,13 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                     keyboardType: TextInputType.url,
                     style: TextStyle(color: textPrimary, fontSize: 15),
                     decoration: _inputDecoration(
-                      hintText: 'community.meetingUrlHint'.tr.isNotEmpty &&
-                              'community.meetingUrlHint'.tr != 'community.meetingUrlHint'
-                          ? 'community.meetingUrlHint'.tr
-                          : 'e.g. https://meet.google.com/...',
+                      hintText: 'e.g. https://meet.google.com/...',
                       errorText: _linkError,
                       isDark: isDark,
                       surface: surface,
                       border: cardBorder,
                       textMuted: textMuted,
                       prefixIcon: Icon(Icons.link_rounded, color: textMuted, size: 20),
-                      labelHintForTest: 'e.g. https://meet.google.com/...',
                     ),
                     textInputAction: TextInputAction.next,
                   ),
@@ -1158,7 +1040,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                             }
                           });
                         },
-                        activeColor: isDark ? Colors.white : Colors.black,
+                        activeThumbColor: isDark ? Colors.white : Colors.black,
                         activeTrackColor: isDark ? Colors.white38 : Colors.black26,
                       ),
                     ],
@@ -1555,10 +1437,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'community.online'.tr.isNotEmpty &&
-                              'community.online'.tr != 'community.online'
-                          ? 'community.online'.tr
-                          : 'Online',
+                      'Online',
                       style: TextStyle(
                         color: _eventType == 'Online'
                             ? (isDark ? Colors.black : Colors.white)
@@ -1603,10 +1482,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'community.inPerson'.tr.isNotEmpty &&
-                              'community.inPerson'.tr != 'community.inPerson'
-                          ? 'community.inPerson'.tr
-                          : 'In person',
+                      'In person',
                       style: TextStyle(
                         color: _eventType == 'In person'
                             ? (isDark ? Colors.black : Colors.white)
@@ -1625,58 +1501,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     );
   }
 
-  Widget _buildDateTimeTile({
-    required String label,
-    required String displayValue,
-    required IconData icon,
-    required VoidCallback onTap,
-    required bool isDark,
-    required Color surface,
-    required Color border,
-    required Color textPrimary,
-    required Color textMuted,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-        decoration: BoxDecoration(
-          color: surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(color: textMuted, fontSize: 11, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(icon, size: 15, color: textMuted),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    displayValue.isNotEmpty ? displayValue : 'Select',
-                    style: TextStyle(
-                      color: displayValue.isNotEmpty ? textPrimary : textMuted,
-                      fontSize: 13,
-                      fontWeight: displayValue.isNotEmpty ? FontWeight.w600 : FontWeight.normal,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   InputDecoration _inputDecoration({
     required String hintText,
     required bool isDark,
@@ -1686,7 +1510,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     String? errorText,
     Widget? prefixIcon,
     BoxConstraints? prefixIconConstraints,
-    String? labelHintForTest,
   }) {
     return InputDecoration(
       filled: true,
@@ -1697,9 +1520,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 12),
       prefixIcon: prefixIcon,
       prefixIconConstraints: prefixIconConstraints,
-      labelText: labelHintForTest,
-      floatingLabelBehavior: FloatingLabelBehavior.never,
-      labelStyle: TextStyle(color: textMuted, fontSize: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: border),

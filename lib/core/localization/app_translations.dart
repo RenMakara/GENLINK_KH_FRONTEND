@@ -735,7 +735,7 @@ class AppTranslations extends Translations {
     'community.filterEvents': 'Filter Events',
     'community.filter': 'Filter',
     'community.format': 'Format',
-    'community.inPerson': 'In Person',
+    'community.inPerson': 'In person',
     'community.price': 'Price',
     'community.free': 'Free',
     'community.paid': 'Paid',

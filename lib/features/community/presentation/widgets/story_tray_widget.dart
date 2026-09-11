@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -7,9 +8,7 @@ import '../../domain/models/story_model.dart';
 import '../../../../shared/utils/current_user.dart';
 import '../controllers/story_controller.dart';
 import '../screens/story_viewer_screen.dart';
-import 'demo_stories_data.dart';
 import 'story_creation_picker_sheet.dart';
-import '../../../../design_system/widgets/avatar/app_avatar.dart';
 
 class StoryTrayWidget extends StatefulWidget {
   const StoryTrayWidget({super.key});
@@ -18,15 +17,41 @@ class StoryTrayWidget extends StatefulWidget {
   State<StoryTrayWidget> createState() => _StoryTrayWidgetState();
 }
 
-class _StoryTrayWidgetState extends State<StoryTrayWidget> {
+class _StoryTrayWidgetState extends State<StoryTrayWidget>
+    with WidgetsBindingObserver {
   late final StoryController _controller;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _controller = Get.isRegistered<StoryController>()
         ? Get.find<StoryController>()
         : Get.put(StoryController());
+
+    if (_controller.storyGroups.isEmpty && !_controller.isLoading.value) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_controller.isClosed) {
+          _controller.fetchStories();
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (!_controller.isClosed) {
+        _controller.purgeExpiredStories();
+        _controller.fetchStories();
+      }
+    }
   }
 
   @override
@@ -81,7 +106,8 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
       final allGroups = controller.storyGroups;
       final currentUserId = CurrentUser.id;
       final currentUserAvatar = CurrentUser.avatarUrl;
-      final rawOwnerGroup = allGroups.firstWhereOrNull((g) => g.isOwner);
+      final rawOwnerGroup = allGroups.firstWhereOrNull((g) =>
+          g.isOwner || (currentUserId.isNotEmpty && g.userId == currentUserId));
       final ownerGroup = rawOwnerGroup != null
           ? StoryGroupModel(
               userId: rawOwnerGroup.userId,
@@ -90,7 +116,7 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
                   ? currentUserAvatar!
                   : rawOwnerGroup.userAvatar,
               isOwner: true,
-              stories: rawOwnerGroup.stories,
+              stories: rawOwnerGroup.stories.where((s) => !s.isExpired).toList(),
             )
           : StoryGroupModel(
               userId: currentUserId.isNotEmpty ? currentUserId : 'current_user',
@@ -99,7 +125,37 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
               isOwner: true,
               stories: [],
             );
-      final otherGroups = allGroups.where((g) => !g.isOwner).toList();
+
+      final seenUserIds = <String>{};
+      if (ownerGroup.userId.isNotEmpty) {
+        seenUserIds.add(ownerGroup.userId);
+      }
+      if (currentUserId.isNotEmpty) {
+        seenUserIds.add(currentUserId);
+      }
+
+      final otherGroups = <StoryGroupModel>[];
+      for (final g in allGroups) {
+        if (g.isOwner) continue;
+        if (currentUserId.isNotEmpty && g.userId == currentUserId) continue;
+        if (g.userId.isNotEmpty && seenUserIds.contains(g.userId)) continue;
+        final activeStories = g.stories.where((s) => !s.isExpired).toList();
+        if (activeStories.isEmpty) continue;
+
+        if (g.userId.isNotEmpty) {
+          seenUserIds.add(g.userId);
+        }
+
+        otherGroups.add(
+          StoryGroupModel(
+            userId: g.userId,
+            userName: g.userName,
+            userAvatar: g.userAvatar,
+            isOwner: false,
+            stories: activeStories,
+          ),
+        );
+      }
 
       otherGroups.sort((a, b) {
         if (a.hasUnseen && !b.hasUnseen) return -1;
@@ -107,9 +163,9 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
         return 0;
       });
 
-      // Combine owner group, demo groups, and real backend groups
-      final demoGroups = getDemoStoryGroups();
-      final displayGroups = [ownerGroup, ...demoGroups, ...otherGroups];
+      // ONLY real groups: owner followed by real other users with active stories.
+      // NO demo/mock groups.
+      final displayGroups = [ownerGroup, ...otherGroups];
 
       return SizedBox(
         height: 100,
@@ -258,10 +314,10 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                       ),
                       child: Hero(
                         tag: 'story_avatar_${group.userId}',
-                        child: AppAvatar(
-                          imageUrl: group.userAvatar,
-                          name: group.userName,
+                        child: _buildStoryAvatar(
+                          avatarUrl: group.userAvatar,
                           size: 52,
+                          isDark: isDark,
                         ),
                       ),
                     ),
@@ -361,10 +417,10 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                     opacity: group.hasUnseen ? 1.0 : 0.80,
                     child: Hero(
                       tag: 'story_avatar_${group.userId}',
-                      child: AppAvatar(
-                        imageUrl: group.userAvatar,
-                        name: group.userName,
+                      child: _buildStoryAvatar(
+                        avatarUrl: group.userAvatar,
                         size: 52,
+                        isDark: isDark,
                       ),
                     ),
                   ),
@@ -408,4 +464,49 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
       ),
     );
   }
+}
+
+Widget _buildStoryAvatar({
+  required String? avatarUrl,
+  required double size,
+  required bool isDark,
+}) {
+  final cleanUrl = avatarUrl?.trim();
+  final hasUrl = cleanUrl != null &&
+      cleanUrl.isNotEmpty &&
+      cleanUrl != 'null' &&
+      cleanUrl != 'undefined';
+
+  ImageProvider? provider;
+  if (hasUrl) {
+    if (cleanUrl.startsWith('assets/')) {
+      provider = AssetImage(cleanUrl);
+    } else if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+      final uri = Uri.tryParse(cleanUrl);
+      if (uri != null && uri.hasScheme) {
+        provider = NetworkImage(cleanUrl);
+      }
+    } else if (cleanUrl.startsWith('/') || cleanUrl.startsWith('file://')) {
+      try {
+        final filePath = cleanUrl.startsWith('file://')
+            ? Uri.parse(cleanUrl).toFilePath()
+            : cleanUrl;
+        provider = FileImage(File(filePath));
+      } catch (_) {}
+    }
+  }
+
+  provider ??= const AssetImage('assets/images/user_profile.png');
+
+  return CircleAvatar(
+    radius: size / 2,
+    backgroundColor: isDark
+        ? AppColors.darkSurfaceSecondary
+        : AppColors.lightBgSecondary,
+    backgroundImage: provider,
+    onBackgroundImageError: (exception, stackTrace) {
+      debugPrint('[StoryTrayWidget] Avatar image load error: $exception');
+    },
+    child: null,
+  );
 }

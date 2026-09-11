@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:genlink_frontend/features/chat/domain/models/chat_models.dart';
 import 'package:genlink_frontend/features/chat/data/datasources/chat_remote_datasource.dart';
+import 'package:genlink_frontend/features/chat/data/datasources/chat_websocket_client.dart';
 import 'package:genlink_frontend/features/chat/data/repositories/chat_repository_impl.dart';
 import 'package:genlink_frontend/features/chat/presentation/controllers/chat_controller.dart';
 import 'package:genlink_frontend/features/chat/presentation/screens/chat_list_screen.dart';
@@ -248,6 +249,64 @@ void main() {
 
       final result = await dataSource.deleteMessage('room-1', 'msg-1');
       expect(result, isTrue);
+    });
+
+    test('pinMessage and unpinMessage call correct endpoints', () async {
+      when(() => mockDio.post<dynamic>(any())).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-1/pin/msg-1'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
+      when(() => mockDio.delete<dynamic>(any())).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-1/pin'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
+
+      final pinOk = await dataSource.pinMessage('room-1', 'msg-1');
+      final unpinOk = await dataSource.unpinMessage('room-1');
+      expect(pinOk, isTrue);
+      expect(unpinOk, isTrue);
+    });
+
+    test('group operations (rename, add, remove, role, leave) call backend correctly', () async {
+      when(() => mockDio.put<dynamic>(any(), data: any(named: 'data'))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-1'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
+      when(() => mockDio.post<dynamic>(any(), data: any(named: 'data'))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-1/members'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
+      when(() => mockDio.delete<dynamic>(any())).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-1/members/u2'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
+
+      final renameOk = await dataSource.renameGroup('room-1', 'New Group Name');
+      final addOk = await dataSource.addGroupMembers('room-1', ['u2', 'u3']);
+      final removeOk = await dataSource.removeGroupMember('room-1', 'u2');
+      final roleOk = await dataSource.changeMemberRole('room-1', 'u3', 'ADMIN');
+      final leaveOk = await dataSource.leaveGroup('room-1');
+
+      expect(renameOk, isTrue);
+      expect(addOk, isTrue);
+      expect(removeOk, isTrue);
+      expect(roleOk, isTrue);
+      expect(leaveOk, isTrue);
     });
   });
 
@@ -564,6 +623,374 @@ void main() {
       expect(controller.conversations.first.lastMessage, 'Hello Sokny!');
       expect(controller.activeMessages.length, 1);
       expect(controller.activeMessages.first.content, 'Hello Sokny!');
+    });
+
+    test('optimistic message replacement reconciles temp local ID with server message ID without duplicating', () {
+      final conv = ChatConversationModel(
+        id: 'room-opt',
+        name: 'Friend',
+        avatar: 'assets/images/user_profile.png',
+        lastMessage: 'Pending...',
+        lastMessageTime: 'Just now',
+      );
+      controller.activeConversation.value = conv;
+
+      // 1. Optimistic local message is created while waiting for backend
+      final localMsg = ChatMessageModel(
+        id: 'msg_local_123456',
+        conversationId: 'room-opt',
+        senderId: 'current_user',
+        senderName: 'Me',
+        content: 'Hello via optimistic send',
+        timestamp: DateTime.now(),
+        timeAgo: 'Just now',
+        isMine: true,
+      );
+      controller.activeMessages.add(localMsg);
+      expect(controller.activeMessages.length, 1);
+      expect(controller.activeMessages.first.id, 'msg_local_123456');
+
+      // 2. Real server message arrives (e.g. from backend response or WebSocket push)
+      final serverMsg = ChatMessageModel(
+        id: 'msg_server_789',
+        conversationId: 'room-opt',
+        senderId: 'current_user',
+        senderName: 'Me',
+        content: 'Hello via optimistic send',
+        timestamp: DateTime.now(),
+        timeAgo: 'Just now',
+        isMine: true,
+      );
+
+      final added = controller.safeAddOrUpdateActiveMessage(serverMsg);
+      expect(added, isTrue);
+
+      // 3. Verify deduplication: count is still 1, but id is replaced with the server ID
+      expect(controller.activeMessages.length, 1);
+      expect(controller.activeMessages.first.id, 'msg_server_789');
+      expect(controller.activeMessages.first.content, 'Hello via optimistic send');
+    });
+
+    test('rapid double-tap sendMessage is guarded against duplicate sending', () async {
+      final conv = ChatConversationModel(
+        id: 'room-double-tap',
+        name: 'Friend',
+        avatar: 'assets/images/user_profile.png',
+        lastMessage: 'Old',
+        lastMessageTime: '1h ago',
+      );
+      controller.conversations.add(conv);
+      controller.activeConversation.value = conv;
+
+      when(() => mockDio.post<dynamic>(
+        any(),
+        data: any(named: 'data'),
+      )).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-double-tap/messages'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'messageId': 'm-double-1',
+              'sender': {'userId': 'me', 'fullName': 'Me'},
+              'type': 'TEXT',
+              'content': 'Quick double tap!',
+              'mine': true,
+              'createdAt': DateTime.now().toIso8601String(),
+            },
+          },
+        ),
+      );
+
+      // First tap
+      controller.textController.text = 'Quick double tap!';
+      await controller.sendMessage();
+      expect(controller.activeMessages.length, 1);
+
+      // Rapid second tap with same content immediately
+      controller.textController.text = 'Quick double tap!';
+      await controller.sendMessage();
+
+      // Verified: duplicate was suppressed
+      expect(controller.activeMessages.length, 1);
+      expect(controller.activeMessages.first.content, 'Quick double tap!');
+    });
+
+    test('rapid double-tap sendStoryReply is guarded against duplicate sending', () async {
+      // First story reply
+      final firstReply = await controller.sendStoryReply(
+        userName: 'Sokny Enat',
+        userAvatar: 'assets/images/user_profile.png',
+        message: 'Loved this story photo!',
+        storyId: 'story-100',
+        userId: 'user_sokny',
+      );
+      expect(firstReply, isNotNull);
+      expect(controller.activeMessages.length, 1);
+
+      // Immediate second call with identical message
+      final secondReply = await controller.sendStoryReply(
+        userName: 'Sokny Enat',
+        userAvatar: 'assets/images/user_profile.png',
+        message: 'Loved this story photo!',
+        storyId: 'story-100',
+        userId: 'user_sokny',
+      );
+
+      // Verified: second call returns the existing message without duplicating in activeMessages
+      expect(secondReply.id, firstReply.id);
+      expect(controller.activeMessages.length, 1);
+    });
+
+    test('incoming WebSocket message with duplicate ID updates existing message rather than appending duplicate', () {
+      final conv = ChatConversationModel(
+        id: 'room-ws-dup',
+        name: 'Friend',
+        avatar: 'assets/images/user_profile.png',
+        lastMessage: 'Initial',
+        lastMessageTime: 'Just now',
+      );
+      controller.conversations.add(conv);
+      controller.activeConversation.value = conv;
+
+      final initialMsg = ChatMessageModel(
+        id: 'msg-ws-1',
+        conversationId: 'room-ws-dup',
+        senderId: 'user-2',
+        senderName: 'Friend',
+        content: 'Original content',
+        timestamp: DateTime.now(),
+        timeAgo: 'Just now',
+        isMine: false,
+      );
+      controller.onMessageReceived(initialMsg);
+      expect(controller.activeMessages.length, 1);
+      expect(controller.activeMessages.first.content, 'Original content');
+
+      // Duplicate delivery (e.g. STOMP reconnect echo)
+      final duplicateDelivery = ChatMessageModel(
+        id: 'msg-ws-1',
+        conversationId: 'room-ws-dup',
+        senderId: 'user-2',
+        senderName: 'Friend',
+        content: 'Updated content from server',
+        timestamp: DateTime.now(),
+        timeAgo: 'Just now',
+        isMine: false,
+      );
+      controller.onMessageReceived(duplicateDelivery);
+
+      // Verified: updated in place, count remains 1
+      expect(controller.activeMessages.length, 1);
+      expect(controller.activeMessages.first.content, 'Updated content from server');
+    });
+
+    test('deduplicateMessages strips duplicates, merges optimistic messages, and enforces chronological order', () {
+      final now = DateTime.now();
+      final rawList = [
+        ChatMessageModel(
+          id: 'msg-3',
+          conversationId: 'room-c',
+          senderId: 'u1',
+          senderName: 'User 1',
+          content: 'Third message',
+          timestamp: now.add(const Duration(minutes: 2)),
+          timeAgo: '2m',
+          isMine: false,
+        ),
+        ChatMessageModel(
+          id: 'msg_local_1',
+          conversationId: 'room-c',
+          senderId: 'me',
+          senderName: 'Me',
+          content: 'First message',
+          timestamp: now,
+          timeAgo: 'now',
+          isMine: true,
+        ),
+        ChatMessageModel(
+          id: 'msg-server-1',
+          conversationId: 'room-c',
+          senderId: 'me',
+          senderName: 'Me',
+          content: 'First message',
+          timestamp: now.add(const Duration(seconds: 1)),
+          timeAgo: 'now',
+          isMine: true,
+        ),
+        ChatMessageModel(
+          id: 'msg-3', // Exact duplicate
+          conversationId: 'room-c',
+          senderId: 'u1',
+          senderName: 'User 1',
+          content: 'Third message',
+          timestamp: now.add(const Duration(minutes: 2)),
+          timeAgo: '2m',
+          isMine: false,
+        ),
+        ChatMessageModel(
+          id: 'msg-2',
+          conversationId: 'room-c',
+          senderId: 'u2',
+          senderName: 'User 2',
+          content: 'Second message',
+          timestamp: now.add(const Duration(minutes: 1)),
+          timeAgo: '1m',
+          isMine: false,
+        ),
+      ];
+
+      final deduped = controller.deduplicateMessages(rawList);
+
+      // msg_local_1 was merged with msg-server-1, msg-3 exact duplicate was removed
+      expect(deduped.length, 3);
+      expect(deduped[0].id, 'msg-server-1');
+      expect(deduped[0].content, 'First message');
+      expect(deduped[1].id, 'msg-2');
+      expect(deduped[1].content, 'Second message');
+      expect(deduped[2].id, 'msg-3');
+      expect(deduped[2].content, 'Third message');
+    });
+
+    test('ChatWebSocketClient safe instantiation and disconnection', () {
+      final wsClient = ChatWebSocketClient(
+        onMessageReceived: (_) {},
+        onConnectionChanged: (_) {},
+      );
+
+      expect(wsClient.isConnected, isFalse);
+      // Disconnecting when not connected should be safe and not throw
+      expect(() => wsClient.disconnect(), returnsNormally);
+    });
+
+    test('togglePinMessage pins message and unpins message updating state and calling backend', () async {
+      final conv = ChatConversationModel(
+        id: 'room-pin-test',
+        name: 'Friend',
+        avatar: 'assets/images/user_profile.png',
+        lastMessage: 'Let us pin this',
+        lastMessageTime: '1m ago',
+      );
+      final msg = ChatMessageModel(
+        id: 'msg-to-pin',
+        conversationId: 'room-pin-test',
+        senderId: 'me',
+        senderName: 'Me',
+        content: 'Important pin',
+        timestamp: DateTime.now(),
+        timeAgo: 'now',
+        isMine: true,
+      );
+
+      controller.conversations.add(conv);
+      controller.activeConversation.value = conv;
+      controller.activeMessages.add(msg);
+
+      when(() => mockDio.post<dynamic>(any())).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-pin-test/pin/msg-to-pin'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
+      when(() => mockDio.delete<dynamic>(any())).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-pin-test/pin'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
+
+      // Pin message
+      controller.togglePinMessage(msg);
+      expect(controller.pinnedMessage.value?.id, 'msg-to-pin');
+      expect(controller.activeMessages.first.isPinned, isTrue);
+
+      // Unpin message
+      controller.togglePinMessage(msg);
+      expect(controller.pinnedMessage.value, isNull);
+      expect(controller.activeMessages.first.isPinned, isFalse);
+    });
+
+    test('onMessageReceived resolves conversationId from sender when omitted in WS event payload', () {
+      final conv = ChatConversationModel(
+        id: 'room-sokny-1',
+        name: 'Sokny Enat',
+        avatar: 'assets/images/user_profile.png',
+        lastMessage: 'Old',
+        lastMessageTime: '1h ago',
+        unreadCount: 0,
+      );
+      controller.conversations.add(conv);
+      controller.activeConversation.value = conv;
+
+      // STOMP ChatMessageResponse without roomId
+      final wsMsgWithoutRoomId = ChatMessageModel(
+        id: 'msg-ws-no-room',
+        conversationId: '', // Empty, as delivered in ChatMessageResponse
+        senderId: 'user_sokny',
+        senderName: 'Sokny Enat',
+        content: 'Direct message from Sokny',
+        timestamp: DateTime.now(),
+        timeAgo: 'now',
+        isMine: false,
+      );
+
+      when(() => mockDio.post<dynamic>(any())).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-sokny-1/read'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
+
+      controller.onMessageReceived(wsMsgWithoutRoomId);
+
+      // Successfully resolved to room-sokny-1, appended to active messages
+      expect(controller.activeMessages.length, 1);
+      expect(controller.activeMessages.first.content, 'Direct message from Sokny');
+      expect(conv.lastMessage, 'Direct message from Sokny');
+    });
+
+    test('group management methods in ChatController update conversation list and active state', () async {
+      final groupConv = ChatConversationModel(
+        id: 'group-100',
+        name: 'Old Group Name',
+        avatar: 'assets/images/user_profile.png',
+        isGroup: true,
+        lastMessage: 'Welcome',
+        lastMessageTime: '1h ago',
+      );
+      controller.conversations.add(groupConv);
+      controller.activeConversation.value = groupConv;
+
+      when(() => mockDio.put<dynamic>(any(), data: any(named: 'data'))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/group-100'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
+      when(() => mockDio.delete<dynamic>(any())).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/group-100/leave'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
+
+      // Rename group
+      final renamed = await controller.renameGroup('group-100', 'New Group Name');
+      expect(renamed, isTrue);
+      expect(controller.conversations.first.name, 'New Group Name');
+      expect(controller.activeConversation.value?.name, 'New Group Name');
+
+      // Leave group
+      final left = await controller.leaveGroup('group-100');
+      expect(left, isTrue);
+      expect(controller.conversations.isEmpty, isTrue);
+      expect(controller.activeConversation.value, isNull);
     });
   });
 

@@ -65,6 +65,34 @@ class ChatRepositoryImpl {
     return remoteDataSource.muteConversation(conversationId);
   }
 
+  Future<bool> pinMessage(String conversationId, String messageId) {
+    return remoteDataSource.pinMessage(conversationId, messageId);
+  }
+
+  Future<bool> unpinMessage(String conversationId) {
+    return remoteDataSource.unpinMessage(conversationId);
+  }
+
+  Future<bool> renameGroup(String conversationId, String newName) {
+    return remoteDataSource.renameGroup(conversationId, newName);
+  }
+
+  Future<bool> addGroupMembers(String conversationId, List<String> userIds) {
+    return remoteDataSource.addGroupMembers(conversationId, userIds);
+  }
+
+  Future<bool> removeGroupMember(String conversationId, String userId) {
+    return remoteDataSource.removeGroupMember(conversationId, userId);
+  }
+
+  Future<bool> changeMemberRole(String conversationId, String userId, String role) {
+    return remoteDataSource.changeMemberRole(conversationId, userId, role);
+  }
+
+  Future<bool> leaveGroup(String conversationId) {
+    return remoteDataSource.leaveGroup(conversationId);
+  }
+
   Future<int> getUnreadCount() {
     return remoteDataSource.getUnreadCount();
   }

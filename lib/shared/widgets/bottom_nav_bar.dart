@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../design_system/colors/app_colors.dart';
+import '../../design_system/glass/glass_effect.dart';
 import '../../design_system/widgets/avatar/app_avatar.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../main_controller.dart';
@@ -231,7 +233,10 @@ class _NavBarContentState extends State<_NavBarContent>
       vsync: this,
       duration: const Duration(milliseconds: 320),
     );
-    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
+    _anim = CurvedAnimation(
+      parent: _ctrl,
+      curve: const Cubic(0.22, 1.0, 0.36, 1.0),
+    );
     _ctrl.addListener(() {
       setState(() {});
     });
@@ -254,13 +259,16 @@ class _NavBarContentState extends State<_NavBarContent>
   }
 
   double get currentPos {
-    return lerpDouble(_fromPos, _toPos, _anim.value) ?? _toPos;
+    final t = _anim.value.clamp(0.0, 1.0);
+    final val = lerpDouble(_fromPos, _toPos, t) ?? _toPos;
+    return val.clamp(0.0, (_kTabs.length - 1).toDouble());
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final semanticColors = AppSemanticColors.of(context);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -274,10 +282,8 @@ class _NavBarContentState extends State<_NavBarContent>
 
         // Heights
         final barHeight = isVeryNarrow ? 60.0 : (isNarrow ? 64.0 : 68.0);
-        // No protrusion: capsule sits inside the bar with vertical inset
-        const topProtrusion = 0.0;
-        const bottomProtrusion = 0.0;
-        final totalBarHeight = barHeight + topProtrusion + bottomProtrusion;
+        final capsulePaddingH = isVeryNarrow ? 6.0 : (isNarrow ? 7.0 : 8.0);
+        final capsulePaddingV = isVeryNarrow ? 6.0 : (isNarrow ? 6.0 : 7.0);
 
         // Plus button sizing
         final plusSize = isVeryNarrow ? 44.0 : 48.0;
@@ -288,58 +294,49 @@ class _NavBarContentState extends State<_NavBarContent>
         final iconSize = isVeryNarrow ? 20.0 : (isNarrow ? 22.0 : 22.0);
         final fontSize = isVeryNarrow ? 9.5 : (isNarrow ? 10.0 : 10.5);
 
-        // Glass bar styling
+        // Outer glass capsule styling
         final pillBg = isDark
-            ? const Color(0xC0121418) // slightly more opaque for premium feel
-            : const Color(0xD4F5F7FA);
-        final pillBorder = isDark
-            ? const Color(0x30FFFFFF) // slightly more visible border
-            : const Color(0x20000000);
+            ? const Color(0xD9121418) // rich translucent dark glass
+            : const Color(0xEBFFFFFF); // crisp translucent light glass
+        final pillBorder = semanticColors.navigationBorder;
         final pillShadow = [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.10),
+            color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.08),
             blurRadius: 24,
             offset: const Offset(0, 8),
             spreadRadius: -4,
           ),
-          // Subtle top highlight
           BoxShadow(
-            color: (isDark ? Colors.white : Colors.white)
-                .withValues(alpha: isDark ? 0.04 : 0.60),
+            color: Colors.white.withValues(alpha: isDark ? 0.04 : 0.70),
             blurRadius: 1,
             offset: const Offset(0, -1),
           ),
         ];
 
-        // Active capsule — premium frosted glass
+        // Active glass indicator — soft frosted highlight contained inside capsule
         final capsuleBg = isDark
-            ? const Color(0x48FFFFFF) // 28% white → clearly visible glass
-            : Colors.white;
+            ? const Color(0x2EFFFFFF) // 18% translucent white glass
+            : const Color(0xF2FFFFFF); // crisp frosted white glass
         final capsuleBorder = isDark
-            ? const Color(0x55FFFFFF) // crisp highlight on dark glass
-            : const Color(0x22000000);
+            ? const Color(0x38FFFFFF) // subtle soft border highlight
+            : const Color(0x18000000); // 9% black hairline
         final capsuleShadow = [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.12),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-            spreadRadius: -2,
+            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05),
+            blurRadius: isDark ? 5 : 6,
+            offset: const Offset(0, 1),
           ),
-          // Inner top highlight for glass depth
+          // Very subtle inner glow — gentle, not a hard edge
           BoxShadow(
-            color: (isDark ? Colors.white : Colors.white)
-                .withValues(alpha: isDark ? 0.22 : 0.90),
+            color: Colors.white.withValues(alpha: isDark ? 0.10 : 0.40),
             blurRadius: 1,
             offset: const Offset(0, -0.5),
           ),
         ];
 
-        // Text / Icon colors
-        final activeColor = isDark ? Colors.white : const Color(0xFF141517);
-        // Inactive: slightly more visible than before (0x80 → 0x99 dark / 0x66 → 0x88 light)
-        final inactiveColor = isDark
-            ? const Color(0x99FFFFFF) // 60% white
-            : const Color(0x88141517); // 53% dark
+        // High contrast active colors & unified muted inactive colors from Design System
+        final activeColor = semanticColors.navigationActiveIcon;
+        final inactiveColor = semanticColors.navigationInactiveIcon;
 
         return Align(
           alignment: Alignment.bottomCenter,
@@ -353,137 +350,151 @@ class _NavBarContentState extends State<_NavBarContent>
                 bottomMargin,
               ),
               child: SizedBox(
-                height: totalBarHeight,
+                height: barHeight,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // ── Main Glass Pill Bar with 4 tabs ─────────────
                     Expanded(
                       child: SizedBox(
-                        height: totalBarHeight,
-                        child: LayoutBuilder(
-                          builder: (context, barConstraints) {
-                            final barWidth = barConstraints.maxWidth;
-                            final slotWidth = barWidth / _kTabs.length;
-                            // Capsule width = slot minus small H padding
-                            // Capsule height = barHeight minus vertical inset
-                            // → width > height → pill shape not circle
-                            final capsuleWidth = (slotWidth - 8.0)
-                                .clamp(56.0, 88.0);
-                            const verticalInset = 8.0;
-                            final capsuleHeight = barHeight - verticalInset * 2;
-                            const capsuleRadius = Radius.circular(24.0);
+                        height: barHeight,
+                        child: DecoratedBox(
+                          key: const ValueKey('nav_outer_capsule'),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(barHeight / 2),
+                            boxShadow: pillShadow,
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(barHeight / 2),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(
+                                sigmaX: const GlassEffect().blur,
+                                sigmaY: const GlassEffect().blur,
+                              ),
+                              child: Container(
+                                height: barHeight,
+                                decoration: BoxDecoration(
+                                  color: pillBg,
+                                  borderRadius:
+                                      BorderRadius.circular(barHeight / 2),
+                                  border: Border.all(
+                                    color: pillBorder,
+                                    width: 1.0,
+                                  ),
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: capsulePaddingH,
+                                  vertical: capsulePaddingV,
+                                ),
+                                child: LayoutBuilder(
+                                  builder: (context, innerConstraints) {
+                                    final usableWidth =
+                                        innerConstraints.maxWidth;
+                                    final usableHeight =
+                                        innerConstraints.maxHeight;
+                                    final slotWidth =
+                                        usableWidth / _kTabs.length;
 
-                            final pos = currentPos;
-                            final capsuleCenter = (pos + 0.5) * slotWidth;
-                            final capsuleLeft = capsuleCenter - capsuleWidth / 2;
+                                    // Active indicator dimensions — contained with breathing room
+                                    const indicatorVInset = 3.0; // 3px gap top + bottom
+                                    final indicatorHInset =
+                                        isVeryNarrow ? 2.0 : 4.0;
+                                    final indicatorWidth = (slotWidth -
+                                            indicatorHInset * 2)
+                                        .clamp(0.0, slotWidth);
+                                    final indicatorHeight =
+                                        usableHeight - indicatorVInset * 2;
+                                    // radius = height/2 → true pill (stadium) shape
+                                    final indicatorRadius =
+                                        BorderRadius.circular(
+                                            indicatorHeight / 2);
 
-                            return Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                // Layer 1: Fixed Glass Pill Background
-                                Positioned(
-                                  left: 0,
-                                  right: 0,
-                                  top: topProtrusion,
-                                  height: barHeight,
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      borderRadius:
-                                          BorderRadius.circular(barHeight / 2),
-                                      boxShadow: pillShadow,
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius:
-                                          BorderRadius.circular(barHeight / 2),
-                                      child: BackdropFilter(
-                                        filter: ImageFilter.blur(
-                                          sigmaX: 18,
-                                          sigmaY: 18,
-                                        ),
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: pillBg,
-                                            borderRadius:
-                                                BorderRadius.circular(barHeight / 2),
-                                            border: Border.all(
-                                              color: pillBorder,
-                                              width: 1.0,
+                                    final pos = currentPos;
+                                    final indicatorLeft = pos * slotWidth +
+                                        indicatorHInset;
+
+                                    return SizedBox(
+                                      width: usableWidth,
+                                      height: usableHeight,
+                                      child: Stack(
+                                        clipBehavior: Clip.hardEdge,
+                                        children: [
+                                          // ── Layer 1: ONE Shared Sliding Active Glass Capsule ──
+                                          // Fully contained inside the capsule with breathing room
+                                          Positioned(
+                                            left: indicatorLeft,
+                                            top: indicatorVInset,
+                                            width: indicatorWidth,
+                                            height: indicatorHeight,
+
+                                            child: DecoratedBox(
+                                              key: const ValueKey(
+                                                  'nav_active_indicator'),
+                                              decoration: BoxDecoration(
+                                                borderRadius: indicatorRadius,
+                                                boxShadow: capsuleShadow,
+                                              ),
+                                              child: ClipRRect(
+                                                borderRadius: indicatorRadius,
+                                                child: BackdropFilter(
+                                                  filter: ImageFilter.blur(
+                                                    sigmaX: isDark ? 6 : 4,
+                                                    sigmaY: isDark ? 6 : 4,
+                                                  ),
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: capsuleBg,
+                                                      borderRadius:
+                                                          indicatorRadius,
+                                                      border: Border.all(
+                                                        color: capsuleBorder,
+                                                        width: 1.0,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
 
-                                // Layer 2: ONE Shared Sliding Active Glass Capsule
-                                Positioned(
-                                  left: capsuleLeft,
-                                  top: verticalInset,
-                                  width: capsuleWidth,
-                                  height: capsuleHeight,
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      borderRadius:
-                                          const BorderRadius.all(capsuleRadius),
-                                      boxShadow: capsuleShadow,
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius:
-                                          const BorderRadius.all(capsuleRadius),
-                                      child: BackdropFilter(
-                                        filter: ImageFilter.blur(
-                                          sigmaX: 14,
-                                          sigmaY: 14,
-                                        ),
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: capsuleBg,
-                                            borderRadius: const BorderRadius.all(
-                                                capsuleRadius),
-                                            border: Border.all(
-                                              color: capsuleBorder,
-                                              width: 1.0,
+                                          // ── Layer 2: 4 Navigation Slots (Icon + Label) ──
+                                          Positioned.fill(
+                                            child: Row(
+                                              children: List.generate(
+                                                  _kTabs.length, (i) {
+                                                final dist = (pos - i).abs();
+                                                final weight = (1.0 - dist)
+                                                    .clamp(0.0, 1.0);
+                                                return _TabItem(
+                                                  tab: _kTabs[i],
+                                                  isSelected:
+                                                      widget.currentIndex == i,
+                                                  activeWeight: weight,
+                                                  iconSize: iconSize,
+                                                  fontSize: fontSize,
+                                                  activeColor: activeColor,
+                                                  inactiveColor: inactiveColor,
+                                                  onTap: () => widget.onTap(i),
+                                                  onLongPress: i == 3
+                                                      ? () => BottomNavBar
+                                                          ._showProfileMenu(
+                                                              context)
+                                                      : null,
+                                                  avatarUrl: widget.avatarUrl,
+                                                  isProfile: i == 3,
+                                                  isVeryNarrow: isVeryNarrow,
+                                                );
+                                              }),
                                             ),
                                           ),
-                                        ),
+                                        ],
                                       ),
-                                    ),
-                                  ),
+                                    );
+                                  },
                                 ),
-
-                                // Layer 3: 4 Tab Items (Icons + Labels)
-                                // Each _TabItem has its own spring-bounce
-                                // animation that triggers when it becomes active.
-                                Positioned.fill(
-                                  child: Row(
-                                    children: List.generate(_kTabs.length, (i) {
-                                      final dist = (pos - i).abs();
-                                      final weight =
-                                          (1.0 - dist).clamp(0.0, 1.0);
-                                      return _TabItem(
-                                        tab: _kTabs[i],
-                                        isSelected: widget.currentIndex == i,
-                                        activeWeight: weight,
-                                        iconSize: iconSize,
-                                        fontSize: fontSize,
-                                        activeColor: activeColor,
-                                        inactiveColor: inactiveColor,
-                                        onTap: () => widget.onTap(i),
-                                        onLongPress: i == 3
-                                            ? () => BottomNavBar
-                                                ._showProfileMenu(context)
-                                            : null,
-                                        avatarUrl: widget.avatarUrl,
-                                        isProfile: i == 3,
-                                      );
-                                    }),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -508,8 +519,8 @@ class _NavBarContentState extends State<_NavBarContent>
   }
 }
 
-// ─── Individual tab item with spring-bounce on activation ────────────────────
-class _TabItem extends StatefulWidget {
+// ─── Individual tab item (Icon + Label centered as one group) ────────────────
+class _TabItem extends StatelessWidget {
   const _TabItem({
     required this.tab,
     required this.isSelected,
@@ -522,6 +533,7 @@ class _TabItem extends StatefulWidget {
     this.onLongPress,
     this.avatarUrl,
     required this.isProfile,
+    required this.isVeryNarrow,
   });
 
   final _TabDef tab;
@@ -535,86 +547,38 @@ class _TabItem extends StatefulWidget {
   final VoidCallback? onLongPress;
   final String? avatarUrl;
   final bool isProfile;
-
-  @override
-  State<_TabItem> createState() => _TabItemState();
-}
-
-class _TabItemState extends State<_TabItem>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _bounce;
-  late final Animation<double> _bounceAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _bounce = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 440),
-    );
-    // Spring sequence: grow → overshoot → settle
-    _bounceAnim = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.30)
-            .chain(CurveTween(curve: Curves.easeOut)),
-        weight: 28,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.30, end: 0.88)
-            .chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 32,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.88, end: 1.0)
-            .chain(CurveTween(curve: Curves.elasticOut)),
-        weight: 40,
-      ),
-    ]).animate(_bounce);
-  }
-
-  @override
-  void didUpdateWidget(_TabItem old) {
-    super.didUpdateWidget(old);
-    // Fire bounce when this tab becomes the newly selected one
-    if (!old.isSelected && widget.isSelected) {
-      _bounce.forward(from: 0.0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _bounce.dispose();
-    super.dispose();
-  }
+  final bool isVeryNarrow;
 
   @override
   Widget build(BuildContext context) {
     final labelText = BottomNavBar._label(
-      widget.tab.labelKey,
-      widget.tab.labelFallback,
+      tab.labelKey,
+      tab.labelFallback,
     );
     final itemColor = Color.lerp(
-      widget.inactiveColor,
-      widget.activeColor,
-      widget.activeWeight,
+      inactiveColor,
+      activeColor,
+      activeWeight,
     )!;
-    final showActive = widget.isSelected || widget.activeWeight > 0.5;
+    final showActive = isSelected
+        ? activeWeight >= 0.35
+        : activeWeight > 0.65;
 
     final Widget iconWidget =
-        (widget.isProfile && widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty)
+        (isProfile && avatarUrl != null && avatarUrl!.isNotEmpty)
             ? Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: itemColor, width: 1.5),
                 ),
                 child: AppAvatar(
-                  imageUrl: widget.avatarUrl,
-                  size: widget.iconSize,
+                  imageUrl: avatarUrl,
+                  size: iconSize,
                 ),
               )
             : Icon(
-                showActive ? widget.tab.filledIcon : widget.tab.outlineIcon,
-                size: widget.iconSize,
+                showActive ? tab.filledIcon : tab.outlineIcon,
+                size: iconSize,
                 color: itemColor,
                 semanticLabel: labelText,
               );
@@ -623,60 +587,48 @@ class _TabItemState extends State<_TabItem>
       child: Semantics(
         button: true,
         label: labelText,
-        selected: widget.isSelected,
+        selected: isSelected,
         excludeSemantics: true,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () {
             HapticFeedback.selectionClick();
-            widget.onTap();
+            onTap();
           },
-          onLongPress: widget.onLongPress,
+          onLongPress: onLongPress,
           child: Center(
-            child: Transform.translate(
-              offset: Offset(0, -0.5 * widget.activeWeight), // subtle lift only
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Icon with combined weight-scale + spring-bounce
-                  AnimatedBuilder(
-                    animation: _bounceAnim,
-                    builder: (context, child) {
-                      final weightScale = 1.0 + 0.08 * widget.activeWeight;
-                      final springScale =
-                          _bounce.isAnimating ? _bounceAnim.value : 1.0;
-                      return Transform.scale(
-                        scale: weightScale * springScale,
-                        child: child,
-                      );
-                    },
-                    child: iconWidget,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Clean stable icon without random scale jumps
+                iconWidget,
+                const SizedBox(height: 2.0), // compact: icon+label as one group
+                // Label contained comfortably inside active indicator
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isVeryNarrow ? 6.0 : 10.0,
                   ),
-                  const SizedBox(height: 4.0),
-                  // Label
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        labelText,
-                        maxLines: 1,
-                        softWrap: false,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: itemColor,
-                          fontWeight:
-                              showActive ? FontWeight.w700 : FontWeight.w500,
-                          fontSize: widget.fontSize,
-                          letterSpacing: showActive ? 0.1 : -0.1,
-                          height: 1.15,
-                        ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.center,
+                    child: Text(
+                      labelText,
+                      maxLines: 1,
+                      softWrap: false,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: itemColor,
+                        fontWeight:
+                            showActive ? FontWeight.w600 : FontWeight.w500,
+                        fontSize: fontSize,
+                        letterSpacing: showActive ? -0.15 : -0.1,
+                        height: 1.15,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

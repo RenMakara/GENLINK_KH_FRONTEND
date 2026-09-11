@@ -566,11 +566,8 @@ class ForumTopicModel {
   /// Evaluates whether the given user ID matches this discussion's author ID.
   /// Uses stable author ID comparison when available, and respects session ownership.
   bool checkIsOwner(String? currentUserId) {
-    if (isOwner) return true;
-    if (authorId != null && authorId!.isNotEmpty) {
-      if (currentUserId != null && currentUserId.isNotEmpty) {
-        return authorId == currentUserId;
-      }
+    if (authorId != null && authorId!.isNotEmpty && currentUserId != null && currentUserId.isNotEmpty) {
+      return authorId == currentUserId;
     }
     return isOwner;
   }

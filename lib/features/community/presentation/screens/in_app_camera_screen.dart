@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -302,6 +303,20 @@ class _InAppCameraScreenState extends State<InAppCameraScreen>
           debugPrint(
             '[StoryCamera] Video recording stopped, path: ${videoFile.path}',
           );
+
+          // Ensure the recorded .mp4 file is flushed and accessible before navigating
+          final file = File(videoFile.path);
+          int retries = 0;
+          while (retries < 20) {
+            try {
+              if (file.existsSync() && file.lengthSync() > 0) {
+                break;
+              }
+            } catch (_) {}
+            await Future.delayed(const Duration(milliseconds: 50));
+            retries++;
+          }
+
           if (mounted) {
             setState(() {
               _isRecording = false;
@@ -892,12 +907,7 @@ class _InAppCameraScreenState extends State<InAppCameraScreen>
                             ),
                             child: Container(
                               decoration: BoxDecoration(
-                                shape: _isRecording
-                                    ? BoxShape.rectangle
-                                    : BoxShape.circle,
-                                borderRadius: _isRecording
-                                    ? BorderRadius.circular(8)
-                                    : null,
+                                shape: BoxShape.circle,
                                 color: (_isVideoMode || _isRecording)
                                     ? AppColors.danger
                                     : Colors.white,
@@ -915,7 +925,19 @@ class _InAppCameraScreenState extends State<InAppCameraScreen>
                                         ),
                                       ),
                                     )
-                                  : null,
+                                  : _isRecording
+                                      ? Center(
+                                          child: Container(
+                                            width: 24,
+                                            height: 24,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(5),
+                                            ),
+                                          ),
+                                        )
+                                      : null,
                             ),
                           ),
                         ),

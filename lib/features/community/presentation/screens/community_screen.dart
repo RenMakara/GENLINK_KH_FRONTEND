@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
-import '../../../../core/utils/date_formatter.dart';
+import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/shadows/app_shadows.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
-import '../../data/datasources/demo_community_data_provider.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import '../widgets/community_header_widget.dart';
 import '../widgets/post_card_widget.dart';
 import '../widgets/quick_create_post_card.dart';
 import '../widgets/story_tray_widget.dart';
+import '../widgets/community_creation_flow.dart';
+
 import 'create_discussion_screen.dart';
 import 'event_details_screen.dart';
 import 'event_register_screen.dart';
@@ -65,48 +66,56 @@ class CommunityScreen extends GetView<CommunityController> {
               const SizedBox(height: 6),
 
               Obx(
-                () => SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
+                () => Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                   child: Row(
                     children: commController.categories.map((cat) {
                       final isSelected =
                           commController.selectedCategory.value == cat;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: AppSpacing.sm),
-                        child: InkWell(
-                          onTap: () => commController.setCategory(cat),
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 7.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? semantic.tabActiveBg
-                                  : semantic.tabInactiveBg,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.pill),
-                              border: Border.all(
-                                color: isSelected
-                                    ? Colors.transparent
-                                    : borderSubtle,
-                                width: 0.8,
+                      final isLast = cat == commController.categories.last;
+                      return Expanded(
+                        child: Padding(
+                          // gap between tabs, no gap after the last one
+                          padding: EdgeInsets.only(right: isLast ? 0 : 8),
+                          child: InkWell(
+                            onTap: () => commController.setCategory(cat),
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.pill),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8.0,
                               ),
-                            ),
-                            child: Text(
-                              'community.${cat.toLowerCase()}'.tr,
-                              style: TextStyle(
+                              decoration: BoxDecoration(
                                 color: isSelected
-                                    ? semantic.tabActiveText
-                                    : semantic.tabInactiveText,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.w500,
-                                fontSize: 13.0,
+                                    ? semantic.tabActiveBg
+                                    : semantic.tabInactiveBg,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.pill),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Colors.transparent
+                                      : borderSubtle,
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Text(
+                                'community.${cat.toLowerCase()}'.tr,
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? semantic.tabActiveText
+                                      : semantic.tabInactiveText,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  fontSize: 13.5,
+                                  letterSpacing: -0.1,
+                                  height: 1.25,
+                                ),
                               ),
                             ),
                           ),
@@ -117,7 +126,7 @@ class CommunityScreen extends GetView<CommunityController> {
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
               Expanded(
                 child: Obx(() {
@@ -284,76 +293,95 @@ class CommunityScreen extends GetView<CommunityController> {
     Color borderSubtle,
   ) {
     final posts = controller.posts;
-    final List<Widget> items = [];
 
+    // ── Empty state ───────────────────────────────────────────────────────────
+    // When the real backend returns 0 posts, show ONLY a friendly empty state.
+    // No fake events, no fake discussions — a clean slate.
     if (posts.isEmpty) {
-      items.add(
-        _buildSuggestedEventsFeedPreview(
-          context,
-          controller,
-          isDark,
-          textPrimary,
-          textSecondary,
-          textMuted,
-          surfaceSecondary,
-          borderSubtle,
+      return Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: 48,
+          horizontal: AppSpacing.lg,
         ),
-      );
-      items.add(const SizedBox(height: 16));
-      items.add(
-        _buildTrendingDiscussionsFeedPreview(
-          context,
-          controller,
-          isDark,
-          textPrimary,
-          textSecondary,
-          textMuted,
-          surfaceSecondary,
-          borderSubtle,
-        ),
-      );
-      items.add(
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: AppSpacing.md),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.dynamic_feed_outlined,
-                  size: 40,
-                  color: textMuted.withValues(alpha: 0.6),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.dynamic_feed_outlined,
+                size: 52,
+                color: textMuted.withValues(alpha: 0.55),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'community.noPostsYet'.tr,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 17,
+                  letterSpacing: -0.2,
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  'community.noPostsYet'.tr,
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'community.beFirstToShare'.tr.isNotEmpty &&
+                        'community.beFirstToShare'.tr !=
+                            'community.beFirstToShare'
+                    ? 'community.beFirstToShare'.tr
+                    : 'Be the first to share something with your community.',
+                style: TextStyle(
+                  color: textMuted,
+                  fontSize: 13.5,
+                  height: 1.45,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () =>
+                    CommunityCreationFlow.openCreatePost(context),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: Text(
+                  'community.createPost'.tr.isNotEmpty &&
+                          'community.createPost'.tr != 'community.createPost'
+                      ? 'community.createPost'.tr
+                      : 'Create a post',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isDark
+                      ? AppColors.darkPrimary
+                      : AppColors.lightPrimary,
+                  foregroundColor: isDark
+                      ? AppColors.darkTextInverse
+                      : AppColors.lightTextInverse,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
                   ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                  elevation: 0,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'community.beFirstToShare'.tr.isNotEmpty &&
-                          'community.beFirstToShare'.tr != 'community.beFirstToShare'
-                      ? 'community.beFirstToShare'.tr
-                      : 'Be the first to share something with GenLink.',
-                  style: TextStyle(color: textMuted, fontSize: 13),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       );
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: items,
-      );
     }
 
+    // ── Populated unified feed ────────────────────────────────────────────────
+    // Pure timeline of real backend posts. No discovery panels injected here —
+    // event cards and discussion posts appear naturally when the backend
+    // returns them as part of the feed.
+    final List<Widget> items = [];
+
     for (int i = 0; i < posts.length; i++) {
+      if (i > 0) {
+        // Subtle vertical breathing room between consecutive post cards
+        items.add(const SizedBox(height: 8));
+      }
       items.add(
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -364,38 +392,6 @@ class CommunityScreen extends GetView<CommunityController> {
         ),
       );
     }
-
-    items.add(
-      Padding(
-        padding: const EdgeInsets.only(bottom: AppSpacing.md),
-        child: _buildSuggestedEventsFeedPreview(
-          context,
-          controller,
-          isDark,
-          textPrimary,
-          textSecondary,
-          textMuted,
-          surfaceSecondary,
-          borderSubtle,
-        ),
-      ),
-    );
-
-    items.add(
-      Padding(
-        padding: const EdgeInsets.only(bottom: AppSpacing.md),
-        child: _buildTrendingDiscussionsFeedPreview(
-          context,
-          controller,
-          isDark,
-          textPrimary,
-          textSecondary,
-          textMuted,
-          surfaceSecondary,
-          borderSubtle,
-        ),
-      ),
-    );
 
     if (controller.isLoadingMore.value) {
       items.add(
@@ -606,21 +602,25 @@ class CommunityScreen extends GetView<CommunityController> {
                     : 'Latest Discussions',
                 style: theme.textTheme.titleMedium?.copyWith(
                       color: textPrimary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 17,
+                      letterSpacing: -0.2,
                     ) ??
                     TextStyle(
                       color: textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
                     ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               ...latest.map((topic) => ForumThreadCard(
                     title: topic.title,
                     author: topic.authorName,
                     avatarUrl: topic.authorAvatar,
-                    timeAgo: formatCommunityTimestamp(topic.createdAt ?? topic.timeAgo),
+                    timeAgo: topic.timeAgo,
+                    createdAt: topic.createdAt,
+                    content: topic.content,
                     category: topic.category,
                     replies: topic.repliesCount,
                     likes: topic.upvotes,
@@ -705,11 +705,14 @@ class CommunityScreen extends GetView<CommunityController> {
                       fontSize: 15,
                     ),
                   ),
-                  onTap: () {
+                  onTap: () async {
                     Get.back();
-                    Get.to(() => CreateDiscussionScreen(
+                    final updated = await Get.to(() => CreateDiscussionScreen(
                           initialDiscussion: topic,
                         ));
+                    if (updated == true) {
+                      controller.forumLatestDiscussions.refresh();
+                    }
                   },
                 ),
                 ListTile(
@@ -912,12 +915,22 @@ class CommunityScreen extends GetView<CommunityController> {
                     message: 'Failed to delete discussion. Please try again.',
                   );
                 }
-              } catch (_) {
+              } catch (e) {
                 if (context.mounted) {
+                  String errorMsg = 'Failed to delete discussion. Please try again.';
+                  if (e is AppError) {
+                    if (e.isForbidden) {
+                      errorMsg = 'You do not have permission to delete this discussion.';
+                    } else if (e.isNotFound) {
+                      errorMsg = 'Discussion not found.';
+                    } else if (e.message.isNotEmpty) {
+                      errorMsg = e.message;
+                    }
+                  }
                   AppNotificationBanner.showError(
                     context: context,
                     title: 'Error',
-                    message: 'Failed to delete discussion. Please try again.',
+                    message: errorMsg,
                   );
                 }
               }
@@ -977,13 +990,15 @@ class CommunityScreen extends GetView<CommunityController> {
                         : 'Upcoming Events',
                     style: theme.textTheme.titleMedium?.copyWith(
                           color: textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16.5,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 17,
+                          letterSpacing: -0.2,
                         ) ??
                         TextStyle(
                           color: textPrimary,
-                          fontSize: 16.5,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
                         ),
                   ),
                 ),
@@ -1034,13 +1049,15 @@ class CommunityScreen extends GetView<CommunityController> {
                       : 'Upcoming Events',
                   style: theme.textTheme.titleMedium?.copyWith(
                         color: textPrimary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.5,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 17,
+                        letterSpacing: -0.2,
                       ) ??
                       TextStyle(
                         color: textPrimary,
-                        fontSize: 16.5,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
                       ),
                 ),
               ),
@@ -1934,522 +1951,7 @@ class CommunityScreen extends GetView<CommunityController> {
     );
   }
 
-  Widget _buildSuggestedEventsFeedPreview(
-    BuildContext context,
-    CommunityController controller,
-    bool isDark,
-    Color textPrimary,
-    Color textSecondary,
-    Color textMuted,
-    Color surfaceSecondary,
-    Color borderSubtle,
-  ) {
-    final theme = Theme.of(context);
-
-    return Obx(() {
-      final previewEvents = controller.events.isNotEmpty
-          ? controller.events.take(2).toList()
-          : (DemoCommunityDataProvider.isDemoEnabled
-              ? DemoCommunityDataProvider.getDay15SuggestedEvents()
-              : <EventModel>[]);
-      if (previewEvents.isEmpty) {
-        return const SizedBox.shrink();
-      }
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        '✨',
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          height: 1.0,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          'community.suggestedEvents'.tr.isNotEmpty &&
-                                  'community.suggestedEvents'.tr !=
-                                      'community.suggestedEvents'
-                              ? 'community.suggestedEvents'.tr
-                              : 'Suggested Events',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                                color: textPrimary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                letterSpacing: -0.2,
-                              ) ??
-                              TextStyle(
-                                color: textPrimary,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: -0.2,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => controller.setCategory('Event'),
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 4,
-                      ),
-                      child: Text(
-                        'community.seeAll'.tr.isNotEmpty &&
-                                'community.seeAll'.tr != 'community.seeAll'
-                            ? 'community.seeAll'.tr
-                            : 'See all',
-                        style: TextStyle(
-                          color: textSecondary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: previewEvents.asMap().entries.map((entry) {
-                final index = entry.key;
-                final ev = entry.value;
-                final isOnline =
-                    ev.eventType.toLowerCase().contains('online');
-                final onlineLabel = 'community.onlineEvent'.tr.isNotEmpty &&
-                        'community.onlineEvent'.tr != 'community.onlineEvent'
-                    ? 'community.onlineEvent'.tr
-                    : 'Online Event';
-                final inPersonLabel = 'community.inPerson'.tr.isNotEmpty &&
-                        'community.inPerson'.tr != 'community.inPerson'
-                    ? 'community.inPerson'.tr
-                    : 'In Person';
-                final locationDisplay =
-                    isOnline ? '🌐 $onlineLabel' : '📍 ${ev.location.isNotEmpty ? ev.location : inPersonLabel}';
-
-                return TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0.0, end: 1.0),
-                  duration: Duration(milliseconds: 180 + (index * 40)),
-                  curve: Curves.easeOutQuad,
-                  builder: (context, value, child) {
-                    return Opacity(
-                      opacity: value,
-                      child: Transform.translate(
-                        offset: Offset(0, 4 * (1.0 - value)),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    margin: EdgeInsets.only(
-                      bottom: index == previewEvents.length - 1 ? 0 : 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.darkSurfacePrimary
-                          : AppColors.lightSurfacePrimary,
-                      borderRadius:
-                          BorderRadius.circular(AppRadius.squircle),
-                      border: isDark
-                          ? Border.all(
-                              color: AppColors.darkBorderSubtle,
-                              width: 0.8,
-                            )
-                          : Border.all(
-                              color: AppColors.lightBorderSubtle,
-                              width: 0.8,
-                            ),
-                      boxShadow: isDark
-                          ? AppShadows.cardDark
-                          : AppShadows.cardLight,
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius:
-                          BorderRadius.circular(AppRadius.squircle),
-                      child: InkWell(
-                        onTap: () =>
-                            Get.to(() => EventDetailsScreen(event: ev, heroTag: 'suggested-event-card-${ev.id}')),
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.squircle),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 11,
-                          ),
-                          child: Row(
-                            children: [
-                              _buildDateBlock(ev, isDark, textPrimary, textSecondary),
-                              const SizedBox(width: 12),
-
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      ev.title,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: textPrimary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14.5,
-                                        height: 1.25,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      locationDisplay,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: textSecondary,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-
-                              _buildFeedJoinButton(
-                                ev,
-                                controller,
-                                isDark,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      );
-    });
-  }
-
-  Widget _buildTrendingDiscussionsFeedPreview(
-    BuildContext context,
-    CommunityController controller,
-    bool isDark,
-    Color textPrimary,
-    Color textSecondary,
-    Color textMuted,
-    Color surfaceSecondary,
-    Color borderSubtle,
-  ) {
-    final theme = Theme.of(context);
-
-    return Obx(() {
-      final previewDiscussions =
-          controller.forumLatestDiscussions.take(3).toList();
-
-      if (previewDiscussions.isEmpty) {
-        return const SizedBox.shrink();
-      }
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        '🔥',
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          height: 1.0,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          'community.trendingDiscussions'.tr.isNotEmpty &&
-                                  'community.trendingDiscussions'.tr !=
-                                      'community.trendingDiscussions'
-                              ? 'community.trendingDiscussions'.tr
-                              : 'Trending Discussions',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                                color: textPrimary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                letterSpacing: -0.2,
-                              ) ??
-                              TextStyle(
-                                color: textPrimary,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: -0.2,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => controller.setCategory('Forum'),
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                    child: Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                      child: Text(
-                        'community.seeAll'.tr.isNotEmpty &&
-                                'community.seeAll'.tr != 'community.seeAll'
-                            ? 'community.seeAll'.tr
-                            : ('home.seeAll'.tr.isNotEmpty &&
-                                    'home.seeAll'.tr != 'home.seeAll'
-                                ? 'home.seeAll'.tr
-                                : 'See all'),
-                        style: TextStyle(
-                          color: textSecondary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: previewDiscussions.map((topic) {
-                final hasAvatar = topic.authorAvatar.isNotEmpty;
-
-                return Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.darkSurfacePrimary
-                        : AppColors.lightSurfacePrimary,
-                    borderRadius: BorderRadius.circular(AppRadius.squircle),
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.darkBorderSubtle
-                          : AppColors.lightBorderSubtle,
-                      width: 0.8,
-                    ),
-                    boxShadow: isDark
-                        ? AppShadows.cardDark
-                        : AppShadows.cardLight,
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(AppRadius.squircle),
-                    child: InkWell(
-                      onTap: () => Get.to(
-                        () => ForumDiscussionScreen(discussion: topic),
-                      ),
-                      borderRadius: BorderRadius.circular(AppRadius.squircle),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 12,
-                                  backgroundImage: hasAvatar
-                                      ? (topic.authorAvatar.startsWith('assets/')
-                                          ? AssetImage(topic.authorAvatar)
-                                              as ImageProvider
-                                          : NetworkImage(topic.authorAvatar))
-                                      : null,
-                                  backgroundColor: AppColors.communityAccent
-                                      .withValues(alpha: 0.15),
-                                  child: !hasAvatar
-                                      ? Text(
-                                          topic.authorName.isNotEmpty
-                                              ? topic.authorName
-                                                  .substring(0, 1)
-                                                  .toUpperCase()
-                                              : 'U',
-                                          style: const TextStyle(
-                                            color: AppColors.communityAccent,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 10,
-                                          ),
-                                        )
-                                      : null,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    topic.authorName,
-                                    style: TextStyle(
-                                      color: textSecondary,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                Text(
-                                  formatCommunityTimestamp(
-                                      topic.createdAt ?? topic.timeAgo),
-                                  style: TextStyle(
-                                    color: textMuted,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              topic.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: textPrimary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                height: 1.3,
-                              ),
-                            ),
-                            if (topic.content.trim().isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                topic.content.trim(),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: textSecondary,
-                                  fontSize: 12.5,
-                                  height: 1.35,
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Flexible(
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 7,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? AppColors.darkSurfaceSecondary
-                                          : AppColors.lightSurfaceSecondary,
-                                      borderRadius:
-                                          BorderRadius.circular(AppRadius.sm),
-                                    ),
-                                    child: Text(
-                                      topic.category,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: textSecondary,
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Spacer(),
-                                Icon(
-                                  topic.isLiked
-                                      ? Icons.favorite_rounded
-                                      : Icons.favorite_border_rounded,
-                                  size: 13,
-                                  color: topic.isLiked
-                                      ? AppColors.danger
-                                      : textMuted,
-                                ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  '${topic.upvotes}',
-                                  style: TextStyle(
-                                    color: textMuted,
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Icon(
-                                  Icons.chat_bubble_outline_rounded,
-                                  size: 13,
-                                  color: textMuted,
-                                ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  '${topic.repliesCount}',
-                                  style: TextStyle(
-                                    color: textMuted,
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      );
-    });
-  }
-
+  /// Event tab empty state — shown when backend returns 0 events.
   Widget _buildEventEmptyState(
     BuildContext context,
     bool isDark,
@@ -2459,46 +1961,43 @@ class CommunityScreen extends GetView<CommunityController> {
     Color surfaceSecondary,
     Color borderSubtle,
   ) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 56, horizontal: AppSpacing.lg),
+      child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: surfaceSecondary,
-                shape: BoxShape.circle,
-                border: Border.all(color: borderSubtle),
-              ),
-              child: Icon(
-                Icons.calendar_today_outlined,
-                size: 36,
-                color: textMuted,
-              ),
+            Icon(
+              Icons.event_outlined,
+              size: 52,
+              color: textMuted.withValues(alpha: 0.55),
             ),
             const SizedBox(height: 16),
             Text(
               'community.noUpcomingEvents'.tr.isNotEmpty &&
-                      'community.noUpcomingEvents'.tr != 'community.noUpcomingEvents'
+                      'community.noUpcomingEvents'.tr !=
+                          'community.noUpcomingEvents'
                   ? 'community.noUpcomingEvents'.tr
                   : 'No upcoming events',
               style: TextStyle(
                 color: textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
+                fontSize: 17,
+                letterSpacing: -0.2,
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 6),
             Text(
               'community.newEventsAppearHere'.tr.isNotEmpty &&
-                      'community.newEventsAppearHere'.tr != 'community.newEventsAppearHere'
+                      'community.newEventsAppearHere'.tr !=
+                          'community.newEventsAppearHere'
                   ? 'community.newEventsAppearHere'.tr
                   : 'New events will appear here.',
               style: TextStyle(
-                color: textSecondary,
+                color: textMuted,
                 fontSize: 13.5,
+                height: 1.45,
               ),
               textAlign: TextAlign.center,
             ),
@@ -2508,3 +2007,4 @@ class CommunityScreen extends GetView<CommunityController> {
     );
   }
 }
+

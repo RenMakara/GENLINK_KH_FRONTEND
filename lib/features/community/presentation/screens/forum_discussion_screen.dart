@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/errors/app_error.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/community_models.dart';
 import '../../domain/models/community_post_model.dart';
 import '../controllers/community_controller.dart';
@@ -194,6 +196,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                         setState(() {
                           _discussion = refreshed;
                         });
+                      } else {
+                        await _loadDiscussionDetail();
                       }
                     }
                   },
@@ -391,12 +395,22 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                     message: 'Failed to delete discussion. Please try again.',
                   );
                 }
-              } catch (_) {
+              } catch (e) {
                 if (mounted && context.mounted) {
+                  String errorMsg = 'Failed to delete discussion. Please try again.';
+                  if (e is AppError) {
+                    if (e.isForbidden) {
+                      errorMsg = 'You do not have permission to delete this discussion.';
+                    } else if (e.isNotFound) {
+                      errorMsg = 'Discussion not found.';
+                    } else if (e.message.isNotEmpty) {
+                      errorMsg = e.message;
+                    }
+                  }
                   AppNotificationBanner.showError(
                     context: context,
                     title: 'Error',
-                    message: 'Failed to delete discussion. Please try again.',
+                    message: errorMsg,
                   );
                 }
               }
@@ -437,6 +451,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
 
     return Scaffold(
       backgroundColor: bg,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: bg,
         elevation: 0,
@@ -510,25 +525,30 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                             Text(
                               _discussion.authorName,
                               style: theme.textTheme.titleSmall?.copyWith(
-                                color: textPrimary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ) ?? TextStyle(
-                                color: textPrimary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
+                                    color: textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ) ??
+                                  TextStyle(
+                                    color: textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 1),
                             Text(
-                              formatCommunityTimestamp(_discussion.createdAt ?? _discussion.timeAgo),
+                              formatCommunityTimestamp(
+                                  _discussion.createdAt ?? _discussion.timeAgo),
                               style: theme.textTheme.labelSmall?.copyWith(
-                                color: textMuted,
-                                fontSize: 11.5,
-                              ) ?? TextStyle(
-                                color: textMuted,
-                                fontSize: 11.5,
-                              ),
+                                    color: textMuted,
+                                    fontSize: 11.5,
+                                  ) ??
+                                  TextStyle(
+                                    color: textMuted,
+                                    fontSize: 11.5,
+                                  ),
                             ),
                           ],
                         ),
@@ -760,17 +780,20 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
           SafeArea(
             top: false,
             child: Container(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 AppSpacing.md,
                 AppSpacing.sm,
                 AppSpacing.md,
-                AppSpacing.md,
+                MediaQuery.of(context).viewInsets.bottom > 0
+                    ? AppSpacing.sm
+                    : AppSpacing.md,
               ),
               decoration: BoxDecoration(
                 color: surfaceSecondary,
-                border: Border(top: BorderSide(color: borderSubtle)),
+                border: Border(top: BorderSide(color: borderSubtle, width: 0.8)),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
                     child: TextField(
@@ -779,32 +802,46 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                       maxLines: 4,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _handleSendComment(),
-                      style: TextStyle(color: textPrimary, fontSize: 14),
+                      onChanged: (_) => _onTextChanged(),
+                      cursorColor: textPrimary,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 14.5,
+                        height: 1.3,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'community.addReply'.tr.isNotEmpty &&
                                 'community.addReply'.tr != 'community.addReply'
                             ? 'community.addReply'.tr
                             : 'Add a reply...',
-                        hintStyle:
-                            TextStyle(color: textSecondary, fontSize: 14),
+                        hintStyle: TextStyle(
+                          color: textSecondary,
+                          fontSize: 14.5,
+                          height: 1.3,
+                        ),
                         filled: true,
-                        fillColor: bg,
+                        fillColor: isDark
+                            ? AppColors.darkBgPrimary
+                            : AppColors.lightBgSecondary,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 12,
+                          vertical: 11,
                         ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide(color: borderSubtle),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          borderSide: BorderSide(color: borderSubtle, width: 0.8),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide(color: borderSubtle),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          borderSide: BorderSide(color: borderSubtle, width: 0.8),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: const BorderSide(
-                            color: AppColors.communityAccent,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          borderSide: BorderSide(
+                            color: isDark
+                                ? AppColors.darkBorderStrong
+                                : const Color(0xFF334155),
+                            width: 1.2,
                           ),
                         ),
                       ),
@@ -816,24 +853,35 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                         _controller.isSendingDiscussionComment.value;
                     final canSend = _hasText && !isSending;
 
-                    return IconButton(
-                      icon: isSending
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                    return SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 44,
+                          minHeight: 44,
+                        ),
+                        icon: isSending
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: textPrimary,
+                                ),
+                              )
+                            : Icon(
+                                Icons.send_rounded,
+                                color: canSend ? textPrimary : textMuted,
+                                size: 21,
                               ),
-                            )
-                          : Icon(
-                              Icons.send_rounded,
-                              color: canSend
-                                  ? Colors.white
-                                  : Colors.white.withValues(alpha: 0.35),
-                              size: 20,
-                            ),
-                      onPressed: canSend ? _handleSendComment : null,
+                        onPressed: canSend ? _handleSendComment : null,
+                        tooltip: 'community.send'.tr.isNotEmpty &&
+                                'community.send'.tr != 'community.send'
+                            ? 'community.send'.tr
+                            : 'Send',
+                      ),
                     );
                   }),
                 ],
@@ -853,98 +901,455 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     final textSecondary =
         isDark ? Colors.white70 : AppColors.lightTextSecondary;
 
+    bool isDeleting = false;
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: dialogBg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
-        title: Text(
-          'community.deleteComment'.tr.isNotEmpty &&
-                  'community.deleteComment'.tr != 'community.deleteComment'
-              ? '${'community.deleteComment'.tr}?'
-              : 'Delete Comment?',
-          style: TextStyle(
-            color: textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: dialogBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
-        ),
-        content: Text(
-          'community.deleteCommentConfirm'.tr.isNotEmpty &&
-                  'community.deleteCommentConfirm'.tr !=
-                      'community.deleteCommentConfirm'
-              ? 'community.deleteCommentConfirm'.tr
-              : 'Are you sure you want to delete this comment?',
-          style: TextStyle(color: textSecondary, fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'common.cancel'.tr.isNotEmpty &&
-                      'common.cancel'.tr != 'common.cancel'
-                  ? 'common.cancel'.tr
-                  : 'Cancel',
-              style: TextStyle(color: textSecondary),
+          title: Text(
+            'community.deleteComment'.tr.isNotEmpty &&
+                    'community.deleteComment'.tr != 'community.deleteComment'
+                ? '${'community.deleteComment'.tr}?'
+                : 'Delete Comment?',
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
+          content: Text(
+            'community.deleteCommentConfirm'.tr.isNotEmpty &&
+                    'community.deleteCommentConfirm'.tr !=
+                        'community.deleteCommentConfirm'
+                ? 'community.deleteCommentConfirm'.tr
+                : 'Are you sure you want to delete this comment? This action cannot be undone.',
+            style: TextStyle(color: textSecondary, fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isDeleting ? null : () => Navigator.pop(ctx),
+              child: Text(
+                'common.cancel'.tr.isNotEmpty &&
+                        'common.cancel'.tr != 'common.cancel'
+                    ? 'common.cancel'.tr
+                    : 'Cancel',
+                style: TextStyle(
+                  color: isDeleting
+                      ? textSecondary.withValues(alpha: 0.5)
+                      : textSecondary,
+                ),
               ),
             ),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                final success = await _controller.deleteDiscussionComment(
-                  _discussion.id,
-                  comment.id,
-                );
-                if (success && mounted) {
-                  setState(() {
-                    if (_repliesCount > 0) _repliesCount--;
-                  });
-                  AppNotificationBanner.showSuccess(
-                    context: context,
-                    title: 'community.commentDeleted'.tr.isNotEmpty &&
-                            'community.commentDeleted'.tr !=
-                                'community.commentDeleted'
-                        ? 'community.commentDeleted'.tr
-                        : 'Deleted',
-                    message: 'Comment deleted successfully.',
-                  );
-                } else if (mounted) {
-                  AppNotificationBanner.showError(
-                    context: context,
-                    title: 'Error',
-                    message: 'Failed to delete comment. Please try again.',
-                  );
-                }
-              } catch (_) {
-                if (mounted) {
-                  AppNotificationBanner.showError(
-                    context: context,
-                    title: 'Error',
-                    message: 'Failed to delete comment. Please try again.',
-                  );
-                }
-              }
-            },
-            child: Text(
-              'common.delete'.tr.isNotEmpty &&
-                      'common.delete'.tr != 'common.delete'
-                  ? 'common.delete'.tr
-                  : 'Delete',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+              ),
+              onPressed: isDeleting
+                  ? null
+                  : () async {
+                      setDialogState(() {
+                        isDeleting = true;
+                      });
+                      try {
+                        final success =
+                            await _controller.deleteDiscussionComment(
+                          _discussion.id,
+                          comment.id,
+                        );
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                        }
+                        if (success && mounted) {
+                          setState(() {
+                            if (_repliesCount > 0) _repliesCount--;
+                          });
+                          AppNotificationBanner.showSuccess(
+                            context: context,
+                            title: 'community.commentDeleted'.tr.isNotEmpty &&
+                                    'community.commentDeleted'.tr !=
+                                        'community.commentDeleted'
+                                ? 'community.commentDeleted'.tr
+                                : 'Deleted',
+                            message: 'Comment deleted successfully.',
+                          );
+                        } else if (mounted) {
+                          AppNotificationBanner.showError(
+                            context: context,
+                            title: 'Error',
+                            message:
+                                'Failed to delete comment. Please try again.',
+                          );
+                        }
+                      } catch (e) {
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                        }
+                        if (mounted) {
+                          String errorMsg =
+                              'Failed to delete comment. Please try again.';
+                          if (e is AppError && e.isForbidden) {
+                            errorMsg = 'community.commentPermissionError'.tr.isNotEmpty &&
+                                    'community.commentPermissionError'.tr !=
+                                        'community.commentPermissionError'
+                                ? 'community.commentPermissionError'.tr
+                                : 'You do not have permission to modify this comment.';
+                          } else if (e is AppError && e.message.isNotEmpty) {
+                            errorMsg = e.message;
+                          }
+                          AppNotificationBanner.showError(
+                            context: context,
+                            title: 'Error',
+                            message: errorMsg,
+                          );
+                        }
+                      }
+                    },
+              child: isDeleting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      'common.delete'.tr.isNotEmpty &&
+                              'common.delete'.tr != 'common.delete'
+                          ? 'common.delete'.tr
+                          : 'Delete',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditCommentDialog(CommentModel comment) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final dialogBg = isDark ? const Color(0xFF1E2228) : Colors.white;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final borderSubtle =
+        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final primaryBtnBg = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final primaryBtnFg = isDark ? Colors.black : Colors.white;
+
+    final textController = TextEditingController(text: comment.text);
+    bool isSaving = false;
+    String? validationError;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: dialogBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          title: Text(
+            'community.editComment'.tr.isNotEmpty &&
+                    'community.editComment'.tr != 'community.editComment'
+                ? 'community.editComment'.tr
+                : 'Edit Comment',
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
             ),
           ),
-        ],
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: textController,
+                autofocus: true,
+                maxLines: 4,
+                minLines: 2,
+                enabled: !isSaving,
+                style: TextStyle(color: textPrimary, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'community.editCommentHint'.tr.isNotEmpty &&
+                          'community.editCommentHint'.tr !=
+                              'community.editCommentHint'
+                      ? 'community.editCommentHint'.tr
+                      : 'Write a comment...',
+                  hintStyle: TextStyle(
+                      color: textSecondary.withValues(alpha: 0.6)),
+                  filled: true,
+                  fillColor: isDark
+                      ? AppColors.darkSurfaceSecondary
+                      : AppColors.lightBgSecondary,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    borderSide: BorderSide(color: borderSubtle),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    borderSide: BorderSide(color: borderSubtle),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    borderSide: BorderSide(
+                      color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.all(12),
+                ),
+                onChanged: (_) {
+                  if (validationError != null) {
+                    setDialogState(() {
+                      validationError = null;
+                    });
+                  }
+                },
+              ),
+              if (validationError != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  validationError!,
+                  style: const TextStyle(color: AppColors.danger, fontSize: 12),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSaving ? null : () => Navigator.pop(ctx),
+              child: Text(
+                'common.cancel'.tr.isNotEmpty &&
+                        'common.cancel'.tr != 'common.cancel'
+                    ? 'common.cancel'.tr
+                    : 'Cancel',
+                style: TextStyle(
+                  color: isSaving
+                      ? textSecondary.withValues(alpha: 0.5)
+                      : textSecondary,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryBtnBg,
+                foregroundColor: primaryBtnFg,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+              ),
+              onPressed: isSaving
+                  ? null
+                  : () async {
+                      final newText = textController.text.trim();
+                      if (newText.isEmpty) {
+                        setDialogState(() {
+                          validationError = 'common.required'.tr.isNotEmpty &&
+                                  'common.required'.tr != 'common.required'
+                              ? 'common.required'.tr
+                              : 'This field is required';
+                        });
+                        return;
+                      }
+
+                      setDialogState(() {
+                        isSaving = true;
+                        validationError = null;
+                      });
+
+                      try {
+                        final updated =
+                            await _controller.updateDiscussionComment(
+                          _discussion.id,
+                          comment.id,
+                          newText,
+                        );
+
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                        }
+
+                        if (updated != null && mounted) {
+                          setState(() {});
+                          AppNotificationBanner.showSuccess(
+                            context: context,
+                            title: 'community.commentEdited'.tr.isNotEmpty &&
+                                    'community.commentEdited'.tr !=
+                                        'community.commentEdited'
+                                ? 'community.commentEdited'.tr
+                                : 'Comment updated',
+                            message: 'Comment updated successfully.',
+                          );
+                        }
+                      } catch (e) {
+                        setDialogState(() {
+                          isSaving = false;
+                        });
+                        if (mounted) {
+                          String errorMsg =
+                              'Failed to update comment. Please try again.';
+                          if (e is AppError && e.isForbidden) {
+                            errorMsg = 'community.commentPermissionError'.tr.isNotEmpty &&
+                                    'community.commentPermissionError'.tr !=
+                                        'community.commentPermissionError'
+                                ? 'community.commentPermissionError'.tr
+                                : 'You do not have permission to modify this comment.';
+                          } else if (e is AppError && e.message.isNotEmpty) {
+                            errorMsg = e.message;
+                          }
+                          AppNotificationBanner.showError(
+                            context: context,
+                            title: 'Error',
+                            message: errorMsg,
+                          );
+                        }
+                      }
+                    },
+              child: isSaving
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: primaryBtnFg,
+                      ),
+                    )
+                  : Text(
+                      'common.save'.tr.isNotEmpty &&
+                              'common.save'.tr != 'common.save'
+                          ? 'common.save'.tr
+                          : 'Save',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCommentOptions(CommentModel comment, bool isCommentOwner) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final surface = isDark ? const Color(0xFF1E2228) : Colors.white;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? Colors.white70 : AppColors.lightTextSecondary;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(top: 8, bottom: 12),
+                decoration: BoxDecoration(
+                  color: textSecondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              if (isCommentOwner) ...[
+                Material(
+                  color: Colors.transparent,
+                  child: ListTile(
+                    key: const Key('comment_option_edit'),
+                    leading: Icon(Icons.edit_outlined, color: textPrimary),
+                    title: Text(
+                      'common.edit'.tr.isNotEmpty &&
+                              'common.edit'.tr != 'common.edit'
+                          ? 'common.edit'.tr
+                          : 'Edit',
+                      style: TextStyle(
+                          color: textPrimary, fontWeight: FontWeight.w500),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _showEditCommentDialog(comment);
+                    },
+                  ),
+                ),
+                Material(
+                  color: Colors.transparent,
+                  child: ListTile(
+                    key: const Key('comment_option_delete'),
+                    leading: const Icon(Icons.delete_outline_rounded,
+                        color: AppColors.danger),
+                    title: Text(
+                      'common.delete'.tr.isNotEmpty &&
+                              'common.delete'.tr != 'common.delete'
+                          ? 'common.delete'.tr
+                          : 'Delete',
+                      style: const TextStyle(
+                          color: AppColors.danger, fontWeight: FontWeight.w500),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _showDeleteCommentDialog(comment);
+                    },
+                  ),
+                ),
+              ] else ...[
+                Material(
+                  color: Colors.transparent,
+                  child: ListTile(
+                    key: const Key('comment_option_report'),
+                    leading: Icon(Icons.flag_outlined, color: textPrimary),
+                    title: Text(
+                      'community.reportComment'.tr.isNotEmpty &&
+                              'community.reportComment'.tr !=
+                                  'community.reportComment'
+                          ? 'community.reportComment'.tr
+                          : 'Report',
+                      style: TextStyle(
+                          color: textPrimary, fontWeight: FontWeight.w500),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      AppNotificationBanner.showInfo(
+                        context: context,
+                        title: 'community.reportCommentSuccess'.tr.isNotEmpty &&
+                                'community.reportCommentSuccess'.tr !=
+                                    'community.reportCommentSuccess'
+                            ? 'community.reportCommentSuccess'.tr
+                            : 'Reported',
+                        message: 'Thank you for reporting this comment.',
+                        icon: Icons.flag_rounded,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -959,9 +1364,9 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     Color textMuted,
   ) {
     final hasAvatar = comment.userAvatar.isNotEmpty;
-    final isCommentOwner = comment.isOwner ||
-        (comment.userId.isNotEmpty &&
-            comment.userId == _controller.currentUserId);
+    final currentUserId = _controller.currentUserId ??
+        (CurrentUser.id.isNotEmpty ? CurrentUser.id : null);
+    final isCommentOwner = comment.checkIsOwner(currentUserId);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm + 4),
@@ -1024,26 +1429,38 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            formatCommunityTimestamp(comment.createdAt ?? comment.timeAgo),
+                            formatCommunityTimestamp(
+                                comment.createdAt ?? comment.timeAgo),
                             style: TextStyle(
                               color: textMuted,
                               fontSize: 11,
                             ),
                           ),
-                          if (isCommentOwner) ...[
-                            const SizedBox(width: 6),
-                            GestureDetector(
-                              onTap: () => _showDeleteCommentDialog(comment),
-                              child: Padding(
-                                padding: const EdgeInsets.all(2),
-                                child: Icon(
-                                  Icons.delete_outline_rounded,
-                                  size: 15,
-                                  color: AppColors.danger.withValues(alpha: 0.8),
-                                ),
+                          if (comment.isEdited) ...[
+                            Text(
+                              ' · ${'community.edited'.tr.isNotEmpty && 'community.edited'.tr != 'community.edited' ? 'community.edited'.tr : 'Edited'}',
+                              style: TextStyle(
+                                color: textMuted,
+                                fontSize: 11,
+                                fontStyle: FontStyle.italic,
                               ),
                             ),
                           ],
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            key: Key('comment_more_${comment.id}'),
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () =>
+                                _showCommentOptions(comment, isCommentOwner),
+                            child: Padding(
+                              padding: const EdgeInsets.all(2),
+                              child: Icon(
+                                Icons.more_horiz_rounded,
+                                size: 16,
+                                color: textMuted,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ],

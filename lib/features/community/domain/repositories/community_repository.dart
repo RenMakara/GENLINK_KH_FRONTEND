@@ -85,6 +85,12 @@ abstract class CommunityRepository {
     required bool isCurrentlyLiked,
   });
 
+  Future<CommentModel> updateDiscussionComment(
+    String commentId,
+    String content,
+  ) =>
+      throw UnimplementedError();
+
   Future<bool> deleteDiscussionComment(String commentId);
 
   Future<bool> followUser(String userId);
@@ -95,4 +101,6 @@ abstract class CommunityRepository {
     String eventId, {
     EventRegistrationRequest? request,
   });
+
+  Future<EventModel> createEvent(EventCreateRequest request);
 }

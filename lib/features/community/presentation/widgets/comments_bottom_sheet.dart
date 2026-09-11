@@ -217,40 +217,55 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            comment.userName,
-                                            style:
-                                                theme.textTheme.labelMedium
-                                                    ?.copyWith(
+                                    Builder(
+                                      builder: (context) {
+                                        final formattedTime =
+                                            formatCommunityTimestamp(
+                                          comment.createdAt ?? comment.timeAgo,
+                                        );
+                                        return Text.rich(
+                                          TextSpan(
+                                            children: [
+                                              TextSpan(
+                                                text: comment.userName,
+                                                style: theme.textTheme
+                                                        .labelMedium
+                                                        ?.copyWith(
+                                                          color: textPrimary,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 13,
+                                                        ) ??
+                                                    TextStyle(
                                                       color: textPrimary,
-                                                      fontWeight: FontWeight.bold,
-                                                    ) ??
-                                                TextStyle(
-                                                  color: textPrimary,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
-                                                ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        const SizedBox(width: AppSpacing.sm),
-                                        Text(
-                                          formatCommunityTimestamp(comment.createdAt ?? comment.timeAgo),
-                                          style:
-                                              theme.textTheme.labelSmall
-                                                  ?.copyWith(
-                                                    color: textMuted,
-                                                  ) ??
-                                              TextStyle(
-                                                color: textMuted,
-                                                fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 13,
+                                                    ),
                                               ),
-                                        ),
-                                      ],
+                                              if (formattedTime.isNotEmpty)
+                                                TextSpan(
+                                                  text: ' · $formattedTime',
+                                                  style: theme.textTheme
+                                                          .labelSmall
+                                                          ?.copyWith(
+                                                            color: textMuted,
+                                                            fontSize: 11,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .normal,
+                                                          ) ??
+                                                      TextStyle(
+                                                        color: textMuted,
+                                                        fontSize: 11,
+                                                      ),
+                                                ),
+                                            ],
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        );
+                                      },
                                     ),
                                     const SizedBox(height: 4),
                                     Text(

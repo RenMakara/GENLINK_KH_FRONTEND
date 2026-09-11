@@ -33,6 +33,14 @@ class CommunityHeaderWidget extends StatelessWidget
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
 
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+
+    final border = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+
     final titleText = isHomeScreen
         ? ('nav.home'.tr.isNotEmpty && 'nav.home'.tr != 'nav.home'
             ? 'nav.home'.tr
@@ -45,15 +53,18 @@ class CommunityHeaderWidget extends StatelessWidget
     final screenWidth = MediaQuery.of(context).size.width;
     final isNarrow = screenWidth < 360;
     final isVeryNarrow = screenWidth < 335;
-    final buttonSize = isVeryNarrow ? 32.0 : (isNarrow ? 36.0 : 42.0);
-    final buttonGap = isVeryNarrow
-        ? 2.0
-        : (isNarrow ? 4.0 : AppSpacing.sm);
-    final iconSize = isVeryNarrow ? 18.0 : (isNarrow ? 20.0 : 22.0);
+
+    // Matches Finance header typography (24px, w800, -0.5) with responsive scaling for compact viewports
     final titleFontSize = isVeryNarrow
-        ? 18.0
-        : (isNarrow ? 20.0 : 22.0);
-    final horizontalPadding = isVeryNarrow ? 8.0 : (isNarrow ? 10.0 : AppSpacing.md);
+        ? 21.0
+        : (isNarrow ? 22.5 : 24.0);
+    final titleLetterSpacing = isVeryNarrow ? -0.3 : (isNarrow ? -0.4 : -0.5);
+
+    // Subtle tactile container styling matching Finance header action button
+    final buttonSize = isVeryNarrow ? 36.0 : (isNarrow ? 38.0 : 40.0);
+    final buttonGap = isVeryNarrow ? 4.0 : (isNarrow ? 6.0 : AppSpacing.xs);
+    final iconSize = isVeryNarrow ? 19.0 : (isNarrow ? 20.0 : 21.0);
+    const horizontalPadding = AppSpacing.md;
 
     return Container(
       color: bg,
@@ -64,7 +75,7 @@ class CommunityHeaderWidget extends StatelessWidget
             constraints: const BoxConstraints(maxWidth: 760),
             child: Container(
               height: preferredSize.height,
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              padding: const EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: Row(
                 children: [
                   Expanded(
@@ -72,16 +83,24 @@ class CommunityHeaderWidget extends StatelessWidget
                       titleText,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: titleFontSize,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
-                      ),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                            color: textPrimary,
+                            fontSize: titleFontSize,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: titleLetterSpacing,
+                            height: 1.2,
+                          ) ??
+                          TextStyle(
+                            color: textPrimary,
+                            fontSize: titleFontSize,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: titleLetterSpacing,
+                            height: 1.2,
+                          ),
                     ),
                   ),
 
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
 
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -94,6 +113,8 @@ class CommunityHeaderWidget extends StatelessWidget
                           ),
                         ),
                         iconColor: textPrimary,
+                        surfaceColor: surface,
+                        borderColor: border,
                         buttonSize: buttonSize,
                         iconSize: iconSize,
                         tooltip: 'community.search'.tr,
@@ -102,9 +123,11 @@ class CommunityHeaderWidget extends StatelessWidget
                       SizedBox(width: buttonGap),
 
                       _HeaderActionButton(
-                        icon: Icons.forum_outlined,
+                        icon: Icons.chat_bubble_outline_rounded,
                         onTap: () => Get.to(() => const ChatListScreen()),
                         iconColor: textPrimary,
+                        surfaceColor: surface,
+                        borderColor: border,
                         buttonSize: buttonSize,
                         iconSize: iconSize,
                         tooltip: 'community.chat'.tr,
@@ -119,6 +142,8 @@ class CommunityHeaderWidget extends StatelessWidget
                             onTap: () =>
                                 Get.to(() => const NotificationScreen()),
                             iconColor: textPrimary,
+                            surfaceColor: surface,
+                            borderColor: border,
                             buttonSize: buttonSize,
                             iconSize: iconSize,
                             tooltip: 'community.notifications'.tr,
@@ -135,6 +160,8 @@ class CommunityHeaderWidget extends StatelessWidget
                             onTap: () =>
                                 Get.to(() => const NotificationScreen()),
                             iconColor: textPrimary,
+                            surfaceColor: surface,
+                            borderColor: border,
                             buttonSize: buttonSize,
                             iconSize: iconSize,
                             hasBadge: unread > 0,
@@ -158,6 +185,8 @@ class _HeaderActionButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final Color iconColor;
+  final Color surfaceColor;
+  final Color borderColor;
   final double buttonSize;
   final double iconSize;
   final String tooltip;
@@ -167,24 +196,32 @@ class _HeaderActionButton extends StatelessWidget {
     required this.icon,
     required this.onTap,
     required this.iconColor,
-    this.buttonSize = 44.0,
-    this.iconSize = 24.0,
+    required this.surfaceColor,
+    required this.borderColor,
+    this.buttonSize = 40.0,
+    this.iconSize = 21.0,
     required this.tooltip,
     this.hasBadge = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(buttonSize * 0.28);
     return Tooltip(
       message: tooltip,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(buttonSize / 2),
-          child: SizedBox(
+          borderRadius: borderRadius,
+          child: Ink(
             width: buttonSize,
             height: buttonSize,
+            decoration: BoxDecoration(
+              color: surfaceColor,
+              borderRadius: borderRadius,
+              border: Border.all(color: borderColor, width: 0.8),
+            ),
             child: Center(
               child: Stack(
                 alignment: Alignment.center,
@@ -198,9 +235,13 @@ class _HeaderActionButton extends StatelessWidget {
                       child: Container(
                         width: 7,
                         height: 7,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Color(0xFFF97316),
+                          color: const Color(0xFFF97316),
+                          border: Border.all(
+                            color: surfaceColor,
+                            width: 1.2,
+                          ),
                         ),
                       ),
                     ),

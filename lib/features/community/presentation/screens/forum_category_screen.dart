@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/errors/app_error.dart';
-import '../../../../core/utils/date_formatter.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
@@ -234,7 +233,10 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
           child: ForumThreadCard(
             title: topic.title,
             author: topic.authorName,
-            timeAgo: formatCommunityTimestamp(topic.createdAt ?? topic.timeAgo),
+            avatarUrl: topic.authorAvatar,
+            timeAgo: topic.timeAgo,
+            createdAt: topic.createdAt,
+            content: topic.content,
             category: topic.category,
             replies: topic.repliesCount,
             likes: topic.upvotes,

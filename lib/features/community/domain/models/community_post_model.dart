@@ -373,45 +373,74 @@ class CommentModel {
   final String id;
   final String postId;
   final String userId;
+  final String authorId;
   final String userName;
   final String userAvatar;
   final String text;
   final String timeAgo;
   final DateTime? createdAt;
+  final DateTime? updatedAt;
   int likesCount;
   bool isLiked;
   final String? parentCommentId;
   final bool isOwner;
 
+  /// Check whether the given [currentUserId] owns this comment using stable IDs.
+  bool checkIsOwner(String? currentUserId) {
+    if (currentUserId == null || currentUserId.isEmpty) return false;
+    final aid = authorId.isNotEmpty ? authorId : userId;
+    return aid == currentUserId;
+  }
+
+  /// Whether the comment has been edited after creation.
+  bool get isEdited {
+    if (updatedAt == null || createdAt == null) return false;
+    return updatedAt!.difference(createdAt!).inSeconds.abs() > 1;
+  }
+
   CommentModel({
     required this.id,
     required this.postId,
     required this.userId,
+    String? authorId,
     required this.userName,
     required this.userAvatar,
     required this.text,
     required this.timeAgo,
     this.createdAt,
+    this.updatedAt,
     this.likesCount = 0,
     this.isLiked = false,
     this.parentCommentId,
     this.isOwner = false,
-  });
+  }) : authorId = (authorId != null && authorId.isNotEmpty) ? authorId : userId;
 
   factory CommentModel.fromJson(Map<String, dynamic> json) {
     final authorObj = json['author'] as Map<String, dynamic>?;
     final rawDate = json['createdAt'] as String? ?? json['timeAgo'] as String?;
+    final rawUpdatedDate = json['updatedAt'] as String?;
     final parsedUtc = CommunityDateFormatter.parseToUtc(rawDate);
+    final parsedUpdatedUtc = CommunityDateFormatter.parseToUtc(rawUpdatedDate);
     final formattedTime = formatCommunityTimestamp(parsedUtc ?? rawDate ?? 'Just now');
+
+    final extractedAuthorId = authorObj?['id']?.toString() ??
+        authorObj?['userId']?.toString() ??
+        json['authorId']?.toString() ??
+        json['userId']?.toString() ??
+        '';
+
+    final resolvedUserId = json['userId'] as String? ??
+        authorObj?['userId'] as String? ??
+        authorObj?['id'] as String? ??
+        extractedAuthorId;
 
     return CommentModel(
       id: json['commentId'] as String? ?? json['id'] as String? ?? '',
       postId: json['postId'] as String? ??
           json['discussionId'] as String? ??
           '',
-      userId: json['userId'] as String? ??
-          authorObj?['userId'] as String? ??
-          '',
+      userId: resolvedUserId,
+      authorId: extractedAuthorId,
       userName: json['userName'] as String? ??
           authorObj?['fullName'] as String? ??
           authorObj?['username'] as String? ??
@@ -422,6 +451,7 @@ class CommentModel {
       text: json['content'] as String? ?? json['text'] as String? ?? '',
       timeAgo: formattedTime.isNotEmpty ? formattedTime : 'Just now',
       createdAt: parsedUtc?.toLocal(),
+      updatedAt: parsedUpdatedUtc?.toLocal(),
       likesCount: json['likeCount'] as int? ?? json['likesCount'] as int? ?? 0,
       isLiked: json['likedByMe'] as bool? ?? json['isLiked'] as bool? ?? false,
       parentCommentId: json['parentCommentId'] as String?,
@@ -433,11 +463,13 @@ class CommentModel {
     String? id,
     String? postId,
     String? userId,
+    String? authorId,
     String? userName,
     String? userAvatar,
     String? text,
     String? timeAgo,
     DateTime? createdAt,
+    DateTime? updatedAt,
     int? likesCount,
     bool? isLiked,
     String? parentCommentId,
@@ -447,11 +479,13 @@ class CommentModel {
       id: id ?? this.id,
       postId: postId ?? this.postId,
       userId: userId ?? this.userId,
+      authorId: authorId ?? this.authorId,
       userName: userName ?? this.userName,
       userAvatar: userAvatar ?? this.userAvatar,
       text: text ?? this.text,
       timeAgo: timeAgo ?? this.timeAgo,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       likesCount: likesCount ?? this.likesCount,
       isLiked: isLiked ?? this.isLiked,
       parentCommentId: parentCommentId ?? this.parentCommentId,
@@ -464,11 +498,13 @@ class CommentModel {
       'id': id,
       'postId': postId,
       'userId': userId,
+      'authorId': authorId,
       'userName': userName,
       'userAvatar': userAvatar,
       'text': text,
       'timeAgo': timeAgo,
       if (createdAt != null) 'createdAt': createdAt!.toUtc().toIso8601String(),
+      if (updatedAt != null) 'updatedAt': updatedAt!.toUtc().toIso8601String(),
       'likesCount': likesCount,
       'isLiked': isLiked,
       'parentCommentId': parentCommentId,

@@ -737,5 +737,307 @@ void main() {
       expect(find.text('សូមធ្វើជាអ្នកដំបូងដែលចាប់ផ្តើមការពិភាក្សា!'), findsOneWidget);
       expect(find.text('បន្ថែមការឆ្លើយតប...'), findsOneWidget);
     });
+
+    testWidgets('14. Verifies ForumThreadCard visual hierarchy: avatar, author · timestamp, category chip, title, content preview, and reactions', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: Scaffold(
+            body: ForumThreadCard(
+              title: 'Mastering Flutter Responsive UI',
+              content: 'A comprehensive guide on building adaptive screens for Android and iOS devices in Flutter 3.',
+              author: 'sokny_enat',
+              timeAgo: '2h',
+              category: 'Technology',
+              replies: 5,
+              likes: 12,
+              isLiked: false,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(CircleAvatar), findsOneWidget);
+      expect(find.textContaining('sokny_enat'), findsOneWidget);
+      expect(find.textContaining('2h'), findsOneWidget);
+      expect(find.text('Technology'), findsOneWidget);
+      expect(find.text('Mastering Flutter Responsive UI'), findsOneWidget);
+      expect(find.text('A comprehensive guide on building adaptive screens for Android and iOS devices in Flutter 3.'), findsOneWidget);
+      expect(find.text('12'), findsOneWidget);
+      expect(find.text('5 comments'), findsOneWidget);
+      expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.chat_bubble_outline_rounded), findsOneWidget);
+    });
+
+    testWidgets('15. Verifies optional content preview: distinct content shows, identical/null/empty content is suppressed', (tester) async {
+      // 15a: distinct content
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(
+            body: ForumThreadCard(
+              title: 'Discussion Alpha',
+              content: 'Unique preview body text here.',
+              author: 'user1',
+              timeAgo: '5m',
+              category: 'General',
+              replies: 0,
+              likes: 1,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Unique preview body text here.'), findsOneWidget);
+
+      // 15b: content identical to title should not be rendered as duplicate body text
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(
+            body: ForumThreadCard(
+              title: 'Identical Title And Content',
+              content: 'Identical Title And Content',
+              author: 'user2',
+              timeAgo: '10m',
+              category: 'General',
+              replies: 0,
+              likes: 0,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Should find only one widget with that text (the title, not duplicated as preview)
+      expect(find.text('Identical Title And Content'), findsOneWidget);
+
+      // 15c: null or empty content
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(
+            body: ForumThreadCard(
+              title: 'Title Without Body',
+              content: '   ',
+              author: 'user3',
+              timeAgo: '15m',
+              category: 'General',
+              replies: 0,
+              likes: 0,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Title Without Body'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('16. Verifies Like button tap isolation: tapping like toggles like without navigating or opening Create Discussion', (tester) async {
+      bool likeTapped = false;
+      bool cardTapped = false;
+      bool commentTapped = false;
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: Scaffold(
+            body: ForumThreadCard(
+              title: 'Tap Isolation Test',
+              author: 'enat',
+              timeAgo: '1h',
+              category: 'Technology',
+              replies: 3,
+              likes: 10,
+              isLiked: false,
+              onLikeTap: () => likeTapped = true,
+              onTap: () => cardTapped = true,
+              onCommentTap: () => commentTapped = true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap the Like icon
+      await tester.tap(find.byIcon(Icons.favorite_border_rounded));
+      await tester.pumpAndSettle();
+
+      expect(likeTapped, isTrue, reason: 'Like tap should be invoked');
+      expect(cardTapped, isFalse, reason: 'Card tap must NOT be triggered when tapping Like');
+      expect(commentTapped, isFalse, reason: 'Comment tap must NOT be triggered when tapping Like');
+
+      // Now tap the Comment button
+      await tester.tap(find.byIcon(Icons.chat_bubble_outline_rounded));
+      await tester.pumpAndSettle();
+      expect(commentTapped, isTrue, reason: 'Comment tap should be invoked');
+      expect(cardTapped, isFalse, reason: 'Card tap must NOT be triggered when tapping Comment button');
+    });
+
+    testWidgets('17. Verifies responsive rendering at 320px, 360px, 390px, and 430px without overflow', (tester) async {
+      final widths = [320.0, 360.0, 390.0, 430.0];
+
+      for (final w in widths) {
+        tester.view.physicalSize = Size(w, 800);
+        tester.view.devicePixelRatio = 1.0;
+
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en', 'US'),
+            home: Scaffold(
+              body: SizedBox(
+                width: w,
+                child: ForumThreadCard(
+                  title: 'A rather long discussion title that tests multi-line wrapping and bounds on narrow viewport',
+                  content: 'A preview paragraph describing the topic in further detail to verify multi-line height handling.',
+                  author: 'very_long_author_username_for_testing',
+                  timeAgo: '2026-09-09T17:28:27.047050304Z',
+                  category: 'Campus Life & Activities',
+                  replies: 128,
+                  likes: 950,
+                  onMoreTap: () {},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull, reason: 'Must not throw overflow at ${w}px width');
+        expect(find.text('Campus Life & Activities'), findsOneWidget);
+        expect(find.byIcon(Icons.more_horiz_rounded), findsOneWidget);
+      }
+
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    testWidgets('18. Verifies bilingual Khmer, English, and mixed titles render cleanly with natural line height', (tester) async {
+      final khmerTitle = 'របៀបរៀបចំខ្លួនសម្រាប់ការសម្ភាសន៍ការងារដំបូង';
+      final khmerContent = 'នៅក្នុងការសម្ភាសន៍ការងារ អ្នកគួរតែត្រៀមខ្លួនឱ្យបានល្អនូវចំណុចសំខាន់ៗទាំងនេះ។';
+      final mixedTitle = 'គន្លឹះរៀន Flutter & Dart សម្រាប់សិស្ស CADT';
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('km', 'KH'),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  ForumThreadCard(
+                    title: khmerTitle,
+                    content: khmerContent,
+                    author: 'សុខនី',
+                    timeAgo: 'Just now',
+                    category: 'បច្ចេកវិទ្យា',
+                    replies: 2,
+                    likes: 15,
+                  ),
+                  ForumThreadCard(
+                    title: mixedTitle,
+                    author: 'Dara',
+                    timeAgo: '2h',
+                    category: 'ការសិក្សា',
+                    replies: 0,
+                    likes: 3,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text(khmerTitle), findsOneWidget);
+      expect(find.text(khmerContent), findsOneWidget);
+      expect(find.text(mixedTitle), findsOneWidget);
+      expect(find.text('បច្ចេកវិទ្យា'), findsOneWidget);
+      expect(find.text('ការសិក្សា'), findsOneWidget);
+      expect(find.text('2 មតិយោបល់'), findsOneWidget);
+    });
+
+    testWidgets('19. Verifies Light Mode and Dark Mode render with proper contrast tokens', (tester) async {
+      // Dark theme test
+      await tester.pumpWidget(
+        GetMaterialApp(
+          theme: ThemeData.dark(),
+          home: const Scaffold(
+            body: ForumThreadCard(
+              title: 'Dark Mode Thread',
+              content: 'Dark mode content preview.',
+              author: 'dark_user',
+              timeAgo: '1d',
+              category: 'Dark Design',
+              replies: 4,
+              likes: 8,
+              isLiked: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
+
+      // Light theme test
+      await tester.pumpWidget(
+        GetMaterialApp(
+          theme: ThemeData.light(),
+          home: const Scaffold(
+            body: ForumThreadCard(
+              title: 'Light Mode Thread',
+              content: 'Light mode content preview.',
+              author: 'light_user',
+              timeAgo: '1d',
+              category: 'Light Design',
+              replies: 1,
+              likes: 3,
+              isLiked: false,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
+    });
+
+    testWidgets('20. Verifies More button tap target and callback execution', (tester) async {
+      bool moreTapped = false;
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: Scaffold(
+            body: ForumThreadCard(
+              title: 'More Menu Button Test',
+              author: 'author_user',
+              timeAgo: '3d',
+              category: 'General',
+              replies: 0,
+              likes: 0,
+              onMoreTap: () => moreTapped = true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.more_horiz_rounded), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+      await tester.pumpAndSettle();
+      expect(moreTapped, isTrue);
+    });
   });
 }

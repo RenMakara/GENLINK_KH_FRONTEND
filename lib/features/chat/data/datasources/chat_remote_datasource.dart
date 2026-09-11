@@ -113,7 +113,7 @@ class ChatRemoteDataSource {
       if (replyTo != null && msg.replyTo == null) {
         msg = msg.copyWith(replyTo: replyTo);
       }
-      _localMessages.putIfAbsent(conversationId, () => []).add(msg);
+      _cacheMessage(conversationId, msg);
       return msg;
     } catch (_) {
       final fallbackMsg = ChatMessageModel(
@@ -129,8 +129,18 @@ class ChatRemoteDataSource {
         mediaUrl: mediaUrl,
         replyTo: replyTo,
       );
-      _localMessages.putIfAbsent(conversationId, () => []).add(fallbackMsg);
+      _cacheMessage(conversationId, fallbackMsg);
       return fallbackMsg;
+    }
+  }
+
+  void _cacheMessage(String conversationId, ChatMessageModel msg) {
+    final list = _localMessages.putIfAbsent(conversationId, () => []);
+    final existingIdx = list.indexWhere((m) => m.id == msg.id);
+    if (existingIdx != -1) {
+      list[existingIdx] = msg;
+    } else {
+      list.add(msg);
     }
   }
 
@@ -152,6 +162,86 @@ class ChatRemoteDataSource {
       );
     } catch (_) {}
     _localMessages[conversationId]?.removeWhere((m) => m.id == messageId);
+    return true;
+  }
+
+  Future<bool> pinMessage(String conversationId, String messageId) async {
+    try {
+      await guardDio(
+        () => dio.post<dynamic>(
+          '${ApiEndpoints.chats}/$conversationId/pin/$messageId',
+        ),
+      );
+    } catch (_) {}
+    return true;
+  }
+
+  Future<bool> unpinMessage(String conversationId) async {
+    try {
+      await guardDio(
+        () => dio.delete<dynamic>(
+          '${ApiEndpoints.chats}/$conversationId/pin',
+        ),
+      );
+    } catch (_) {}
+    return true;
+  }
+
+  Future<bool> leaveGroup(String conversationId) async {
+    try {
+      await guardDio(
+        () => dio.delete<dynamic>(
+          '${ApiEndpoints.chats}/$conversationId/leave',
+        ),
+      );
+    } catch (_) {}
+    return true;
+  }
+
+  Future<bool> renameGroup(String conversationId, String newName) async {
+    try {
+      await guardDio(
+        () => dio.put<dynamic>(
+          '${ApiEndpoints.chats}/$conversationId',
+          data: {'name': newName},
+        ),
+      );
+    } catch (_) {}
+    return true;
+  }
+
+  Future<bool> addGroupMembers(String conversationId, List<String> userIds) async {
+    try {
+      await guardDio(
+        () => dio.post<dynamic>(
+          '${ApiEndpoints.chats}/$conversationId/members',
+          data: {'userIds': userIds},
+        ),
+      );
+    } catch (_) {}
+    return true;
+  }
+
+  Future<bool> removeGroupMember(String conversationId, String userId) async {
+    try {
+      await guardDio(
+        () => dio.delete<dynamic>(
+          '${ApiEndpoints.chats}/$conversationId/members/$userId',
+        ),
+      );
+    } catch (_) {}
+    return true;
+  }
+
+  Future<bool> changeMemberRole(String conversationId, String userId, String role) async {
+    try {
+      await guardDio(
+        () => dio.put<dynamic>(
+          '${ApiEndpoints.chats}/$conversationId/members/$userId/role',
+          data: {'role': role.toUpperCase()},
+        ),
+      );
+    } catch (_) {}
     return true;
   }
 

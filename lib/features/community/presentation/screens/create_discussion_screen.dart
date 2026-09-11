@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
@@ -394,13 +395,22 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
         );
         Navigator.pop(context, true);
       }
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      AppNotificationBanner.showError(
-        context: context,
-        title: 'Error',
-        message: widget.isEdit
+      String errorMsg;
+      if (e is AppError) {
+        if (e.isForbidden) {
+          errorMsg = 'You do not have permission to edit this discussion.';
+        } else if (e.isNotFound) {
+          errorMsg = 'Discussion not found.';
+        } else if (e.isUnauthorized) {
+          errorMsg = 'Please sign in to continue.';
+        } else {
+          errorMsg = e.message;
+        }
+      } else {
+        errorMsg = widget.isEdit
             ? ('community.couldNotUpdateDiscussion'.tr.isNotEmpty &&
                     'community.couldNotUpdateDiscussion'.tr !=
                         'community.couldNotUpdateDiscussion'
@@ -410,7 +420,12 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                     'community.couldNotPublishDiscussion'.tr !=
                         'community.couldNotPublishDiscussion'
                 ? 'community.couldNotPublishDiscussion'.tr
-                : "Couldn't publish your discussion. Please check your connection and try again."),
+                : "Couldn't publish your discussion. Please check your connection and try again.");
+      }
+      AppNotificationBanner.showError(
+        context: context,
+        title: 'Error',
+        message: errorMsg,
       );
     }
   }

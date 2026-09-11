@@ -682,6 +682,35 @@ class CommunityRemoteDataSource {
     );
   }
 
+  Future<CommentModel> updateDiscussionComment(
+    String commentId,
+    String content,
+  ) async {
+    final response = await guardDio(
+      () => dio.put<dynamic>(
+        ApiEndpoints.communityDiscussionCommentDetail(commentId),
+        data: {
+          'content': content,
+        },
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      if (body is Map<String, dynamic> &&
+          body['data'] is Map<String, dynamic>) {
+        return CommentModel.fromJson(body['data'] as Map<String, dynamic>);
+      } else if (body is Map<String, dynamic>) {
+        return CommentModel.fromJson(body);
+      }
+    }
+
+    throw AppError(
+      message: 'Failed to update comment',
+      errorCode: 'COMMENT_UPDATE_FAILED',
+    );
+  }
+
   Future<bool> deleteDiscussionComment(String commentId) async {
     final response = await guardDio(
       () => dio.delete<dynamic>(
@@ -805,6 +834,33 @@ class CommunityRemoteDataSource {
     throw const AppError(
       message: 'Failed to complete event RSVP.',
       errorCode: 'RSVP_FAILED',
+    );
+  }
+
+  Future<EventModel> createEvent(EventCreateRequest request) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityEvents,
+        data: request.toJson(),
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      dynamic rawData;
+      if (body is Map<String, dynamic>) {
+        rawData = body['data'] ?? body;
+      } else {
+        rawData = body;
+      }
+      if (rawData is Map<String, dynamic>) {
+        return EventModel.fromJson(rawData);
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to create event.',
+      errorCode: 'EVENT_CREATION_FAILED',
     );
   }
 }

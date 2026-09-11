@@ -127,13 +127,43 @@ void main() {
       );
     });
 
-    // 12. Future timestamp -> Just now / safe fallback
+    // 12. Future timestamp -> Just now / safe fallback (server clock drift)
     test('12. Future timestamp -> Just now', () {
-      final futurePost = fixedNow.add(const Duration(minutes: 10));
+      final future10m = fixedNow.add(const Duration(minutes: 10));
       expect(
-        formatCommunityTimestamp(futurePost, now: fixedNow, locale: const Locale('en')),
+        formatCommunityTimestamp(future10m, now: fixedNow, locale: const Locale('en')),
         'Just now',
       );
+
+      final future2h = fixedNow.add(const Duration(hours: 2));
+      expect(
+        formatCommunityTimestamp(future2h, now: fixedNow, locale: const Locale('en')),
+        'Just now',
+      );
+
+      final future1d = fixedNow.add(const Duration(days: 1));
+      expect(
+        formatCommunityTimestamp(future1d, now: fixedNow, locale: const Locale('en')),
+        'Just now',
+      );
+    });
+
+    test('Various backend ISO formats parsing to UTC', () {
+      // With microseconds and Z
+      final microZ = CommunityDateFormatter.parseToUtc('2026-09-09T17:28:27.047050Z');
+      expect(microZ, isNotNull);
+      expect(microZ!.isUtc, isTrue);
+
+      // Without Z (backend UTC assumed)
+      final noZ = CommunityDateFormatter.parseToUtc('2026-09-09T17:28:27');
+      expect(noZ, isNotNull);
+      expect(noZ!.isUtc, isTrue);
+      expect(noZ.hour, 17);
+
+      // Space separator
+      final spaceSep = CommunityDateFormatter.parseToUtc('2026-09-09 17:28:27');
+      expect(spaceSep, isNotNull);
+      expect(spaceSep!.isUtc, isTrue);
     });
 
     // 13. Invalid timestamp -> safe fallback (empty string, never crashes, never exposes raw string)
@@ -324,6 +354,30 @@ void main() {
       expect(find.textContaining('.047050304Z'), findsNothing);
     });
 
+    testWidgets('ForumThreadCard uses createdAt DateTime when provided', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: Scaffold(
+            body: ForumThreadCard(
+              title: 'Dart DateTime Test',
+              author: 'sokny',
+              timeAgo: 'Just now',
+              createdAt: DateTime.now().subtract(const Duration(hours: 3)),
+              category: 'Tech',
+              replies: 2,
+              likes: 8,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('sokny'), findsOneWidget);
+      expect(find.textContaining('· 3h'), findsOneWidget);
+    });
+
     testWidgets('ForumThreadCard does not overflow on small 320px mobile screens', (tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1.0;
@@ -352,6 +406,100 @@ void main() {
       await tester.pumpAndSettle();
 
       // Ensure no flutter overflow errors occurred
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Comment row username · timestamp does not overflow on 320px width', (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 320,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            const TextSpan(
+                              text: 'super_long_contributor_username_from_cambodia',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            TextSpan(
+                              text: ' · ${formatCommunityTimestamp("2026-09-09T17:28:27.047050304Z", now: DateTime.parse("2026-09-09T19:28:27.047050304Z"))}',
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('· 2h'), findsOneWidget);
+    });
+
+    testWidgets('Renders properly in Light and Dark mode', (tester) async {
+      // Test Dark Mode
+      await tester.pumpWidget(
+        GetMaterialApp(
+          theme: ThemeData.dark(),
+          home: const Scaffold(
+            body: ForumThreadCard(
+              title: 'Dark Theme Test',
+              author: 'chanrith',
+              timeAgo: '5m',
+              category: 'Dark Mode',
+              replies: 1,
+              likes: 4,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('chanrith'), findsOneWidget);
+      expect(find.textContaining('· 5m'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      // Test Light Mode
+      await tester.pumpWidget(
+        GetMaterialApp(
+          theme: ThemeData.light(),
+          home: const Scaffold(
+            body: ForumThreadCard(
+              title: 'Light Theme Test',
+              author: 'chanrith',
+              timeAgo: '5m',
+              category: 'Light Mode',
+              replies: 1,
+              likes: 4,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('chanrith'), findsOneWidget);
+      expect(find.textContaining('· 5m'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

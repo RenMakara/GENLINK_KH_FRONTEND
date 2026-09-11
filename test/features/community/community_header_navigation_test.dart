@@ -7,6 +7,9 @@ import 'package:genlink_frontend/features/community/presentation/screens/communi
 import 'package:genlink_frontend/features/community/presentation/widgets/community_header_widget.dart';
 import 'package:genlink_frontend/features/community/domain/repositories/community_repository.dart';
 import 'package:genlink_frontend/features/community/domain/models/community_post_model.dart';
+import 'package:genlink_frontend/features/community/domain/models/community_models.dart';
+import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/spacing/app_spacing.dart';
 
 class MockCommunityRepository implements CommunityRepository {
   @override
@@ -116,7 +119,27 @@ class MockCommunityRepository implements CommunityRepository {
   Future<bool> unfollowUser(String userId) async => true;
 
   @override
-  Future<bool> checkIsFollowing(String userId) async => false;
+  Future<List<ForumTopicModel>> getDiscussions({String? category, int page = 1, int limit = 20}) async => [
+    ForumTopicModel(
+      id: 'disc_1',
+      title: 'Best practices for GetX state management in Flutter Community App',
+      content: 'Discussion content preview text for testing',
+      category: 'Technology',
+      authorName: 'Sokny Enat',
+      authorAvatar: '',
+      timeAgo: '2h ago',
+      createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+      upvotes: 89,
+      repliesCount: 34,
+      isLiked: false,
+    ),
+  ];
+
+  @override
+  Future<bool> toggleDiscussionLike(
+    String discussionId, {
+    bool isCurrentlyLiked = false,
+  }) async => true;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -172,6 +195,135 @@ void main() {
       expect(find.byTooltip('Chat'), findsOneWidget);
       expect(find.byTooltip('Notifications'), findsOneWidget);
     });
+
+    testWidgets('header title typography strictly matches Finance design system (24px, w800, -0.5)', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      // Community mode title
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(
+            appBar: PreferredSize(
+              preferredSize: Size.fromHeight(64.0),
+              child: CommunityHeaderWidget(activeCategory: 'Feed', isHomeScreen: false),
+            ),
+          ),
+        ),
+      );
+
+      final titleFinder = find.text('Community');
+      expect(titleFinder, findsOneWidget);
+      final Text titleText = tester.widget(titleFinder);
+      expect(titleText.style?.fontWeight, equals(FontWeight.w800));
+      expect(titleText.style?.fontSize, equals(24.0));
+      expect(titleText.style?.letterSpacing, equals(-0.5));
+
+      // Home mode title
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(
+            appBar: PreferredSize(
+              preferredSize: Size.fromHeight(64.0),
+              child: CommunityHeaderWidget(activeCategory: 'Feed', isHomeScreen: true),
+            ),
+          ),
+        ),
+      );
+
+      final homeFinder = find.text('Home');
+      expect(homeFinder, findsOneWidget);
+      final Text homeText = tester.widget(homeFinder);
+      expect(homeText.style?.fontWeight, equals(FontWeight.w800));
+      expect(homeText.style?.fontSize, equals(24.0));
+      expect(homeText.style?.letterSpacing, equals(-0.5));
+    });
+
+    testWidgets('header responsive typography scales appropriately on compact 320px viewport', (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(
+            appBar: PreferredSize(
+              preferredSize: Size.fromHeight(64.0),
+              child: CommunityHeaderWidget(activeCategory: 'Feed'),
+            ),
+          ),
+        ),
+      );
+
+      final titleFinder = find.text('Community');
+      expect(titleFinder, findsOneWidget);
+      final Text titleText = tester.widget(titleFinder);
+      expect(titleText.style?.fontWeight, equals(FontWeight.w800));
+      expect(titleText.style?.fontSize, equals(21.0));
+      expect(titleText.style?.letterSpacing, equals(-0.3));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('header horizontal padding strictly matches AppSpacing.md (16.0px) for edge alignment', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(
+            appBar: PreferredSize(
+              preferredSize: Size.fromHeight(64.0),
+              child: CommunityHeaderWidget(activeCategory: 'Feed'),
+            ),
+          ),
+        ),
+      );
+
+      final containers = tester.widgetList<Container>(find.byType(Container));
+      final headerContainer = containers.firstWhere(
+        (c) => c.padding == const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      );
+      expect(headerContainer.padding, equals(const EdgeInsets.symmetric(horizontal: 16.0)));
+    });
+
+    testWidgets('header action buttons match Finance tactile styling with surface & subtle border', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          theme: ThemeData.light(),
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(
+            appBar: PreferredSize(
+              preferredSize: Size.fromHeight(64.0),
+              child: CommunityHeaderWidget(activeCategory: 'Feed'),
+            ),
+          ),
+        ),
+      );
+
+      final inkWidgets = tester.widgetList<Ink>(find.byType(Ink));
+      expect(inkWidgets.isNotEmpty, isTrue);
+      for (final ink in inkWidgets) {
+        expect(ink.width, equals(40.0));
+        expect(ink.height, equals(40.0));
+        final dec = ink.decoration as BoxDecoration?;
+        expect(dec, isNotNull);
+        expect(dec?.color, equals(AppColors.lightSurfacePrimary));
+        expect(dec?.border, isNotNull);
+      }
+    });
   });
 
   group('CommunityScreen Tab Navigation Tests', () {
@@ -224,6 +376,60 @@ void main() {
       expect(controller.selectedCategory.value, equals('Feed'));
     });
 
+    testWidgets('tab typography and active/inactive styling match design system', (tester) async {
+      final controller = CommunityController(repository: MockCommunityRepository());
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pump();
+
+      // Feed is initially active
+      final feedFinder = find.text('Feed');
+      final Text feedText = tester.widget(feedFinder);
+      expect(feedText.style?.fontSize, equals(13.5));
+      expect(feedText.style?.fontWeight, equals(FontWeight.w700));
+      expect(feedText.style?.letterSpacing, equals(-0.1));
+
+      // Forum is inactive
+      final forumFinder = find.text('Forum');
+      final Text forumText = tester.widget(forumFinder);
+      expect(forumText.style?.fontSize, equals(13.5));
+      expect(forumText.style?.fontWeight, equals(FontWeight.w500));
+      expect(forumText.style?.letterSpacing, equals(-0.1));
+    });
+
+    testWidgets('section heading Latest Discussions matches Finance typography (17px, w700, -0.2 spacing)', (tester) async {
+      final controller = CommunityController(repository: MockCommunityRepository());
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pump();
+
+      // Switch to Forum tab
+      await tester.tap(find.text('Forum'));
+      await tester.pumpAndSettle();
+
+      final headingFinder = find.text('Latest Discussions');
+      expect(headingFinder, findsOneWidget);
+
+      final Text headingText = tester.widget(headingFinder);
+      expect(headingText.style?.fontSize, equals(17.0));
+      expect(headingText.style?.fontWeight, equals(FontWeight.w700));
+      expect(headingText.style?.letterSpacing, equals(-0.2));
+    });
+
     testWidgets('renders cleanly on narrow screen widths without layout overflow', (tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1.0;
@@ -237,6 +443,89 @@ void main() {
 
       await tester.pumpWidget(
         GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Feed'), findsOneWidget);
+      expect(find.text('Forum'), findsOneWidget);
+      expect(find.text('Event'), findsOneWidget);
+    });
+
+    testWidgets('responsive verification across 320px, 360px, 390px, 430px produces no overflow', (tester) async {
+      final screenSizes = [
+        const Size(320, 640),
+        const Size(360, 740),
+        const Size(390, 844),
+        const Size(430, 932),
+      ];
+
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final controller = CommunityController(repository: MockCommunityRepository());
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (final size in screenSizes) {
+        tester.view.physicalSize = size;
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull, reason: 'Failed at size $size');
+        expect(find.text('Feed'), findsOneWidget);
+        expect(find.text('Forum'), findsOneWidget);
+        expect(find.text('Event'), findsOneWidget);
+      }
+    });
+
+    testWidgets('Khmer localization renders tabs and header cleanly without overflow', (tester) async {
+      tester.view.physicalSize = const Size(360, 740);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final controller = CommunityController(repository: MockCommunityRepository());
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('km', 'KH'),
+          home: const CommunityScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('ព័ត៌មាន'), findsOneWidget);
+      expect(find.text('វេទិកា'), findsOneWidget);
+      expect(find.text('ព្រឹត្តិការណ៍'), findsOneWidget);
+    });
+
+    testWidgets('renders cleanly in dark mode with dark theme tokens', (tester) async {
+      final controller = CommunityController(repository: MockCommunityRepository());
+      Get.put<CommunityController>(controller);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          theme: ThemeData.dark(),
           translations: AppTranslations(),
           locale: const Locale('en', 'US'),
           home: const CommunityScreen(),

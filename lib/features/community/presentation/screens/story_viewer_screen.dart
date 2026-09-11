@@ -3047,7 +3047,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
     switch (layer.type) {
       case LayerType.text:
-        final hasBackground = layer.bgStyle != TextBgStyle.none;
+        final isOutline = layer.effect == TextEffectType.outline ||
+            layer.bgStyle == TextBgStyle.outline;
+        final hasBackground = layer.bgStyle == TextBgStyle.filled ||
+            layer.bgStyle == TextBgStyle.rounded;
         final baseStyle = _getViewerLayerTextStyle(
           layer.fontStyle,
           layer.color,
@@ -3069,11 +3072,28 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             ? Colors.black
             : layer.color;
 
+        final List<Shadow>? fallbackShadows =
+            (!hasBackground && !isOutline && layer.effect == TextEffectType.none)
+                ? const [
+                    Shadow(
+                      color: Colors.black54,
+                      offset: Offset(0, 1),
+                      blurRadius: 4,
+                    ),
+                    Shadow(
+                      color: Colors.black38,
+                      offset: Offset(0, 2),
+                      blurRadius: 8,
+                    ),
+                  ]
+                : baseStyle.shadows;
+
         Widget textWidget;
 
-        if (layer.effect == TextEffectType.outline) {
+        if (isOutline) {
           final strokeColor = textLuminance > 0.5 ? Colors.black : Colors.white;
           textWidget = Stack(
+            alignment: Alignment.center,
             children: [
               Text(
                 layer.text,
@@ -3103,7 +3123,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             layer.text,
             softWrap: true,
             textAlign: layer.alignment,
-            style: baseStyle.copyWith(color: textDisplayColor),
+            style: baseStyle.copyWith(
+              color: textDisplayColor,
+              shadows: fallbackShadows,
+            ),
           );
         }
 
@@ -3127,15 +3150,24 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                                               alpha: 0.80,
                                             )))
                                 : Colors.transparent),
-                      borderRadius: BorderRadius.circular(10),
-                      border: layer.bgStyle == TextBgStyle.outline
-                          ? Border.all(
-                              color:
-                                  layer.bgColor ??
-                                  layer.color.withValues(alpha: 0.85),
-                              width: 1.8,
-                            )
-                          : null,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: layer.bgStyle == TextBgStyle.filled
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : (layer.bgStyle == TextBgStyle.rounded
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null),
                     ),
                     child: textWidget,
                   )

@@ -163,5 +163,27 @@ void main() {
       expect(galleryController.requiredPhotosCount.value, equals(3));
       expect(galleryController.isMultiSelectMode.value, isTrue);
     });
+
+    testWidgets('Test 6: StoryCreatorScreen displays error and retry button when video fails to load', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          home: const StoryCreatorScreen(
+            type: StoryType.video,
+            mediaPaths: ['assets/videos/corrupted_video.mp4'],
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.byType(StoryCreatorScreen), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('Choose Video'), findsOneWidget);
+      expect(find.byIcon(Icons.videocam_off_rounded), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 500));
+    });
   });
 }

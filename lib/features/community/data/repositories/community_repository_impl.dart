@@ -204,6 +204,14 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<CommentModel> updateDiscussionComment(
+    String commentId,
+    String content,
+  ) {
+    return remoteDataSource.updateDiscussionComment(commentId, content);
+  }
+
+  @override
   Future<bool> deleteDiscussionComment(String commentId) {
     return remoteDataSource.deleteDiscussionComment(commentId);
   }
@@ -229,5 +237,10 @@ class CommunityRepositoryImpl implements CommunityRepository {
     EventRegistrationRequest? request,
   }) {
     return remoteDataSource.rsvpEvent(eventId, request: request);
+  }
+
+  @override
+  Future<EventModel> createEvent(EventCreateRequest request) {
+    return remoteDataSource.createEvent(request);
   }
 }

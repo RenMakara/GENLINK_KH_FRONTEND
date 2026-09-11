@@ -224,8 +224,72 @@ class CommunityController extends GetxController {
     ),
   ].obs;
 
-  void createEvent(EventModel event) {
+  final isCreatingEvent = false.obs;
+
+  Future<EventModel> createEvent(
+    EventCreateRequest request, {
+    File? coverImageFile,
+  }) async {
+    isCreatingEvent.value = true;
+    try {
+      String? uploadedCoverUrl = request.coverImageUrl;
+
+      if (coverImageFile != null && (uploadedCoverUrl == null || uploadedCoverUrl.isEmpty)) {
+        if (Get.isRegistered<MediaUploadService>()) {
+          final uploadService = Get.find<MediaUploadService>();
+          final bytes = await coverImageFile.readAsBytes();
+          final filename = coverImageFile.path.toLowerCase();
+          final contentType = filename.endsWith('.png')
+              ? 'image/png'
+              : filename.endsWith('.webp')
+                  ? 'image/webp'
+                  : 'image/jpeg';
+          final media = await uploadService.upload(
+            bytes: bytes,
+            contentType: contentType,
+            purpose: MediaPurpose.eventCover,
+          );
+          uploadedCoverUrl = media.url;
+        }
+      }
+
+      final finalRequest = EventCreateRequest(
+        title: request.title,
+        description: request.description,
+        category: request.category,
+        coverImageUrl: uploadedCoverUrl,
+        startDateTime: request.startDateTime,
+        endDateTime: request.endDateTime,
+        mode: request.mode,
+        meetingUrl: request.meetingUrl,
+        locationName: request.locationName,
+        latitude: request.latitude,
+        longitude: request.longitude,
+        attendeeLimit: request.attendeeLimit,
+        status: request.status,
+        language: request.language,
+        paid: request.paid,
+        price: request.price,
+        currency: request.currency,
+      );
+
+      final createdEvent = await repository.createEvent(finalRequest);
+
+      final eventToStore = (coverImageFile != null && createdEvent.coverImageFile == null)
+          ? createdEvent.copyWith(coverImageFile: coverImageFile)
+          : createdEvent;
+
+      events.insert(0, eventToStore);
+      events.refresh();
+      return eventToStore;
+    } finally {
+      isCreatingEvent.value = false;
+    }
+  }
+
+  void addEventLocally(EventModel event) {
     events.insert(0, event);
+    events.refresh();
   }
 
   void toggleRsvp(String eventId) {
@@ -470,6 +534,16 @@ class CommunityController extends GetxController {
       forumLatestDiscussions.insert(0, createdTopic);
       forumLatestDiscussions.refresh();
 
+      final existingIdx = posts.indexWhere((p) => p.id == createdTopic.id);
+      if (existingIdx != -1) {
+        posts[existingIdx] = posts[existingIdx].copyWith(
+          content: content,
+          discussionTitle: title,
+          category: category,
+        );
+        posts.refresh();
+      }
+
       return createdTopic;
     } finally {
       isPublishingDiscussion.value = false;
@@ -496,6 +570,17 @@ class CommunityController extends GetxController {
         forumLatestDiscussions[forumIdx] = updatedTopic;
         forumLatestDiscussions.refresh();
       }
+
+      final feedIdx = posts.indexWhere((p) => p.id == discussionId);
+      if (feedIdx != -1) {
+        posts[feedIdx] = posts[feedIdx].copyWith(
+          content: content,
+          discussionTitle: title,
+          category: category,
+        );
+        posts.refresh();
+      }
+
       return true;
     } catch (e) {
       rethrow;
@@ -508,6 +593,8 @@ class CommunityController extends GetxController {
       if (success) {
         forumLatestDiscussions.removeWhere((d) => d.id == discussionId);
         forumLatestDiscussions.refresh();
+        posts.removeWhere((p) => p.id == discussionId);
+        posts.refresh();
       }
       return success;
     } catch (e) {
@@ -1128,6 +1215,29 @@ class CommunityController extends GetxController {
       return false;
     } finally {
       inFlightCommentLikes.remove(commentId);
+    }
+  }
+
+  Future<CommentModel?> updateDiscussionComment(
+    String discussionId,
+    String commentId,
+    String content,
+  ) async {
+    try {
+      final updatedComment =
+          await repository.updateDiscussionComment(commentId, content);
+      final current = List<CommentModel>.from(
+        discussionComments[discussionId] ?? [],
+      );
+      final idx = current.indexWhere((c) => c.id == commentId);
+      if (idx != -1) {
+        current[idx] = updatedComment;
+        discussionComments[discussionId] = current;
+        discussionComments.refresh();
+      }
+      return updatedComment;
+    } catch (e) {
+      rethrow;
     }
   }
 

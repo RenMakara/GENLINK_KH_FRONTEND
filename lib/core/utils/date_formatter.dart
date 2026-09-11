@@ -54,24 +54,27 @@ abstract final class CommunityDateFormatter {
     final trimmed = input.trim();
     if (trimmed.isEmpty) return null;
 
-    // 1. Try standard ISO-8601 parsing
-    DateTime? parsed = DateTime.tryParse(trimmed);
-
-    // 2. Handle fractional seconds with > 6 digits (e.g. Java Instant nanoseconds)
-    if (parsed == null) {
-      final nanoRegex = RegExp(r'(\.\d{1,6})\d+');
-      if (nanoRegex.hasMatch(trimmed)) {
-        final truncated = trimmed.replaceFirstMapped(nanoRegex, (m) => m.group(1)!);
-        parsed = DateTime.tryParse(truncated);
-      }
+    // 1. Normalize fractional seconds (> 6 digits truncated to 6 digits for Dart ISO parser)
+    String normalized = trimmed;
+    final nanoRegex = RegExp(r'(\.\d{1,6})\d+');
+    if (nanoRegex.hasMatch(normalized)) {
+      normalized = normalized.replaceFirstMapped(nanoRegex, (m) => m.group(1)!);
     }
 
-    // 3. If missing timezone offset or 'Z', treat backend ISO string as UTC
+    // 2. Normalize space separator to ISO 'T'
+    if (RegExp(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}').hasMatch(normalized)) {
+      normalized = normalized.replaceFirst(' ', 'T');
+    }
+
+    // 3. Standard ISO parsing attempt
+    DateTime? parsed = DateTime.tryParse(normalized);
+
+    // 4. If missing timezone offset or 'Z', treat backend ISO string as UTC
     if (parsed == null) {
-      if (RegExp(r'^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}').hasMatch(trimmed) &&
-          !trimmed.endsWith('Z') &&
-          !RegExp(r'[+-]\d{2}(?::?\d{2})?$').hasMatch(trimmed)) {
-        parsed = DateTime.tryParse('${trimmed}Z');
+      if (RegExp(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}').hasMatch(normalized) &&
+          !normalized.endsWith('Z') &&
+          !RegExp(r'[+-]\d{2}(?::?\d{2})?$').hasMatch(normalized)) {
+        parsed = DateTime.tryParse('${normalized}Z');
       }
     }
 
@@ -80,9 +83,9 @@ abstract final class CommunityDateFormatter {
     // Ensure it is marked UTC
     if (parsed.isUtc) return parsed;
 
-    // If input had no explicit timezone offset, the backend standard is UTC.
-    final hasExplicitOffset = trimmed.endsWith('Z') ||
-        RegExp(r'[+-]\d{2}(?::?\d{2})?$').hasMatch(trimmed);
+    // If input had explicit timezone offset, convert to UTC; otherwise interpret values as UTC
+    final hasExplicitOffset = normalized.endsWith('Z') ||
+        RegExp(r'[+-]\d{2}(?::?\d{2})?$').hasMatch(normalized);
 
     if (hasExplicitOffset) {
       return parsed.toUtc();

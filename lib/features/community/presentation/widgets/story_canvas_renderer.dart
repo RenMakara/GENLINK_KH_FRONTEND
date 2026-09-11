@@ -135,7 +135,10 @@ Widget buildStoryLayerContent({
 }) {
   switch (layer.type) {
     case LayerType.text:
-      final hasBg = layer.bgStyle != TextBgStyle.none;
+      final isOutline = layer.effect == TextEffectType.outline ||
+          layer.bgStyle == TextBgStyle.outline;
+      final hasBg = layer.bgStyle == TextBgStyle.filled ||
+          layer.bgStyle == TextBgStyle.rounded;
       final baseStyle = getStoryTextStyle(
         fontStyle: layer.fontStyle,
         color: layer.color,
@@ -158,9 +161,25 @@ Widget buildStoryLayerContent({
           ? Colors.black
           : layer.color;
 
+      final List<Shadow>? fallbackShadows =
+          (!hasBg && !isOutline && layer.effect == TextEffectType.none)
+              ? const [
+                  Shadow(
+                    color: Colors.black54,
+                    offset: Offset(0, 1),
+                    blurRadius: 4,
+                  ),
+                  Shadow(
+                    color: Colors.black38,
+                    offset: Offset(0, 2),
+                    blurRadius: 8,
+                  ),
+                ]
+              : baseStyle.shadows;
+
       Widget textWidget;
 
-      if (layer.effect == TextEffectType.outline) {
+      if (isOutline) {
         final strokeColor = textLuminance > 0.5 ? Colors.black : Colors.white;
         textWidget = Stack(
           alignment: Alignment.center,
@@ -193,12 +212,14 @@ Widget buildStoryLayerContent({
           layer.text,
           softWrap: true,
           textAlign: layer.alignment,
-          style: baseStyle.copyWith(color: textDisplayColor),
+          style: baseStyle.copyWith(
+            color: textDisplayColor,
+            shadows: fallbackShadows,
+          ),
         );
       }
 
       Color? boxColor;
-      BoxBorder? boxBorder;
       List<BoxShadow>? boxShadow;
 
       if (layer.bgStyle == TextBgStyle.filled) {
@@ -223,33 +244,25 @@ Widget buildStoryLayerContent({
             offset: const Offset(0, 2),
           ),
         ];
-      } else if (layer.bgStyle == TextBgStyle.outline) {
-        boxColor = Colors.transparent;
-        boxBorder = Border.all(
-          color:
-              layer.bgColor ??
-              layer.color.withValues(alpha: 0.85),
-          width: 2.0,
-        );
       }
 
       return ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxCanvasWidth * 0.92),
+        constraints: BoxConstraints(maxWidth: maxCanvasWidth * 0.9),
         child: IntrinsicWidth(
-          child: Container(
-            padding: hasBg
-                ? const EdgeInsets.symmetric(horizontal: 14, vertical: 8)
-                : const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-            decoration: BoxDecoration(
-              color: boxColor,
-              borderRadius: BorderRadius.circular(14),
-              border: isSelected && !hasBg
-                  ? Border.all(color: Colors.white38, width: 1.0)
-                  : boxBorder,
-              boxShadow: boxShadow,
-            ),
-            child: textWidget,
-          ),
+          child: hasBg
+              ? Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: boxColor,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: boxShadow,
+                  ),
+                  child: textWidget,
+                )
+              : textWidget,
         ),
       );
 

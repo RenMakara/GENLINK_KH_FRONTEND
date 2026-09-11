@@ -17,7 +17,7 @@ android {
     defaultConfig {
         applicationId = "kh.edu.acleda.genlink.genlink_frontend"
         minSdk = flutter.minSdkVersion
-        targetSdk = 37
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -38,3 +38,4 @@ kotlin {
 flutter {
     source = "../.."
 }
+

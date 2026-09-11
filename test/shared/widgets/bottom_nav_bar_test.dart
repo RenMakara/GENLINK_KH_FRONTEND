@@ -445,5 +445,208 @@ void main() {
 
     semantics.dispose();
   });
+
+  testWidgets('verifies transitions to Home (Profile → Home, Finance → Home, LevelUp → Home) in Light Mode', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    int activeIndex = 3; // start on Profile
+
+    await tester.pumpWidget(
+      StatefulBuilder(
+        builder: (context, setState) {
+          return GetMaterialApp(
+            translations: AppTranslations(),
+            locale: LocalizationService.englishLocale,
+            fallbackLocale: LocalizationService.englishLocale,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            home: Scaffold(
+              bottomNavigationBar: BottomNavBar(
+                currentIndex: activeIndex,
+                onTap: (idx) => setState(() => activeIndex = idx),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(activeIndex, 3);
+    expect(find.byIcon(Icons.person_rounded), findsOneWidget);
+
+    // 1. Profile → Home (3 → 0) in Light Mode
+    await tester.tap(find.bySemanticsLabel('Home'));
+    await tester.pump(const Duration(milliseconds: 140));
+    expect(activeIndex, 0);
+    expect(tester.takeException(), isNull);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+
+    // 2. Home → Finance (0 → 2)
+    await tester.tap(find.bySemanticsLabel('Finance'));
+    await tester.pumpAndSettle();
+    expect(activeIndex, 2);
+    expect(find.byIcon(Icons.paid_rounded), findsOneWidget);
+
+    // 3. Finance → Home (2 → 0) in Light Mode
+    await tester.tap(find.bySemanticsLabel('Home'));
+    await tester.pump(const Duration(milliseconds: 140));
+    expect(activeIndex, 0);
+    expect(tester.takeException(), isNull);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+
+    // 4. Home → LevelUp (0 → 1)
+    await tester.tap(find.bySemanticsLabel('LevelUp'));
+    await tester.pumpAndSettle();
+    expect(activeIndex, 1);
+    expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
+
+    // 5. LevelUp → Home (1 → 0) in Light Mode
+    await tester.tap(find.bySemanticsLabel('Home'));
+    await tester.pump(const Duration(milliseconds: 140));
+    expect(activeIndex, 0);
+    expect(tester.takeException(), isNull);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+
+    semantics.dispose();
+  });
+
+  group('Geometry & Layout Constraints: Active Indicator Contained in Capsule', () {
+    const phoneWidths = [320.0, 360.0, 390.0, 412.0, 430.0];
+
+    for (final width in phoneWidths) {
+      testWidgets(
+        'indicator never extends outside outer capsule on width $width (Home, LevelUp, Finance, Profile)',
+        (tester) async {
+          tester.view.physicalSize = Size(width, 800);
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(tester.view.reset);
+
+          for (int tabIdx = 0; tabIdx < 4; tabIdx++) {
+            await tester.pumpWidget(createNavBar(currentIndex: tabIdx));
+            await tester.pumpAndSettle();
+
+            final outerRect =
+                tester.getRect(find.byKey(const ValueKey('nav_outer_capsule')));
+            final indicatorRect = tester
+                .getRect(find.byKey(const ValueKey('nav_active_indicator')));
+
+            // 1. Indicator is fully inside outer capsule bounds
+            expect(indicatorRect.top, greaterThanOrEqualTo(outerRect.top + 4.0),
+                reason: 'Top breathing room violated at tab $tabIdx on width $width');
+            expect(indicatorRect.bottom, lessThanOrEqualTo(outerRect.bottom - 4.0),
+                reason: 'Bottom breathing room violated at tab $tabIdx on width $width');
+            expect(indicatorRect.left, greaterThanOrEqualTo(outerRect.left + 4.0),
+                reason: 'Left breathing room violated at tab $tabIdx on width $width');
+            expect(indicatorRect.right, lessThanOrEqualTo(outerRect.right - 4.0),
+                reason: 'Right breathing room violated at tab $tabIdx on width $width');
+
+            // 2. Indicator height strictly fits inside outer capsule height
+            expect(indicatorRect.height, lessThan(outerRect.height));
+          }
+        },
+      );
+    }
+
+    testWidgets('all 4 navigation slots have identical width', (tester) async {
+      tester.view.physicalSize = const Size(390, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(createNavBar(currentIndex: 0));
+      await tester.pumpAndSettle();
+
+      final homeRect = tester.getRect(find.bySemanticsLabel('Home'));
+      final levelUpRect = tester.getRect(find.bySemanticsLabel('LevelUp'));
+      final financeRect = tester.getRect(find.bySemanticsLabel('Finance'));
+      final profileRect = tester.getRect(find.bySemanticsLabel('Profile'));
+
+      expect(homeRect.width, closeTo(levelUpRect.width, 0.01));
+      expect(levelUpRect.width, closeTo(financeRect.width, 0.01));
+      expect(financeRect.width, closeTo(profileRect.width, 0.01));
+
+      final outerRect =
+          tester.getRect(find.byKey(const ValueKey('nav_outer_capsule')));
+      final indicatorRect =
+          tester.getRect(find.byKey(const ValueKey('nav_active_indicator')));
+
+      // Active indicator width is smaller than or equal to slot width
+      expect(indicatorRect.width, lessThanOrEqualTo(homeRect.width));
+    });
+
+    testWidgets(
+        'sliding animation preserves containment throughout transitions: Home->LevelUp->Finance->Profile->Home',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      int activeIndex = 0;
+
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) {
+            return GetMaterialApp(
+              translations: AppTranslations(),
+              locale: LocalizationService.englishLocale,
+              fallbackLocale: LocalizationService.englishLocale,
+              theme: AppTheme.light,
+              darkTheme: AppTheme.dark,
+              home: Scaffold(
+                bottomNavigationBar: BottomNavBar(
+                  currentIndex: activeIndex,
+                  onTap: (idx) => setState(() => activeIndex = idx),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final transitions = [
+        ('LevelUp', 1),
+        ('Finance', 2),
+        ('Profile', 3),
+        ('Home', 0),
+      ];
+
+      for (final (label, expectedIdx) in transitions) {
+        await tester.tap(find.bySemanticsLabel(label));
+        // Check halfway through animation (160ms)
+        await tester.pump(const Duration(milliseconds: 160));
+
+        final outerRectMid =
+            tester.getRect(find.byKey(const ValueKey('nav_outer_capsule')));
+        final indicatorRectMid =
+            tester.getRect(find.byKey(const ValueKey('nav_active_indicator')));
+
+        expect(indicatorRectMid.top, greaterThanOrEqualTo(outerRectMid.top + 4.0));
+        expect(indicatorRectMid.bottom,
+            lessThanOrEqualTo(outerRectMid.bottom - 4.0));
+        expect(indicatorRectMid.left, greaterThanOrEqualTo(outerRectMid.left + 4.0));
+        expect(indicatorRectMid.right,
+            lessThanOrEqualTo(outerRectMid.right - 4.0));
+
+        await tester.pumpAndSettle();
+        expect(activeIndex, expectedIdx);
+
+        final outerRectEnd =
+            tester.getRect(find.byKey(const ValueKey('nav_outer_capsule')));
+        final indicatorRectEnd =
+            tester.getRect(find.byKey(const ValueKey('nav_active_indicator')));
+
+        expect(indicatorRectEnd.top, greaterThanOrEqualTo(outerRectEnd.top + 4.0));
+        expect(indicatorRectEnd.bottom,
+            lessThanOrEqualTo(outerRectEnd.bottom - 4.0));
+        expect(indicatorRectEnd.left, greaterThanOrEqualTo(outerRectEnd.left + 4.0));
+        expect(indicatorRectEnd.right,
+            lessThanOrEqualTo(outerRectEnd.right - 4.0));
+      }
+
+      semantics.dispose();
+    });
+  });
 }
 

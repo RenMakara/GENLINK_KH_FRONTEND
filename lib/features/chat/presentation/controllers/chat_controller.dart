@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../data/datasources/chat_websocket_client.dart';
 import '../../data/repositories/chat_repository_impl.dart';
 import '../../domain/models/chat_models.dart';
 
 class ChatController extends GetxController {
   final ChatRepositoryImpl repository;
+  ChatWebSocketClient? webSocketClient;
 
-  ChatController({required this.repository});
+  ChatController({
+    required this.repository,
+    this.webSocketClient,
+  });
 
   final conversations = <ChatConversationModel>[].obs;
   final activeMessages = <ChatMessageModel>[].obs;
@@ -27,10 +32,22 @@ class ChatController extends GetxController {
   void onInit() {
     super.onInit();
     fetchConversations();
+    if (webSocketClient != null) {
+      webSocketClient!.connect();
+    }
+  }
+
+  void initWebSocket({String? token, String? url}) {
+    webSocketClient?.disconnect();
+    webSocketClient = ChatWebSocketClient(
+      onMessageReceived: onMessageReceived,
+    );
+    webSocketClient!.connect(token: token, url: url);
   }
 
   @override
   void onClose() {
+    webSocketClient?.disconnect();
     textController.dispose();
     scrollController.dispose();
     super.onClose();
@@ -56,11 +73,15 @@ class ChatController extends GetxController {
   }
 
   Future<void> openConversation(ChatConversationModel conv) async {
+    final isDifferentConv = activeConversation.value?.id != conv.id;
     activeConversation.value = conv;
     replyingToMessage.value = null;
     pinnedMessage.value = conv.pinnedMessage;
     conv.unreadCount = 0;
     conversations.refresh();
+    if (isDifferentConv) {
+      activeMessages.clear();
+    }
     try {
       await repository.markConversationRead(conv.id);
     } catch (_) {}
@@ -69,8 +90,9 @@ class ChatController extends GetxController {
     try {
       final msgs = await repository.getMessages(conv.id);
       if (msgs.isNotEmpty) {
-        activeMessages.assignAll(msgs);
-        final pinned = msgs.firstWhereOrNull((m) => m.isPinned);
+        final deduped = _deduplicateMessages(msgs);
+        activeMessages.assignAll(deduped);
+        final pinned = deduped.firstWhereOrNull((m) => m.isPinned);
         if (pinned != null) {
           pinnedMessage.value = pinned;
         }
@@ -234,6 +256,7 @@ class ChatController extends GetxController {
         activeMessages.refresh();
       }
       activeConversation.value = conv.copyWith(pinnedMessage: null);
+      repository.unpinMessage(conv.id);
     } else {
       for (var i = 0; i < activeMessages.length; i++) {
         if (activeMessages[i].isPinned) {
@@ -248,6 +271,7 @@ class ChatController extends GetxController {
       }
       pinnedMessage.value = updatedMsg;
       activeConversation.value = conv.copyWith(pinnedMessage: updatedMsg);
+      repository.pinMessage(conv.id, message.id);
     }
     conversations.refresh();
   }
@@ -274,9 +298,24 @@ class ChatController extends GetxController {
   }) async {
     final text = textController.text.trim();
     if (text.isEmpty && mediaUrl == null) return;
+    if (isSendingMessage.value) return;
 
     final conv = activeConversation.value;
     if (conv == null) return;
+
+    final messageContent = text.isEmpty
+        ? (type == 'image' ? '📷 Photo' : 'Shared attachment')
+        : text;
+
+    // Double-tap guard: suppress duplicate send if identical message was sent in last 2 seconds
+    if (activeMessages.isNotEmpty) {
+      final last = activeMessages.last;
+      if (last.isMine &&
+          last.content == messageContent &&
+          DateTime.now().difference(last.timestamp).inSeconds < 2) {
+        return;
+      }
+    }
 
     final effectiveReplyTo = replyTo ??
         (replyingToMessage.value != null
@@ -297,9 +336,7 @@ class ChatController extends GetxController {
     try {
       newMsg = await repository.sendMessage(
         conv.id,
-        text.isEmpty
-            ? (type == 'image' ? '📷 Photo' : 'Shared attachment')
-            : text,
+        messageContent,
         messageType: type,
         mediaUrl: mediaUrl,
         replyTo: effectiveReplyTo,
@@ -311,9 +348,7 @@ class ChatController extends GetxController {
         conversationId: conv.id,
         senderId: 'current_user',
         senderName: 'Me',
-        content: text.isEmpty
-            ? (type == 'image' ? '📷 Photo' : 'Shared attachment')
-            : text,
+        content: messageContent,
         timestamp: DateTime.now(),
         timeAgo: 'Just now',
         isMine: true,
@@ -325,15 +360,13 @@ class ChatController extends GetxController {
       isSendingMessage.value = false;
     }
 
-    if (!activeMessages.any((m) => m.id == newMsg.id)) {
-      activeMessages.add(newMsg);
-    }
+    _safeAddOrUpdateActiveMessage(newMsg);
+
     conv.lastMessage = newMsg.content;
     conv.lastMessageTime = 'Just now';
     conv.unreadCount = 0;
     _moveConversationToTop(conv);
     conversations.refresh();
-    _scrollToBottom();
   }
 
   Future<bool> deleteMessage(String messageId) async {
@@ -408,6 +441,46 @@ class ChatController extends GetxController {
     return true;
   }
 
+  Future<bool> renameGroup(String conversationId, String newName) async {
+    final ok = await repository.renameGroup(conversationId, newName);
+    if (ok) {
+      final idx = conversations.indexWhere((c) => c.id == conversationId);
+      if (idx != -1) {
+        conversations[idx] = conversations[idx].copyWith(name: newName);
+        conversations.refresh();
+      }
+      if (activeConversation.value?.id == conversationId) {
+        activeConversation.value = activeConversation.value?.copyWith(name: newName);
+      }
+    }
+    return ok;
+  }
+
+  Future<bool> addGroupMembers(String conversationId, List<String> userIds) async {
+    return repository.addGroupMembers(conversationId, userIds);
+  }
+
+  Future<bool> removeGroupMember(String conversationId, String userId) async {
+    return repository.removeGroupMember(conversationId, userId);
+  }
+
+  Future<bool> changeMemberRole(String conversationId, String userId, String role) async {
+    return repository.changeMemberRole(conversationId, userId, role);
+  }
+
+  Future<bool> leaveGroup(String conversationId) async {
+    final ok = await repository.leaveGroup(conversationId);
+    if (ok) {
+      conversations.removeWhere((c) => c.id == conversationId);
+      if (activeConversation.value?.id == conversationId) {
+        activeConversation.value = null;
+        activeMessages.clear();
+      }
+      conversations.refresh();
+    }
+    return ok;
+  }
+
   Future<ChatMessageModel> sendStoryReply({
     required String userName,
     required String userAvatar,
@@ -416,6 +489,16 @@ class ChatController extends GetxController {
     String? storyId,
     String? userId,
   }) async {
+    // Double-tap guard: suppress duplicate reply if sent in last 2 seconds
+    if (activeMessages.isNotEmpty) {
+      final last = activeMessages.last;
+      if (last.isMine &&
+          last.content == message &&
+          DateTime.now().difference(last.timestamp).inSeconds < 2) {
+        return last;
+      }
+    }
+
     // 1. Find existing conversation or create a new one
     var convIndex = conversations.indexWhere((c) {
       if (userId != null && userId.isNotEmpty) {
@@ -490,41 +573,174 @@ class ChatController extends GetxController {
       pinnedMessage.value = conv.pinnedMessage;
       try {
         final existingMsgs = await repository.getMessages(conv.id);
-        activeMessages.assignAll(existingMsgs);
+        activeMessages.assignAll(_deduplicateMessages(existingMsgs));
       } catch (_) {
         activeMessages.clear();
       }
     }
-    if (!activeMessages.any((m) => m.id == newMsg.id)) {
-      activeMessages.add(newMsg);
-    }
-    _scrollToBottom();
+    _safeAddOrUpdateActiveMessage(newMsg);
 
     return newMsg;
   }
 
   void onMessageReceived(ChatMessageModel message) {
-    if (activeConversation.value?.id == message.conversationId) {
-      final exists = activeMessages.any((m) => m.id == message.id);
-      if (!exists) {
-        activeMessages.add(message);
-        _scrollToBottom();
+    var effectiveConvId = message.conversationId;
+    if (effectiveConvId.isEmpty) {
+      final active = activeConversation.value;
+      if (active != null &&
+          (active.id == message.senderId ||
+              active.id == 'private_${message.senderId}' ||
+              active.id == 'room_${message.senderId}' ||
+              active.name.trim().toLowerCase() == message.senderName.trim().toLowerCase())) {
+        effectiveConvId = active.id;
+      } else {
+        final matchedConv = conversations.firstWhereOrNull((c) =>
+            c.id == message.senderId ||
+            c.id == 'private_${message.senderId}' ||
+            c.id == 'room_${message.senderId}' ||
+            c.name.trim().toLowerCase() == message.senderName.trim().toLowerCase());
+        if (matchedConv != null) {
+          effectiveConvId = matchedConv.id;
+        } else {
+          effectiveConvId = 'private_${message.senderId}';
+        }
       }
-      repository.markConversationRead(message.conversationId);
     }
 
-    final idx = conversations.indexWhere((c) => c.id == message.conversationId);
+    final resolvedMessage = message.conversationId.isEmpty
+        ? message.copyWith(conversationId: effectiveConvId)
+        : message;
+
+    if (activeConversation.value?.id == effectiveConvId) {
+      _safeAddOrUpdateActiveMessage(resolvedMessage);
+      try {
+        repository.markConversationRead(effectiveConvId);
+      } catch (_) {}
+    }
+
+    final idx = conversations.indexWhere((c) => c.id == effectiveConvId);
     if (idx != -1) {
       final conv = conversations[idx];
-      conv.lastMessage = message.content;
+      conv.lastMessage = resolvedMessage.content;
       conv.lastMessageTime = 'Just now';
-      if (activeConversation.value?.id != message.conversationId) {
+      if (activeConversation.value?.id != effectiveConvId) {
         conv.unreadCount += 1;
       }
       _moveConversationToTop(conv);
       conversations.refresh();
+    } else {
+      // New conversation initiated by other user
+      final newConv = ChatConversationModel(
+        id: effectiveConvId,
+        name: resolvedMessage.senderName,
+        avatar: (resolvedMessage.senderAvatar != null && resolvedMessage.senderAvatar!.isNotEmpty)
+            ? resolvedMessage.senderAvatar!
+            : 'assets/images/user_profile.png',
+        isGroup: false,
+        isOnline: true,
+        lastMessage: resolvedMessage.content,
+        lastMessageTime: 'Just now',
+        unreadCount: activeConversation.value?.id == effectiveConvId ? 0 : 1,
+      );
+      conversations.insert(0, newConv);
+      conversations.refresh();
     }
   }
+
+  bool _safeAddOrUpdateActiveMessage(ChatMessageModel incoming) {
+    // 1. Check exact match by ID
+    final exactIdx = activeMessages.indexWhere((m) => m.id == incoming.id);
+    if (exactIdx != -1) {
+      activeMessages[exactIdx] = incoming;
+      activeMessages.refresh();
+      return true;
+    }
+
+    // 2. Check if incoming is a server message reconciling an optimistic local message
+    final isIncomingReal = !incoming.id.startsWith('msg_local_') &&
+        !incoming.id.startsWith('msg_story_') &&
+        !incoming.id.startsWith('temp_');
+
+    if (isIncomingReal) {
+      final tempIdx = activeMessages.indexWhere((m) =>
+          (m.id.startsWith('msg_local_') ||
+              m.id.startsWith('msg_story_') ||
+              m.id.startsWith('temp_')) &&
+          m.content == incoming.content &&
+          (m.senderId == incoming.senderId || (m.isMine && incoming.isMine)) &&
+          m.timestamp.difference(incoming.timestamp).abs().inSeconds < 120);
+
+      if (tempIdx != -1) {
+        activeMessages[tempIdx] = incoming;
+        activeMessages.refresh();
+        return true;
+      }
+    }
+
+    // 3. Rapid echo / duplicate suppression (within 4 seconds, same sender & content)
+    final isDuplicateEcho = activeMessages.reversed.take(5).any((m) =>
+        m.content == incoming.content &&
+        (m.senderId == incoming.senderId || (m.isMine && incoming.isMine)) &&
+        m.timestamp.difference(incoming.timestamp).abs().inSeconds < 4);
+
+    if (isDuplicateEcho) {
+      return false;
+    }
+
+    // 4. Safe append
+    activeMessages.add(incoming);
+    _scrollToBottom();
+    return true;
+  }
+
+  List<ChatMessageModel> _deduplicateMessages(List<ChatMessageModel> messages) {
+    final seenIds = <String>{};
+    final result = <ChatMessageModel>[];
+
+    for (final m in messages) {
+      if (seenIds.contains(m.id)) {
+        continue;
+      }
+
+      final isTemp = m.id.startsWith('msg_local_') ||
+          m.id.startsWith('msg_story_') ||
+          m.id.startsWith('temp_');
+
+      if (isTemp) {
+        final hasReal = result.any((existing) =>
+            !existing.id.startsWith('msg_local_') &&
+            !existing.id.startsWith('msg_story_') &&
+            !existing.id.startsWith('temp_') &&
+            existing.content == m.content &&
+            (existing.senderId == m.senderId || existing.isMine == m.isMine) &&
+            existing.timestamp.difference(m.timestamp).abs().inSeconds < 120);
+        if (hasReal) {
+          continue;
+        }
+      } else {
+        result.removeWhere((existing) =>
+            (existing.id.startsWith('msg_local_') ||
+                existing.id.startsWith('msg_story_') ||
+                existing.id.startsWith('temp_')) &&
+            existing.content == m.content &&
+            (existing.senderId == m.senderId || existing.isMine == m.isMine) &&
+            existing.timestamp.difference(m.timestamp).abs().inSeconds < 120);
+      }
+
+      seenIds.add(m.id);
+      result.add(m);
+    }
+
+    result.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    return result;
+  }
+
+  // Public methods exposed for testing and external coordination
+  bool safeAddOrUpdateActiveMessage(ChatMessageModel incoming) =>
+      _safeAddOrUpdateActiveMessage(incoming);
+
+  List<ChatMessageModel> deduplicateMessages(List<ChatMessageModel> messages) =>
+      _deduplicateMessages(messages);
 
   void _moveConversationToTop(ChatConversationModel conv) {
     final idx = conversations.indexOf(conv);

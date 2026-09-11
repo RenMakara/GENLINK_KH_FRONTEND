@@ -116,6 +116,8 @@ class ForumThreadCard extends StatefulWidget {
   final String author;
   final String? avatarUrl;
   final String timeAgo;
+  final DateTime? createdAt;
+  final String? content;
   final String category;
   final int replies;
   final int likes;
@@ -134,6 +136,8 @@ class ForumThreadCard extends StatefulWidget {
     required this.author,
     this.avatarUrl,
     required this.timeAgo,
+    this.createdAt,
+    this.content,
     required this.category,
     required this.replies,
     required this.likes,
@@ -201,19 +205,20 @@ class _ForumThreadCardState extends State<ForumThreadCard>
     final textMuted = isDark
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark
-        ? const Color(0xFF171717)
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
         : AppColors.lightSurfacePrimary;
     final borderSubtle = isDark
-        ? const Color(0xFF262626)
+        ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
 
-    final formattedTime = formatCommunityTimestamp(widget.timeAgo);
+    final formattedTime =
+        formatCommunityTimestamp(widget.createdAt ?? widget.timeAgo);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12.0),
       decoration: BoxDecoration(
-        color: surfaceSecondary,
+        color: surface,
         borderRadius: BorderRadius.circular(AppRadius.squircle),
         border: Border.all(
           color: borderSubtle,
@@ -237,7 +242,8 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                     GestureDetector(
                       onTap: widget.onAuthorTap,
                       child: CircleAvatar(
-                        radius: 15,
+                        radius: 16,
+                        backgroundColor: textPrimary.withValues(alpha: 0.08),
                         onBackgroundImageError: (exception, stackTrace) {},
                         backgroundImage: (widget.avatarUrl != null &&
                                 widget.avatarUrl!.isNotEmpty)
@@ -245,6 +251,18 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                 ? AssetImage(widget.avatarUrl!) as ImageProvider
                                 : NetworkImage(widget.avatarUrl!))
                             : const AssetImage('assets/images/user_profile.png'),
+                        child: (widget.avatarUrl == null || widget.avatarUrl!.isEmpty)
+                            ? Text(
+                                widget.author.isNotEmpty
+                                    ? widget.author.characters.first.toUpperCase()
+                                    : 'U',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: textPrimary,
+                                ),
+                              )
+                            : null,
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -261,13 +279,15 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                     text: widget.author,
                                     style: theme.textTheme.labelMedium?.copyWith(
                                           color: textPrimary,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13.5,
+                                          letterSpacing: -0.1,
                                         ) ??
                                         TextStyle(
                                           color: textPrimary,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: -0.1,
                                         ),
                                   ),
                                   if (formattedTime.isNotEmpty)
@@ -276,10 +296,12 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                       style: theme.textTheme.labelMedium?.copyWith(
                                             color: textMuted,
                                             fontSize: 11.5,
+                                            fontWeight: FontWeight.w400,
                                           ) ??
                                           TextStyle(
                                             color: textMuted,
                                             fontSize: 11.5,
+                                            fontWeight: FontWeight.w400,
                                           ),
                                     ),
                                 ],
@@ -296,11 +318,13 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                               borderRadius: BorderRadius.circular(AppRadius.sm),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 7,
-                                  vertical: 2,
+                                  horizontal: 8,
+                                  vertical: 2.5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: textPrimary.withValues(alpha: 0.08),
+                                  color: isDark
+                                      ? AppColors.darkSurfaceSecondary
+                                      : AppColors.lightBgSecondary,
                                   borderRadius: BorderRadius.circular(AppRadius.sm),
                                   border: Border.all(
                                     color: borderSubtle,
@@ -346,27 +370,47 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                     ],
                   ],
                 ),
-                const SizedBox(height: AppSpacing.sm + 2),
-
+                const SizedBox(height: 10),
                 Text(
                   widget.title,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
                         color: textPrimary,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         height: 1.35,
-                        fontSize: 14.5,
+                        fontSize: 15,
+                        letterSpacing: -0.2,
                       ) ??
                       TextStyle(
                         color: textPrimary,
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                         height: 1.35,
+                        letterSpacing: -0.2,
                       ),
                 ),
-                const SizedBox(height: AppSpacing.sm + 4),
-
+                if (widget.content != null &&
+                    widget.content!.trim().isNotEmpty &&
+                    widget.content!.trim() != widget.title.trim()) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    widget.content!.trim(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                          color: textSecondary,
+                          fontSize: 13,
+                          height: 1.4,
+                        ) ??
+                        TextStyle(
+                          color: textSecondary,
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
+                  ),
+                ],
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Material(
@@ -395,7 +439,7 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                   size: 16,
                                 ),
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 5),
                               Text(
                                 "${widget.likes}",
                                 style: theme.textTheme.labelMedium?.copyWith(
@@ -426,8 +470,7 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-
+                    const SizedBox(width: 14),
                     Material(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -447,15 +490,18 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                 color: textSecondary,
                                 size: 15,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 5),
                               Text(
-                                "${widget.replies} ${'community.comments'.tr.isNotEmpty && 'community.comments'.tr != 'community.comments' ? 'community.comments'.tr : 'comments'}",
+                                "${widget.replies} ${'community.comments'.tr.isNotEmpty && 'community.comments'.tr != 'community.comments' ? ('community.comments'.tr == 'Comments' ? 'comments' : 'community.comments'.tr) : 'comments'}",
                                 style: theme.textTheme.labelMedium?.copyWith(
                                       color: textSecondary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
                                     ) ??
                                     TextStyle(
                                       color: textSecondary,
                                       fontSize: 12,
+                                      fontWeight: FontWeight.w500,
                                     ),
                               ),
                             ],

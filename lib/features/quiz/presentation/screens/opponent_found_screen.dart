@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/spacing/app_spacing.dart';
 import '../controllers/quiz_controller.dart';
 import '../quiz_colors.dart';
 import '../widgets/quiz_custom_card.dart';
 import '../widgets/quiz_gradient_button.dart';
+import '../widgets/quiz_icon_container.dart';
 
 class OpponentFoundScreen extends GetView<QuizController> {
   const OpponentFoundScreen({super.key});
@@ -12,17 +15,17 @@ class OpponentFoundScreen extends GetView<QuizController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: QuizColors.background,
+      backgroundColor: QuizThemeColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
+          icon: Icon(Icons.arrow_back, color: QuizThemeColors.heading),
           onPressed: () => Get.back(),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         child: Column(
           children: [
             const SizedBox(height: 10),
@@ -42,7 +45,7 @@ class OpponentFoundScreen extends GetView<QuizController> {
             Center(
               child: Text(
                 'quiz.quitAnytime'.tr,
-                style: const TextStyle(fontSize: 12, color: QuizColors.body),
+                style: TextStyle(fontSize: 12, color: QuizThemeColors.body),
               ),
             ),
             const SizedBox(height: 20),
@@ -67,7 +70,11 @@ class OpponentFoundScreen extends GetView<QuizController> {
                 _buildPlayerColumn(
                   user.name,
                   'quiz.levelShort'.trParams({'level': '${user.level}'}),
-                  'quiz.streakShort'.trParams({'count': '${user.streak}'}),
+                  user.streak == null
+                      ? '-'
+                      : 'quiz.streakShort'.trParams({
+                          'count': '${user.streak}',
+                        }),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -75,15 +82,15 @@ class OpponentFoundScreen extends GetView<QuizController> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    gradient: QuizColors.gradient,
-                    borderRadius: BorderRadius.circular(20),
+                    gradient: QuizThemeColors.gradient,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
-                  child: const Text(
+                  child: Text(
                     'VS',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: QuizThemeColors.onPrimary,
                       letterSpacing: 2,
                     ),
                   ),
@@ -100,16 +107,16 @@ class OpponentFoundScreen extends GetView<QuizController> {
               width: double.infinity,
               height: 6,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(3),
-                color: QuizColors.border,
+                borderRadius: BorderRadius.circular(AppRadius.sm - 1),
+                color: QuizThemeColors.border,
               ),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
                 widthFactor: 0.55,
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(3),
-                    gradient: QuizColors.gradient,
+                    borderRadius: BorderRadius.circular(AppRadius.sm - 1),
+                    gradient: QuizThemeColors.gradient,
                   ),
                 ),
               ),
@@ -117,10 +124,10 @@ class OpponentFoundScreen extends GetView<QuizController> {
             const SizedBox(height: 6),
             Text(
               'quiz.fairMatch'.tr,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: QuizColors.correct,
+                color: QuizThemeColors.correct,
               ),
             ),
           ],
@@ -135,38 +142,32 @@ class OpponentFoundScreen extends GetView<QuizController> {
         Container(
           width: 64,
           height: 64,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: QuizColors.gradient,
+            gradient: QuizThemeColors.gradient,
           ),
-          child: const Icon(Icons.person, color: Colors.white, size: 32),
+          child: Icon(Icons.person, color: QuizThemeColors.onPrimary, size: 32),
         ),
         const SizedBox(height: 10),
         Text(
           name,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: QuizColors.heading,
-          ),
+          style: Theme.of(
+            Get.context!,
+          ).textTheme.titleMedium?.copyWith(color: QuizThemeColors.heading),
         ),
         const SizedBox(height: 4),
         Text(
           level,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: QuizColors.body,
-          ),
+          style: Theme.of(
+            Get.context!,
+          ).textTheme.labelMedium?.copyWith(color: QuizThemeColors.body),
         ),
         const SizedBox(height: 2),
         Text(
           stat,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: QuizColors.primary,
-          ),
+          style: Theme.of(
+            Get.context!,
+          ).textTheme.labelSmall?.copyWith(color: QuizThemeColors.body),
         ),
       ],
     );
@@ -180,10 +181,10 @@ class OpponentFoundScreen extends GetView<QuizController> {
         children: [
           Text(
             'quiz.gameRules'.tr,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: QuizColors.heading,
+              color: QuizThemeColors.heading,
             ),
           ),
           const SizedBox(height: 14),
@@ -208,20 +209,15 @@ class OpponentFoundScreen extends GetView<QuizController> {
   Widget _buildRuleRow(IconData icon, String text) {
     return Row(
       children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: QuizColors.primaryLight,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: QuizColors.primary, size: 18),
+        QuizIconContainer(
+          icon: icon,
+          accentColor: QuizThemeColors.primary,
+          size: 32,
+          iconSize: 18,
+          borderRadius: AppRadius.sm,
         ),
         const SizedBox(width: 12),
-        Text(
-          text,
-          style: const TextStyle(fontSize: 14, color: QuizColors.body),
-        ),
+        Text(text, style: TextStyle(fontSize: 14, color: QuizThemeColors.body)),
       ],
     );
   }

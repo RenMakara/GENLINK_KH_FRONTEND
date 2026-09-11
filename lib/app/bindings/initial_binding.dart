@@ -7,7 +7,6 @@ import '../../core/network/dio_provider.dart';
 import '../../core/network/interceptors/auth_interceptor.dart';
 import '../../core/network/interceptors/error_interceptor.dart';
 import '../../core/network/interceptors/language_interceptor.dart';
-import '../../core/network/interceptors/mock_interceptor.dart';
 import '../../core/storage/local_storage.dart';
 import '../../core/storage/secure_storage.dart';
 import '../../core/theme/theme_controller.dart';
@@ -19,6 +18,7 @@ import '../../features/media/data/repositories/media_repository_impl.dart';
 import '../../features/media/domain/media_upload_service.dart';
 import '../../features/media/presentation/media_picker.dart';
 import '../../features/profile/presentation/controllers/profile_controller.dart';
+import '../../features/productivity/presentation/controllers/productivity_controller.dart';
 import '../../features/community/presentation/controllers/community_controller.dart';
 import '../../features/community/presentation/controllers/story_controller.dart';
 import 'package:flutter/painting.dart';
@@ -45,10 +45,7 @@ class InitialBinding extends Bindings {
       ..put<MainController>(mainController, permanent: true);
 
     final dio = DioProvider.create();
-    dio.interceptors.addAll([
-      LanguageInterceptor(localization),
-      MockInterceptor(secureStorage),
-    ]);
+    dio.interceptors.addAll([LanguageInterceptor(localization)]);
     final apiClient = ApiClient(dio);
     Get
       ..put<Dio>(dio, permanent: true)
@@ -85,6 +82,10 @@ class InitialBinding extends Bindings {
       }
       if (Get.isRegistered<NotificationController>()) {
         Get.delete<NotificationController>(force: true);
+      }
+      if (Get.isRegistered<ProductivityController>()) {
+        Get.find<ProductivityController>().clear();
+        Get.delete<ProductivityController>(force: true);
       }
     }
 

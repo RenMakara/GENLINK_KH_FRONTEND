@@ -9,14 +9,14 @@
 
 | Domain file | Status |
 |---|---|
-| [community.md](community.md) | ✅ (chat/polls/stories ⏸) |
+| [community.md](community.md) | ✅ (advanced chat realtime ⏸) |
 | [finance.md](finance.md) | ✅ |
 | [lifestyle.md](lifestyle.md) (Productivity) | ✅ |
 | [entertainment.md](entertainment.md) | ✅ (multiplayer/friends ⏸) |
 | [mobile-bff.md](mobile-bff.md) | ✅ home/finance/productivity/profile · ⏸ events/notifications |
 | [auth.md](auth.md) | ✅ (my screens) |
 | [profile-settings.md](profile-settings.md) | ✅ (my screens) |
-| Notifications | ⬜ backend not built — do not wire yet |
+| Notifications | 🟨 read/list/count APIs ✅ · emission/BFF/push ⏸ |
 
 ---
 
@@ -155,7 +155,7 @@ Each domain file lists the `errorCode`s that endpoint can return.
 - **UI labels:** Flutter `en.json` / `km.json` — the backend does **not** send UI strings.
 - **System content** (lessons, motivation, quizzes, challenges, badges, notifications) is **already localized** by the backend based on your `Accept-Language` header — you receive a single `title`/`content`/`name` string, not `_en`/`_km`. Send `km` or `en`.
 - **User content** (posts, comments, bio, event descriptions) comes back **as written** — display verbatim.
-- Default language **KHMER**; store the user's choice and set it as `Accept-Language`.
+- Default language **ENGLISH**; store the user's choice and set it as `Accept-Language`.
 
 ---
 

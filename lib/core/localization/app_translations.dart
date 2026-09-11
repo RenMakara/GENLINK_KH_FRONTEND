@@ -1531,6 +1531,7 @@ class AppTranslations extends Translations {
 
     // ── Productivity ───────────────────────────────────────────────────────
     'productivity.title': 'Productivity',
+    'productivity.today': 'Today',
     'productivity.todayplan': 'Today Plan',
     'productivity.quickActions': 'Quick Actions',
     'productivity.weeklyFocus': 'Weekly Focus',
@@ -3203,6 +3204,7 @@ class AppTranslations extends Translations {
 
     // ── Productivity ───────────────────────────────────────────────────────
     'productivity.title': 'ការងារប្រចាំថ្ងៃ',
+    'productivity.today': 'ថ្ងៃនេះ',
     'productivity.todayplan': 'ផែនការថ្ងៃនេះ',
     'productivity.quickActions': 'សកម្មភាពរហ័ស',
     'productivity.weeklyFocus': 'ការផ្តោតប្រចាំសប្តាហ៍',

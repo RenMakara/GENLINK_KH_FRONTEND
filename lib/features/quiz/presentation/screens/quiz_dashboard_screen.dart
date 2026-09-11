@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../controllers/quiz_controller.dart';
 import '../../domain/models/quiz_models.dart';
 import '../quiz_colors.dart';
 import '../widgets/quiz_custom_card.dart';
 import '../widgets/quiz_gradient_button.dart';
+import '../widgets/quiz_icon_container.dart';
+import '../widgets/quiz_section_header.dart';
 import '../../../../app/routes/app_routes.dart';
 
 class QuizDashboardScreen extends GetView<QuizController> {
@@ -16,7 +20,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: QuizColors.background,
+      backgroundColor: QuizThemeColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -37,44 +41,48 @@ class QuizDashboardScreen extends GetView<QuizController> {
         leadingWidth: 74,
         actions: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.notifications_outlined,
-              color: QuizColors.heading,
+              color: QuizThemeColors.heading,
             ),
             onPressed: () {},
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
-            const SizedBox(height: 20),
-            _buildStatsRow(),
-            const SizedBox(height: 24),
+            _buildHeader(context),
+            const SizedBox(height: AppSpacing.md),
+            _buildStatsRow(context),
+            const SizedBox(height: AppSpacing.lg),
             _buildQuickPlayCards(),
-            const SizedBox(height: 24),
-            _buildLearningProgress(),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
+            _buildLearningProgress(context),
+            const SizedBox(height: AppSpacing.lg),
             _buildCategoriesPreview(),
-            const SizedBox(height: 24),
-            _buildLeaderboardCard(),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
+            _buildLeaderboardCard(context),
+            const SizedBox(height: AppSpacing.lg),
             _buildBottomAction(),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.md),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Obx(() {
       final stats = controller.userStats.value;
+      final textTheme = Theme.of(context).textTheme;
       return QuizCustomCard(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -83,14 +91,26 @@ class QuizDashboardScreen extends GetView<QuizController> {
                 Container(
                   width: 52,
                   height: 52,
-                  decoration: const BoxDecoration(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: QuizColors.gradient,
+                    border: Border.all(
+                      color: QuizThemeColors.primary.withValues(alpha: 0.34),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: QuizThemeColors.primary.withValues(alpha: 0.14),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.white,
-                    size: 28,
+                  child: ClipOval(
+                    child: AppAvatar(
+                      imageUrl: stats.avatarUrl,
+                      name: stats.name,
+                      size: 48,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -100,10 +120,8 @@ class QuizDashboardScreen extends GetView<QuizController> {
                     children: [
                       Text(
                         'quiz.dashboardGreeting'.trParams({'name': stats.name}),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: QuizColors.heading,
+                        style: textTheme.titleLarge?.copyWith(
+                          color: QuizThemeColors.heading,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -113,15 +131,13 @@ class QuizDashboardScreen extends GetView<QuizController> {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          gradient: QuizColors.gradient,
+                          gradient: QuizThemeColors.gradient,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           'quiz.level'.trParams({'level': '${stats.level}'}),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                          style: textTheme.labelSmall?.copyWith(
+                            color: QuizThemeColors.onPrimary,
                           ),
                         ),
                       ),
@@ -134,10 +150,10 @@ class QuizDashboardScreen extends GetView<QuizController> {
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: LinearProgressIndicator(
-                value: stats.xp / stats.xpToNextLevel,
-                backgroundColor: QuizColors.border,
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  QuizColors.primary,
+                value: stats.levelProgress,
+                backgroundColor: QuizThemeColors.border,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  QuizThemeColors.primary,
                 ),
                 minHeight: 8,
               ),
@@ -145,7 +161,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
             const SizedBox(height: 6),
             Text(
               '${stats.xp} / ${stats.xpToNextLevel} XP',
-              style: const TextStyle(fontSize: 12, color: QuizColors.body),
+              style: textTheme.bodySmall?.copyWith(color: QuizThemeColors.body),
             ),
           ],
         ),
@@ -153,42 +169,47 @@ class QuizDashboardScreen extends GetView<QuizController> {
     });
   }
 
-  Widget _buildStatsRow() {
+  Widget _buildStatsRow(BuildContext context) {
     return Obx(() {
       final stats = controller.userStats.value;
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          gradient: QuizColors.statGradient,
-          borderRadius: BorderRadius.circular(20),
+      final textTheme = Theme.of(context).textTheme;
+      return QuizCustomCard(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
         ),
         child: Row(
           children: [
             Expanded(
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.local_fire_department,
-                    color: QuizColors.gold,
-                    size: 26,
+                  QuizIconContainer(
+                    icon: Icons.local_fire_department,
+                    accentColor: QuizThemeColors.gold,
+                    size: 38,
+                    iconSize: 21,
+                    borderRadius: AppRadius.md,
                   ),
                   const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'quiz.days'.trParams({'count': '${stats.streak}'}),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                        stats.streak == null
+                            ? '-'
+                            : 'quiz.days'.trParams({
+                                'count': '${stats.streak}',
+                              }),
+                        style: textTheme.titleMedium?.copyWith(
+                          color: stats.streak == null
+                              ? QuizThemeColors.disabled
+                              : QuizThemeColors.heading,
                         ),
                       ),
                       Text(
                         'quiz.activeStreak'.tr,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF9CA3AF),
+                        style: textTheme.labelSmall?.copyWith(
+                          color: QuizThemeColors.muted,
                         ),
                       ),
                     ],
@@ -196,33 +217,34 @@ class QuizDashboardScreen extends GetView<QuizController> {
                 ],
               ),
             ),
-            Container(width: 1, height: 36, color: const Color(0xFF4B5563)),
+            Container(width: 1, height: 36, color: QuizThemeColors.border),
             const SizedBox(width: 16),
             Expanded(
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.monetization_on,
-                    color: QuizColors.gold,
-                    size: 26,
+                  QuizIconContainer(
+                    icon: Icons.monetization_on,
+                    accentColor: QuizThemeColors.gold,
+                    size: 38,
+                    iconSize: 21,
+                    borderRadius: AppRadius.md,
                   ),
                   const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${stats.coins}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                        '${stats.coins ?? '-'}',
+                        style: textTheme.titleMedium?.copyWith(
+                          color: stats.coins == null
+                              ? QuizThemeColors.disabled
+                              : QuizThemeColors.heading,
                         ),
                       ),
                       Text(
                         'quiz.coins'.tr,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF9CA3AF),
+                        style: textTheme.labelSmall?.copyWith(
+                          color: QuizThemeColors.muted,
                         ),
                       ),
                     ],
@@ -244,7 +266,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
             Icons.person_outline,
             'quiz.singleQuiz'.tr,
             'quiz.playAlone'.tr,
-            QuizColors.correct,
+            QuizThemeColors.correct,
             QuizType.single,
           ),
         ),
@@ -254,7 +276,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
             Icons.group_outlined,
             'quiz.randomQuiz'.tr,
             'quiz.findOpponent'.tr,
-            QuizColors.primary,
+            QuizThemeColors.primary,
             QuizType.random,
           ),
         ),
@@ -279,28 +301,25 @@ class QuizDashboardScreen extends GetView<QuizController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(icon, color: color, size: 24),
+            QuizIconContainer(
+              icon: icon,
+              accentColor: color,
+              size: 44,
+              iconSize: 24,
             ),
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: QuizColors.heading,
+                color: QuizThemeColors.heading,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: const TextStyle(fontSize: 12, color: QuizColors.body),
+              style: TextStyle(fontSize: 12, color: QuizThemeColors.body),
             ),
           ],
         ),
@@ -308,23 +327,17 @@ class QuizDashboardScreen extends GetView<QuizController> {
     );
   }
 
-  Widget _buildLearningProgress() {
+  Widget _buildLearningProgress(BuildContext context) {
     return QuizCustomCard(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: const Color(0xFFD1FAE5),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.trending_up,
-              color: QuizColors.correct,
-              size: 24,
-            ),
+          QuizIconContainer(
+            icon: Icons.trending_up,
+            accentColor: QuizThemeColors.correct,
+            size: 46,
+            iconSize: 24,
+            borderRadius: AppRadius.lg,
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -333,10 +346,8 @@ class QuizDashboardScreen extends GetView<QuizController> {
               children: [
                 Text(
                   'quiz.learningProgress'.tr,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: QuizColors.heading,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: QuizThemeColors.heading,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -344,9 +355,9 @@ class QuizDashboardScreen extends GetView<QuizController> {
                   borderRadius: BorderRadius.circular(6),
                   child: LinearProgressIndicator(
                     value: 0.72,
-                    backgroundColor: QuizColors.border,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      QuizColors.correct,
+                    backgroundColor: QuizThemeColors.border,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      QuizThemeColors.correct,
                     ),
                     minHeight: 8,
                   ),
@@ -354,7 +365,9 @@ class QuizDashboardScreen extends GetView<QuizController> {
                 const SizedBox(height: 4),
                 Text(
                   'quiz.percentComplete'.trParams({'percent': '72'}),
-                  style: const TextStyle(fontSize: 12, color: QuizColors.body),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: QuizThemeColors.body),
                 ),
               ],
             ),
@@ -367,10 +380,10 @@ class QuizDashboardScreen extends GetView<QuizController> {
   Widget _buildCategoriesPreview() {
     return Obx(() {
       if (controller.isQuizListLoading.value && controller.quizzes.isEmpty) {
-        return const Center(
+        return Center(
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
-            child: CircularProgressIndicator(color: QuizColors.primary),
+            child: CircularProgressIndicator(color: QuizThemeColors.primary),
           ),
         );
       }
@@ -384,10 +397,10 @@ class QuizDashboardScreen extends GetView<QuizController> {
               Expanded(
                 child: Text(
                   'quiz.couldNotLoadQuizzes'.tr,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: QuizColors.heading,
+                    color: QuizThemeColors.heading,
                   ),
                 ),
               ),
@@ -405,7 +418,7 @@ class QuizDashboardScreen extends GetView<QuizController> {
           padding: const EdgeInsets.all(16),
           child: Text(
             'quiz.noQuizzesAvailable'.tr,
-            style: const TextStyle(fontSize: 14, color: QuizColors.body),
+            style: TextStyle(fontSize: 14, color: QuizThemeColors.body),
           ),
         );
       }
@@ -413,29 +426,10 @@ class QuizDashboardScreen extends GetView<QuizController> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'quiz.categories'.tr,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: QuizColors.heading,
-                ),
-              ),
-              GestureDetector(
-                onTap: () => Get.toNamed('/quiz/categories'),
-                child: Text(
-                  'quiz.seeAll'.tr,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: QuizColors.primary,
-                  ),
-                ),
-              ),
-            ],
+          QuizSectionHeader(
+            title: 'quiz.categories'.tr,
+            actionLabel: 'quiz.seeAll'.tr,
+            onAction: () => Get.toNamed('/quiz/categories'),
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -446,47 +440,40 @@ class QuizDashboardScreen extends GetView<QuizController> {
               separatorBuilder: (_, _) => const SizedBox(width: 12),
               itemBuilder: (context, index) {
                 final cat = controller.categories[index];
-                final bgColor = QuizColors.categoryColors[cat.colorIndex];
-                final iconColor = QuizColors.categoryIconColors[cat.colorIndex];
-                return GestureDetector(
-                  onTap: () {
-                    controller.selectCategory(cat);
-                    if (controller.quizType.value == QuizType.single) {
-                      controller.startQuiz();
-                      Get.toNamed('/quiz/in-progress');
-                    } else {
-                      controller.startMatchmaking();
-                      Get.toNamed('/quiz/matchmaking');
-                    }
-                  },
-                  child: Container(
-                    width: 130,
+                final iconColor =
+                    QuizThemeColors.categoryIconColors[cat.colorIndex];
+                return SizedBox(
+                  width: 130,
+                  child: QuizCustomCard(
+                    borderRadius: 20,
                     padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: QuizColors.surface,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: QuizColors.border),
-                      boxShadow: QuizColors.cardShadow,
-                    ),
+                    onTap: () {
+                      controller.selectCategory(cat);
+                      if (controller.quizType.value == QuizType.single) {
+                        controller.startQuiz();
+                        Get.toNamed('/quiz/in-progress');
+                      } else {
+                        controller.startMatchmaking();
+                        Get.toNamed('/quiz/matchmaking');
+                      }
+                    },
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: bgColor,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(Icons.star, color: iconColor, size: 20),
+                        QuizIconContainer(
+                          icon: Icons.star,
+                          accentColor: iconColor,
+                          size: 38,
+                          iconSize: 20,
+                          borderRadius: AppRadius.md,
                         ),
                         const SizedBox(height: 8),
                         Text(
                           cat.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: QuizColors.heading,
+                            color: QuizThemeColors.heading,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -502,76 +489,50 @@ class QuizDashboardScreen extends GetView<QuizController> {
     });
   }
 
-  Widget _buildLeaderboardCard() {
-    return GestureDetector(
+  Widget _buildLeaderboardCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return QuizCustomCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       onTap: () => Get.toNamed(AppRoutes.leaderboard),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: QuizColors.statGradient,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x301E1B4B),
-              blurRadius: 16,
-              offset: Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: QuizColors.gold.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.emoji_events,
-                color: QuizColors.gold,
-                size: 26,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'quiz.viewLeaderboard'.tr,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+      child: Row(
+        children: [
+          QuizIconContainer(
+            icon: Icons.emoji_events,
+            accentColor: QuizThemeColors.gold,
+            size: 48,
+            iconSize: 26,
+            borderRadius: AppRadius.lg,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'quiz.viewLeaderboard'.tr,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: scheme.primary,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'quiz.rankGlobally'.tr,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF9CA3AF),
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'quiz.rankGlobally'.tr,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.arrow_forward,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ],
-        ),
+          ),
+          QuizIconContainer(
+            icon: Icons.arrow_forward,
+            accentColor: scheme.primary,
+            size: 36,
+            iconSize: 20,
+            borderRadius: AppRadius.md,
+          ),
+        ],
       ),
     );
   }

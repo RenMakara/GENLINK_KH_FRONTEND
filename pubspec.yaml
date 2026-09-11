@@ -12,6 +12,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  mobile_scanner: ^7.0.1
 
   # ==============================
   # State Management + Routing + i18n
@@ -53,6 +54,11 @@ dependencies:
   # ==============================
   video_player: ^2.9.2
 
+
+# google_sign_in_android 7.2.12+ migrated to built-in Kotlin/AGP 9,
+# while this project currently builds with AGP 8.11.1.
+dependency_overrides:
+  google_sign_in_android: 7.2.11
 
 dev_dependencies:
   flutter_test:

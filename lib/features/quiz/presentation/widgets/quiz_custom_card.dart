@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../quiz_colors.dart';
+import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/surfaces/app_surface.dart';
 
 class QuizCustomCard extends StatelessWidget {
   const QuizCustomCard({
@@ -22,20 +24,39 @@ class QuizCustomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final card = Container(
-      margin: margin,
-      padding: padding ?? const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: QuizColors.surface,
-        borderRadius: BorderRadius.circular(borderRadius ?? 20),
-        border: border ?? Border.all(color: QuizColors.border),
-        boxShadow: QuizColors.cardShadow,
-      ),
-      child: child,
-    );
+    final theme = Theme.of(context);
+    final radius = borderRadius ?? AppRadius.xl;
+    final card = border == null
+        ? Container(
+            margin: margin,
+            child: AppSurface(
+              padding: padding ?? const EdgeInsets.all(AppSpacing.md),
+              radius: radius,
+              child: child,
+            ),
+          )
+        : Container(
+            margin: margin,
+            padding: padding ?? const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(radius),
+              border: border,
+            ),
+            child: child,
+          );
 
     if (onTap == null) return card;
 
-    return GestureDetector(onTap: onTap, child: card);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(radius),
+        hoverColor: theme.colorScheme.primary.withValues(alpha: 0.04),
+        splashColor: theme.colorScheme.primary.withValues(alpha: 0.08),
+        child: card,
+      ),
+    );
   }
 }

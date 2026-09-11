@@ -108,6 +108,17 @@ class AuthRemoteDatasource {
     return _parseMessage(response);
   }
 
+  Future<String> verifyResetOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final response = await _post(
+      ApiEndpoints.verifyResetOtp,
+      data: {'email': email, 'otp': otp},
+    );
+    return _parseMessage(response);
+  }
+
   Future<String> resetPassword({
     required String email,
     required String otp,

@@ -10,7 +10,7 @@ import '../../../leaderboard/presentation/bindings/leaderboard_binding.dart';
 import '../../../leaderboard/presentation/screens/leaderboard_home_screen.dart';
 import '../../../productivity/presentation/focus_feature/focus_home_screen.dart';
 import '../../../productivity/presentation/goals_plan/goal_plan.dart';
-import '../../../productivity/presentation/habit_feature/habit_home_screen.dart';
+import '../../../productivity/presentation/habit_feature/habit_screen.dart';
 import '../../../productivity/presentation/task_feature/task_home_screen.dart';
 import '../../../home/domain/entities/home_entity.dart';
 import '../../../home/presentation/controllers/home_controller.dart';
@@ -413,6 +413,8 @@ class _TimelineActivityItem {
     required this.accentColor,
     required this.onTap,
     this.onToggle,
+    // Reserved for activity sources that award XP (for example challenges).
+    // ignore: unused_element_parameter
     this.xpReward,
   });
 

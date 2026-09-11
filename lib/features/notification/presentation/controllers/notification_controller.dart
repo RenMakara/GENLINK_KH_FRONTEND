@@ -9,7 +9,7 @@ import 'package:genlink_frontend/features/finance/presentation/saving_goal_featu
 import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_screen.dart';
 import 'package:genlink_frontend/features/finance/finance_screen.dart';
 import '../../../productivity/presentation/focus_feature/focus_home_screen.dart';
-import '../../../productivity/presentation/habit_feature/habit_home_screen.dart';
+import '../../../productivity/presentation/habit_feature/habit_screen.dart';
 import '../../../productivity/presentation/task_feature/task_home_screen.dart';
 import '../../../productivity/productivity_screen.dart';
 import '../../data/repositories/notification_repository_impl.dart';

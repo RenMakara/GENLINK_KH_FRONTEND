@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/spacing/app_spacing.dart';
 import '../quiz_colors.dart';
 
 class QuizStatBadge extends StatelessWidget {
@@ -22,37 +24,37 @@ class QuizStatBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm + 4,
+        vertical: AppSpacing.sm + 2,
+      ),
       decoration: BoxDecoration(
-        color: backgroundColor ?? QuizColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: QuizColors.border),
-        boxShadow: QuizColors.cardShadow,
+        color: backgroundColor ?? scheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg - 2),
+        border: Border.all(color: scheme.outlineVariant),
+        boxShadow: QuizThemeColors.cardShadow,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: iconColor ?? QuizColors.primary),
-          const SizedBox(width: 8),
+          Icon(icon, size: 18, color: iconColor ?? scheme.primary),
+          const SizedBox(width: AppSpacing.sm),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 value,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: valueColor ?? QuizColors.heading,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: valueColor ?? scheme.onSurface,
                 ),
               ),
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: QuizColors.body,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             ],

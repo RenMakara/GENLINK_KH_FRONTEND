@@ -25,6 +25,9 @@ class SavingGoalsScreen extends GetView<SavingGoalController> {
     final text = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
     final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final border = isDark
         ? AppColors.darkBorderSubtle
@@ -55,9 +58,10 @@ class SavingGoalsScreen extends GetView<SavingGoalController> {
                       child: Text(
                         'finance.goal.title'.tr,
                         style: TextStyle(
-                          color: text,
-                          fontSize: 24,
+                          color: textPrimary,
+                          fontSize: 22,
                           fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),
@@ -183,41 +187,63 @@ class _CurrencyBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isUsd = currency == FinanceCurrency.usd;
+
     return Container(
+      height: 48,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: border),
       ),
-      child: Row(
-        children: FinanceCurrency.values.map((value) {
-          final selected = value == currency;
-          return Expanded(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(10),
-              onTap: () => onChanged(value),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Stack(
+        children: [
+          // Sliding background
+          AnimatedAlign(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            alignment: isUsd ? Alignment.centerLeft : Alignment.centerRight,
+            child: FractionallySizedBox(
+              widthFactor: 0.5,
+              child: Container(
+                height: 40,
                 decoration: BoxDecoration(
-                  color: selected ? primary : Colors.transparent,
+                  color: primary,
                   borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  value.apiValue,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: selected
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : text,
-                    fontWeight: FontWeight.w700,
-                  ),
                 ),
               ),
             ),
-          );
-        }).toList(),
+          ),
+
+          // Currency buttons
+          Row(
+            children: FinanceCurrency.values.map((value) {
+              final selected = value == currency;
+
+              return Expanded(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => onChanged(value),
+                  child: Center(
+                    child: AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOut,
+                      style: TextStyle(
+                        color: selected
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : text,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                      child: Text(value.apiValue),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

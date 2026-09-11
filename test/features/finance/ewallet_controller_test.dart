@@ -551,7 +551,7 @@ void main() {
         translations: AppTranslations(),
         locale: const Locale('en', 'US'),
         fallbackLocale: const Locale('en', 'US'),
-        home: const PayWithKHQRScreen(),
+        home: const Payment(currency: FinanceCurrency.usd),
       ),
     );
     await tester.enterText(find.byType(TextField).first, '100');

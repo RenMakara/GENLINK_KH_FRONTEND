@@ -195,14 +195,14 @@ class LeaderboardEntry {
 
 class UserStats {
   final String name;
-  final String avatarUrl;
+  final String? avatarUrl;
   final int level;
   final int xp;
   final int xpToNextLevel;
-  final int streak;
-  final int coins;
-  final int badges;
-  final int totalQuizzes;
+  final int? streak;
+  final int? coins;
+  final int? badges;
+  final int? totalQuizzes;
 
   const UserStats({
     required this.name,
@@ -210,9 +210,12 @@ class UserStats {
     required this.level,
     required this.xp,
     required this.xpToNextLevel,
-    required this.streak,
-    required this.coins,
-    this.badges = 0,
-    this.totalQuizzes = 0,
+    this.streak,
+    this.coins,
+    this.badges,
+    this.totalQuizzes,
   });
+
+  /// The backend stores total XP and derives level from 100 XP bands.
+  double get levelProgress => (xp % 100) / 100;
 }

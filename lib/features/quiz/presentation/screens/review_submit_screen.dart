@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/spacing/app_spacing.dart';
 import '../controllers/quiz_controller.dart';
 import '../quiz_colors.dart';
+import '../widgets/quiz_custom_card.dart';
 import '../widgets/quiz_gradient_button.dart';
 
 class ReviewSubmitScreen extends GetView<QuizController> {
@@ -11,27 +14,25 @@ class ReviewSubmitScreen extends GetView<QuizController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: QuizColors.background,
+      backgroundColor: QuizThemeColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
+          icon: Icon(Icons.arrow_back, color: QuizThemeColors.heading),
           onPressed: () => Get.back(),
         ),
         title: Text(
           'quiz.reviewAnswers'.tr,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: QuizColors.heading,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(color: QuizThemeColors.heading),
         ),
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Obx(
               () => Row(
                 children: [
@@ -40,7 +41,7 @@ class ReviewSubmitScreen extends GetView<QuizController> {
                     'quiz.answeredCount'.trParams({
                       'count': '${controller.answeredCount}',
                     }),
-                    QuizColors.correct,
+                    QuizThemeColors.correct,
                   ),
                   const SizedBox(width: 12),
                   _buildStatusChip(
@@ -48,7 +49,7 @@ class ReviewSubmitScreen extends GetView<QuizController> {
                     'quiz.unansweredCount'.trParams({
                       'count': '${controller.unansweredCount}',
                     }),
-                    QuizColors.incorrect,
+                    QuizThemeColors.incorrect,
                   ),
                 ],
               ),
@@ -57,10 +58,10 @@ class ReviewSubmitScreen extends GetView<QuizController> {
           const SizedBox(height: 16),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               itemCount: controller.totalQuestions,
               itemBuilder: (context, index) {
-                return _buildQuestionRow(index);
+                return _buildQuestionRow(context, index);
               },
             ),
           ),
@@ -95,65 +96,58 @@ class ReviewSubmitScreen extends GetView<QuizController> {
     );
   }
 
-  Widget _buildQuestionRow(int index) {
+  Widget _buildQuestionRow(BuildContext context, int index) {
     return Obx(() {
       final isAnswered = controller.selectedAnswers.containsKey(index);
-      return GestureDetector(
+      return QuizCustomCard(
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm + 2),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md + 2,
+          vertical: AppSpacing.sm + 6,
+        ),
         onTap: () {
           controller.goToQuestion(index);
           Get.back();
         },
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          decoration: BoxDecoration(
-            color: QuizColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: QuizColors.border),
-            boxShadow: QuizColors.cardShadow,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: isAnswered
-                      ? const Color(0x2010B981)
-                      : const Color(0x20EF4444),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Center(
-                  child: Text(
-                    '${index + 1}',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: isAnswered
-                          ? QuizColors.correct
-                          : QuizColors.incorrect,
-                    ),
-                  ),
-                ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: isAnswered
+                    ? QuizThemeColors.correctSoft
+                    : QuizThemeColors.incorrectSoft,
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              const SizedBox(width: 14),
-              Expanded(
+              child: Center(
                 child: Text(
-                  'quiz.questionNumber'.trParams({'number': '${index + 1}'}),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: QuizColors.heading,
+                  '${index + 1}',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: isAnswered
+                        ? QuizThemeColors.correct
+                        : QuizThemeColors.incorrect,
                   ),
                 ),
               ),
-              Icon(
-                isAnswered ? Icons.check_circle : Icons.cancel,
-                color: isAnswered ? QuizColors.correct : QuizColors.incorrect,
-                size: 24,
+            ),
+            const SizedBox(width: AppSpacing.sm + 6),
+            Expanded(
+              child: Text(
+                'quiz.questionNumber'.trParams({'number': '${index + 1}'}),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: QuizThemeColors.heading),
               ),
-            ],
-          ),
+            ),
+            Icon(
+              isAnswered ? Icons.check_circle : Icons.cancel,
+              color: isAnswered
+                  ? QuizThemeColors.correct
+                  : QuizThemeColors.incorrect,
+              size: 24,
+            ),
+          ],
         ),
       );
     });
@@ -162,12 +156,17 @@ class ReviewSubmitScreen extends GetView<QuizController> {
   Widget _buildBottomBar() {
     final controller = Get.find<QuizController>();
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm + 4,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
       decoration: BoxDecoration(
-        color: QuizColors.surface,
+        color: QuizThemeColors.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: QuizThemeColors.shadow,
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),
@@ -185,9 +184,9 @@ class ReviewSubmitScreen extends GetView<QuizController> {
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Text(
                     'quiz.unansweredWarning'.trParams({'count': '$unanswered'}),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: QuizColors.incorrect,
+                      color: QuizThemeColors.incorrect,
                     ),
                   ),
                 ),
@@ -197,9 +196,9 @@ class ReviewSubmitScreen extends GetView<QuizController> {
                   child: Text(
                     'quiz.submissionFailed'.tr,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: QuizColors.incorrect,
+                      color: QuizThemeColors.incorrect,
                     ),
                   ),
                 ),

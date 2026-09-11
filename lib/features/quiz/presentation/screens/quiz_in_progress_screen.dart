@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../controllers/quiz_controller.dart';
 import '../quiz_colors.dart';
 import '../widgets/quiz_option_tile.dart';
+import '../widgets/quiz_custom_card.dart';
 
 class QuizInProgressScreen extends GetView<QuizController> {
   const QuizInProgressScreen({super.key});
@@ -11,41 +15,41 @@ class QuizInProgressScreen extends GetView<QuizController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: QuizColors.background,
+      backgroundColor: QuizThemeColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: QuizColors.heading),
+          icon: Icon(Icons.close, color: QuizThemeColors.heading),
           onPressed: () => _showQuitDialog(context),
         ),
       ),
       body: Obx(() {
         if (controller.isQuizLoading.value) {
-          return const Center(
-            child: CircularProgressIndicator(color: QuizColors.primary),
+          return Center(
+            child: CircularProgressIndicator(color: QuizThemeColors.primary),
           );
         }
 
         if (controller.quizError.value != null) {
           return Center(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.error_outline,
                     size: 48,
-                    color: QuizColors.incorrect,
+                    color: QuizThemeColors.incorrect,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'quiz.couldNotLoadQuiz'.tr,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: QuizColors.heading,
+                      color: QuizThemeColors.heading,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -69,25 +73,25 @@ class QuizInProgressScreen extends GetView<QuizController> {
         if (controller.questions.isEmpty) {
           return Center(
             child: Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.inbox, size: 48, color: QuizColors.border),
+                  Icon(Icons.inbox, size: 48, color: QuizThemeColors.border),
                   const SizedBox(height: 16),
                   Text(
                     'quiz.noQuestionsAvailable'.tr,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: QuizColors.heading,
+                      color: QuizThemeColors.heading,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'quiz.pickAnotherCategory'.tr,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: QuizColors.body),
+                    style: TextStyle(color: QuizThemeColors.body),
                   ),
                 ],
               ),
@@ -101,10 +105,10 @@ class QuizInProgressScreen extends GetView<QuizController> {
             const SizedBox(height: 16),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: Column(
                   children: [
-                    _buildQuestionCard(),
+                    _buildQuestionCard(context),
                     const SizedBox(height: 20),
                     _buildOptionsList(),
                     const SizedBox(height: 20),
@@ -123,14 +127,16 @@ class QuizInProgressScreen extends GetView<QuizController> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.squircle),
+        ),
         title: Text(
           'quiz.quitQuizTitle'.tr,
-          style: const TextStyle(color: QuizColors.heading),
+          style: TextStyle(color: QuizThemeColors.heading),
         ),
         content: Text(
           'quiz.quitQuizMessage'.tr,
-          style: const TextStyle(color: QuizColors.body),
+          style: TextStyle(color: QuizThemeColors.body),
         ),
         actions: [
           TextButton(
@@ -149,7 +155,7 @@ class QuizInProgressScreen extends GetView<QuizController> {
             },
             child: Text(
               'quiz.quit'.tr,
-              style: const TextStyle(color: QuizColors.incorrect),
+              style: TextStyle(color: QuizThemeColors.incorrect),
             ),
           ),
         ],
@@ -168,10 +174,10 @@ class QuizInProgressScreen extends GetView<QuizController> {
                 'current': '${controller.currentQuestionIndex.value + 1}',
                 'total': '${controller.totalQuestions}',
               }),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: QuizColors.heading,
+                color: QuizThemeColors.heading,
               ),
             ),
             const Spacer(),
@@ -193,9 +199,11 @@ class QuizInProgressScreen extends GetView<QuizController> {
         height: 52,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isLow ? const Color(0x20EF4444) : QuizColors.primaryLight,
+          color: isLow
+              ? QuizThemeColors.incorrectSoft
+              : QuizThemeColors.primaryLight,
           border: Border.all(
-            color: isLow ? QuizColors.incorrect : QuizColors.primary,
+            color: isLow ? QuizThemeColors.incorrect : QuizThemeColors.primary,
             width: 3,
           ),
         ),
@@ -210,7 +218,7 @@ class QuizInProgressScreen extends GetView<QuizController> {
                 strokeWidth: 3,
                 backgroundColor: Colors.transparent,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  isLow ? QuizColors.incorrect : QuizColors.primary,
+                  isLow ? QuizThemeColors.incorrect : QuizThemeColors.primary,
                 ),
               ),
             ),
@@ -219,7 +227,9 @@ class QuizInProgressScreen extends GetView<QuizController> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: isLow ? QuizColors.incorrect : QuizColors.primary,
+                color: isLow
+                    ? QuizThemeColors.incorrect
+                    : QuizThemeColors.primary,
               ),
             ),
           ],
@@ -228,33 +238,24 @@ class QuizInProgressScreen extends GetView<QuizController> {
     });
   }
 
-  Widget _buildQuestionCard() {
+  Widget _buildQuestionCard(BuildContext context) {
     return Obx(() {
       if (controller.questions.isEmpty) {
-        return const Padding(
+        return Padding(
           padding: EdgeInsets.symmetric(vertical: 48),
           child: Center(
-            child: CircularProgressIndicator(color: QuizColors.primary),
+            child: CircularProgressIndicator(color: QuizThemeColors.primary),
           ),
         );
       }
       final question =
           controller.questions[controller.currentQuestionIndex.value];
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: QuizColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: QuizColors.border),
-          boxShadow: QuizColors.cardShadow,
-        ),
+      return QuizCustomCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Text(
           question.question,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: QuizColors.heading,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: QuizThemeColors.heading,
             height: 1.4,
           ),
         ),
@@ -297,10 +298,10 @@ class QuizInProgressScreen extends GetView<QuizController> {
       return Container(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
         decoration: BoxDecoration(
-          color: QuizColors.surface,
+          color: QuizThemeColors.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: QuizThemeColors.shadow,
               blurRadius: 10,
               offset: const Offset(0, -4),
             ),
@@ -310,70 +311,28 @@ class QuizInProgressScreen extends GetView<QuizController> {
           child: Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: AppButton.secondary(
+                  label: 'common.skip'.tr,
+                  height: 52,
+                  radius: AppRadius.pill,
                   onPressed: () => controller.skipQuestion(),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: QuizColors.body,
-                    side: const BorderSide(color: QuizColors.border),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    minimumSize: const Size(0, 52),
-                  ),
-                  child: Text(
-                    'common.skip'.tr,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 flex: 2,
-                child: Container(
+                child: AppButton(
+                  label: isLast ? 'quiz.review'.tr : 'common.next'.tr,
+                  icon: isLast ? null : Icons.arrow_forward,
                   height: 52,
-                  decoration: BoxDecoration(
-                    gradient: QuizColors.gradient,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        if (isLast) {
-                          Get.toNamed('/quiz/review');
-                        } else {
-                          controller.nextQuestion();
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(16),
-                      child: Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              isLast ? 'quiz.review'.tr : 'common.next'.tr,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                            if (!isLast) ...[
-                              const SizedBox(width: 6),
-                              const Icon(
-                                Icons.arrow_forward,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                  radius: AppRadius.pill,
+                  onPressed: () {
+                    if (isLast) {
+                      Get.toNamed('/quiz/review');
+                    } else {
+                      controller.nextQuestion();
+                    }
+                  },
                 ),
               ),
             ],

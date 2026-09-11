@@ -199,6 +199,11 @@ class _FakeAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> verifyResetOtp({required String email, required String otp}) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<void> resetPassword({
     required String email,
     required String otp,

@@ -32,6 +32,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     'OTP_EXPIRED',
     'OTP_NOT_FOUND',
     'OTP_MAX_ATTEMPTS',
+    'OTP_TOO_MANY_ATTEMPTS',
+    'OTP_ALREADY_USED',
   };
 
   @override

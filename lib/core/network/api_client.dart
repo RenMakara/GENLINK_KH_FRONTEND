@@ -9,7 +9,6 @@ class ApiClient {
 
   Dio get raw => _dio;
 
-
   Future<T> get<T>(
     String path, {
     Map<String, dynamic>? query,
@@ -49,6 +48,16 @@ class ApiClient {
     _envelope(response);
   }
 
+  Future<T> deleteWithResult<T>(
+    String path, {
+    Map<String, dynamic>? query,
+    required T Function(dynamic data) parse,
+  }) async {
+    final response = await guardDio(
+      () => _dio.delete<dynamic>(path, queryParameters: query),
+    );
+    return parse(_envelope(response)['data']);
+  }
 
   static Map<String, dynamic> asMap(dynamic data) =>
       (data as Map?)?.cast<String, dynamic>() ?? const {};
@@ -62,7 +71,6 @@ class ApiClient {
         .map((e) => item((e as Map).cast<String, dynamic>()))
         .toList(growable: false);
   }
-
 
   T _unwrap<T>(Response<dynamic> response, T Function(dynamic) parse) =>
       parse(_envelope(response)['data']);

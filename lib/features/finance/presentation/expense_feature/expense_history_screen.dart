@@ -123,6 +123,7 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                               color: textPrimary,
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
+                              letterSpacing: -0.5,
                             ),
                           ),
                         ),

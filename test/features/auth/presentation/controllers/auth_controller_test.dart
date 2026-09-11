@@ -118,6 +118,9 @@ void main() {
       ).thenAnswer((_) async => 'access-token');
       when(() => storage.saveUserEmail(any())).thenAnswer((_) async {});
       when(() => storage.saveUserId(any())).thenAnswer((_) async {});
+      when(
+        () => storage.readAccessToken(),
+      ).thenAnswer((_) async => 'access-token');
 
       final result = await controller.signInWithGoogle();
 
@@ -188,7 +191,7 @@ void main() {
     });
   });
 
-  test('logout resets the main navigation tab to Home', () async {
+  test('logout resets the main navigation tab to Community', () async {
     mainController.changeIndex(3);
     when(() => google.signOut()).thenAnswer((_) async {});
     when(() => repository.logout()).thenAnswer((_) async {});

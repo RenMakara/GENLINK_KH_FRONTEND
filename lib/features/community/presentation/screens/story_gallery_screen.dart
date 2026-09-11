@@ -262,7 +262,7 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                     ? "All $req photos selected!"
                     : (widget.replaceSlotIndex != null
                         ? "Select 1 photo to replace slot ${widget.replaceSlotIndex! + 1}."
-                        : "Select $req photos for ${tmpl?.name ?? 'this template'}."),
+                        : "Select $req Photos ($selectedCount/$req)"),
                 style: TextStyle(
                   color: isComplete ? const Color(0xFF4ADE80) : Colors.white70,
                   fontSize: 12.5,

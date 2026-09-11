@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../controllers/productivity_controller.dart';
+import '../productivity_scope.dart';
 
 class CreateHabitScreen extends StatefulWidget {
   const CreateHabitScreen({super.key});
@@ -14,12 +16,26 @@ class CreateHabitScreen extends StatefulWidget {
 
 class _CreateHabitScreenState extends State<CreateHabitScreen> {
   final _titleController = TextEditingController();
-  String _selectedFrequency = 'Every Day';
-  String _selectedTimeOfDay = 'Morning';
-  int _targetDays = 21;
+  ProductivityController? _controller;
+  String _category = 'PERSONAL';
+  String _frequency = 'DAILY';
+  TimeOfDay? _reminderTime;
+  bool _saving = false;
 
-  final _frequencies = ['Every Day', 'Weekdays', '3 Days / Week', 'Weekends'];
-  final _timesOfDay = ['Morning', 'Afternoon', 'Evening', 'Anytime'];
+  static const _categories = [
+    'PERSONAL',
+    'HEALTH',
+    'LEARNING',
+    'WORK',
+    'OTHER',
+  ];
+  static const _frequencies = ['DAILY', 'WEEKLY', 'CUSTOM'];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = ensureProductivityController();
+  }
 
   @override
   void dispose() {
@@ -27,52 +43,83 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     super.dispose();
   }
 
+  Future<void> _save() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      _showMessage('Please enter a habit title.');
+      return;
+    }
+
+    final controller = _controller;
+    if (controller == null) {
+      Get.back(result: true);
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      await controller.createHabit(
+        title: title,
+        category: _category,
+        frequency: _frequency,
+        reminderTime: _formatTime(_reminderTime),
+      );
+      if (mounted) Get.back(result: true);
+    } catch (error) {
+      _showMessage(_errorText(error));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _pickReminderTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _reminderTime ?? TimeOfDay.now(),
+    );
+    if (picked != null) setState(() => _reminderTime = picked);
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-    final surface = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfaceSecondary;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final border = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-
+    final colors = _HabitFormColors(context);
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: surface,
+        backgroundColor: colors.surface,
+        foregroundColor: colors.textPrimary,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.close_rounded, color: textPrimary),
           onPressed: () => Get.back(),
+          icon: const Icon(Icons.close_rounded),
         ),
-        title: Text(
-          'New Habit',
-          style: TextStyle(
-            color: textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('New Habit'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
-            child: ElevatedButton(
-              onPressed: () {
-                if (_titleController.text.trim().isNotEmpty) {
-                  Get.back(result: true);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isDark ? Colors.white : Colors.black,
-                foregroundColor: isDark ? Colors.black : Colors.white,
+            child: FilledButton(
+              onPressed: _saving ? null : _save,
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.textPrimary,
+                foregroundColor: colors.inverseText,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.squircle),
                 ),
               ),
-              child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: _saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Save'),
             ),
           ),
         ],
@@ -81,147 +128,189 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: surfaceSecondary,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: border),
+            TextField(
+              controller: _titleController,
+              autofocus: true,
+              textInputAction: TextInputAction.done,
+              style: TextStyle(color: colors.textPrimary),
+              decoration: _decoration(
+                colors,
+                hintText: 'What habit do you want to build?',
               ),
-              child: TextField(
-                controller: _titleController,
-                style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.w600),
-                decoration: InputDecoration(
-                  hintText: 'e.g., Read 15 mins, Exercise, Meditate',
-                  hintStyle: TextStyle(color: textSecondary.withValues(alpha: 0.5)),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
+              onSubmitted: (_) => _saving ? null : _save(),
             ),
-
             const SizedBox(height: AppSpacing.lg),
-
-            Text(
-              'Frequency',
-              style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
+            _FieldLabel(label: 'Category', color: colors.textPrimary),
+            const SizedBox(height: 8),
+            _DropdownField(
+              value: _category,
+              values: _categories,
+              colors: colors,
+              onChanged: (value) => setState(() => _category = value),
             ),
-            const SizedBox(height: AppSpacing.xs + 2),
+            const SizedBox(height: AppSpacing.lg),
+            _FieldLabel(label: 'Frequency', color: colors.textPrimary),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 8,
-              runSpacing: 8,
-              children: _frequencies.map((freq) {
-                final isSel = _selectedFrequency == freq;
-                return ChoiceChip(
-                  label: Text(freq),
-                  selected: isSel,
-                  onSelected: (_) => setState(() => _selectedFrequency = freq),
-                  selectedColor: isDark ? Colors.white : Colors.black87,
-                  backgroundColor: surfaceSecondary,
-                  labelStyle: TextStyle(
-                    color: isSel
-                        ? (isDark ? Colors.black : Colors.white)
-                        : textSecondary,
-                    fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                  ),
-                  side: BorderSide(color: border),
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: AppSpacing.lg),
-
-            Text(
-              'Time of Day',
-              style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: AppSpacing.xs + 2),
-            Row(
-              children: _timesOfDay.map((tod) {
-                final isSel = _selectedTimeOfDay == tod;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: InkWell(
-                      onTap: () => setState(() => _selectedTimeOfDay = tod),
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: isSel
-                              ? (isDark ? Colors.white : Colors.black87)
-                              : surfaceSecondary,
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                          border: Border.all(color: border),
-                        ),
-                        child: Text(
-                          tod,
-                          style: TextStyle(
-                            color: isSel
-                                ? (isDark ? Colors.black : Colors.white)
-                                : textSecondary,
-                            fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                            fontSize: 12,
-                          ),
-                        ),
+              children: _frequencies
+                  .map((value) {
+                    final selected = _frequency == value;
+                    return ChoiceChip(
+                      label: Text(value),
+                      selected: selected,
+                      onSelected: (_) => setState(() => _frequency = value),
+                      selectedColor: AppColors.productivityAccent,
+                      labelStyle: TextStyle(
+                        color: selected ? Colors.white : colors.textSecondary,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                       ),
-                    ),
-                  ),
-                );
-              }).toList(),
+                    );
+                  })
+                  .toList(growable: false),
             ),
-
             const SizedBox(height: AppSpacing.lg),
-
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: surfaceSecondary,
+            _FieldLabel(label: 'Reminder', color: colors.textPrimary),
+            const SizedBox(height: 8),
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+              tileColor: colors.surfaceSecondary,
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: border),
+                side: BorderSide(color: colors.border),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.growthAccent.withValues(alpha: 0.14),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.local_fire_department_rounded, color: AppColors.growthAccent, size: 22),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Target Streak', style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
-                        Text('$_targetDays days to form habit', style: TextStyle(color: textSecondary, fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                  DropdownButton<int>(
-                    value: _targetDays,
-                    dropdownColor: surface,
-                    underline: const SizedBox.shrink(),
-                    items: [7, 14, 21, 30, 60, 100].map((d) {
-                      return DropdownMenuItem(
-                        value: d,
-                        child: Text('$d days', style: TextStyle(color: textPrimary, fontSize: 13)),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _targetDays = val);
-                    },
-                  ),
-                ],
+              leading: const Icon(
+                Icons.notifications_none_rounded,
+                color: AppColors.productivityAccent,
               ),
+              title: Text(
+                _reminderTime == null
+                    ? 'No reminder set'
+                    : _reminderTime!.format(context),
+                style: TextStyle(color: colors.textPrimary),
+              ),
+              trailing: _reminderTime == null
+                  ? const Icon(Icons.chevron_right_rounded)
+                  : IconButton(
+                      onPressed: () => setState(() => _reminderTime = null),
+                      icon: const Icon(Icons.clear_rounded),
+                    ),
+              onTap: _pickReminderTime,
             ),
           ],
         ),
       ),
     );
   }
+
+  InputDecoration _decoration(
+    _HabitFormColors colors, {
+    required String hintText,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: TextStyle(color: colors.textMuted),
+      filled: true,
+      fillColor: colors.surfaceSecondary,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderSide: BorderSide(color: colors.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderSide: BorderSide(color: colors.border),
+      ),
+    );
+  }
 }
+
+class _DropdownField extends StatelessWidget {
+  const _DropdownField({
+    required this.value,
+    required this.values,
+    required this.colors,
+    required this.onChanged,
+  });
+
+  final String value;
+  final List<String> values;
+  final _HabitFormColors colors;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<String>(
+      initialValue: value,
+      items: values
+          .map(
+            (item) => DropdownMenuItem<String>(value: item, child: Text(item)),
+          )
+          .toList(growable: false),
+      onChanged: (item) {
+        if (item != null) onChanged(item);
+      },
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: colors.surfaceSecondary,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderSide: BorderSide(color: colors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderSide: BorderSide(color: colors.border),
+        ),
+      ),
+      dropdownColor: colors.surface,
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    label,
+    style: TextStyle(color: color, fontWeight: FontWeight.w700),
+  );
+}
+
+class _HabitFormColors {
+  _HabitFormColors(BuildContext context)
+    : isDark = Theme.of(context).brightness == Brightness.dark;
+
+  final bool isDark;
+
+  Color get background =>
+      isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
+  Color get surface =>
+      isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+  Color get surfaceSecondary =>
+      isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfaceSecondary;
+  Color get textPrimary =>
+      isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+  Color get textSecondary =>
+      isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+  Color get textMuted =>
+      isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+  Color get inverseText =>
+      isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse;
+  Color get border =>
+      isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+}
+
+String? _formatTime(TimeOfDay? time) {
+  if (time == null) return null;
+  final hour = time.hour.toString().padLeft(2, '0');
+  final minute = time.minute.toString().padLeft(2, '0');
+  return '$hour:$minute:00';
+}
+
+String _errorText(Object error) =>
+    error.toString().replaceFirst('Exception: ', '');

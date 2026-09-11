@@ -13,7 +13,7 @@ class TopRankDetailScreen extends GetView<QuizController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: QuizColors.background,
+      backgroundColor: QuizThemeColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -42,10 +42,10 @@ class TopRankDetailScreen extends GetView<QuizController> {
                 ),
                 child: Text(
                   'quiz.backToDashboard'.tr,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: QuizColors.body,
+                    color: QuizThemeColors.body,
                   ),
                 ),
               ),
@@ -70,9 +70,9 @@ class TopRankDetailScreen extends GetView<QuizController> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.only(top: 40, bottom: 32),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0x306C5CE7), QuizColors.background],
+          colors: [QuizThemeColors.primarySoft, QuizThemeColors.background],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -80,7 +80,7 @@ class TopRankDetailScreen extends GetView<QuizController> {
       child: Column(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
+            icon: Icon(Icons.arrow_back, color: QuizThemeColors.heading),
             onPressed: () => Get.back(),
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.only(left: 16),
@@ -94,18 +94,25 @@ class TopRankDetailScreen extends GetView<QuizController> {
                 height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFFD700), Color(0xFFFFA000)],
+                  gradient: LinearGradient(
+                    colors: [
+                      QuizThemeColors.gold,
+                      QuizThemeColors.gold.withValues(alpha: 0.78),
+                    ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFFC107).withValues(alpha: 0.3),
+                      color: QuizThemeColors.gold.withValues(alpha: 0.3),
                       blurRadius: 30,
                       offset: const Offset(0, 10),
                     ),
                   ],
                 ),
-                child: const Icon(Icons.person, color: Colors.white, size: 48),
+                child: Icon(
+                  Icons.person,
+                  color: QuizThemeColors.onPrimary,
+                  size: 48,
+                ),
               ),
               Positioned(
                 bottom: -6,
@@ -115,11 +122,11 @@ class TopRankDetailScreen extends GetView<QuizController> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    gradient: QuizColors.gradient,
+                    gradient: QuizThemeColors.gradient,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: QuizColors.primary.withValues(alpha: 0.3),
+                        color: QuizThemeColors.primary.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -127,10 +134,10 @@ class TopRankDetailScreen extends GetView<QuizController> {
                   ),
                   child: Text(
                     'quiz.globalRank'.trParams({'rank': '1'}),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: QuizThemeColors.onPrimary,
                     ),
                   ),
                 ),
@@ -140,24 +147,24 @@ class TopRankDetailScreen extends GetView<QuizController> {
           const SizedBox(height: 18),
           Text(
             topEntry.name,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w800,
-              color: QuizColors.heading,
+              color: QuizThemeColors.heading,
             ),
           ),
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.star, color: QuizColors.gold, size: 16),
+              Icon(Icons.star, color: QuizThemeColors.gold, size: 16),
               const SizedBox(width: 6),
               Text(
                 '${topEntry.xp} XP',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: QuizColors.body,
+                  color: QuizThemeColors.body,
                 ),
               ),
             ],
@@ -177,10 +184,10 @@ class TopRankDetailScreen extends GetView<QuizController> {
           children: [
             Text(
               'quiz.achievements'.tr,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: QuizColors.heading,
+                color: QuizThemeColors.heading,
               ),
             ),
             const SizedBox(height: 16),
@@ -192,15 +199,15 @@ class TopRankDetailScreen extends GetView<QuizController> {
               crossAxisSpacing: 12,
               childAspectRatio: 1,
               children: List.generate(8, (i) {
-                final colors = const [
-                  Color(0xFFFFD700),
-                  Color(0xFFC0C0C0),
-                  Color(0xFFCD7F32),
-                  Color(0xFF8B5CF6),
-                  Color(0xFF10B981),
-                  Color(0xFFF59E0B),
-                  Color(0xFFEF4444),
-                  Color(0xFF3B82F6),
+                final colors = [
+                  QuizThemeColors.gold,
+                  QuizThemeColors.medalSilver,
+                  QuizThemeColors.medalBronze,
+                  QuizThemeColors.primary,
+                  QuizThemeColors.correct,
+                  QuizThemeColors.gold,
+                  QuizThemeColors.incorrect,
+                  QuizThemeColors.primary,
                 ];
                 final icons = const [
                   Icons.emoji_events,
@@ -233,17 +240,17 @@ class TopRankDetailScreen extends GetView<QuizController> {
       child: Row(
         children: [
           Expanded(
-            child: _buildStatItem('148', 'quiz.quizzes'.tr, QuizColors.primary),
+            child: _buildStatItem(
+              '148',
+              'quiz.quizzes'.tr,
+              QuizThemeColors.primary,
+            ),
           ),
           const SizedBox(width: 10),
-          Expanded(child: _buildStatItem('12,450', 'XP', QuizColors.gold)),
+          Expanded(child: _buildStatItem('12,450', 'XP', QuizThemeColors.gold)),
           const SizedBox(width: 10),
           Expanded(
-            child: _buildStatItem(
-              '8',
-              'quiz.badges'.tr,
-              const Color(0xFFF59E0B),
-            ),
+            child: _buildStatItem('8', 'quiz.badges'.tr, QuizThemeColors.gold),
           ),
         ],
       ),
@@ -266,7 +273,7 @@ class TopRankDetailScreen extends GetView<QuizController> {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: QuizColors.body),
+            style: TextStyle(fontSize: 12, color: QuizThemeColors.body),
           ),
         ],
       ),

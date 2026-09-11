@@ -2,9 +2,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/spacing/app_spacing.dart';
 import '../controllers/quiz_controller.dart';
 import '../quiz_colors.dart';
 import '../widgets/quiz_custom_card.dart';
+import '../widgets/quiz_icon_container.dart';
 
 class FindOpponentScreen extends GetView<QuizController> {
   const FindOpponentScreen({super.key});
@@ -12,21 +15,19 @@ class FindOpponentScreen extends GetView<QuizController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: QuizColors.background,
+      backgroundColor: QuizThemeColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: QuizColors.heading),
+          icon: Icon(Icons.arrow_back, color: QuizThemeColors.heading),
           onPressed: () => Get.back(),
         ),
         title: Text(
           'quiz.findOpponent'.tr,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: QuizColors.heading,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(color: QuizThemeColors.heading),
         ),
       ),
       body: Column(
@@ -35,9 +36,9 @@ class FindOpponentScreen extends GetView<QuizController> {
           _buildRadarAnimation(),
           const Spacer(),
           _buildStatusText(),
-          const SizedBox(height: 32),
+          const SizedBox(height: AppSpacing.xl),
           _buildCancelButton(),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           _buildTipCard(),
           const Spacer(),
         ],
@@ -59,18 +60,22 @@ class FindOpponentScreen extends GetView<QuizController> {
             Container(
               width: 80,
               height: 80,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: QuizColors.gradient,
+                gradient: QuizThemeColors.gradient,
                 boxShadow: [
                   BoxShadow(
-                    color: Color(0x408B5CF6),
+                    color: QuizThemeColors.primary.withValues(alpha: 0.25),
                     blurRadius: 20,
                     offset: Offset(0, 8),
                   ),
                 ],
               ),
-              child: const Icon(Icons.person, color: Colors.white, size: 40),
+              child: Icon(
+                Icons.person,
+                color: QuizThemeColors.onPrimary,
+                size: 40,
+              ),
             ),
             if (controller.opponentSearchProgress.value >= 1.0)
               _buildCheckingPulse(),
@@ -86,10 +91,10 @@ class FindOpponentScreen extends GetView<QuizController> {
       height: 80,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: QuizColors.correct, width: 3),
+        border: Border.all(color: QuizThemeColors.correct, width: 3),
       ),
       child: const Center(
-        child: Icon(Icons.check, color: QuizColors.correct, size: 28),
+        child: Icon(Icons.check, color: QuizThemeColors.correct, size: 28),
       ),
     );
   }
@@ -105,10 +110,10 @@ class FindOpponentScreen extends GetView<QuizController> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
-            color: QuizColors.primary.withValues(alpha: 0.15 * opacity),
+            color: QuizThemeColors.primary.withValues(alpha: 0.15 * opacity),
             width: 1.5,
           ),
-          color: QuizColors.primary.withValues(alpha: 0.04 * opacity),
+          color: QuizThemeColors.primary.withValues(alpha: 0.04 * opacity),
         ),
       );
     });
@@ -121,10 +126,10 @@ class FindOpponentScreen extends GetView<QuizController> {
           children: [
             Text(
               'quiz.opponentFound'.tr,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
-                color: QuizColors.correct,
+                color: QuizThemeColors.correct,
               ),
             ),
             const SizedBox(height: 8),
@@ -132,7 +137,7 @@ class FindOpponentScreen extends GetView<QuizController> {
               'quiz.preparingMatch'.tr,
               style: TextStyle(
                 fontSize: 15,
-                color: QuizColors.body.withValues(alpha: 0.8),
+                color: QuizThemeColors.body.withValues(alpha: 0.8),
               ),
             ),
           ],
@@ -142,10 +147,10 @@ class FindOpponentScreen extends GetView<QuizController> {
         children: [
           Text(
             'quiz.findingOpponent'.tr,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
-              color: QuizColors.heading,
+              color: QuizThemeColors.heading,
             ),
           ),
           const SizedBox(height: 8),
@@ -153,7 +158,7 @@ class FindOpponentScreen extends GetView<QuizController> {
             'quiz.searchingPlayers'.tr,
             style: TextStyle(
               fontSize: 14,
-              color: QuizColors.body.withValues(alpha: 0.8),
+              color: QuizThemeColors.body.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 20),
@@ -164,9 +169,9 @@ class FindOpponentScreen extends GetView<QuizController> {
               child: Obx(
                 () => LinearProgressIndicator(
                   value: controller.opponentSearchProgress.value,
-                  backgroundColor: QuizColors.border,
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    QuizColors.primary,
+                  backgroundColor: QuizThemeColors.border,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    QuizThemeColors.primary,
                   ),
                   minHeight: 6,
                 ),
@@ -191,16 +196,16 @@ class FindOpponentScreen extends GetView<QuizController> {
             Get.back();
           },
           style: OutlinedButton.styleFrom(
-            foregroundColor: QuizColors.body,
-            side: const BorderSide(color: QuizColors.border),
+            foregroundColor: QuizThemeColors.body,
+            side: BorderSide(color: QuizThemeColors.border),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             minimumSize: const Size(double.infinity, 48),
           ),
           child: Text(
             'common.cancel'.tr,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
           ),
         ),
       );
@@ -211,29 +216,23 @@ class FindOpponentScreen extends GetView<QuizController> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: QuizCustomCard(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(AppSpacing.sm + 6),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0x40FFC107),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.lightbulb_outline,
-                color: QuizColors.gold,
-                size: 22,
-              ),
+            QuizIconContainer(
+              icon: Icons.lightbulb_outline,
+              accentColor: QuizThemeColors.gold,
+              size: 40,
+              iconSize: 22,
+              borderRadius: AppRadius.md,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 'quiz.matchTip'.tr,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
-                  color: QuizColors.body,
+                  color: QuizThemeColors.body,
                   height: 1.4,
                 ),
               ),

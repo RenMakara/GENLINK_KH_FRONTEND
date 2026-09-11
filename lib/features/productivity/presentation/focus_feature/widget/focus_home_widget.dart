@@ -41,7 +41,7 @@ class FocusSessionData {
 class _FocusColors {
   final bool isDark;
 
-  _FocusColors(this.isDark);
+  const _FocusColors(this.isDark);
 
   Color get background =>
       isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
@@ -81,26 +81,29 @@ class FocusHeader extends StatelessWidget {
     return Row(
       children: [
         if (onBack != null) ...[
-          InkWell(
-            borderRadius: BorderRadius.circular(10),
-            onTap: onBack,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: colors.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: colors.border),
-              ),
-              child: Icon(
-                Icons.arrow_back_rounded,
-                size: 18,
-                color: colors.textPrimary,
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: onBack,
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colors.border),
+                ),
+                child: Icon(
+                  Icons.arrow_back_rounded,
+                  size: 19,
+                  color: colors.textPrimary,
+                ),
               ),
             ),
           ),
 
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
         ],
 
         Expanded(
@@ -108,8 +111,9 @@ class FocusHeader extends StatelessWidget {
             title,
             style: TextStyle(
               color: colors.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
             ),
           ),
         ),
@@ -134,8 +138,9 @@ class FocusSectionTitle extends StatelessWidget {
       title,
       style: TextStyle(
         color: colors.textPrimary,
-        fontSize: 11,
+        fontSize: 17,
         fontWeight: FontWeight.w700,
+        letterSpacing: -0.2,
       ),
     );
   }
@@ -156,9 +161,9 @@ class FocusModes extends StatelessWidget {
       itemCount: modes.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        mainAxisSpacing: 7,
-        crossAxisSpacing: 7,
-        childAspectRatio: 1.65,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 1.50,
       ),
       itemBuilder: (context, index) {
         return _FocusModeCard(
@@ -169,6 +174,10 @@ class FocusModes extends StatelessWidget {
     );
   }
 }
+
+// ============================================================
+// FOCUS MODE CARD
+// ============================================================
 
 class _FocusModeCard extends StatefulWidget {
   final FocusModeData mode;
@@ -193,48 +202,64 @@ class _FocusModeCardState extends State<_FocusModeCard> {
 
     return GestureDetector(
       onTapDown: (_) {
-        setState(() => pressed = true);
+        setState(() {
+          pressed = true;
+        });
       },
       onTapUp: (_) {
-        setState(() => pressed = false);
+        setState(() {
+          pressed = false;
+        });
+
         widget.onTap?.call();
       },
       onTapCancel: () {
-        setState(() => pressed = false);
+        setState(() {
+          pressed = false;
+        });
       },
       child: AnimatedScale(
-        scale: pressed ? .96 : 1,
-        duration: const Duration(milliseconds: 100),
+        scale: pressed ? 0.97 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOutCubic,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.all(10),
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
             color: selected ? colors.textPrimary : colors.surface,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: selected ? colors.textPrimary : colors.border,
             ),
           ),
           child: Row(
             children: [
-              Container(
-                width: 34,
-                height: 34,
+              // ------------------------------------------------
+              // ICON
+              // ------------------------------------------------
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: selected
-                      ? Colors.white.withValues(alpha: .10)
+                      ? Colors.white.withValues(alpha: 0.10)
                       : colors.surfaceSecondary,
-                  borderRadius: BorderRadius.circular(9),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   widget.mode.icon,
-                  size: 16,
-                  color: selected ? Colors.white : colors.textMuted,
+                  size: 18,
+                  color: selected ? Colors.white : colors.textSecondary,
                 ),
               ),
 
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
 
+              // ------------------------------------------------
+              // TEXT
+              // ------------------------------------------------
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -242,14 +267,16 @@ class _FocusModeCardState extends State<_FocusModeCard> {
                   children: [
                     Text(
                       widget.mode.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: selected ? Colors.white : colors.textPrimary,
-                        fontSize: 9,
+                        fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
 
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
 
                     Text(
                       widget.mode.subtitle,
@@ -257,13 +284,44 @@ class _FocusModeCardState extends State<_FocusModeCard> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: selected
-                            ? Colors.white.withValues(alpha: .65)
+                            ? Colors.white.withValues(alpha: 0.65)
                             : colors.textMuted,
-                        fontSize: 7,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
                 ),
+              ),
+
+              const SizedBox(width: 5),
+
+              // ------------------------------------------------
+              // CHECK
+              // ------------------------------------------------
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                width: 19,
+                height: 19,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected
+                      ? AppColors.productivityAccent
+                      : Colors.transparent,
+                  border: Border.all(
+                    color: selected
+                        ? AppColors.productivityAccent
+                        : colors.border,
+                    width: 1.5,
+                  ),
+                ),
+                child: selected
+                    ? const Icon(
+                        Icons.check_rounded,
+                        size: 12,
+                        color: Colors.white,
+                      )
+                    : null,
               ),
             ],
           ),
@@ -299,12 +357,16 @@ class FocusAmbientSounds extends StatelessWidget {
             ),
           ),
 
-          if (i != sounds.length - 1) const SizedBox(width: 6),
+          if (i != sounds.length - 1) const SizedBox(width: 8),
         ],
       ],
     );
   }
 }
+
+// ============================================================
+// AMBIENT SOUND ITEM
+// ============================================================
 
 class _AmbientSoundItem extends StatefulWidget {
   final AmbientSoundData data;
@@ -332,51 +394,81 @@ class _AmbientSoundItemState extends State<_AmbientSoundItem> {
 
     return GestureDetector(
       onTapDown: (_) {
-        setState(() => pressed = true);
+        setState(() {
+          pressed = true;
+        });
       },
       onTapUp: (_) {
-        setState(() => pressed = false);
+        setState(() {
+          pressed = false;
+        });
+
         widget.onTap?.call();
       },
       onTapCancel: () {
-        setState(() => pressed = false);
+        setState(() {
+          pressed = false;
+        });
       },
       child: AnimatedScale(
-        scale: pressed ? .93 : 1,
-        duration: const Duration(milliseconds: 100),
+        scale: pressed ? 0.94 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOutCubic,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          height: 48,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          height: 64,
           decoration: BoxDecoration(
             color: widget.selected
-                ? AppColors.productivityAccent.withValues(alpha: .10)
+                ? AppColors.productivityAccent.withValues(alpha: 0.10)
                 : colors.surface,
-            borderRadius: BorderRadius.circular(9),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: widget.selected
-                  ? AppColors.productivityAccent.withValues(alpha: .35)
+                  ? AppColors.productivityAccent.withValues(alpha: 0.40)
                   : colors.border,
             ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                widget.data.icon,
-                size: 14,
-                color: widget.selected
-                    ? AppColors.productivityAccent
-                    : colors.textMuted,
+              // ------------------------------------------------
+              // ICON
+              // ------------------------------------------------
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: widget.selected
+                      ? AppColors.productivityAccent.withValues(alpha: 0.12)
+                      : colors.surfaceSecondary,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  widget.data.icon,
+                  size: 15,
+                  color: widget.selected
+                      ? AppColors.productivityAccent
+                      : colors.textMuted,
+                ),
               ),
 
-              const SizedBox(height: 3),
+              const SizedBox(height: 5),
 
+              // ------------------------------------------------
+              // TITLE
+              // ------------------------------------------------
               Text(
                 widget.data.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: colors.textSecondary,
-                  fontSize: 6,
-                  fontWeight: FontWeight.w500,
+                  color: widget.selected
+                      ? colors.textPrimary
+                      : colors.textSecondary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -403,7 +495,7 @@ class FocusRecentSessions extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: colors.border),
       ),
       child: Column(
@@ -420,6 +512,10 @@ class FocusRecentSessions extends StatelessWidget {
   }
 }
 
+// ============================================================
+// RECENT SESSION ITEM
+// ============================================================
+
 class _RecentSessionItem extends StatelessWidget {
   final FocusSessionData data;
 
@@ -432,54 +528,72 @@ class _RecentSessionItem extends StatelessWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       child: Row(
         children: [
+          // ------------------------------------------------
+          // ICON
+          // ------------------------------------------------
           Container(
-            width: 25,
-            height: 25,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
-              color: AppColors.productivityAccent.withValues(alpha: .08),
-              shape: BoxShape.circle,
+              color: AppColors.productivityAccent.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               data.icon,
-              size: 12,
+              size: 16,
               color: AppColors.productivityAccent,
             ),
           ),
 
-          const SizedBox(width: 8),
+          const SizedBox(width: 11),
 
+          // ------------------------------------------------
+          // SESSION INFO
+          // ------------------------------------------------
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   data.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: colors.textPrimary,
-                    fontSize: 8,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
 
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
 
                 Text(
                   data.date,
-                  style: TextStyle(color: colors.textMuted, fontSize: 7),
+                  style: TextStyle(color: colors.textMuted, fontSize: 10),
                 ),
               ],
             ),
           ),
 
-          Text(
-            data.duration,
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: 8,
-              fontWeight: FontWeight.w700,
+          // ------------------------------------------------
+          // DURATION
+          // ------------------------------------------------
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+            decoration: BoxDecoration(
+              color: colors.surfaceSecondary,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              data.duration,
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -511,7 +625,9 @@ class _FocusStartButtonState extends State<FocusStartButton> {
       loading = true;
     });
 
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 120));
+
+    if (!mounted) return;
 
     setState(() {
       pressed = false;
@@ -532,38 +648,51 @@ class _FocusStartButtonState extends State<FocusStartButton> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: _handleTap,
+
       onTapDown: (_) {
         if (!loading) {
-          setState(() => pressed = true);
+          setState(() {
+            pressed = true;
+          });
         }
       },
+
       onTapUp: (_) {
         if (!loading) {
-          setState(() => pressed = false);
+          setState(() {
+            pressed = false;
+          });
         }
       },
+
       onTapCancel: () {
         if (!loading) {
-          setState(() => pressed = false);
+          setState(() {
+            pressed = false;
+          });
         }
       },
+
       child: AnimatedScale(
-        scale: pressed ? .97 : 1,
-        duration: const Duration(milliseconds: 100),
+        scale: pressed ? 0.97 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOutCubic,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
           width: double.infinity,
-          height: 40,
+          height: 46,
           decoration: BoxDecoration(
             color: AppColors.productivityAccent,
-            borderRadius: BorderRadius.circular(9),
+            borderRadius: BorderRadius.circular(12),
             boxShadow: pressed
                 ? [
                     BoxShadow(
                       color: AppColors.productivityAccent.withValues(
-                        alpha: .25,
+                        alpha: 0.25,
                       ),
-                      blurRadius: 8,
+                      blurRadius: 12,
+                      offset: const Offset(0, 5),
                     ),
                   ]
                 : null,
@@ -571,20 +700,33 @@ class _FocusStartButtonState extends State<FocusStartButton> {
           child: Center(
             child: loading
                 ? const SizedBox(
-                    width: 17,
-                    height: 17,
+                    width: 19,
+                    height: 19,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       color: Colors.white,
                     ),
                   )
-                : Text(
-                    widget.text,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                    ),
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.play_arrow_rounded,
+                        size: 19,
+                        color: Colors.white,
+                      ),
+
+                      const SizedBox(width: 7),
+
+                      Text(
+                        widget.text,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
           ),
         ),

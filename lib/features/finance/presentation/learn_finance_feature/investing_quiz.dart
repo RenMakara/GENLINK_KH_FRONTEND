@@ -42,6 +42,9 @@ class _InvestingQuizScreenState extends State<InvestingQuizScreen> {
     final text = isDark
         ? AppColors.darkTextPrimary
         : AppColors.lightTextPrimary;
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
     final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final border = isDark
         ? AppColors.darkBorderSubtle
@@ -84,10 +87,10 @@ class _InvestingQuizScreenState extends State<InvestingQuizScreen> {
                       child: Text(
                         'finance.learning.quiz'.tr,
                         style: TextStyle(
-                          color: text,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.3,
+                          color: textPrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),

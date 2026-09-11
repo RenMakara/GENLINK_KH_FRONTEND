@@ -82,6 +82,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> verifyResetOtp({required String email, required String otp}) async {
+    await _remote.verifyResetOtp(email: email, otp: otp);
+  }
+
+  @override
   Future<void> resetPassword({
     required String email,
     required String otp,

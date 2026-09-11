@@ -115,22 +115,24 @@ class SavingGoalResponse {
 **Pay (mock KHQR)** `POST /finance/wallet/pay` → `{ "amount": 15.00, "merchant": "Brown Coffee", "note": "iced latte" }`
 **History** `GET /finance/wallet/transactions?page=0&size=20` → `PageResponse<TransactionResponse>`
 ```json
-{ "walletId":"…", "balance": 85.00, "currency": "USD" }
+{ "walletId":"…", "balanceUsd": 85.00, "balanceKhr": 0.00 }
 ```
 ```dart
 class WalletResponse {
-  final String walletId, currency; final double balance;
-  WalletResponse.fromJson(Map j) : walletId=j['walletId'], currency=j['currency'],
-    balance=(j['balance'] as num).toDouble();
+  final String walletId; final double balanceUsd, balanceKhr;
+  WalletResponse.fromJson(Map j) : walletId=j['walletId'],
+    balanceUsd=(j['balanceUsd'] as num).toDouble(), balanceKhr=(j['balanceKhr'] as num).toDouble();
 }
 class TransactionResponse {
-  final String transactionId, transactionType, status, createdAt; final String? description; final double amount;
+  final String transactionId, transactionType, direction, currency, status, createdAt;
+  final String? description, provider, providerRef; final double amount;
   TransactionResponse.fromJson(Map j) : transactionId=j['transactionId'],
-    transactionType=j['transactionType'], status=j['status'], createdAt=j['createdAt'],
-    description=j['description'], amount=(j['amount'] as num).toDouble();
+    transactionType=j['transactionType'], direction=j['direction'], currency=j['currency'],
+    status=j['status'], createdAt=j['createdAt'], description=j['description'],
+    provider=j['provider'], providerRef=j['providerRef'], amount=(j['amount'] as num).toDouble();
 }
 ```
-`transactionType`: `DEPOSIT`/`MOCK_KHQR_PAYMENT`/`EVENT_PAYMENT`/`REWARD`. **errorCodes:** `DEMO_WALLET_INSUFFICIENT_BALANCE`.
+`transactionType`: `DEPOSIT`/`KHQR_PAYMENT`/`EVENT_PAYMENT`/`REWARD`. Top-up/payment accept optional `currency` (default `USD`). **errorCodes:** `DEMO_WALLET_INSUFFICIENT_BALANCE`.
 
 ---
 

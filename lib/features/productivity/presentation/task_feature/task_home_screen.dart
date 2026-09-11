@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:genlink_frontend/features/productivity/presentation/task_feature/task_create_screen.dart';
 import 'package:get/get.dart';
 
-import 'package:genlink_frontend/features/productivity/presentation/task_feature/widget/task_home_widget.dart';
+import '../../../../design_system/colors/app_colors.dart';
+import '../../domain/entities/productivity_entities.dart';
+import '../controllers/productivity_controller.dart';
+import '../productivity_scope.dart';
+import '../screens/create_task_screen.dart';
 
 class TasksPage extends StatefulWidget {
   const TasksPage({super.key});
@@ -12,193 +15,15 @@ class TasksPage extends StatefulWidget {
 }
 
 class _TasksPageState extends State<TasksPage> {
-  final TextEditingController _searchController = TextEditingController();
+  final _searchController = TextEditingController();
+  ProductivityController? _controller;
+  String _search = '';
+  _TaskFilter _filter = _TaskFilter.all;
 
-  String _searchText = '';
-
-  int _selectedStatus = 0;
-  int _selectedPriority = 0;
-
-  final List<TaskData> _tasks = const [
-    TaskData(
-      title: 'Deep work — React TypeScript',
-      dueText: 'Due 2:00 PM',
-      priority: TaskPriority.high,
-    ),
-    TaskData(
-      title: 'Review weekly goals',
-      dueText: 'Completed · 9:00 AM',
-      priority: TaskPriority.high,
-      completed: true,
-    ),
-    TaskData(
-      title: 'Update portfolio design',
-      dueText: 'Due 4:00 PM',
-      priority: TaskPriority.medium,
-    ),
-    TaskData(
-      title: 'Send client proposal',
-      dueText: 'Due 5:00 PM',
-      priority: TaskPriority.low,
-    ),
-    TaskData(
-      title: 'Read design patterns book',
-      dueText: 'Completed',
-      priority: TaskPriority.high,
-      completed: true,
-    ),
-    TaskData(
-      title: 'Prepare presentation',
-      dueText: 'Due Tomorrow · 10:00 AM',
-      priority: TaskPriority.medium,
-    ),
-    TaskData(
-      title: 'Check project GitHub issues',
-      dueText: 'Due Tomorrow · 3:00 PM',
-      priority: TaskPriority.low,
-    ),
-  ];
-
-  List<String> get _statusOptions => [
-    'tasks.filter.all'.tr,
-    'tasks.filter.today'.tr,
-    'tasks.filter.upcoming'.tr,
-    'tasks.filter.completed'.tr,
-  ];
-
-  List<String> get _priorityOptions => [
-    'tasks.filter.all'.tr,
-    'tasks.filter.high'.tr,
-    'tasks.filter.medium'.tr,
-    'tasks.filter.low'.tr,
-  ];
-
-  List<TaskData> get _filteredTasks {
-    var result = List<TaskData>.from(_tasks);
-
-    if (_searchText.trim().isNotEmpty) {
-      final query = _searchText.trim().toLowerCase();
-
-      result = result.where((task) {
-        return task.title.toLowerCase().contains(query) ||
-            task.dueText.toLowerCase().contains(query);
-      }).toList();
-    }
-
-    switch (_selectedStatus) {
-      case 1:
-        result = result.where((task) {
-          final due = task.dueText.toLowerCase();
-
-          return !task.completed &&
-              (due.contains('am') || due.contains('pm')) &&
-              !due.contains('tomorrow');
-        }).toList();
-        break;
-
-      case 2:
-        result = result.where((task) {
-          return !task.completed &&
-              task.dueText.toLowerCase().contains('tomorrow');
-        }).toList();
-        break;
-
-      case 3:
-        result = result.where((task) {
-          return task.completed;
-        }).toList();
-        break;
-    }
-
-    switch (_selectedPriority) {
-      case 1:
-        result = result
-            .where((task) => task.priority == TaskPriority.high)
-            .toList();
-        break;
-
-      case 2:
-        result = result
-            .where((task) => task.priority == TaskPriority.medium)
-            .toList();
-        break;
-
-      case 3:
-        result = result
-            .where((task) => task.priority == TaskPriority.low)
-            .toList();
-        break;
-    }
-
-    return result;
-  }
-
-  int get _activeFilterCount {
-    int count = 0;
-
-    if (_selectedStatus != 0) count++;
-    if (_selectedPriority != 0) count++;
-
-    return count;
-  }
-
-  void _openFilterSheet() {
-    int temporaryStatus = _selectedStatus;
-    int temporaryPriority = _selectedPriority;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return TasksFilterSheet(
-              title: 'tasks.filter.title'.tr,
-              subtitle: 'tasks.filter.subtitle'.tr,
-              statusTitle: 'tasks.filter.status'.tr,
-              priorityTitle: 'tasks.filter.priority'.tr,
-              resetText: 'tasks.filter.reset'.tr,
-              applyText: 'tasks.filter.apply'.tr,
-              statusOptions: _statusOptions,
-              priorityOptions: _priorityOptions,
-              selectedStatus: temporaryStatus,
-              selectedPriority: temporaryPriority,
-              onStatusChanged: (index) {
-                setSheetState(() {
-                  temporaryStatus = index;
-                });
-              },
-              onPriorityChanged: (index) {
-                setSheetState(() {
-                  temporaryPriority = index;
-                });
-              },
-              onReset: () {
-                setSheetState(() {
-                  temporaryStatus = 0;
-                  temporaryPriority = 0;
-                });
-              },
-              onApply: () {
-                setState(() {
-                  _selectedStatus = temporaryStatus;
-                  _selectedPriority = temporaryPriority;
-                });
-
-                Navigator.of(sheetContext).pop();
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _createTask() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const CreateTaskPage()));
+  @override
+  void initState() {
+    super.initState();
+    _controller = ensureProductivityController();
   }
 
   @override
@@ -207,68 +32,391 @@ class _TasksPageState extends State<TasksPage> {
     super.dispose();
   }
 
+  Future<void> _createTask() async {
+    await Get.to(() => const CreateTaskScreen());
+    await _controller?.reload();
+  }
+
+  Future<void> _toggle(
+    ProductivityController controller,
+    ProductivityTask task,
+  ) async {
+    try {
+      await controller.toggleTask(task.taskId, completed: !task.completed);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_errorText(error))));
+    }
+  }
+
+  Future<void> _delete(ProductivityController controller, String taskId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete task?'),
+        content: const Text('This task will be removed permanently.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await controller.deleteTask(taskId);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_errorText(error))));
+    }
+  }
+
+  List<ProductivityTask> _filtered(List<ProductivityTask> tasks) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+    final query = _search.trim().toLowerCase();
+
+    return tasks
+        .where((task) {
+          if (query.isNotEmpty &&
+              !task.title.toLowerCase().contains(query) &&
+              !(task.description ?? '').toLowerCase().contains(query)) {
+            return false;
+          }
+
+          final due = task.dueDate?.toLocal();
+          switch (_filter) {
+            case _TaskFilter.all:
+              return true;
+            case _TaskFilter.today:
+              return !task.completed &&
+                  due != null &&
+                  due.isAfter(today.subtract(const Duration(seconds: 1))) &&
+                  due.isBefore(tomorrow);
+            case _TaskFilter.upcoming:
+              return !task.completed && due != null && !due.isBefore(tomorrow);
+            case _TaskFilter.completed:
+              return task.completed;
+          }
+        })
+        .toList(growable: false);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colors = TaskThemeColors(
-      Theme.of(context).brightness == Brightness.dark,
-    );
+    final controller = _controller;
+    if (controller == null) return const _UnavailableTaskView();
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final colors = _TaskColors(context);
+    return Obx(() {
+      if (controller.isLoading.value && controller.tasks.isEmpty) {
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      }
+      final tasks = _filtered(controller.tasks.toList(growable: false));
+      return Scaffold(
+        backgroundColor: colors.background,
+        appBar: AppBar(
+          backgroundColor: colors.background,
+          foregroundColor: colors.textPrimary,
+          elevation: 0,
+          title: const Text('Tasks'),
+          actions: [
+            IconButton(
+              onPressed: _createTask,
+              icon: const Icon(Icons.add_rounded),
+              tooltip: 'Create task',
+            ),
+          ],
+        ),
+        body: RefreshIndicator(
+          onRefresh: controller.reload,
+          color: AppColors.productivityAccent,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
-              TasksTopBar(
-                title: 'tasks.title'.tr,
-                subtitle: 'tasks.subtitle'.tr,
-                onBack: () => Navigator.of(context).pop(),
-                onAdd: _createTask,
-              ),
-
-              const SizedBox(height: 20),
-
-              TasksSearchField(
+              TextField(
                 controller: _searchController,
-                hintText: 'tasks.searchHint'.tr,
-                activeFilterCount: _activeFilterCount,
-                onChanged: (value) {
-                  setState(() {
-                    _searchText = value;
-                  });
-                },
-                onFilter: _openFilterSheet,
+                onChanged: (value) => setState(() => _search = value),
+                decoration: InputDecoration(
+                  hintText: 'Search tasks',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  filled: true,
+                  fillColor: colors.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: colors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: colors.border),
+                  ),
+                ),
               ),
-
-              const SizedBox(height: 22),
-
-              TasksHeader(
-                title: 'tasks.myTasks'.tr,
-                count: _filteredTasks.length,
-                activeFilterCount: _activeFilterCount,
-                onFilter: _openFilterSheet,
+              const SizedBox(height: 12),
+              _FilterBar(
+                selected: _filter,
+                onChanged: (value) => setState(() => _filter = value),
               ),
-
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'My tasks',
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${tasks.length}',
+                    style: TextStyle(color: colors.textMuted),
+                  ),
+                ],
+              ),
               const SizedBox(height: 10),
-
-              TasksList(
-                tasks: _filteredTasks,
-                emptyTitle: 'tasks.empty.title'.tr,
-                emptyMessage: 'tasks.empty.message'.tr,
-              ),
-
-              const SizedBox(height: 20),
-
-              TasksBottomTip(text: 'tasks.bottomTip'.tr),
-
-              const SizedBox(height: 30),
+              if (tasks.isEmpty)
+                _EmptyTasks(onCreate: _createTask)
+              else
+                ...tasks.map(
+                  (task) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _TaskTile(
+                      task: task,
+                      busy: controller.isBusy(task.taskId),
+                      onToggle: () => _toggle(controller, task),
+                      onDelete: () => _delete(controller, task.taskId),
+                    ),
+                  ),
+                ),
             ],
           ),
+        ),
+      );
+    });
+  }
+}
+
+enum _TaskFilter { all, today, upcoming, completed }
+
+class _FilterBar extends StatelessWidget {
+  const _FilterBar({required this.selected, required this.onChanged});
+
+  final _TaskFilter selected;
+  final ValueChanged<_TaskFilter> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final labels = {
+      _TaskFilter.all: 'All',
+      _TaskFilter.today: 'Today',
+      _TaskFilter.upcoming: 'Upcoming',
+      _TaskFilter.completed: 'Completed',
+    };
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: _TaskFilter.values
+            .map((filter) {
+              final isSelected = filter == selected;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(labels[filter]!),
+                  selected: isSelected,
+                  onSelected: (_) => onChanged(filter),
+                  selectedColor: AppColors.productivityAccent,
+                ),
+              );
+            })
+            .toList(growable: false),
+      ),
+    );
+  }
+}
+
+class _TaskTile extends StatelessWidget {
+  const _TaskTile({
+    required this.task,
+    required this.busy,
+    required this.onToggle,
+    required this.onDelete,
+  });
+
+  final ProductivityTask task;
+  final bool busy;
+  final VoidCallback onToggle;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _TaskColors(context);
+    final priorityColor = switch (task.priority) {
+      'HIGH' => AppColors.danger,
+      'LOW' => AppColors.success,
+      _ => AppColors.productivityAccent,
+    };
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: task.overdue
+              ? AppColors.danger.withValues(alpha: .65)
+              : colors.border,
+        ),
+      ),
+      child: ListTile(
+        onTap: busy ? null : onToggle,
+        leading: IconButton(
+          onPressed: busy ? null : onToggle,
+          icon: Icon(
+            task.completed
+                ? Icons.check_circle_rounded
+                : Icons.radio_button_unchecked_rounded,
+            color: task.completed ? AppColors.success : colors.textMuted,
+          ),
+        ),
+        title: Text(
+          task.title,
+          style: TextStyle(
+            color: colors.textPrimary,
+            fontWeight: FontWeight.w600,
+            decoration: task.completed ? TextDecoration.lineThrough : null,
+          ),
+        ),
+        subtitle: Text(
+          _taskSubtitle(task),
+          style: TextStyle(
+            color: task.overdue ? AppColors.danger : colors.textMuted,
+            fontSize: 11,
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (task.priority != null)
+              Text(
+                task.priority!,
+                style: TextStyle(
+                  color: priorityColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'delete') onDelete();
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'delete', child: Text('Delete')),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 }
+
+class _EmptyTasks extends StatelessWidget {
+  const _EmptyTasks({required this.onCreate});
+
+  final VoidCallback onCreate;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _TaskColors(context);
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.checklist_rounded, color: colors.textMuted, size: 30),
+          const SizedBox(height: 8),
+          Text(
+            'No tasks found',
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Create a task and keep your next step visible.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: colors.textSecondary, fontSize: 12),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton(onPressed: onCreate, child: const Text('Create task')),
+        ],
+      ),
+    );
+  }
+}
+
+class _UnavailableTaskView extends StatelessWidget {
+  const _UnavailableTaskView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text('Sign in to manage tasks.')),
+    );
+  }
+}
+
+class _TaskColors {
+  _TaskColors(BuildContext context)
+    : isDark = Theme.of(context).brightness == Brightness.dark;
+
+  final bool isDark;
+
+  Color get background =>
+      isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
+  Color get surface =>
+      isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+  Color get textPrimary =>
+      isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+  Color get textSecondary =>
+      isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+  Color get textMuted =>
+      isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+  Color get border =>
+      isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+}
+
+String _taskSubtitle(ProductivityTask task) {
+  final category = task.category;
+  final due = task.dueDate;
+  if (task.overdue) return '${category ?? 'Task'} · Overdue';
+  if (due == null) return category ?? 'No due date';
+  final local = due.toLocal();
+  final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+  final minute = local.minute.toString().padLeft(2, '0');
+  final period = local.hour >= 12 ? 'PM' : 'AM';
+  return '${category ?? 'Task'} · ${local.month}/${local.day} $hour:$minute $period';
+}
+
+String _errorText(Object error) =>
+    error.toString().replaceFirst('AppError(', '').split('):').last.trim();

@@ -3,22 +3,21 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
+import '../../../auth/domain/entities/user_entity.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../domain/models/quiz_models.dart';
 import '../../domain/repositories/quiz_repository.dart';
 
 class QuizController extends GetxController {
   final QuizRepository _quizRepository = Get.find();
+  final AuthController _authController = Get.find<AuthController>();
 
-  final userStats = UserStats(
-    name: 'Thearaa',
-    avatarUrl: '',
-    level: 12,
-    xp: 2800,
-    xpToNextLevel: 4000,
-    streak: 7,
-    coins: 120,
-    badges: 5,
-    totalQuizzes: 48,
+  final userStats = const UserStats(
+    name: '',
+    avatarUrl: null,
+    level: 1,
+    xp: 0,
+    xpToNextLevel: 100,
   ).obs;
 
   final quizzes = <QuizSummary>[].obs;
@@ -55,6 +54,7 @@ class QuizController extends GetxController {
 
   Timer? _questionTimer;
   Timer? _matchmakingTimer;
+  Worker? _authUserWorker;
   bool _matchmakingCancelled = false;
   DateTime? _quizStartTime;
 
@@ -69,6 +69,11 @@ class QuizController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    syncAuthenticatedUser(_authController.currentUser.value);
+    _authUserWorker = ever<UserEntity?>(
+      _authController.currentUser,
+      syncAuthenticatedUser,
+    );
     loadQuizzes();
     loadQuizHistory();
     _loadLeaderboard();
@@ -78,7 +83,24 @@ class QuizController extends GetxController {
   void onClose() {
     _questionTimer?.cancel();
     _matchmakingTimer?.cancel();
+    _authUserWorker?.dispose();
     super.onClose();
+  }
+
+  /// Keep Quiz profile data derived from the shared authenticated account.
+  void syncAuthenticatedUser(UserEntity? user) {
+    final level = user?.level ?? 1;
+    final name = user == null
+        ? ''
+        : (user.fullName.trim().isNotEmpty ? user.fullName : user.username);
+
+    userStats.value = UserStats(
+      name: name,
+      avatarUrl: user?.avatarUrl,
+      level: level,
+      xp: user?.totalXp ?? 0,
+      xpToNextLevel: level * 100,
+    );
   }
 
   Future<void> loadQuizzes({String? category, String? difficulty}) async {
@@ -304,6 +326,7 @@ class QuizController extends GetxController {
       quizResult.value = result.copyWith(timeTakenSeconds: elapsedSeconds);
       isQuizSubmitted.value = true;
       await loadQuizHistory();
+      await _authController.refreshCurrentUser();
     } catch (e) {
       submitError.value = e.toString();
     } finally {
@@ -314,20 +337,6 @@ class QuizController extends GetxController {
   void claimReward() {
     if (quizResult.value == null) return;
     isRewardClaimed.value = true;
-
-    final stats = userStats.value;
-    final result = quizResult.value!;
-    userStats.value = UserStats(
-      name: stats.name,
-      avatarUrl: stats.avatarUrl,
-      level: stats.level,
-      xp: stats.xp + result.xpEarned,
-      xpToNextLevel: stats.xpToNextLevel,
-      streak: stats.streak,
-      coins: stats.coins + result.coinsEarned,
-      badges: stats.badges,
-      totalQuizzes: stats.totalQuizzes + 1,
-    );
   }
 
   void resetQuiz() {

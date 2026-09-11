@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
@@ -11,9 +12,32 @@ import 'bindings/initial_binding.dart';
 import 'routes/app_routes.dart';
 import 'startup_route_resolver.dart';
 
+/// Bootstraps app-level setup before rendering GenLink KH.
+///
+/// Dependency registration happens here rather than through
+/// `GetMaterialApp.initialBinding` so that [GenLinkKhApp] can resolve the
+/// theme and localization controllers during its first `build`.
+///
+/// The stored theme and language are loaded before the first frame, so the
+/// app opens directly in the user's preference instead of flashing the
+/// default and correcting itself.
+///
+/// The single hard rule here: **the app must always paint**. Every preload is
+/// a convenience — the worst case of skipping one is the wrong theme or
+/// language for a moment, which self-corrects. A preload that throws or hangs
+/// must never prevent `runApp`, because the result is an unrecoverable black
+/// screen with no error on screen and nothing in the logs.
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Request access immediately, but do not hold the first Flutter frame while
+  // Android displays the permission dialog. The dialog is modal, so the user
+  // cannot start an API action until they have answered it.
+  unawaited(_ensureAndroidLocalNetworkAccess());
+
+  // Surface framework and platform errors instead of letting them vanish.
+  // Without this a build-time or async error during startup can leave a blank
+  // window and an empty console — the exact failure this file guards against.
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
     debugPrint('FlutterError during startup: ${details.exceptionAsString()}');
@@ -30,6 +54,10 @@ Future<void> bootstrap() async {
     localStorage: Get.find(),
   ).resolve();
 
+  // Preload persisted preferences, but never let them block the first frame.
+  // A keystore read can hang or throw on some devices/emulators; the timeout
+  // caps the wait and the catch swallows a failure, so a slow or broken store
+  // costs at most [_preloadTimeout] and a default-styled first frame.
   try {
     await Future.wait([
       Get.find<ThemeController>().load(),
@@ -44,4 +72,26 @@ Future<void> bootstrap() async {
   runApp(GenLinkKhApp(initialRoute: initialRoute));
 }
 
+/// Android 17 (API 37) blocks direct TCP connections to local addresses unless
+/// the app declares and receives ACCESS_LOCAL_NETWORK. Local development uses
+/// 10.0.2.2 to reach the host machine; production uses the public API instead.
+Future<void> _ensureAndroidLocalNetworkAccess() async {
+  if (!kDebugMode || defaultTargetPlatform != TargetPlatform.android) return;
+
+  try {
+    final granted = await const MethodChannel(
+      'kh.edu.acleda.genlink/local_network',
+    ).invokeMethod<bool>('ensurePermission');
+    if (granted != true) {
+      debugPrint(
+        'Local network permission was not granted; local development API calls may fail.',
+      );
+    }
+  } on PlatformException catch (error) {
+    debugPrint('Unable to request local network permission: $error');
+  }
+}
+
+/// Long enough for a healthy keystore read, short enough that a stuck one
+/// does not read as a frozen launch.
 const _preloadTimeout = Duration(seconds: 3);

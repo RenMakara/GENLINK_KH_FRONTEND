@@ -152,8 +152,9 @@ class _IncomeAddScreenState extends State<IncomeAddScreen> {
                           : 'finance.income.add'.tr,
                       style: TextStyle(
                         color: textPrimary,
-                        fontSize: 21,
+                        fontSize: 22,
                         fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
                       ),
                     ),
                   ),

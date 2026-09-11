@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/spacing/app_spacing.dart';
 import '../controllers/quiz_controller.dart';
 import '../quiz_colors.dart';
 import '../widgets/quiz_custom_card.dart';
 import '../widgets/quiz_gradient_button.dart';
+import '../widgets/quiz_icon_container.dart';
 
 class RewardClaimedScreen extends GetView<QuizController> {
   const RewardClaimedScreen({super.key});
@@ -12,10 +15,10 @@ class RewardClaimedScreen extends GetView<QuizController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: QuizColors.background,
+      backgroundColor: QuizThemeColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Column(
             children: [
               const SizedBox(height: 40),
@@ -23,16 +26,16 @@ class RewardClaimedScreen extends GetView<QuizController> {
               const SizedBox(height: 20),
               Text(
                 'quiz.rewardClaimed'.tr,
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: QuizColors.heading,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: QuizThemeColors.heading,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 'quiz.rewardsAdded'.tr,
-                style: const TextStyle(fontSize: 14, color: QuizColors.body),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: QuizThemeColors.body),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 28),
@@ -69,10 +72,10 @@ class RewardClaimedScreen extends GetView<QuizController> {
                 },
                 child: Text(
                   'quiz.backToDashboard'.tr,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: QuizColors.body,
+                    color: QuizThemeColors.body,
                   ),
                 ),
               ),
@@ -92,14 +95,14 @@ class RewardClaimedScreen extends GetView<QuizController> {
           Container(
             width: 80,
             height: 80,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Color(0x2010B981),
+              color: QuizThemeColors.correctSoft,
             ),
             child: const Center(
               child: Icon(
                 Icons.check_circle,
-                color: QuizColors.correct,
+                color: QuizThemeColors.correct,
                 size: 48,
               ),
             ),
@@ -107,16 +110,16 @@ class RewardClaimedScreen extends GetView<QuizController> {
           const SizedBox(height: 14),
           Text(
             'quiz.congratulations'.tr,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: QuizColors.heading,
+              color: QuizThemeColors.heading,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             'quiz.rewardsCredited'.tr,
-            style: const TextStyle(fontSize: 13, color: QuizColors.body),
+            style: TextStyle(fontSize: 13, color: QuizThemeColors.body),
           ),
         ],
       ),
@@ -134,7 +137,7 @@ class RewardClaimedScreen extends GetView<QuizController> {
               Icons.star,
               'XP',
               '${stats.xp}',
-              QuizColors.primary,
+              QuizThemeColors.primary,
               'quiz.xpValue'.trParams({
                 'xp': '${controller.quizResult.value?.xpEarned ?? 0}',
               }),
@@ -143,8 +146,8 @@ class RewardClaimedScreen extends GetView<QuizController> {
             _buildBalancePill(
               Icons.monetization_on,
               'quiz.coins'.tr,
-              '${stats.coins}',
-              QuizColors.gold,
+              '${stats.coins ?? '-'}',
+              QuizThemeColors.gold,
               'quiz.coinsValue'.trParams({
                 'coins': '${controller.quizResult.value?.coinsEarned ?? 0}',
               }),
@@ -153,9 +156,9 @@ class RewardClaimedScreen extends GetView<QuizController> {
             _buildBalancePill(
               Icons.military_tech,
               'quiz.badges'.tr,
-              '${stats.badges}',
-              const Color(0xFFF59E0B),
-              '+0',
+              '${stats.badges ?? '-'}',
+              QuizThemeColors.gold,
+              '-',
             ),
           ],
         ),
@@ -179,7 +182,13 @@ class RewardClaimedScreen extends GetView<QuizController> {
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 24),
+            QuizIconContainer(
+              icon: icon,
+              accentColor: color,
+              size: 36,
+              iconSize: 20,
+              borderRadius: AppRadius.md,
+            ),
             const SizedBox(height: 6),
             Text(
               value,
@@ -192,25 +201,25 @@ class RewardClaimedScreen extends GetView<QuizController> {
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: QuizColors.body,
+                color: QuizThemeColors.body,
               ),
             ),
             const SizedBox(height: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0x2010B981),
+                color: QuizThemeColors.correctSoft,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 increment,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: QuizColors.correct,
+                  color: QuizThemeColors.correct,
                 ),
               ),
             ),

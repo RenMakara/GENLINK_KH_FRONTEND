@@ -460,6 +460,17 @@ void main() {
         content: 'Original content description',
         category: 'Career',
       );
+      controller.posts.add(CommunityPostModel(
+        id: controller.forumLatestDiscussions.first.id,
+        userId: 'user_1',
+        authorName: 'Sokny Enat',
+        authorTag: 'sokny',
+        authorAvatar: '',
+        timeAgo: 'now',
+        content: 'Original content description',
+        discussionTitle: 'test2',
+        category: 'Career',
+      ));
 
       await tester.pumpWidget(
         GetMaterialApp(

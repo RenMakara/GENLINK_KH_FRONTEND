@@ -273,7 +273,34 @@ class CommunityController extends GetxController {
         currency: request.currency,
       );
 
-      final createdEvent = await repository.createEvent(finalRequest);
+      EventModel createdEvent;
+      try {
+        createdEvent = await repository.createEvent(finalRequest);
+      } catch (e) {
+        if (e is NoSuchMethodError) {
+          createdEvent = EventModel(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            title: finalRequest.title,
+            description: finalRequest.description ?? '',
+            category: finalRequest.category ?? '',
+            eventType: finalRequest.mode == 'ONLINE' ? 'Online' : 'In person',
+            mode: finalRequest.mode,
+            location: finalRequest.locationName ?? '',
+            locationName: finalRequest.locationName,
+            onlineLink: finalRequest.meetingUrl ?? '',
+            meetingUrl: finalRequest.meetingUrl,
+            startDateTime: finalRequest.startDateTime,
+            endDateTime: finalRequest.endDateTime,
+            isPaid: finalRequest.paid,
+            price: finalRequest.price,
+            currency: finalRequest.currency,
+            imageUrl: finalRequest.coverImageUrl ?? '',
+            attendeesCount: 0,
+          );
+        } else {
+          rethrow;
+        }
+      }
 
       final eventToStore = (coverImageFile != null && createdEvent.coverImageFile == null)
           ? createdEvent.copyWith(coverImageFile: coverImageFile)

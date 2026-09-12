@@ -589,6 +589,32 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                           },
                           onReplyTap: (replyId) => _scrollToMessage(replyId, displayMsgs, chatController),
                           onReactionTap: (emoji) => chatController.toggleReaction(msg.id, emoji),
+                          onSharedContentTap: () {
+                            if (msg.messageType.contains('event')) {
+                              AppNotificationBanner.showInfo(
+                                context: context,
+                                title: 'Event Details',
+                                message: 'Viewing event details...',
+                                icon: Icons.event_rounded,
+                              );
+                            } else if (msg.messageType.contains('discussion')) {
+                              AppNotificationBanner.showInfo(
+                                context: context,
+                                title: 'Discussion',
+                                message: 'Viewing discussion topic...',
+                                icon: Icons.forum_rounded,
+                              );
+                            } else if (msg.messageType.contains('profile')) {
+                              Get.to(() => const ProfileScreen());
+                            } else {
+                              AppNotificationBanner.showInfo(
+                                context: context,
+                                title: 'Community Post',
+                                message: 'Viewing shared post...',
+                                icon: Icons.article_rounded,
+                              );
+                            }
+                          },
                           onLongPress: () => _showMessageActionSheet(context, msg, chatController),
                           onDeleteTap: (msgId) => _showDeleteMessageDialog(context, msg, chatController),
                         );

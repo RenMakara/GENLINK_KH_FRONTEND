@@ -12,6 +12,9 @@ import '../../../productivity/presentation/focus_feature/focus_home_screen.dart'
 import '../../../productivity/presentation/habit_feature/habit_screen.dart';
 import '../../../productivity/presentation/task_feature/task_home_screen.dart';
 import '../../../productivity/productivity_screen.dart';
+import '../../../chat/presentation/bindings/chat_binding.dart';
+import '../../../chat/presentation/controllers/chat_controller.dart';
+import '../../../chat/presentation/screens/chat_detail_screen.dart';
 import '../../data/repositories/notification_repository_impl.dart';
 import '../../domain/models/notification_model.dart';
 
@@ -159,6 +162,39 @@ class NotificationController extends GetxController {
 
     final targetType = notif.targetType?.toLowerCase();
     final targetId = notif.targetId;
+
+    final isStoryReply = notif.title.toLowerCase().contains('story reply') ||
+        targetType == 'story_reply';
+    final isChatNotification = isStoryReply ||
+        targetType == 'chat' ||
+        targetType == 'chat_message';
+
+    if (isChatNotification) {
+      if (!Get.isRegistered<ChatController>()) {
+        ChatBinding().dependencies();
+      }
+      final chatCtrl = Get.find<ChatController>();
+      final isChansela = notif.senderName.toLowerCase().contains('chansela');
+      final isSokny = notif.senderName.toLowerCase().contains('sokny');
+      final contactId = isChansela
+          ? 'user_chansela'
+          : (isSokny
+              ? 'user_sokny'
+              : (notif.targetId != null && notif.targetId!.isNotEmpty && targetType == 'chat'
+                  ? notif.targetId!
+                  : notif.senderName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_')));
+      final avatar = notif.senderAvatar ??
+          (isChansela
+              ? 'assets/images/heng_chansela_profile.png'
+              : 'assets/images/user_profile.png');
+      await chatCtrl.openPrivateChat(
+        contactId,
+        name: notif.senderName,
+        avatar: avatar,
+      );
+      Get.to(() => const ChatDetailScreen());
+      return;
+    }
 
     if (notif.category == NotificationCategory.social ||
         notif.type == NotificationType.friendRequest ||

@@ -186,14 +186,21 @@ class ChatController extends GetxController {
   ) async {
     try {
       final newGroup = await repository.createGroup(name, memberUserIds);
+      conversations.removeWhere((c) => c.id == newGroup.id);
       conversations.insert(0, newGroup);
       conversations.refresh();
       await openConversation(newGroup);
       return newGroup;
     } catch (e) {
       Get.snackbar(
-        'Group creation failed',
-        'Could not create the group chat.',
+        'chat.groupCreationFailed'.tr.isNotEmpty &&
+                'chat.groupCreationFailed'.tr != 'chat.groupCreationFailed'
+            ? 'chat.groupCreationFailed'.tr
+            : 'Group creation failed',
+        'chat.groupCreationFailedDesc'.tr.isNotEmpty &&
+                'chat.groupCreationFailedDesc'.tr != 'chat.groupCreationFailedDesc'
+            ? 'chat.groupCreationFailedDesc'.tr
+            : 'Could not create the group chat.',
         snackPosition: SnackPosition.BOTTOM,
       );
       return null;
@@ -367,6 +374,9 @@ class ChatController extends GetxController {
     conv.unreadCount = 0;
     _moveConversationToTop(conv);
     conversations.refresh();
+    repository.getCurrentUserId().then((uId) {
+      repository.localDataSource.saveConversation(uId, conv);
+    });
   }
 
   Future<bool> deleteMessage(String messageId) async {
@@ -529,6 +539,12 @@ class ChatController extends GetxController {
       );
     }
 
+    final effectiveStoryRef = StoryReference(
+      storyId: storyId,
+      mediaUrl: mediaUrl,
+      isExpired: false,
+    );
+
     // 2. Call Repository send message API, with resilient fallback for local mock/demo
     ChatMessageModel newMsg;
     try {
@@ -537,7 +553,11 @@ class ChatController extends GetxController {
         message,
         messageType: 'story_reply',
         mediaUrl: mediaUrl,
+        storyReference: effectiveStoryRef,
       );
+      if (newMsg.storyReference == null) {
+        newMsg = newMsg.copyWith(storyReference: effectiveStoryRef);
+      }
     } catch (_) {
       // Fallback local message for mock / demo / offline state
       newMsg = ChatMessageModel(
@@ -551,11 +571,7 @@ class ChatController extends GetxController {
         isMine: true,
         messageType: 'story_reply',
         mediaUrl: mediaUrl,
-        storyReference: StoryReference(
-          storyId: storyId,
-          mediaUrl: mediaUrl,
-          isExpired: false,
-        ),
+        storyReference: effectiveStoryRef,
       );
     }
 
@@ -565,6 +581,10 @@ class ChatController extends GetxController {
     conv.unreadCount = 0;
     conversations.insert(0, conv);
     conversations.refresh();
+    repository.getCurrentUserId().then((uId) {
+      repository.localDataSource.saveConversation(uId, conv);
+      repository.localDataSource.saveMessage(uId, conv.id, newMsg);
+    });
 
     // 4. Set as active conversation and switch activeMessages cleanly without leaking prior conversation messages
     if (activeConversation.value?.id != conv.id) {
@@ -645,6 +665,14 @@ class ChatController extends GetxController {
       conversations.insert(0, newConv);
       conversations.refresh();
     }
+
+    repository.getCurrentUserId().then((uId) {
+      repository.localDataSource.saveMessage(uId, effectiveConvId, resolvedMessage);
+      final c = conversations.firstWhereOrNull((item) => item.id == effectiveConvId);
+      if (c != null) {
+        repository.localDataSource.saveConversation(uId, c);
+      }
+    });
   }
 
   bool _safeAddOrUpdateActiveMessage(ChatMessageModel incoming) {

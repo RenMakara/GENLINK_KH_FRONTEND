@@ -41,12 +41,12 @@ class GroupMemberTile extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8.5),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected ? AppColors.chatPrimary : borderColor,
-                width: isSelected ? 1.4 : 1.0,
+                width: isSelected ? 1.2 : 0.8,
               ),
             ),
             child: Row(

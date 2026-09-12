@@ -2,12 +2,17 @@ import 'package:dio/dio.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../core/network/api_endpoints.dart';
 import '../../domain/models/chat_models.dart';
+import 'chat_local_datasource.dart';
 
 class ChatRemoteDataSource {
   final Dio dio;
+  final ChatLocalDataSource? localDataSource;
   final Map<String, List<ChatMessageModel>> _localMessages = {};
 
-  ChatRemoteDataSource({required this.dio});
+  ChatRemoteDataSource({
+    required this.dio,
+    this.localDataSource,
+  });
 
   Future<List<ChatConversationModel>> fetchConversations() async {
     final response = await guardDio(() => dio.get<dynamic>(ApiEndpoints.chats));
@@ -57,15 +62,16 @@ class ChatRemoteDataSource {
           '${ApiEndpoints.chats}/groups',
           data: {
             'name': name,
-            'memberUserIds': memberUserIds,
+            'memberIds': memberUserIds,
           },
         ),
       );
       final data = _dataOf(response.data);
       return ChatConversationModel.fromRoomResponse(data);
     } catch (_) {
-      return ChatConversationModel(
-        id: 'group_${DateTime.now().millisecondsSinceEpoch}',
+      final fallbackId = 'group_${DateTime.now().millisecondsSinceEpoch}';
+      final fallbackGroup = ChatConversationModel(
+        id: fallbackId,
         name: name,
         avatar: 'assets/images/heng_chansela_profile.png',
         isGroup: true,
@@ -75,6 +81,21 @@ class ChatRemoteDataSource {
         unreadCount: 0,
         membersCount: memberUserIds.length + 1,
       );
+      _localMessages[fallbackId] = [
+        ChatMessageModel(
+          id: 'msg_welcome_$fallbackId',
+          conversationId: fallbackId,
+          senderId: 'system',
+          senderName: 'GenLink',
+          content: 'You created group "$name"',
+          timestamp: DateTime.now(),
+          timeAgo: 'Just now',
+          isMine: false,
+          isSystemMessage: true,
+          messageType: 'system',
+        ),
+      ];
+      return fallbackGroup;
     }
   }
 
@@ -106,6 +127,7 @@ class ChatRemoteDataSource {
     String messageType = 'text',
     String? mediaUrl,
     ChatReplyReference? replyTo,
+    StoryReference? storyReference,
   }) async {
     try {
       final response = await guardDio(
@@ -119,6 +141,9 @@ class ChatRemoteDataSource {
               'replyToMessageId': replyTo.messageId,
               'replyTo': replyTo.toJson(),
             },
+            if (storyReference != null) ...{
+              'storyReference': storyReference.toJson(),
+            },
           },
         ),
       );
@@ -126,6 +151,9 @@ class ChatRemoteDataSource {
       var msg = ChatMessageModel.fromJson(data, conversationId: conversationId);
       if (replyTo != null && msg.replyTo == null) {
         msg = msg.copyWith(replyTo: replyTo);
+      }
+      if (storyReference != null && msg.storyReference == null) {
+        msg = msg.copyWith(storyReference: storyReference);
       }
       _cacheMessage(conversationId, msg);
       return msg;
@@ -142,6 +170,7 @@ class ChatRemoteDataSource {
         messageType: messageType,
         mediaUrl: mediaUrl,
         replyTo: replyTo,
+        storyReference: storyReference,
       );
       _cacheMessage(conversationId, fallbackMsg);
       return fallbackMsg;

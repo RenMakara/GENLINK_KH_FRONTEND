@@ -201,8 +201,11 @@ class ChatMessageModel {
         : const <String, dynamic>{};
     final createdAt =
         DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+        DateTime.tryParse(json['timestamp']?.toString() ?? '') ??
         DateTime.now();
-    final backendType = (json['type'] as String?) ?? 'TEXT';
+    final backendType = (json['type'] as String?) ??
+        (json['messageType'] as String?) ??
+        'TEXT';
     return ChatMessageModel(
       id: json['messageId']?.toString() ?? json['id']?.toString() ?? '',
       conversationId: conversationId,
@@ -215,7 +218,7 @@ class ChatMessageModel {
       senderAvatar: (sender['avatarUrl'] as String?) ?? (json['senderAvatar'] as String?),
       content: json['content'] as String? ?? '',
       timestamp: createdAt,
-      timeAgo: _timeAgo(createdAt),
+      timeAgo: (json['timeAgo'] as String?) ?? _timeAgo(createdAt),
       isMine: json['mine'] as bool? ?? json['isMine'] as bool? ?? false,
       isRead: json['isRead'] as bool? ?? true,
       messageType: backendType.toLowerCase(),
@@ -406,6 +409,12 @@ class ChatConversationModel {
       isPinned: (json['isPinned'] as bool?) ?? false,
       isArchived: (json['isArchived'] as bool?) ?? false,
       isMuted: (json['isMuted'] as bool?) ?? false,
+      pinnedMessage: json['pinnedMessage'] is Map<String, dynamic>
+          ? ChatMessageModel.fromJson(
+              json['pinnedMessage'] as Map<String, dynamic>,
+              conversationId: json['roomId']?.toString() ?? json['id']?.toString() ?? '',
+            )
+          : null,
     );
   }
 

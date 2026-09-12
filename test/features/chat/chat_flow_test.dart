@@ -15,8 +15,9 @@ import 'package:genlink_frontend/features/chat/presentation/screens/create_group
 import 'package:genlink_frontend/features/chat/presentation/widgets/chat_system_message.dart';
 import 'package:genlink_frontend/features/chat/presentation/widgets/chat_filter_chip.dart';
 import 'package:genlink_frontend/features/chat/presentation/widgets/chat_list_item.dart';
-import 'package:genlink_frontend/features/chat/presentation/widgets/group_member_tile.dart';
 import 'package:genlink_frontend/features/chat/presentation/widgets/chat_story_reply_card.dart';
+import 'package:genlink_frontend/features/chat/presentation/widgets/group_member_tile.dart';
+import 'package:genlink_frontend/features/chat/data/datasources/chat_local_datasource.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
 
 class MockDio extends Mock implements Dio {}
@@ -24,6 +25,8 @@ class MockDio extends Mock implements Dio {}
 void main() {
   setUp(() {
     Get.reset();
+    Get.testMode = true;
+    ChatLocalDataSource.resetStaticStore();
   });
 
   group('Chat Models & Serialization Tests', () {
@@ -1000,7 +1003,7 @@ void main() {
     late ChatRepositoryImpl repository;
     late ChatController controller;
 
-    setUp(() {
+    setUp(() async {
       mockDio = MockDio();
       dataSource = ChatRemoteDataSource(dio: mockDio);
       repository = ChatRepositoryImpl(remoteDataSource: dataSource);
@@ -1014,6 +1017,7 @@ void main() {
       );
 
       controller = Get.put(ChatController(repository: repository));
+      await controller.fetchConversations();
     });
 
     testWidgets('ChatListScreen renders header, online row, and empty state', (tester) async {
@@ -1252,6 +1256,69 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Selected · 1'), findsOneWidget);
+    });
+
+    testWidgets('CreateGroupScreen selects multiple members, filters with search, and clear all removes them', (tester) async {
+      await tester.pumpWidget(
+        const GetMaterialApp(
+          home: CreateGroupScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap first member
+      await tester.tap(find.text('Sokny Enat'));
+      await tester.pumpAndSettle();
+      expect(find.text('Selected · 1'), findsOneWidget);
+
+      // Tap second member
+      await tester.tap(find.text('Heng Chansela'));
+      await tester.pumpAndSettle();
+      expect(find.text('Selected · 2'), findsOneWidget);
+
+      // Tap Clear all
+      await tester.tap(find.text('Clear all'));
+      await tester.pumpAndSettle();
+      expect(find.text('Selected · 2'), findsNothing);
+
+      // Search filtering
+      await tester.enterText(find.byType(TextField).last, 'Ren');
+      await tester.pumpAndSettle();
+      expect(find.text('Ren Makara'), findsOneWidget);
+      expect(find.text('Sokny Enat'), findsNothing);
+    });
+
+    testWidgets('CreateGroupScreen renders in Dark Mode without layout overflow', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          theme: ThemeData.dark(),
+          home: const CreateGroupScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('New Group Chat'), findsOneWidget);
+      expect(find.text('Create'), findsOneWidget);
+    });
+
+    testWidgets('CreateGroupScreen localizes properly in Khmer locale', (tester) async {
+      Get.clearTranslations();
+      Get.addTranslations(AppTranslations().keys);
+      Get.locale = const Locale('km', 'KH');
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('km', 'KH'),
+          fallbackLocale: const Locale('en', 'US'),
+          home: const CreateGroupScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('បង្កើតក្រុមជជែកថ្មី'), findsOneWidget);
+      expect(find.text('បង្កើត'), findsOneWidget);
+      expect(find.text('ជ្រើសរើសសមាជិក'), findsOneWidget);
     });
 
     testWidgets('ChatListScreen renders properly in Dark Mode', (tester) async {
@@ -1835,6 +1902,251 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(controller.activeMessages.isEmpty, isTrue);
+    });
+  });
+
+  group('Chat Step 12 — Persistence, Deduplication & User Isolation Regression Tests', () {
+    late MockDio mockDio;
+    late ChatLocalDataSource localDataSource;
+
+    setUp(() {
+      Get.reset();
+      Get.testMode = true;
+      mockDio = MockDio();
+      localDataSource = ChatLocalDataSource();
+      when(() => mockDio.get<dynamic>(any())).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats'),
+          statusCode: 200,
+          data: {'success': true, 'data': {'content': []}},
+        ),
+      );
+    });
+
+    testWidgets('TEST 1 — 1-to-1 persistence: Sokny Enat to Heng Chansela survives app restart simulation', (tester) async {
+      // 1. Start as Sokny Enat
+      final repo1 = ChatRepositoryImpl(
+        remoteDataSource: ChatRemoteDataSource(dio: mockDio, localDataSource: localDataSource),
+        localDataSource: localDataSource,
+        currentUserIdOverride: 'user_sokny',
+      );
+      final controller1 = Get.put(ChatController(repository: repo1));
+
+      // 2. Open Heng Chansela chat
+      final conv = await controller1.openPrivateChat('user_chansela', name: 'Heng Chansela');
+      expect(conv, isNotNull);
+
+      // 3. Send "Hello Heng"
+      controller1.textController.text = 'Hello Heng';
+      await controller1.sendMessage();
+      // 4. Send "This should survive refresh"
+      controller1.textController.text = 'This should survive refresh';
+      await controller1.sendMessage();
+
+      // 5. Confirm both messages appear
+      expect(controller1.activeMessages.length, 2);
+      expect(controller1.activeMessages.map((m) => m.content).toList(), [
+        'Hello Heng',
+        'This should survive refresh',
+      ]);
+
+      // 6. Fully restart/refresh the Flutter app (simulate Get.reset() while preserving local persistent storage)
+      Get.reset();
+
+      // 7. Open Chat List (re-instantiate repository and controller)
+      final repo2 = ChatRepositoryImpl(
+        remoteDataSource: ChatRemoteDataSource(dio: mockDio, localDataSource: localDataSource),
+        localDataSource: localDataSource,
+        currentUserIdOverride: 'user_sokny',
+      );
+      final controller2 = Get.put(ChatController(repository: repo2));
+      await controller2.fetchConversations();
+
+      // 8. Confirm Heng Chansela conversation still exists
+      expect(controller2.conversations.length, 1);
+      expect(controller2.conversations.first.name, 'Heng Chansela');
+      expect(controller2.conversations.first.lastMessage, 'This should survive refresh');
+
+      // 9. Open the conversation
+      await controller2.openConversation(controller2.conversations.first);
+
+      // 10. Confirm both messages are still there
+      expect(controller2.activeMessages.length, 2);
+      expect(controller2.activeMessages[0].content, 'Hello Heng');
+      expect(controller2.activeMessages[1].content, 'This should survive refresh');
+
+      // 11. Send another message
+      controller2.textController.text = 'Surviving restart round 2';
+      await controller2.sendMessage();
+      expect(controller2.activeMessages.length, 3);
+
+      // 12. Restart again
+      Get.reset();
+      final repo3 = ChatRepositoryImpl(
+        remoteDataSource: ChatRemoteDataSource(dio: mockDio, localDataSource: localDataSource),
+        localDataSource: localDataSource,
+        currentUserIdOverride: 'user_sokny',
+      );
+      final controller3 = Get.put(ChatController(repository: repo3));
+      await controller3.fetchConversations();
+      await controller3.openConversation(controller3.conversations.first);
+
+      // 13. Confirm all messages remain
+      expect(controller3.activeMessages.length, 3);
+      expect(controller3.activeMessages.map((m) => m.content).toList(), [
+        'Hello Heng',
+        'This should survive refresh',
+        'Surviving restart round 2',
+      ]);
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+
+    testWidgets('TEST 2 — Conversation deduplication: opening Heng Chansela never creates duplicates after restart', (tester) async {
+      // 1. Open Heng Chansela from Chat List or profile
+      final repo1 = ChatRepositoryImpl(
+        remoteDataSource: ChatRemoteDataSource(dio: mockDio, localDataSource: localDataSource),
+        localDataSource: localDataSource,
+        currentUserIdOverride: 'user_sokny',
+      );
+      final controller1 = Get.put(ChatController(repository: repo1));
+      await controller1.openPrivateChat('user_chansela', name: 'Heng Chansela');
+      controller1.textController.text = 'First greeting';
+      await controller1.sendMessage();
+      expect(controller1.conversations.where((c) => c.name == 'Heng Chansela').length, 1);
+
+      // 2. Restart app
+      Get.reset();
+
+      // 3. Open Heng Chansela again from Chat List or profile
+      final repo2 = ChatRepositoryImpl(
+        remoteDataSource: ChatRemoteDataSource(dio: mockDio, localDataSource: localDataSource),
+        localDataSource: localDataSource,
+        currentUserIdOverride: 'user_sokny',
+      );
+      final controller2 = Get.put(ChatController(repository: repo2));
+      await controller2.fetchConversations();
+      await controller2.openPrivateChat('user_chansela', name: 'Heng Chansela');
+
+      // 4. Confirm: strictly 1 Heng Chansela conversation exists in the list
+      final matching = controller2.conversations.where((c) => c.name == 'Heng Chansela').toList();
+      expect(matching.length, 1);
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+
+    testWidgets('TEST 3 — Story reply persistence: story metadata and card survive restart without downgrading', (tester) async {
+      final repo1 = ChatRepositoryImpl(
+        remoteDataSource: ChatRemoteDataSource(dio: mockDio, localDataSource: localDataSource),
+        localDataSource: localDataSource,
+        currentUserIdOverride: 'user_sokny',
+      );
+      final controller1 = Get.put(ChatController(repository: repo1));
+
+      // 1-3. Send story reply with image preview
+      final replyMsg = await controller1.sendStoryReply(
+        userName: 'Heng Chansela',
+        userAvatar: 'assets/images/heng_chansela_profile.png',
+        message: 'Nice view!',
+        mediaUrl: 'assets/images/user_profile.png',
+        storyId: 'story-sunset-99',
+      );
+
+      expect(replyMsg.messageType, 'story_reply');
+      expect(replyMsg.storyReference?.storyId, 'story-sunset-99');
+      expect(replyMsg.storyReference?.mediaUrl, 'assets/images/user_profile.png');
+
+      // 4. Restart/refresh app
+      Get.reset();
+
+      // 5. Open Heng Chansela chat
+      final repo2 = ChatRepositoryImpl(
+        remoteDataSource: ChatRemoteDataSource(dio: mockDio, localDataSource: localDataSource),
+        localDataSource: localDataSource,
+        currentUserIdOverride: 'user_sokny',
+      );
+      final controller2 = Get.put(ChatController(repository: repo2));
+      await controller2.fetchConversations();
+      final chanselaConv = controller2.conversations.firstWhere((c) => c.name == 'Heng Chansela');
+      await controller2.openConversation(chanselaConv);
+
+      // 6. Confirm story reply message still exists with thumbnail and metadata intact
+      expect(controller2.activeMessages.isNotEmpty, isTrue);
+      final persistedReply = controller2.activeMessages.firstWhere((m) => m.messageType == 'story_reply');
+      expect(persistedReply.content, 'Nice view!');
+      expect(persistedReply.storyReference, isNotNull);
+      expect(persistedReply.storyReference!.storyId, 'story-sunset-99');
+      expect(persistedReply.storyReference!.mediaUrl, 'assets/images/user_profile.png');
+
+      // 7. Verify UI widget renders ChatStoryReplyCard
+      await tester.pumpWidget(
+        const GetMaterialApp(
+          home: ChatDetailScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(ChatStoryReplyCard), findsOneWidget);
+      expect(find.text('Nice view!'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+
+    testWidgets('TEST 4 — Two-user isolation: User A messages never leak into User B store', (tester) async {
+      // 1. User A (Sokny) sends secret message
+      final repoA = ChatRepositoryImpl(
+        remoteDataSource: ChatRemoteDataSource(dio: mockDio, localDataSource: localDataSource),
+        localDataSource: localDataSource,
+        currentUserIdOverride: 'user_sokny',
+      );
+      final controllerA = Get.put(ChatController(repository: repoA));
+      await controllerA.openPrivateChat('user_chansela', name: 'Heng Chansela');
+      controllerA.textController.text = 'Secret confidential note from Sokny';
+      await controllerA.sendMessage();
+
+      // 2. Switch to User B (Bob)
+      Get.reset();
+      final repoB = ChatRepositoryImpl(
+        remoteDataSource: ChatRemoteDataSource(dio: mockDio, localDataSource: localDataSource),
+        localDataSource: localDataSource,
+        currentUserIdOverride: 'user_bob',
+      );
+      final controllerB = Get.put(ChatController(repository: repoB));
+      await controllerB.fetchConversations();
+
+      // 3. Confirm: User B does NOT see User A's private chats
+      expect(controllerB.conversations.isEmpty, isTrue);
+      expect(controllerB.activeMessages.isEmpty, isTrue);
+
+      // Also directly query local datasource to guarantee cryptographic key separation
+      final bobMessages = await localDataSource.getMessages('user_bob', 'private_user_chansela');
+      expect(bobMessages.isEmpty, isTrue);
+      final soknyMessages = await localDataSource.getMessages('user_sokny', 'private_user_chansela');
+      expect(soknyMessages.length, 1);
+      expect(soknyMessages.first.content, 'Secret confidential note from Sokny');
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+
+    testWidgets('TEST 5 — Empty/new user: clean empty state renders with zero lingering chats or spinner', (tester) async {
+      // 1. Switch to a brand new user with no chats
+      Get.reset();
+      final repoNew = ChatRepositoryImpl(
+        remoteDataSource: ChatRemoteDataSource(dio: mockDio, localDataSource: localDataSource),
+        localDataSource: localDataSource,
+        currentUserIdOverride: 'user_new_student',
+      );
+      final controllerNew = Get.put(ChatController(repository: repoNew));
+      await controllerNew.fetchConversations();
+
+      // 2. Render ChatListScreen
+      await tester.pumpWidget(
+        const GetMaterialApp(
+          home: ChatListScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 3. Verify clean empty state: "No messages yet", not a crash, not infinite spinner
+      expect(find.text('No messages yet'), findsOneWidget);
+      expect(find.text('Connect with student peers and join group discussions.'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(controllerNew.conversations.isEmpty, isTrue);
     });
   });
 }

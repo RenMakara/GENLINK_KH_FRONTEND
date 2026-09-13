@@ -194,6 +194,7 @@ class CommunityRemoteDataSource {
   Future<CommunityPostModel> createPost({
     required String content,
     List<String> imageUrls = const [],
+    String? videoUrl,
     String visibility = 'Public',
     String community = 'All GenLink',
   }) async {
@@ -209,7 +210,9 @@ class CommunityRemoteDataSource {
         resolvedVisibility = 'PUBLIC';
     }
 
-    final postType = imageUrls.isNotEmpty ? 'IMAGE' : 'TEXT';
+    final postType = (videoUrl != null && videoUrl.isNotEmpty)
+        ? 'VIDEO'
+        : (imageUrls.isNotEmpty ? 'IMAGE' : 'TEXT');
 
     final response = await guardDio(
       () => dio.post<dynamic>(
@@ -217,6 +220,7 @@ class CommunityRemoteDataSource {
         data: {
           'contentText': content,
           'imageUrl': imageUrls.isNotEmpty ? imageUrls.join(',') : null,
+          'videoUrl': (videoUrl != null && videoUrl.isNotEmpty) ? videoUrl : null,
           'visibility': resolvedVisibility,
           'postType': postType,
         },

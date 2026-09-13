@@ -142,6 +142,7 @@ class NotificationModel {
         case 'comment':
           return NotificationType.comment;
         case 'reply':
+        case 'storyreply':
           return NotificationType.reply;
         case 'mention':
           return NotificationType.mention;

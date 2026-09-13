@@ -7,10 +7,16 @@ import 'package:genlink_frontend/features/notification/data/repositories/notific
 import 'package:genlink_frontend/features/notification/domain/models/notification_model.dart';
 import 'package:genlink_frontend/features/notification/presentation/controllers/notification_controller.dart';
 import 'package:genlink_frontend/features/notification/presentation/screens/notification_screen.dart';
+import 'package:genlink_frontend/features/community/domain/models/story_model.dart';
+import 'package:genlink_frontend/features/community/domain/repositories/story_repository.dart';
+import 'package:genlink_frontend/features/community/presentation/controllers/story_controller.dart';
+import 'package:genlink_frontend/features/community/presentation/screens/story_viewer_screen.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockNotificationRepo extends Mock
     implements NotificationRepositoryImpl {}
+
+class _MockStoryRepo extends Mock implements StoryRepository {}
 
 List<NotificationModel> _createSampleNotifications() {
   final now = DateTime.now();
@@ -270,6 +276,36 @@ void main() {
       expect(controller.notifications.length, 8);
       expect(controller.notifications.any((n) => n.id == 'n1'), isFalse);
     });
+
+    test('NotificationModel.fromJson parses STORY_REPLY backend payload correctly', () {
+      final json = {
+        'notificationId': 'e7b1a2c3-4d5e-6f7a-8b9c-0d1e2f3a4b5c',
+        'title': 'Story Reply',
+        'message': 'User Alpha replied to your story',
+        'type': 'STORY_REPLY',
+        'language': 'ENGLISH',
+        'readStatus': false,
+        'createdAt': '2026-09-13T10:00:00Z',
+        'referenceId': 'story-uuid-1',
+        'referenceType': 'STORY',
+        'actorId': 'user-a-uuid',
+        'senderName': 'User Alpha',
+        'senderAvatar': 'https://cdn/userA.png',
+      };
+
+      final model = NotificationModel.fromJson(json);
+
+      expect(model.id, 'e7b1a2c3-4d5e-6f7a-8b9c-0d1e2f3a4b5c');
+      expect(model.title, 'Story Reply');
+      expect(model.body, 'User Alpha replied to your story');
+      expect(model.type, NotificationType.reply);
+      expect(model.category, NotificationCategory.social);
+      expect(model.senderName, 'User Alpha');
+      expect(model.senderAvatar, 'https://cdn/userA.png');
+      expect(model.targetId, 'story-uuid-1');
+      expect(model.targetType, 'STORY');
+      expect(model.isRead, isFalse);
+    });
   });
 
   Widget buildTestScreen({
@@ -467,6 +503,64 @@ void main() {
 
       expect(find.byType(FriendRequestsScreen), findsOneWidget);
       expect(find.text('Friend Requests'), findsOneWidget);
+    });
+
+    testWidgets('tapping a story notification navigates to StoryViewerScreen',
+        (tester) async {
+      final mockStoryRepo = _MockStoryRepo();
+      final testStory = StoryItemModel(
+        id: 'story_target_1',
+        type: StoryType.photo,
+        createdAt: DateTime.now(),
+        timeAgo: 'Just now',
+      );
+      final testGroup = StoryGroupModel(
+        userId: 'user_b',
+        userName: 'User Beta',
+        userAvatar: '',
+        isOwner: true,
+        stories: [testStory],
+      );
+
+      when(() => mockStoryRepo.getStories())
+          .thenAnswer((_) async => [testGroup]);
+      when(() => mockStoryRepo.getStoryViewers(any()))
+          .thenAnswer((_) async => []);
+      Get.put<StoryRepository>(mockStoryRepo);
+
+      final storyCtrl = StoryController(repository: mockStoryRepo);
+      Get.put<StoryController>(storyCtrl);
+      storyCtrl.storyGroups.assignAll([testGroup]);
+
+      when(() => mockRepo.getNotifications()).thenAnswer((_) async => [
+            NotificationModel(
+              id: 'notif_story_1',
+              type: NotificationType.reply,
+              category: NotificationCategory.social,
+              title: 'Story Reply',
+              body: 'User Alpha replied to your story',
+              senderName: 'User Alpha',
+              timeAgo: '1m ago',
+              timestamp: DateTime.now(),
+              isRead: false,
+              targetId: 'story_target_1',
+              targetType: 'story',
+            ),
+          ]);
+      addTearDown(() {
+        when(() => mockRepo.getNotifications())
+            .thenAnswer((_) async => _createSampleNotifications());
+      });
+
+      await controller.fetchNotifications();
+      await tester.pumpWidget(buildTestScreen());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Story Reply'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(StoryViewerScreen), findsOneWidget);
     });
 
     testWidgets('tapping a notification marks it as read', (tester) async {

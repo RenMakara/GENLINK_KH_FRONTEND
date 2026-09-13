@@ -365,6 +365,19 @@ class StoryRepositoryImpl implements StoryRepository {
 
   @override
   Future<void> replyToStory(String storyId, String message) async {
+    final client = _client;
+    if (client != null) {
+      try {
+        await client.post(
+          '${ApiEndpoints.stories}/$storyId/reply',
+          body: {'message': message},
+          parse: (_) => null,
+        );
+      } catch (e) {
+        debugPrint('[StoryRepository] replyToStory error: $e');
+        rethrow;
+      }
+    }
   }
 
   StoryItemModel storyFromJson(Map<String, dynamic> json) => _storyFromJson(json);

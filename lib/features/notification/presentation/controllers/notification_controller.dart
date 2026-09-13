@@ -5,6 +5,7 @@ import '../../../../design_system/widgets/notifications/app_notification_banner.
 import '../../../community/presentation/controllers/story_controller.dart';
 import '../../../community/presentation/screens/events_screen.dart';
 import '../../../community/presentation/screens/friend_requests_screen.dart';
+import '../../../community/presentation/screens/story_viewer_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_screen.dart';
 import 'package:genlink_frontend/features/finance/finance_screen.dart';
@@ -197,24 +198,35 @@ class NotificationController extends GetxController {
       }
 
       if (targetType == 'story' && targetId != null && targetId.isNotEmpty) {
-        if (Get.isRegistered<StoryController>()) {
-          final storyCtrl = Get.find<StoryController>();
-          final hasTarget = storyCtrl.storyGroups
-              .any((group) => group.stories.any((s) => s.id == targetId));
-          if (hasTarget) {
-            AppNotificationBanner.showInfo(
-              context: context,
-              title: notif.title.isNotEmpty ? notif.title : 'Story',
-              message: notif.body,
-            );
-            return;
-          }
+        final storyCtrl = Get.isRegistered<StoryController>()
+            ? Get.find<StoryController>()
+            : Get.put(StoryController());
+
+        if (storyCtrl.storyGroups.isEmpty && !storyCtrl.isLoading.value) {
+          await storyCtrl.fetchStories();
         }
-        AppNotificationBanner.showInfo(
-          context: context,
-          title: 'Story unavailable',
-          message: 'This story has expired or was deleted.',
+
+        final groupIdx = storyCtrl.storyGroups.indexWhere(
+          (group) => group.stories.any((s) => s.id == targetId),
         );
+
+        if (groupIdx != -1) {
+          Get.to(
+            () => StoryViewerScreen(
+              initialGroupIndex: groupIdx,
+              groups: storyCtrl.storyGroups.toList(),
+            ),
+          );
+          return;
+        }
+
+        if (context.mounted) {
+          AppNotificationBanner.showInfo(
+            context: context,
+            title: 'Story unavailable',
+            message: 'This story has expired or was deleted.',
+          );
+        }
         return;
       }
 

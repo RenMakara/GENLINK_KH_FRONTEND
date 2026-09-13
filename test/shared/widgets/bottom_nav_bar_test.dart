@@ -108,7 +108,7 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('LevelUp navigation tab uses Trophy icon', (
+  testWidgets('LevelUp navigation tab uses Bar Chart icon', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -116,13 +116,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.emoji_events_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.bar_chart_outlined), findsOneWidget);
 
     await tester.pumpWidget(
       createNavBar(currentIndex: 1),
     );
     await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.bar_chart_rounded), findsOneWidget);
   });
 
   testWidgets('Finance navigation tab uses Dollar sign in circle icon', (
@@ -397,7 +397,7 @@ void main() {
     expect(activeIndex, 1);
     expect(tester.takeException(), isNull);
     await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.bar_chart_rounded), findsOneWidget);
 
     // Sequence 2: LevelUp → Finance (1 → 2)
     await tester.tap(find.bySemanticsLabel('Finance'));
@@ -441,7 +441,7 @@ void main() {
     expect(activeIndex, 1);
     expect(tester.takeException(), isNull);
     await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.bar_chart_rounded), findsOneWidget);
 
     semantics.dispose();
   });
@@ -502,7 +502,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel('LevelUp'));
     await tester.pumpAndSettle();
     expect(activeIndex, 1);
-    expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.bar_chart_rounded), findsOneWidget);
 
     // 5. LevelUp → Home (1 → 0) in Light Mode
     await tester.tap(find.bySemanticsLabel('Home'));

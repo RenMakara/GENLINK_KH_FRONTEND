@@ -52,11 +52,12 @@ class _MockCommunityRepository implements CommunityRepository {
   Future<CommunityPostModel> createPost({
     required String content,
     List<String> imageUrls = const [],
+    String? videoUrl,
     String visibility = 'Public',
     String community = 'All GenLink',
   }) async {
     createPostCallCount++;
-    return _createPost(content: content, imageUrls: imageUrls);
+    return _createPost(content: content, imageUrls: imageUrls, videoUrl: videoUrl);
   }
 
   @override
@@ -304,24 +305,24 @@ void main() {
       expect(picked.bytes.length, equals(3));
     });
 
-    testWidgets('7. Video post submission is safely isolated (pending Step 4B backend)', (tester) async {
+    testWidgets('7. Video post submission connects to backend in Step 4B', (tester) async {
       await tester.pumpWidget(
         createTestWidget(child: const CreatePostScreen()),
       );
       await tester.pumpAndSettle();
 
       final state = tester.state<CreatePostScreenState>(find.byType(CreatePostScreen));
-      state.setAttachedVideoForTesting('/test/video.mp4');
+      state.setAttachedVideoForTesting('https://cdn.genlink.kh/test_video.mp4');
       state.setVideoInitializedForTesting(true);
       await tester.pumpAndSettle();
 
       final postButton = find.text('Post');
       expect(postButton, findsOneWidget);
       await tester.tap(postButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 4));
 
-      expect(mockRepo.createPostCallCount, equals(0));
-      expect(find.textContaining('Video posting is coming soon'), findsOneWidget);
+      expect(mockRepo.createPostCallCount, equals(1));
     });
 
     testWidgets('8. Camera photo selection triggers conflict dialog if video is attached', (tester) async {

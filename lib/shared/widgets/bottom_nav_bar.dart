@@ -32,8 +32,8 @@ const _kTabs = [
     labelFallback: 'Home',
   ),
   _TabDef(
-    outlineIcon: Icons.emoji_events_outlined,
-    filledIcon: Icons.emoji_events_rounded,
+    outlineIcon: Icons.bar_chart_outlined,
+    filledIcon: Icons.bar_chart_rounded,
     labelKey: 'nav.levelUp',
     labelFallback: 'LevelUp',
   ),

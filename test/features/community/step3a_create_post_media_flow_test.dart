@@ -104,6 +104,7 @@ class Step3aMockCommunityRepository implements CommunityRepository {
   Future<CommunityPostModel> createPost({
     required String content,
     List<String> imageUrls = const [],
+    String? videoUrl,
     String visibility = 'Public',
     String community = 'All GenLink',
   }) async {
@@ -544,6 +545,7 @@ class _FailingUploadRepository implements CommunityRepository {
   Future<CommunityPostModel> createPost({
     required String content,
     List<String> imageUrls = const [],
+    String? videoUrl,
     String visibility = 'Public',
     String community = 'All GenLink',
   }) async {

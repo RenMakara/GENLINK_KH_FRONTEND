@@ -981,9 +981,49 @@ class CommunityController extends GetxController {
     return resolved;
   }
 
+  Future<String?> _resolveVideoUrl(String? rawUrl) async {
+    if (rawUrl == null || rawUrl.isEmpty) return null;
+    if (rawUrl.startsWith('http://') ||
+        rawUrl.startsWith('https://') ||
+        rawUrl.startsWith('assets/')) {
+      return rawUrl;
+    }
+    try {
+      final file = File(rawUrl);
+      if (await file.exists()) {
+        final bytes = await file.readAsBytes();
+        final ext = rawUrl.split('.').last.toLowerCase();
+        final contentType = (ext == 'mov')
+            ? 'video/quicktime'
+            : (ext == 'webm')
+                ? 'video/webm'
+                : 'video/mp4';
+
+        if (Get.isRegistered<MediaUploadService>()) {
+          final uploadService = Get.find<MediaUploadService>();
+          final media = await uploadService.upload(
+            bytes: bytes,
+            contentType: contentType,
+            purpose: MediaPurpose.post,
+            onProgress: (frac) {
+              uploadProgress.value = 0.2 + frac * 0.6;
+            },
+          );
+          return media.url;
+        } else {
+          return rawUrl;
+        }
+      }
+    } catch (_) {
+      return rawUrl;
+    }
+    return rawUrl;
+  }
+
   Future<bool> addNewPost({
     required String content,
     List<String> imageUrls = const [],
+    String? videoUrl,
     String visibility = 'Public',
     String community = 'All GenLink',
     String? location,
@@ -1001,17 +1041,20 @@ class CommunityController extends GetxController {
 
     try {
       final resolvedImageUrls = await _resolveImageUrls(imageUrls);
+      final resolvedVideoUrl = await _resolveVideoUrl(videoUrl);
       uploadProgress.value = 0.8;
 
       final createdPost = await repository.createPost(
         content: content,
         imageUrls: resolvedImageUrls,
+        videoUrl: resolvedVideoUrl,
         visibility: visibility,
         community: community,
       );
 
       final richPost = createdPost.copyWith(
         imageUrls: resolvedImageUrls.isNotEmpty ? resolvedImageUrls : createdPost.imageUrls,
+        videoUrl: resolvedVideoUrl ?? createdPost.videoUrl,
         location: location,
         linkUrl: linkUrl,
         linkPreviewTitle: linkPreviewTitle,
@@ -1023,7 +1066,9 @@ class CommunityController extends GetxController {
         attachedEvent: attachedEvent,
         postType: attachedEvent != null
             ? 'event'
-            : (resolvedImageUrls.isNotEmpty ? 'IMAGE' : createdPost.postType),
+            : (resolvedVideoUrl != null && resolvedVideoUrl.isNotEmpty
+                ? 'VIDEO'
+                : (resolvedImageUrls.isNotEmpty ? 'IMAGE' : createdPost.postType)),
       );
 
       posts.insert(0, richPost);
@@ -1122,6 +1167,7 @@ class CommunityController extends GetxController {
     required String postId,
     required String content,
     required List<String> imageUrls,
+    String? videoUrl,
     required String visibility,
     String? location,
     String? linkUrl,
@@ -1134,11 +1180,13 @@ class CommunityController extends GetxController {
     EventModel? attachedEvent,
   }) async {
     final resolvedImageUrls = await _resolveImageUrls(imageUrls);
+    final resolvedVideoUrl = await _resolveVideoUrl(videoUrl);
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
       posts[idx] = posts[idx].copyWith(
         content: content,
         imageUrls: resolvedImageUrls,
+        videoUrl: resolvedVideoUrl ?? posts[idx].videoUrl,
         visibility: visibility,
         location: location,
         linkUrl: linkUrl,
@@ -1149,7 +1197,11 @@ class CommunityController extends GetxController {
         pollDuration: pollDuration,
         allowMultipleAnswers: allowMultipleAnswers,
         attachedEvent: attachedEvent,
-        postType: attachedEvent != null ? 'event' : posts[idx].postType,
+        postType: attachedEvent != null
+            ? 'event'
+            : (resolvedVideoUrl != null && resolvedVideoUrl.isNotEmpty
+                ? 'VIDEO'
+                : (resolvedImageUrls.isNotEmpty ? 'IMAGE' : posts[idx].postType)),
       );
       await repository.updatePost(postId, content: content);
     }
@@ -1158,6 +1210,7 @@ class CommunityController extends GetxController {
   Future<bool> createPost({
     required String content,
     List<String> imageUrls = const [],
+    String? videoUrl,
     String visibility = 'Public',
     String community = 'All GenLink',
     String? location,
@@ -1172,6 +1225,7 @@ class CommunityController extends GetxController {
   }) => addNewPost(
     content: content,
     imageUrls: imageUrls,
+    videoUrl: videoUrl,
     visibility: visibility,
     community: community,
     location: location,
@@ -1189,6 +1243,7 @@ class CommunityController extends GetxController {
     required String postId,
     required String content,
     required List<String> imageUrls,
+    String? videoUrl,
     required String visibility,
     String? location,
     String? linkUrl,
@@ -1203,6 +1258,7 @@ class CommunityController extends GetxController {
     postId: postId,
     content: content,
     imageUrls: imageUrls,
+    videoUrl: videoUrl,
     visibility: visibility,
     location: location,
     linkUrl: linkUrl,

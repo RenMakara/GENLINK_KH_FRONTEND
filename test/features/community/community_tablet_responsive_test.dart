@@ -59,6 +59,7 @@ class _MockCommunityRepository implements CommunityRepository {
   Future<CommunityPostModel> createPost({
     required String content,
     List<String> imageUrls = const [],
+    String? videoUrl,
     String visibility = 'Public',
     String community = 'All GenLink',
   }) async => throw UnimplementedError();
@@ -272,7 +273,7 @@ void main() {
       expect(find.text('Event'), findsOneWidget);
       expect(find.byType(BottomNavBar), findsOneWidget);
       expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(Icons.home_outlined)), findsOneWidget);
-      expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(Icons.emoji_events_rounded)), findsOneWidget);
+      expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(Icons.bar_chart_rounded)), findsOneWidget);
       expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(Icons.add_rounded)), findsOneWidget);
       expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(Icons.paid_outlined)), findsOneWidget);
       expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(Icons.person_outline)), findsOneWidget);

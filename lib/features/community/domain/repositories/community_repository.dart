@@ -7,6 +7,7 @@ abstract class CommunityRepository {
   Future<CommunityPostModel> createPost({
     required String content,
     List<String> imageUrls = const [],
+    String? videoUrl,
     String visibility = 'Public',
     String community = 'All GenLink',
   });

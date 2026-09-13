@@ -17,12 +17,14 @@ class CommunityRepositoryImpl implements CommunityRepository {
   Future<CommunityPostModel> createPost({
     required String content,
     List<String> imageUrls = const [],
+    String? videoUrl,
     String visibility = 'Public',
     String community = 'All GenLink',
   }) {
     return remoteDataSource.createPost(
       content: content,
       imageUrls: imageUrls,
+      videoUrl: videoUrl,
       visibility: visibility,
       community: community,
     );

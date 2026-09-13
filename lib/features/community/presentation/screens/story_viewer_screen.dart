@@ -1306,6 +1306,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     _pauseStory();
 
     try {
+      final storyRepo = Get.isRegistered<StoryRepository>()
+          ? Get.find<StoryRepository>()
+          : StoryRepositoryImpl();
+      await storyRepo.replyToStory(story.id, message);
+
       if (!Get.isRegistered<ChatController>()) {
         ChatBinding().dependencies();
       }
@@ -1320,25 +1325,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         storyId: story.id,
         userId: group.userId,
       );
-
-      if (Get.isRegistered<NotificationController>()) {
-        final notifCtrl = Get.find<NotificationController>();
-        notifCtrl.addActivityNotification(
-          NotificationModel(
-            id: 'notif_reply_${story.id}_${DateTime.now().millisecondsSinceEpoch}',
-            type: NotificationType.comment,
-            title: 'Story Reply',
-            body: '${group.userName} replied to your story: "$message"',
-            senderName: group.userName,
-            senderAvatar: group.userAvatar,
-            timeAgo: 'Just now',
-            timestamp: DateTime.now(),
-            isRead: false,
-            targetId: story.id,
-            targetType: 'story',
-          ),
-        );
-      }
 
       if (mounted) {
         _showCompactReplyToast(context, group.userName, group.userAvatar);

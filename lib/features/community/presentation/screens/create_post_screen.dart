@@ -1213,29 +1213,6 @@ class CreatePostScreenState extends State<CreatePostScreen> {
       _isSubmitting = true;
     });
 
-    // ─── Step 3B-Frontend: Video backend gate ─────────────────────────────
-    // Backend does not yet support VIDEO PostType or videoUrl field.
-    // When Step 3B-Backend is complete, replace this block with:
-    //   1. Await MediaUploadService.upload(bytes, contentType: 'video/mp4',
-    //        purpose: MediaPurpose.post) → MediaEntity.url (CDN URL)
-    //   2. Pass videoUrl to controller.createPost(videoUrl: cdnUrl)
-    if (_attachedVideo != null) {
-      if (mounted) {
-        AppNotificationBanner.showDanger(
-          context: context,
-          title: 'community.videoBackendPending'.tr != 'community.videoBackendPending'
-              ? 'community.videoBackendPending'.tr
-              : 'Video posting is coming soon!',
-          message: 'community.videoBackendPendingMsg'.tr != 'community.videoBackendPendingMsg'
-              ? 'community.videoBackendPendingMsg'.tr
-              : 'Backend video support is not yet available. Your video was not uploaded.',
-        );
-        setState(() => _isSubmitting = false);
-      }
-      return;
-    }
-    // ──────────────────────────────────────────────────────────────────────
-
     final controller = Get.isRegistered<CommunityController>()
         ? Get.find<CommunityController>()
         : Get.put(CommunityController());
@@ -1258,6 +1235,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
         postId: widget.initialPost!.id,
         content: _textController.text.trim(),
         imageUrls: _attachedImages,
+        videoUrl: _attachedVideo,
         visibility: visibilityValue,
         location: _selectedLocation,
         linkUrl: _attachedLink,
@@ -1285,6 +1263,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
       final success = await controller.createPost(
         content: _textController.text.trim(),
         imageUrls: _attachedImages,
+        videoUrl: _attachedVideo,
         visibility: visibilityValue,
         location: _selectedLocation,
         linkUrl: _attachedLink,

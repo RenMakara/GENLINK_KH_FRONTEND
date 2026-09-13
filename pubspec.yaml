@@ -48,6 +48,8 @@ dependencies:
   # Media upload
   # ==============================
   crypto: ^3.0.0
+  firebase_core: ^4.14.0
+  firebase_messaging: ^16.6.0
 
 
 # google_sign_in_android 7.2.12+ migrated to built-in Kotlin/AGP 9,

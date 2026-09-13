@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -7,6 +8,7 @@ import 'package:get/get.dart';
 
 import '../core/localization/localization_service.dart';
 import '../core/theme/theme_controller.dart';
+import '../firebase_options.dart';
 import 'app.dart';
 import 'bindings/initial_binding.dart';
 import 'routes/app_routes.dart';
@@ -29,6 +31,20 @@ import 'startup_route_resolver.dart';
 /// screen with no error on screen and nothing in the logs.
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Firebase is required by mobile push registration, but a Firebase setup
+  // problem must never prevent the app from painting or the user from using
+  // non-push features.
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      ).timeout(const Duration(seconds: 5));
+    }
+    debugPrint('[Firebase] initialized');
+  } catch (error, stack) {
+    debugPrint('Firebase initialization skipped: $error\n$stack');
+  }
 
   // Request access immediately, but do not hold the first Flutter frame while
   // Android displays the permission dialog. The dialog is modal, so the user

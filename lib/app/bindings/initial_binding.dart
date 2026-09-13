@@ -23,6 +23,8 @@ import '../../features/community/presentation/controllers/community_controller.d
 import '../../features/community/presentation/controllers/story_controller.dart';
 import 'package:flutter/painting.dart';
 import '../../features/chat/presentation/controllers/chat_controller.dart';
+import '../../features/notification/data/firebase_mobile_push_registration_service.dart';
+import '../../features/notification/domain/mobile_push_registration_service.dart';
 import '../../features/notification/presentation/controllers/notification_controller.dart';
 import '../../main_controller.dart';
 
@@ -50,6 +52,13 @@ class InitialBinding extends Bindings {
     Get
       ..put<Dio>(dio, permanent: true)
       ..put<ApiClient>(apiClient, permanent: true);
+
+    final mobilePushRegistrationService =
+        FirebaseMobilePushRegistrationService(apiClient: apiClient);
+    Get.put<MobilePushRegistrationService>(
+      mobilePushRegistrationService,
+      permanent: true,
+    );
 
     void handleSessionCleared() {
       PaintingBinding.instance.imageCache.clear();
@@ -89,7 +98,10 @@ class InitialBinding extends Bindings {
       }
     }
 
-    AuthBinding(onSessionCleared: handleSessionCleared).dependencies();
+    AuthBinding(
+      onSessionCleared: handleSessionCleared,
+      mobilePushRegistrationService: mobilePushRegistrationService,
+    ).dependencies();
 
     final authInterceptor = AuthInterceptor(
       secureStorage: secureStorage,

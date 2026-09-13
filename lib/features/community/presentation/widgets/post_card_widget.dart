@@ -1568,6 +1568,10 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
             'community.joined'.tr != 'community.joined'
         ? 'community.joined'.tr
         : 'joined';
+    final String newEventBadgeText = 'community.newEvent'.tr.isNotEmpty &&
+            'community.newEvent'.tr != 'community.newEvent'
+        ? 'community.newEvent'.tr
+        : 'New Event';
     final String viewEventLabel = 'community.viewEvent'.tr.isNotEmpty &&
             'community.viewEvent'.tr != 'community.viewEvent'
         ? 'community.viewEvent'.tr
@@ -1635,6 +1639,28 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                           runSpacing: 4,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.12)
+                                    : Colors.black.withValues(alpha: 0.07),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: borderSubtle.withValues(alpha: 0.8),
+                                  width: 0.6,
+                                ),
+                              ),
+                              child: Text(
+                                newEventBadgeText,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : textPrimary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                               decoration: BoxDecoration(

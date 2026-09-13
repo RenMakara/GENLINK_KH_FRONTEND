@@ -80,7 +80,7 @@ abstract final class AppColors {
   // ── Navigation Design Tokens (iPhone-Style Glass Navigation) ───────────────
   static const navBgLight = Color(0xD6FFFFFF);
   static const navBorderLight = Color(0x1F000000);
-  static const navActiveSurfaceLight = Color(0xF2FFFFFF);
+  static const navActiveSurfaceLight = Color(0x52FFFFFF);
   static const navActiveIconLight = Color(0xFF18191B);
   static const navActiveLabelLight = Color(0xFF18191B);
   static const navInactiveIconLight = Color(0xFF18191B);
@@ -90,7 +90,7 @@ abstract final class AppColors {
 
   static const navBgDark = Color(0xD9121418);
   static const navBorderDark = Color(0x29FFFFFF);
-  static const navActiveSurfaceDark = Color(0x2EFFFFFF);
+  static const navActiveSurfaceDark = Color(0x24FFFFFF);
   static const navActiveIconDark = Color(0xFFFFFFFF);
   static const navActiveLabelDark = Color(0xFFFFFFFF);
   static const navInactiveIconDark = Color(0xFFFFFFFF);

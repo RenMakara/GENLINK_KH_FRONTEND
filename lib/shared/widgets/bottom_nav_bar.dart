@@ -280,9 +280,9 @@ class _NavBarContentState extends State<_NavBarContent>
         final bottomMargin = safeBottom > 0 ? safeBottom + 4.0 : 16.0;
 
         // Heights
-        final barHeight = isVeryNarrow ? 64.0 : (isNarrow ? 68.0 : 70.0);
-        final capsulePaddingH = isVeryNarrow ? 5.0 : (isNarrow ? 6.0 : 7.0);
-        final capsulePaddingV = isVeryNarrow ? 4.5 : (isNarrow ? 5.0 : 5.0);
+        final barHeight = isVeryNarrow ? 60.0 : (isNarrow ? 62.0 : 64.0);
+        final capsulePaddingH = isVeryNarrow ? 6.0 : (isNarrow ? 7.0 : 8.0);
+        final capsulePaddingV = isVeryNarrow ? 6.0 : (isNarrow ? 6.5 : 7.0);
 
         // Plus button sizing
         final plusSize = isVeryNarrow ? 44.0 : 48.0;
@@ -290,50 +290,47 @@ class _NavBarContentState extends State<_NavBarContent>
         final plusGap = isVeryNarrow ? 8.0 : 10.0;
 
         // Content sizes
-        final iconSize = isVeryNarrow ? 21.0 : (isNarrow ? 22.5 : 23.0);
-        final fontSize = isVeryNarrow ? 9.5 : (isNarrow ? 10.0 : 10.5);
+        final iconSize = isVeryNarrow ? 20.0 : (isNarrow ? 21.0 : 22.0);
+        final fontSize = isVeryNarrow ? 9.5 : (isNarrow ? 10.0 : 10.0);
 
-        // Outer glass capsule styling
+        // Outer glass capsule styling — ONE continuous glass/frosted surface
         final pillBg = isDark
-            ? const Color(0xD9121418) // rich translucent dark glass
-            : const Color(0xD6FFFFFF); // crisp translucent light glass (content slightly visible)
+            ? const Color(0xCC121418) // rich translucent dark glass
+            : const Color(0xCCFFFFFF); // crisp translucent frosted light glass
         final pillBorder = isDark
             ? const Color(0x2EFFFFFF) // subtle luminous glass highlight
             : const Color(0x1F000000); // 12% hairline border
         final pillShadow = [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
-            blurRadius: 28,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.07),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
             spreadRadius: -4,
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-          BoxShadow(
-            color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.85),
+            color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.80),
             blurRadius: 1,
             offset: const Offset(0, -0.5),
           ),
         ];
 
-        // Active glass indicator — clean, subtle, slightly translucent, soft, premium
+        // Active glass indicator — INNER GLASS HIGHLIGHT inside outer glass capsule
         final capsuleBg = isDark
-            ? const Color(0x28FFFFFF) // 16% translucent white frosted glass
-            : const Color(0xE8FFFFFF); // clean translucent frosted white glass
+            ? const Color(0x24FFFFFF) // 14% luminous frosted white highlight on dark glass
+            : const Color(0x52FFFFFF); // 32% clean translucent frosted white highlight
         final capsuleBorder = isDark
-            ? const Color(0x33FFFFFF) // subtle soft border highlight
-            : const Color(0x18000000); // delicate hairline
+            ? const Color(0x38FFFFFF) // subtle luminous glass rim
+            : const Color(0x66FFFFFF); // delicate white light-catch rim border
         final capsuleShadow = [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.16)
+                : Colors.black.withValues(alpha: 0.02),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
           ),
           BoxShadow(
-            color: Colors.white.withValues(alpha: isDark ? 0.10 : 0.60),
+            color: Colors.white.withValues(alpha: isDark ? 0.08 : 0.50),
             blurRadius: 1,
             offset: const Offset(0, -0.5),
           ),
@@ -402,18 +399,19 @@ class _NavBarContentState extends State<_NavBarContent>
                                     final slotWidth =
                                         usableWidth / _kTabs.length;
 
-                                    // Active indicator dimensions — larger comfortable capsule
+                                    // Active indicator dimensions — natural inner glass highlight
                                     const indicatorVInset = 2.0; // 2.0px gap top + bottom
                                     final indicatorHInset =
-                                        isVeryNarrow ? 1.5 : 2.5; // 2.5px gap left + right
+                                        isVeryNarrow ? 2.5 : 3.5; // balanced horizontal padding
                                     final indicatorWidth = (slotWidth -
                                             indicatorHInset * 2)
                                         .clamp(0.0, slotWidth);
                                     final indicatorHeight =
                                         usableHeight - indicatorVInset * 2;
-                                    // Balanced rounded corners wrapping icon + label comfortably
+                                    // Smooth stadium pill matching outer capsule curves
                                     final indicatorRadius =
-                                        BorderRadius.circular(20.0);
+                                        BorderRadius.circular(
+                                            indicatorHeight / 2);
 
                                     final pos = currentPos;
                                     final indicatorLeft = pos * slotWidth +

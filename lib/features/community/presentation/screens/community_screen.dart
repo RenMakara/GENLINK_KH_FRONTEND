@@ -1815,7 +1815,7 @@ class _CommunityScreenState extends State<CommunityScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.event_outlined,
+              Icons.calendar_today_outlined,
               size: 52,
               color: textMuted.withValues(alpha: 0.55),
             ),

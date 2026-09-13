@@ -96,6 +96,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     final bool hasLocalImage = event.coverImageFile != null;
 
     final effectiveHeroTag = widget.heroTag ?? 'event-image-${event.id}';
+    final double coverHeight = (hasLocalImage || hasNetworkImage) ? 240.0 : 180.0;
 
     return Scaffold(
       backgroundColor: bgPrimary,
@@ -112,7 +113,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                     Hero(
                       tag: effectiveHeroTag,
                       child: SizedBox(
-                        height: 290,
+                        height: coverHeight,
                         width: double.infinity,
                         child: hasLocalImage
                             ? Image.file(event.coverImageFile!, fit: BoxFit.cover)
@@ -129,7 +130,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
 
                     // Contrast gradient overlay
                     Container(
-                      height: 290,
+                      height: coverHeight,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,

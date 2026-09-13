@@ -1305,7 +1305,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final alertDialog = tester.widget<AlertDialog>(find.byType(AlertDialog));
-      expect(alertDialog.backgroundColor, equals(const Color(0xFF1E2228)));
+      expect(alertDialog.backgroundColor, equals(AppColors.darkSurfaceSecondary));
 
       final saveButton = tester.widget<ElevatedButton>(find.widgetWithText(ElevatedButton, 'Save'));
       expect(saveButton.style?.backgroundColor?.resolve({}), equals(Colors.white));

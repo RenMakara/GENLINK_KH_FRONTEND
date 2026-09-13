@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -272,11 +271,11 @@ void main() {
       expect(find.text('Forum'), findsOneWidget);
       expect(find.text('Event'), findsOneWidget);
       expect(find.byType(BottomNavBar), findsOneWidget);
-      expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(CupertinoIcons.house)), findsOneWidget);
-      expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(CupertinoIcons.person_2_fill)), findsOneWidget);
-      expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(CupertinoIcons.plus)), findsOneWidget);
-      expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(CupertinoIcons.money_dollar_circle)), findsOneWidget);
-      expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(CupertinoIcons.person_crop_circle)), findsOneWidget);
+      expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(Icons.home_outlined)), findsOneWidget);
+      expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(Icons.emoji_events_rounded)), findsOneWidget);
+      expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(Icons.add_rounded)), findsOneWidget);
+      expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(Icons.paid_outlined)), findsOneWidget);
+      expect(find.descendant(of: find.byType(BottomNavBar), matching: find.byIcon(Icons.person_outline)), findsOneWidget);
     });
 
     testWidgets('4. Tablet Landscape / Large Tablet (1024px wide): Centered max-width content, floating nav centered', (tester) async {

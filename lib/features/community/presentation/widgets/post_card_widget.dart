@@ -1506,7 +1506,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final ctaBg = isDark ? Colors.white : Colors.black;
     final ctaText = isDark ? Colors.black : Colors.white;
     final isRsvped = event.isRsvped;
@@ -1699,7 +1698,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                                 child: Text(
                                   onlineLabel.toUpperCase(),
                                   style: TextStyle(
-                                    color: textMuted,
+                                    color: textSecondary,
                                     fontSize: 9.5,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.3,

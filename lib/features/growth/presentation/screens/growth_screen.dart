@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:genlink_frontend/features/growth/presentation/screens/growth_date_detail_screen.dart';
 import 'package:get/get.dart';
-
 import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
@@ -15,20 +15,6 @@ import '../../../productivity/presentation/task_feature/task_home_screen.dart';
 import '../../../home/domain/entities/home_entity.dart';
 import '../../../home/presentation/controllers/home_controller.dart';
 
-/// Level Up Screen — Personal Development & Progression
-///
-/// Refactored Phase 1: Visual Consistency + Information Hierarchy.
-/// Aligned with GenLink's core black/white/gray design language.
-/// Accent colors are used strictly for meaning (Gold=XP, Orange=Habits, Blue=Tasks, Cyan=Focus, Green=Goals, Purple=Mindset).
-///
-/// Section Hierarchy:
-/// 1. HEADER (LEVEL UP [GROWTH] + "Your personal growth journey" + Trophy button to Leaderboard)
-/// 2. YOUR PROGRESS (Clean Hero Card with level, XP progress, and Leaderboard link)
-/// 3. TODAY (Main functional checklist: Habits & Tasks + Daily progress)
-/// 4. IMPORTANT ALERTS (Habit Streak at Risk only; zero space when absent)
-/// 5. GROW (Productivity Tools shortcuts: Habits, Tasks, Focus, Goals)
-/// 6. YOUR NEXT MOVE (Recommended: Challenge / Quiz & Saving Goal)
-/// 7. DAILY MINDSET (Calm inspirational quote card)
 class GrowthScreen extends GetView<HomeController> {
   const GrowthScreen({super.key, this.onNavigateTab});
 
@@ -65,8 +51,7 @@ class GrowthScreen extends GetView<HomeController> {
   }
 }
 
-// ── MAIN CONTENT VIEW ────────────────────────────────────────────────────────
-
+// MAIN CONTENT
 class _GrowthContentView extends StatelessWidget {
   const _GrowthContentView({
     required this.controller,
@@ -82,6 +67,7 @@ class _GrowthContentView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
 
     return Scaffold(
@@ -105,44 +91,46 @@ class _GrowthContentView extends StatelessWidget {
                   AppSpacing.md,
                   AppSpacing.xs + 2,
                   AppSpacing.md,
-                  120, // Clearance for bottom navigation bar
+                  120,
                 ),
                 children: [
-                  // 1. HEADER
+                  // HEADER + DATE SELECTOR
                   _GrowthHeader(user: home.user),
+
                   const SizedBox(height: 12),
 
-                  // 2. YOUR PROGRESS (Hero Card)
+                  // LEVEL PROGRESS
                   _LevelProgressCard(user: home.user),
+
                   const SizedBox(height: 14),
 
-                  // 3. TODAY (Habit & Task checklist or unified compact empty state)
+                  // TODAY
                   _GrowthTodayChecklist(
                     home: home,
                     controller: controller,
                     onNavigateTab: onNavigateTab,
                   ),
+
                   const SizedBox(height: 12),
 
-                  // 4. IMPORTANT ALERTS (Streak at risk only; zero space if absent)
-                  _GrowthImportantAlerts(
-                    home: home,
-                    controller: controller,
-                  ),
+                  // ALERTS
+                  _GrowthImportantAlerts(home: home, controller: controller),
 
-                  // 5. GROW (Productivity Tools shortcuts)
+                  // GROW
                   _ProductivityTools(onNavigateTab: onNavigateTab),
+
                   const SizedBox(height: AppSpacing.lg),
 
-                  // 6. YOUR NEXT MOVE (Recommended for you: Challenge / Saving Goal)
+                  // NEXT MOVE
                   _GrowthYourNextStepSection(
                     home: home,
                     onNavigateTab: onNavigateTab,
                   ),
 
-                  // 7. DAILY MINDSET (Distinctive calm inspiration card)
+                  // DAILY MINDSET
                   if (home.dailyMotivation != null &&
-                      (home.dailyMotivation?.content?.trim().isNotEmpty ?? false)) ...[
+                      (home.dailyMotivation?.content?.trim().isNotEmpty ??
+                          false)) ...[
                     const SizedBox(height: AppSpacing.lg),
                     _DailyMindsetCard(motivation: home.dailyMotivation!),
                   ],
@@ -156,8 +144,7 @@ class _GrowthContentView extends StatelessWidget {
   }
 }
 
-// ── 1. HEADER ────────────────────────────────────────────────────────────────
-
+//HEADER
 class _GrowthHeader extends StatelessWidget {
   const _GrowthHeader({required this.user});
 
@@ -167,81 +154,244 @@ class _GrowthHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 
-    final firstName = user.fullName?.trim().split(' ').first;
-    final subtitleText = (firstName != null && firstName.isNotEmpty)
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+
+    final firstName = user.fullName?.trim().isNotEmpty == true
+        ? user.fullName!.trim().split(' ').first
+        : null;
+
+    final subtitle = firstName != null
         ? 'Welcome, $firstName · Your personal growth journey'
         : 'Your personal growth journey';
 
-    return Container(
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'LEVEL UP',
-                  style: TextStyle(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // TOP HEADER
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'LEVEL UP',
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.6,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: textSecondary,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  Get.to(
+                    () => const LeaderboardHomeScreen(),
+                    binding: LeaderboardBinding(),
+                  );
+                },
+                borderRadius: BorderRadius.circular(11),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.darkSurfacePrimary
+                        : AppColors.lightSurfacePrimary,
+                    borderRadius: BorderRadius.circular(11),
+                    border: Border.all(color: borderSubtle, width: 0.8),
+                  ),
+                  child: Icon(
+                    Icons.emoji_events_outlined,
+                    size: 20,
                     color: textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.4,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitleText,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: textSecondary,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 10),
+
+        // MONTH
+        Row(
+          children: [
+            Text(
+              'September 2026',
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(width: 3),
+            Icon(Icons.chevron_right_rounded, size: 19, color: textSecondary),
+          ],
+        ),
+
+        const SizedBox(height: 6),
+
+        // DATE SELECTOR
+        const _GrowthDateStrip(),
+      ],
+    );
+  }
+}
+
+// DATE STRIP
+class _GrowthDateStrip extends StatelessWidget {
+  const _GrowthDateStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    final dates = [
+      const _GrowthDateItem(day: 'Sun', number: 6),
+      const _GrowthDateItem(day: 'Mon', number: 7),
+      const _GrowthDateItem(day: 'Tue', number: 8),
+      const _GrowthDateItem(day: 'Wed', number: 9),
+      const _GrowthDateItem(day: 'Thu', number: 10, selected: true),
+      const _GrowthDateItem(day: 'Fri', number: 11),
+      const _GrowthDateItem(day: 'Sat', number: 12),
+    ];
+
+    return SizedBox(
+      height: 58,
+      child: Row(
+        children: [
+          for (final date in dates)
+            Expanded(child: _GrowthDateButton(date: date)),
+        ],
+      ),
+    );
+  }
+}
+
+class _GrowthDateItem {
+  const _GrowthDateItem({
+    required this.day,
+    required this.number,
+    this.selected = false,
+  });
+
+  final String day;
+  final int number;
+  final bool selected;
+}
+
+class _GrowthDateButton extends StatelessWidget {
+  const _GrowthDateButton({required this.date});
+
+  final _GrowthDateItem date;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+
+    final border = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        Get.to(
+          () => GrowthDateDetailScreen(
+            selectedDate: DateTime(2026, 9, date.number),
+          ),
+        );
+      },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            date.day,
+            style: TextStyle(
+              color: textMuted,
+              fontSize: 8.5,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => Get.to(
-                () => const LeaderboardHomeScreen(),
-                binding: LeaderboardBinding(),
+
+          const SizedBox(height: 4),
+
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: date.selected
+                  ? (isDark ? Colors.white : const Color(0xFF111111))
+                  : Colors.transparent,
+              shape: BoxShape.circle,
+              border: date.selected
+                  ? null
+                  : Border.all(color: border, width: 0.7),
+            ),
+            child: Text(
+              '${date.number}',
+              style: TextStyle(
+                color: date.selected
+                    ? (isDark ? Colors.black : Colors.white)
+                    : textPrimary,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
               ),
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.darkSurfacePrimary
-                      : AppColors.lightSurfacePrimary,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: borderSubtle,
-                    width: 0.8,
-                  ),
-                ),
-                child: Icon(
-                  Icons.emoji_events_outlined,
-                  size: 20,
-                  color: textPrimary,
-                ),
-              ),
+            ),
+          ),
+
+          const SizedBox(height: 3),
+
+          Container(
+            width: 4,
+            height: 4,
+            decoration: BoxDecoration(
+              color: date.number == 10
+                  ? const Color(0xFFF97316)
+                  : const Color(0xFF3B82F6),
+              shape: BoxShape.circle,
             ),
           ),
         ],
@@ -250,38 +400,52 @@ class _GrowthHeader extends StatelessWidget {
   }
 }
 
-// ── 2. YOUR PROGRESS (LEVEL & XP PROGRESS HERO CARD) ─────────────────────────
-
+//LEVEL PROGRESS
 class _LevelProgressCard extends StatelessWidget {
   const _LevelProgressCard({required this.user});
 
   final HomeUser user;
 
-  static const Color growthAccent = Color(0xFFF2B84B); // Restrained Gold / Amber
+  static const Color growthAccent = Color(0xFFF2B84B);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final textMuted =
-        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final cardSurface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+
+    final cardSurface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     final nextLevel = user.safeLevel + 1;
-    final levelLabel = 'home.levelLabel'.trParams({'level': '${user.safeLevel}'});
-    final levelDisplay = (levelLabel.isNotEmpty && levelLabel != 'home.levelLabel')
+
+    final levelLabel = 'home.levelLabel'.trParams({
+      'level': '${user.safeLevel}',
+    });
+
+    final levelDisplay =
+        (levelLabel.isNotEmpty && levelLabel != 'home.levelLabel')
         ? levelLabel
         : 'Level ${user.safeLevel}';
 
-    // Supportive progress copy
     final xpDiff = user.xpForNextLevel - user.safeTotalXp;
+
     final progressCopy = xpDiff > 0
         ? 'Only $xpDiff XP to Level $nextLevel'
         : 'Progress toward Level $nextLevel';
@@ -290,10 +454,12 @@ class _LevelProgressCard extends StatelessWidget {
       color: cardSurface,
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: InkWell(
-        onTap: () => Get.to(
-          () => const LeaderboardHomeScreen(),
-          binding: LeaderboardBinding(),
-        ),
+        onTap: () {
+          Get.to(
+            () => const LeaderboardHomeScreen(),
+            binding: LeaderboardBinding(),
+          );
+        },
         borderRadius: BorderRadius.circular(AppRadius.lg),
         splashFactory: InkRipple.splashFactory,
         child: Container(
@@ -301,10 +467,7 @@ class _LevelProgressCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: cardSurface,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(
-              color: borderSubtle,
-              width: 0.8,
-            ),
+            border: Border.all(color: borderSubtle, width: 0.8),
             boxShadow: isDark ? AppShadows.cardDark : AppShadows.cardLight,
           ),
           child: Column(
@@ -320,7 +483,9 @@ class _LevelProgressCard extends StatelessWidget {
                         width: 28,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: growthAccent.withValues(alpha: isDark ? 0.16 : 0.12),
+                          color: growthAccent.withValues(
+                            alpha: isDark ? 0.16 : 0.12,
+                          ),
                           borderRadius: BorderRadius.circular(7),
                         ),
                         child: const Icon(
@@ -329,7 +494,9 @@ class _LevelProgressCard extends StatelessWidget {
                           color: growthAccent,
                         ),
                       ),
+
                       const SizedBox(width: 10),
+
                       Text(
                         levelDisplay,
                         style: TextStyle(
@@ -340,6 +507,7 @@ class _LevelProgressCard extends StatelessWidget {
                       ),
                     ],
                   ),
+
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -361,7 +529,9 @@ class _LevelProgressCard extends StatelessWidget {
                   ),
                 ],
               ),
+
               const SizedBox(height: 12),
+
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.pill),
                 child: LinearProgressIndicator(
@@ -373,7 +543,9 @@ class _LevelProgressCard extends StatelessWidget {
                   valueColor: const AlwaysStoppedAnimation<Color>(growthAccent),
                 ),
               ),
+
               const SizedBox(height: 9),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -387,7 +559,7 @@ class _LevelProgressCard extends StatelessWidget {
                   ),
                   Text(
                     '${user.percentToNext}%',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: growthAccent,
                       fontSize: 11.5,
                       fontWeight: FontWeight.w700,
@@ -403,8 +575,7 @@ class _LevelProgressCard extends StatelessWidget {
   }
 }
 
-// ── 3. TODAY'S JOURNEY (LIGHTWEIGHT VERTICAL ACTIVITY TIMELINE) ───────────────
-
+//TODAY
 class _TimelineActivityItem {
   const _TimelineActivityItem({
     required this.title,
@@ -413,8 +584,6 @@ class _TimelineActivityItem {
     required this.accentColor,
     required this.onTap,
     this.onToggle,
-    // Reserved for activity sources that award XP (for example challenges).
-    // ignore: unused_element_parameter
     this.xpReward,
   });
 
@@ -438,49 +607,69 @@ class _GrowthTodayChecklist extends StatelessWidget {
   final HomeController controller;
   final ValueChanged<int>? onNavigateTab;
 
-  static const Color habitAccent = Color(0xFFF97316); // Semantic Orange
-  static const Color taskAccent = Color(0xFF3B82F6); // Semantic Blue
+  static const Color habitAccent = Color(0xFFF97316);
+
+  static const Color taskAccent = Color(0xFF3B82F6);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final textMuted =
-        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final cardSurface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+
+    final cardSurface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     final progress = home.todayProgress;
 
-    final todayTitle = 'home.todayJourney'.tr.isNotEmpty &&
+    final todayTitle =
+        'home.todayJourney'.tr.isNotEmpty &&
             'home.todayJourney'.tr != 'home.todayJourney'
         ? 'home.todayJourney'.tr.toUpperCase()
         : "TODAY'S JOURNEY";
 
     final habitsTotal = progress.habitsTotal;
+
     final habitsDone = progress.habitsCompletedToday;
+
     final tasksTotal = progress.tasksTotal;
+
     final tasksDone = progress.tasksCompleted;
+
     final percent = progress.percent;
 
-    // Build timeline activities from real existing data
     final habitItems = controller.habits;
+
     final activities = <_TimelineActivityItem>[];
 
-    // 1. Habits (individual habits if loaded, or aggregated habit if habitsTotal > 0)
+    // HABITS
     if (habitItems.isNotEmpty) {
       for (final habit in habitItems) {
-        final streakText =
-            habit.streakCount > 0 ? '${habit.streakCount} day streak' : null;
+        final streakText = habit.streakCount > 0
+            ? '${habit.streakCount} day streak'
+            : null;
+
         final subtitle = habit.checkedInToday
-            ? 'Habit · Completed today${streakText != null ? ' · $streakText' : ''}'
-            : 'Habit · ${streakText ?? (habit.category ?? 'Daily routine')}';
+            ? 'Habit · Completed today'
+                  '${streakText != null ? ' · $streakText' : ''}'
+            : 'Habit · '
+                  '${streakText ?? (habit.category ?? 'Daily routine')}';
 
         activities.add(
           _TimelineActivityItem(
@@ -488,48 +677,51 @@ class _GrowthTodayChecklist extends StatelessWidget {
             subtitle: subtitle,
             isCompleted: habit.checkedInToday,
             accentColor: habitAccent,
-            onTap: () => Get.to(() => const HabitHomeScreen()),
-            onToggle: () => controller.toggleHabitCheckIn(
-              habitId: habit.habitId,
-              targetState: !habit.checkedInToday,
-            ),
+            onTap: () {
+              Get.to(() => const HabitHomeScreen());
+            },
+            onToggle: () {
+              controller.toggleHabitCheckIn(
+                habitId: habit.habitId,
+                targetState: !habit.checkedInToday,
+              );
+            },
           ),
         );
       }
     } else if (habitsTotal > 0) {
       final isHabitDone = habitsDone >= habitsTotal;
-      final title = 'home.rowHabits'.tr.isNotEmpty &&
+
+      final title =
+          'home.rowHabits'.tr.isNotEmpty &&
               'home.rowHabits'.tr != 'home.rowHabits'
           ? 'home.rowHabits'.tr
           : 'Check in your habits';
-      final subtitle = 'home.rowHabitsDetail'.trParams({
-        'done': '$habitsDone',
-        'total': '$habitsTotal',
-      });
 
       activities.add(
         _TimelineActivityItem(
           title: title,
-          subtitle: subtitle.isNotEmpty && subtitle != 'home.rowHabitsDetail'
-              ? 'Habit · $subtitle'
-              : 'Habit · $habitsDone of $habitsTotal completed',
+          subtitle: 'Habit · $habitsDone of $habitsTotal completed',
           isCompleted: isHabitDone,
           accentColor: habitAccent,
-          onTap: () => Get.to(() => const HabitHomeScreen()),
-          onToggle: () => controller.toggleHabitCheckIn(),
+          onTap: () {
+            Get.to(() => const HabitHomeScreen());
+          },
+          onToggle: () {
+            controller.toggleHabitCheckIn();
+          },
         ),
       );
     }
 
-    // 2. Tasks
+    // TASKS
     if (tasksTotal > 0) {
       final isTaskDone = tasksDone >= tasksTotal;
+
       final title = isTaskDone
           ? "Today's tasks completed"
-          : ('home.rowTasks'.tr.isNotEmpty &&
-                  'home.rowTasks'.tr != 'home.rowTasks'
-              ? 'home.rowTasks'.tr
-              : "Finish today's tasks");
+          : 'Finish today\'s tasks';
+
       final subtitle = isTaskDone
           ? 'Task · All $tasksTotal completed'
           : 'Task · $tasksDone of $tasksTotal completed';
@@ -540,7 +732,9 @@ class _GrowthTodayChecklist extends StatelessWidget {
           subtitle: subtitle,
           isCompleted: isTaskDone,
           accentColor: taskAccent,
-          onTap: () => Get.to(() => const TasksPage()),
+          onTap: () {
+            Get.to(() => const TasksPage());
+          },
         ),
       );
     }
@@ -550,7 +744,6 @@ class _GrowthTodayChecklist extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -571,19 +764,14 @@ class _GrowthTodayChecklist extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     "What can I do today to Level Up?",
-                    style: TextStyle(
-                      color: textSecondary,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w400,
-                    ),
+                    style: TextStyle(color: textSecondary, fontSize: 11.5),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            if (!isAllEmpty) ...[
-              const SizedBox(width: 8),
+            if (!isAllEmpty)
               Text(
                 '$percent%',
                 style: TextStyle(
@@ -592,12 +780,11 @@ class _GrowthTodayChecklist extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-            ],
           ],
         ),
-        const SizedBox(height: AppSpacing.sm + 2),
 
-        // Section Content: Lightweight Timeline vs All Caught Up Empty State
+        const SizedBox(height: 10),
+
         Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
@@ -614,9 +801,8 @@ class _GrowthTodayChecklist extends StatelessWidget {
                 )
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    for (int i = 0; i < activities.length; i++) ...[
+                    for (int i = 0; i < activities.length; i++)
                       _TimelineItemRow(
                         item: activities[i],
                         isLast: i == activities.length - 1,
@@ -626,20 +812,14 @@ class _GrowthTodayChecklist extends StatelessWidget {
                         borderSubtle: borderSubtle,
                         isDark: isDark,
                       ),
-                    ],
 
-                    const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: 12),
 
-                    // Daily progress bar
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'home.dailyProgress'.tr.isNotEmpty &&
-                                  'home.dailyProgress'.tr !=
-                                      'home.dailyProgress'
-                              ? 'home.dailyProgress'.tr
-                              : 'Daily progress',
+                          'Daily progress',
                           style: TextStyle(
                             color: textMuted,
                             fontSize: 11.5,
@@ -656,7 +836,9 @@ class _GrowthTodayChecklist extends StatelessWidget {
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 6),
+
                     ClipRRect(
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                       child: LinearProgressIndicator(
@@ -677,14 +859,14 @@ class _GrowthTodayChecklist extends StatelessWidget {
     );
   }
 
-  /// Compact, Lightweight Empty State when no habits/tasks need attention
   Widget _buildAllCaughtUpEmptyState({
     required Color textPrimary,
     required Color textSecondary,
     required bool isDark,
   }) {
+    final primary = isDark ? Colors.white : AppColors.lightPrimary;
+
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
           height: 32,
@@ -692,25 +874,16 @@ class _GrowthTodayChecklist extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: (isDark ? Colors.white : AppColors.lightPrimary)
-                .withValues(alpha: 0.1),
-            border: Border.all(
-              color: (isDark ? Colors.white : AppColors.lightPrimary)
-                  .withValues(alpha: 0.25),
-              width: 1,
-            ),
+            color: primary.withValues(alpha: 0.1),
           ),
-          child: Icon(
-            Icons.check_rounded,
-            size: 18,
-            color: isDark ? Colors.white : AppColors.lightPrimary,
-          ),
+          child: Icon(Icons.check_rounded, size: 18, color: primary),
         ),
+
         const SizedBox(width: 12),
+
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 "You're all caught up",
@@ -737,6 +910,7 @@ class _GrowthTodayChecklist extends StatelessWidget {
   }
 }
 
+// TIMELINE ITEM
 class _TimelineItemRow extends StatelessWidget {
   const _TimelineItemRow({
     required this.item,
@@ -763,18 +937,14 @@ class _TimelineItemRow extends StatelessWidget {
       child: InkWell(
         onTap: item.onTap,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        splashFactory: InkRipple.splashFactory,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Timeline status indicator & thin vertical connector
               Column(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   GestureDetector(
-                    behavior: HitTestBehavior.opaque,
                     onTap: item.onToggle ?? item.onTap,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
@@ -785,14 +955,18 @@ class _TimelineItemRow extends StatelessWidget {
                         shape: BoxShape.circle,
                         color: item.isCompleted
                             ? (isDark
-                                ? Colors.white.withValues(alpha: 0.18)
-                                : AppColors.lightPrimary.withValues(alpha: 0.14))
+                                  ? Colors.white.withValues(alpha: 0.18)
+                                  : AppColors.lightPrimary.withValues(
+                                      alpha: 0.14,
+                                    ))
                             : Colors.transparent,
                         border: Border.all(
                           color: item.isCompleted
                               ? (isDark
-                                  ? Colors.white.withValues(alpha: 0.45)
-                                  : AppColors.lightPrimary.withValues(alpha: 0.4))
+                                    ? Colors.white.withValues(alpha: 0.45)
+                                    : AppColors.lightPrimary.withValues(
+                                        alpha: 0.4,
+                                      ))
                               : (isDark ? Colors.white38 : Colors.black38),
                           width: 1.4,
                         ),
@@ -801,11 +975,14 @@ class _TimelineItemRow extends StatelessWidget {
                           ? Icon(
                               Icons.check_rounded,
                               size: 13,
-                              color: isDark ? Colors.white : AppColors.lightPrimary,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.lightPrimary,
                             )
                           : null,
                     ),
                   ),
+
                   if (!isLast)
                     Container(
                       width: 1.5,
@@ -817,13 +994,13 @@ class _TimelineItemRow extends StatelessWidget {
                     ),
                 ],
               ),
+
               const SizedBox(width: 12),
-              // Activity details: Title, metadata, optional XP, arrow
+
               Expanded(
                 child: Padding(
                   padding: EdgeInsets.only(bottom: isLast ? 0 : 8, top: 1),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: Column(
@@ -844,7 +1021,6 @@ class _TimelineItemRow extends StatelessWidget {
                                 decoration: item.isCompleted
                                     ? TextDecoration.lineThrough
                                     : TextDecoration.none,
-                                decorationColor: textSecondary,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -855,35 +1031,26 @@ class _TimelineItemRow extends StatelessWidget {
                               style: TextStyle(
                                 color: textMuted,
                                 fontSize: 11.5,
-                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ],
                         ),
                       ),
+
                       if (item.xpReward != null && item.xpReward! > 0) ...[
                         const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF2B84B)
-                                .withValues(alpha: isDark ? 0.2 : 0.12),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: Text(
-                            '+${item.xpReward} XP',
-                            style: const TextStyle(
-                              color: Color(0xFFF2B84B),
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w700,
-                            ),
+                        Text(
+                          '+${item.xpReward} XP',
+                          style: const TextStyle(
+                            color: Color(0xFFF2B84B),
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
-                      const SizedBox(width: 8),
+
+                      const SizedBox(width: 7),
+
                       Icon(
                         Icons.arrow_forward_ios_rounded,
                         size: 10,
@@ -901,13 +1068,9 @@ class _TimelineItemRow extends StatelessWidget {
   }
 }
 
-// ── 4. IMPORTANT ALERTS (CONDITIONAL: STREAK AT RISK ONLY) ──────────────────
-
+//IMPORTANT ALERTS
 class _GrowthImportantAlerts extends StatelessWidget {
-  const _GrowthImportantAlerts({
-    required this.home,
-    required this.controller,
-  });
+  const _GrowthImportantAlerts({required this.home, required this.controller});
 
   final HomeEntity home;
   final HomeController controller;
@@ -915,45 +1078,43 @@ class _GrowthImportantAlerts extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final habitsTotal = home.todayProgress.habitsTotal;
+
     final habitsDone = home.todayProgress.habitsCompletedToday;
-    final isStreakAtRisk = habitsTotal > 0 &&
+
+    final isStreakAtRisk =
+        habitsTotal > 0 &&
         habitsDone < habitsTotal &&
         controller.habits.any((h) => !h.checkedInToday && h.streakCount > 0);
 
-    // If no streak at risk, take zero space on Level Up screen
     if (!isStreakAtRisk) {
       return const SizedBox.shrink();
     }
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
-    final alertTitle = 'home.habitStreakAlertTitle'.tr.isNotEmpty &&
-            'home.habitStreakAlertTitle'.tr != 'home.habitStreakAlertTitle'
-        ? 'home.habitStreakAlertTitle'.tr
-        : 'Habit Streak at Risk';
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
-    final alertMsg = 'home.habitStreakAlertMsg'.tr.isNotEmpty &&
-            'home.habitStreakAlertMsg'.tr != 'home.habitStreakAlertMsg'
-        ? 'home.habitStreakAlertMsg'.tr
-        : "Complete today's habit check-in to protect your streak!";
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: _GrowthAlertCard(
         icon: Icons.local_fire_department_rounded,
         iconColor: const Color(0xFFF97316),
-        title: alertTitle,
-        message: alertMsg,
+        title: 'Habit Streak at Risk',
+        message: "Complete today's habit check-in to protect your streak!",
         actionText: 'Tap → Check in habits',
         textPrimary: textPrimary,
         textSecondary: textSecondary,
         isDark: isDark,
-        onTap: () => Get.to(() => const HabitHomeScreen()),
+        onTap: () {
+          Get.to(() => const HabitHomeScreen());
+        },
       ),
     );
   }
@@ -984,25 +1145,27 @@ class _GrowthAlertCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
 
     return Material(
-      color: isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary,
+      color: surface,
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        splashFactory: InkRipple.splashFactory,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary,
+            color: surface,
             borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(
-              color: isDark
-                  ? iconColor.withValues(alpha: 0.28)
-                  : borderSubtle,
+              color: isDark ? iconColor.withValues(alpha: 0.28) : borderSubtle,
               width: 0.8,
             ),
             boxShadow: isDark ? AppShadows.cardDark : AppShadows.cardLight,
@@ -1020,7 +1183,9 @@ class _GrowthAlertCard extends StatelessWidget {
                 ),
                 child: Icon(icon, size: 19, color: iconColor),
               ),
+
               const SizedBox(width: 12),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1062,8 +1227,7 @@ class _GrowthAlertCard extends StatelessWidget {
   }
 }
 
-// ── 5. GROW (PRODUCTIVITY TOOLS SHORTCUTS) ───────────────────────────────────
-
+//GROW
 class _ProductivityTools extends StatelessWidget {
   const _ProductivityTools({this.onNavigateTab});
 
@@ -1073,33 +1237,43 @@ class _ProductivityTools extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
 
     final tools = [
       (
         icon: Icons.repeat_rounded,
         label: 'Habits',
-        accentColor: const Color(0xFFF97316), // Orange
-        onTap: () => Get.to(() => const HabitHomeScreen()),
+        color: const Color(0xFFF97316),
+        onTap: () {
+          Get.to(() => const HabitHomeScreen());
+        },
       ),
       (
         icon: Icons.check_circle_outline_rounded,
         label: 'Tasks',
-        accentColor: const Color(0xFF3B82F6), // Blue
-        onTap: () => Get.to(() => const TasksPage()),
+        color: const Color(0xFF3B82F6),
+        onTap: () {
+          Get.to(() => const TasksPage());
+        },
       ),
       (
         icon: Icons.timer_outlined,
         label: 'Focus',
-        accentColor: const Color(0xFF06B6D4), // Cyan
-        onTap: () => Get.to(() => const FocusPage()),
+        color: const Color(0xFF06B6D4),
+        onTap: () {
+          Get.to(() => const FocusPage());
+        },
       ),
       (
         icon: Icons.flag_outlined,
         label: 'Goals',
-        accentColor: const Color(0xFF10B981), // Emerald
-        onTap: () => Get.to(() => const PlanGoalScreen()),
+        color: const Color(0xFF10B981),
+        onTap: () {
+          Get.to(() => const PlanGoalScreen());
+        },
       ),
     ];
 
@@ -1114,10 +1288,10 @@ class _ProductivityTools extends StatelessWidget {
             fontWeight: FontWeight.w700,
             letterSpacing: 0.6,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: AppSpacing.sm + 2),
+
+        const SizedBox(height: 10),
+
         Row(
           children: [
             for (int i = 0; i < tools.length; i++) ...[
@@ -1125,7 +1299,7 @@ class _ProductivityTools extends StatelessWidget {
                 child: _ToolTile(
                   icon: tools[i].icon,
                   label: tools[i].label,
-                  accentColor: tools[i].accentColor,
+                  accentColor: tools[i].color,
                   onTap: tools[i].onTap,
                 ),
               ),
@@ -1155,12 +1329,18 @@ class _ToolTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final cardSurface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+
+    final cardSurface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1171,7 +1351,6 @@ class _ToolTile extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            splashFactory: InkRipple.splashFactory,
             child: Container(
               height: 48,
               alignment: Alignment.center,
@@ -1194,7 +1373,9 @@ class _ToolTile extends StatelessWidget {
             ),
           ),
         ),
+
         const SizedBox(height: 6),
+
         Text(
           label,
           maxLines: 1,
@@ -1210,13 +1391,9 @@ class _ToolTile extends StatelessWidget {
   }
 }
 
-// ── 6. YOUR NEXT MOVE (RECOMMENDED FOR YOU: CHALLENGE & SAVING GOAL) ────────
-
+//YOUR NEXT MOVE
 class _GrowthYourNextStepSection extends StatelessWidget {
-  const _GrowthYourNextStepSection({
-    required this.home,
-    this.onNavigateTab,
-  });
+  const _GrowthYourNextStepSection({required this.home, this.onNavigateTab});
 
   final HomeEntity home;
   final ValueChanged<int>? onNavigateTab;
@@ -1229,18 +1406,29 @@ class _GrowthYourNextStepSection extends StatelessWidget {
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final textMuted =
-        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final cardSurface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+
+    final cardSurface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     final challenge = home.dailyChallenge!;
+
     final challengeTitle = challenge.title.trim().isNotEmpty
         ? challenge.title
         : "Today's Challenge";
@@ -1255,8 +1443,6 @@ class _GrowthYourNextStepSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: Text(
@@ -1267,11 +1453,8 @@ class _GrowthYourNextStepSection extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: 8),
             Text(
               'RECOMMENDED FOR YOU',
               style: TextStyle(
@@ -1283,19 +1466,23 @@ class _GrowthYourNextStepSection extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: AppSpacing.sm + 2),
+
+        const SizedBox(height: 10),
+
         _GrowthActionCard(
           icon: Icons.quiz_outlined,
           accentColor: const Color(0xFFF97316),
           title: challengeTitle,
           subtitle: challengeDesc,
-          badgeText: (xpReward != null && xpReward > 0) ? '+$xpReward XP' : null,
+          badgeText: xpReward != null && xpReward > 0 ? '+$xpReward XP' : null,
           cardSurface: cardSurface,
           borderSubtle: borderSubtle,
           textPrimary: textPrimary,
           textSecondary: textSecondary,
           isDark: isDark,
-          onTap: () => Get.toNamed(AppRoutes.quizDashboard),
+          onTap: () {
+            Get.toNamed(AppRoutes.quizDashboard);
+          },
         ),
       ],
     );
@@ -1337,20 +1524,15 @@ class _GrowthActionCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        splashFactory: InkRipple.splashFactory,
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             color: cardSurface,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(
-              color: borderSubtle,
-              width: 0.8,
-            ),
+            border: Border.all(color: borderSubtle, width: 0.8),
             boxShadow: isDark ? AppShadows.cardDark : AppShadows.cardLight,
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 height: 36,
@@ -1362,7 +1544,9 @@ class _GrowthActionCard extends StatelessWidget {
                 ),
                 child: Icon(icon, size: 20, color: accentColor),
               ),
-              const SizedBox(width: AppSpacing.sm + 4),
+
+              const SizedBox(width: 12),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1381,30 +1565,23 @@ class _GrowthActionCard extends StatelessWidget {
                             ),
                           ),
                         ),
+
                         if (badgeText != null) ...[
                           const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 2.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: accentColor.withValues(alpha: isDark ? 0.18 : 0.12),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              badgeText!,
-                              style: TextStyle(
-                                color: accentColor,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w800,
-                              ),
+                          Text(
+                            badgeText!,
+                            style: TextStyle(
+                              color: accentColor,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
                       ],
                     ),
+
                     const SizedBox(height: 3),
+
                     Text(
                       subtitle,
                       maxLines: 2,
@@ -1418,7 +1595,9 @@ class _GrowthActionCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 6),
+
+              const SizedBox(width: 7),
+
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 10,
@@ -1432,8 +1611,7 @@ class _GrowthActionCard extends StatelessWidget {
   }
 }
 
-// ── 7. DAILY MINDSET (CALM & INSPIRATIONAL CARD) ──────────────────────────────
-
+//DAILY MINDSET
 class _DailyMindsetCard extends StatelessWidget {
   const _DailyMindsetCard({required this.motivation});
 
@@ -1443,16 +1621,24 @@ class _DailyMindsetCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final cardSurface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 
-    const mindsetAccent = Color(0xFF8B5CF6); // Gentle purple/indigo
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+
+    final cardSurface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+
+    const accent = Color(0xFF8B5CF6);
 
     final title = motivation.title?.trim().isNotEmpty ?? false
         ? motivation.title!
@@ -1465,10 +1651,7 @@ class _DailyMindsetCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardSurface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(
-          color: borderSubtle,
-          width: 0.8,
-        ),
+        border: Border.all(color: borderSubtle, width: 0.8),
         boxShadow: isDark ? AppShadows.cardDark : AppShadows.cardLight,
       ),
       child: Row(
@@ -1479,16 +1662,18 @@ class _DailyMindsetCard extends StatelessWidget {
             width: 32,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: mindsetAccent.withValues(alpha: isDark ? 0.16 : 0.12),
+              color: accent.withValues(alpha: isDark ? 0.16 : 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
               Icons.format_quote_rounded,
               size: 18,
-              color: mindsetAccent,
+              color: accent,
             ),
           ),
+
           const SizedBox(width: 12),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1496,13 +1681,15 @@ class _DailyMindsetCard extends StatelessWidget {
                 Text(
                   title.toUpperCase(),
                   style: const TextStyle(
-                    color: mindsetAccent,
+                    color: accent,
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.6,
                   ),
                 ),
+
                 const SizedBox(height: 4),
+
                 Text(
                   content,
                   style: TextStyle(
@@ -1512,7 +1699,9 @@ class _DailyMindsetCard extends StatelessWidget {
                     height: 1.4,
                   ),
                 ),
+
                 const SizedBox(height: 4),
+
                 Text(
                   'Reflection for today',
                   style: TextStyle(
@@ -1530,8 +1719,7 @@ class _DailyMindsetCard extends StatelessWidget {
   }
 }
 
-// ── SKELETON LOADING VIEW ───────────────────────────────────────────────────
-
+// SKELETON
 class _GrowthSkeletonView extends StatelessWidget {
   const _GrowthSkeletonView();
 
@@ -1539,12 +1727,18 @@ class _GrowthSkeletonView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final skeletonBase =
-        isDark ? const Color(0xFF1E1E22) : const Color(0xFFE5E7EB);
-    final cardSurface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
+    final skeletonBase = isDark
+        ? const Color(0xFF1E1E22)
+        : const Color(0xFFE5E7EB);
+
+    final cardSurface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+
+    final borderSubtle = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -1559,10 +1753,8 @@ class _GrowthSkeletonView extends StatelessWidget {
             120,
           ),
           children: [
-            // Header Skeleton
-            Container(
+            SizedBox(
               height: 44,
-              alignment: Alignment.center,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1600,20 +1792,20 @@ class _GrowthSkeletonView extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 14),
 
-            // Level Card Skeleton
+            const SizedBox(height: 12),
+
             Container(
-              height: 86,
+              height: 120,
               decoration: BoxDecoration(
                 color: cardSurface,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(color: borderSubtle, width: 0.8),
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
 
-            // Today Skeleton
+            const SizedBox(height: 14),
+
             Container(
               height: 150,
               decoration: BoxDecoration(
@@ -1622,9 +1814,9 @@ class _GrowthSkeletonView extends StatelessWidget {
                 border: Border.all(color: borderSubtle, width: 0.8),
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
 
-            // Tools Skeleton
+            const SizedBox(height: 14),
+
             Row(
               children: List.generate(4, (index) {
                 return Expanded(
@@ -1647,13 +1839,9 @@ class _GrowthSkeletonView extends StatelessWidget {
   }
 }
 
-// ── ERROR VIEW ──────────────────────────────────────────────────────────────
-
+// ERROR
 class _GrowthErrorView extends StatelessWidget {
-  const _GrowthErrorView({
-    required this.errorMessage,
-    required this.onRetry,
-  });
+  const _GrowthErrorView({required this.errorMessage, required this.onRetry});
 
   final String errorMessage;
   final VoidCallback onRetry;
@@ -1662,10 +1850,14 @@ class _GrowthErrorView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -1690,7 +1882,9 @@ class _GrowthErrorView extends StatelessWidget {
                     color: isDark ? Colors.white70 : Colors.black54,
                   ),
                 ),
+
                 const SizedBox(height: 18),
+
                 Text(
                   'Unable to load Growth',
                   textAlign: TextAlign.center,
@@ -1700,7 +1894,9 @@ class _GrowthErrorView extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+
                 const SizedBox(height: 6),
+
                 Text(
                   'Check your connection and try again.',
                   textAlign: TextAlign.center,
@@ -1710,12 +1906,15 @@ class _GrowthErrorView extends StatelessWidget {
                     height: 1.35,
                   ),
                 ),
+
                 const SizedBox(height: 24),
+
                 ElevatedButton(
                   onPressed: onRetry,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        isDark ? Colors.white : AppColors.lightPrimary,
+                    backgroundColor: isDark
+                        ? Colors.white
+                        : AppColors.lightPrimary,
                     foregroundColor: isDark ? Colors.black : Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,

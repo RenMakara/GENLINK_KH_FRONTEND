@@ -209,15 +209,21 @@ class _StoryVideoPlayerWidgetState extends State<StoryVideoPlayerWidget> {
       await ctrl.setLooping(widget.isLooping);
       await ctrl.setVolume(widget.isMuted ? 0.0 : 1.0);
 
-      if (widget.isPlaying) {
-        await ctrl.play();
+      if (mounted) {
+        setState(() {
+          _isInitializing = false;
+        });
       }
 
-      debugPrint('[StoryVideoPlayer] Initialized successfully: isInitialized=${ctrl.value.isInitialized}, hasError=${ctrl.value.hasError}, size=${ctrl.value.size}, duration=${ctrl.value.duration}, aspectRatio=${ctrl.value.aspectRatio}');
+      if (widget.isPlaying) {
+        try {
+          await ctrl.play();
+        } catch (playErr) {
+          debugPrint('[StoryVideoPlayer] Initial ctrl.play() warning: $playErr');
+        }
+      }
 
-      setState(() {
-        _isInitializing = false;
-      });
+      debugPrint('[StoryVideoPlayer] Initialized successfully: isInitialized=${ctrl.value.isInitialized}, isPlaying=${ctrl.value.isPlaying}, hasError=${ctrl.value.hasError}, size=${ctrl.value.size}, duration=${ctrl.value.duration}, aspectRatio=${ctrl.value.aspectRatio}');
 
       widget.onControllerInitialized?.call(ctrl);
     } catch (e) {
@@ -351,7 +357,7 @@ class _StoryVideoPlayerWidgetState extends State<StoryVideoPlayerWidget> {
                 ),
               ),
             ),
-            if (widget.showControls && !isPlaying)
+            if (widget.showControls && !widget.isPlaying && !isPlaying)
               AnimatedOpacity(
                 duration: const Duration(milliseconds: 180),
                 opacity: 0.9,

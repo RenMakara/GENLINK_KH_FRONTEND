@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/network/api_client.dart';
@@ -237,9 +236,6 @@ class StoryRepositoryImpl implements StoryRepository {
         parse: (data) => _storyFromJson(ApiClient.asMap(data)),
       );
       debugPrint('[StoryUpload] Story successfully posted to backend, storyId: ${serverStory.id}');
-      if (isVideo && (finalMediaUrl.startsWith('http://') || finalMediaUrl.startsWith('https://'))) {
-        unawaited(_verifyCdnVideoUrl(finalMediaUrl));
-      }
 
       return StoryItemModel(
         id: serverStory.id.isNotEmpty ? serverStory.id : 'story_${DateTime.now().millisecondsSinceEpoch}',
@@ -541,58 +537,5 @@ class StoryRepositoryImpl implements StoryRepository {
     final img = await picture.toImage(width, height);
     final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
     return byteData!.buffer.asUint8List();
-  }
-
-  Future<void> _verifyCdnVideoUrl(String videoUrl) async {
-    if (!videoUrl.startsWith('http://') && !videoUrl.startsWith('https://')) {
-      return;
-    }
-    debugPrint('[StoryCDN] Verifying CDN video URL directly: $videoUrl');
-    try {
-      final dio = Dio(
-        BaseOptions(
-          connectTimeout: const Duration(seconds: 15),
-          receiveTimeout: const Duration(seconds: 15),
-          followRedirects: true,
-          validateStatus: (status) => true,
-        ),
-      );
-
-      final response = await dio.get<List<int>>(
-        videoUrl,
-        options: Options(
-          responseType: ResponseType.bytes,
-          headers: {'Range': 'bytes=0-1023'},
-        ),
-      );
-
-      final statusCode = response.statusCode ?? 0;
-      final contentType = response.headers.value('content-type') ?? 'unknown';
-      final contentLength = response.headers.value('content-length') ?? 'unknown';
-      final acceptRanges = response.headers.value('accept-ranges') ?? 'none';
-      final bytes = response.data;
-
-      bool isValidMp4 = false;
-      if (bytes != null && bytes.length >= 8) {
-        final isFtyp = bytes[4] == 0x66 &&
-            bytes[5] == 0x74 &&
-            bytes[6] == 0x79 &&
-            bytes[7] == 0x70;
-        isValidMp4 = isFtyp;
-      }
-
-      debugPrint(
-        '[StoryCDN] Verification completed for: $videoUrl\n'
-        '  - HTTP Status: $statusCode\n'
-        '  - Content-Type: $contentType\n'
-        '  - Content-Length: $contentLength bytes\n'
-        '  - Accept-Ranges: $acceptRanges\n'
-        '  - Received bytes: ${bytes?.length ?? 0}\n'
-        '  - Valid MP4 Header (ftyp): $isValidMp4\n'
-        '  - Playable from Android: ${statusCode >= 200 && statusCode < 300 && (isValidMp4 || contentType.contains('video'))}',
-      );
-    } catch (e) {
-      debugPrint('[StoryCDN] CDN verification error: $e');
-    }
   }
 }

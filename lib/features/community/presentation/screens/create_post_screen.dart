@@ -14,17 +14,19 @@ import '../../domain/models/community_post_model.dart';
 import '../controllers/community_controller.dart';
 import 'create_event_screen.dart';
 import 'event_details_screen.dart';
+import '../../../media/presentation/media_picker.dart';
 
 class CreatePostScreen extends StatefulWidget {
   final CommunityPostModel? initialPost;
+  final MediaPicker? mediaPicker;
 
-  const CreatePostScreen({super.key, this.initialPost});
+  const CreatePostScreen({super.key, this.initialPost, this.mediaPicker});
 
   @override
-  State<CreatePostScreen> createState() => _CreatePostScreenState();
+  State<CreatePostScreen> createState() => CreatePostScreenState();
 }
 
-class _CreatePostScreenState extends State<CreatePostScreen> {
+class CreatePostScreenState extends State<CreatePostScreen> {
   final TextEditingController _textController = TextEditingController();
   final FocusNode _editorFocusNode = FocusNode();
 
@@ -73,6 +75,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       if (widget.initialPost!.attachedEvent != null) {
         _attachedEvent = widget.initialPost!.attachedEvent;
       }
+      if (widget.initialPost!.videoUrl != null && widget.initialPost!.videoUrl!.isNotEmpty) {
+        _attachedVideo = widget.initialPost!.videoUrl;
+      }
     }
     _textController.addListener(() {
       setState(() {});
@@ -88,9 +93,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   final ImagePicker _picker = ImagePicker();
+  late final MediaPicker _mediaPicker = widget.mediaPicker ?? MediaPicker(picker: _picker);
 
   Future<void> _pickGalleryImages() async {
-    // Step 3B: if a video is attached, ask user before replacing it with images
+    // If a video is attached, ask user before replacing it with images
     if (_attachedVideo != null) {
       final replace = await _showMediaConflictDialog(videoReplacingImages: false);
       if (!replace) return;
@@ -142,6 +148,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Future<void> _pickCameraImage() async {
+    // If a video is attached, ask user before replacing it with camera photo
+    if (_attachedVideo != null) {
+      final replace = await _showMediaConflictDialog(videoReplacingImages: false);
+      if (!replace) return;
+      await _clearVideo();
+    }
     try {
       final XFile? captured = await _picker.pickImage(
         source: ImageSource.camera,
@@ -168,9 +180,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     }
   }
 
-  // ─── Step 3B-Frontend: Video picking ──────────────────────────────────────
+  // ─── Video picking using existing MediaPicker ────────────────────────────
 
-  /// Picks a video from the gallery.
+  /// Picks a video from the gallery using [MediaPicker.pickVideo].
   /// If images are already attached, asks the user to confirm replacement.
   Future<void> _pickGalleryVideo() async {
     // Conflict: images exist — ask user
@@ -180,13 +192,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     }
 
     try {
-      final XFile? file = await _picker.pickVideo(
+      final PickedMedia? picked = await _mediaPicker.pickVideo(
         source: ImageSource.gallery,
         maxDuration: const Duration(minutes: 5),
       );
-      if (file == null) return; // user cancelled — not an error
+      if (picked == null) return; // user cancelled — not an error
 
-      await _setVideoFile(file.path);
+      if (picked.path != null && picked.path!.isNotEmpty) {
+        await _setVideoFile(picked.path!);
+      }
     } on PlatformException catch (e) {
       debugPrint('[CreatePostScreen] Video pick PlatformException: ${e.code} — ${e.message}');
       if (!mounted) return;
@@ -252,6 +266,49 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       _videoInitError = false;
     });
     await ctrl?.dispose();
+  }
+
+  @visibleForTesting
+  String? get attachedVideo => _attachedVideo;
+
+  @visibleForTesting
+  List<String> get attachedImages => _attachedImages;
+
+  @visibleForTesting
+  bool get videoInitError => _videoInitError;
+
+  @visibleForTesting
+  Future<void> setVideoFileForTesting(String path) => _setVideoFile(path);
+
+  @visibleForTesting
+  Future<void> clearVideoForTesting() => _clearVideo();
+
+  @visibleForTesting
+  void setVideoInitErrorForTesting(bool error) {
+    setState(() {
+      _videoInitError = error;
+    });
+  }
+
+  @visibleForTesting
+  void setAttachedVideoForTesting(String? path) {
+    setState(() {
+      _attachedVideo = path;
+    });
+  }
+
+  @visibleForTesting
+  void setVideoInitializedForTesting(bool initialized) {
+    setState(() {
+      _videoInitialized = initialized;
+    });
+  }
+
+  @visibleForTesting
+  void setAttachedImagesForTesting(List<String> images) {
+    setState(() {
+      _attachedImages = List.from(images);
+    });
   }
 
   /// Shows a conflict dialog when the user tries to switch between media types.
@@ -888,7 +945,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
-  void _showGifPickerSheet() {
+  void _showGifPickerSheet() async {
+    if (_attachedVideo != null) {
+      final replace = await _showMediaConflictDialog(videoReplacingImages: false);
+      if (!replace) return;
+      await _clearVideo();
+    }
+    if (!mounted) return;
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? const Color(0xFF16181C) : Colors.white;
     final cardBg = isDark ? const Color(0xFF1E2228) : const Color(0xFFF2F4F7);
@@ -1297,7 +1361,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     onTap: _showAudiencePickerSheet,
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF1C2028) : const Color(0xFFF0F2F5),
                         borderRadius: BorderRadius.circular(20),
@@ -1311,9 +1375,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                 ? Icons.public
                                 : (_selectedAudience == 'Friends' ? Icons.group_outlined : Icons.lock_outline),
                             color: textSecondary,
-                            size: 12,
+                            size: 11,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 3),
                           Flexible(
                             child: Text(
                               _selectedAudience == 'Public'
@@ -1941,25 +2005,30 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
                   // Play / pause overlay
                   if (ctrl != null && _videoInitialized)
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          ctrl.value.isPlaying ? ctrl.pause() : ctrl.play();
-                        });
-                      },
-                      child: AnimatedOpacity(
-                        opacity: ctrl.value.isPlaying ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0x88000000),
-                            shape: BoxShape.circle,
-                          ),
-                          padding: const EdgeInsets.all(14),
-                          child: Icon(
-                            ctrl.value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                            color: Colors.white,
-                            size: 32,
+                    Positioned.fill(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          setState(() {
+                            ctrl.value.isPlaying ? ctrl.pause() : ctrl.play();
+                          });
+                        },
+                        child: Center(
+                          child: AnimatedOpacity(
+                            opacity: ctrl.value.isPlaying ? 0.0 : 1.0,
+                            duration: const Duration(milliseconds: 200),
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Color(0x88000000),
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(14),
+                              child: Icon(
+                                ctrl.value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                color: Colors.white,
+                                size: 32,
+                              ),
+                            ),
                           ),
                         ),
                       ),

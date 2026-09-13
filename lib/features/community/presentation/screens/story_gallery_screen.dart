@@ -1093,7 +1093,7 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
   }
 
   bool _isVideoFile(String path) {
-    final p = path.toLowerCase();
+    final p = path.split('?').first.toLowerCase();
     return p.endsWith('.mp4') ||
         p.endsWith('.mov') ||
         p.endsWith('.m4v') ||
@@ -1199,7 +1199,7 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
 
   Future<void> _handleAssetTap(AssetEntity asset) async {
     if (widget.replaceSlotIndex != null) {
-      final file = await asset.file;
+      final file = (await asset.file) ?? (await asset.originFile);
       if (file != null && mounted) {
         Get.back(result: file.path);
       }
@@ -1207,7 +1207,7 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
     }
 
     if (widget.onPhotosSelected != null) {
-      final file = await asset.file;
+      final file = (await asset.file) ?? (await asset.originFile);
       if (file != null && mounted) {
         widget.onPhotosSelected!([file.path]);
         Get.back(result: [file.path]);
@@ -1222,7 +1222,7 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
       if (req > 0 && controller.selectedAssets.length == req) {
         final List<String> paths = [];
         for (var a in controller.selectedAssets) {
-          final f = await a.file;
+          final f = (await a.file) ?? (await a.originFile);
           if (f != null) paths.add(f.path);
         }
         if (paths.length == req && mounted) {
@@ -1256,7 +1256,7 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
     }
 
     // Single photo/video selection -> open Story Creator directly
-    final file = await asset.file;
+    final file = (await asset.file) ?? (await asset.originFile);
     if (file != null && mounted) {
       final bool isVideo = asset.type == AssetType.video || _isVideoFile(file.path);
       final result = await Get.to(
@@ -1342,7 +1342,7 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
   Future<void> _proceedWithMultiSelection() async {
     final List<String> paths = [];
     for (final a in controller.selectedAssets) {
-      final f = await a.file;
+      final f = (await a.file) ?? (await a.originFile);
       if (f != null) {
         paths.add(f.path);
       }

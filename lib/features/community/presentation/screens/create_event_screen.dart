@@ -994,41 +994,46 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            _isPaid ? Icons.monetization_on : Icons.money_off_outlined,
-                            color: _isPaid
-                                ? (isDark ? Colors.white : Colors.black)
-                                : textMuted,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'community.paidEvent'.tr.isNotEmpty &&
-                                        'community.paidEvent'.tr != 'community.paidEvent'
-                                    ? 'community.paidEvent'.tr
-                                    : 'Paid Event',
-                                style: TextStyle(
-                                  color: textPrimary,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Icon(
+                              _isPaid ? Icons.monetization_on : Icons.money_off_outlined,
+                              color: _isPaid
+                                  ? (isDark ? Colors.white : Colors.black)
+                                  : textMuted,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'community.paidEvent'.tr.isNotEmpty &&
+                                            'community.paidEvent'.tr != 'community.paidEvent'
+                                        ? 'community.paidEvent'.tr
+                                        : 'Paid Event',
+                                    style: TextStyle(
+                                      color: textPrimary,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    'community.paidEventDesc'.tr.isNotEmpty &&
+                                            'community.paidEventDesc'.tr != 'community.paidEventDesc'
+                                        ? 'community.paidEventDesc'.tr
+                                        : 'Require ticket purchase to attend',
+                                    style: TextStyle(color: textMuted, fontSize: 12),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                'community.paidEventDesc'.tr.isNotEmpty &&
-                                        'community.paidEventDesc'.tr != 'community.paidEventDesc'
-                                    ? 'community.paidEventDesc'.tr
-                                    : 'Require ticket purchase to attend',
-                                style: TextStyle(color: textMuted, fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       Switch.adaptive(
                         value: _isPaid,
                         onChanged: (val) {

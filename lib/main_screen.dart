@@ -112,10 +112,9 @@ class FadeIndexedStack extends StatefulWidget {
 
 class _FadeIndexedStackState extends State<FadeIndexedStack>
     with SingleTickerProviderStateMixin {
-  static const Duration _transitionDuration = Duration(milliseconds: 200);
+  static const Duration _transitionDuration = Duration(milliseconds: 160);
   late final AnimationController _controller;
   late final Animation<double> _fadeAnimation;
-  late final Animation<double> _reverseFadeAnimation;
   int _currentIndex = 0;
   int _previousIndex = 0;
 
@@ -131,13 +130,7 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
     );
     _fadeAnimation = CurvedAnimation(
       parent: _controller,
-      curve: Curves.easeInOutCubic,
-    );
-    _reverseFadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOutCubic,
-      ),
+      curve: Curves.easeOutCubic,
     );
     _controller.addStatusListener(_onAnimationStatusChanged);
   }
@@ -186,28 +179,24 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
         }
 
         if (isPrevious) {
-          return IgnorePointer(
-            child: FadeTransition(
-              opacity: _reverseFadeAnimation,
-              child: TickerMode(
-                enabled: false,
-                child: widget.children[i],
-              ),
+          return FadeTransition(
+            opacity: ReverseAnimation(_fadeAnimation),
+            child: TickerMode(
+              enabled: false,
+              child: widget.children[i],
             ),
           );
         }
 
-        return IgnorePointer(
-          ignoring: isAnimating,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: TickerMode(
-              enabled: true,
-              child: widget.children[i],
-            ),
+        return FadeTransition(
+          opacity: _fadeAnimation,
+          child: TickerMode(
+            enabled: true,
+            child: widget.children[i],
           ),
         );
       }),
     );
   }
 }
+

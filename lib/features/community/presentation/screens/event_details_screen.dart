@@ -31,6 +31,7 @@ class EventDetailsScreen extends StatefulWidget {
 
 class _EventDetailsScreenState extends State<EventDetailsScreen>
     with SingleTickerProviderStateMixin {
+  late EventModel _event;
   bool _isBookmarked = false;
   bool _isDescriptionExpanded = false;
   bool _isButtonPressed = false;
@@ -39,7 +40,17 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
   @override
   void initState() {
     super.initState();
+    _event = widget.event;
     _isBookmarked = widget.event.isBookmarked;
+  }
+
+  @override
+  void didUpdateWidget(EventDetailsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.event != widget.event) {
+      _event = widget.event;
+      _isBookmarked = widget.event.isBookmarked;
+    }
   }
 
   void _triggerBookmarkAnimation() {
@@ -66,7 +77,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
       return _buildLoadingSkeleton(context, isDark);
     }
 
-    final event = widget.event;
+    final controller = Get.isRegistered<CommunityController>()
+        ? Get.find<CommunityController>()
+        : null;
+
+    final event = controller != null
+        ? (controller.events.firstWhereOrNull((e) => e.id == _event.id) ?? _event)
+        : _event;
+
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
     final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
     final surfacePrimary = isDark ? const Color(0xFF141414) : Colors.white;
@@ -76,10 +94,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
 
     final bool hasNetworkImage = event.imageUrl.isNotEmpty;
     final bool hasLocalImage = event.coverImageFile != null;
-
-    final controller = Get.isRegistered<CommunityController>()
-        ? Get.find<CommunityController>()
-        : null;
 
     final effectiveHeroTag = widget.heroTag ?? 'event-image-${event.id}';
 
@@ -302,19 +316,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                       ],
                       const SizedBox(height: 18),
 
-                      // ── Organizer Row with Owner Controls ─────────────────
-                      _buildOrganizerCard(
-                        context: context,
-                        event: event,
-                        controller: controller,
-                        textPrimary: textPrimary,
-                        textSecondary: textSecondary,
-                        tileBg: tileBg,
-                        borderSubtle: borderSubtle,
-                        isDark: isDark,
-                      ),
-                      const SizedBox(height: 12),
-
                       // ── Compact Event Info Rows ───────────────────────────
                       // 1. Date and Time
                       _buildDateInfoCard(
@@ -361,8 +362,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                       ),
                       const SizedBox(height: 10),
 
-                      // 4. Attendees / Capacity
-                      _buildAttendeesInfoCard(
+                      // 4. Organizer Row with Owner Controls ─────────────────
+                      _buildOrganizerCard(
                         context: context,
                         event: event,
                         controller: controller,
@@ -370,10 +371,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                         textSecondary: textSecondary,
                         tileBg: tileBg,
                         borderSubtle: borderSubtle,
+                        isDark: isDark,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
 
-                      // ── About This Event (Expandable Description) ─────────
+                      // 5. About This Event (Expandable Description) ─────────
                       Text(
                         'community.aboutThisEvent'.tr,
                         style: TextStyle(
@@ -388,6 +390,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                         textPrimary: textPrimary,
                         textSecondary: textSecondary,
                         isDark: isDark,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 6. Attendees / Capacity
+                      _buildAttendeesInfoCard(
+                        context: context,
+                        event: event,
+                        controller: controller,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        tileBg: tileBg,
+                        borderSubtle: borderSubtle,
                       ),
 
                       const SizedBox(height: 130),
@@ -570,6 +584,53 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                     controller.events.removeWhere((e) => e.id == event.id);
                   }
                   Navigator.pop(context);
+                } else if (val == 'remove_cover') {
+                  setState(() {
+                    _event = EventModel(
+                      id: event.id,
+                      title: event.title,
+                      subtitle: event.subtitle,
+                      organizerName: event.organizerName,
+                      organizerId: event.organizerId,
+                      organizerAvatar: event.organizerAvatar,
+                      eventType: event.eventType,
+                      mode: event.mode,
+                      location: event.location,
+                      locationName: event.locationName,
+                      onlineLink: event.onlineLink,
+                      meetingUrl: event.meetingUrl,
+                      latitude: event.latitude,
+                      longitude: event.longitude,
+                      dateString: event.dateString,
+                      timeString: event.timeString,
+                      startDateTime: event.startDateTime,
+                      endDateTime: event.endDateTime,
+                      description: event.description,
+                      category: event.category,
+                      isPaid: event.isPaid,
+                      price: event.price,
+                      priceKhr: event.priceKhr,
+                      currency: event.currency,
+                      imageUrl: '',
+                      coverImageFile: null,
+                      attendeeLimit: event.attendeeLimit,
+                      attendeesCount: event.attendeesCount,
+                      status: event.status,
+                      language: event.language,
+                      myRsvpStatus: event.myRsvpStatus,
+                      isRsvped: event.isRsvped,
+                      isFull: event.isFull,
+                      isBookmarked: event.isBookmarked,
+                      attendeeAvatars: event.attendeeAvatars,
+                    );
+                    if (controller != null) {
+                      final idx = controller.events.indexWhere((e) => e.id == event.id);
+                      if (idx != -1) {
+                        controller.events[idx] = _event;
+                      }
+                    }
+                  });
+                  _showSnackBar(context, isDark, 'Cover image removed');
                 }
               },
               itemBuilder: (ctx) => [
@@ -587,6 +648,21 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                     ],
                   ),
                 ),
+                if (event.imageUrl.isNotEmpty || event.coverImageFile != null)
+                  PopupMenuItem(
+                    value: 'remove_cover',
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.hide_image_outlined, size: 18, color: textPrimary),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Remove Cover Image',
+                          style: TextStyle(color: textPrimary, fontSize: 13.5),
+                        ),
+                      ],
+                    ),
+                  ),
                 PopupMenuItem(
                   value: 'delete',
                   child: Row(
@@ -1075,7 +1151,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     } else if (event.isRsvped) {
       label = 'community.youAreRegistered'.tr;
       icon = Icons.check_circle_rounded;
-      iconColor = AppColors.success;
+      iconColor = isDark ? Colors.white70 : Colors.black87;
     } else if (isEnded) {
       label = 'community.eventEnded'.tr;
       icon = Icons.schedule_rounded;

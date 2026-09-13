@@ -746,11 +746,9 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen>
       }
     } else {
       if (widget.type != StoryType.template && widget.mediaPaths != null && widget.mediaPaths!.isNotEmpty) {
-        if (widget.mediaPaths!.length == 1) {
-          _activeMediaPath = widget.mediaPaths!.first;
-        } else {
-          _activeMediaPath = null;
-          for (int i = 0; i < widget.mediaPaths!.length; i++) {
+        _activeMediaPath = widget.mediaPaths!.first;
+        if (widget.mediaPaths!.length > 1) {
+          for (int i = 1; i < widget.mediaPaths!.length; i++) {
             final path = widget.mediaPaths![i];
             final offset = _calculateInitialLayerOffset(i, widget.mediaPaths!.length);
             _layers.add(
@@ -2173,7 +2171,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen>
   }
 
   bool _isVideoFile(String path) {
-    final p = path.toLowerCase();
+    final p = path.split('?').first.toLowerCase();
     return p.endsWith('.mp4') ||
         p.endsWith('.mov') ||
         p.endsWith('.m4v') ||
@@ -2184,7 +2182,19 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen>
   }
 
   File _resolveFile(String rawPath) {
-    final clean = rawPath.replaceAll(RegExp(r'^file://'), '');
+    String clean = rawPath.trim();
+    if (clean.startsWith('file:')) {
+      final normalized = clean.replaceAll('\\', '/');
+      try {
+        clean = Uri.parse(normalized).toFilePath();
+      } catch (_) {
+        clean = normalized.replaceFirst(RegExp(r'^file:/{1,3}'), '');
+      }
+    }
+    clean = clean.replaceAll('\\', '/');
+    if (clean.startsWith('/') && clean.length > 2 && clean[2] == ':') {
+      clean = clean.substring(1);
+    }
     return File(clean);
   }
 
@@ -2219,6 +2229,8 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen>
         controller = VideoPlayerController.networkUrl(Uri.parse(path));
       } else if (path.startsWith('assets/')) {
         controller = VideoPlayerController.asset(path);
+      } else if (path.startsWith('content://')) {
+        controller = VideoPlayerController.contentUri(Uri.parse(path));
       } else {
         final file = _resolveFile(path);
         if (!file.existsSync()) {
@@ -3332,14 +3344,16 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen>
       }
 
       bool success = false;
+      final isVideo = widget.type == StoryType.video ||
+          (_activeMediaPath != null && _isVideoFile(_activeMediaPath!));
       final effectiveType = isTemplateStory
           ? StoryType.template
-          : ((_activeMediaPath != null && _isVideoFile(_activeMediaPath!))
-              ? StoryType.video
-              : widget.type);
+          : (isVideo ? StoryType.video : widget.type);
       final effectiveMediaUrl = isTemplateStory
           ? (_templateSlots.firstWhereOrNull((s) => s.mediaPath != null && s.mediaPath!.isNotEmpty)?.mediaPath ?? _activeMediaPath)
-          : _activeMediaPath;
+          : (_activeMediaPath ?? (widget.mediaPaths?.isNotEmpty == true ? widget.mediaPaths!.first : null) ?? _layers.firstWhereOrNull((l) => l.type == LayerType.image)?.text);
+
+      debugPrint('[StoryCreator] Publishing story: type=$effectiveType (isVideo=$isVideo, widgetType=${widget.type}), mediaUrl=$effectiveMediaUrl');
 
       if (widget.existingStory != null) {
         final newSettings = StorySettings(

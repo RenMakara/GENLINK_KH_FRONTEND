@@ -569,8 +569,6 @@ void main() {
       expect(levelUpRect.width, closeTo(financeRect.width, 0.01));
       expect(financeRect.width, closeTo(profileRect.width, 0.01));
 
-      final outerRect =
-          tester.getRect(find.byKey(const ValueKey('nav_outer_capsule')));
       final indicatorRect =
           tester.getRect(find.byKey(const ValueKey('nav_active_indicator')));
 

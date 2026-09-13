@@ -156,7 +156,7 @@ void main() {
   });
 
   group('CommunityHeaderWidget Tests', () {
-    testWidgets('renders Community title, Search, Chat, and Notification buttons', (tester) async {
+    testWidgets('renders Home title, Search, Chat, and Notification buttons', (tester) async {
       await tester.pumpWidget(
         GetMaterialApp(
           translations: AppTranslations(),
@@ -170,7 +170,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Community'), findsOneWidget);
+      expect(find.text('Home'), findsOneWidget);
 
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
       expect(find.byIcon(Icons.chat_bubble_outline_rounded), findsOneWidget);
@@ -204,7 +204,7 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      // Community mode title
+      // Home mode title strictly matches Finance title typography
       await tester.pumpWidget(
         GetMaterialApp(
           translations: AppTranslations(),
@@ -212,20 +212,20 @@ void main() {
           home: const Scaffold(
             appBar: PreferredSize(
               preferredSize: Size.fromHeight(52.0),
-              child: CommunityHeaderWidget(activeCategory: 'Feed', isHomeScreen: false),
+              child: CommunityHeaderWidget(activeCategory: 'Feed'),
             ),
           ),
         ),
       );
 
-      final titleFinder = find.text('Community');
+      final titleFinder = find.text('Home');
       expect(titleFinder, findsOneWidget);
       final Text titleText = tester.widget(titleFinder);
       expect(titleText.style?.fontWeight, equals(FontWeight.w800));
       expect(titleText.style?.fontSize, equals(24.0));
       expect(titleText.style?.letterSpacing, equals(-0.5));
 
-      // Home mode title
+      // Forum non-home mode preserves Community title
       await tester.pumpWidget(
         GetMaterialApp(
           translations: AppTranslations(),
@@ -233,7 +233,24 @@ void main() {
           home: const Scaffold(
             appBar: PreferredSize(
               preferredSize: Size.fromHeight(52.0),
-              child: CommunityHeaderWidget(activeCategory: 'Feed', isHomeScreen: true),
+              child: CommunityHeaderWidget(activeCategory: 'Forum', isHomeScreen: false),
+            ),
+          ),
+        ),
+      );
+
+      final commFinder = find.text('Community');
+      expect(commFinder, findsOneWidget);
+
+      // Forum home mode preserves Home title
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(
+            appBar: PreferredSize(
+              preferredSize: Size.fromHeight(52.0),
+              child: CommunityHeaderWidget(activeCategory: 'Forum', isHomeScreen: true),
             ),
           ),
         ),
@@ -241,13 +258,9 @@ void main() {
 
       final homeFinder = find.text('Home');
       expect(homeFinder, findsOneWidget);
-      final Text homeText = tester.widget(homeFinder);
-      expect(homeText.style?.fontWeight, equals(FontWeight.w800));
-      expect(homeText.style?.fontSize, equals(24.0));
-      expect(homeText.style?.letterSpacing, equals(-0.5));
     });
 
-    testWidgets('header responsive typography scales appropriately on compact 320px viewport', (tester) async {
+    testWidgets('header responsive typography on compact 320px viewport renders without overflow', (tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -268,7 +281,7 @@ void main() {
         ),
       );
 
-      final titleFinder = find.text('Community');
+      final titleFinder = find.text('Home');
       expect(titleFinder, findsOneWidget);
       final Text titleText = tester.widget(titleFinder);
       expect(titleText.style?.fontWeight, equals(FontWeight.w800));
@@ -324,6 +337,96 @@ void main() {
         expect(dec?.border, isNotNull);
       }
     });
+
+    testWidgets('Home header in Khmer renders localized title without overflow', (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('km', 'KH'),
+          home: const Scaffold(
+            appBar: PreferredSize(
+              preferredSize: Size.fromHeight(52.0),
+              child: CommunityHeaderWidget(activeCategory: 'Feed'),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('ទំព័រដើម'), findsOneWidget);
+      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.chat_bubble_outline_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Home header renders cleanly across 320px, 360px, 390px, 430px viewports', (tester) async {
+      final screenSizes = [
+        const Size(320, 640),
+        const Size(360, 740),
+        const Size(390, 844),
+        const Size(430, 932),
+      ];
+
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      for (final size in screenSizes) {
+        tester.view.physicalSize = size;
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en', 'US'),
+            home: const Scaffold(
+              appBar: PreferredSize(
+                preferredSize: Size.fromHeight(52.0),
+                child: CommunityHeaderWidget(activeCategory: 'Feed'),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull, reason: 'Failed at size $size');
+        expect(find.text('Home'), findsOneWidget);
+        expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.chat_bubble_outline_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
+      }
+    });
+
+    testWidgets('Home header renders with dark theme tokens in Dark Mode', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          theme: ThemeData.dark(),
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(
+            appBar: PreferredSize(
+              preferredSize: Size.fromHeight(52.0),
+              child: CommunityHeaderWidget(activeCategory: 'Feed'),
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Home'), findsOneWidget);
+      final inkWidgets = tester.widgetList<Ink>(find.byType(Ink));
+      for (final ink in inkWidgets) {
+        final dec = ink.decoration as BoxDecoration?;
+        expect(dec?.color, equals(AppColors.darkSurfacePrimary));
+      }
+    });
   });
 
   group('CommunityScreen Tab Navigation Tests', () {
@@ -340,9 +443,9 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Feed'), findsOneWidget);
-      expect(find.text('Forum'), findsOneWidget);
-      expect(find.text('Event'), findsOneWidget);
+      expect(find.widgetWithText(InkWell, 'Feed'), findsOneWidget);
+      expect(find.widgetWithText(InkWell, 'Forum'), findsOneWidget);
+      expect(find.widgetWithText(InkWell, 'Event'), findsOneWidget);
 
       expect(controller.categories, equals(['Feed', 'Forum', 'Event']));
       expect(controller.categories.contains('Career'), isFalse);
@@ -363,15 +466,15 @@ void main() {
 
       expect(controller.selectedCategory.value, equals('Feed'));
 
-      await tester.tap(find.text('Forum'));
+      await tester.tap(find.widgetWithText(InkWell, 'Forum'));
       await tester.pumpAndSettle();
       expect(controller.selectedCategory.value, equals('Forum'));
 
-      await tester.tap(find.text('Event'));
+      await tester.tap(find.widgetWithText(InkWell, 'Event'));
       await tester.pumpAndSettle();
       expect(controller.selectedCategory.value, equals('Event'));
 
-      await tester.tap(find.text('Feed'));
+      await tester.tap(find.widgetWithText(InkWell, 'Feed'));
       await tester.pumpAndSettle();
       expect(controller.selectedCategory.value, equals('Feed'));
     });
@@ -390,14 +493,20 @@ void main() {
       await tester.pump();
 
       // Feed is initially active
-      final feedFinder = find.text('Feed');
+      final feedFinder = find.descendant(
+        of: find.widgetWithText(InkWell, 'Feed'),
+        matching: find.byType(Text),
+      );
       final Text feedText = tester.widget(feedFinder);
       expect(feedText.style?.fontSize, equals(13.5));
       expect(feedText.style?.fontWeight, equals(FontWeight.w700));
       expect(feedText.style?.letterSpacing, equals(-0.1));
 
       // Forum is inactive
-      final forumFinder = find.text('Forum');
+      final forumFinder = find.descendant(
+        of: find.widgetWithText(InkWell, 'Forum'),
+        matching: find.byType(Text),
+      );
       final Text forumText = tester.widget(forumFinder);
       expect(forumText.style?.fontSize, equals(13.5));
       expect(forumText.style?.fontWeight, equals(FontWeight.w500));
@@ -418,7 +527,7 @@ void main() {
       await tester.pump();
 
       // Switch to Forum tab
-      await tester.tap(find.text('Forum'));
+      await tester.tap(find.widgetWithText(InkWell, 'Forum'));
       await tester.pumpAndSettle();
 
       final headingFinder = find.text('Latest Discussions');
@@ -451,9 +560,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(find.text('Feed'), findsOneWidget);
-      expect(find.text('Forum'), findsOneWidget);
-      expect(find.text('Event'), findsOneWidget);
+      expect(find.widgetWithText(InkWell, 'Feed'), findsOneWidget);
+      expect(find.widgetWithText(InkWell, 'Forum'), findsOneWidget);
+      expect(find.widgetWithText(InkWell, 'Event'), findsOneWidget);
     });
 
     testWidgets('responsive verification across 320px, 360px, 390px, 430px produces no overflow', (tester) async {
@@ -487,9 +596,9 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull, reason: 'Failed at size $size');
-        expect(find.text('Feed'), findsOneWidget);
-        expect(find.text('Forum'), findsOneWidget);
-        expect(find.text('Event'), findsOneWidget);
+        expect(find.widgetWithText(InkWell, 'Feed'), findsOneWidget);
+        expect(find.widgetWithText(InkWell, 'Forum'), findsOneWidget);
+        expect(find.widgetWithText(InkWell, 'Event'), findsOneWidget);
       }
     });
 
@@ -514,9 +623,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(find.text('ព័ត៌មាន'), findsOneWidget);
-      expect(find.text('វេទិកា'), findsOneWidget);
-      expect(find.text('ព្រឹត្តិការណ៍'), findsOneWidget);
+      expect(find.widgetWithText(InkWell, 'ព័ត៌មាន'), findsOneWidget);
+      expect(find.widgetWithText(InkWell, 'វេទិកា'), findsOneWidget);
+      expect(find.widgetWithText(InkWell, 'ព្រឹត្តិការណ៍'), findsOneWidget);
     });
 
     testWidgets('renders cleanly in dark mode with dark theme tokens', (tester) async {
@@ -534,9 +643,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(find.text('Feed'), findsOneWidget);
-      expect(find.text('Forum'), findsOneWidget);
-      expect(find.text('Event'), findsOneWidget);
+      expect(find.widgetWithText(InkWell, 'Feed'), findsOneWidget);
+      expect(find.widgetWithText(InkWell, 'Forum'), findsOneWidget);
+      expect(find.widgetWithText(InkWell, 'Event'), findsOneWidget);
     });
   });
 }

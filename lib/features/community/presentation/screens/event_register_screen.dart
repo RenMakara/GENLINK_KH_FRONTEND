@@ -236,13 +236,12 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
 
       if (Get.isRegistered<CommunityController>()) {
         final ctrl = Get.find<CommunityController>();
-        final ev = ctrl.events.firstWhereOrNull((e) => e.id == widget.event.id);
-        if (ev != null) {
-          ev.isRsvped = true;
-          ev.attendeesCount = widget.event.attendeesCount;
-          ev.myRsvpStatus = widget.event.myRsvpStatus;
-          ctrl.events.refresh();
-        }
+        ctrl.syncEventRsvp(
+          widget.event.id,
+          isRsvped: true,
+          attendeesCount: widget.event.attendeesCount,
+          status: widget.event.myRsvpStatus,
+        );
       }
 
       setState(() => _isSubmitting = false);

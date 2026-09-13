@@ -220,22 +220,37 @@ class NotificationModel {
     final parsedCategory = parseCategory(json['category'] as String?) ??
         _resolveCategory(parsedType);
 
+    final timestamp = json['timestamp'] != null
+        ? DateTime.tryParse(json['timestamp'].toString()) ?? DateTime.now()
+        : (json['createdAt'] != null
+            ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
+            : DateTime.now());
+
+    String computeTimeAgo(DateTime dt) {
+      final diff = DateTime.now().difference(dt);
+      if (diff.inSeconds < 60) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${dt.day}/${dt.month}/${dt.year}';
+    }
+
     return NotificationModel(
-      id: json['id'] as String? ?? '',
+      id: json['id'] as String? ?? json['notificationId']?.toString() ?? '',
       type: parsedType,
       category: parsedCategory,
       title: json['title'] as String? ?? '',
       body: json['body'] as String? ?? json['message'] as String? ?? '',
-      contextText: json['contextText'] as String? ?? json['context'] as String? ?? json['subtitle'] as String?,
+      contextText: json['contextText'] as String? ??
+          json['context'] as String? ??
+          json['subtitle'] as String?,
       senderName: json['senderName'] as String? ?? 'GenLink KH',
       senderAvatar: json['senderAvatar'] as String?,
-      timeAgo: json['timeAgo'] as String? ?? 'Just now',
-      timestamp: json['timestamp'] != null
-          ? DateTime.tryParse(json['timestamp'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-      isRead: json['isRead'] as bool? ?? false,
-      targetId: json['targetId'] as String?,
-      targetType: json['targetType'] as String?,
+      timeAgo: json['timeAgo'] as String? ?? computeTimeAgo(timestamp),
+      timestamp: timestamp,
+      isRead: (json['readStatus'] as bool?) ?? (json['isRead'] as bool?) ?? false,
+      targetId: json['targetId'] as String? ?? json['referenceId']?.toString(),
+      targetType: json['targetType'] as String? ?? json['referenceType'] as String?,
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
   }

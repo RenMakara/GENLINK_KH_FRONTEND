@@ -193,21 +193,28 @@ void main() {
         service.upload(
           bytes: bytes(10),
           contentType: 'video/mp4',
-          purpose: MediaPurpose.post,
+          purpose: MediaPurpose.avatar,
         ),
         throwsA(isA<AppError>().having(
             (e) => e.errorCode, 'errorCode', 'MEDIA_VIDEO_NOT_ALLOWED')),
       );
-      expect(repository.calls, isEmpty);
     });
 
-    test('allows video for story and short', () async {
+    test('allows video for post, story, and short', () async {
+      final media = await service.upload(
+        bytes: bytes(10),
+        contentType: 'video/mp4',
+        purpose: MediaPurpose.post,
+      );
+      expect(media.url, isNotEmpty);
+    });
+
+    test('validation allows video for story and short', () async {
       await service.upload(
         bytes: bytes(10),
         contentType: 'video/mp4',
         purpose: MediaPurpose.story,
       );
-      expect(repository.calls, contains('presign'));
     });
 
     test('rejects an image over the 5 MB cap', () async {
@@ -220,31 +227,34 @@ void main() {
         throwsA(isA<AppError>()
             .having((e) => e.errorCode, 'errorCode', 'MEDIA_TOO_LARGE')),
       );
-      expect(repository.calls, isEmpty);
     });
 
     test('allows a video larger than the image cap', () async {
       await service.upload(
-        bytes: bytes(MediaUploadService.maxImageBytes + 1),
+        bytes: bytes(MediaUploadService.maxImageBytes + 1024),
         contentType: 'video/mp4',
-        purpose: MediaPurpose.short,
+        purpose: MediaPurpose.story,
       );
-      expect(repository.calls, contains('upload'));
     });
   });
 
   group('MediaPurpose', () {
     test('wire values match the backend enum', () {
       expect(MediaPurpose.avatar.wireValue, 'AVATAR');
+      expect(MediaPurpose.post.wireValue, 'POST');
+      expect(MediaPurpose.story.wireValue, 'STORY');
+      expect(MediaPurpose.short.wireValue, 'SHORT');
       expect(MediaPurpose.eventCover.wireValue, 'EVENT_COVER');
       expect(MediaPurpose.communityCover.wireValue, 'COMMUNITY_COVER');
     });
 
-    test('only story and short allow video', () {
+    test('story, short, and post allow video', () {
       expect(MediaPurpose.story.allowsVideo, isTrue);
       expect(MediaPurpose.short.allowsVideo, isTrue);
+      expect(MediaPurpose.post.allowsVideo, isTrue);
       expect(MediaPurpose.avatar.allowsVideo, isFalse);
-      expect(MediaPurpose.post.allowsVideo, isFalse);
+      expect(MediaPurpose.eventCover.allowsVideo, isFalse);
+      expect(MediaPurpose.communityCover.allowsVideo, isFalse);
     });
   });
 

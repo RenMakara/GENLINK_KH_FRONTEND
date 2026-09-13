@@ -58,6 +58,10 @@ class CommunityPostModel {
   /// True when this post carries a video (not images).
   bool get isVideoPost => videoUrl != null && videoUrl!.isNotEmpty;
 
+  /// True when this post represents an event post.
+  bool get isEventPost =>
+      (postType?.toLowerCase() == 'event') || attachedEvent != null;
+
   CommunityPostModel({
     required this.id,
     required this.userId,
@@ -273,6 +277,15 @@ class CommunityPostModel {
       }
     }
 
+    EventModel? parsedEvent;
+    if (json['attachedEvent'] is Map<String, dynamic>) {
+      parsedEvent = EventModel.fromJson(json['attachedEvent'] as Map<String, dynamic>);
+    } else if (json['event'] is Map<String, dynamic>) {
+      parsedEvent = EventModel.fromJson(json['event'] as Map<String, dynamic>);
+    } else if (json['eventId'] != null) {
+      parsedEvent = EventModel.fromJson(json);
+    }
+
     return CommunityPostModel(
       id: json['postId'] as String? ?? json['id'] as String? ?? json['discussionId'] as String? ?? '',
       userId: userId,
@@ -321,11 +334,12 @@ class CommunityPostModel {
       repostCaption: json['repostCaption'] as String?,
       originalPostId: json['originalPostId'] as String?,
       reposterId: json['reposterId'] as String?,
-      postType: json['postType'] as String?,
+      postType: json['postType'] as String? ?? (parsedEvent != null ? 'event' : null),
       discussionTitle: json['discussionTitle'] as String? ?? json['title'] as String?,
       category: json['category'] as String?,
       // Step 3B-Frontend: read videoUrl — null-safe; returns null until backend supports it
       videoUrl: json['videoUrl'] as String?,
+      attachedEvent: parsedEvent,
       comments:
           (json['commentsList'] as List<dynamic>?)
               ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
@@ -365,6 +379,7 @@ class CommunityPostModel {
       'discussionTitle': discussionTitle,
       'category': category,
       'videoUrl': videoUrl,
+      if (attachedEvent != null) 'attachedEvent': attachedEvent!.toJson(),
     };
   }
 }
@@ -384,12 +399,17 @@ class CommentModel {
   bool isLiked;
   final String? parentCommentId;
   final bool isOwner;
+  final List<CommentModel> replies;
 
   /// Check whether the given [currentUserId] owns this comment using stable IDs.
   bool checkIsOwner(String? currentUserId) {
-    if (currentUserId == null || currentUserId.isEmpty) return false;
-    final aid = authorId.isNotEmpty ? authorId : userId;
-    return aid == currentUserId;
+    if (authorId.isNotEmpty && currentUserId != null && currentUserId.isNotEmpty) {
+      return authorId == currentUserId;
+    }
+    if (userId.isNotEmpty && currentUserId != null && currentUserId.isNotEmpty) {
+      return userId == currentUserId;
+    }
+    return isOwner;
   }
 
   /// Whether the comment has been edited after creation.
@@ -413,6 +433,7 @@ class CommentModel {
     this.isLiked = false,
     this.parentCommentId,
     this.isOwner = false,
+    this.replies = const [],
   }) : authorId = (authorId != null && authorId.isNotEmpty) ? authorId : userId;
 
   factory CommentModel.fromJson(Map<String, dynamic> json) {
@@ -456,6 +477,10 @@ class CommentModel {
       isLiked: json['likedByMe'] as bool? ?? json['isLiked'] as bool? ?? false,
       parentCommentId: json['parentCommentId'] as String?,
       isOwner: json['mine'] as bool? ?? json['isOwner'] as bool? ?? false,
+      replies: (json['replies'] as List<dynamic>?)
+              ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
   }
 
@@ -474,6 +499,7 @@ class CommentModel {
     bool? isLiked,
     String? parentCommentId,
     bool? isOwner,
+    List<CommentModel>? replies,
   }) {
     return CommentModel(
       id: id ?? this.id,
@@ -490,6 +516,7 @@ class CommentModel {
       isLiked: isLiked ?? this.isLiked,
       parentCommentId: parentCommentId ?? this.parentCommentId,
       isOwner: isOwner ?? this.isOwner,
+      replies: replies ?? this.replies,
     );
   }
 
@@ -509,6 +536,7 @@ class CommentModel {
       'isLiked': isLiked,
       'parentCommentId': parentCommentId,
       'isOwner': isOwner,
+      'replies': replies.map((r) => r.toJson()).toList(),
     };
   }
 }

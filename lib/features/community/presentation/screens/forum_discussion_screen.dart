@@ -11,6 +11,7 @@ import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/community_models.dart';
 import '../../domain/models/community_post_model.dart';
 import '../controllers/community_controller.dart';
+import '../widgets/community_design_tokens.dart';
 import 'create_discussion_screen.dart';
 
 class ForumDiscussionScreen extends StatefulWidget {
@@ -25,6 +26,8 @@ class ForumDiscussionScreen extends StatefulWidget {
 class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   late final CommunityController _controller;
   late final TextEditingController _commentController;
+  final FocusNode _commentFocusNode = FocusNode();
+  CommentModel? _replyingToComment;
   late ForumTopicModel _discussion;
   late int _repliesCount;
   late int _upvotes;
@@ -96,6 +99,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   void dispose() {
     _commentController.removeListener(_onTextChanged);
     _commentController.dispose();
+    _commentFocusNode.dispose();
     super.dispose();
   }
 
@@ -103,15 +107,19 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     final text = _commentController.text.trim();
     if (text.isEmpty || _controller.isSendingDiscussionComment.value) return;
 
+    final parentId = _replyingToComment?.id;
+
     try {
       final newComment = await _controller.addDiscussionComment(
         _discussion.id,
         text,
+        parentCommentId: parentId,
       );
 
       if (newComment != null && mounted) {
         _commentController.clear();
         setState(() {
+          _replyingToComment = null;
           _repliesCount++;
         });
       } else if (mounted) {
@@ -135,7 +143,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   void _showOptionsSheet() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1E2228) : Colors.white;
+    final bg = isDark ? AppColors.darkSurfaceSecondary : Colors.white;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
     final textSecondary =
         isDark ? Colors.white70 : AppColors.lightTextSecondary;
@@ -316,7 +324,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
 
   void _showDeleteDialog() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg = isDark ? const Color(0xFF1E2228) : Colors.white;
+    final dialogBg = isDark ? AppColors.darkSurfaceSecondary : Colors.white;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
     final textSecondary =
         isDark ? Colors.white70 : AppColors.lightTextSecondary;
@@ -553,26 +561,8 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 3.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : textPrimary.withValues(alpha: 0.06),
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                          border: Border.all(color: borderSubtle, width: 0.8),
-                        ),
-                        child: Text(
-                          _discussion.category,
-                          style: TextStyle(
-                            color: textSecondary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                      CommunityCategoryBadge(
+                        label: _discussion.category,
                       ),
                     ],
                   ),
@@ -629,9 +619,9 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                                       ? Icons.favorite_rounded
                                       : Icons.favorite_border_rounded,
                                   color: _isLiked
-                                      ? AppColors.danger
+                                      ? AppColors.likedAccent
                                       : textSecondary,
-                                  size: 19,
+                                  size: 18,
                                 ),
                                 const SizedBox(width: 5),
                                 Text(
@@ -702,7 +692,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                   const SizedBox(height: AppSpacing.sm + 4),
                   Obx(() {
                     final comments = _controller
-                        .getCommentsForDiscussion(widget.discussion.id);
+                        .getCommentsForDiscussion(_discussion.id);
                     final isLoading =
                         _controller.isLoadingDiscussionComments.value;
 
@@ -780,110 +770,192 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
           SafeArea(
             top: false,
             child: Container(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                AppSpacing.sm,
-                AppSpacing.md,
-                MediaQuery.of(context).viewInsets.bottom > 0
-                    ? AppSpacing.sm
-                    : AppSpacing.md,
-              ),
               decoration: BoxDecoration(
                 color: surfaceSecondary,
                 border: Border(top: BorderSide(color: borderSubtle, width: 0.8)),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _commentController,
-                      minLines: 1,
-                      maxLines: 4,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _handleSendComment(),
-                      onChanged: (_) => _onTextChanged(),
-                      cursorColor: textPrimary,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 14.5,
-                        height: 1.3,
+                  if (_replyingToComment != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: 8,
                       ),
-                      decoration: InputDecoration(
-                        hintText: 'community.addReply'.tr.isNotEmpty &&
-                                'community.addReply'.tr != 'community.addReply'
-                            ? 'community.addReply'.tr
-                            : 'Add a reply...',
-                        hintStyle: TextStyle(
-                          color: textSecondary,
-                          fontSize: 14.5,
-                          height: 1.3,
-                        ),
-                        filled: true,
-                        fillColor: isDark
-                            ? AppColors.darkBgPrimary
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkSurfaceSecondary
                             : AppColors.lightBgSecondary,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 11,
+                        border: Border(
+                          bottom: BorderSide(color: borderSubtle, width: 0.8),
                         ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          borderSide: BorderSide(color: borderSubtle, width: 0.8),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          borderSide: BorderSide(color: borderSubtle, width: 0.8),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          borderSide: BorderSide(
-                            color: isDark
-                                ? AppColors.darkBorderStrong
-                                : const Color(0xFF334155),
-                            width: 1.2,
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.reply_rounded,
+                            size: 16,
+                            color: AppColors.communityAccent,
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text.rich(
+                              TextSpan(
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  color: textSecondary,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: 'community.replyingTo'.tr.isNotEmpty &&
+                                            'community.replyingTo'.tr != 'community.replyingTo'
+                                        ? '${'community.replyingTo'.tr} '
+                                        : 'Replying to ',
+                                  ),
+                                  TextSpan(
+                                    text: _replyingToComment!.userName,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          GestureDetector(
+                            key: const Key('cancel_reply_button'),
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              setState(() {
+                                _replyingToComment = null;
+                              });
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: 16,
+                                color: textMuted,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Obx(() {
-                    final isSending =
-                        _controller.isSendingDiscussionComment.value;
-                    final canSend = _hasText && !isSending;
-
-                    return SizedBox(
-                      width: 44,
-                      height: 44,
-                      child: IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 44,
-                          minHeight: 44,
-                        ),
-                        icon: isSending
-                            ? SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: textPrimary,
-                                ),
-                              )
-                            : Icon(
-                                Icons.send_rounded,
-                                color: canSend ? textPrimary : textMuted,
-                                size: 21,
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.sm,
+                      AppSpacing.md,
+                      MediaQuery.of(context).viewInsets.bottom > 0
+                          ? AppSpacing.sm
+                          : AppSpacing.md,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            focusNode: _commentFocusNode,
+                            controller: _commentController,
+                            minLines: 1,
+                            maxLines: 4,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => _handleSendComment(),
+                            onChanged: (_) => _onTextChanged(),
+                            cursorColor: textPrimary,
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontSize: 14.5,
+                              height: 1.3,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: _replyingToComment != null
+                                  ? ('community.reply'.tr.isNotEmpty &&
+                                          'community.reply'.tr != 'community.reply'
+                                      ? '${'community.reply'.tr} ${_replyingToComment!.userName}...'
+                                      : 'Reply to ${_replyingToComment!.userName}...')
+                                  : ('community.addReply'.tr.isNotEmpty &&
+                                          'community.addReply'.tr != 'community.addReply'
+                                      ? 'community.addReply'.tr
+                                      : 'Add a reply...'),
+                              hintStyle: TextStyle(
+                                color: textSecondary,
+                                fontSize: 14.5,
+                                height: 1.3,
                               ),
-                        onPressed: canSend ? _handleSendComment : null,
-                        tooltip: 'community.send'.tr.isNotEmpty &&
-                                'community.send'.tr != 'community.send'
-                            ? 'community.send'.tr
-                            : 'Send',
-                      ),
-                    );
-                  }),
+                              filled: true,
+                              fillColor: isDark
+                                  ? AppColors.darkBgPrimary
+                                  : AppColors.lightBgSecondary,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 11,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                borderSide: BorderSide(color: borderSubtle, width: 0.8),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                borderSide: BorderSide(color: borderSubtle, width: 0.8),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                borderSide: BorderSide(
+                                  color: isDark
+                                      ? AppColors.darkBorderStrong
+                                      : AppColors.lightBorderStrong,
+                                  width: 1.2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Obx(() {
+                          final isSending =
+                              _controller.isSendingDiscussionComment.value;
+                          final canSend = _hasText && !isSending;
+
+                          return SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 44,
+                                minHeight: 44,
+                              ),
+                              icon: isSending
+                                  ? SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: textPrimary,
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.send_rounded,
+                                      color: canSend ? textPrimary : textMuted,
+                                      size: 21,
+                                    ),
+                              onPressed: canSend ? _handleSendComment : null,
+                              tooltip: 'community.send'.tr.isNotEmpty &&
+                                      'community.send'.tr != 'community.send'
+                                  ? 'community.send'.tr
+                                  : 'Send',
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -896,7 +968,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   void _showDeleteCommentDialog(CommentModel comment) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final dialogBg = isDark ? const Color(0xFF1E2228) : Colors.white;
+    final dialogBg = isDark ? AppColors.darkSurfaceSecondary : Colors.white;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
     final textSecondary =
         isDark ? Colors.white70 : AppColors.lightTextSecondary;
@@ -1041,7 +1113,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   void _showEditCommentDialog(CommentModel comment) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final dialogBg = isDark ? const Color(0xFF1E2228) : Colors.white;
+    final dialogBg = isDark ? AppColors.darkSurfaceSecondary : Colors.white;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
     final textSecondary =
         isDark ? Colors.white70 : AppColors.lightTextSecondary;
@@ -1247,7 +1319,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   void _showCommentOptions(CommentModel comment, bool isCommentOwner) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final surface = isDark ? const Color(0xFF1E2228) : Colors.white;
+    final surface = isDark ? AppColors.darkSurfaceSecondary : Colors.white;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
     final textSecondary =
         isDark ? Colors.white70 : AppColors.lightTextSecondary;
@@ -1370,37 +1442,263 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm + 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 15,
+                backgroundImage: hasAvatar
+                    ? (comment.userAvatar.startsWith('assets/')
+                        ? AssetImage(comment.userAvatar) as ImageProvider
+                        : NetworkImage(comment.userAvatar))
+                    : null,
+                backgroundColor: AppColors.communityAccent.withValues(alpha: 0.15),
+                child: !hasAvatar
+                    ? Text(
+                        comment.userName.isNotEmpty
+                            ? (comment.userName.startsWith('@') &&
+                                    comment.userName.length > 1
+                                ? comment.userName.substring(1, 2).toUpperCase()
+                                : comment.userName.substring(0, 1).toUpperCase())
+                            : 'U',
+                        style: const TextStyle(
+                          color: AppColors.communityAccent,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: surfaceSecondary,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(color: borderSubtle, width: 0.8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              comment.userName,
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12.5,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                formatCommunityTimestamp(
+                                    comment.createdAt ?? comment.timeAgo),
+                                style: TextStyle(
+                                  color: textMuted,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              if (comment.isEdited) ...[
+                                Text(
+                                  ' · ${'community.edited'.tr.isNotEmpty && 'community.edited'.tr != 'community.edited' ? 'community.edited'.tr : 'Edited'}',
+                                  style: TextStyle(
+                                    color: textMuted,
+                                    fontSize: 11,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(width: 6),
+                              GestureDetector(
+                                key: Key('comment_more_${comment.id}'),
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () =>
+                                    _showCommentOptions(comment, isCommentOwner),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(2),
+                                  child: Icon(
+                                    Icons.more_horiz_rounded,
+                                    size: 16,
+                                    color: textMuted,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        comment.text,
+                        style: TextStyle(
+                          color: textPrimary.withValues(alpha: 0.9),
+                          fontSize: 13,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _controller.toggleDiscussionCommentLike(
+                              _discussion.id,
+                              comment.id,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  comment.isLiked
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  size: 14,
+                                  color: comment.isLiked
+                                      ? AppColors.likedAccent
+                                      : textMuted,
+                                ),
+                                if (comment.likesCount > 0) ...[
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${comment.likesCount}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: comment.isLiked
+                                          ? AppColors.likedAccent
+                                          : textMuted,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          GestureDetector(
+                            key: Key('comment_reply_${comment.id}'),
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              setState(() {
+                                _replyingToComment = comment;
+                              });
+                              _commentFocusNode.requestFocus();
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.reply_rounded,
+                                  size: 14,
+                                  color: textMuted,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'community.reply'.tr.isNotEmpty &&
+                                          'community.reply'.tr != 'community.reply'
+                                      ? 'community.reply'.tr
+                                      : 'Reply',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (comment.replies.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 36, top: 6),
+              child: Column(
+                children: comment.replies
+                    .map((reply) => _buildReplyItem(
+                          context,
+                          reply,
+                          comment,
+                          surfaceSecondary,
+                          borderSubtle,
+                          textPrimary,
+                          textSecondary,
+                          textMuted,
+                        ))
+                    .toList(),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReplyItem(
+    BuildContext context,
+    CommentModel reply,
+    CommentModel parentComment,
+    Color surfaceSecondary,
+    Color borderSubtle,
+    Color textPrimary,
+    Color textSecondary,
+    Color textMuted,
+  ) {
+    final hasAvatar = reply.userAvatar.isNotEmpty;
+    final currentUserId = _controller.currentUserId ??
+        (CurrentUser.id.isNotEmpty ? CurrentUser.id : null);
+    final isReplyOwner = reply.checkIsOwner(currentUserId);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
-            radius: 15,
+            radius: 12,
             backgroundImage: hasAvatar
-                ? (comment.userAvatar.startsWith('assets/')
-                    ? AssetImage(comment.userAvatar) as ImageProvider
-                    : NetworkImage(comment.userAvatar))
+                ? (reply.userAvatar.startsWith('assets/')
+                    ? AssetImage(reply.userAvatar) as ImageProvider
+                    : NetworkImage(reply.userAvatar))
                 : null,
             backgroundColor: AppColors.communityAccent.withValues(alpha: 0.15),
             child: !hasAvatar
                 ? Text(
-                    comment.userName.isNotEmpty
-                        ? (comment.userName.startsWith('@') &&
-                                comment.userName.length > 1
-                            ? comment.userName.substring(1, 2).toUpperCase()
-                            : comment.userName.substring(0, 1).toUpperCase())
+                    reply.userName.isNotEmpty
+                        ? (reply.userName.startsWith('@') &&
+                                reply.userName.length > 1
+                            ? reply.userName.substring(1, 2).toUpperCase()
+                            : reply.userName.substring(0, 1).toUpperCase())
                         : 'U',
                     style: const TextStyle(
                       color: AppColors.communityAccent,
                       fontWeight: FontWeight.bold,
-                      fontSize: 11,
+                      fontSize: 10,
                     ),
                   )
                 : null,
           ),
-          const SizedBox(width: AppSpacing.sm),
+          const SizedBox(width: AppSpacing.sm - 2),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               decoration: BoxDecoration(
                 color: surfaceSecondary,
                 borderRadius: BorderRadius.circular(AppRadius.md),
@@ -1414,49 +1712,49 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          comment.userName,
+                          reply.userName,
                           style: TextStyle(
                             color: textPrimary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 12.5,
+                            fontSize: 12,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             formatCommunityTimestamp(
-                                comment.createdAt ?? comment.timeAgo),
+                                reply.createdAt ?? reply.timeAgo),
                             style: TextStyle(
                               color: textMuted,
-                              fontSize: 11,
+                              fontSize: 10.5,
                             ),
                           ),
-                          if (comment.isEdited) ...[
+                          if (reply.isEdited) ...[
                             Text(
                               ' · ${'community.edited'.tr.isNotEmpty && 'community.edited'.tr != 'community.edited' ? 'community.edited'.tr : 'Edited'}',
                               style: TextStyle(
                                 color: textMuted,
-                                fontSize: 11,
+                                fontSize: 10.5,
                                 fontStyle: FontStyle.italic,
                               ),
                             ),
                           ],
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           GestureDetector(
-                            key: Key('comment_more_${comment.id}'),
+                            key: Key('comment_more_${reply.id}'),
                             behavior: HitTestBehavior.opaque,
                             onTap: () =>
-                                _showCommentOptions(comment, isCommentOwner),
+                                _showCommentOptions(reply, isReplyOwner),
                             child: Padding(
                               padding: const EdgeInsets.all(2),
                               child: Icon(
                                 Icons.more_horiz_rounded,
-                                size: 16,
+                                size: 15,
                                 color: textMuted,
                               ),
                             ),
@@ -1465,48 +1763,86 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
-                    comment.text,
+                    reply.text,
                     style: TextStyle(
                       color: textPrimary.withValues(alpha: 0.9),
-                      fontSize: 13,
+                      fontSize: 12.5,
                       height: 1.35,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  GestureDetector(
-                    onTap: () => _controller.toggleDiscussionCommentLike(
-                      _discussion.id,
-                      comment.id,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          comment.isLiked
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border_rounded,
-                          size: 14,
-                          color: comment.isLiked
-                              ? AppColors.danger
-                              : textMuted,
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => _controller.toggleDiscussionCommentLike(
+                          _discussion.id,
+                          reply.id,
                         ),
-                        if (comment.likesCount > 0) ...[
-                          const SizedBox(width: 4),
-                          Text(
-                            '${comment.likesCount}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: comment.isLiked
-                                  ? AppColors.danger
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              reply.isLiked
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              size: 13,
+                              color: reply.isLiked
+                                  ? AppColors.likedAccent
                                   : textMuted,
                             ),
-                          ),
-                        ],
-                      ],
-                    ),
+                            if (reply.likesCount > 0) ...[
+                              const SizedBox(width: 3),
+                              Text(
+                                '${reply.likesCount}',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: reply.isLiked
+                                      ? AppColors.likedAccent
+                                      : textMuted,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      GestureDetector(
+                        key: Key('comment_reply_${reply.id}'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          setState(() {
+                            _replyingToComment = parentComment;
+                          });
+                          _commentFocusNode.requestFocus();
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.reply_rounded,
+                              size: 13,
+                              color: textMuted,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'community.reply'.tr.isNotEmpty &&
+                                      'community.reply'.tr != 'community.reply'
+                                  ? 'community.reply'.tr
+                                  : 'Reply',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

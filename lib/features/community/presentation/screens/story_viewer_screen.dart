@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
@@ -17,6 +18,8 @@ import '../../domain/models/story_model.dart';
 import '../../domain/repositories/story_repository.dart';
 import '../../data/repositories/story_repository_impl.dart';
 import '../controllers/story_controller.dart';
+import 'package:video_player/video_player.dart';
+import '../widgets/story_video_player_widget.dart';
 import '../widgets/story_template_canvas.dart';
 import '../widgets/story_interactive_like_button.dart';
 import '../widgets/demo_stories_data.dart';
@@ -244,10 +247,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   final GlobalKey _storyContentKey = GlobalKey();
 
   late AnimationController _progressAnimController;
+  VideoPlayerController? _activeVideoController;
   bool _isPaused = false;
   bool _isClosing = false;
+  bool _isNavigatingStory = false;
 
   final TextEditingController _replyController = TextEditingController();
+
+  final Set<String> _loadingViewerStoryIds = <String>{};
 
   bool _isMorePressed = false;
   DateTime? _lastLikeTapTime;
@@ -312,23 +319,122 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
   @override
   void dispose() {
+    _loadingViewerStoryIds.clear();
+    _progressAnimController.stop();
     _progressAnimController.dispose();
+    _activeVideoController?.pause();
+    _activeVideoController = null;
     _replyController.dispose();
     super.dispose();
   }
 
   void _markCurrentStoryViewed() {
     final story = _currentStory;
-    if (story != null) {
+    if (story != null && story.id.isNotEmpty) {
       story.isViewed = true;
       if (story.id.startsWith('demo_')) {
         markDemoStoryViewed(story.id);
-      } else if (Get.isRegistered<StoryController>()) {
-        final ctrl = Get.find<StoryController>();
-        ctrl.markStoryAsViewed(story.id);
-        ctrl.markStoryViewed(story.id);
+      } else if (!_isOwnStory) {
+        if (Get.isRegistered<StoryController>()) {
+          final ctrl = Get.find<StoryController>();
+          ctrl.markStoryAsViewed(story.id);
+          ctrl.markStoryViewed(story.id);
+        } else {
+          final storyRepo = Get.isRegistered<StoryRepository>()
+              ? Get.find<StoryRepository>()
+              : StoryRepositoryImpl();
+          storyRepo.markViewed(story.id);
+        }
       }
     }
+  }
+
+  void _safeApplyViewers(StoryItemModel story, List<StoryViewerModel> viewers) {
+    if (!mounted) return;
+
+    void apply() {
+      if (!mounted) return;
+      story.viewers = List<StoryViewerModel>.from(viewers);
+      story.viewersCount = viewers.length;
+
+      // Only trigger rebuild if this story is currently visible
+      if (_currentStory?.id == story.id) {
+        setState(() {});
+      }
+
+      if (Get.isRegistered<StoryController>()) {
+        Get.find<StoryController>().updateStoryViewers(story.id, viewers);
+      }
+    }
+
+    final binding = WidgetsBinding.instance;
+    if (binding.buildOwner?.debugBuilding == true ||
+        binding.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+      binding.addPostFrameCallback((_) => apply());
+    } else {
+      apply();
+    }
+  }
+
+  void _loadViewersForCurrentStory() {
+    final story = _currentStory;
+    if (story == null ||
+        !_isOwnStory ||
+        story.id.isEmpty ||
+        story.id.startsWith('demo_')) {
+      return;
+    }
+
+    // Prevent duplicate in-flight requests for the same story
+    if (_loadingViewerStoryIds.contains(story.id)) {
+      return;
+    }
+    _loadingViewerStoryIds.add(story.id);
+
+    final storyRepo = Get.isRegistered<StoryRepository>()
+        ? Get.find<StoryRepository>()
+        : StoryRepositoryImpl();
+
+    storyRepo.getStoryViewers(story.id).then((viewers) {
+      if (!mounted) return;
+      _safeApplyViewers(story, viewers);
+    }).catchError((e) {
+      debugPrint('[StoryViewerScreen] loadViewers error: $e');
+    }).whenComplete(() {
+      _loadingViewerStoryIds.remove(story.id);
+    });
+  }
+
+  // ignore: unused_element
+  void _onVideoControllerInitialized(
+    VideoPlayerController ctrl,
+    StoryItemModel story,
+  ) {
+    if (!mounted || _isClosing) return;
+    if (_currentStory?.id != story.id) return;
+
+    _activeVideoController = ctrl;
+    final dur = ctrl.value.duration;
+    final storyDuration =
+        (dur > Duration.zero) ? dur : const Duration(seconds: 10);
+    _progressAnimController.duration = storyDuration;
+    _progressAnimController.reset();
+    if (!_isPaused && !_isClosing) {
+      _progressAnimController.forward();
+    }
+    debugPrint(
+      '[StoryViewerScreen] Video initialized for story ${story.id}: duration=${ctrl.value.duration}, size=${ctrl.value.size}',
+    );
+  }
+
+  // ignore: unused_element
+  void _onVideoPlaybackError(String err, StoryItemModel story) {
+    debugPrint(
+      '[StoryViewerScreen] Video playback error for story ${story.id}: $err',
+    );
+    if (!mounted || _isClosing) return;
+    if (_currentStory?.id != story.id) return;
+    _progressAnimController.stop();
   }
 
   void _closeViewer() {
@@ -336,6 +442,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     _isClosing = true;
     _markCurrentStoryViewed();
     _progressAnimController.stop();
+    _activeVideoController?.pause();
+    _activeVideoController = null;
     Get.back();
   }
 
@@ -355,32 +463,72 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     if (story.textContent != null && story.textContent!.trim().isNotEmpty) {
       return const Duration(seconds: 7);
     }
-    if (story.mediaUrl != null && _isVideoFile(story.mediaUrl!)) {
+    if (story.type == StoryType.video || (story.mediaUrl != null && _isVideoFile(story.mediaUrl!))) {
       return const Duration(seconds: 10);
     }
     return const Duration(seconds: 6);
   }
 
+  void _scheduleStoryTrackingAndInsights() {
+    final binding = WidgetsBinding.instance;
+    if (binding.buildOwner?.debugBuilding == true ||
+        binding.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+      binding.addPostFrameCallback((_) {
+        if (!mounted || _isClosing) return;
+        _markCurrentStoryViewed();
+        if (_isOwnStory) {
+          _loadViewersForCurrentStory();
+        }
+      });
+    } else {
+      _markCurrentStoryViewed();
+      if (_isOwnStory) {
+        _loadViewersForCurrentStory();
+      }
+    }
+  }
+
   void _startStoryTimer() {
     _progressAnimController.stop();
     final story = _currentStory;
-    _markCurrentStoryViewed();
-    final duration = _calculateStoryDuration(story);
-    _progressAnimController.duration = duration;
-    _progressAnimController.reset();
-    if (!_isPaused && !_isClosing) {
-      _progressAnimController.forward();
+
+    _scheduleStoryTrackingAndInsights();
+
+    final isVideo = story != null &&
+        (story.type == StoryType.video ||
+            (story.mediaUrl != null && _isVideoFile(story.mediaUrl!)));
+
+    if (isVideo) {
+      _progressAnimController.reset();
+      if (_activeVideoController != null &&
+          _activeVideoController!.value.isInitialized) {
+        final dur = _activeVideoController!.value.duration;
+        _progressAnimController.duration =
+            dur > Duration.zero ? dur : const Duration(seconds: 10);
+        if (!_isPaused && !_isClosing) {
+          _progressAnimController.forward();
+        }
+      }
+    } else {
+      final duration = _calculateStoryDuration(story);
+      _progressAnimController.duration = duration;
+      _progressAnimController.reset();
+      if (!_isPaused && !_isClosing) {
+        _progressAnimController.forward();
+      }
     }
   }
 
   void _pauseStory() {
     setState(() => _isPaused = true);
     _progressAnimController.stop();
+    _activeVideoController?.pause();
   }
 
   void _resumeStory() {
     setState(() => _isPaused = false);
     if (!_isClosing && mounted) {
+      _activeVideoController?.play();
       _progressAnimController.forward();
     }
   }
@@ -404,7 +552,15 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   }
 
   void _nextStory() {
+    if (_isClosing || _isNavigatingStory) return;
+    if (_isPaused) {
+      _resumeStory();
+      return;
+    }
+    _isNavigatingStory = true;
     _progressAnimController.stop();
+    _activeVideoController?.pause();
+    _activeVideoController = null;
     final group = _currentGroup;
     if (group == null) {
       _closeViewer();
@@ -428,10 +584,19 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         _closeViewer();
       }
     }
+    Future.microtask(() => _isNavigatingStory = false);
   }
 
   void _previousStory() {
+    if (_isClosing || _isNavigatingStory) return;
+    if (_isPaused) {
+      _resumeStory();
+      return;
+    }
+    _isNavigatingStory = true;
     _progressAnimController.stop();
+    _activeVideoController?.pause();
+    _activeVideoController = null;
     final group = _currentGroup;
     if (group == null) {
       _closeViewer();
@@ -455,6 +620,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         _closeViewer();
       }
     }
+    Future.microtask(() => _isNavigatingStory = false);
   }
 
   Future<void> _toggleLike(StoryItemModel story) async {
@@ -573,7 +739,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   Widget _buildStoryReplyThumbnail(StoryItemModel story, [bool isDark = true]) {
     const double thumbSize = 38.0;
     final mediaUrl = story.mediaUrl;
-    final isVideo = mediaUrl != null && _isVideoFile(mediaUrl);
+    final isVideo = story.type == StoryType.video ||
+        (mediaUrl != null && _isVideoFile(mediaUrl));
     final borderColor = isDark ? Colors.white24 : AppColors.lightBorderSubtle;
 
     if (mediaUrl == null || mediaUrl.trim().isEmpty) {
@@ -824,8 +991,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                               story.textContent != null &&
                                       story.textContent!.trim().isNotEmpty
                                   ? story.textContent!.trim()
-                                  : (story.mediaUrl != null &&
-                                            _isVideoFile(story.mediaUrl!)
+                                  : (story.type == StoryType.video ||
+                                            (story.mediaUrl != null &&
+                                                _isVideoFile(story.mediaUrl!))
                                         ? "Video Story"
                                         : "Photo Story"),
                               maxLines: 1,
@@ -1799,6 +1967,18 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 snapshot.connectionState == ConnectionState.waiting;
             final viewers = snapshot.data ?? story.viewers;
 
+            if (snapshot.hasData && snapshot.data != null) {
+              final freshViewers = snapshot.data!;
+              story.viewers = freshViewers;
+              story.viewersCount = freshViewers.length;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && Get.isRegistered<StoryController>()) {
+                  Get.find<StoryController>()
+                      .updateStoryViewers(story.id, freshViewers);
+                }
+              });
+            }
+
             return Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1911,7 +2091,12 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           },
         ),
       ),
-    ).then((_) => _resumeStory());
+    ).then((_) {
+      if (mounted) {
+        setState(() {});
+      }
+      _resumeStory();
+    });
   }
 
   void _showPrivacySheet() {
@@ -2624,7 +2809,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   }
 
   bool _isVideoFile(String path) {
-    final p = path.toLowerCase();
+    final p = path.split('?').first.toLowerCase();
     return p.endsWith('.mp4') ||
         p.endsWith('.mov') ||
         p.endsWith('.m4v') ||
@@ -2751,22 +2936,41 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               story.layers.isEmpty &&
               story.textContent != null &&
               story.textContent!.trim().isNotEmpty)
-            Positioned(
-              left: 28,
-              right: 28,
-              bottom: 120,
-              child: Text(
-                story.textContent!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  height: 1.35,
-                  shadows: [Shadow(color: Colors.black87, blurRadius: 16)],
-                ),
-              ),
-            ),
+            story.type == StoryType.text
+                ? Positioned.fill(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 28),
+                        child: Text(
+                          story.textContent!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            height: 1.35,
+                            shadows: [Shadow(color: Colors.black87, blurRadius: 16)],
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                : Positioned(
+                    left: 28,
+                    right: 28,
+                    bottom: 120,
+                    child: Text(
+                      story.textContent!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        height: 1.35,
+                        shadows: [Shadow(color: Colors.black87, blurRadius: 16)],
+                      ),
+                    ),
+                  ),
         ],
       ],
     );
@@ -2802,75 +3006,28 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
     final url = story.mediaUrl!;
     if (story.type == StoryType.video || _isVideoFile(url)) {
-      mediaWidget = Container(
-        color: Colors.black,
-        child: Center(
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: double.infinity,
-                height: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(22),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white30, width: 2),
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow_rounded,
-                      color: Colors.white,
-                      size: 54,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white12),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.movie_rounded,
-                          color: Colors.white70,
-                          size: 16,
-                        ),
-                        SizedBox(width: 6),
-                        Text(
-                          "Video Story",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+      mediaWidget = StoryVideoPlayerWidget(
+        key: ValueKey("story_video_${story.id}"),
+        videoUrl: url,
+        isPlaying: !_isPaused,
+        isLooping: false,
+        fit: BoxFit.contain,
+        showControls: true,
+        onTap: () {
+          if (_isPaused) {
+            _resumeStory();
+          } else {
+            _pauseStory();
+          }
+        },
+        onControllerInitialized: (ctrl) =>
+            _onVideoControllerInitialized(ctrl, story),
+        onVideoEnd: () {
+          if (mounted && !_isClosing && _currentStory?.id == story.id) {
+            _nextStory();
+          }
+        },
+        onError: (err) => _onVideoPlaybackError(err, story),
       );
     } else if (url.startsWith('assets/')) {
       mediaWidget = Image.asset(
@@ -3607,11 +3764,15 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                             },
                             child: CircleAvatar(
                               radius: 18,
-                              backgroundImage:
-                                  group.userAvatar.startsWith('assets/')
-                                  ? AssetImage(group.userAvatar)
-                                        as ImageProvider
-                                  : NetworkImage(group.userAvatar),
+                              backgroundImage: group.userAvatar.isNotEmpty
+                                  ? (group.userAvatar.startsWith('assets/')
+                                      ? AssetImage(group.userAvatar)
+                                            as ImageProvider
+                                      : NetworkImage(group.userAvatar))
+                                  : null,
+                              child: group.userAvatar.isEmpty
+                                  ? const Icon(Icons.person, size: 18, color: Colors.white70)
+                                  : null,
                             ),
                           ),
                           const SizedBox(width: 10),

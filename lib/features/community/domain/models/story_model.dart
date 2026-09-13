@@ -107,6 +107,37 @@ class StoryViewerModel {
     required this.userAvatar,
     required this.viewedTimeAgo,
   });
+
+  factory StoryViewerModel.fromJson(Map<String, dynamic> json) {
+    final viewedAtStr = json['viewedAt']?.toString();
+    final viewedAt = viewedAtStr != null ? DateTime.tryParse(viewedAtStr) : null;
+    return StoryViewerModel(
+      id: json['userId']?.toString() ?? json['id']?.toString() ?? '',
+      userName: (json['fullName'] as String?) ??
+          (json['username'] as String?) ??
+          (json['userName'] as String?) ??
+          'User',
+      userAvatar: (json['avatarUrl'] as String?) ??
+          (json['userAvatar'] as String?) ??
+          '',
+      viewedTimeAgo: viewedAt != null ? _formatTimeAgo(viewedAt) : (json['viewedTimeAgo'] as String? ?? 'Just now'),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'userId': id,
+        'fullName': userName,
+        'avatarUrl': userAvatar,
+        'viewedTimeAgo': viewedTimeAgo,
+      };
+
+  static String _formatTimeAgo(DateTime time) {
+    final diff = DateTime.now().difference(time);
+    if (diff.inSeconds < 60) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
 }
 
 enum StoryPrivacy {
@@ -206,7 +237,7 @@ class StoryItemModel {
   bool isLiked;
   bool isViewed;
   int viewersCount;
-  final List<StoryViewerModel> viewers;
+  List<StoryViewerModel> viewers;
   final double bgScale;
   final Offset bgOffset;
   final double bgRotation;
@@ -255,6 +286,49 @@ class StoryItemModel {
   bool get allowReactions => settings.allowReactions;
 
   bool get isExpired => DateTime.now().difference(createdAt).inHours >= 24;
+
+  factory StoryItemModel.fromJson(Map<String, dynamic> json) {
+    final rawType = (json['mediaType'] ?? json['type'] ?? json['storyType'])?.toString().toUpperCase();
+    final mediaUrl = json['mediaUrl'] as String?;
+    final StoryType type;
+    final isVideoUrl = mediaUrl != null &&
+        (mediaUrl.toLowerCase().contains('.mp4') ||
+            mediaUrl.toLowerCase().contains('.mov') ||
+            mediaUrl.toLowerCase().contains('.webm'));
+    if (rawType == 'VIDEO' || isVideoUrl) {
+      type = StoryType.video;
+    } else if (rawType == 'TEMPLATE') {
+      type = StoryType.template;
+    } else if (rawType == 'TEXT') {
+      type = StoryType.text;
+    } else {
+      type = StoryType.photo;
+    }
+
+    final createdAtStr = json['createdAt']?.toString();
+    final createdAt = createdAtStr != null
+        ? DateTime.tryParse(createdAtStr) ?? DateTime.now()
+        : DateTime.now();
+
+    return StoryItemModel(
+      id: json['storyId']?.toString() ?? json['id']?.toString() ?? '',
+      type: type,
+      mediaUrl: mediaUrl,
+      textContent: json['caption'] as String? ?? json['textContent'] as String?,
+      bgGradientStart: json['bgGradientStart'] as String?,
+      bgGradientEnd: json['bgGradientEnd'] as String?,
+      location: json['location'] as String?,
+      timeAgo: json['timeAgo']?.toString() ?? 'Just now',
+      createdAt: createdAt,
+      likesCount: (json['likesCount'] as num?)?.toInt() ?? 0,
+      isLiked: json['isLiked'] as bool? ?? false,
+      isViewed: json['isViewed'] as bool? ?? json['seen'] as bool? ?? false,
+      viewersCount: (json['viewersCount'] as num?)?.toInt() ??
+          (json['viewerCount'] as num?)?.toInt() ??
+          0,
+      templateId: json['templateId'] as String?,
+    );
+  }
 }
 
 class StoryAuthor {

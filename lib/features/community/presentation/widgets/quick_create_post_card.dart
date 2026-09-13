@@ -6,6 +6,7 @@ import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
+import 'community_design_tokens.dart';
 import 'community_creation_flow.dart';
 
 /// "What's happening in your community?" Quick Post Card.
@@ -38,8 +39,6 @@ class QuickCreatePostCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 
     final authController =
         Get.isRegistered<AuthController>() ? Get.find<AuthController>() : null;
@@ -57,20 +56,7 @@ class QuickCreatePostCard extends StatelessWidget {
                 horizontal: 14,
                 vertical: 10,
               ),
-              decoration: BoxDecoration(
-                color: surfaceSecondary,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: borderSubtle),
-                boxShadow: isDark
-                    ? []
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-              ),
+              decoration: CommunityCardStyle.cardDecoration(context),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -80,7 +66,7 @@ class QuickCreatePostCard extends StatelessWidget {
                       AppAvatar(
                         imageUrl: effectiveAvatar,
                         name: effectiveName,
-                        size: 36,
+                        size: 38,
                       ),
                       const SizedBox(width: 12),
                       Expanded(

@@ -3,11 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
-import '../../../../design_system/colors/app_colors.dart';
-import '../../../../design_system/radius/app_radius.dart';
-import '../../../../main_controller.dart';
+import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/radius/app_radius.dart';
 import '../../domain/models/community_models.dart';
-import '../controllers/community_controller.dart';
 import 'event_details_screen.dart';
 
 class EventSuccessScreen extends StatefulWidget {
@@ -136,13 +134,6 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
 
   void _onDone(BuildContext context) {
     HapticFeedback.lightImpact();
-    final ctrl = Get.isRegistered<CommunityController>()
-        ? Get.find<CommunityController>()
-        : null;
-    ctrl?.setCategory('Event');
-    if (Get.isRegistered<MainController>()) {
-      Get.find<MainController>().changeIndex(0);
-    }
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 

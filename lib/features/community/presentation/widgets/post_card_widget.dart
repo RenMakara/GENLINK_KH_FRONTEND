@@ -7,7 +7,6 @@ import '../../../../core/utils/date_formatter.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
-import '../../../../design_system/shadows/app_shadows.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
@@ -18,6 +17,7 @@ import '../screens/create_post_screen.dart';
 import '../screens/event_details_screen.dart';
 import '../controllers/community_controller.dart';
 import 'comments_bottom_sheet.dart';
+import 'community_design_tokens.dart';
 import 'full_screen_image_viewer.dart';
 
 class PostCardWidget extends StatefulWidget {
@@ -583,23 +583,11 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-    final surfaceSecondary = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
     final actionIconColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12.0),
-      decoration: BoxDecoration(
-        color: surfaceSecondary,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(
-          color: borderSubtle.withValues(alpha: isDark ? 0.45 : 0.75),
-          width: 0.6,
-        ),
-        boxShadow: isDark
-            ? AppShadows.cardDark
-            : AppShadows.cardLight,
-      ),
+      margin: const EdgeInsets.only(bottom: CommunityCardStyle.cardBottomMargin),
+      decoration: CommunityCardStyle.cardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -654,9 +642,9 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
             builder: (context, constraints) {
               final isNarrow = constraints.maxWidth < 360;
               final isVeryNarrow = constraints.maxWidth < 330;
-              final avatarRadius = isVeryNarrow ? 17.0 : (isNarrow ? 19.0 : 20.0);
+              final avatarRadius = isVeryNarrow ? 17.0 : (isNarrow ? 18.0 : 19.0);
               final headerGap = isVeryNarrow ? 6.0 : (isNarrow ? 8.0 : 10.0);
-              final authorFontSize = isVeryNarrow ? 13.5 : (isNarrow ? 14.5 : 15.0);
+              final authorFontSize = isVeryNarrow ? 13.5 : (isNarrow ? 14.0 : 14.5);
 
               return Padding(
                 padding: EdgeInsets.fromLTRB(
@@ -791,14 +779,38 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             )
+                          else if (widget.post.postType == 'DISCUSSION' || widget.post.category != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2.0),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CommunityCategoryBadge(
+                                    label: widget.post.category ?? 'Technology',
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    fontSize: isVeryNarrow ? 10.0 : 10.5,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Flexible(
+                                    child: Text(
+                                      '· ${_formatTimeAgo(widget.post.timeAgo)}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: textMuted,
+                                        fontSize: isVeryNarrow ? 10.5 : 11.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
                           else
                             Text.rich(
                               TextSpan(
                                 children: [
                                   TextSpan(
-                                    text: (widget.post.postType == 'DISCUSSION' || widget.post.category != null)
-                                        ? '${widget.post.category ?? 'Technology'} · ${'community.discussion'.tr.isNotEmpty && 'community.discussion'.tr != 'community.discussion' ? 'community.discussion'.tr : 'Discussion'}'
-                                        : widget.post.community,
+                                    text: widget.post.community,
                                     style: TextStyle(
                                       color: textSecondary,
                                       fontSize: isVeryNarrow ? 10.5 : 11.5,
@@ -1050,7 +1062,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                   onTap: _onLikeTap,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     child: Row(
                       children: [
                         ScaleTransition(
@@ -1060,10 +1072,10 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                             color: widget.post.isLiked
                                 ? AppColors.likedAccent
                                 : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
-                            size: 20,
+                            size: 18,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 5),
                         Text(
                           "${widget.post.likesCount}",
                           style: theme.textTheme.labelMedium?.copyWith(
@@ -1071,13 +1083,13 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                                     ? AppColors.likedAccent
                                     : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
                                 fontWeight: FontWeight.w600,
-                                fontSize: 13,
+                                fontSize: 12.5,
                               ) ??
                               TextStyle(
                                 color: widget.post.isLiked
                                     ? AppColors.likedAccent
                                     : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
-                                fontSize: 13,
+                                fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
                               ),
                         ),
@@ -1090,7 +1102,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                 InkWell(
                   onTap: () {
                     showModalBottomSheet(
-                      context: context,
+                       context: context,
                       isScrollControlled: true,
                       backgroundColor: Colors.transparent,
                       builder: (_) => CommentsBottomSheet(postId: widget.post.id),
@@ -1098,19 +1110,19 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                   },
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     child: Row(
                       children: [
-                        Icon(Icons.chat_bubble_outline_rounded, color: actionIconColor, size: 19),
-                        const SizedBox(width: 6),
+                        Icon(Icons.chat_bubble_outline_rounded, color: actionIconColor, size: 18),
+                        const SizedBox(width: 5),
                         Text(
                           "${widget.post.commentsCount}",
                           style: theme.textTheme.labelMedium?.copyWith(
                                 color: actionIconColor,
                                 fontWeight: FontWeight.w600,
-                                fontSize: 13,
+                                fontSize: 12.5,
                               ) ??
-                              TextStyle(color: actionIconColor, fontSize: 13, fontWeight: FontWeight.w600),
+                              TextStyle(color: actionIconColor, fontSize: 12.5, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -1142,7 +1154,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                         },
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     child: Row(
                       children: [
                         Icon(
@@ -1150,9 +1162,9 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                           color: widget.post.isRepostedByMe
                               ? AppColors.growthAccent
                               : actionIconColor,
-                          size: 20,
+                          size: 18,
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 5),
                         Text(
                           "${widget.post.repostsCount}",
                           style: theme.textTheme.labelMedium?.copyWith(
@@ -1160,13 +1172,13 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                                     ? AppColors.growthAccent
                                     : actionIconColor,
                                 fontWeight: FontWeight.w600,
-                                fontSize: 13,
+                                fontSize: 12.5,
                               ) ??
                               TextStyle(
                                 color: widget.post.isRepostedByMe
                                     ? AppColors.growthAccent
                                     : actionIconColor,
-                                fontSize: 13,
+                                fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
                               ),
                         ),
@@ -1193,7 +1205,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                         color: isBookmarked
                             ? AppColors.warning
                             : actionIconColor,
-                        size: 21,
+                        size: 19,
                       ),
                     ),
                     tooltip: isBookmarked ? 'community.removeBookmark'.tr : 'community.saveBookmark'.tr,
@@ -1440,10 +1452,28 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     );
   }
 
-  String _formatEventDate(String dateString, String timeString) {
-    if (dateString.trim().isEmpty) return '';
+  String _formatEventDate(EventModel event) {
+    String dateStr = event.dateString.trim();
+    String timeStr = event.timeString.trim();
 
-    String localizedDate = dateString.trim();
+    if (dateStr.isEmpty && event.startDateTime != null) {
+      final dt = event.startDateTime!;
+      const enMonths = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      dateStr = '${enMonths[dt.month - 1]} ${dt.day}, ${dt.year}';
+      if (timeStr.isEmpty) {
+        final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+        final period = dt.hour >= 12 ? 'PM' : 'AM';
+        final min = dt.minute.toString().padLeft(2, '0');
+        timeStr = '$hour:$min $period';
+      }
+    }
+
+    if (dateStr.isEmpty) return '';
+
+    String localizedDate = dateStr;
     final isKhmer = Get.locale?.languageCode == 'km';
     if (isKhmer) {
       final kmMonths = 'date.months'.tr.split(',');
@@ -1462,8 +1492,8 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
       }
     }
 
-    if (timeString.trim().isNotEmpty) {
-      return '$localizedDate · $timeString';
+    if (timeStr.isNotEmpty) {
+      return '$localizedDate · $timeStr';
     }
     return localizedDate;
   }
@@ -1476,15 +1506,40 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final badgeBg = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final ctaBg = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
-    final ctaText = isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse;
+    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final ctaBg = isDark ? Colors.white : Colors.black;
+    final ctaText = isDark ? Colors.black : Colors.white;
     final isRsvped = event.isRsvped;
+
+    // Graceful error / empty state
+    if (event.id.isEmpty && event.title.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: borderSubtle.withValues(alpha: 0.6), width: 0.8),
+          ),
+          child: Center(
+            child: Text(
+              'community.eventUnavailable'.tr.isNotEmpty &&
+                      'community.eventUnavailable'.tr != 'community.eventUnavailable'
+                  ? 'community.eventUnavailable'.tr
+                  : 'Event details currently unavailable',
+              style: TextStyle(color: textSecondary, fontSize: 13),
+            ),
+          ),
+        ),
+      );
+    }
 
     final hasLocalCover = event.coverImageFile != null;
     final hasNetworkCover = event.imageUrl.isNotEmpty;
 
-    final isOnline = event.eventType.toLowerCase().contains('online');
+    final isOnline = event.isOnline;
     final String onlineLabel = 'community.onlineEvent'.tr.isNotEmpty &&
             'community.onlineEvent'.tr != 'community.onlineEvent'
         ? 'community.onlineEvent'.tr
@@ -1494,13 +1549,16 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
         ? 'community.inPerson'.tr
         : 'In person';
 
+    // In feed: do not expose raw meeting URL; use friendly online/in-person label
     final locationText = isOnline
-        ? (event.onlineLink.isNotEmpty ? event.onlineLink : onlineLabel)
-        : (event.location.isNotEmpty ? event.location : inPersonLabel);
+        ? onlineLabel
+        : (event.effectiveLocationName.isNotEmpty
+            ? event.effectiveLocationName
+            : (event.location.isNotEmpty ? event.location : inPersonLabel));
 
     final locationIcon = isOnline ? Icons.videocam_outlined : Icons.location_on_outlined;
 
-    final dateTimeDisplay = _formatEventDate(event.dateString, event.timeString);
+    final dateTimeDisplay = _formatEventDate(event);
 
     final rawCat = event.category.isNotEmpty ? event.category : 'Event';
     final catKey = 'community.${rawCat.toLowerCase()}';
@@ -1515,6 +1573,15 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
         ? 'community.viewEvent'.tr
         : 'View Event';
 
+    void navigateToDetail() {
+      Get.to(
+        () => EventDetailsScreen(
+          event: event,
+          heroTag: 'post-event-${event.id}-${widget.post.id}',
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
       child: Container(
@@ -1524,22 +1591,16 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
           border: Border.all(color: borderSubtle.withValues(alpha: 0.6), width: 0.8),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () => Get.to(
-                () => EventDetailsScreen(
-                  event: event,
-                  heroTag: 'post-event-${event.id}-${widget.post.id}',
-                ),
-              ),
+              onTap: navigateToDetail,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    height: 150,
-                    width: double.infinity,
+                  AspectRatio(
+                    aspectRatio: 16 / 9,
                     child: Hero(
                       tag: 'post-event-${event.id}-${widget.post.id}',
                       child: hasLocalCover
@@ -1548,6 +1609,15 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                               ? Image.network(
                                   event.imageUrl,
                                   fit: BoxFit.cover,
+                                  frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                                    if (wasSynchronouslyLoaded) return child;
+                                    return AnimatedOpacity(
+                                      opacity: frame == null ? 0.0 : 1.0,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeOut,
+                                      child: child,
+                                    );
+                                  },
                                   errorBuilder: (context, error, stackTrace) =>
                                       _buildMonochromeEventPlaceholder(isDark, textSecondary),
                                 )
@@ -1560,48 +1630,85 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                               decoration: BoxDecoration(
-                                color: badgeBg,
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.08)
+                                    : Colors.black.withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: borderSubtle.withValues(alpha: 0.6),
+                                  width: 0.6,
+                                ),
                               ),
                               child: Text(
                                 categoryDisplay.toUpperCase(),
                                 style: TextStyle(
-                                  color: textSecondary,
+                                  color: isDark ? Colors.white70 : textSecondary,
                                   fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.6,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ),
-                            if (event.isPaid) ...[
-                              const SizedBox(width: 6),
+                            if (isOnline)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                                 decoration: BoxDecoration(
-                                  color: AppColors.communityAccent.withValues(alpha: 0.15),
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.06)
+                                      : Colors.black.withValues(alpha: 0.04),
                                   borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: borderSubtle.withValues(alpha: 0.4),
+                                    width: 0.6,
+                                  ),
                                 ),
                                 child: Text(
-                                  'community.paid'.tr.isNotEmpty && 'community.paid'.tr != 'community.paid'
-                                      ? 'community.paid'.tr.toUpperCase()
-                                      : 'PAID',
-                                  style: const TextStyle(
-                                    color: AppColors.communityAccent,
+                                  onlineLabel.toUpperCase(),
+                                  style: TextStyle(
+                                    color: textMuted,
                                     fontSize: 9.5,
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3,
                                   ),
                                 ),
                               ),
-                            ],
+                            if (event.isPaid)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.08)
+                                      : Colors.black.withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: borderSubtle.withValues(alpha: 0.5),
+                                    width: 0.6,
+                                  ),
+                                ),
+                                child: Text(
+                                  'community.paid'.tr.isNotEmpty &&
+                                          'community.paid'.tr != 'community.paid'
+                                      ? 'community.paid'.tr.toUpperCase()
+                                      : 'PAID',
+                                  style: TextStyle(
+                                    color: textSecondary,
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
 
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
 
                         Text(
                           event.title,
@@ -1616,27 +1723,28 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                           ),
                         ),
 
-                        const SizedBox(height: 8),
-
-                        Row(
-                          children: [
-                            Icon(Icons.calendar_month_outlined, color: textSecondary, size: 14),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                dateTimeDisplay,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: textSecondary,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  height: 1.25,
+                        if (dateTimeDisplay.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(Icons.calendar_month_outlined, color: textSecondary, size: 14),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  dateTimeDisplay,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: textSecondary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.25,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
 
                         const SizedBox(height: 4),
 
@@ -1675,7 +1783,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                           ),
                         ],
 
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
 
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1691,58 +1799,61 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                               )
                             else
                               const SizedBox.shrink(),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 7,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isRsvped
-                                    ? (isDark
-                                        ? Colors.white.withValues(alpha: 0.12)
-                                        : Colors.black.withValues(alpha: 0.08))
-                                    : ctaBg,
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.pill),
-                                border: isRsvped
-                                    ? Border.all(
-                                        color: borderSubtle,
-                                        width: 0.8,
-                                      )
-                                    : null,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (isRsvped) ...[
-                                    Icon(
-                                      Icons.check_rounded,
-                                      size: 14,
-                                      color: isDark
-                                          ? AppColors.darkTextPrimary
-                                          : AppColors.lightTextPrimary,
+                            InkWell(
+                              onTap: navigateToDetail,
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isRsvped
+                                      ? (isDark
+                                          ? Colors.white.withValues(alpha: 0.12)
+                                          : Colors.black.withValues(alpha: 0.08))
+                                      : ctaBg,
+                                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                                  border: isRsvped
+                                      ? Border.all(
+                                          color: borderSubtle,
+                                          width: 0.8,
+                                        )
+                                      : null,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (isRsvped) ...[
+                                      Icon(
+                                        Icons.check_rounded,
+                                        size: 14,
+                                        color: isDark
+                                            ? AppColors.darkTextPrimary
+                                            : AppColors.lightTextPrimary,
+                                      ),
+                                      const SizedBox(width: 4),
+                                    ],
+                                    Text(
+                                      isRsvped
+                                          ? ('community.joinedChecked'.tr.isNotEmpty &&
+                                                  'community.joinedChecked'.tr !=
+                                                      'community.joinedChecked'
+                                              ? 'community.joinedChecked'.tr
+                                              : 'Joined ✓')
+                                          : viewEventLabel,
+                                      style: TextStyle(
+                                        color: isRsvped
+                                            ? (isDark
+                                                ? AppColors.darkTextPrimary
+                                                : AppColors.lightTextPrimary)
+                                            : ctaText,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12.5,
+                                      ),
                                     ),
-                                    const SizedBox(width: 4),
                                   ],
-                                  Text(
-                                    isRsvped
-                                        ? ('community.joinedChecked'.tr.isNotEmpty &&
-                                                'community.joinedChecked'.tr !=
-                                                    'community.joinedChecked'
-                                            ? 'community.joinedChecked'.tr
-                                            : 'Joined ✓')
-                                        : viewEventLabel,
-                                    style: TextStyle(
-                                      color: isRsvped
-                                          ? (isDark
-                                              ? AppColors.darkTextPrimary
-                                              : AppColors.lightTextPrimary)
-                                          : ctaText,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12.5,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
                           ],
@@ -1882,12 +1993,12 @@ class _VideoPostMediaState extends State<VideoPostMedia> {
 
               // Play / pause overlay
               if (ctrl != null && _initialized)
-                GestureDetector(
-                  onTap: () => setState(() {
-                    ctrl.value.isPlaying ? ctrl.pause() : ctrl.play();
-                  }),
-                  child: Container(
-                    color: Colors.transparent,
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => setState(() {
+                      ctrl.value.isPlaying ? ctrl.pause() : ctrl.play();
+                    }),
                     child: Center(
                       child: AnimatedOpacity(
                         opacity: ctrl.value.isPlaying ? 0.0 : 1.0,

@@ -193,6 +193,10 @@ void main() {
       expect(find.text('Delete Discussion'), findsOneWidget);
       // Non-owner action Report is NOT shown for owner
       expect(find.text('Report'), findsNothing);
+
+      // Cleanly dismiss bottom sheet
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
     });
 
     // 3 & 4: Non-owner does NOT see Edit or Delete
@@ -238,6 +242,10 @@ void main() {
 
       // Non-owner sees Report
       expect(find.text('Report'), findsOneWidget);
+
+      // Cleanly dismiss bottom sheet
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
     });
 
     // 5 & 6: Owner can open Edit and existing values are pre-filled
@@ -382,6 +390,10 @@ void main() {
       expect(find.text('Delete Discussion?'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Delete'), findsOneWidget);
+
+      // Cleanly dismiss dialog
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
     });
 
     // 12 & 13: Deleted discussion disappears and persists after refresh
@@ -549,9 +561,22 @@ void main() {
         GetMaterialApp(
           translations: AppTranslations(),
           locale: const Locale('en', 'US'),
-          home: CreateDiscussionScreen(initialDiscussion: topic),
+          home: Scaffold(
+            body: Builder(
+              builder: (ctx) => ElevatedButton(
+                onPressed: () => Navigator.push(
+                  ctx,
+                  MaterialPageRoute(builder: (_) => CreateDiscussionScreen(initialDiscussion: topic)),
+                ),
+                child: const Text('Open Edit'),
+              ),
+            ),
+          ),
         ),
       );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Edit'));
       await tester.pumpAndSettle();
 
       const khmerTitle = 'ការណែនាំអំពី Architecture សម្រាប់ GenLink';

@@ -180,7 +180,7 @@ class StoryRepositoryImpl implements StoryRepository {
     if (finalMediaUrl.isNotEmpty &&
         !finalMediaUrl.startsWith('http://') &&
         !finalMediaUrl.startsWith('https://')) {
-      final cleanPath = finalMediaUrl.replaceAll(RegExp(r'^file://'), '');
+      final cleanPath = _normalizeFilePath(finalMediaUrl);
       final file = File(cleanPath);
 
       if (file.existsSync() && uploadService != null) {
@@ -238,7 +238,7 @@ class StoryRepositoryImpl implements StoryRepository {
 
       return StoryItemModel(
         id: serverStory.id.isNotEmpty ? serverStory.id : 'story_${DateTime.now().millisecondsSinceEpoch}',
-        type: type,
+        type: isVideo ? StoryType.video : type,
         mediaUrl: serverStory.mediaUrl ?? (finalMediaUrl.isNotEmpty ? finalMediaUrl : null),
         textContent: textContent ?? serverStory.textContent,
         location: location,
@@ -258,7 +258,7 @@ class StoryRepositoryImpl implements StoryRepository {
 
     return StoryItemModel(
       id: 'story_${DateTime.now().millisecondsSinceEpoch}',
-      type: type,
+      type: isVideo ? StoryType.video : type,
       mediaUrl: (finalMediaUrl.isNotEmpty ? finalMediaUrl : (mediaUrl != null && mediaUrl.isNotEmpty ? mediaUrl : null)),
       textContent: textContent,
       location: location,
@@ -366,6 +366,8 @@ class StoryRepositoryImpl implements StoryRepository {
   Future<void> replyToStory(String storyId, String message) async {
   }
 
+  StoryItemModel storyFromJson(Map<String, dynamic> json) => _storyFromJson(json);
+
   StoryItemModel _storyFromJson(Map<String, dynamic> json) {
     final createdAt =
         DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
@@ -376,14 +378,37 @@ class StoryRepositoryImpl implements StoryRepository {
     final caption = json['caption'] as String? ?? json['textContent'] as String?;
     final seen = json['seen'] as bool? ?? false;
 
+    final viewersCount = (json['viewersCount'] as num?)?.toInt() ??
+        (json['viewerCount'] as num?)?.toInt() ??
+        (json['viewCount'] as num?)?.toInt() ??
+        0;
+
+    final rawViewers = json['viewers'] as List?;
+    final List<StoryViewerModel> parsedViewers = rawViewers != null
+        ? rawViewers
+            .whereType<Map>()
+            .map((v) => StoryViewerModel.fromJson(v.cast<String, dynamic>()))
+            .toList()
+        : const [];
+
+    final rawType = (json['type'] as String?)?.toLowerCase() ??
+        (json['storyType'] as String?)?.toLowerCase();
+    final StoryType resolvedType = rawType == 'text'
+        ? StoryType.text
+        : (rawType == 'template'
+            ? StoryType.template
+            : (rawType == 'video' || mediaType == 'VIDEO' ? StoryType.video : StoryType.photo));
+
     return StoryItemModel(
       id: storyId,
-      type: mediaType == 'VIDEO' ? StoryType.video : StoryType.photo,
+      type: resolvedType,
       mediaUrl: mediaUrl,
       textContent: caption,
       timeAgo: _timeAgo(createdAt),
       createdAt: createdAt,
       isViewed: seen,
+      viewersCount: viewersCount > 0 ? viewersCount : parsedViewers.length,
+      viewers: parsedViewers,
       visibility: json['visibility'] as String? ?? 'Public',
       replyPrivacy: json['replyPrivacy'] as String? ?? 'Everyone',
       allowReactions: json['allowReactions'] as bool? ?? true,
@@ -401,14 +426,31 @@ class StoryRepositoryImpl implements StoryRepository {
     return '${diff.inDays}d ago';
   }
 
+  String _normalizeFilePath(String path) {
+    String clean = path.trim();
+    if (clean.startsWith('file:')) {
+      final normalized = clean.replaceAll('\\', '/');
+      try {
+        clean = Uri.parse(normalized).toFilePath();
+      } catch (_) {
+        clean = normalized.replaceFirst(RegExp(r'^file:/{1,3}'), '');
+      }
+    }
+    clean = clean.replaceAll('\\', '/');
+    if (clean.startsWith('/') && clean.length > 2 && clean[2] == ':') {
+      clean = clean.substring(1);
+    }
+    return clean;
+  }
+
   bool _isVideoPath(String path) {
-    final p = path.toLowerCase();
-    return p.endsWith('.mp4') ||
-        p.endsWith('.mov') ||
-        p.endsWith('.m4v') ||
-        p.endsWith('.webm') ||
-        p.endsWith('.avi') ||
-        p.endsWith('.mkv');
+    final clean = _normalizeFilePath(path).split('?').first.split('#').first.toLowerCase();
+    return clean.endsWith('.mp4') ||
+        clean.endsWith('.mov') ||
+        clean.endsWith('.m4v') ||
+        clean.endsWith('.webm') ||
+        clean.endsWith('.avi') ||
+        clean.endsWith('.mkv');
   }
 
   String _detectContentType(String path, bool isVideo) {

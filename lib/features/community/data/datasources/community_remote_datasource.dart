@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../core/network/api_endpoints.dart';
@@ -25,7 +26,7 @@ class CommunityRemoteDataSource {
         'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800',
       ],
       likesCount: 42,
-      commentsCount: 8,
+      commentsCount: 0,
       sharesCount: 2,
       isLiked: false,
       isBookmarked: false,
@@ -45,7 +46,7 @@ class CommunityRemoteDataSource {
       imageUrls: ['assets/images/heng_chansela_post.png'],
       location: 'ACLEDA University of Business, Phnom Penh',
       likesCount: 42,
-      commentsCount: 8,
+      commentsCount: 0,
       sharesCount: 3,
       isLiked: true,
       isBookmarked: false,
@@ -63,7 +64,7 @@ class CommunityRemoteDataSource {
       content:
           '🚀 Excited to announce our upcoming Flutter Workshop 2026! Learn how to build clean architecture mobile apps with reactive state management. Register below to secure your seat! 📱✨ #Flutter #MobileDev #AUB',
       likesCount: 88,
-      commentsCount: 16,
+      commentsCount: 0,
       sharesCount: 12,
       isLiked: false,
       isBookmarked: false,
@@ -105,7 +106,7 @@ class CommunityRemoteDataSource {
       imageUrls: ['assets/images/authgate_project.png'],
       location: 'ACLEDA University of Business',
       likesCount: 65,
-      commentsCount: 14,
+      commentsCount: 0,
       sharesCount: 8,
       isLiked: false,
       isBookmarked: false,
@@ -123,7 +124,7 @@ class CommunityRemoteDataSource {
       content:
           '🌐 Join us for an inspiring session on AI in Everyday Life! Explore practical LLM tooling and automation strategies for student builders. Free virtual attendance via Google Meet 🤖💡',
       likesCount: 142,
-      commentsCount: 29,
+      commentsCount: 0,
       sharesCount: 22,
       isLiked: true,
       isBookmarked: false,
@@ -363,28 +364,7 @@ class CommunityRemoteDataSource {
       }
     } catch (_) {}
 
-    return [
-      CommentModel(
-        id: 'c_1',
-        postId: postId,
-        userId: 'u_10',
-        userName: 'Rathana P.',
-        userAvatar: 'assets/images/user_profile.png',
-        text: 'Awesome post! Looking forward to seeing more updates 🔥',
-        timeAgo: '1h ago',
-        likesCount: 3,
-      ),
-      CommentModel(
-        id: 'c_2',
-        postId: postId,
-        userId: 'u_11',
-        userName: 'Sothea N.',
-        userAvatar: 'assets/images/user_profile.png',
-        text: 'Great work team! Keep it up 👏',
-        timeAgo: '30m ago',
-        likesCount: 1,
-      ),
-    ];
+    return [];
   }
 
   Future<CommentModel> addComment(
@@ -407,19 +387,63 @@ class CommunityRemoteDataSource {
     );
 
     try {
-      await guardDio(
+      final response = await guardDio(
         () => dio.post<dynamic>(
           ApiEndpoints.communityPostComments(postId),
-          data: {'text': text, 'parentCommentId': parentCommentId},
+          data: {
+            'text': text,
+            if (parentCommentId != null && parentCommentId.isNotEmpty)
+              'parentCommentId': parentCommentId,
+          },
         ),
       );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final body = response.data;
+        if (body != null) {
+          final rawData = body is Map<String, dynamic>
+              ? (body['data'] ?? body)
+              : body;
+          if (rawData is Map<String, dynamic>) {
+            return CommentModel.fromJson(rawData);
+          }
+        }
+      }
     } catch (_) {}
 
-    final idx = _mockPosts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      _mockPosts[idx].commentsCount += 1;
-    }
     return comment;
+  }
+
+  Future<List<CommentModel>> fetchDiscussionCommentReplies(
+    String commentId,
+  ) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityDiscussionCommentReplies(commentId),
+        ),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        dynamic rawData =
+            body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+
+        List<dynamic> content = [];
+        if (rawData is Map<String, dynamic>) {
+          content = (rawData['content'] as List<dynamic>?) ?? [];
+        } else if (rawData is List) {
+          content = rawData;
+        }
+
+        return content
+            .map(
+              (json) => CommentModel.fromJson(json as Map<String, dynamic>),
+            )
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch replies for comment $commentId: $e');
+    }
+    return [];
   }
 
   Future<List<CommentModel>> fetchDiscussionComments(
@@ -442,11 +466,20 @@ class CommunityRemoteDataSource {
         content = rawData;
       }
 
-      return content
+      final topLevel = content
           .map(
             (json) => CommentModel.fromJson(json as Map<String, dynamic>),
           )
           .toList();
+
+      final commentsWithReplies = await Future.wait(
+        topLevel.map((comment) async {
+          if (comment.id.isEmpty) return comment;
+          final replies = await fetchDiscussionCommentReplies(comment.id);
+          return comment.copyWith(replies: replies);
+        }),
+      );
+      return commentsWithReplies;
     }
     return [];
   }
@@ -863,4 +896,50 @@ class CommunityRemoteDataSource {
       errorCode: 'EVENT_CREATION_FAILED',
     );
   }
+
+  Future<List<EventModel>> fetchEvents({
+    int page = 1,
+    int limit = 20,
+    String? category,
+    String? status,
+  }) async {
+    final query = <String, dynamic>{
+      'page': page - 1,
+      'size': limit,
+    };
+    if (category != null && category.isNotEmpty && category != 'All') {
+      query['category'] = category;
+    }
+    if (status != null && status.isNotEmpty) {
+      query['status'] = status;
+    }
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityEvents,
+        queryParameters: query,
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      dynamic rawData;
+      if (body is Map<String, dynamic>) {
+        rawData = body['data'];
+      } else {
+        rawData = body;
+      }
+
+      List<dynamic> content = [];
+      if (rawData is Map<String, dynamic>) {
+        content = (rawData['content'] as List<dynamic>?) ?? [];
+      } else if (rawData is List) {
+        content = rawData;
+      }
+
+      return content
+          .map((json) => EventModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    }
+    return const <EventModel>[];
+  }
 }
+

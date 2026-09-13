@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/story_model.dart';
@@ -235,7 +236,7 @@ class StoryController extends GetxController {
         );
       }
       if (!isClosed) {
-        storyGroups.refresh();
+        _safeRefreshGroups();
       }
       return true;
     } finally {
@@ -243,6 +244,23 @@ class StoryController extends GetxController {
         isUploading.value = false;
       }
     }
+  }
+
+  void _safeRefreshGroups() {
+    if (isClosed) return;
+    try {
+      final binding = WidgetsBinding.instance;
+      if (binding.buildOwner?.debugBuilding == true ||
+          binding.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+        binding.addPostFrameCallback((_) {
+          if (!isClosed) {
+            storyGroups.refresh();
+          }
+        });
+        return;
+      }
+    } catch (_) {}
+    storyGroups.refresh();
   }
 
   void markStoryAsViewed(String storyId) {
@@ -257,7 +275,7 @@ class StoryController extends GetxController {
       }
     }
     if (modified && !isClosed) {
-      storyGroups.refresh();
+      _safeRefreshGroups();
     }
   }
 
@@ -274,7 +292,7 @@ class StoryController extends GetxController {
           story.isLiked = !story.isLiked;
           story.likesCount += story.isLiked ? 1 : -1;
           if (!isClosed) {
-            storyGroups.refresh();
+            _safeRefreshGroups();
           }
           try {
             await _repository.toggleLikeStory(storyId);
@@ -282,7 +300,7 @@ class StoryController extends GetxController {
             story.isLiked = previousLiked;
             story.likesCount = previousCount;
             if (!isClosed) {
-              storyGroups.refresh();
+              _safeRefreshGroups();
             }
             rethrow;
           }
@@ -309,7 +327,7 @@ class StoryController extends GetxController {
     }
     await _repository.toggleLikeStory(storyId);
     if (foundInGroups && !isClosed) {
-      storyGroups.refresh();
+      _safeRefreshGroups();
     }
   }
 
@@ -327,7 +345,7 @@ class StoryController extends GetxController {
         final index = ownerGroup.stories.indexWhere((s) => s.id == storyId);
         if (index != -1) {
           ownerGroup.stories[index] = updatedStory;
-          storyGroups.refresh();
+          _safeRefreshGroups();
         }
       }
       return true;
@@ -379,7 +397,7 @@ class StoryController extends GetxController {
 
       ownerGroup.stories[index] = updatedStory;
       if (!isClosed) {
-        storyGroups.refresh();
+        _safeRefreshGroups();
       }
       _repository.updateStory(storyId, updatedStory);
     }
@@ -395,7 +413,7 @@ class StoryController extends GetxController {
       }
       storyGroups.removeWhere((group) => group.stories.isEmpty && !group.isOwner);
       if (!isClosed) {
-        storyGroups.refresh();
+        _safeRefreshGroups();
       }
       return true;
     } catch (e) {
@@ -408,6 +426,37 @@ class StoryController extends GetxController {
     if (isClosed) return;
     try {
       await _repository.markViewed(storyId);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[StoryController] markStoryViewed error: $e');
+    }
+  }
+
+  void updateStoryViewers(String storyId, List<StoryViewerModel> viewers) {
+    if (isClosed) return;
+    bool modified = false;
+    for (final group in storyGroups) {
+      for (final story in group.stories) {
+        if (story.id == storyId) {
+          story.viewers = List.from(viewers);
+          story.viewersCount = viewers.length;
+          modified = true;
+        }
+      }
+    }
+    if (modified && !isClosed) {
+      _safeRefreshGroups();
+    }
+  }
+
+  Future<List<StoryViewerModel>> fetchStoryViewers(String storyId) async {
+    if (isClosed) return [];
+    try {
+      final viewers = await _repository.getStoryViewers(storyId);
+      updateStoryViewers(storyId, viewers);
+      return viewers;
+    } catch (e) {
+      debugPrint('[StoryController] fetchStoryViewers error: $e');
+      return [];
+    }
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import '../../../../design_system/colors/app_colors.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import '../widgets/community_creation_flow.dart';
@@ -162,24 +161,29 @@ class _EventsScreenState extends State<EventsScreen> {
                   );
                 }
 
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                  itemCount: filtered.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    return _EventCard(
-                      event: filtered[index],
-                      controller: _controller,
-                      index: index,
-                      isDark: isDark,
-                      textPrimary: textPrimary,
-                      textSecondary: textSecondary,
-                      textMuted: textMuted,
-                      cardBg: cardBg,
-                      borderSubtle: borderSubtle,
-                    );
-                  },
+                return RefreshIndicator(
+                  onRefresh: () => _controller.refreshEvents(),
+                  color: isDark ? Colors.white : Colors.black,
+                  backgroundColor: cardBg,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                    itemCount: filtered.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      return _EventCard(
+                        event: filtered[index],
+                        controller: _controller,
+                        index: index,
+                        isDark: isDark,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        textMuted: textMuted,
+                        cardBg: cardBg,
+                        borderSubtle: borderSubtle,
+                      );
+                    },
+                  ),
                 );
               }),
             ),
@@ -289,30 +293,45 @@ class _EventCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Event Title
+                      Text(
+                        event.title,
+                        style: TextStyle(
+                          color: textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14.5,
+                          height: 1.25,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+
+                      // Category & Badges Row
                       Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 7,
-                              vertical: 2.5,
+                              vertical: 2,
                             ),
                             decoration: BoxDecoration(
                               color: isDark
                                   ? Colors.white.withValues(alpha: 0.08)
                                   : Colors.black.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(4),
                               border: Border.all(
                                 color: borderSubtle.withValues(alpha: 0.6),
                                 width: 0.6,
                               ),
                             ),
                             child: Text(
-                              categoryDisplay,
+                              categoryDisplay.toUpperCase(),
                               style: TextStyle(
                                 color: isDark ? Colors.white70 : textSecondary,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.2,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.4,
                               ),
                             ),
                           ),
@@ -324,17 +343,22 @@ class _EventCard extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.communityAccent
-                                    .withValues(alpha: 0.15),
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.08)
+                                    : Colors.black.withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: borderSubtle.withValues(alpha: 0.5),
+                                  width: 0.6,
+                                ),
                               ),
                               child: Text(
                                 'community.paid'.tr.isNotEmpty &&
                                         'community.paid'.tr != 'community.paid'
                                     ? 'community.paid'.tr.toUpperCase()
                                     : 'PAID',
-                                style: const TextStyle(
-                                  color: AppColors.communityAccent,
+                                style: TextStyle(
+                                  color: textSecondary,
                                   fontSize: 9.5,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -361,7 +385,7 @@ class _EventCard extends StatelessWidget {
                                         ? Icons.bookmark_rounded
                                         : Icons.bookmark_border_rounded,
                                     color: event.isBookmarked
-                                        ? AppColors.communityAccent
+                                        ? (isDark ? Colors.white : Colors.black)
                                         : textMuted,
                                     size: 19,
                                   ),
@@ -370,19 +394,6 @@ class _EventCard extends StatelessWidget {
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 5),
-
-                      Text(
-                        event.title,
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14.5,
-                          height: 1.25,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 5),
 
@@ -410,6 +421,63 @@ class _EventCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (event.attendeesCount > 0 || event.isRsvped) ...[
+                        const SizedBox(height: 5),
+                        Row(
+                          children: [
+                            if (event.attendeesCount > 0) ...[
+                              Icon(Icons.people_outline_rounded, color: textMuted, size: 13),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${event.attendeesCount} ${'community.joined'.tr.isNotEmpty && 'community.joined'.tr != 'community.joined' ? 'community.joined'.tr : 'joined'}',
+                                style: TextStyle(
+                                  color: textSecondary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                            if (event.isRsvped) ...[
+                              if (event.attendeesCount > 0) const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.10)
+                                      : Colors.black.withValues(alpha: 0.06),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: isDark ? Colors.white24 : Colors.black12,
+                                    width: 0.6,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.check_rounded,
+                                      size: 11,
+                                      color: isDark ? Colors.white : Colors.black,
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      'community.joinedChecked'.tr.isNotEmpty &&
+                                              'community.joinedChecked'.tr != 'community.joinedChecked'
+                                          ? 'community.joinedChecked'.tr
+                                          : 'Joined',
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white : Colors.black,
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

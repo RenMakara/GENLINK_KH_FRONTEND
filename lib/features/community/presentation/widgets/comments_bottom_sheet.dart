@@ -20,6 +20,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   final FocusNode _focusNode = FocusNode();
   late final CommunityController controller;
   String? _replyingToUser;
+  String? _replyingToCommentId;
 
   @override
   void initState() {
@@ -35,9 +36,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     super.dispose();
   }
 
-  void _onReplyTo(String userName) {
+  void _onReplyTo(String userName, {String? commentId}) {
     setState(() {
       _replyingToUser = userName;
+      _replyingToCommentId = commentId;
       _commentController.text = "@$userName ";
       _commentController.selection = TextSelection.fromPosition(
         TextPosition(offset: _commentController.text.length),
@@ -49,6 +51,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   void _cancelReply() {
     setState(() {
       _replyingToUser = null;
+      _replyingToCommentId = null;
       _commentController.clear();
     });
   }
@@ -84,7 +87,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
       decoration: BoxDecoration(
         color: surfacePrimary,
         borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppRadius.xl),
+          top: Radius.circular(20),
         ),
       ),
       child: Column(
@@ -97,7 +100,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               color: isDark
                   ? AppColors.darkBorderStrong
                   : AppColors.lightBorderStrong,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
             ),
           ),
           Padding(
@@ -147,14 +150,35 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                       Icon(
                         Icons.chat_bubble_outline_rounded,
                         size: 48,
-                        color: textMuted.withValues(alpha: 0.5),
+                        color: textMuted.withValues(alpha: 0.45),
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        "No comments yet. Be the first to start the discussion!",
-                        style:
-                            theme.textTheme.bodySmall?.copyWith(
+                        'community.noCommentsYet'.tr.isNotEmpty &&
+                                'community.noCommentsYet'.tr != 'community.noCommentsYet'
+                            ? 'community.noCommentsYet'.tr
+                            : 'No comments yet',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                              color: textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ) ??
+                            TextStyle(
+                              color: textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'community.beFirstComment'.tr.isNotEmpty &&
+                                'community.beFirstComment'.tr != 'community.beFirstComment'
+                            ? 'community.beFirstComment'.tr
+                            : 'Be the first to comment.',
+                        style: theme.textTheme.bodySmall?.copyWith(
                               color: textMuted,
+                              fontSize: 13,
                             ) ??
                             TextStyle(color: textMuted, fontSize: 13),
                         textAlign: TextAlign.center,
@@ -207,12 +231,13 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(12),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
                                   color: surfaceSecondary,
                                   borderRadius: BorderRadius.circular(
-                                    AppRadius.lg,
+                                    AppRadius.md,
                                   ),
+                                  border: Border.all(color: borderSubtle, width: 0.8),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,20 +362,34 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                     ),
                                     const SizedBox(width: 20),
                                     GestureDetector(
-                                      onTap: () => _onReplyTo(comment.userName),
-                                      child: Text(
-                                        'community.reply'.tr,
-                                        style:
-                                            theme.textTheme.labelSmall
-                                                ?.copyWith(
+                                      onTap: () => _onReplyTo(
+                                        comment.userName,
+                                        commentId: comment.id,
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.reply_rounded,
+                                            size: 14,
+                                            color: textMuted,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'community.reply'.tr,
+                                            style:
+                                                theme.textTheme.labelSmall
+                                                    ?.copyWith(
+                                                      color: textMuted,
+                                                      fontWeight: FontWeight.bold,
+                                                    ) ??
+                                                TextStyle(
                                                   color: textMuted,
+                                                  fontSize: 11,
                                                   fontWeight: FontWeight.bold,
-                                                ) ??
-                                            TextStyle(
-                                              color: textMuted,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                                ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
@@ -371,31 +410,64 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md,
-                vertical: 6,
+                vertical: 8,
               ),
-              color: surfaceSecondary,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.darkSurfaceSecondary
+                    : AppColors.lightBgSecondary,
+                border: Border(
+                  top: BorderSide(color: borderSubtle, width: 0.8),
+                  bottom: BorderSide(color: borderSubtle, width: 0.8),
+                ),
+              ),
               child: Row(
                 children: [
-                  Text(
-                    'community.replyingTo'.trParams({'user': _replyingToUser!}),
-                    style:
-                        theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.communityAccent,
-                          fontWeight: FontWeight.bold,
-                        ) ??
-                        const TextStyle(
-                          color: AppColors.communityAccent,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  const Icon(
+                    Icons.reply_rounded,
+                    size: 16,
+                    color: AppColors.communityAccent,
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: textSecondary,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: 'community.replyingTo'.tr.isNotEmpty &&
+                                    'community.replyingTo'.tr !=
+                                        'community.replyingTo'
+                                ? '${'community.replyingTo'.tr} '
+                                : 'Replying to ',
+                          ),
+                          TextSpan(
+                            text: _replyingToUser!,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                   GestureDetector(
+                    key: const Key('cancel_reply_button'),
+                    behavior: HitTestBehavior.opaque,
                     onTap: _cancelReply,
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: 16,
-                      color: textMuted,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: textMuted,
+                      ),
                     ),
                   ),
                 ],
@@ -408,8 +480,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               vertical: 10,
             ),
             decoration: BoxDecoration(
-              color: surfaceSecondary,
-              border: Border(top: BorderSide(color: borderSubtle)),
+              color: surfacePrimary,
+              border: Border(top: BorderSide(color: borderSubtle, width: 0.8)),
             ),
             child: Row(
               children: [
@@ -417,37 +489,66 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   child: TextField(
                     controller: _commentController,
                     focusNode: _focusNode,
-                    style:
-                        theme.textTheme.bodyMedium?.copyWith(
-                          color: textPrimary,
-                        ) ??
-                        TextStyle(color: textPrimary, fontSize: 14),
+                    cursorColor: textPrimary,
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 14,
+                      height: 1.3,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'community.writeCommentHint'.tr,
-                      hintStyle:
-                          theme.textTheme.bodyMedium?.copyWith(
-                            color: textMuted,
-                          ) ??
-                          TextStyle(color: textMuted, fontSize: 13),
-                      border: InputBorder.none,
+                      hintStyle: TextStyle(
+                        color: textSecondary,
+                        fontSize: 13.5,
+                      ),
+                      filled: true,
+                      fillColor: isDark
+                          ? AppColors.darkBgPrimary
+                          : AppColors.lightBgSecondary,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        borderSide: BorderSide(color: borderSubtle, width: 0.8),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        borderSide: BorderSide(color: borderSubtle, width: 0.8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? AppColors.darkBorderStrong
+                              : AppColors.lightBorderStrong,
+                          width: 1.2,
+                        ),
+                      ),
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(
                     Icons.send_rounded,
                     color: AppColors.communityAccent,
                   ),
                   onPressed: () {
-                    if (_commentController.text.trim().isNotEmpty) {
+                    final text = _commentController.text.trim();
+                    if (text.isNotEmpty) {
                       controller.addComment(
                         widget.postId,
-                        _commentController.text,
+                        text,
+                        parentCommentId: _replyingToCommentId,
                       );
                       _commentController.clear();
-                      if (_replyingToUser != null) {
+                      if (_replyingToUser != null ||
+                          _replyingToCommentId != null) {
                         setState(() {
                           _replyingToUser = null;
+                          _replyingToCommentId = null;
                         });
                       }
                     }

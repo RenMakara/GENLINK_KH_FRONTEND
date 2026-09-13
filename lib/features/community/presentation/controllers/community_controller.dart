@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -308,6 +309,44 @@ class CommunityController extends GetxController {
 
       events.insert(0, eventToStore);
       events.refresh();
+
+      // Step 10: Seamlessly insert Event Post into Community Feed
+      final currentUid = CurrentUser.id;
+      final currentUName = CurrentUser.name;
+      final currentUAvatar = CurrentUser.avatarUrl;
+      final currentUTag = CurrentUser.username;
+
+      final authorName = eventToStore.organizerName.isNotEmpty
+          ? eventToStore.organizerName
+          : (currentUName.isNotEmpty && currentUName != 'Guest' ? currentUName : 'Organizer');
+
+      final authorTag = currentUTag.isNotEmpty ? '@$currentUTag' : '@organizer';
+
+      final authorAvatar = eventToStore.organizerAvatar?.isNotEmpty == true
+          ? eventToStore.organizerAvatar!
+          : (currentUAvatar?.isNotEmpty == true ? currentUAvatar! : '');
+
+      final eventPost = CommunityPostModel(
+        id: 'post_event_${eventToStore.id}',
+        userId: currentUid.isNotEmpty ? currentUid : (eventToStore.organizerId ?? 'user_1'),
+        authorName: authorName,
+        authorTag: authorTag,
+        authorAvatar: authorAvatar,
+        timeAgo: 'Just now',
+        content: eventToStore.description.isNotEmpty ? eventToStore.description : eventToStore.title,
+        postType: 'event',
+        attachedEvent: eventToStore,
+        isOwner: true,
+      );
+
+      final existingPostIdx = posts.indexWhere(
+        (p) => p.attachedEvent?.id == eventToStore.id || p.id == eventPost.id,
+      );
+      if (existingPostIdx == -1) {
+        posts.insert(0, eventPost);
+        posts.refresh();
+      }
+
       return eventToStore;
     } finally {
       isCreatingEvent.value = false;
@@ -315,20 +354,114 @@ class CommunityController extends GetxController {
   }
 
   void addEventLocally(EventModel event) {
-    events.insert(0, event);
+    final eventToStore = event.copyWith();
+    events.insert(0, eventToStore);
     events.refresh();
+
+    final existingPostIdx = posts.indexWhere(
+      (p) => p.attachedEvent?.id == event.id || p.id == 'post_event_${event.id}',
+    );
+    if (existingPostIdx == -1) {
+      final authorName = event.organizerName.isNotEmpty
+          ? event.organizerName
+          : (CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest' ? CurrentUser.name : 'Organizer');
+      final authorTag = CurrentUser.username.isNotEmpty ? '@${CurrentUser.username}' : '@organizer';
+      final authorAvatar = event.organizerAvatar?.isNotEmpty == true
+          ? event.organizerAvatar!
+          : (CurrentUser.avatarUrl?.isNotEmpty == true ? CurrentUser.avatarUrl! : '');
+
+      final eventPost = CommunityPostModel(
+        id: 'post_event_${event.id}',
+        userId: CurrentUser.id.isNotEmpty ? CurrentUser.id : (event.organizerId ?? 'user_1'),
+        authorName: authorName,
+        authorTag: authorTag,
+        authorAvatar: authorAvatar,
+        timeAgo: 'Just now',
+        content: event.description.isNotEmpty ? event.description : event.title,
+        postType: 'event',
+        attachedEvent: event.copyWith(),
+        isOwner: true,
+      );
+      posts.insert(0, eventPost);
+      posts.refresh();
+    }
   }
 
   void toggleRsvp(String eventId) {
+    bool targetState = true;
+    int targetAttendees = 0;
+
     final idx = events.indexWhere((e) => e.id == eventId);
-    if (idx == -1) return;
-    final ev = events[idx];
-    ev.isRsvped = !ev.isRsvped;
-    ev.attendeesCount += ev.isRsvped ? 1 : -1;
-    events.refresh();
+    if (idx != -1) {
+      final ev = events[idx];
+      ev.isRsvped = !ev.isRsvped;
+      ev.attendeesCount += ev.isRsvped ? 1 : -1;
+      targetState = ev.isRsvped;
+      targetAttendees = ev.attendeesCount;
+      events.refresh();
+    } else {
+      final p = posts.firstWhereOrNull((p) => p.attachedEvent?.id == eventId);
+      if (p?.attachedEvent != null) {
+        targetState = !p!.attachedEvent!.isRsvped;
+        targetAttendees = p.attachedEvent!.attendeesCount + (targetState ? 1 : -1);
+      }
+    }
+
+    bool changedInPosts = false;
+    for (int i = 0; i < posts.length; i++) {
+      if (posts[i].attachedEvent?.id == eventId) {
+        final ev = posts[i].attachedEvent!;
+        final updated = ev.copyWith(
+          isRsvped: targetState,
+          attendeesCount: targetAttendees > 0
+              ? targetAttendees
+              : (targetState ? ev.attendeesCount + 1 : (ev.attendeesCount > 0 ? ev.attendeesCount - 1 : 0)),
+        );
+        posts[i] = posts[i].copyWith(attachedEvent: updated);
+        changedInPosts = true;
+      }
+    }
+    if (changedInPosts) posts.refresh();
   }
 
   final isRegisteringEvent = false.obs;
+
+  void syncEventRsvp(
+    String eventId, {
+    required bool isRsvped,
+    int? attendeesCount,
+    String? status,
+  }) {
+    final idx = events.indexWhere((e) => e.id == eventId);
+    if (idx != -1) {
+      final ev = events[idx];
+      ev.isRsvped = isRsvped;
+      if (attendeesCount != null && attendeesCount > 0) {
+        ev.attendeesCount = attendeesCount;
+      } else if (isRsvped && !ev.isRsvped) {
+        ev.attendeesCount += 1;
+      }
+      if (status != null) ev.myRsvpStatus = status;
+      events.refresh();
+    }
+
+    bool changedInPosts = false;
+    for (int i = 0; i < posts.length; i++) {
+      if (posts[i].attachedEvent?.id == eventId) {
+        final ev = posts[i].attachedEvent!;
+        final updated = ev.copyWith(
+          isRsvped: isRsvped,
+          attendeesCount: attendeesCount != null && attendeesCount > 0
+              ? attendeesCount
+              : (isRsvped && !ev.isRsvped ? ev.attendeesCount + 1 : ev.attendeesCount),
+          myRsvpStatus: status ?? ev.myRsvpStatus,
+        );
+        posts[i] = posts[i].copyWith(attachedEvent: updated);
+        changedInPosts = true;
+      }
+    }
+    if (changedInPosts) posts.refresh();
+  }
 
   Future<RsvpResponseModel> registerForEvent(
     String eventId,
@@ -337,16 +470,12 @@ class CommunityController extends GetxController {
     isRegisteringEvent.value = true;
     try {
       final response = await repository.rsvpEvent(eventId, request: request);
-      final idx = events.indexWhere((e) => e.id == eventId);
-      if (idx != -1) {
-        final ev = events[idx];
-        ev.isRsvped = true;
-        ev.attendeesCount = response.attendeeCount > 0
-            ? response.attendeeCount
-            : ev.attendeesCount + 1;
-        ev.myRsvpStatus = response.status;
-        events.refresh();
-      }
+      syncEventRsvp(
+        eventId,
+        isRsvped: true,
+        attendeesCount: response.attendeeCount,
+        status: response.status,
+      );
       return response;
     } finally {
       isRegisteringEvent.value = false;
@@ -355,15 +484,41 @@ class CommunityController extends GetxController {
 
   void toggleEventBookmark(String eventId) {
     final idx = events.indexWhere((e) => e.id == eventId);
-    if (idx == -1) return;
-    final ev = events[idx];
-    ev.isBookmarked = !ev.isBookmarked;
-    events.refresh();
+    if (idx != -1) {
+      final ev = events[idx];
+      ev.isBookmarked = !ev.isBookmarked;
+      events.refresh();
+    }
+    bool changedInPosts = false;
+    for (int i = 0; i < posts.length; i++) {
+      if (posts[i].attachedEvent?.id == eventId) {
+        final ev = posts[i].attachedEvent!;
+        final updated = ev.copyWith(isBookmarked: !ev.isBookmarked);
+        posts[i] = posts[i].copyWith(attachedEvent: updated);
+        changedInPosts = true;
+      }
+    }
+    if (changedInPosts) posts.refresh();
+  }
+
+  Future<void> loadEvents({bool isRefresh = false}) async {
+    try {
+      final fetched = await repository.getEvents();
+      if (fetched.isNotEmpty) {
+        events.assignAll(fetched);
+      }
+    } catch (_) {
+      // Keep existing events on error
+    }
   }
 
   Future<void> refreshEvents() async {
-    events.refresh();
+    await Future.wait([
+      loadEvents(isRefresh: true),
+      fetchPosts(isRefresh: true),
+    ]);
   }
+
 
   final selectedEventDate = 'All'.obs;
   final selectedEventCategories = <String>{}.obs;
@@ -713,6 +868,20 @@ class CommunityController extends GetxController {
       final fetched = await repository.getPosts(page: 1, limit: 10);
       posts.assignAll(fetched);
       hasMorePosts.value = fetched.length >= 10;
+      for (final post in fetched) {
+        if (post.attachedEvent != null) {
+          final ev = post.attachedEvent!;
+          final idx = events.indexWhere((e) => e.id == ev.id);
+          if (idx != -1) {
+            events[idx] = ev;
+          } else {
+            events.add(ev);
+          }
+        }
+      }
+      if (fetched.any((p) => p.attachedEvent != null)) {
+        events.refresh();
+      }
       _syncFollowStates(fetched);
     } catch (e) {
       hasError.value = true;
@@ -760,6 +929,7 @@ class CommunityController extends GetxController {
     await Future.wait([
       fetchPosts(isRefresh: true),
       fetchDiscussions(isRefresh: true),
+      loadEvents(isRefresh: true),
     ]);
   }
 
@@ -1129,10 +1299,12 @@ class CommunityController extends GetxController {
 
   Future<void> fetchComments(String postId) async {
     isLoadingComments.value = true;
+    activeComments.clear();
     try {
       final comments = await repository.getComments(postId);
       activeComments.assignAll(comments);
     } catch (_) {
+      activeComments.clear();
     } finally {
       isLoadingComments.value = false;
     }
@@ -1152,7 +1324,10 @@ class CommunityController extends GetxController {
       final comments = await repository.getDiscussionComments(discussionId);
       discussionComments[discussionId] = comments;
       discussionComments.refresh();
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Failed to fetch discussion comments: $e');
+      }
     } finally {
       isLoadingDiscussionComments.value = false;
     }
@@ -1176,7 +1351,24 @@ class CommunityController extends GetxController {
       final current = List<CommentModel>.from(
         discussionComments[discussionId] ?? [],
       );
-      current.add(comment);
+      final effectiveParentId = comment.parentCommentId ?? parentCommentId;
+      if (effectiveParentId != null && effectiveParentId.isNotEmpty) {
+        final pIdx = current.indexWhere(
+          (c) =>
+              c.id == effectiveParentId ||
+              c.replies.any((r) => r.id == effectiveParentId),
+        );
+        if (pIdx != -1) {
+          final parent = current[pIdx];
+          final updatedReplies = List<CommentModel>.from(parent.replies)
+            ..add(comment);
+          current[pIdx] = parent.copyWith(replies: updatedReplies);
+        } else {
+          current.add(comment);
+        }
+      } else {
+        current.add(comment);
+      }
       discussionComments[discussionId] = current;
       discussionComments.refresh();
 
@@ -1210,18 +1402,30 @@ class CommunityController extends GetxController {
       return false;
     }
 
+    CommentModel? targetComment;
     final cIdx = comments.indexWhere((c) => c.id == commentId);
-    if (cIdx == -1) {
+    if (cIdx != -1) {
+      targetComment = comments[cIdx];
+    } else {
+      for (final parent in comments) {
+        final rIdx = parent.replies.indexWhere((r) => r.id == commentId);
+        if (rIdx != -1) {
+          targetComment = parent.replies[rIdx];
+          break;
+        }
+      }
+    }
+
+    if (targetComment == null) {
       inFlightCommentLikes.remove(commentId);
       return false;
     }
 
-    final comment = comments[cIdx];
-    final prevLiked = comment.isLiked;
-    final prevLikesCount = comment.likesCount;
+    final prevLiked = targetComment.isLiked;
+    final prevLikesCount = targetComment.likesCount;
 
-    comment.isLiked = !prevLiked;
-    comment.likesCount += comment.isLiked ? 1 : -1;
+    targetComment.isLiked = !prevLiked;
+    targetComment.likesCount += targetComment.isLiked ? 1 : -1;
     discussionComments.refresh();
 
     try {
@@ -1230,14 +1434,14 @@ class CommunityController extends GetxController {
         isCurrentlyLiked: prevLiked,
       );
       if (!success) {
-        comment.isLiked = prevLiked;
-        comment.likesCount = prevLikesCount;
+        targetComment.isLiked = prevLiked;
+        targetComment.likesCount = prevLikesCount;
         discussionComments.refresh();
       }
       return success;
     } catch (_) {
-      comment.isLiked = prevLiked;
-      comment.likesCount = prevLikesCount;
+      targetComment.isLiked = prevLiked;
+      targetComment.likesCount = prevLikesCount;
       discussionComments.refresh();
       return false;
     } finally {
@@ -1258,9 +1462,26 @@ class CommunityController extends GetxController {
       );
       final idx = current.indexWhere((c) => c.id == commentId);
       if (idx != -1) {
-        current[idx] = updatedComment;
+        current[idx] = updatedComment.copyWith(
+          replies: updatedComment.replies.isNotEmpty
+              ? updatedComment.replies
+              : current[idx].replies,
+        );
         discussionComments[discussionId] = current;
         discussionComments.refresh();
+      } else {
+        for (int i = 0; i < current.length; i++) {
+          final parent = current[i];
+          final rIdx = parent.replies.indexWhere((r) => r.id == commentId);
+          if (rIdx != -1) {
+            final updatedReplies = List<CommentModel>.from(parent.replies);
+            updatedReplies[rIdx] = updatedComment;
+            current[i] = parent.copyWith(replies: updatedReplies);
+            discussionComments[discussionId] = current;
+            discussionComments.refresh();
+            break;
+          }
+        }
       }
       return updatedComment;
     } catch (e) {
@@ -1278,7 +1499,20 @@ class CommunityController extends GetxController {
         final current = List<CommentModel>.from(
           discussionComments[discussionId] ?? [],
         );
-        current.removeWhere((c) => c.id == commentId);
+        final topIdx = current.indexWhere((c) => c.id == commentId);
+        if (topIdx != -1) {
+          current.removeAt(topIdx);
+        } else {
+          for (int i = 0; i < current.length; i++) {
+            final parent = current[i];
+            if (parent.replies.any((r) => r.id == commentId)) {
+              final updatedReplies = List<CommentModel>.from(parent.replies)
+                ..removeWhere((r) => r.id == commentId);
+              current[i] = parent.copyWith(replies: updatedReplies);
+              break;
+            }
+          }
+        }
         discussionComments[discussionId] = current;
         discussionComments.refresh();
 
@@ -1315,10 +1549,18 @@ class CommunityController extends GetxController {
     }
   }
 
-  Future<void> addComment(String postId, String text) async {
+  Future<void> addComment(
+    String postId,
+    String text, {
+    String? parentCommentId,
+  }) async {
     if (text.trim().isEmpty) return;
     try {
-      final comment = await repository.addComment(postId, text);
+      final comment = await repository.addComment(
+        postId,
+        text,
+        parentCommentId: parentCommentId,
+      );
       activeComments.add(comment);
 
       final idx = posts.indexWhere((p) => p.id == postId);
@@ -1447,6 +1689,8 @@ class CommunityController extends GetxController {
 
   void toggleUserFollow(String userId) => toggleFollowUser(userId);
 
+  DateTime? _lastFeedTapRefreshTime;
+
   void scrollToTop() {
     if (scrollController.hasClients) {
       scrollController.animateTo(
@@ -1455,5 +1699,19 @@ class CommunityController extends GetxController {
         curve: Curves.easeOutCubic,
       );
     }
+  }
+
+  Future<void> onFeedTabTappedAgain() async {
+    scrollToTop();
+    final now = DateTime.now();
+    if (_lastFeedTapRefreshTime != null &&
+        now.difference(_lastFeedTapRefreshTime!).inMilliseconds < 800) {
+      return;
+    }
+    if (isLoadingFeed.value || isRefreshingFeed.value) {
+      return;
+    }
+    _lastFeedTapRefreshTime = now;
+    await refreshFeed();
   }
 }

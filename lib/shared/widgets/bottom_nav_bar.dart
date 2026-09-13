@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../design_system/colors/app_colors.dart';
-import '../../design_system/glass/glass_effect.dart';
 import '../../design_system/widgets/avatar/app_avatar.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../main_controller.dart';
@@ -231,11 +230,11 @@ class _NavBarContentState extends State<_NavBarContent>
     _toPos = widget.currentIndex.toDouble();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 240),
     );
     _anim = CurvedAnimation(
       parent: _ctrl,
-      curve: const Cubic(0.22, 1.0, 0.36, 1.0),
+      curve: const Cubic(0.2, 0.0, 0.2, 1.0),
     );
     _ctrl.addListener(() {
       setState(() {});
@@ -281,9 +280,9 @@ class _NavBarContentState extends State<_NavBarContent>
         final bottomMargin = safeBottom > 0 ? safeBottom + 4.0 : 16.0;
 
         // Heights
-        final barHeight = isVeryNarrow ? 60.0 : (isNarrow ? 64.0 : 68.0);
-        final capsulePaddingH = isVeryNarrow ? 6.0 : (isNarrow ? 7.0 : 8.0);
-        final capsulePaddingV = isVeryNarrow ? 6.0 : (isNarrow ? 6.0 : 7.0);
+        final barHeight = isVeryNarrow ? 64.0 : (isNarrow ? 68.0 : 70.0);
+        final capsulePaddingH = isVeryNarrow ? 5.0 : (isNarrow ? 6.0 : 7.0);
+        final capsulePaddingV = isVeryNarrow ? 4.5 : (isNarrow ? 5.0 : 5.0);
 
         // Plus button sizing
         final plusSize = isVeryNarrow ? 44.0 : 48.0;
@@ -291,52 +290,60 @@ class _NavBarContentState extends State<_NavBarContent>
         final plusGap = isVeryNarrow ? 8.0 : 10.0;
 
         // Content sizes
-        final iconSize = isVeryNarrow ? 20.0 : (isNarrow ? 22.0 : 22.0);
+        final iconSize = isVeryNarrow ? 21.0 : (isNarrow ? 22.5 : 23.0);
         final fontSize = isVeryNarrow ? 9.5 : (isNarrow ? 10.0 : 10.5);
 
         // Outer glass capsule styling
         final pillBg = isDark
             ? const Color(0xD9121418) // rich translucent dark glass
-            : const Color(0xEBFFFFFF); // crisp translucent light glass
-        final pillBorder = semanticColors.navigationBorder;
+            : const Color(0xD6FFFFFF); // crisp translucent light glass (content slightly visible)
+        final pillBorder = isDark
+            ? const Color(0x2EFFFFFF) // subtle luminous glass highlight
+            : const Color(0x1F000000); // 12% hairline border
         final pillShadow = [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
+            blurRadius: 28,
+            offset: const Offset(0, 10),
             spreadRadius: -4,
           ),
           BoxShadow(
-            color: Colors.white.withValues(alpha: isDark ? 0.04 : 0.70),
-            blurRadius: 1,
-            offset: const Offset(0, -1),
+            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ];
-
-        // Active glass indicator — soft frosted highlight contained inside capsule
-        final capsuleBg = isDark
-            ? const Color(0x2EFFFFFF) // 18% translucent white glass
-            : const Color(0xF2FFFFFF); // crisp frosted white glass
-        final capsuleBorder = isDark
-            ? const Color(0x38FFFFFF) // subtle soft border highlight
-            : const Color(0x18000000); // 9% black hairline
-        final capsuleShadow = [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05),
-            blurRadius: isDark ? 5 : 6,
-            offset: const Offset(0, 1),
-          ),
-          // Very subtle inner glow — gentle, not a hard edge
-          BoxShadow(
-            color: Colors.white.withValues(alpha: isDark ? 0.10 : 0.40),
+            color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.85),
             blurRadius: 1,
             offset: const Offset(0, -0.5),
           ),
         ];
 
-        // High contrast active colors & unified muted inactive colors from Design System
-        final activeColor = semanticColors.navigationActiveIcon;
-        final inactiveColor = semanticColors.navigationInactiveIcon;
+        // Active glass indicator — clean, subtle, slightly translucent, soft, premium
+        final capsuleBg = isDark
+            ? const Color(0x28FFFFFF) // 16% translucent white frosted glass
+            : const Color(0xE8FFFFFF); // clean translucent frosted white glass
+        final capsuleBorder = isDark
+            ? const Color(0x33FFFFFF) // subtle soft border highlight
+            : const Color(0x18000000); // delicate hairline
+        final capsuleShadow = [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+          BoxShadow(
+            color: Colors.white.withValues(alpha: isDark ? 0.10 : 0.60),
+            blurRadius: 1,
+            offset: const Offset(0, -0.5),
+          ),
+        ];
+
+        // Active & Inactive colors from Design System
+        final activeIconColor = semanticColors.navigationActiveIcon;
+        final activeLabelColor = semanticColors.navigationActiveLabel;
+        final inactiveIconColor = semanticColors.navigationInactiveIcon;
+        final inactiveLabelColor = semanticColors.navigationInactiveLabel;
 
         return Align(
           alignment: Alignment.bottomCenter,
@@ -368,8 +375,8 @@ class _NavBarContentState extends State<_NavBarContent>
                             borderRadius: BorderRadius.circular(barHeight / 2),
                             child: BackdropFilter(
                               filter: ImageFilter.blur(
-                                sigmaX: const GlassEffect().blur,
-                                sigmaY: const GlassEffect().blur,
+                                sigmaX: 20.0,
+                                sigmaY: 20.0,
                               ),
                               child: Container(
                                 height: barHeight,
@@ -395,19 +402,18 @@ class _NavBarContentState extends State<_NavBarContent>
                                     final slotWidth =
                                         usableWidth / _kTabs.length;
 
-                                    // Active indicator dimensions — contained with breathing room
-                                    const indicatorVInset = 3.0; // 3px gap top + bottom
+                                    // Active indicator dimensions — larger comfortable capsule
+                                    const indicatorVInset = 2.0; // 2.0px gap top + bottom
                                     final indicatorHInset =
-                                        isVeryNarrow ? 2.0 : 4.0;
+                                        isVeryNarrow ? 1.5 : 2.5; // 2.5px gap left + right
                                     final indicatorWidth = (slotWidth -
                                             indicatorHInset * 2)
                                         .clamp(0.0, slotWidth);
                                     final indicatorHeight =
                                         usableHeight - indicatorVInset * 2;
-                                    // radius = height/2 → true pill (stadium) shape
+                                    // Balanced rounded corners wrapping icon + label comfortably
                                     final indicatorRadius =
-                                        BorderRadius.circular(
-                                            indicatorHeight / 2);
+                                        BorderRadius.circular(20.0);
 
                                     final pos = currentPos;
                                     final indicatorLeft = pos * slotWidth +
@@ -438,8 +444,8 @@ class _NavBarContentState extends State<_NavBarContent>
                                                 borderRadius: indicatorRadius,
                                                 child: BackdropFilter(
                                                   filter: ImageFilter.blur(
-                                                    sigmaX: isDark ? 6 : 4,
-                                                    sigmaY: isDark ? 6 : 4,
+                                                    sigmaX: isDark ? 8.0 : 6.0,
+                                                    sigmaY: isDark ? 8.0 : 6.0,
                                                   ),
                                                   child: Container(
                                                     decoration: BoxDecoration(
@@ -472,8 +478,14 @@ class _NavBarContentState extends State<_NavBarContent>
                                                   activeWeight: weight,
                                                   iconSize: iconSize,
                                                   fontSize: fontSize,
-                                                  activeColor: activeColor,
-                                                  inactiveColor: inactiveColor,
+                                                  activeIconColor:
+                                                      activeIconColor,
+                                                  activeLabelColor:
+                                                      activeLabelColor,
+                                                  inactiveIconColor:
+                                                      inactiveIconColor,
+                                                  inactiveLabelColor:
+                                                      inactiveLabelColor,
                                                   onTap: () => widget.onTap(i),
                                                   onLongPress: i == 3
                                                       ? () => BottomNavBar
@@ -527,8 +539,10 @@ class _TabItem extends StatelessWidget {
     required this.activeWeight,
     required this.iconSize,
     required this.fontSize,
-    required this.activeColor,
-    required this.inactiveColor,
+    required this.activeIconColor,
+    required this.activeLabelColor,
+    required this.inactiveIconColor,
+    required this.inactiveLabelColor,
     required this.onTap,
     this.onLongPress,
     this.avatarUrl,
@@ -541,8 +555,10 @@ class _TabItem extends StatelessWidget {
   final double activeWeight; // 0.0 → 1.0 from capsule proximity
   final double iconSize;
   final double fontSize;
-  final Color activeColor;
-  final Color inactiveColor;
+  final Color activeIconColor;
+  final Color activeLabelColor;
+  final Color inactiveIconColor;
+  final Color inactiveLabelColor;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
   final String? avatarUrl;
@@ -555,9 +571,14 @@ class _TabItem extends StatelessWidget {
       tab.labelKey,
       tab.labelFallback,
     );
-    final itemColor = Color.lerp(
-      inactiveColor,
-      activeColor,
+    final iconColor = Color.lerp(
+      inactiveIconColor,
+      activeIconColor,
+      activeWeight,
+    )!;
+    final labelColor = Color.lerp(
+      inactiveLabelColor,
+      activeLabelColor,
       activeWeight,
     )!;
     final showActive = isSelected
@@ -569,7 +590,10 @@ class _TabItem extends StatelessWidget {
             ? Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: itemColor, width: 1.5),
+                  border: Border.all(
+                    color: iconColor,
+                    width: showActive ? 1.8 : 1.4,
+                  ),
                 ),
                 child: AppAvatar(
                   imageUrl: avatarUrl,
@@ -579,7 +603,7 @@ class _TabItem extends StatelessWidget {
             : Icon(
                 showActive ? tab.filledIcon : tab.outlineIcon,
                 size: iconSize,
-                color: itemColor,
+                color: iconColor,
                 semanticLabel: labelText,
               );
 
@@ -601,13 +625,13 @@ class _TabItem extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Clean stable icon without random scale jumps
+                // Clean stable icon with intentional visual weight
                 iconWidget,
                 const SizedBox(height: 2.0), // compact: icon+label as one group
                 // Label contained comfortably inside active indicator
                 Padding(
                   padding: EdgeInsets.symmetric(
-                    horizontal: isVeryNarrow ? 6.0 : 10.0,
+                    horizontal: isVeryNarrow ? 4.0 : 6.0,
                   ),
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
@@ -618,7 +642,7 @@ class _TabItem extends StatelessWidget {
                       softWrap: false,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: itemColor,
+                        color: labelColor,
                         fontWeight:
                             showActive ? FontWeight.w600 : FontWeight.w500,
                         fontSize: fontSize,

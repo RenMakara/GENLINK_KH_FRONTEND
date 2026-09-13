@@ -4,6 +4,7 @@ import 'package:genlink_frontend/core/utils/date_formatter.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/radius/app_radius.dart';
 import 'package:genlink_frontend/design_system/spacing/app_spacing.dart';
+import '../../widgets/community_design_tokens.dart';
 import '../community_search_screen.dart';
 
 class ForumCategoryCard extends StatelessWidget {
@@ -31,11 +32,13 @@ class ForumCategoryCard extends StatelessWidget {
 
     final cardBg = isSelected
         ? Colors.white
-        : (isDark ? const Color(0xFF171717) : const Color(0xFFF2F2EF));
+        : (isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary);
 
     final cardBorder = isSelected
         ? Colors.white
-        : (isDark ? const Color(0xFF303030) : AppColors.lightBorderSubtle);
+        : (isDark
+            ? AppColors.darkBorderSubtle.withValues(alpha: 0.60)
+            : AppColors.lightBorderSubtle);
 
     final titleColor = isSelected
         ? Colors.black
@@ -205,34 +208,21 @@ class _ForumThreadCardState extends State<ForumThreadCard>
     final textMuted = isDark
         ? AppColors.darkTextMuted
         : AppColors.lightTextMuted;
-    final surface = isDark
-        ? AppColors.darkSurfacePrimary
-        : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark
-        ? AppColors.darkBorderSubtle
-        : AppColors.lightBorderSubtle;
 
     final formattedTime =
         formatCommunityTimestamp(widget.createdAt ?? widget.timeAgo);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12.0),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(AppRadius.squircle),
-        border: Border.all(
-          color: borderSubtle,
-          width: 1.0,
-        ),
-      ),
+      margin: const EdgeInsets.only(bottom: CommunityCardStyle.cardBottomMargin),
+      decoration: CommunityCardStyle.cardDecoration(context),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(AppRadius.squircle),
+        borderRadius: BorderRadius.circular(CommunityCardStyle.cardRadius),
         child: InkWell(
           onTap: widget.onTap,
-          borderRadius: BorderRadius.circular(AppRadius.squircle),
+          borderRadius: BorderRadius.circular(CommunityCardStyle.cardRadius),
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: CommunityCardStyle.cardPadding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -242,24 +232,29 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                     GestureDetector(
                       onTap: widget.onAuthorTap,
                       child: CircleAvatar(
-                        radius: 16,
-                        backgroundColor: textPrimary.withValues(alpha: 0.08),
-                        onBackgroundImageError: (exception, stackTrace) {},
+                        radius: 19,
+                        backgroundColor: isDark
+                            ? AppColors.darkSurfaceSecondary
+                            : AppColors.lightBgSecondary,
+                        onBackgroundImageError: (widget.avatarUrl != null &&
+                                widget.avatarUrl!.isNotEmpty)
+                            ? (exception, stackTrace) {}
+                            : null,
                         backgroundImage: (widget.avatarUrl != null &&
                                 widget.avatarUrl!.isNotEmpty)
                             ? (widget.avatarUrl!.startsWith('assets/')
                                 ? AssetImage(widget.avatarUrl!) as ImageProvider
                                 : NetworkImage(widget.avatarUrl!))
-                            : const AssetImage('assets/images/user_profile.png'),
+                            : null,
                         child: (widget.avatarUrl == null || widget.avatarUrl!.isEmpty)
                             ? Text(
                                 widget.author.isNotEmpty
                                     ? widget.author.characters.first.toUpperCase()
                                     : 'U',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  color: textPrimary,
+                                  color: textSecondary,
                                 ),
                               )
                             : null,
@@ -277,32 +272,27 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                 children: [
                                   TextSpan(
                                     text: widget.author,
-                                    style: theme.textTheme.labelMedium?.copyWith(
+                                    style: theme.textTheme.titleSmall?.copyWith(
                                           color: textPrimary,
                                           fontWeight: FontWeight.w700,
-                                          fontSize: 13.5,
-                                          letterSpacing: -0.1,
+                                          fontSize: 14.5,
+                                          letterSpacing: -0.2,
                                         ) ??
                                         TextStyle(
                                           color: textPrimary,
-                                          fontSize: 13.5,
+                                          fontSize: 14.5,
                                           fontWeight: FontWeight.w700,
-                                          letterSpacing: -0.1,
+                                          letterSpacing: -0.2,
                                         ),
                                   ),
                                   if (formattedTime.isNotEmpty)
                                     TextSpan(
                                       text: " · $formattedTime",
-                                      style: theme.textTheme.labelMedium?.copyWith(
-                                            color: textMuted,
-                                            fontSize: 11.5,
-                                            fontWeight: FontWeight.w400,
-                                          ) ??
-                                          TextStyle(
-                                            color: textMuted,
-                                            fontSize: 11.5,
-                                            fontWeight: FontWeight.w400,
-                                          ),
+                                      style: TextStyle(
+                                        color: textMuted,
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w400,
+                                      ),
                                     ),
                                 ],
                               ),
@@ -310,39 +300,10 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(height: 3),
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: widget.onCategoryTap,
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2.5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? AppColors.darkSurfaceSecondary
-                                      : AppColors.lightBgSecondary,
-                                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                                  border: Border.all(
-                                    color: borderSubtle,
-                                    width: 0.8,
-                                  ),
-                                ),
-                                child: Text(
-                                  widget.category,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: textSecondary,
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
+                          const SizedBox(height: 4),
+                          CommunityCategoryBadge(
+                            label: widget.category,
+                            onTap: widget.onCategoryTap,
                           ),
                         ],
                       ),
@@ -375,16 +336,16 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                   widget.title,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(
+                  style: theme.textTheme.titleMedium?.copyWith(
                         color: textPrimary,
                         fontWeight: FontWeight.w700,
                         height: 1.35,
-                        fontSize: 15,
+                        fontSize: 16.0,
                         letterSpacing: -0.2,
                       ) ??
                       TextStyle(
                         color: textPrimary,
-                        fontSize: 15,
+                        fontSize: 16.0,
                         fontWeight: FontWeight.w700,
                         height: 1.35,
                         letterSpacing: -0.2,
@@ -400,13 +361,13 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodyMedium?.copyWith(
                           color: textSecondary,
-                          fontSize: 13,
-                          height: 1.4,
+                          fontSize: 14.0,
+                          height: 1.45,
                         ) ??
                         TextStyle(
                           color: textSecondary,
-                          fontSize: 13,
-                          height: 1.4,
+                          fontSize: 14.0,
+                          height: 1.45,
                         ),
                   ),
                 ],
@@ -421,8 +382,8 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                         borderRadius: BorderRadius.circular(AppRadius.pill),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 4,
+                            horizontal: 8,
+                            vertical: 6,
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -434,9 +395,9 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                       ? Icons.favorite_rounded
                                       : Icons.favorite_border_rounded,
                                   color: widget.isLiked
-                                      ? AppColors.danger
+                                      ? AppColors.likedAccent
                                       : textSecondary,
-                                  size: 16,
+                                  size: 18,
                                 ),
                               ),
                               const SizedBox(width: 5),
@@ -444,25 +405,21 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                 "${widget.likes}",
                                 style: theme.textTheme.labelMedium?.copyWith(
                                       color: widget.isLiked
-                                          ? (isDark
-                                              ? Colors.white
-                                              : AppColors.lightTextPrimary)
+                                          ? AppColors.likedAccent
                                           : textSecondary,
                                       fontWeight: widget.isLiked
                                           ? FontWeight.w700
-                                          : FontWeight.w500,
-                                      fontSize: 12,
+                                          : FontWeight.w600,
+                                      fontSize: 12.5,
                                     ) ??
                                     TextStyle(
                                       color: widget.isLiked
-                                          ? (isDark
-                                              ? Colors.white
-                                              : AppColors.lightTextPrimary)
+                                          ? AppColors.likedAccent
                                           : textSecondary,
-                                      fontSize: 12,
+                                      fontSize: 12.5,
                                       fontWeight: widget.isLiked
                                           ? FontWeight.w700
-                                          : FontWeight.w500,
+                                          : FontWeight.w600,
                                     ),
                               ),
                             ],
@@ -470,41 +427,47 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                         ),
                       ),
                     ),
-                    const SizedBox(width: 14),
-                    Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                      child: InkWell(
-                        onTap: widget.onCommentTap ?? widget.onTap,
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Material(
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(AppRadius.pill),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 4,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.chat_bubble_outline_rounded,
-                                color: textSecondary,
-                                size: 15,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                "${widget.replies} ${'community.comments'.tr.isNotEmpty && 'community.comments'.tr != 'community.comments' ? ('community.comments'.tr == 'Comments' ? 'comments' : 'community.comments'.tr) : 'comments'}",
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                      color: textSecondary,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ) ??
-                                    TextStyle(
-                                      color: textSecondary,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                              ),
-                            ],
+                        child: InkWell(
+                          onTap: widget.onCommentTap ?? widget.onTap,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.chat_bubble_outline_rounded,
+                                  color: textSecondary,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 5),
+                                Flexible(
+                                  child: Text(
+                                    "${widget.replies} ${'community.comments'.tr.isNotEmpty && 'community.comments'.tr != 'community.comments' ? ('community.comments'.tr == 'Comments' ? 'comments' : 'community.comments'.tr) : 'comments'}",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.labelMedium?.copyWith(
+                                          color: textSecondary,
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                        ) ??
+                                        TextStyle(
+                                          color: textSecondary,
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),

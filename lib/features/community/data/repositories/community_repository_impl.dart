@@ -240,6 +240,26 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<List<CommentModel>> getDiscussionCommentReplies(String commentId) async {
+    return const [];
+  }
+
+  @override
+  Future<List<EventModel>> getEvents({
+    int page = 1,
+    int limit = 20,
+    String? category,
+    String? status,
+  }) {
+    return remoteDataSource.fetchEvents(
+      page: page,
+      limit: limit,
+      category: category,
+      status: status,
+    );
+  }
+
+  @override
   Future<EventModel> createEvent(EventCreateRequest request) {
     return remoteDataSource.createEvent(request);
   }

@@ -3,13 +3,15 @@
     <!-- Internet access for GenLink KH API -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Camera access for KHQR scanner -->
+    <!-- Camera access for KHQR scanner and Story capture -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:label="GenLink KH"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
 
         <activity
             android:name=".MainActivity"

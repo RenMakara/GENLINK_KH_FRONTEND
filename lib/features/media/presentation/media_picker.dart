@@ -7,12 +7,14 @@ class PickedMedia {
     required this.contentType,
     this.width,
     this.height,
+    this.path,
   });
 
   final Uint8List bytes;
   final String contentType;
   final int? width;
   final int? height;
+  final String? path;
 }
 
 class MediaPicker {
@@ -39,12 +41,13 @@ class MediaPicker {
     return PickedMedia(
       bytes: bytes,
       contentType: 'image/jpeg',
+      path: file.path,
     );
   }
 
   Future<PickedMedia?> pickVideo({
     ImageSource source = ImageSource.gallery,
-    Duration maxDuration = const Duration(seconds: 60),
+    Duration maxDuration = const Duration(minutes: 5),
   }) async {
     final file = await _picker.pickVideo(
       source: source,
@@ -53,7 +56,11 @@ class MediaPicker {
     if (file == null) return null;
 
     final bytes = await file.readAsBytes();
-    return PickedMedia(bytes: bytes, contentType: videoTypeFor(file.path));
+    return PickedMedia(
+      bytes: bytes,
+      contentType: videoTypeFor(file.path),
+      path: file.path,
+    );
   }
 
   @visibleForTesting

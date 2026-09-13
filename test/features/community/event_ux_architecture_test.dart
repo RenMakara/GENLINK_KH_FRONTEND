@@ -184,7 +184,7 @@ void main() {
 
       expect(find.textContaining('120'), findsOneWidget);
 
-      expect(find.text('View details'), findsOneWidget);
+      expect(find.text('View Event'), findsOneWidget);
 
       await tester.tap(find.text('Flutter Workshop 2026'));
       await tester.pumpAndSettle();

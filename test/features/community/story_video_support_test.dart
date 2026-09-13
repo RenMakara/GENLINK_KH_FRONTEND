@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/core/storage/local_storage.dart';
@@ -9,6 +11,10 @@ import 'package:genlink_frontend/features/community/presentation/controllers/sto
 import 'package:genlink_frontend/features/community/presentation/controllers/story_gallery_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/story_viewer_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/story_creator_screen.dart';
+import 'package:genlink_frontend/features/community/presentation/widgets/story_video_player_widget.dart';
+import 'package:video_player/video_player.dart';
+// ignore: depend_on_referenced_packages
+import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
 class MockLocalStorage extends LocalStorage {
   final Map<String, dynamic> _memory = {};
@@ -29,10 +35,123 @@ class MockLocalStorage extends LocalStorage {
   }
 }
 
+class FakeVideoPlayerPlatform extends VideoPlayerPlatform {
+  int _nextPlayerId = 1;
+  final Map<int, StreamController<VideoEvent>> _controllers = {};
+  final Map<int, bool> _isPlaying = {};
+  bool shouldFail = false;
+
+  @override
+  Future<void> init() async {}
+
+  @override
+  Future<void> dispose(int playerId) async {
+    await _controllers[playerId]?.close();
+    _controllers.remove(playerId);
+    _isPlaying.remove(playerId);
+  }
+
+  @override
+  Future<int?> create(DataSource dataSource) async {
+    if (shouldFail) {
+      throw PlatformException(
+        code: 'VIDEO_ERROR',
+        message: 'Simulated video initialization error',
+      );
+    }
+    final id = _nextPlayerId++;
+    final controller = StreamController<VideoEvent>.broadcast();
+    controller.onListen = () {
+      scheduleMicrotask(() {
+        if (!controller.isClosed) {
+          controller.add(
+            VideoEvent(
+              eventType: VideoEventType.initialized,
+              duration: const Duration(seconds: 15),
+              size: const Size(1080, 1920),
+            ),
+          );
+        }
+      });
+    };
+    _controllers[id] = controller;
+    _isPlaying[id] = false;
+
+    return id;
+  }
+
+  @override
+  Future<int?> createWithOptions(VideoCreationOptions options) {
+    return create(options.dataSource);
+  }
+
+  @override
+  Stream<VideoEvent> videoEventsFor(int playerId) {
+    return _controllers[playerId]?.stream ?? const Stream.empty();
+  }
+
+  @override
+  Future<void> setLooping(int playerId, bool looping) async {}
+
+  @override
+  Future<void> play(int playerId) async {
+    _isPlaying[playerId] = true;
+    _controllers[playerId]?.add(
+      VideoEvent(
+        eventType: VideoEventType.isPlayingStateUpdate,
+        isPlaying: true,
+      ),
+    );
+  }
+
+  @override
+  Future<void> pause(int playerId) async {
+    _isPlaying[playerId] = false;
+    _controllers[playerId]?.add(
+      VideoEvent(
+        eventType: VideoEventType.isPlayingStateUpdate,
+        isPlaying: false,
+      ),
+    );
+  }
+
+  @override
+  Future<void> setVolume(int playerId, double volume) async {}
+
+  @override
+  Future<void> setPlaybackSpeed(int playerId, double speed) async {}
+
+  @override
+  Future<void> seekTo(int playerId, Duration position) async {}
+
+  @override
+  Future<Duration> getPosition(int playerId) async => Duration.zero;
+
+  @override
+  Widget buildView(int playerId) {
+    return Container(
+      key: ValueKey('fake_video_texture_$playerId'),
+      color: Colors.black,
+    );
+  }
+
+  @override
+  Widget buildViewWithOptions(VideoViewOptions options) {
+    return buildView(options.playerId);
+  }
+
+  @override
+  Future<void> setMixWithOthers(bool mixWithOthers) async {}
+}
+
 void main() {
+  late FakeVideoPlayerPlatform fakeVideoPlatform;
+
   setUp(() {
     Get.testMode = true;
     Get.reset();
+    fakeVideoPlatform = FakeVideoPlayerPlatform();
+    VideoPlayerPlatform.instance = fakeVideoPlatform;
     final storage = MockLocalStorage();
     Get.put<LocalStorage>(storage);
     final repo = StoryRepositoryImpl();
@@ -118,12 +237,13 @@ void main() {
       );
 
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(StoryViewerScreen), findsOneWidget);
       expect(find.text('Check out the video preview!'), findsOneWidget);
       expect(find.text('Phnom Penh'), findsOneWidget);
-      expect(find.byIcon(Icons.play_arrow_rounded), findsWidgets);
+      expect(find.byType(StoryVideoPlayerWidget), findsOneWidget);
+      expect(find.byType(VideoPlayer), findsWidgets);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 500));
@@ -144,7 +264,8 @@ void main() {
 
       expect(find.byType(StoryCreatorScreen), findsOneWidget);
       expect(find.byIcon(Icons.videocam_rounded), findsWidgets);
-      expect(find.text('00:05'), findsOneWidget);
+      expect(find.text('00:00'), findsOneWidget);
+      expect(find.text('00:15'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 500));
@@ -165,6 +286,8 @@ void main() {
     });
 
     testWidgets('Test 6: StoryCreatorScreen displays error and retry button when video fails to load', (tester) async {
+      fakeVideoPlatform.shouldFail = true;
+
       await tester.pumpWidget(
         GetMaterialApp(
           home: const StoryCreatorScreen(

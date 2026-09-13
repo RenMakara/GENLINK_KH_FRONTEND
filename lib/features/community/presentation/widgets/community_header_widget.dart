@@ -16,7 +16,7 @@ class CommunityHeaderWidget extends StatelessWidget
   const CommunityHeaderWidget({
     super.key,
     required this.activeCategory,
-    this.isHomeScreen = false,
+    this.isHomeScreen = true,
   });
 
   @override
@@ -63,7 +63,7 @@ class CommunityHeaderWidget extends StatelessWidget
     // Subtle tactile container styling matching Finance header action button
     final buttonSize = isVeryNarrow ? 36.0 : (isNarrow ? 38.0 : 40.0);
     final buttonGap = isVeryNarrow ? 4.0 : (isNarrow ? 6.0 : AppSpacing.xs);
-    final iconSize = isVeryNarrow ? 19.0 : (isNarrow ? 20.0 : 21.0);
+    final iconSize = isVeryNarrow ? 19.0 : (isNarrow ? 20.0 : 20.5);
     const horizontalPadding = AppSpacing.md;
 
     return Container(
@@ -117,7 +117,10 @@ class CommunityHeaderWidget extends StatelessWidget
                         borderColor: border,
                         buttonSize: buttonSize,
                         iconSize: iconSize,
-                        tooltip: 'community.search'.tr,
+                        tooltip: 'community.search'.tr.isNotEmpty &&
+                                'community.search'.tr != 'community.search'
+                            ? 'community.search'.tr
+                            : 'Search',
                       ),
 
                       SizedBox(width: buttonGap),
@@ -130,12 +133,19 @@ class CommunityHeaderWidget extends StatelessWidget
                         borderColor: border,
                         buttonSize: buttonSize,
                         iconSize: iconSize,
-                        tooltip: 'community.chat'.tr,
+                        tooltip: 'community.chat'.tr.isNotEmpty &&
+                                'community.chat'.tr != 'community.chat'
+                            ? 'community.chat'.tr
+                            : 'Messages',
                       ),
 
                       SizedBox(width: buttonGap),
 
                       Builder(builder: (context) {
+                        final notifTooltip = 'community.notifications'.tr.isNotEmpty &&
+                                'community.notifications'.tr != 'community.notifications'
+                            ? 'community.notifications'.tr
+                            : 'Notifications';
                         if (!Get.isRegistered<NotificationController>()) {
                           return _HeaderActionButton(
                             icon: Icons.notifications_none_rounded,
@@ -146,7 +156,7 @@ class CommunityHeaderWidget extends StatelessWidget
                             borderColor: border,
                             buttonSize: buttonSize,
                             iconSize: iconSize,
-                            tooltip: 'community.notifications'.tr,
+                            tooltip: notifTooltip,
                           );
                         }
                         final notifController =
@@ -154,9 +164,7 @@ class CommunityHeaderWidget extends StatelessWidget
                         return Obx(() {
                           final unread = notifController.unreadCount;
                           return _HeaderActionButton(
-                            icon: unread > 0
-                                ? Icons.notifications_active_outlined
-                                : Icons.notifications_none_rounded,
+                            icon: Icons.notifications_none_rounded,
                             onTap: () =>
                                 Get.to(() => const NotificationScreen()),
                             iconColor: textPrimary,
@@ -165,7 +173,7 @@ class CommunityHeaderWidget extends StatelessWidget
                             buttonSize: buttonSize,
                             iconSize: iconSize,
                             hasBadge: unread > 0,
-                            tooltip: 'community.notifications'.tr,
+                            tooltip: notifTooltip,
                           );
                         });
                       }),
@@ -199,53 +207,57 @@ class _HeaderActionButton extends StatelessWidget {
     required this.surfaceColor,
     required this.borderColor,
     this.buttonSize = 40.0,
-    this.iconSize = 21.0,
+    this.iconSize = 20.5,
     required this.tooltip,
     this.hasBadge = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final borderRadius = BorderRadius.circular(buttonSize * 0.28);
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: borderRadius,
-          child: Ink(
-            width: buttonSize,
-            height: buttonSize,
-            decoration: BoxDecoration(
-              color: surfaceColor,
-              borderRadius: borderRadius,
-              border: Border.all(color: borderColor, width: 0.8),
-            ),
-            child: Center(
-              child: Stack(
-                alignment: Alignment.center,
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(icon, size: iconSize, color: iconColor),
-                  if (hasBadge)
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFFF97316),
-                          border: Border.all(
-                            color: surfaceColor,
-                            width: 1.2,
+    final borderRadius = BorderRadius.circular(buttonSize * 0.30);
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: Tooltip(
+        message: tooltip,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: borderRadius,
+            child: Ink(
+              width: buttonSize,
+              height: buttonSize,
+              decoration: BoxDecoration(
+                color: surfaceColor,
+                borderRadius: borderRadius,
+                border: Border.all(color: borderColor, width: 0.8),
+              ),
+              child: Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(icon, size: iconSize, color: iconColor),
+                    if (hasBadge)
+                      Positioned(
+                        top: 1.0,
+                        right: 1.0,
+                        child: Container(
+                          width: 7.5,
+                          height: 7.5,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.danger,
+                            border: Border.all(
+                              color: surfaceColor,
+                              width: 1.5,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

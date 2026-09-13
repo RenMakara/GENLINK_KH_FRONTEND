@@ -11,6 +11,7 @@ class EventModel {
   final String subtitle;
   final String organizerName;
   final String? organizerId;
+  final String? organizerAvatar;
 
   /// 'Online' or 'In person'
   final String eventType;
@@ -67,6 +68,7 @@ class EventModel {
     this.subtitle = '',
     this.organizerName = '',
     this.organizerId,
+    this.organizerAvatar,
     this.eventType = 'In person',
     this.mode,
     this.location = '',
@@ -339,6 +341,9 @@ class EventModel {
         json['organizerName'] as String? ??
         '';
 
+    final orgAvatar = organizerObj?['avatarUrl'] as String? ??
+        json['organizerAvatar'] as String?;
+
     final parsedStart = parseDt(json['startDateTime']) ?? parseDt(json['dateTime']);
     final parsedEnd = parseDt(json['endDateTime']);
 
@@ -379,6 +384,7 @@ class EventModel {
       subtitle: json['subtitle'] as String? ?? '',
       organizerName: orgName,
       organizerId: orgId,
+      organizerAvatar: orgAvatar,
       eventType: eventTypeVal,
       mode: modeVal,
       location: loc,
@@ -429,6 +435,7 @@ class EventModel {
       if (subtitle.isNotEmpty) 'subtitle': subtitle,
       if (organizerId != null) 'organizerId': organizerId,
       if (organizerName.isNotEmpty) 'organizerName': organizerName,
+      if (organizerAvatar != null && organizerAvatar!.isNotEmpty) 'organizerAvatar': organizerAvatar,
       'description': description,
       'category': category,
       if (imageUrl.isNotEmpty) 'coverImageUrl': imageUrl,
@@ -461,6 +468,7 @@ class EventModel {
     String? subtitle,
     String? organizerName,
     String? organizerId,
+    String? organizerAvatar,
     String? eventType,
     String? mode,
     String? location,
@@ -497,6 +505,7 @@ class EventModel {
       subtitle: subtitle ?? this.subtitle,
       organizerName: organizerName ?? this.organizerName,
       organizerId: organizerId ?? this.organizerId,
+      organizerAvatar: organizerAvatar ?? this.organizerAvatar,
       eventType: eventType ?? this.eventType,
       mode: mode ?? this.mode,
       location: location ?? this.location,

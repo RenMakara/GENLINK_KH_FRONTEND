@@ -26,6 +26,9 @@ class NotificationController extends GetxController {
   final notifications = <NotificationModel>[].obs;
   final selectedCategory = 'All'.obs;
   final isLoading = false.obs;
+  final errorMessage = RxnString();
+
+  bool get hasError => errorMessage.value != null;
 
   final categories = const [
     'All',
@@ -87,9 +90,13 @@ class NotificationController extends GetxController {
 
   Future<void> fetchNotifications() async {
     isLoading.value = true;
+    errorMessage.value = null;
     try {
       final list = await repository.getNotifications();
       notifications.assignAll(list);
+    } catch (e) {
+      errorMessage.value = e.toString();
+      notifications.clear();
     } finally {
       isLoading.value = false;
     }
@@ -163,34 +170,18 @@ class NotificationController extends GetxController {
     final targetType = notif.targetType?.toLowerCase();
     final targetId = notif.targetId;
 
-    final isStoryReply = notif.title.toLowerCase().contains('story reply') ||
-        targetType == 'story_reply';
-    final isChatNotification = isStoryReply ||
-        targetType == 'chat' ||
-        targetType == 'chat_message';
+    final isChatNotification =
+        targetType == 'chat' || targetType == 'chat_message';
 
-    if (isChatNotification) {
+    if (isChatNotification && targetId != null && targetId.isNotEmpty) {
       if (!Get.isRegistered<ChatController>()) {
         ChatBinding().dependencies();
       }
       final chatCtrl = Get.find<ChatController>();
-      final isChansela = notif.senderName.toLowerCase().contains('chansela');
-      final isSokny = notif.senderName.toLowerCase().contains('sokny');
-      final contactId = isChansela
-          ? 'user_chansela'
-          : (isSokny
-              ? 'user_sokny'
-              : (notif.targetId != null && notif.targetId!.isNotEmpty && targetType == 'chat'
-                  ? notif.targetId!
-                  : notif.senderName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_')));
-      final avatar = notif.senderAvatar ??
-          (isChansela
-              ? 'assets/images/heng_chansela_profile.png'
-              : 'assets/images/user_profile.png');
       await chatCtrl.openPrivateChat(
-        contactId,
+        targetId,
         name: notif.senderName,
-        avatar: avatar,
+        avatar: notif.senderAvatar,
       );
       Get.to(() => const ChatDetailScreen());
       return;

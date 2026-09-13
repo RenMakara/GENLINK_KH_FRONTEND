@@ -174,6 +174,14 @@ class NotificationScreen extends GetView<NotificationController> {
         return _LoadingSkeleton(isDark: isDark);
       }
 
+      if (notifController.errorMessage.value != null &&
+          notifController.notifications.isEmpty) {
+        return _ErrorState(
+          onRetry: notifController.fetchNotifications,
+          isDark: isDark,
+        );
+      }
+
       final list = notifController.filteredNotifications;
 
       if (list.isEmpty) {
@@ -672,7 +680,7 @@ class _EmptyState extends StatelessWidget {
       desc = 'notification.emptyAllDesc'.tr.isNotEmpty &&
               'notification.emptyAllDesc'.tr != 'notification.emptyAllDesc'
           ? 'notification.emptyAllDesc'.tr
-          : "You're all caught up!";
+          : "When you have activity, updates, or reminders,\nthey'll appear here.";
     } else {
       final categoryKey = 'notification.category$category';
       final localizedCategory =
@@ -807,4 +815,111 @@ class _LoadingSkeleton extends StatelessWidget {
     );
   }
 }
+
+class _ErrorState extends StatelessWidget {
+  final Future<void> Function() onRetry;
+  final bool isDark;
+
+  const _ErrorState({required this.onRetry, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextPrimary;
+    final textMuted =
+        isDark ? AppColors.darkTextMuted : AppColors.lightTextSecondary;
+
+    final title = 'notification.errorTitle'.tr.isNotEmpty &&
+            'notification.errorTitle'.tr != 'notification.errorTitle'
+        ? 'notification.errorTitle'.tr
+        : 'Unable to load notifications';
+
+    final desc = 'notification.errorDesc'.tr.isNotEmpty &&
+            'notification.errorDesc'.tr != 'notification.errorDesc'
+        ? 'notification.errorDesc'.tr
+        : 'Something went wrong. Please check your connection and try again.';
+
+    final retryLabel = 'notification.retry'.tr.isNotEmpty &&
+            'notification.retry'.tr != 'notification.retry'
+        ? 'notification.retry'.tr
+        : 'Retry';
+
+    final buttonBg =
+        isDark ? const Color(0xFF242424) : const Color(0xFFF0F0ED);
+    final buttonBorder =
+        isDark ? const Color(0xFF333333) : const Color(0xFFE2E2DE);
+    final buttonText =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 48,
+              color: textMuted.withValues(alpha: 0.45),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              title,
+              style: TextStyle(
+                color: textSecondary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.2,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 5),
+            Text(
+              desc,
+              style: TextStyle(
+                color: textMuted,
+                fontSize: 13,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 18),
+            GestureDetector(
+              onTap: onRetry,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+                decoration: BoxDecoration(
+                  color: buttonBg,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: buttonBorder, width: 0.8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.refresh_rounded,
+                      size: 16,
+                      color: buttonText,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      retryLabel,
+                      style: TextStyle(
+                        color: buttonText,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 

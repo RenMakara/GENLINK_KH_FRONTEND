@@ -300,9 +300,8 @@ class _InAppCameraScreenState extends State<InAppCameraScreen>
         setState(() => _isCapturing = true);
         try {
           final XFile videoFile = await controller.stopVideoRecording();
-          debugPrint(
-            '[StoryCamera] Video recording stopped, path: ${videoFile.path}',
-          );
+          final durationSec = _recordingSeconds;
+          _stopTimer();
 
           // Ensure the recorded .mp4 file is flushed and accessible before navigating
           final file = File(videoFile.path);
@@ -316,6 +315,19 @@ class _InAppCameraScreenState extends State<InAppCameraScreen>
             await Future.delayed(const Duration(milliseconds: 50));
             retries++;
           }
+
+          final exists = file.existsSync();
+          final size = exists ? file.lengthSync() : 0;
+          final ext = file.path.contains('.') ? file.path.split('.').last.toLowerCase() : '';
+          debugPrint(
+            '[StoryCamera] Video recording stopped and verified:\n'
+            '  - Path: ${file.path}\n'
+            '  - Exists: $exists\n'
+            '  - Size: $size bytes\n'
+            '  - Extension: .$ext\n'
+            '  - MIME Type: video/mp4\n'
+            '  - Duration: ${durationSec}s',
+          );
 
           if (mounted) {
             setState(() {

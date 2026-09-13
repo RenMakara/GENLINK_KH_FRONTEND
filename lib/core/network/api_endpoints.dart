@@ -200,6 +200,8 @@ abstract final class ApiEndpoints {
       '$_base/community/discussions/$discussionId';
   static String communityDiscussionComments(String discussionId) =>
       '$_base/community/discussions/$discussionId/comments';
+  static String communityDiscussionCommentReplies(String commentId) =>
+      '$_base/community/discussions/comments/$commentId/replies';
   static String communityDiscussionReact(String discussionId) =>
       '$_base/community/discussions/$discussionId/react';
   static String communityDiscussionReport(String discussionId) =>
@@ -212,6 +214,7 @@ abstract final class ApiEndpoints {
   static String communityDiscussionCommentDetail(String commentId) =>
       communityDiscussionComment(commentId);
 
+  static const communityEvents = '$_base/community/events';
   static String communityEventRsvp(String eventId) =>
       '$_base/community/events/$eventId/rsvp';
 

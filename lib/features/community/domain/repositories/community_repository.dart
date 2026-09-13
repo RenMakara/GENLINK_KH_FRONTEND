@@ -80,6 +80,9 @@ abstract class CommunityRepository {
     String? parentCommentId,
   });
 
+  Future<List<CommentModel>> getDiscussionCommentReplies(String commentId) =>
+      Future.value([]);
+
   Future<bool> toggleDiscussionCommentLike(
     String commentId, {
     required bool isCurrentlyLiked,
@@ -103,4 +106,13 @@ abstract class CommunityRepository {
   });
 
   Future<EventModel> createEvent(EventCreateRequest request);
+
+  Future<List<EventModel>> getEvents({
+    int page = 1,
+    int limit = 20,
+    String? category,
+    String? status,
+  }) async =>
+      const [];
 }
+

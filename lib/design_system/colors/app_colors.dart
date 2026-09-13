@@ -77,25 +77,26 @@ abstract final class AppColors {
   static const chatPrimaryBubble = brandPrimary;
 
 
-  static const navBgLight = Color(0xEAFFFFFF);
+  // ── Navigation Design Tokens (iPhone-Style Glass Navigation) ───────────────
+  static const navBgLight = Color(0xD6FFFFFF);
   static const navBorderLight = Color(0x1F000000);
-  static const navActiveSurfaceLight = Color(0x12000000);
+  static const navActiveSurfaceLight = Color(0xF2FFFFFF);
   static const navActiveIconLight = Color(0xFF18191B);
   static const navActiveLabelLight = Color(0xFF18191B);
-  static const navInactiveIconLight = Color(0xFF71767B);
-  static const navInactiveLabelLight = Color(0xFF71767B);
+  static const navInactiveIconLight = Color(0xFF18191B);
+  static const navInactiveLabelLight = Color(0xFF4A4E54);
   static const navCreateBgLight = Color(0xFF18191B);
   static const navCreateIconLight = Color(0xFFFFFFFF);
 
-  static const navBgDark = Color(0xEE1E1F21);
+  static const navBgDark = Color(0xD9121418);
   static const navBorderDark = Color(0x29FFFFFF);
-  static const navActiveSurfaceDark = Color(0x24FFFFFF);
+  static const navActiveSurfaceDark = Color(0x2EFFFFFF);
   static const navActiveIconDark = Color(0xFFFFFFFF);
   static const navActiveLabelDark = Color(0xFFFFFFFF);
-  static const navInactiveIconDark = Color(0xFF8E9297);
-  static const navInactiveLabelDark = Color(0xFF8E9297);
-  static const navCreateBgDark = Color(0xFF383A3D);
-  static const navCreateIconDark = Color(0xFFFFFFFF);
+  static const navInactiveIconDark = Color(0xFFFFFFFF);
+  static const navInactiveLabelDark = Color(0xFFB0B4BA);
+  static const navCreateBgDark = Color(0xFFF0F2F5);
+  static const navCreateIconDark = Color(0xFF141517);
 
 
   static AppSemanticColors of(BuildContext context) =>

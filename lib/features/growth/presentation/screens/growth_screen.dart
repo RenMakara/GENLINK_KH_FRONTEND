@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:genlink_frontend/features/growth/presentation/screens/growth_date_detail_screen.dart';
 import 'package:get/get.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
@@ -51,8 +50,11 @@ class GrowthScreen extends GetView<HomeController> {
   }
 }
 
+// ============================================================
 // MAIN CONTENT
-class _GrowthContentView extends StatelessWidget {
+// ============================================================
+
+class _GrowthContentView extends StatefulWidget {
   const _GrowthContentView({
     required this.controller,
     required this.home,
@@ -62,6 +64,38 @@ class _GrowthContentView extends StatelessWidget {
   final HomeController controller;
   final HomeEntity home;
   final ValueChanged<int>? onNavigateTab;
+  @override
+  State<_GrowthContentView> createState() => _GrowthContentViewState();
+}
+
+class _GrowthContentViewState extends State<_GrowthContentView> {
+  late DateTime selectedDate;
+  late DateTime today;
+
+  bool showDateDetail = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final now = DateTime.now();
+
+    today = DateTime(now.year, now.month, now.day);
+
+    selectedDate = today;
+  }
+
+  void _selectDate(DateTime date) {
+    setState(() {
+      selectedDate = DateTime(date.year, date.month, date.day);
+    });
+  }
+
+  void _toggleDateDetail() {
+    setState(() {
+      showDateDetail = !showDateDetail;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +109,7 @@ class _GrowthContentView extends StatelessWidget {
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
-          onRefresh: controller.reload,
+          onRefresh: widget.controller.reload,
           color: isDark ? Colors.white : AppColors.lightPrimary,
           backgroundColor: isDark
               ? AppColors.darkSurfacePrimary
@@ -94,45 +128,70 @@ class _GrowthContentView extends StatelessWidget {
                   120,
                 ),
                 children: [
-                  // HEADER + DATE SELECTOR
-                  _GrowthHeader(user: home.user),
-
-                  const SizedBox(height: 12),
-
-                  // LEVEL PROGRESS
-                  _LevelProgressCard(user: home.user),
+                  // =====================================================
+                  // HEADER + MERGED DATE CARD
+                  // =====================================================
+                  _GrowthHeader(
+                    user: widget.home.user,
+                    selectedDate: selectedDate,
+                    today: today,
+                    showDateDetail: showDateDetail,
+                    onDateSelected: _selectDate,
+                    onToggleDetail: _toggleDateDetail,
+                  ),
 
                   const SizedBox(height: 14),
 
-                  // TODAY
+                  // =====================================================
+                  // LEVEL PROGRESS
+                  // =====================================================
+                  _LevelProgressCard(user: widget.home.user),
+
+                  const SizedBox(height: 14),
+
+                  // =====================================================
+                  // TODAY CHECKLIST
+                  // =====================================================
                   _GrowthTodayChecklist(
-                    home: home,
-                    controller: controller,
-                    onNavigateTab: onNavigateTab,
+                    home: widget.home,
+                    controller: widget.controller,
+                    onNavigateTab: widget.onNavigateTab,
                   ),
 
                   const SizedBox(height: 12),
 
-                  // ALERTS
-                  _GrowthImportantAlerts(home: home, controller: controller),
+                  // =====================================================
+                  // IMPORTANT ALERTS
+                  // =====================================================
+                  _GrowthImportantAlerts(
+                    home: widget.home,
+                    controller: widget.controller,
+                  ),
 
-                  // GROW
-                  _ProductivityTools(onNavigateTab: onNavigateTab),
+                  const SizedBox(height: 2),
+
+                  // =====================================================
+                  // PRODUCTIVITY TOOLS
+                  // =====================================================
+                  _ProductivityTools(onNavigateTab: widget.onNavigateTab),
 
                   const SizedBox(height: AppSpacing.lg),
 
-                  // NEXT MOVE
+                  // =====================================================
+                  // YOUR NEXT MOVE
+                  // =====================================================
                   _GrowthYourNextStepSection(
-                    home: home,
-                    onNavigateTab: onNavigateTab,
+                    home: widget.home,
+                    onNavigateTab: widget.onNavigateTab,
                   ),
 
-                  // DAILY MINDSET
-                  if (home.dailyMotivation != null &&
-                      (home.dailyMotivation?.content?.trim().isNotEmpty ??
+                  if (widget.home.dailyMotivation != null &&
+                      (widget.home.dailyMotivation?.content
+                              ?.trim()
+                              .isNotEmpty ??
                           false)) ...[
                     const SizedBox(height: AppSpacing.lg),
-                    _DailyMindsetCard(motivation: home.dailyMotivation!),
+                    _DailyMindsetCard(motivation: widget.home.dailyMotivation!),
                   ],
                 ],
               ),
@@ -144,11 +203,26 @@ class _GrowthContentView extends StatelessWidget {
   }
 }
 
-//HEADER
+// ============================================================
+// HEADER
+// ============================================================
+
 class _GrowthHeader extends StatelessWidget {
-  const _GrowthHeader({required this.user});
+  const _GrowthHeader({
+    required this.user,
+    required this.selectedDate,
+    required this.today,
+    required this.showDateDetail,
+    required this.onDateSelected,
+    required this.onToggleDetail,
+  });
 
   final HomeUser user;
+  final DateTime selectedDate;
+  final DateTime today;
+  final bool showDateDetail;
+  final ValueChanged<DateTime> onDateSelected;
+  final VoidCallback onToggleDetail;
 
   @override
   Widget build(BuildContext context) {
@@ -163,24 +237,17 @@ class _GrowthHeader extends StatelessWidget {
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
 
-    final borderSubtle = isDark
-        ? AppColors.darkBorderSubtle
-        : AppColors.lightBorderSubtle;
-
-    final firstName = user.fullName?.trim().isNotEmpty == true
-        ? user.fullName!.trim().split(' ').first
-        : null;
-
-    final subtitle = firstName != null
-        ? 'Welcome, $firstName · Your personal growth journey'
+    final subtitle = user.fullName?.trim().isNotEmpty == true
+        ? 'Welcome, ${user.fullName!.trim().split(' ').first} · Your personal growth journey'
         : 'Your personal growth journey';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ==========================================================
         // TOP HEADER
+        // ==========================================================
         Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: Column(
@@ -192,7 +259,7 @@ class _GrowthHeader extends StatelessWidget {
                       color: textPrimary,
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
-                      letterSpacing: -0.6,
+                      letterSpacing: -0.7,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -212,110 +279,359 @@ class _GrowthHeader extends StatelessWidget {
 
             const SizedBox(width: 10),
 
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  Get.to(
-                    () => const LeaderboardHomeScreen(),
-                    binding: LeaderboardBinding(),
-                  );
-                },
-                borderRadius: BorderRadius.circular(11),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.darkSurfacePrimary
-                        : AppColors.lightSurfacePrimary,
-                    borderRadius: BorderRadius.circular(11),
-                    border: Border.all(color: borderSubtle, width: 0.8),
-                  ),
-                  child: Icon(
-                    Icons.emoji_events_outlined,
-                    size: 20,
-                    color: textPrimary,
-                  ),
-                ),
-              ),
+            // LEADERBOARD
+            _GrowthHeaderIconButton(
+              icon: Icons.emoji_events_outlined,
+              onTap: () {
+                Get.to(
+                  () => const LeaderboardHomeScreen(),
+                  binding: LeaderboardBinding(),
+                );
+              },
             ),
           ],
         ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 14),
 
-        // MONTH
-        Row(
-          children: [
-            Text(
-              'September 2026',
-              style: TextStyle(
-                color: textPrimary,
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(width: 3),
-            Icon(Icons.chevron_right_rounded, size: 19, color: textSecondary),
-          ],
+        // ==========================================================
+        // ONE MERGED DATE CARD
+        // ==========================================================
+        _GrowthDateCard(
+          today: today,
+          selectedDate: selectedDate,
+          showDateDetail: showDateDetail,
+          onDateSelected: onDateSelected,
+          onToggleDetail: onToggleDetail,
         ),
-
-        const SizedBox(height: 6),
-
-        // DATE SELECTOR
-        const _GrowthDateStrip(),
       ],
     );
   }
 }
 
-// DATE STRIP
-class _GrowthDateStrip extends StatelessWidget {
-  const _GrowthDateStrip();
+// ============================================================
+// HEADER ICON BUTTON
+// ============================================================
+
+class _GrowthHeaderIconButton extends StatelessWidget {
+  const _GrowthHeaderIconButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final dates = [
-      const _GrowthDateItem(day: 'Sun', number: 6),
-      const _GrowthDateItem(day: 'Mon', number: 7),
-      const _GrowthDateItem(day: 'Tue', number: 8),
-      const _GrowthDateItem(day: 'Wed', number: 9),
-      const _GrowthDateItem(day: 'Thu', number: 10, selected: true),
-      const _GrowthDateItem(day: 'Fri', number: 11),
-      const _GrowthDateItem(day: 'Sat', number: 12),
-    ];
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return SizedBox(
-      height: 58,
-      child: Row(
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+
+    final border = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    return Material(
+      color: surface,
+      borderRadius: BorderRadius.circular(11),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(11),
+        child: Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(11),
+            border: Border.all(color: border, width: 0.8),
+          ),
+          child: Icon(icon, size: 20, color: textPrimary),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// MERGED DATE CARD
+// ============================================================
+
+class _GrowthDateCard extends StatelessWidget {
+  const _GrowthDateCard({
+    required this.today,
+    required this.selectedDate,
+    required this.showDateDetail,
+    required this.onDateSelected,
+    required this.onToggleDetail,
+  });
+
+  final DateTime today;
+  final DateTime selectedDate;
+  final bool showDateDetail;
+  final ValueChanged<DateTime> onDateSelected;
+  final VoidCallback onToggleDetail;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final surface = isDark
+        ? AppColors.darkSurfacePrimary
+        : AppColors.lightSurfacePrimary;
+
+    final border = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: border, width: 0.8),
+        boxShadow: isDark ? AppShadows.cardDark : AppShadows.cardLight,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
         children: [
-          for (final date in dates)
-            Expanded(child: _GrowthDateButton(date: date)),
+          // ======================================================
+          // DATE HEADER
+          // ======================================================
+          _GrowthDateCardHeader(
+            selectedDate: selectedDate,
+            showDateDetail: showDateDetail,
+            onToggleDetail: onToggleDetail,
+          ),
+
+          // ======================================================
+          // FIXED 7-DAY STRIP
+          // ======================================================
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 2, 10, 10),
+            child: _GrowthDateStrip(
+              today: today,
+              selectedDate: selectedDate,
+              onDateSelected: onDateSelected,
+            ),
+          ),
+
+          // ======================================================
+          // SLIDE DOWN DETAIL
+          // ======================================================
+          AnimatedSize(
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: showDateDetail
+                ? _GrowthDateDetailInsideCard(
+                    selectedDate: selectedDate,
+                    today: today,
+                    onDateSelected: onDateSelected,
+                  )
+                : const SizedBox.shrink(),
+          ),
         ],
       ),
     );
   }
 }
 
-class _GrowthDateItem {
-  const _GrowthDateItem({
-    required this.day,
-    required this.number,
-    this.selected = false,
+// ============================================================
+// DATE CARD HEADER
+// ============================================================
+
+class _GrowthDateCardHeader extends StatelessWidget {
+  const _GrowthDateCardHeader({
+    required this.selectedDate,
+    required this.showDateDetail,
+    required this.onToggleDetail,
   });
 
-  final String day;
-  final int number;
-  final bool selected;
+  final DateTime selectedDate;
+  final bool showDateDetail;
+  final VoidCallback onToggleDetail;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+
+    final textMuted = isDark
+        ? AppColors.darkTextMuted
+        : AppColors.lightTextMuted;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onToggleDetail,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 13, 12, 7),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.07)
+                      : Colors.black.withValues(alpha: 0.045),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(
+                  Icons.calendar_month_rounded,
+                  size: 17,
+                  color: textPrimary,
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _monthYear(selectedDate),
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      showDateDetail ? 'Hide day details' : 'View day details',
+                      style: TextStyle(
+                        color: textMuted,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              AnimatedRotation(
+                turns: showDateDetail ? 0.5 : 0,
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                child: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 22,
+                  color: textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _monthYear(DateTime date) {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+
+    return '${months[date.month - 1]} ${date.year}';
+  }
 }
 
-class _GrowthDateButton extends StatelessWidget {
-  const _GrowthDateButton({required this.date});
+// ============================================================
+// DATE STRIP
+// ============================================================
 
-  final _GrowthDateItem date;
+class _GrowthDateStrip extends StatelessWidget {
+  const _GrowthDateStrip({
+    required this.today,
+    required this.selectedDate,
+    required this.onDateSelected,
+  });
+
+  final DateTime today;
+  final DateTime selectedDate;
+  final ValueChanged<DateTime> onDateSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    // IMPORTANT:
+    //
+    // The strip ALWAYS starts from TODAY.
+    //
+    // selectedDate is ONLY used to determine which date
+    // is highlighted.
+    //
+    // Therefore selecting another date will NOT move
+    // the seven dates.
+
+    final base = DateTime(today.year, today.month, today.day);
+
+    final dates = List.generate(7, (index) => base.add(Duration(days: index)));
+
+    return SizedBox(
+      height: 60,
+      child: Row(
+        children: [
+          for (final date in dates)
+            Expanded(
+              child: _GrowthDateButton(
+                date: date,
+                selected: _sameDay(date, selectedDate),
+                onTap: () {
+                  onDateSelected(date);
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  bool _sameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+}
+
+// ============================================================
+// DATE BUTTON
+// ============================================================
+
+class _GrowthDateButton extends StatelessWidget {
+  const _GrowthDateButton({
+    required this.date,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final DateTime date;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -334,20 +650,16 @@ class _GrowthDateButton extends StatelessWidget {
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
 
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        Get.to(
-          () => GrowthDateDetailScreen(
-            selectedDate: DateTime(2026, 9, date.number),
-          ),
-        );
-      },
+      onTap: onTap,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            date.day,
+            weekdays[date.weekday % 7],
             style: TextStyle(
               color: textMuted,
               fontSize: 8.5,
@@ -357,23 +669,22 @@ class _GrowthDateButton extends StatelessWidget {
 
           const SizedBox(height: 4),
 
-          Container(
-            width: 28,
-            height: 28,
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            width: 29,
+            height: 29,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: date.selected
+              color: selected
                   ? (isDark ? Colors.white : const Color(0xFF111111))
                   : Colors.transparent,
               shape: BoxShape.circle,
-              border: date.selected
-                  ? null
-                  : Border.all(color: border, width: 0.7),
+              border: selected ? null : Border.all(color: border, width: 0.7),
             ),
             child: Text(
-              '${date.number}',
+              '${date.day}',
               style: TextStyle(
-                color: date.selected
+                color: selected
                     ? (isDark ? Colors.black : Colors.white)
                     : textPrimary,
                 fontSize: 10,
@@ -388,7 +699,7 @@ class _GrowthDateButton extends StatelessWidget {
             width: 4,
             height: 4,
             decoration: BoxDecoration(
-              color: date.number == 10
+              color: selected
                   ? const Color(0xFFF97316)
                   : const Color(0xFF3B82F6),
               shape: BoxShape.circle,
@@ -400,7 +711,923 @@ class _GrowthDateButton extends StatelessWidget {
   }
 }
 
-//LEVEL PROGRESS
+// ============================================================
+// DATE DETAIL INSIDE SAME CARD
+// ============================================================
+
+class _GrowthDateDetailInsideCard extends StatefulWidget {
+  const _GrowthDateDetailInsideCard({
+    required this.selectedDate,
+    required this.today,
+    required this.onDateSelected,
+  });
+
+  final DateTime selectedDate;
+  final DateTime today;
+  final ValueChanged<DateTime> onDateSelected;
+
+  @override
+  State<_GrowthDateDetailInsideCard> createState() =>
+      _GrowthDateDetailInsideCardState();
+}
+
+class _GrowthDateDetailInsideCardState
+    extends State<_GrowthDateDetailInsideCard> {
+  int selectedCategory = 0;
+  int selectedActivity = 0;
+
+  final List<_GrowthCategory> categories = const [
+    _GrowthCategory(
+      label: 'All',
+      icon: Icons.apps_rounded,
+      color: Color(0xFF777777),
+    ),
+    _GrowthCategory(
+      label: 'Task',
+      icon: Icons.check_circle_outline_rounded,
+      color: Color(0xFF3B82F6),
+    ),
+    _GrowthCategory(
+      label: 'Habit',
+      icon: Icons.repeat_rounded,
+      color: Color(0xFFF97316),
+    ),
+    _GrowthCategory(
+      label: 'Focus',
+      icon: Icons.timer_outlined,
+      color: Color(0xFF8B5CF6),
+    ),
+    _GrowthCategory(
+      label: 'Goal',
+      icon: Icons.flag_outlined,
+      color: Color(0xFF10B981),
+    ),
+    _GrowthCategory(
+      label: 'Quiz',
+      icon: Icons.quiz_outlined,
+      color: Color(0xFFF2B84B),
+    ),
+  ];
+
+  final List<_GrowthTimelineActivity> activities = const [
+    _GrowthTimelineActivity(
+      title: 'Rise and Shine',
+      subtitle: 'Morning meditation',
+      time: '8:00 AM',
+      endTime: '8:30 AM',
+      type: 'Habit',
+      icon: Icons.wb_sunny_outlined,
+      color: Color(0xFFF97316),
+      completed: true,
+      xp: 15,
+    ),
+    _GrowthTimelineActivity(
+      title: 'Go for a walk',
+      subtitle: 'Clear your mind',
+      time: '11:00 AM',
+      endTime: '11:15 AM',
+      type: 'Task',
+      icon: Icons.directions_walk_rounded,
+      color: Color(0xFF3B82F6),
+      completed: false,
+      xp: 10,
+    ),
+    _GrowthTimelineActivity(
+      title: 'Study session',
+      subtitle: 'Focus for 25 minutes',
+      time: '2:00 PM',
+      endTime: '2:25 PM',
+      type: 'Focus',
+      icon: Icons.menu_book_rounded,
+      color: Color(0xFF8B5CF6),
+      completed: false,
+      xp: 20,
+    ),
+    _GrowthTimelineActivity(
+      title: 'Update portfolio',
+      subtitle: 'Work on your goal',
+      time: '6:00 PM',
+      endTime: '6:30 PM',
+      type: 'Goal',
+      icon: Icons.track_changes_rounded,
+      color: Color(0xFF10B981),
+      completed: false,
+      xp: 15,
+    ),
+    _GrowthTimelineActivity(
+      title: "Today's Challenge",
+      subtitle: 'Test your knowledge',
+      time: '8:00 PM',
+      endTime: '8:20 PM',
+      type: 'Quiz',
+      icon: Icons.extension_rounded,
+      color: Color(0xFFF2B84B),
+      completed: false,
+      xp: 20,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final textPrimary = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.lightTextPrimary;
+
+    final textSecondary = isDark
+        ? AppColors.darkTextSecondary
+        : AppColors.lightTextSecondary;
+
+    final border = isDark
+        ? AppColors.darkBorderSubtle
+        : AppColors.lightBorderSubtle;
+
+    final filteredActivities = selectedCategory == 0
+        ? activities
+        : activities
+              .where((item) => item.type == categories[selectedCategory].label)
+              .toList();
+
+    final safeSelectedActivity = filteredActivities.isEmpty
+        ? 0
+        : selectedActivity.clamp(0, filteredActivities.length - 1);
+
+    final activity = filteredActivities.isEmpty
+        ? null
+        : filteredActivities[safeSelectedActivity];
+
+    final completedCount = filteredActivities
+        .where((item) => item.completed)
+        .length;
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: border, width: 0.7)),
+      ),
+      child: Column(
+        children: [
+          // ======================================================
+          // DETAIL HEADER
+          // ======================================================
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 10, 9),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.07)
+                              : Colors.black.withValues(alpha: 0.045),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.today_rounded,
+                          size: 16,
+                          color: textPrimary,
+                        ),
+                      ),
+
+                      const SizedBox(width: 9),
+
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _formatDate(widget.selectedDate),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Your activity for this day',
+                              style: TextStyle(
+                                color: textSecondary,
+                                fontSize: 9.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // DONE COUNT
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.black.withValues(alpha: 0.035),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${completedCount}/${filteredActivities.length} Done',
+                    style: TextStyle(
+                      color: textSecondary,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 6),
+
+                // NEXT DATE
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      widget.onDateSelected(
+                        widget.selectedDate.add(const Duration(days: 1)),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : Colors.black.withValues(alpha: 0.035),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ======================================================
+          // CATEGORY FILTERS
+          // ======================================================
+          _buildCategoryFilters(textSecondary: textSecondary, isDark: isDark),
+
+          // ======================================================
+          // TIMELINE
+          // ======================================================
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 2, 14, 4),
+            child: _buildTimeline(isDark: isDark, textSecondary: textSecondary),
+          ),
+
+          // ======================================================
+          // SELECTED ACTIVITY
+          // ======================================================
+          if (activity != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+              child: _buildActivityCard(
+                activity: activity,
+                isDark: isDark,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================================
+  // CATEGORY FILTERS
+  // ==========================================================
+
+  Widget _buildCategoryFilters({
+    required Color textSecondary,
+    required bool isDark,
+  }) {
+    return SizedBox(
+      height: 55,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: categories.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 5),
+        itemBuilder: (context, index) {
+          final category = categories[index];
+          final selected = selectedCategory == index;
+
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                selectedCategory = index;
+                selectedActivity = 0;
+              });
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              width: 45,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 27,
+                    height: 27,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? category.color.withValues(alpha: 0.16)
+                          : Colors.transparent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      category.icon,
+                      size: 15,
+                      color: selected ? category.color : textSecondary,
+                    ),
+                  ),
+
+                  const SizedBox(height: 3),
+
+                  Text(
+                    category.label,
+                    style: TextStyle(
+                      color: selected ? category.color : textSecondary,
+                      fontSize: 7.5,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ==========================================================
+  // TIMELINE
+  // ==========================================================
+
+  Widget _buildTimeline({required bool isDark, required Color textSecondary}) {
+    final lineColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.08);
+
+    final positions = [8.0, 62.0, 112.0, 174.0, 238.0];
+
+    return SizedBox(
+      height: 305,
+      child: Stack(
+        children: [
+          Column(
+            children: [
+              for (int i = 0; i < 7; i++)
+                Expanded(
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 48,
+                        child: Text(
+                          _timelineTime(i),
+                          style: TextStyle(
+                            color: textSecondary.withValues(alpha: 0.65),
+                            fontSize: 7.5,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border(
+                              top: BorderSide(color: lineColor, width: 0.5),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+
+          // VERTICAL TIMELINE
+          Positioned(
+            left: 65,
+            top: 5,
+            bottom: 5,
+            child: Container(
+              width: 1.2,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : Colors.black.withValues(alpha: 0.10),
+            ),
+          ),
+
+          // NODES
+          for (int i = 0; i < activities.length; i++)
+            _timelineNode(
+              index: i,
+              activity: activities[i],
+              position: positions[i],
+              isDark: isDark,
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================================
+  // TIMELINE NODE
+  // ==========================================================
+
+  Widget _timelineNode({
+    required int index,
+    required _GrowthTimelineActivity activity,
+    required double position,
+    required bool isDark,
+  }) {
+    final selected = selectedActivity == index;
+
+    return Positioned(
+      left: 52,
+      top: position,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedActivity = index;
+          });
+        },
+        child: Row(
+          children: [
+            Container(
+              width: 13,
+              height: 1,
+              color: activity.color.withValues(alpha: 0.45),
+            ),
+
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: selected ? 30 : 24,
+              height: selected ? 30 : 24,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: activity.color,
+                shape: BoxShape.circle,
+                border: selected
+                    ? Border.all(
+                        color: isDark ? Colors.white : Colors.black,
+                        width: 2,
+                      )
+                    : null,
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: activity.color.withValues(alpha: 0.28),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Icon(
+                activity.icon,
+                size: selected ? 14 : 12,
+                color: Colors.white,
+              ),
+            ),
+
+            const SizedBox(width: 8),
+
+            if (selected)
+              Container(
+                constraints: const BoxConstraints(maxWidth: 145),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.65)
+                      : Colors.white.withValues(alpha: 0.94),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: isDark ? null : AppShadows.cardLight,
+                ),
+                child: Text(
+                  activity.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================================
+  // ACTIVITY CARD
+  // ==========================================================
+
+  Widget _buildActivityCard({
+    required _GrowthTimelineActivity activity,
+    required bool isDark,
+    required Color textPrimary,
+    required Color textSecondary,
+  }) {
+    final surface = isDark
+        ? Colors.white.withValues(alpha: 0.025)
+        : Colors.black.withValues(alpha: 0.018);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.07)
+              : Colors.black.withValues(alpha: 0.06),
+          width: 0.7,
+        ),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: activity.color.withValues(
+                      alpha: isDark ? 0.17 : 0.10,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(activity.icon, color: activity.color, size: 20),
+                ),
+
+                const SizedBox(width: 10),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              activity.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(width: 7),
+
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: activity.color.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(
+                              activity.type,
+                              style: TextStyle(
+                                color: activity.color,
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 3),
+
+                      Text(
+                        activity.subtitle,
+                        style: TextStyle(color: textSecondary, fontSize: 10.5),
+                      ),
+
+                      const SizedBox(height: 5),
+
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time_rounded,
+                            size: 11,
+                            color: textSecondary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${activity.time} - ${activity.endTime}',
+                            style: TextStyle(
+                              color: textSecondary,
+                              fontSize: 9.5,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            '+${activity.xp} XP',
+                            style: TextStyle(
+                              color: activity.color,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          _buildProgress(
+            isDark: isDark,
+            textSecondary: textSecondary,
+            activity: activity,
+          ),
+
+          const SizedBox(height: 10),
+
+          _buildActions(
+            textPrimary: textPrimary,
+            isDark: isDark,
+            activity: activity,
+          ),
+
+          const SizedBox(height: 10),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================================
+  // PROGRESS
+  // ==========================================================
+
+  Widget _buildProgress({
+    required bool isDark,
+    required Color textSecondary,
+    required _GrowthTimelineActivity activity,
+  }) {
+    final filtered = selectedCategory == 0
+        ? activities
+        : activities
+              .where((item) => item.type == categories[selectedCategory].label)
+              .toList();
+
+    final completed = filtered.where((item) => item.completed).length;
+
+    final total = filtered.length;
+
+    final progress = total == 0 ? 0.0 : completed / total;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Progress',
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Text(
+                '$completed / $total completed',
+                style: TextStyle(
+                  color: textSecondary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 6),
+
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 4,
+              backgroundColor: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.06),
+              valueColor: AlwaysStoppedAnimation<Color>(activity.color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================================
+  // ACTIONS
+  // ==========================================================
+
+  Widget _buildActions({
+    required Color textPrimary,
+    required bool isDark,
+    required _GrowthTimelineActivity activity,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: _smallActionButton(
+              label: 'Edit',
+              icon: Icons.edit_outlined,
+              onTap: () {
+                _showMessage('Edit ${activity.title}');
+              },
+              isDark: isDark,
+              filled: false,
+              textPrimary: textPrimary,
+            ),
+          ),
+
+          const SizedBox(width: 7),
+
+          Expanded(
+            child: _smallActionButton(
+              label: 'Delete',
+              icon: Icons.delete_outline,
+              onTap: () {
+                _showMessage('Delete ${activity.title}');
+              },
+              isDark: isDark,
+              filled: false,
+              textPrimary: textPrimary,
+            ),
+          ),
+
+          const SizedBox(width: 7),
+
+          Expanded(
+            flex: 2,
+            child: _smallActionButton(
+              label: activity.completed ? 'Completed' : 'Mark as Done',
+              icon: activity.completed
+                  ? Icons.check_circle_rounded
+                  : Icons.check_rounded,
+              onTap: () {
+                _showMessage(
+                  activity.completed ? 'Already completed' : 'Marked as done',
+                );
+              },
+              isDark: isDark,
+              filled: true,
+              textPrimary: textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _smallActionButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+    required bool isDark,
+    required bool filled,
+    required Color textPrimary,
+  }) {
+    final background = filled
+        ? (isDark ? Colors.white : Colors.black)
+        : (isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.black.withValues(alpha: 0.035));
+
+    final foreground = filled
+        ? (isDark ? Colors.black : Colors.white)
+        : textPrimary;
+
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(9),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(9),
+        child: Container(
+          height: 34,
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 13, color: foreground),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showMessage(String message) {
+    Get.snackbar(
+      '',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(12),
+      duration: const Duration(seconds: 1),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  String _timelineTime(int index) {
+    switch (index) {
+      case 0:
+        return '8 AM';
+      case 1:
+        return '10 AM';
+      case 2:
+        return '12 PM';
+      case 3:
+        return '2 PM';
+      case 4:
+        return '4 PM';
+      case 5:
+        return '6 PM';
+      case 6:
+        return '8 PM';
+      default:
+        return '';
+    }
+  }
+}
+
+// ============================================================
+// LEVEL PROGRESS
+// ============================================================
+
 class _LevelProgressCard extends StatelessWidget {
   const _LevelProgressCard({required this.user});
 
@@ -461,7 +1688,6 @@ class _LevelProgressCard extends StatelessWidget {
           );
         },
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        splashFactory: InkRipple.splashFactory,
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
@@ -575,7 +1801,10 @@ class _LevelProgressCard extends StatelessWidget {
   }
 }
 
-//TODAY
+// ============================================================
+// TODAY CHECKLIST
+// ============================================================
+
 class _TimelineActivityItem {
   const _TimelineActivityItem({
     required this.title,
@@ -584,8 +1813,7 @@ class _TimelineActivityItem {
     required this.accentColor,
     required this.onTap,
     this.onToggle,
-    this.xpReward,
-  });
+  }) : xpReward = null;
 
   final String title;
   final String subtitle;
@@ -658,7 +1886,10 @@ class _GrowthTodayChecklist extends StatelessWidget {
 
     final activities = <_TimelineActivityItem>[];
 
+    // ==========================================================
     // HABITS
+    // ==========================================================
+
     if (habitItems.isNotEmpty) {
       for (final habit in habitItems) {
         final streakText = habit.streakCount > 0
@@ -714,7 +1945,10 @@ class _GrowthTodayChecklist extends StatelessWidget {
       );
     }
 
+    // ==========================================================
     // TASKS
+    // ==========================================================
+
     if (tasksTotal > 0) {
       final isTaskDone = tasksDone >= tasksTotal;
 
@@ -910,7 +2144,10 @@ class _GrowthTodayChecklist extends StatelessWidget {
   }
 }
 
-// TIMELINE ITEM
+// ============================================================
+// TIMELINE ITEM ROW
+// ============================================================
+
 class _TimelineItemRow extends StatelessWidget {
   const _TimelineItemRow({
     required this.item,
@@ -1068,7 +2305,10 @@ class _TimelineItemRow extends StatelessWidget {
   }
 }
 
-//IMPORTANT ALERTS
+// ============================================================
+// IMPORTANT ALERTS
+// ============================================================
+
 class _GrowthImportantAlerts extends StatelessWidget {
   const _GrowthImportantAlerts({required this.home, required this.controller});
 
@@ -1227,7 +2467,10 @@ class _GrowthAlertCard extends StatelessWidget {
   }
 }
 
-//GROW
+// ============================================================
+// GROW TOOLS
+// ============================================================
+
 class _ProductivityTools extends StatelessWidget {
   const _ProductivityTools({this.onNavigateTab});
 
@@ -1391,7 +2634,10 @@ class _ToolTile extends StatelessWidget {
   }
 }
 
-//YOUR NEXT MOVE
+// ============================================================
+// YOUR NEXT MOVE
+// ============================================================
+
 class _GrowthYourNextStepSection extends StatelessWidget {
   const _GrowthYourNextStepSection({required this.home, this.onNavigateTab});
 
@@ -1611,7 +2857,10 @@ class _GrowthActionCard extends StatelessWidget {
   }
 }
 
-//DAILY MINDSET
+// ============================================================
+// DAILY MINDSET
+// ============================================================
+
 class _DailyMindsetCard extends StatelessWidget {
   const _DailyMindsetCard({required this.motivation});
 
@@ -1719,7 +2968,50 @@ class _DailyMindsetCard extends StatelessWidget {
   }
 }
 
+// ============================================================
+// MODELS
+// ============================================================
+
+class _GrowthCategory {
+  const _GrowthCategory({
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+}
+
+class _GrowthTimelineActivity {
+  const _GrowthTimelineActivity({
+    required this.title,
+    required this.subtitle,
+    required this.time,
+    required this.endTime,
+    required this.type,
+    required this.icon,
+    required this.color,
+    required this.completed,
+    required this.xp,
+  });
+
+  final String title;
+  final String subtitle;
+  final String time;
+  final String endTime;
+  final String type;
+  final IconData icon;
+  final Color color;
+  final bool completed;
+  final int xp;
+}
+
+// ============================================================
 // SKELETON
+// ============================================================
+
 class _GrowthSkeletonView extends StatelessWidget {
   const _GrowthSkeletonView();
 
@@ -1796,7 +3088,7 @@ class _GrowthSkeletonView extends StatelessWidget {
             const SizedBox(height: 12),
 
             Container(
-              height: 120,
+              height: 130,
               decoration: BoxDecoration(
                 color: cardSurface,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -1839,7 +3131,10 @@ class _GrowthSkeletonView extends StatelessWidget {
   }
 }
 
+// ============================================================
 // ERROR
+// ============================================================
+
 class _GrowthErrorView extends StatelessWidget {
   const _GrowthErrorView({required this.errorMessage, required this.onRetry});
 

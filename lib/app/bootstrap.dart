@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import '../core/localization/localization_service.dart';
 import '../core/theme/theme_controller.dart';
 import '../firebase_options.dart';
+import '../features/notification/data/firebase_mobile_notification_service.dart';
 import 'app.dart';
 import 'bindings/initial_binding.dart';
 import 'routes/app_routes.dart';
@@ -86,6 +87,9 @@ Future<void> bootstrap() async {
   }
 
   runApp(GenLinkKhApp(initialRoute: initialRoute));
+  if (Get.isRegistered<FirebaseMobileNotificationService>()) {
+    unawaited(Get.find<FirebaseMobileNotificationService>().initialize());
+  }
 }
 
 /// Android 17 (API 37) blocks direct TCP connections to local addresses unless

@@ -232,6 +232,11 @@ abstract final class ApiEndpoints {
 
   // ── Notifications ─────────────────────────────────────────────────────
   static const notifications = '$_base/notifications';
+  static const notificationDevices =
+      '$_base/profile/settings/notifications/devices';
+
+  static String notificationDevice(String deviceId) =>
+      '$_base/profile/settings/notifications/devices/$deviceId';
 
   // ── Chats ─────────────────────────────────────────────────────────────
   static const chats = '$_base/community/chats';

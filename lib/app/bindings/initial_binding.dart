@@ -17,6 +17,9 @@ import '../../features/media/data/datasources/media_remote_datasource.dart';
 import '../../features/media/data/repositories/media_repository_impl.dart';
 import '../../features/media/domain/media_upload_service.dart';
 import '../../features/media/presentation/media_picker.dart';
+import '../../features/notification/data/firebase_mobile_notification_service.dart';
+import '../../features/notification/data/firebase_mobile_push_registration_service.dart';
+import '../../features/notification/domain/mobile_push_registration_service.dart';
 import '../../features/profile/presentation/controllers/profile_controller.dart';
 import '../../features/productivity/presentation/controllers/productivity_controller.dart';
 import '../../features/community/presentation/controllers/community_controller.dart';
@@ -50,6 +53,19 @@ class InitialBinding extends Bindings {
     Get
       ..put<Dio>(dio, permanent: true)
       ..put<ApiClient>(apiClient, permanent: true);
+
+    final mobilePushRegistrationService = FirebaseMobilePushRegistrationService(
+      apiClient: apiClient,
+    );
+    final mobileNotificationService = FirebaseMobileNotificationService();
+    Get.put<MobilePushRegistrationService>(
+      mobilePushRegistrationService,
+      permanent: true,
+    );
+    Get.put<FirebaseMobileNotificationService>(
+      mobileNotificationService,
+      permanent: true,
+    );
 
     void handleSessionCleared() {
       PaintingBinding.instance.imageCache.clear();
@@ -89,7 +105,10 @@ class InitialBinding extends Bindings {
       }
     }
 
-    AuthBinding(onSessionCleared: handleSessionCleared).dependencies();
+    AuthBinding(
+      onSessionCleared: handleSessionCleared,
+      mobilePushRegistrationService: mobilePushRegistrationService,
+    ).dependencies();
 
     final authInterceptor = AuthInterceptor(
       secureStorage: secureStorage,

@@ -58,21 +58,21 @@ void main() {
   }
 
   group('GENLINK HOME FEED HEADER SPECIFICATION TESTS', () {
-    testWidgets('1. Header Structure: Renders Home title and exactly Search -> Chat -> Notifications', (tester) async {
+    testWidgets('1. Header Structure: Renders Home title and exactly Search -> Notification -> Chat', (tester) async {
       await tester.pumpWidget(buildFeedHeaderApp());
       await tester.pumpAndSettle();
 
       expect(find.text('Home'), findsOneWidget);
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.chat_bubble_outline_rounded), findsOneWidget);
       expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.sms_outlined), findsOneWidget);
 
       final searchPos = tester.getTopLeft(find.byIcon(Icons.search_rounded));
-      final chatPos = tester.getTopLeft(find.byIcon(Icons.chat_bubble_outline_rounded));
       final notifPos = tester.getTopLeft(find.byIcon(Icons.notifications_none_rounded));
+      final chatPos = tester.getTopLeft(find.byIcon(Icons.sms_outlined));
 
-      expect(searchPos.dx, lessThan(chatPos.dx));
-      expect(chatPos.dx, lessThan(notifPos.dx));
+      expect(searchPos.dx, lessThan(notifPos.dx));
+      expect(notifPos.dx, lessThan(chatPos.dx));
     });
 
     testWidgets('2. Title Typography: Matches Finance screen (fontSize: 24, w800, letterSpacing: -0.5)', (tester) async {
@@ -107,7 +107,7 @@ void main() {
       }
 
       final searchIcon = tester.widget<Icon>(find.byIcon(Icons.search_rounded));
-      final chatIcon = tester.widget<Icon>(find.byIcon(Icons.chat_bubble_outline_rounded));
+      final chatIcon = tester.widget<Icon>(find.byIcon(Icons.sms_outlined));
       final notifIcon = tester.widget<Icon>(find.byIcon(Icons.notifications_none_rounded));
 
       expect(searchIcon.size, equals(20.5));
@@ -193,8 +193,8 @@ void main() {
         expect(tester.takeException(), isNull, reason: 'Failed on viewport $size');
         expect(find.text('Home'), findsOneWidget);
         expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.chat_bubble_outline_rounded), findsOneWidget);
         expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.sms_outlined), findsOneWidget);
       }
     });
 
@@ -225,7 +225,10 @@ void main() {
       expect(notifController.unreadCount, equals(1));
 
       // Verify notification bell has badge container
-      final notifInk = find.byType(Ink).last;
+      final notifInk = find.ancestor(
+        of: find.byIcon(Icons.notifications_none_rounded),
+        matching: find.byType(Ink),
+      );
       expect(notifInk, findsOneWidget);
 
       final containers = tester.widgetList<Container>(
@@ -249,12 +252,12 @@ void main() {
       await tester.pumpAndSettle();
 
       final searchFinder = find.byIcon(Icons.search_rounded);
-      final chatFinder = find.byIcon(Icons.chat_bubble_outline_rounded);
       final notifFinder = find.byIcon(Icons.notifications_none_rounded);
+      final chatFinder = find.byIcon(Icons.sms_outlined);
 
       expect(searchFinder, findsOneWidget);
-      expect(chatFinder, findsOneWidget);
       expect(notifFinder, findsOneWidget);
+      expect(chatFinder, findsOneWidget);
 
       // Search navigation
       await tester.tap(searchFinder);

@@ -125,22 +125,6 @@ class CommunityHeaderWidget extends StatelessWidget
 
                       SizedBox(width: buttonGap),
 
-                      _HeaderActionButton(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        onTap: () => Get.to(() => const ChatListScreen()),
-                        iconColor: textPrimary,
-                        surfaceColor: surface,
-                        borderColor: border,
-                        buttonSize: buttonSize,
-                        iconSize: iconSize,
-                        tooltip: 'community.chat'.tr.isNotEmpty &&
-                                'community.chat'.tr != 'community.chat'
-                            ? 'community.chat'.tr
-                            : 'Messages',
-                      ),
-
-                      SizedBox(width: buttonGap),
-
                       Builder(builder: (context) {
                         final notifTooltip = 'community.notifications'.tr.isNotEmpty &&
                                 'community.notifications'.tr != 'community.notifications'
@@ -177,6 +161,22 @@ class CommunityHeaderWidget extends StatelessWidget
                           );
                         });
                       }),
+
+                      SizedBox(width: buttonGap),
+
+                      _HeaderActionButton(
+                        icon: Icons.sms_outlined,
+                        onTap: () => Get.to(() => const ChatListScreen()),
+                        iconColor: textPrimary,
+                        surfaceColor: surface,
+                        borderColor: border,
+                        buttonSize: buttonSize,
+                        iconSize: iconSize,
+                        tooltip: 'community.chat'.tr.isNotEmpty &&
+                                'community.chat'.tr != 'community.chat'
+                            ? 'community.chat'.tr
+                            : 'Messages',
+                      ),
                     ],
                   ),
                 ],

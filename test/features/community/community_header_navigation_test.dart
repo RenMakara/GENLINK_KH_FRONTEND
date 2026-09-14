@@ -174,7 +174,7 @@ void main() {
       expect(find.text('Home'), findsOneWidget);
 
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.chat_bubble_outline_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.sms_outlined), findsOneWidget);
       expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
     });
 
@@ -362,7 +362,7 @@ void main() {
 
       expect(find.text('ទំព័រដើម'), findsOneWidget);
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.chat_bubble_outline_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.sms_outlined), findsOneWidget);
       expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -400,7 +400,7 @@ void main() {
         expect(tester.takeException(), isNull, reason: 'Failed at size $size');
         expect(find.text('Home'), findsOneWidget);
         expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.chat_bubble_outline_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.sms_outlined), findsOneWidget);
         expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
       }
     });

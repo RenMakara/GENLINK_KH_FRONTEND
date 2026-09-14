@@ -78,9 +78,7 @@ class QuickCreatePostCard extends StatelessWidget {
                               effectiveName != null &&
                                       effectiveName.isNotEmpty &&
                                       effectiveName != 'Guest'
-                                  ? (Get.locale?.languageCode == 'km'
-                                      ? 'តើមានអ្វីកំពុងកើតឡើងក្នុងសហគមន៍របស់អ្នក, $effectiveName?'
-                                      : "What's happening in your community, $effectiveName?")
+                                  ? 'community.whatsHappeningWithName'.trParams({'name': effectiveName})
                                   : 'community.whatsHappening'.tr,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -135,7 +133,7 @@ class QuickCreatePostCard extends StatelessWidget {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               child: Text(
-                                'Post',
+                                'community.post'.tr,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: textPrimary,
                                   fontWeight: FontWeight.w600,
@@ -149,7 +147,7 @@ class QuickCreatePostCard extends StatelessWidget {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               child: Text(
-                                'Discussion',
+                                'community.discussion'.tr,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: textPrimary,
                                   fontWeight: FontWeight.w600,
@@ -163,7 +161,7 @@ class QuickCreatePostCard extends StatelessWidget {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               child: Text(
-                                'Event',
+                                'community.event'.tr,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: textPrimary,
                                   fontWeight: FontWeight.w600,

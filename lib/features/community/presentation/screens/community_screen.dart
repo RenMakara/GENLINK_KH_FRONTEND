@@ -157,40 +157,48 @@ class _CommunityScreenState extends State<CommunityScreen>
                               ),
                               borderRadius:
                                   BorderRadius.circular(AppRadius.pill),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 6.5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? semantic.tabActiveBg
-                                      : semantic.tabInactiveBg,
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.pill),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? Colors.transparent
-                                        : borderSubtle,
-                                    width: 0.8,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  constraints: const BoxConstraints(
+                                    minHeight: 34,
+                                    minWidth: 80,
                                   ),
-                                ),
-                                child: Text(
-                                  'community.${cat.toLowerCase()}'.tr,
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 7.0,
+                                  ),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
                                     color: isSelected
-                                        ? semantic.tabActiveText
-                                        : semantic.tabInactiveText,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                    fontSize: 13.5,
-                                    letterSpacing: -0.1,
-                                    height: 1.25,
+                                        ? semantic.tabActiveBg
+                                        : semantic.tabInactiveBg,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.pill),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Colors.transparent
+                                          : borderSubtle,
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'community.${cat.toLowerCase()}'.tr,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? semantic.tabActiveText
+                                          : semantic.tabInactiveText,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                      fontSize: 13.5,
+                                      letterSpacing: -0.1,
+                                      height: 1.25,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -270,18 +278,18 @@ class _CommunityScreenState extends State<CommunityScreen>
           children: [
             const StoryTrayWidget(),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
             const QuickCreatePostCard(),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
             if (widget.isHomeScreen) ...[
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: HomeFeaturedEventsCarousel(),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
             ],
 
             Obx(() {
@@ -393,11 +401,7 @@ class _CommunityScreenState extends State<CommunityScreen>
               ),
               const SizedBox(height: 6),
               Text(
-                'community.beFirstToShare'.tr.isNotEmpty &&
-                        'community.beFirstToShare'.tr !=
-                            'community.beFirstToShare'
-                    ? 'community.beFirstToShare'.tr
-                    : 'Be the first to share something with your community.',
+                'community.beFirstToShare'.tr,
                 style: TextStyle(
                   color: textMuted,
                   fontSize: 13.5,
@@ -1172,20 +1176,6 @@ class _CommunityScreenState extends State<CommunityScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 2, bottom: 8),
-          child: Center(
-            child: SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: AppColors.communityAccent.withValues(alpha: 0.8),
-              ),
-            ),
-          ),
-        ),
-
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Container(

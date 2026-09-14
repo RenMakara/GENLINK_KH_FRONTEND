@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/models/community_models.dart';
@@ -106,6 +107,7 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
       appBar: AppBar(
         backgroundColor: bg,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: const Center(child: AppBackButton()),
         leadingWidth: 72,
         title: Text(
@@ -181,6 +183,9 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
                   foregroundColor: isDark
                       ? AppColors.darkTextInverse
                       : AppColors.lightTextInverse,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
                 ),
               ),
             ],
@@ -228,26 +233,23 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
       itemCount: _discussions.length,
       itemBuilder: (context, index) {
         final topic = _discussions[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.md),
-          child: ForumThreadCard(
-            title: topic.title,
-            author: topic.authorName,
-            avatarUrl: topic.authorAvatar,
-            timeAgo: topic.timeAgo,
-            createdAt: topic.createdAt,
-            content: topic.content,
-            category: topic.category,
-            replies: topic.repliesCount,
-            likes: topic.upvotes,
-            isPinned: topic.isPinned,
-            isLiked: topic.isLiked,
-            onTap: () =>
-                Get.to(() => ForumDiscussionScreen(discussion: topic)),
-            onCommentTap: () =>
-                Get.to(() => ForumDiscussionScreen(discussion: topic)),
-            onLikeTap: () => _handleLikeTap(topic, index),
-          ),
+        return ForumThreadCard(
+          title: topic.title,
+          author: topic.authorName,
+          avatarUrl: topic.authorAvatar,
+          timeAgo: topic.timeAgo,
+          createdAt: topic.createdAt,
+          content: topic.content,
+          category: topic.category,
+          replies: topic.repliesCount,
+          likes: topic.upvotes,
+          isPinned: topic.isPinned,
+          isLiked: topic.isLiked,
+          onTap: () =>
+              Get.to(() => ForumDiscussionScreen(discussion: topic)),
+          onCommentTap: () =>
+              Get.to(() => ForumDiscussionScreen(discussion: topic)),
+          onLikeTap: () => _handleLikeTap(topic, index),
         );
       },
     );

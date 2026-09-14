@@ -86,7 +86,8 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
   void _onBackPress() {
     if (_hasUnsavedChanges) {
       final isDark = Theme.of(context).brightness == Brightness.dark;
-      final dialogBg = isDark ? const Color(0xFF1E2228) : Colors.white;
+      final dialogBg =
+          isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
       final textPrimary =
           isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
       final textSecondary =
@@ -150,7 +151,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                     ? 'community.discard'.tr
                     : 'Discard',
                 style: const TextStyle(
-                  color: Colors.redAccent,
+                  color: AppColors.danger,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -165,7 +166,8 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
 
   void _showCategorySheet() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? const Color(0xFF161B22) : Colors.white;
+    final surface =
+        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
     final textPrimary =
         isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary =
@@ -182,7 +184,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
           constraints: BoxConstraints(
             maxHeight: MediaQuery.of(context).size.height * 0.7,
           ),
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           decoration: BoxDecoration(
             color: surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -199,76 +201,103 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white24 : Colors.black12,
+                      color: isDark
+                          ? AppColors.darkBorderSubtle
+                          : AppColors.lightBorderSubtle,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
-                Text(
-                  'community.discussionCategory'.tr.isNotEmpty &&
-                          'community.discussionCategory'.tr !=
-                              'community.discussionCategory'
-                      ? 'community.discussionCategory'.tr
-                      : 'Category',
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    'community.discussionCategory'.tr.isNotEmpty &&
+                            'community.discussionCategory'.tr !=
+                                'community.discussionCategory'
+                        ? 'community.discussionCategory'.tr
+                        : 'Category',
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
                 ..._categoryKeys.map((key) {
                   final isSelected = _selectedCategory == key;
-                  return InkWell(
-                    onTap: () {
-                      setState(() => _selectedCategory = key);
-                      Navigator.pop(ctx);
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 4,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isSelected ? textPrimary : textSecondary,
-                                width: isSelected ? 2.0 : 1.5,
+                  return Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    child: InkWell(
+                      onTap: () {
+                        setState(() => _selectedCategory = key);
+                        Navigator.pop(ctx);
+                      },
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      child: Container(
+                        height: 46,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: isSelected
+                            ? BoxDecoration(
+                                color: isDark
+                                    ? AppColors.darkSurfaceSecondary
+                                    : AppColors.lightBgSecondary,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                                border: Border.all(
+                                  color: borderColor,
+                                  width: 0.8,
+                                ),
+                              )
+                            : null,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color:
+                                      isSelected ? textPrimary : textSecondary,
+                                  width: isSelected ? 2.0 : 1.5,
+                                ),
                               ),
-                            ),
-                            child: isSelected
-                                ? Center(
-                                    child: Container(
-                                      width: 10,
-                                      height: 10,
-                                      decoration: BoxDecoration(
-                                        color: textPrimary,
-                                        shape: BoxShape.circle,
+                              child: isSelected
+                                  ? Center(
+                                      child: Container(
+                                        width: 10,
+                                        height: 10,
+                                        decoration: BoxDecoration(
+                                          color: textPrimary,
+                                          shape: BoxShape.circle,
+                                        ),
                                       ),
-                                    ),
-                                  )
-                                : null,
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Text(
-                              key.tr,
-                              style: TextStyle(
-                                color: isSelected ? textPrimary : textSecondary,
-                                fontSize: 15,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                key.tr,
+                                style: TextStyle(
+                                  color: isSelected ? textPrimary : textSecondary,
+                                  fontSize: 14.5,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                            if (isSelected)
+                              Icon(
+                                Icons.check_rounded,
+                                color: textPrimary,
+                                size: 19,
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -441,7 +470,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
     final cardBorder =
         isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
     final inputBg =
-        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
 
     final charCount = _contentController.text.length;
     const maxChars = 5000;
@@ -505,17 +534,19 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                 onPressed: _canPublish && !_isSubmitting ? _submit : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _canPublish
-                      ? (isDark ? Colors.white : Colors.black87)
+                      ? (isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.lightTextPrimary)
                       : (isDark
-                            ? const Color(0xFF222222)
-                            : const Color(0xFFE2E8F0)),
+                          ? AppColors.darkSurfaceSecondary
+                          : AppColors.lightBgSecondary),
                   disabledBackgroundColor: isDark
-                      ? const Color(0xFF222222)
-                      : const Color(0xFFE2E8F0),
+                      ? AppColors.darkSurfaceSecondary
+                      : AppColors.lightBgSecondary,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                 ),
                 child: _isSubmitting
@@ -524,15 +555,21 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: isDark ? Colors.black : Colors.white,
+                          color: isDark
+                              ? AppColors.darkTextInverse
+                              : AppColors.lightTextInverse,
                         ),
                       )
                     : Text(
                         actionButtonText,
                         style: TextStyle(
                           color: _canPublish
-                              ? (isDark ? Colors.black : Colors.white)
-                              : (isDark ? Colors.white30 : Colors.black38),
+                              ? (isDark
+                                  ? AppColors.darkTextInverse
+                                  : AppColors.lightTextInverse)
+                              : (isDark
+                                  ? AppColors.darkTextMuted
+                                  : AppColors.lightTextMuted),
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -579,7 +616,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
               const SizedBox(height: 8),
               InkWell(
                 onTap: _showCategorySheet,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
@@ -587,7 +624,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: inputBg,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(color: cardBorder, width: 1.0),
                   ),
                   child: Row(
@@ -668,15 +705,15 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                   filled: true,
                   fillColor: inputBg,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     borderSide: BorderSide(color: cardBorder),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     borderSide: BorderSide(color: cardBorder),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     borderSide: BorderSide(color: textPrimary, width: 1.4),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
@@ -740,15 +777,15 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                   filled: true,
                   fillColor: inputBg,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     borderSide: BorderSide(color: cardBorder),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     borderSide: BorderSide(color: cardBorder),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     borderSide: BorderSide(color: textPrimary, width: 1.4),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
@@ -766,9 +803,9 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                     '$charCount / $maxChars',
                     style: TextStyle(
                       color: charCount >= maxChars
-                          ? Colors.redAccent
+                          ? AppColors.danger
                           : (charCount >= 4800
-                              ? Colors.orangeAccent
+                              ? AppColors.warning
                               : textMuted),
                       fontSize: 12,
                       fontWeight: FontWeight.w500,

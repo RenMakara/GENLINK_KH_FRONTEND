@@ -31,29 +31,33 @@ class ForumCategoryCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final cardBg = isSelected
-        ? Colors.white
+        ? (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary)
         : (isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary);
 
     final cardBorder = isSelected
-        ? Colors.white
+        ? (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary)
         : (isDark
             ? AppColors.darkBorderSubtle.withValues(alpha: 0.60)
             : AppColors.lightBorderSubtle);
 
     final titleColor = isSelected
-        ? Colors.black
-        : (isDark ? Colors.white : AppColors.lightTextPrimary);
+        ? (isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse)
+        : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary);
     final countColor = isSelected
-        ? Colors.black.withValues(alpha: 0.65)
+        ? (isDark
+            ? AppColors.darkTextInverse.withValues(alpha: 0.75)
+            : AppColors.lightTextInverse.withValues(alpha: 0.75))
         : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary);
     final iconBoxBg = isSelected
-        ? Colors.black.withValues(alpha: 0.08)
+        ? (isDark
+            ? AppColors.darkTextInverse.withValues(alpha: 0.12)
+            : AppColors.lightTextInverse.withValues(alpha: 0.10))
         : (isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.black.withValues(alpha: 0.05));
+            ? AppColors.darkSurfaceSecondary
+            : AppColors.lightBgSecondary);
     final iconColor = isSelected
-        ? Colors.black
-        : (isDark ? Colors.white : AppColors.lightTextPrimary);
+        ? (isDark ? AppColors.darkTextInverse : AppColors.lightTextInverse)
+        : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary);
 
     return InkWell(
       onTap: onTap,

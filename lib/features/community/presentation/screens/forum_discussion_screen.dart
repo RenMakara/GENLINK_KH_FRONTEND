@@ -143,10 +143,11 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   void _showOptionsSheet() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final bg = isDark ? AppColors.darkSurfaceSecondary : Colors.white;
-    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final bg = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary =
-        isDark ? Colors.white70 : AppColors.lightTextSecondary;
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final borderSubtle =
         isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 
@@ -172,7 +173,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white24 : Colors.black12,
+                  color: isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -324,10 +325,12 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
 
   void _showDeleteDialog() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg = isDark ? AppColors.darkSurfaceSecondary : Colors.white;
-    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final dialogBg =
+        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary =
-        isDark ? Colors.white70 : AppColors.lightTextSecondary;
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
     showDialog(
       context: context,
@@ -463,6 +466,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
       appBar: AppBar(
         backgroundColor: bg,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: const Center(child: AppBackButton()),
         leadingWidth: 72,
         title: Text(
@@ -968,10 +972,12 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   void _showDeleteCommentDialog(CommentModel comment) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final dialogBg = isDark ? AppColors.darkSurfaceSecondary : Colors.white;
-    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final dialogBg =
+        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary =
-        isDark ? Colors.white70 : AppColors.lightTextSecondary;
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
     bool isDeleting = false;
 
@@ -1113,14 +1119,18 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   void _showEditCommentDialog(CommentModel comment) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final dialogBg = isDark ? AppColors.darkSurfaceSecondary : Colors.white;
-    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final dialogBg =
+        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary =
-        isDark ? Colors.white70 : AppColors.lightTextSecondary;
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final borderSubtle =
         isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-    final primaryBtnBg = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final primaryBtnFg = isDark ? Colors.black : Colors.white;
+    final primaryBtnBg =
+        isDark ? Colors.white : AppColors.lightTextPrimary;
+    final primaryBtnFg =
+        isDark ? Colors.black : Colors.white;
 
     final textController = TextEditingController(text: comment.text);
     bool isSaving = false;
@@ -1180,7 +1190,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     borderSide: BorderSide(
-                      color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                     ),
                   ),
                   contentPadding: const EdgeInsets.all(12),
@@ -1319,10 +1329,10 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   void _showCommentOptions(CommentModel comment, bool isCommentOwner) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final surface = isDark ? AppColors.darkSurfaceSecondary : Colors.white;
-    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final surface =
+        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
 
     showModalBottomSheet(
       context: context,
@@ -1344,7 +1354,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                 height: 4,
                 margin: const EdgeInsets.only(top: 8, bottom: 12),
                 decoration: BoxDecoration(
-                  color: textSecondary.withValues(alpha: 0.3),
+                  color: isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

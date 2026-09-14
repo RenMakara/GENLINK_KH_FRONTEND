@@ -1133,6 +1133,20 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
+  void _showDocumentAttachmentNotice() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'community.documentNotice'.tr.isNotEmpty &&
+                  'community.documentNotice'.tr != 'community.documentNotice'
+              ? 'community.documentNotice'.tr
+              : 'Documents and files can be attached as media or shared via links.',
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   void _showPollCreatorSheet() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? const Color(0xFF16181C) : Colors.white;
@@ -2150,7 +2164,18 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                         child: InkWell(
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            GlobalCreateSheet.show(context, fromPostComposer: true);
+                            GlobalCreateSheet.show(
+                              context,
+                              fromPostComposer: true,
+                              onSelectMedia: _showMediaPickerSheet,
+                              onSelectPoll: _showPollCreatorSheet,
+                              onSelectCelebration: () {
+                                setState(() {
+                                  _selectedFeeling = '🥳 Celebrating';
+                                });
+                              },
+                              onSelectDocument: _showDocumentAttachmentNotice,
+                            );
                           },
                           borderRadius: BorderRadius.circular(10),
                           child: Container(

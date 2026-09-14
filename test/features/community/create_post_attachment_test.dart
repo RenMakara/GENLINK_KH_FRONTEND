@@ -12,7 +12,10 @@ class MockCommunityRepository implements CommunityRepository {
   CommunityPostModel? createdPost;
 
   @override
-  Future<List<CommunityPostModel>> getPosts({int page = 1, int limit = 10}) async => [];
+  Future<List<CommunityPostModel>> getPosts({
+    int page = 1,
+    int limit = 10,
+  }) async => [];
 
   @override
   Future<CommunityPostModel> createPost({
@@ -54,7 +57,10 @@ class MockCommunityRepository implements CommunityRepository {
   }
 
   @override
-  Future<CommunityPostModel> updatePost(String postId, {required String content}) async {
+  Future<CommunityPostModel> updatePost(
+    String postId, {
+    required String content,
+  }) async {
     return CommunityPostModel(
       id: postId,
       userId: 'user_1',
@@ -79,13 +85,20 @@ class MockCommunityRepository implements CommunityRepository {
   Future<bool> toggleBookmark(String postId) async => true;
 
   @override
-  Future<bool> repostPost(String postId, {String? caption, String? reposterId}) async => true;
+  Future<bool> repostPost(
+    String postId, {
+    String? caption,
+    String? reposterId,
+  }) async => true;
 
   @override
   Future<bool> unrepostPost(String postId, {String? reposterId}) async => true;
 
   @override
-  Future<bool> reportPost(String postId, {String reason = 'INAPPROPRIATE_CONTENT'}) async => true;
+  Future<bool> reportPost(
+    String postId, {
+    String reason = 'INAPPROPRIATE_CONTENT',
+  }) async => true;
 
   @override
   Future<List<CommentModel>> getComments(String postId) async => [];
@@ -145,260 +158,293 @@ void main() {
   });
 
   group('CreatePostScreen and Global Create Interaction Comprehensive Tests', () {
-    testWidgets('1. Test opening Create Post: renders header, schedule icon, and toolbar', (tester) async {
-      final repo = MockCommunityRepository();
-      final controller = CommunityController(repository: repo);
-      Get.put<CommunityController>(controller);
+    testWidgets(
+      '1. Test opening Create Post: renders header, schedule icon, and toolbar',
+      (tester) async {
+        final repo = MockCommunityRepository();
+        final controller = CommunityController(repository: repo);
+        Get.put<CommunityController>(controller);
 
-      await tester.pumpWidget(
-        GetMaterialApp(
-          translations: AppTranslations(),
-          locale: const Locale('en', 'US'),
-          home: const CreatePostScreen(),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en', 'US'),
+            home: const CreatePostScreen(),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text("What's on your mind?"), findsOneWidget);
+        expect(find.text("What's on your mind?"), findsOneWidget);
 
-      expect(find.text('Public'), findsOneWidget);
+        expect(find.text('Public'), findsOneWidget);
 
-      expect(find.byTooltip('Create'), findsOneWidget);
+        expect(find.byTooltip('Create'), findsOneWidget);
 
-      expect(find.byTooltip('Media / Image'), findsOneWidget);
-      expect(find.byTooltip('GIF'), findsOneWidget);
-      expect(find.byTooltip('Feeling / Activity'), findsOneWidget);
-      expect(find.byTooltip('Event'), findsWidgets);
-      expect(find.byTooltip('Location'), findsOneWidget);
-    });
+        expect(find.byTooltip('Media / Image'), findsOneWidget);
+        expect(find.byTooltip('GIF'), findsOneWidget);
+        expect(find.byTooltip('Feeling / Activity'), findsOneWidget);
+        expect(find.byTooltip('Event'), findsWidgets);
+        expect(find.byTooltip('Location'), findsOneWidget);
+      },
+    );
 
-    testWidgets('2. Test "+" inside New Post opens Create sheet with Community, Productivity, Financial, and Entertainment categories', (tester) async {
-      tester.view.physicalSize = const Size(600, 2000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+    testWidgets(
+      '2. Test "+" inside New Post opens compact floating glass menu with creation options',
+      (tester) async {
+        tester.view.physicalSize = const Size(600, 2000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
 
-      final repo = MockCommunityRepository();
-      final controller = CommunityController(repository: repo);
-      Get.put<CommunityController>(controller);
+        final repo = MockCommunityRepository();
+        final controller = CommunityController(repository: repo);
+        Get.put<CommunityController>(controller);
 
-      await tester.pumpWidget(
-        GetMaterialApp(
-          translations: AppTranslations(),
-          locale: const Locale('en', 'US'),
-          home: const CreatePostScreen(),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en', 'US'),
+            home: const CreatePostScreen(),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Create'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Create'));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(GlobalCreateSheet), findsOneWidget);
-      expect(find.text('What would you like to create?'), findsOneWidget);
+        expect(find.byType(GlobalCreateSheet), findsOneWidget);
+        expect(find.text('Create'), findsWidgets);
 
-      expect(find.text('COMMUNITY'), findsOneWidget);
-      expect(find.text('PRODUCTIVITY'), findsOneWidget);
-      expect(find.text('FINANCIAL'), findsOneWidget);
-      expect(find.text('ENTERTAINMENT'), findsOneWidget);
+        // Verify compact glass pill options exist
+        expect(find.text('Poll'), findsOneWidget);
+        expect(find.text('Discussion'), findsOneWidget);
+        expect(find.text('Celebration'), findsOneWidget);
+        expect(find.text('Job'), findsOneWidget);
+        expect(find.text('Document'), findsOneWidget);
+        expect(find.text('Media'), findsOneWidget);
+        expect(find.text('Event'), findsWidgets);
 
-      expect(find.text('Post'), findsWidgets);
-      expect(find.text('Story'), findsOneWidget);
-      expect(find.text('Event'), findsWidgets);
-      expect(find.text('Discussion'), findsOneWidget);
-      expect(find.text('Goal'), findsOneWidget);
-      expect(find.text('To-Do'), findsOneWidget);
-      expect(find.text('Habit'), findsOneWidget);
-      expect(find.text('Expense'), findsOneWidget);
-      expect(find.text('Saving Goal'), findsOneWidget);
-      expect(find.text('Budget'), findsOneWidget);
-      expect(find.text('Quiz'), findsOneWidget);
-      expect(find.text('Challenge'), findsOneWidget);
-      expect(find.text('Short Content'), findsOneWidget);
-    });
+        // Verify removed categories and options are absent
+        expect(find.text('COMMUNITY'), findsNothing);
+        expect(find.text('PRODUCTIVITY'), findsNothing);
+        expect(find.text('FINANCIAL'), findsNothing);
+        expect(find.text('ENTERTAINMENT'), findsNothing);
+        expect(find.text('Goal'), findsNothing);
+        expect(find.text('To-Do'), findsNothing);
+        expect(find.text('Habit'), findsNothing);
+        expect(find.text('Expense'), findsNothing);
+        expect(find.text('Saving Goal'), findsNothing);
+        expect(find.text('Budget'), findsNothing);
+        expect(find.text('Quiz'), findsNothing);
+        expect(find.text('Challenge'), findsNothing);
 
-    testWidgets('3. Test Location attachment option: attaches location and preserves draft text', (tester) async {
-      final repo = MockCommunityRepository();
-      final controller = CommunityController(repository: repo);
-      Get.put<CommunityController>(controller);
+        // Verify right-side chevron arrows are removed
+        expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+        expect(find.byIcon(Icons.chevron_right), findsNothing);
+      },
+    );
 
-      await tester.pumpWidget(
-        GetMaterialApp(
-          translations: AppTranslations(),
-          locale: const Locale('en', 'US'),
-          home: const CreatePostScreen(),
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      '3. Test Location attachment option: attaches location and preserves draft text',
+      (tester) async {
+        final repo = MockCommunityRepository();
+        final controller = CommunityController(repository: repo);
+        Get.put<CommunityController>(controller);
 
-      await tester.enterText(
-        find.byType(TextField).first,
-        'Had a great day at university!',
-      );
-      await tester.pump();
-      expect(find.text('Had a great day at university!'), findsOneWidget);
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en', 'US'),
+            home: const CreatePostScreen(),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Location'));
-      await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byType(TextField).first,
+          'Had a great day at university!',
+        );
+        await tester.pump();
+        expect(find.text('Had a great day at university!'), findsOneWidget);
 
-      expect(find.text('CADT Innovation Center, Phnom Penh'), findsOneWidget);
-      await tester.tap(find.text('CADT Innovation Center, Phnom Penh'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Location'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Had a great day at university!'), findsOneWidget);
+        expect(find.text('CADT Innovation Center, Phnom Penh'), findsOneWidget);
+        await tester.tap(find.text('CADT Innovation Center, Phnom Penh'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('CADT Innovation Center, Phnom Penh'), findsWidgets);
-    });
+        expect(find.text('Had a great day at university!'), findsOneWidget);
 
-    testWidgets('4. Test Feeling/Activity attachment option: attaches feeling and preserves draft text', (tester) async {
-      final repo = MockCommunityRepository();
-      final controller = CommunityController(repository: repo);
-      Get.put<CommunityController>(controller);
+        expect(find.text('CADT Innovation Center, Phnom Penh'), findsWidgets);
+      },
+    );
 
-      await tester.pumpWidget(
-        GetMaterialApp(
-          translations: AppTranslations(),
-          locale: const Locale('en', 'US'),
-          home: const CreatePostScreen(),
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      '4. Test Feeling/Activity attachment option: attaches feeling and preserves draft text',
+      (tester) async {
+        final repo = MockCommunityRepository();
+        final controller = CommunityController(repository: repo);
+        Get.put<CommunityController>(controller);
 
-      await tester.enterText(
-        find.byType(TextField).first,
-        'Coding my Flutter project!',
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en', 'US'),
+            home: const CreatePostScreen(),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Feeling / Activity'));
-      await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byType(TextField).first,
+          'Coding my Flutter project!',
+        );
+        await tester.pump();
 
-      expect(find.text('😊 Happy'), findsOneWidget);
-      await tester.tap(find.text('😊 Happy'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Feeling / Activity'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Coding my Flutter project!'), findsOneWidget);
+        expect(find.text('😊 Happy'), findsOneWidget);
+        await tester.tap(find.text('😊 Happy'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('😊 Happy'), findsWidgets);
-    });
+        expect(find.text('Coding my Flutter project!'), findsOneWidget);
 
-    testWidgets('5. Test Audience selector: selects Friends and updates header capsule', (tester) async {
-      final repo = MockCommunityRepository();
-      final controller = CommunityController(repository: repo);
-      Get.put<CommunityController>(controller);
+        expect(find.text('😊 Happy'), findsWidgets);
+      },
+    );
 
-      await tester.pumpWidget(
-        GetMaterialApp(
-          translations: AppTranslations(),
-          locale: const Locale('en', 'US'),
-          home: const CreatePostScreen(),
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      '5. Test Audience selector: selects Friends and updates header capsule',
+      (tester) async {
+        final repo = MockCommunityRepository();
+        final controller = CommunityController(repository: repo);
+        Get.put<CommunityController>(controller);
 
-      await tester.enterText(
-        find.byType(TextField).first,
-        'Study session with friends',
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en', 'US'),
+            home: const CreatePostScreen(),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Public'));
-      await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byType(TextField).first,
+          'Study session with friends',
+        );
+        await tester.pump();
 
-      expect(find.text('Friends only'), findsOneWidget);
-      await tester.tap(find.text('Friends only'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Public'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Study session with friends'), findsOneWidget);
+        expect(find.text('Friends only'), findsOneWidget);
+        await tester.tap(find.text('Friends only'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Friends only'), findsOneWidget);
-    });
+        expect(find.text('Study session with friends'), findsOneWidget);
 
-    testWidgets('6. Test multiple attachments together on the same draft and verify Post button', (tester) async {
-      final repo = MockCommunityRepository();
-      final controller = CommunityController(repository: repo);
-      Get.put<CommunityController>(controller);
+        expect(find.text('Friends only'), findsOneWidget);
+      },
+    );
 
-      await tester.pumpWidget(
-        GetMaterialApp(
-          translations: AppTranslations(),
-          locale: const Locale('en', 'US'),
-          home: const CreatePostScreen(),
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      '6. Test multiple attachments together on the same draft and verify Post button',
+      (tester) async {
+        final repo = MockCommunityRepository();
+        final controller = CommunityController(repository: repo);
+        Get.put<CommunityController>(controller);
 
-      await tester.enterText(
-        find.byType(TextField).first,
-        'Campus hackathon launch day!',
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en', 'US'),
+            home: const CreatePostScreen(),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Location'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('RUPP Campus 1, Phnom Penh'));
-      await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byType(TextField).first,
+          'Campus hackathon launch day!',
+        );
+        await tester.pump();
 
-      await tester.tap(find.byTooltip('Feeling / Activity'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('🤩 Excited'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Location'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('RUPP Campus 1, Phnom Penh'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Campus hackathon launch day!'), findsOneWidget);
-      expect(find.text('RUPP Campus 1, Phnom Penh'), findsWidgets);
-      expect(find.text('🤩 Excited'), findsWidgets);
+        await tester.tap(find.byTooltip('Feeling / Activity'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('🤩 Excited'));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Post'));
-      await tester.pumpAndSettle();
+        expect(find.text('Campus hackathon launch day!'), findsOneWidget);
+        expect(find.text('RUPP Campus 1, Phnom Penh'), findsWidgets);
+        expect(find.text('🤩 Excited'), findsWidgets);
 
-      expect(repo.createdPost, isNotNull);
-      expect(repo.createdPost!.content, 'Campus hackathon launch day!');
-    });
+        await tester.tap(find.text('Post'));
+        await tester.pumpAndSettle();
 
-    testWidgets('7. Test Light and Dark modes render cleanly without exception', (tester) async {
-      final repo = MockCommunityRepository();
-      final controller = CommunityController(repository: repo);
-      Get.put<CommunityController>(controller);
+        expect(repo.createdPost, isNotNull);
+        expect(repo.createdPost!.content, 'Campus hackathon launch day!');
+      },
+    );
 
-      await tester.pumpWidget(
-        GetMaterialApp(
-          theme: ThemeData.dark(),
-          translations: AppTranslations(),
-          locale: const Locale('en', 'US'),
-          home: const CreatePostScreen(),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
+    testWidgets(
+      '7. Test Light and Dark modes render cleanly without exception',
+      (tester) async {
+        final repo = MockCommunityRepository();
+        final controller = CommunityController(repository: repo);
+        Get.put<CommunityController>(controller);
 
-      await tester.tap(find.byTooltip('Create'));
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-      expect(find.text('What would you like to create?'), findsOneWidget);
+        await tester.pumpWidget(
+          GetMaterialApp(
+            theme: ThemeData.dark(),
+            translations: AppTranslations(),
+            locale: const Locale('en', 'US'),
+            home: const CreatePostScreen(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
 
-      await tester.tapAt(const Offset(10, 10));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('Create'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.byType(GlobalCreateSheet), findsOneWidget);
+        expect(find.text('Poll'), findsOneWidget);
 
-      await tester.pumpWidget(
-        GetMaterialApp(
-          theme: ThemeData.light(),
-          translations: AppTranslations(),
-          locale: const Locale('en', 'US'),
-          home: const CreatePostScreen(),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
+        await tester.tapAt(const Offset(10, 10));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Create'));
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-      expect(find.text('What would you like to create?'), findsOneWidget);
-    });
+        await tester.pumpWidget(
+          GetMaterialApp(
+            theme: ThemeData.light(),
+            translations: AppTranslations(),
+            locale: const Locale('en', 'US'),
+            home: const CreatePostScreen(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
 
-    testWidgets('8. Test narrow screen (320px) zero layout overflow', (tester) async {
+        await tester.tap(find.byTooltip('Create'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.byType(GlobalCreateSheet), findsOneWidget);
+        expect(find.text('Poll'), findsOneWidget);
+      },
+    );
+
+    testWidgets('8. Test narrow screen (320px) zero layout overflow', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -425,14 +471,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(find.text('What would you like to create?'), findsOneWidget);
-      expect(find.text('Post'), findsWidgets);
-      expect(find.text('Story'), findsOneWidget);
-      expect(find.text('Event'), findsWidgets);
+      expect(find.byType(GlobalCreateSheet), findsOneWidget);
+      expect(find.text('Poll'), findsOneWidget);
       expect(find.text('Discussion'), findsOneWidget);
-      expect(find.text('Goal'), findsOneWidget);
-      expect(find.text('To-Do'), findsOneWidget);
-      expect(find.text('Habit'), findsOneWidget);
+      expect(find.text('Celebration'), findsOneWidget);
+      expect(find.text('Job'), findsOneWidget);
+      expect(find.text('Document'), findsOneWidget);
+      expect(find.text('Media'), findsOneWidget);
+      expect(find.text('Event'), findsWidgets);
     });
 
     testWidgets('9. Test Khmer localization renders properly', (tester) async {
@@ -456,10 +502,13 @@ void main() {
       await tester.tap(find.byTooltip('បង្កើត'));
       await tester.pumpAndSettle();
 
-      expect(find.text('តើអ្នកចង់បង្កើតអ្វី?'), findsOneWidget);
-      expect(find.text('សហគមន៍'), findsOneWidget);
-      expect(find.text('ប្រកាស'), findsWidgets);
-      expect(find.text('ស្តូរី'), findsOneWidget);
+      expect(find.byType(GlobalCreateSheet), findsOneWidget);
+      expect(find.text('ការស្ទង់មតិ'), findsOneWidget);
+      expect(find.text('ការពិភាក្សា'), findsOneWidget);
+      expect(find.text('ការអបអរសាទរ'), findsOneWidget);
+      expect(find.text('ការងារ'), findsOneWidget);
+      expect(find.text('ឯកសារ'), findsOneWidget);
+      expect(find.text('មេឌៀ'), findsOneWidget);
       expect(find.text('ព្រឹត្តិការណ៍'), findsWidgets);
     });
   });

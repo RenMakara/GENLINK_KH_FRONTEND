@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:genlink_frontend/features/levelup/levelup_screen.dart';
 import 'package:get/get.dart';
 
 import 'package:genlink_frontend/core/localization/app_translations.dart';
@@ -12,7 +13,6 @@ import 'package:genlink_frontend/features/community/domain/repositories/communit
 import 'package:genlink_frontend/features/community/domain/repositories/story_repository.dart';
 import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/controllers/story_controller.dart';
-import 'package:genlink_frontend/features/growth/presentation/screens/growth_screen.dart';
 import 'package:genlink_frontend/features/home/data/home_repository.dart';
 import 'package:genlink_frontend/features/home/domain/entities/home_entity.dart';
 import 'package:genlink_frontend/features/home/presentation/controllers/home_controller.dart';
@@ -47,15 +47,73 @@ class _MockHttpClientRequest implements HttpClientRequest {
 
 class _MockHttpClientResponse implements HttpClientResponse {
   static final _kTransparentPng = <int>[
-    0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-    0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-    0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
-    0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,
-    0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
-    0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
-    0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
-    0x42, 0x60, 0x82,
+    0x89,
+    0x50,
+    0x4E,
+    0x47,
+    0x0D,
+    0x0A,
+    0x1A,
+    0x0A,
+    0x00,
+    0x00,
+    0x00,
+    0x0D,
+    0x49,
+    0x48,
+    0x44,
+    0x52,
+    0x00,
+    0x00,
+    0x00,
+    0x01,
+    0x00,
+    0x00,
+    0x00,
+    0x01,
+    0x08,
+    0x06,
+    0x00,
+    0x00,
+    0x00,
+    0x1F,
+    0x15,
+    0xC4,
+    0x89,
+    0x00,
+    0x00,
+    0x00,
+    0x0A,
+    0x49,
+    0x44,
+    0x41,
+    0x54,
+    0x78,
+    0x9C,
+    0x63,
+    0x00,
+    0x01,
+    0x00,
+    0x00,
+    0x05,
+    0x00,
+    0x01,
+    0x0D,
+    0x0A,
+    0x2D,
+    0xB4,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x49,
+    0x45,
+    0x4E,
+    0x44,
+    0xAE,
+    0x42,
+    0x60,
+    0x82,
   ];
 
   @override
@@ -89,7 +147,10 @@ class _MockHttpClientResponse implements HttpClientResponse {
 
 class MockCommunityRepository implements CommunityRepository {
   @override
-  Future<List<CommunityPostModel>> getPosts({int page = 1, int limit = 10}) async => [];
+  Future<List<CommunityPostModel>> getPosts({
+    int page = 1,
+    int limit = 10,
+  }) async => [];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -105,7 +166,8 @@ class MockStoryRepository implements StoryRepository {
 
 class MockHomeRepository implements HomeRepository {
   MockHomeRepository({HomeEntity? stubData}) {
-    _stub = stubData ??
+    _stub =
+        stubData ??
         const HomeEntity(
           user: HomeUser(
             userId: 'user-1',
@@ -137,7 +199,8 @@ class MockHomeRepository implements HomeRepository {
           dailyMotivation: MotivationCard(
             motivationId: 'mot-1',
             title: 'Quote of the Day',
-            content: 'Success is the sum of small efforts repeated day in and day out.',
+            content:
+                'Success is the sum of small efforts repeated day in and day out.',
           ),
           recommendedCommunities: [
             CommunitySuggestion(
@@ -196,18 +259,21 @@ void main() {
     Get.reset();
   });
 
-  test('HomeController loads data and calculates today progress safely', () async {
-    final mockRepo = MockHomeRepository();
-    final controller = HomeController(repository: mockRepo);
+  test(
+    'HomeController loads data and calculates today progress safely',
+    () async {
+      final mockRepo = MockHomeRepository();
+      final controller = HomeController(repository: mockRepo);
 
-    await controller.load();
+      await controller.load();
 
-    expect(controller.isLoading.value, false);
-    expect(controller.home.value, isNotNull);
-    expect(controller.home.value?.user.safeLevel, 3);
-    expect(controller.home.value?.todayProgress.percent, 50);
-    expect(controller.habits.length, 2);
-  });
+      expect(controller.isLoading.value, false);
+      expect(controller.home.value, isNotNull);
+      expect(controller.home.value?.user.safeLevel, 3);
+      expect(controller.home.value?.todayProgress.percent, 50);
+      expect(controller.habits.length, 2);
+    },
+  );
 
   test('HomeController toggles habit check-in optimistically', () async {
     final mockRepo = MockHomeRepository();
@@ -219,69 +285,85 @@ void main() {
     await controller.toggleHabitCheckIn(habitId: 'h-2', targetState: true);
 
     expect(controller.home.value?.todayProgress.habitsCompletedToday, 2);
-    expect(controller.habits.firstWhere((h) => h.habitId == 'h-2').checkedInToday, true);
-  });
-
-  testWidgets('HomeScreen renders Campus Life & Connections with GenLink branding and tabs', (tester) async {
-    Get.put(CommunityController(repository: MockCommunityRepository()));
-
-    await tester.pumpWidget(
-      GetMaterialApp(
-        translations: AppTranslations(),
-        locale: const Locale('en'),
-        home: const HomeScreen(),
-      ),
+    expect(
+      controller.habits.firstWhere((h) => h.habitId == 'h-2').checkedInToday,
+      true,
     );
-
-    await tester.pumpAndSettle();
-
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.forum_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
-
-    expect(find.text('Feed'), findsOneWidget);
-    expect(find.text('Forum'), findsOneWidget);
-    expect(find.text('Event'), findsOneWidget);
   });
 
-  testWidgets('HomeScreen renders Demo Stories and opens DemoStoryViewer on tap', (tester) async {
-    Get.put(CommunityController(repository: MockCommunityRepository()));
-    final storyController = Get.put(StoryController(repository: MockStoryRepository()));
-    storyController.isLoading.value = false;
+  testWidgets(
+    'HomeScreen renders Campus Life & Connections with GenLink branding and tabs',
+    (tester) async {
+      Get.put(CommunityController(repository: MockCommunityRepository()));
 
-    await tester.pumpWidget(
-      GetMaterialApp(
-        translations: AppTranslations(),
-        locale: const Locale('en'),
-        home: const HomeScreen(),
-      ),
-    );
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en'),
+          home: const HomeScreen(),
+        ),
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    expect(find.text('Your Story'), findsOneWidget);
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.forum_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
 
-    expect(find.text('Dara'), findsOneWidget);
-    expect(find.text('Lina'), findsOneWidget);
-    expect(find.text('Sokha'), findsOneWidget);
+      expect(find.text('Feed'), findsOneWidget);
+      expect(find.text('Forum'), findsOneWidget);
+      expect(find.text('Event'), findsOneWidget);
+    },
+  );
 
-    await tester.tap(find.text('Dara'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+  testWidgets(
+    'HomeScreen renders Demo Stories and opens DemoStoryViewer on tap',
+    (tester) async {
+      Get.put(CommunityController(repository: MockCommunityRepository()));
+      final storyController = Get.put(
+        StoryController(repository: MockStoryRepository()),
+      );
+      storyController.isLoading.value = false;
 
-    expect(find.text('Dara'), findsWidgets);
-    expect(find.textContaining('Working on the Flutter mobile design system'), findsOneWidget);
-    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en'),
+          home: const HomeScreen(),
+        ),
+      );
 
-    await tester.tap(find.byIcon(Icons.close_rounded));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.close_rounded), findsNothing);
-  });
+      expect(find.text('Your Story'), findsOneWidget);
 
-  testWidgets('GrowthScreen renders Personal Development & Productivity', (tester) async {
+      expect(find.text('Dara'), findsOneWidget);
+      expect(find.text('Lina'), findsOneWidget);
+      expect(find.text('Sokha'), findsOneWidget);
+
+      await tester.tap(find.text('Dara'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Dara'), findsWidgets);
+      expect(
+        find.textContaining('Working on the Flutter mobile design system'),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byIcon(Icons.close_rounded), findsNothing);
+    },
+  );
+
+  testWidgets('GrowthScreen renders Personal Development & Productivity', (
+    tester,
+  ) async {
     final mockRepo = MockHomeRepository();
     Get.put(HomeController(repository: mockRepo));
 
@@ -321,7 +403,9 @@ void main() {
     expect(find.text('Solve 5 Math Quizzes'), findsOneWidget);
   });
 
-  testWidgets('GrowthScreen renders empty states when habits are zero', (tester) async {
+  testWidgets('GrowthScreen renders empty states when habits are zero', (
+    tester,
+  ) async {
     final mockRepo = MockHomeRepository(
       stubData: const HomeEntity(
         user: HomeUser(userId: 'u-empty', level: 1, totalXp: 0),
@@ -339,7 +423,7 @@ void main() {
       GetMaterialApp(
         translations: AppTranslations(),
         locale: const Locale('en'),
-        home: const GrowthScreen(),
+        home: const LevelUpScreen(),
       ),
     );
 

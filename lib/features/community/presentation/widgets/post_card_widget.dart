@@ -1817,19 +1817,23 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                         const SizedBox(height: 14),
 
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             if (event.attendeesCount > 0)
-                              Text(
-                                '👥 ${event.attendeesCount} $joinedLabel',
-                                style: TextStyle(
-                                  color: textSecondary,
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w500,
+                              Expanded(
+                                child: Text(
+                                  '👥 ${event.attendeesCount} $joinedLabel',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: textSecondary,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               )
                             else
-                              const SizedBox.shrink(),
+                              const Spacer(),
+                            const SizedBox(width: 8),
                             InkWell(
                               onTap: navigateToDetail,
                               borderRadius: BorderRadius.circular(AppRadius.pill),

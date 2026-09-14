@@ -8,7 +8,6 @@ import 'package:genlink_frontend/features/auth/domain/entities/user_entity.dart'
 import 'package:genlink_frontend/features/auth/domain/repositories/auth_repository.dart';
 import 'package:genlink_frontend/features/auth/domain/services/google_auth_service.dart';
 import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:genlink_frontend/features/notification/domain/mobile_push_registration_service.dart';
 import 'package:genlink_frontend/main_controller.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
@@ -18,24 +17,6 @@ class _MockAuthRepository extends Mock implements AuthRepository {}
 class _MockSecureStorage extends Mock implements SecureStorage {}
 
 class _MockGoogleAuthService extends Mock implements GoogleAuthService {}
-
-class _FakeMobilePushRegistrationService
-    implements MobilePushRegistrationService {
-  int registerCalls = 0;
-  int deactivateCalls = 0;
-  bool? lastRemoteValue;
-
-  @override
-  Future<void> registerCurrentDevice() async {
-    registerCalls++;
-  }
-
-  @override
-  Future<void> deactivateCurrentDevice({bool remote = true}) async {
-    deactivateCalls++;
-    lastRemoteValue = remote;
-  }
-}
 
 const _user = UserEntity(
   id: 'user-1',
@@ -64,7 +45,6 @@ void main() {
   late _MockAuthRepository repository;
   late _MockSecureStorage storage;
   late _MockGoogleAuthService google;
-  late _FakeMobilePushRegistrationService mobilePush;
   late MainController mainController;
   late AuthController controller;
 
@@ -72,14 +52,12 @@ void main() {
     repository = _MockAuthRepository();
     storage = _MockSecureStorage();
     google = _MockGoogleAuthService();
-    mobilePush = _FakeMobilePushRegistrationService();
     mainController = MainController();
     controller = AuthController(
       authRepository: repository,
       secureStorage: storage,
       localization: LocalizationService(localStorage: LocalStorage()),
       googleAuthService: google,
-      mobilePushRegistrationService: mobilePush,
       onSessionCleared: mainController.reset,
     );
     Get.testMode = true;
@@ -155,8 +133,6 @@ void main() {
           refreshToken: 'refresh-token',
         ),
       ).called(1);
-      await Future<void>.delayed(Duration.zero);
-      expect(mobilePush.registerCalls, 1);
     });
   });
 

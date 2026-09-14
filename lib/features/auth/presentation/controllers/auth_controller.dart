@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
-import 'package:genlink_frontend/features/notification/domain/mobile_push_registration_service.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/errors/app_error.dart';
@@ -26,17 +25,14 @@ class AuthController extends GetxController {
     required SecureStorage secureStorage,
     required this._localization,
     GoogleAuthService googleAuthService = const UnconfiguredGoogleAuthService(),
-    MobilePushRegistrationService? mobilePushRegistrationService,
     this.onSessionCleared,
   }) : _storage = secureStorage,
-       _google = googleAuthService,
-       _mobilePushRegistrationService = mobilePushRegistrationService;
+       _google = googleAuthService;
 
   final AuthRepository _authRepository;
   final SecureStorage _storage;
   final LocalizationService _localization;
   final GoogleAuthService _google;
-  final MobilePushRegistrationService? _mobilePushRegistrationService;
   final void Function()? onSessionCleared;
 
   /// Seconds a user must wait before requesting another OTP.
@@ -96,7 +92,6 @@ class AuthController extends GetxController {
       // Sync, not setLanguage: adopting the account value must not lock
       // the language against device-following.
       _localization.syncFromAccount(user.preferredLanguage);
-      unawaited(_registerMobilePushDevice());
       return true;
     } on AppError catch (e) {
       // Only confirmed authentication/account failures invalidate the
@@ -273,7 +268,7 @@ class AuthController extends GetxController {
       // Always clear local state, even if the server call fails —
       // otherwise a network blip would trap the user in the session.
     }
-    await _clearSession(deactivateMobilePushDevice: true);
+    await _clearSession();
     Get.offAllNamed<void>(AppRoutes.login);
   }
 
@@ -388,36 +383,9 @@ class AuthController extends GetxController {
     // as a sync, so device-following keeps working for users who never
     // explicitly chose.
     _localization.syncFromAccount(session.user.preferredLanguage);
-    unawaited(_registerMobilePushDevice());
   }
 
-  Future<void> _registerMobilePushDevice() async {
-    final service = _mobilePushRegistrationService;
-    if (service == null) return;
-
-    try {
-      await service.registerCurrentDevice();
-    } catch (error, stackTrace) {
-      // Push registration is supplemental. A Firebase or network failure must
-      // never turn a successful authentication into a failed login.
-      debugPrint('[FCM] Device registration failed: $error\n$stackTrace');
-    }
-  }
-
-  Future<void> _clearSession({
-    bool deactivateMobilePushDevice = false,
-  }) async {
-    final pushService = _mobilePushRegistrationService;
-    if (pushService != null) {
-      try {
-        await pushService.deactivateCurrentDevice(
-          remote: deactivateMobilePushDevice,
-        );
-      } catch (error, stackTrace) {
-        debugPrint('[FCM] Device cleanup failed: $error\n$stackTrace');
-      }
-    }
-
+  Future<void> _clearSession() async {
     await _storage.clearAll();
     currentUser.value = null;
     isAuthenticated.value = false;

@@ -10,7 +10,6 @@ import 'package:genlink_frontend/features/auth/domain/repositories/auth_reposito
 import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:genlink_frontend/features/media/domain/media_upload_service.dart';
 import 'package:genlink_frontend/features/media/presentation/media_picker.dart';
-import 'package:genlink_frontend/features/notification/data/firebase_mobile_notification_service.dart';
 import 'package:genlink_frontend/features/profile/domain/repositories/profile_repository.dart';
 import 'package:genlink_frontend/features/settings/domain/repositories/settings_repository.dart';
 import 'package:genlink_frontend/features/settings/presentation/bindings/settings_binding.dart';
@@ -34,7 +33,6 @@ void main() {
     expect(Get.isRegistered<ApiClient>(), isTrue);
     expect(Get.isRegistered<MediaUploadService>(), isTrue);
     expect(Get.isRegistered<MediaPicker>(), isTrue);
-    expect(Get.isRegistered<FirebaseMobileNotificationService>(), isTrue);
     expect(Get.isRegistered<AuthRepository>(), isTrue);
     expect(Get.isRegistered<AuthController>(), isTrue);
   });

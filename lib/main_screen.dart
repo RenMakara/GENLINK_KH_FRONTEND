@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 
 import 'features/community/presentation/screens/community_screen.dart';
 import 'features/community/presentation/widgets/community_creation_flow.dart';
-import 'features/growth/presentation/screens/growth_screen.dart';
+import 'features/levelup/levelup_screen.dart';
 import 'features/profile/presentation/screens/profile_screen.dart';
 import 'main_controller.dart';
 import 'shared/widgets/bottom_nav_bar.dart';
@@ -29,7 +29,9 @@ class _MainScreenState extends State<MainScreen> {
     ),
     KeyedSubtree(
       key: const PageStorageKey<String>('page_growth'),
-      child: GrowthScreen(onNavigateTab: (index) => controller.changeIndex(index)),
+      child: LevelUpScreen(
+        onNavigateTab: (index) => controller.changeIndex(index),
+      ),
     ),
     const KeyedSubtree(
       key: PageStorageKey<String>('page_finance'),
@@ -79,10 +81,7 @@ class _MainScreenState extends State<MainScreen> {
             }
             return false;
           },
-          child: FadeIndexedStack(
-            index: currentIndex,
-            children: pages,
-          ),
+          child: FadeIndexedStack(index: currentIndex, children: pages),
         ),
         bottomNavigationBar: BottomNavBar(
           currentIndex: currentIndex,
@@ -134,10 +133,7 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
       curve: Curves.easeInOutCubic,
     );
     _reverseFadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOutCubic,
-      ),
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutCubic),
     );
     _controller.addStatusListener(_onAnimationStatusChanged);
   }
@@ -178,10 +174,7 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
         if (!isCurrent && !isPrevious) {
           return Offstage(
             offstage: true,
-            child: TickerMode(
-              enabled: false,
-              child: widget.children[i],
-            ),
+            child: TickerMode(enabled: false, child: widget.children[i]),
           );
         }
 
@@ -189,10 +182,7 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
           return IgnorePointer(
             child: FadeTransition(
               opacity: _reverseFadeAnimation,
-              child: TickerMode(
-                enabled: false,
-                child: widget.children[i],
-              ),
+              child: TickerMode(enabled: false, child: widget.children[i]),
             ),
           );
         }
@@ -201,10 +191,7 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
           ignoring: isAnimating,
           child: FadeTransition(
             opacity: _fadeAnimation,
-            child: TickerMode(
-              enabled: true,
-              child: widget.children[i],
-            ),
+            child: TickerMode(enabled: true, child: widget.children[i]),
           ),
         );
       }),

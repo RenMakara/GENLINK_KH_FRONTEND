@@ -244,6 +244,89 @@ class CommunityRemoteDataSource {
     );
   }
 
+  Future<CommunityPostModel> createPollPost({
+    required String question,
+    required List<String> options,
+    String? caption,
+    String visibility = 'Public',
+    String? communityId,
+  }) async {
+    String resolvedVisibility;
+    switch (visibility.toUpperCase()) {
+      case 'FRIENDS':
+        resolvedVisibility = 'FRIENDS';
+        break;
+      case 'COMMUNITY':
+        resolvedVisibility = 'COMMUNITY';
+        break;
+      default:
+        resolvedVisibility = 'PUBLIC';
+    }
+
+    final payload = <String, dynamic>{
+      'question': question.trim(),
+      'options': options.map((o) => o.trim()).where((o) => o.isNotEmpty).toList(),
+      if (caption != null && caption.trim().isNotEmpty) 'caption': caption.trim(),
+      'visibility': resolvedVisibility,
+      if (communityId != null && communityId.isNotEmpty) 'communityId': communityId,
+    };
+
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityPoll,
+        data: payload,
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final data = body is Map<String, dynamic> ? body['data'] : null;
+      if (data is Map<String, dynamic>) {
+        return CommunityPostModel.fromJson(data);
+      }
+      if (body is Map<String, dynamic>) {
+        return CommunityPostModel.fromJson(body);
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to create poll on server.',
+      errorCode: 'POLL_CREATION_FAILED',
+    );
+  }
+
+  Future<CommunityPostModel> votePoll({
+    required String postId,
+    required String optionId,
+  }) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityPollVote(postId),
+        data: {'optionId': optionId},
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final data = body is Map<String, dynamic> ? body['data'] : null;
+      if (data is Map<String, dynamic>) {
+        // When backend returns ApiResponse<PollResponse>, wrap with postId
+        if (data.containsKey('pollId') || data.containsKey('options')) {
+          return CommunityPostModel.fromJson({'postId': postId, 'poll': data});
+        }
+        return CommunityPostModel.fromJson(data);
+      }
+      if (body is Map<String, dynamic>) {
+        return CommunityPostModel.fromJson({'postId': postId, 'poll': body});
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to record vote on server.',
+      errorCode: 'POLL_VOTE_FAILED',
+    );
+  }
+
   Future<bool> deletePost(String postId) async {
     try {
       await guardDio(

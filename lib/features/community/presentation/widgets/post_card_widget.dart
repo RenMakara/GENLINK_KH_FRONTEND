@@ -584,6 +584,12 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final actionIconColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final resolvedEvent = widget.post.attachedEvent ??
+        (widget.post.isEventPost && widget.post.eventId != null
+            ? widget.controller.events.firstWhereOrNull(
+                (e) => e.id == widget.post.eventId,
+              )
+            : null);
 
     return Container(
       margin: const EdgeInsets.only(bottom: CommunityCardStyle.cardBottomMargin),
@@ -1033,14 +1039,25 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
           // into CommunityPostModel.videoUrl and rendered here automatically.
           // ─────────────────────────────────────────────────────────────
 
-          if (widget.post.imageUrls.isNotEmpty) _buildImageCarousel(widget.post.imageUrls),
+          if (widget.post.imageUrls.isNotEmpty &&
+              !(resolvedEvent != null &&
+                  widget.post.imageUrls.length == 1 &&
+                  widget.post.imageUrls.first == resolvedEvent.imageUrl))
+            _buildImageCarousel(widget.post.imageUrls),
 
           if (widget.post.pollQuestion != null && widget.post.pollOptions != null)
             PollWidget(
+              postId: widget.post.id,
               question: widget.post.pollQuestion!,
               options: widget.post.pollOptions!,
+              totalVotes: widget.post.pollTotalVotes,
+              hasVoted: widget.post.hasVoted,
+              myOptionId: widget.post.myOptionId,
               duration: widget.post.pollDuration,
               hideResultsUntilVote: widget.post.hideResultsUntilVote,
+              onVote: (optionId) async {
+                await widget.controller.votePoll(widget.post.id, optionId);
+              },
             ),
 
           if (widget.post.linkUrl != null)
@@ -1050,8 +1067,8 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               domain: widget.post.linkPreviewDomain,
             ),
 
-          if (widget.post.attachedEvent != null)
-            _buildAttachedEventCard(context, widget.post.attachedEvent!),
+          if (resolvedEvent != null)
+            _buildAttachedEventCard(context, resolvedEvent),
 
           const SizedBox(height: 2),
           Padding(
@@ -1453,41 +1470,34 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
   }
 
   String _formatEventDate(EventModel event) {
-    String dateStr = event.dateString.trim();
-    String timeStr = event.timeString.trim();
-
-    if (dateStr.isEmpty && event.startDateTime != null) {
-      final dt = event.startDateTime!;
-      const enMonths = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-      ];
-      dateStr = '${enMonths[dt.month - 1]} ${dt.day}, ${dt.year}';
-      if (timeStr.isEmpty) {
-        final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
-        final period = dt.hour >= 12 ? 'PM' : 'AM';
-        final min = dt.minute.toString().padLeft(2, '0');
-        timeStr = '$hour:$min $period';
+    final isKhmer = Get.locale?.languageCode == 'km';
+    if (event.startDateTime != null) {
+      final d = event.formatLocalizedDateRange(isKhmer);
+      final t = event.formatLocalizedTimeRange(isKhmer);
+      if (d.isNotEmpty && t.isNotEmpty) {
+        return '$d · $t';
+      } else if (d.isNotEmpty) {
+        return d;
       }
     }
+
+    String dateStr = event.dateString.trim();
+    String timeStr = event.timeString.trim();
 
     if (dateStr.isEmpty) return '';
 
     String localizedDate = dateStr;
-    final isKhmer = Get.locale?.languageCode == 'km';
-    if (isKhmer) {
-      final kmMonths = 'date.months'.tr.split(',');
-      const enMonths = [
-        'jan', 'feb', 'mar', 'apr', 'may', 'jun',
-        'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
-      ];
-      if (kmMonths.length == 12) {
-        for (int i = 0; i < enMonths.length; i++) {
-          final regex = RegExp(enMonths[i], caseSensitive: false);
-          if (regex.hasMatch(localizedDate)) {
-            localizedDate = localizedDate.replaceFirst(regex, kmMonths[i].trim());
-            break;
-          }
+    final kmMonths = 'date.months'.tr.split(',');
+    const enMonths = [
+      'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+      'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+    ];
+    if (kmMonths.length == 12 && 'date.months'.tr != 'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec') {
+      for (int i = 0; i < enMonths.length; i++) {
+        final regex = RegExp(enMonths[i], caseSensitive: false);
+        if (regex.hasMatch(localizedDate)) {
+          localizedDate = localizedDate.replaceFirst(regex, kmMonths[i].trim());
+          break;
         }
       }
     }
@@ -1502,34 +1512,41 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final cardBg = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
+    final cardBg = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
     final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
     final ctaBg = isDark ? Colors.white : Colors.black;
     final ctaText = isDark ? Colors.black : Colors.white;
+
     final isRsvped = event.isRsvped;
 
-    // Graceful error / empty state
-    if (event.id.isEmpty && event.title.isEmpty) {
+    // Handle deleted/unavailable event fallback gracefully
+    if ((event.id.isEmpty && event.title.isEmpty) || event.title.trim().isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
         child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: cardBg,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: borderSubtle.withValues(alpha: 0.6), width: 0.8),
+            border: Border.all(color: borderSubtle, width: 0.8),
           ),
-          child: Center(
-            child: Text(
-              'community.eventUnavailable'.tr.isNotEmpty &&
-                      'community.eventUnavailable'.tr != 'community.eventUnavailable'
-                  ? 'community.eventUnavailable'.tr
-                  : 'Event details currently unavailable',
-              style: TextStyle(color: textSecondary, fontSize: 13),
-            ),
+          child: Row(
+            children: [
+              Icon(Icons.event_busy_outlined, color: textSecondary, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'community.eventUnavailable'.tr.isNotEmpty &&
+                          'community.eventUnavailable'.tr != 'community.eventUnavailable'
+                      ? 'community.eventUnavailable'.tr
+                      : 'Event details currently unavailable',
+                  style: TextStyle(color: textSecondary, fontSize: 13.5),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -1571,6 +1588,17 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
             'community.newEvent'.tr != 'community.newEvent'
         ? 'community.newEvent'.tr
         : 'New Event';
+    final isKhmer = Get.locale?.languageCode == 'km';
+    final isAnnouncement = widget.post.isAnnouncementPost ||
+        widget.post.postType?.toLowerCase() == 'announcement';
+    final String eventBadgeText = isAnnouncement
+        ? (isKhmer
+            ? ('community.eventAnnouncementBadge'.tr.isNotEmpty &&
+                    'community.eventAnnouncementBadge'.tr != 'community.eventAnnouncementBadge'
+                ? 'community.eventAnnouncementBadge'.tr
+                : 'សេចក្ដីប្រកាសព្រឹត្តិការណ៍')
+            : 'EVENT ANNOUNCEMENT')
+        : newEventBadgeText;
     final String viewEventLabel = 'community.viewEvent'.tr.isNotEmpty &&
             'community.viewEvent'.tr != 'community.viewEvent'
         ? 'community.viewEvent'.tr
@@ -1602,31 +1630,30 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Hero(
-                      tag: 'post-event-${event.id}-${widget.post.id}',
-                      child: hasLocalCover
-                          ? Image.file(event.coverImageFile!, fit: BoxFit.cover)
-                          : (hasNetworkCover
-                              ? Image.network(
-                                  event.imageUrl,
-                                  fit: BoxFit.cover,
-                                  frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                                    if (wasSynchronouslyLoaded) return child;
-                                    return AnimatedOpacity(
-                                      opacity: frame == null ? 0.0 : 1.0,
-                                      duration: const Duration(milliseconds: 300),
-                                      curve: Curves.easeOut,
-                                      child: child,
-                                    );
-                                  },
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      _buildMonochromeEventPlaceholder(isDark, textSecondary),
-                                )
-                              : _buildMonochromeEventPlaceholder(isDark, textSecondary)),
+                  if (hasLocalCover || hasNetworkCover)
+                    AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Hero(
+                        tag: 'post-event-${event.id}-${widget.post.id}',
+                        child: hasLocalCover
+                            ? Image.file(event.coverImageFile!, fit: BoxFit.cover)
+                            : Image.network(
+                                event.imageUrl,
+                                fit: BoxFit.cover,
+                                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                                  if (wasSynchronouslyLoaded) return child;
+                                  return AnimatedOpacity(
+                                    opacity: frame == null ? 0.0 : 1.0,
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeOut,
+                                    child: child,
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) =>
+                                    _buildMonochromeEventPlaceholder(isDark, textSecondary),
+                              ),
+                      ),
                     ),
-                  ),
 
                   Padding(
                     padding: const EdgeInsets.all(14),
@@ -1651,7 +1678,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                                 ),
                               ),
                               child: Text(
-                                newEventBadgeText,
+                                eventBadgeText,
                                 style: TextStyle(
                                   color: isDark ? Colors.white : textPrimary,
                                   fontSize: 10,
@@ -1682,29 +1709,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                                 ),
                               ),
                             ),
-                            if (isOnline)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? Colors.white.withValues(alpha: 0.06)
-                                      : Colors.black.withValues(alpha: 0.04),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color: borderSubtle.withValues(alpha: 0.4),
-                                    width: 0.6,
-                                  ),
-                                ),
-                                child: Text(
-                                  onlineLabel.toUpperCase(),
-                                  style: TextStyle(
-                                    color: textSecondary,
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                              ),
                             if (event.isPaid)
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
@@ -1771,30 +1775,32 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                           ),
                         ],
 
-                        const SizedBox(height: 4),
-
-                        Row(
-                          children: [
-                            Icon(locationIcon, color: textSecondary, size: 14),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                locationText,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: textSecondary,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  height: 1.25,
+                        if (locationText.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(locationIcon, color: textSecondary, size: 14),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  locationText,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: textSecondary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.25,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
 
                         if (event.description.trim().isNotEmpty &&
-                            event.description.trim() != event.title) ...[
+                            event.description.trim() != event.title &&
+                            widget.post.content.trim() != event.description.trim()) ...[
                           const SizedBox(height: 8),
                           Text(
                             event.description.trim(),
@@ -1980,9 +1986,9 @@ class _VideoPostMediaState extends State<VideoPostMedia> {
     final ctrl = _ctrl;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.lg - 2),
         child: AspectRatio(
           aspectRatio: (ctrl != null && _initialized) ? ctrl.value.aspectRatio : 16 / 9,
           child: Stack(

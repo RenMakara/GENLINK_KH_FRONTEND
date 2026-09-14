@@ -12,6 +12,19 @@ abstract class CommunityRepository {
     String community = 'All GenLink',
   });
 
+  Future<CommunityPostModel> createPollPost({
+    required String question,
+    required List<String> options,
+    String? caption,
+    String visibility = 'Public',
+    String? communityId,
+  });
+
+  Future<CommunityPostModel> votePoll({
+    required String postId,
+    required String optionId,
+  });
+
   Future<CommunityPostModel> getPostDetails(String postId);
 
   Future<CommunityPostModel> updatePost(

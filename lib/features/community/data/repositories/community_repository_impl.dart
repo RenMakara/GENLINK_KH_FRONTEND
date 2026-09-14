@@ -31,6 +31,34 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<CommunityPostModel> createPollPost({
+    required String question,
+    required List<String> options,
+    String? caption,
+    String visibility = 'Public',
+    String? communityId,
+  }) {
+    return remoteDataSource.createPollPost(
+      question: question,
+      options: options,
+      caption: caption,
+      visibility: visibility,
+      communityId: communityId,
+    );
+  }
+
+  @override
+  Future<CommunityPostModel> votePoll({
+    required String postId,
+    required String optionId,
+  }) {
+    return remoteDataSource.votePoll(
+      postId: postId,
+      optionId: optionId,
+    );
+  }
+
+  @override
   Future<CommunityPostModel> getPostDetails(String postId) async {
     final posts = await remoteDataSource.fetchPosts();
     return posts.firstWhere((p) => p.id == postId, orElse: () => posts.first);

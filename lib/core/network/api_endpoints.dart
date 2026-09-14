@@ -169,6 +169,10 @@ abstract final class ApiEndpoints {
   // ── Community ─────────────────────────────────────────────────────────
   static const communityFeed = '$_base/community/posts/feed';
   static const communityPosts = '$_base/community/posts';
+  static const communityPoll = '$_base/community/posts/poll';
+
+  static String communityPollVote(String postId) =>
+      '$_base/community/posts/$postId/poll/vote';
 
   static String communityPostDetail(String postId) =>
       '$_base/community/posts/$postId';

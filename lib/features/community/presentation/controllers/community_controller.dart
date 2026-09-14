@@ -1089,6 +1089,129 @@ class CommunityController extends GetxController {
     }
   }
 
+  final isCreatingPoll = false.obs;
+  final inFlightPollVotes = <String>{}.obs;
+
+  Future<bool> createPollPost({
+    required String question,
+    required List<String> options,
+    String? caption,
+    String visibility = 'Public',
+    String? communityId,
+  }) async {
+    isCreatingPoll.value = true;
+    try {
+      final createdPost = await repository.createPollPost(
+        question: question,
+        options: options,
+        caption: caption,
+        visibility: visibility,
+        communityId: communityId,
+      );
+
+      posts.insert(0, createdPost);
+      posts.refresh();
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[CommunityController] createPollPost error: $e');
+      }
+      return false;
+    } finally {
+      isCreatingPoll.value = false;
+    }
+  }
+
+  Future<bool> votePoll(String postId, String optionId) async {
+    if (inFlightPollVotes.contains(postId)) return false;
+
+    final postIdx = posts.indexWhere((p) => p.id == postId);
+    if (postIdx == -1) return false;
+
+    final originalPost = posts[postIdx];
+    final prevOptions = originalPost.pollOptions != null
+        ? List<PollOptionModel>.from(originalPost.pollOptions!)
+        : <PollOptionModel>[];
+    final prevTotalVotes = originalPost.pollTotalVotes;
+    final prevHasVoted = originalPost.hasVoted;
+    final prevMyOptionId = originalPost.myOptionId;
+
+    // Duplicate vote prevention for the already selected option
+    if (prevHasVoted && prevMyOptionId == optionId) {
+      return true;
+    }
+
+    inFlightPollVotes.add(postId);
+
+    // Optimistic UI update
+    final updatedOptions = prevOptions.map((opt) {
+      final isNewChoice = opt.id == optionId;
+      final isOldChoice = opt.id == prevMyOptionId;
+
+      int newVotes = opt.votes;
+      if (isNewChoice) {
+        newVotes += 1;
+      } else if (isOldChoice && opt.votes > 0) {
+        newVotes -= 1;
+      }
+
+      return opt.copyWith(
+        votes: newVotes,
+        isVoted: isNewChoice,
+      );
+    }).toList();
+
+    final newTotalVotes = prevHasVoted ? prevTotalVotes : prevTotalVotes + 1;
+
+    posts[postIdx] = originalPost.copyWith(
+      pollOptions: updatedOptions,
+      pollTotalVotes: newTotalVotes,
+      hasVoted: true,
+      myOptionId: optionId,
+    );
+    posts.refresh();
+
+    try {
+      final updatedPost = await repository.votePoll(
+        postId: postId,
+        optionId: optionId,
+      );
+
+      final currentIdx = posts.indexWhere((p) => p.id == postId);
+      if (currentIdx != -1) {
+        final current = posts[currentIdx];
+        posts[currentIdx] = current.copyWith(
+          pollOptions: updatedPost.pollOptions ?? current.pollOptions,
+          pollTotalVotes: updatedPost.pollTotalVotes > 0
+              ? updatedPost.pollTotalVotes
+              : current.pollTotalVotes,
+          hasVoted: updatedPost.hasVoted,
+          myOptionId: updatedPost.myOptionId ?? optionId,
+        );
+        posts.refresh();
+      }
+      return true;
+    } catch (e) {
+      // Rollback on failure
+      final currentIdx = posts.indexWhere((p) => p.id == postId);
+      if (currentIdx != -1) {
+        posts[currentIdx] = originalPost.copyWith(
+          pollOptions: prevOptions,
+          pollTotalVotes: prevTotalVotes,
+          hasVoted: prevHasVoted,
+          myOptionId: prevMyOptionId,
+        );
+        posts.refresh();
+      }
+      if (kDebugMode) {
+        debugPrint('[CommunityController] votePoll error: $e');
+      }
+      rethrow;
+    } finally {
+      inFlightPollVotes.remove(postId);
+    }
+  }
+
   void toggleLike(String postId) {
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {

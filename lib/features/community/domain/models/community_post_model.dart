@@ -4,11 +4,57 @@ import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/utils/current_user.dart';
 
 class PollOptionModel {
+  final String id;
   final String text;
   int votes;
   bool isVoted;
 
-  PollOptionModel({required this.text, this.votes = 0, this.isVoted = false});
+  PollOptionModel({
+    this.id = '',
+    required this.text,
+    this.votes = 0,
+    this.isVoted = false,
+  });
+
+  PollOptionModel copyWith({
+    String? id,
+    String? text,
+    int? votes,
+    bool? isVoted,
+  }) {
+    return PollOptionModel(
+      id: id ?? this.id,
+      text: text ?? this.text,
+      votes: votes ?? this.votes,
+      isVoted: isVoted ?? this.isVoted,
+    );
+  }
+
+  factory PollOptionModel.fromJson(
+    Map<String, dynamic> json, {
+    String? myOptionId,
+  }) {
+    final optId =
+        json['optionId']?.toString() ?? json['id']?.toString() ?? '';
+    final count = json['voteCount'] as int? ?? json['votes'] as int? ?? 0;
+    final voted = json['isVoted'] as bool? ??
+        (myOptionId != null && myOptionId.isNotEmpty && myOptionId == optId);
+    return PollOptionModel(
+      id: optId,
+      text: json['text'] as String? ?? json['optionText'] as String? ?? '',
+      votes: count,
+      isVoted: voted,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'optionId': id,
+        'text': text,
+        'votes': votes,
+        'voteCount': votes,
+        'isVoted': isVoted,
+      };
 }
 
 class CommunityPostModel {
@@ -41,13 +87,18 @@ class CommunityPostModel {
   final String? linkUrl;
   final String? linkPreviewTitle;
   final String? linkPreviewDomain;
+  final String? pollId;
   final String? pollQuestion;
   final List<PollOptionModel>? pollOptions;
   final String? pollDuration;
   final bool allowMultipleAnswers;
   final bool hideResultsUntilVote;
+  final int pollTotalVotes;
+  final bool hasVoted;
+  final String? myOptionId;
   final List<CommentModel> comments;
   final EventModel? attachedEvent;
+  final String? eventId;
   final String? postType;
   final String? discussionTitle;
   final String? category;
@@ -58,9 +109,21 @@ class CommunityPostModel {
   /// True when this post carries a video (not images).
   bool get isVideoPost => videoUrl != null && videoUrl!.isNotEmpty;
 
-  /// True when this post represents an event post.
+  /// True when this post represents an event post or event announcement.
   bool get isEventPost =>
-      (postType?.toLowerCase() == 'event') || attachedEvent != null;
+      (postType?.toLowerCase() == 'event') ||
+      (postType?.toLowerCase() == 'announcement') ||
+      attachedEvent != null ||
+      (eventId != null && eventId!.isNotEmpty);
+
+  /// True when this post represents an announcement.
+  bool get isAnnouncementPost =>
+      postType?.toLowerCase() == 'announcement';
+
+  /// True when this post represents a poll post.
+  bool get isPollPost =>
+      (postType?.toUpperCase() == 'POLL') ||
+      (pollQuestion != null && (pollOptions?.isNotEmpty ?? false));
 
   CommunityPostModel({
     required this.id,
@@ -90,13 +153,18 @@ class CommunityPostModel {
     this.linkUrl,
     this.linkPreviewTitle,
     this.linkPreviewDomain,
+    this.pollId,
     this.pollQuestion,
     this.pollOptions,
     this.pollDuration,
     this.allowMultipleAnswers = false,
     this.hideResultsUntilVote = true,
+    this.pollTotalVotes = 0,
+    this.hasVoted = false,
+    this.myOptionId,
     this.comments = const [],
     this.attachedEvent,
+    this.eventId,
     this.postType,
     this.discussionTitle,
     this.category,
@@ -140,12 +208,17 @@ class CommunityPostModel {
     String? linkUrl,
     String? linkPreviewTitle,
     String? linkPreviewDomain,
+    String? pollId,
     String? pollQuestion,
     List<PollOptionModel>? pollOptions,
     String? pollDuration,
     bool? allowMultipleAnswers,
+    int? pollTotalVotes,
+    bool? hasVoted,
+    String? myOptionId,
     List<CommentModel>? comments,
     EventModel? attachedEvent,
+    String? eventId,
     String? postType,
     String? discussionTitle,
     String? category,
@@ -179,12 +252,17 @@ class CommunityPostModel {
       linkUrl: linkUrl ?? this.linkUrl,
       linkPreviewTitle: linkPreviewTitle ?? this.linkPreviewTitle,
       linkPreviewDomain: linkPreviewDomain ?? this.linkPreviewDomain,
+      pollId: pollId ?? this.pollId,
       pollQuestion: pollQuestion ?? this.pollQuestion,
       pollOptions: pollOptions ?? this.pollOptions,
       pollDuration: pollDuration ?? this.pollDuration,
       allowMultipleAnswers: allowMultipleAnswers ?? this.allowMultipleAnswers,
+      pollTotalVotes: pollTotalVotes ?? this.pollTotalVotes,
+      hasVoted: hasVoted ?? this.hasVoted,
+      myOptionId: myOptionId ?? this.myOptionId,
       comments: comments ?? this.comments,
       attachedEvent: attachedEvent ?? this.attachedEvent,
+      eventId: eventId ?? this.eventId,
       postType: postType ?? this.postType,
       discussionTitle: discussionTitle ?? this.discussionTitle,
       category: category ?? this.category,
@@ -277,13 +355,67 @@ class CommunityPostModel {
       }
     }
 
+    final rawEventId = json['eventId']?.toString();
     EventModel? parsedEvent;
     if (json['attachedEvent'] is Map<String, dynamic>) {
       parsedEvent = EventModel.fromJson(json['attachedEvent'] as Map<String, dynamic>);
     } else if (json['event'] is Map<String, dynamic>) {
       parsedEvent = EventModel.fromJson(json['event'] as Map<String, dynamic>);
     } else if (json['eventId'] != null) {
-      parsedEvent = EventModel.fromJson(json);
+      if (json['eventId'] is Map<String, dynamic>) {
+        parsedEvent = EventModel.fromJson(json['eventId'] as Map<String, dynamic>);
+      } else if (json['title'] != null) {
+        parsedEvent = EventModel.fromJson(json);
+      }
+    }
+
+    String? parsedPollQuestion;
+    List<PollOptionModel>? parsedPollOptions;
+    String? parsedPollId;
+    int parsedTotalVotes = 0;
+    bool parsedHasVoted = false;
+    String? parsedMyOptionId;
+
+    if (json['poll'] is Map<String, dynamic>) {
+      final pollJson = json['poll'] as Map<String, dynamic>;
+      parsedPollId = pollJson['pollId']?.toString() ?? pollJson['id']?.toString();
+      parsedPollQuestion = pollJson['question'] as String?;
+      parsedTotalVotes = pollJson['totalVotes'] as int? ?? 0;
+      parsedHasVoted = pollJson['hasVoted'] as bool? ?? false;
+      parsedMyOptionId = pollJson['myOptionId']?.toString();
+
+      if (pollJson['options'] is List) {
+        parsedPollOptions = (pollJson['options'] as List)
+            .whereType<Map<String, dynamic>>()
+            .map((opt) => PollOptionModel.fromJson(
+                  opt,
+                  myOptionId: parsedMyOptionId,
+                ))
+            .toList();
+      }
+    } else if (json['pollQuestion'] != null || json['pollOptions'] != null) {
+      parsedPollQuestion = json['pollQuestion'] as String?;
+      parsedPollId = json['pollId']?.toString();
+      parsedTotalVotes = json['pollTotalVotes'] as int? ?? 0;
+      parsedHasVoted = json['hasVoted'] as bool? ?? false;
+      parsedMyOptionId = json['myOptionId']?.toString();
+      if (json['pollOptions'] is List) {
+        parsedPollOptions = (json['pollOptions'] as List).map((opt) {
+          if (opt is Map<String, dynamic>) {
+            return PollOptionModel.fromJson(opt, myOptionId: parsedMyOptionId);
+          } else if (opt is PollOptionModel) {
+            return opt;
+          }
+          return PollOptionModel(text: opt.toString());
+        }).toList();
+      }
+    }
+
+    if (parsedPollOptions != null && parsedTotalVotes == 0) {
+      parsedTotalVotes = parsedPollOptions.fold<int>(0, (sum, o) => sum + o.votes);
+    }
+    if (parsedPollOptions != null && !parsedHasVoted) {
+      parsedHasVoted = parsedPollOptions.any((o) => o.isVoted);
     }
 
     return CommunityPostModel(
@@ -334,12 +466,20 @@ class CommunityPostModel {
       repostCaption: json['repostCaption'] as String?,
       originalPostId: json['originalPostId'] as String?,
       reposterId: json['reposterId'] as String?,
-      postType: json['postType'] as String? ?? (parsedEvent != null ? 'event' : null),
+      postType: json['postType'] as String? ?? (parsedEvent != null ? 'event' : (parsedPollQuestion != null ? 'POLL' : null)),
       discussionTitle: json['discussionTitle'] as String? ?? json['title'] as String?,
       category: json['category'] as String?,
       // Step 3B-Frontend: read videoUrl — null-safe; returns null until backend supports it
       videoUrl: json['videoUrl'] as String?,
       attachedEvent: parsedEvent,
+      eventId: rawEventId ?? parsedEvent?.id,
+      pollId: parsedPollId,
+      pollQuestion: parsedPollQuestion,
+      pollOptions: parsedPollOptions,
+      pollDuration: json['pollDuration'] as String?,
+      pollTotalVotes: parsedTotalVotes,
+      hasVoted: parsedHasVoted,
+      myOptionId: parsedMyOptionId,
       comments:
           (json['commentsList'] as List<dynamic>?)
               ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
@@ -379,7 +519,17 @@ class CommunityPostModel {
       'discussionTitle': discussionTitle,
       'category': category,
       'videoUrl': videoUrl,
+      'eventId': eventId,
       if (attachedEvent != null) 'attachedEvent': attachedEvent!.toJson(),
+      if (pollQuestion != null) ...{
+        'pollId': pollId,
+        'pollQuestion': pollQuestion,
+        'pollTotalVotes': pollTotalVotes,
+        'hasVoted': hasVoted,
+        'myOptionId': myOptionId,
+        if (pollOptions != null)
+          'pollOptions': pollOptions!.map((o) => o.toJson()).toList(),
+      },
     };
   }
 }

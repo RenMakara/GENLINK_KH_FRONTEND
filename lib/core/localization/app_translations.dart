@@ -465,9 +465,11 @@ class AppTranslations extends Translations {
     'interests.selectedCount': '@count SELECTED',
     'interests.coreInterests': 'Core Interests',
     'interests.suggested': 'Suggested for you',
+    'interests.selectionTitle': 'Build your profile',
     'interests.selectionProgress': '@count / @max selections made',
     'interests.saveContinue': 'Save & Continue',
     'interests.limit': 'Choose up to @max interests.',
+    'interests.showMore': 'Show more',
     'interests.noResults': 'No matching interests found.',
     'settings.accountSettings': 'Account Settings',
     'settings.accountSettingsHint': 'Email, username, phone',
@@ -631,6 +633,7 @@ class AppTranslations extends Translations {
 
     // ── Settings ────────────────────────────────────────────────────────
     'settings.title': 'Settings',
+    'settings.subtitle': 'Manage your account and preferences',
     'settings.appearance': 'Appearance',
     'settings.theme': 'Theme',
     'settings.themeLight': 'Light',
@@ -707,13 +710,69 @@ class AppTranslations extends Translations {
     'notification.back': 'Back',
     'notification.deleteHint': 'Swipe left to delete',
     'settings.privacy': 'Privacy',
+    'settings.privacyData': 'Privacy & Data',
     'settings.privacyProfile': 'Profile visibility',
     'settings.allowMessages': 'Allow messages',
     'settings.allowFollowRequest': 'Allow follow requests',
     'settings.security': 'Security',
     'settings.biometric': 'Unlock with biometrics',
+    'settings.biometricHint': 'Use fingerprint or face ID',
     'settings.account': 'Account',
+    'settings.personalInformation': 'Personal Information',
+    'settings.personalInformationHint': 'Manage your personal details',
+    'settings.notificationsHint': 'Manage your notifications',
+    'settings.version': 'Version 1.0.0',
     'settings.saved': 'Settings saved',
+
+    // ── About ───────────────────────────────────────────────────────────
+    'about.title': 'About GenLink KH',
+    'about.tagline': 'Connect. Grow. Thrive.',
+    'about.khmerTagline': 'ភ្ជាប់ • រីកចម្រើន • រុងរឿង',
+    'about.whatTitle': 'What is GenLink KH?',
+    'about.whatBody':
+        'GenLink KH is a Khmer-first digital ecosystem built for Cambodian '
+        'young people. It brings together community, productivity, '
+        'entertainment, events, and financial management in one mobile app '
+        'so you can communicate, learn, grow, and manage everyday life.',
+    'about.audience':
+        'For Cambodian Gen Z, students, young professionals, creators, '
+        'freelancers, and all young people.',
+    'about.whyTitle': 'Why GenLink KH?',
+    'about.whyBody':
+        'Bring the important parts of your life together in one place:',
+    'about.connect': 'Connect',
+    'about.connectHint': 'Build communities and real relationships',
+    'about.discover': 'Discover',
+    'about.discoverHint': 'Find events and opportunities',
+    'about.grow': 'Grow',
+    'about.growHint': 'Build skills and reach your goals',
+    'about.manage': 'Manage',
+    'about.manageHint': 'Track expenses and plan your budget',
+    'about.enjoy': 'Enjoy',
+    'about.enjoyHint': 'Take part in quizzes and challenges',
+    'about.builtTitle': 'Built for Cambodia',
+    'about.builtBody':
+        'GenLink KH is designed with a Khmer-first experience while '
+        'supporting both Khmer and English, so you can use the app naturally '
+        'in your own language.',
+    'about.visionTitle': 'Our Vision',
+    'about.visionBody':
+        '“A connected digital ecosystem where Cambodian youth can connect, '
+        'grow, and thrive together.”',
+    'about.valuesTitle': 'Our Values',
+    'about.connection': 'Connection',
+    'about.connectionHint': 'Stronger communities',
+    'about.growth': 'Growth',
+    'about.growthHint': 'Learning and self-development',
+    'about.opportunity': 'Opportunity',
+    'about.opportunityHint': 'New activities and paths',
+    'about.financialAwareness': 'Financial awareness',
+    'about.financialAwarenessHint': 'Healthier habits',
+    'about.localIdentity': 'Local identity',
+    'about.localIdentityHint': 'Built for Cambodia',
+    'about.licenses': 'View open-source licenses',
+    'about.licensesHint': 'See the third-party software used by GenLink KH',
+    'about.version': 'Version 1.0.0  •  © 2026 GenLink KH',
 
     // ── Community Extended ──────────────────────────────────────────────
     'community.title': 'Community',
@@ -2104,9 +2163,11 @@ class AppTranslations extends Translations {
     'interests.selectedCount': 'បានជ្រើស @count',
     'interests.coreInterests': 'ចំណាប់អារម្មណ៍ស្នូល',
     'interests.suggested': 'ណែនាំសម្រាប់អ្នក',
+    'interests.selectionTitle': 'បង្កើតប្រវត្តិរូបរបស់អ្នក',
     'interests.selectionProgress': 'បានជ្រើស @count / @max',
     'interests.saveContinue': 'រក្សាទុក និងបន្ត',
     'interests.limit': 'ជ្រើសរើសបានរហូតដល់ @max ចំណាប់អារម្មណ៍។',
+    'interests.showMore': 'បង្ហាញបន្ថែម',
     'interests.noResults': 'រកមិនឃើញចំណាប់អារម្មណ៍ដែលត្រូវគ្នា។',
     'settings.accountSettings': 'ការកំណត់គណនី',
     'settings.accountSettingsHint': 'អ៊ីមែល ឈ្មោះអ្នកប្រើ ទូរស័ព្ទ',
@@ -2269,6 +2330,7 @@ class AppTranslations extends Translations {
 
     // ── Settings ────────────────────────────────────────────────────────
     'settings.title': 'ការកំណត់',
+    'settings.subtitle': 'គ្រប់គ្រងគណនី និងចំណូលចិត្តរបស់អ្នក',
     'settings.appearance': 'រូបរាង',
     'settings.theme': 'ផ្ទាំងពណ៌',
     'settings.themeLight': 'ភ្លឺ',
@@ -2346,13 +2408,67 @@ class AppTranslations extends Translations {
     'notification.back': 'ត្រឡប់',
     'notification.deleteHint': 'អូសទៅឆ្វេងដើម្បីលុប',
     'settings.privacy': 'ឯកជនភាព',
+    'settings.privacyData': 'ឯកជនភាព និងទិន្នន័យ',
     'settings.privacyProfile': 'ការមើលឃើញប្រវត្តិរូប',
     'settings.allowMessages': 'អនុញ្ញាតឲ្យផ្ញើសារ',
     'settings.allowFollowRequest': 'អនុញ្ញាតសំណើតាមដាន',
     'settings.security': 'សុវត្ថិភាព',
     'settings.biometric': 'ដោះសោដោយជីវមាត្រ',
+    'settings.biometricHint': 'ប្រើស្នាមម្រាមដៃ ឬ Face ID',
     'settings.account': 'គណនី',
+    'settings.personalInformation': 'ព័ត៌មានផ្ទាល់ខ្លួន',
+    'settings.personalInformationHint': 'គ្រប់គ្រងព័ត៌មានលម្អិតផ្ទាល់ខ្លួន',
+    'settings.notificationsHint': 'គ្រប់គ្រងការជូនដំណឹងរបស់អ្នក',
+    'settings.version': 'កំណែ 1.0.0',
     'settings.saved': 'បានរក្សាទុកការកំណត់',
+
+    // ── About ───────────────────────────────────────────────────────────
+    'about.title': 'អំពី GenLink KH',
+    'about.tagline': 'ភ្ជាប់។ រីកចម្រើន។ រុងរឿង។',
+    'about.khmerTagline': 'ភ្ជាប់ • រីកចម្រើន • រុងរឿង',
+    'about.whatTitle': 'តើ GenLink KH ជាអ្វី?',
+    'about.whatBody':
+        'GenLink KH គឺជាប្រព័ន្ធឌីជីថលដែលផ្តោតលើភាសាខ្មែរ សម្រាប់យុវជនកម្ពុជា។ '
+        'វានាំសហគមន៍ ផលិតភាព ការកម្សាន្ត ព្រឹត្តិការណ៍ និងការគ្រប់គ្រងហិរញ្ញវត្ថុ '
+        'មកជាមួយគ្នាក្នុងកម្មវិធីទូរស័ព្ទតែមួយ ដើម្បីឲ្យអ្នកអាចទំនាក់ទំនង រៀន '
+        'រីកចម្រើន និងគ្រប់គ្រងជីវិតប្រចាំថ្ងៃបានកាន់តែងាយ។',
+    'about.audience':
+        'សម្រាប់ Gen Z កម្ពុជា សិស្ស និស្សិត អ្នកជំនាញវ័យក្មេង អ្នកបង្កើតមាតិកា '
+        'អ្នកធ្វើការឯករាជ្យ និងយុវជនគ្រប់រូប។',
+    'about.whyTitle': 'ហេតុអ្វី GenLink KH?',
+    'about.whyBody': 'នាំផ្នែកសំខាន់ៗនៃជីវិតអ្នកមកជាមួយគ្នានៅកន្លែងតែមួយ៖',
+    'about.connect': 'តភ្ជាប់',
+    'about.connectHint': 'កសាងសហគមន៍ និងទំនាក់ទំនងពិតប្រាកដ',
+    'about.discover': 'ស្វែងរក',
+    'about.discoverHint': 'ស្វែងរកព្រឹត្តិការណ៍ និងឱកាស',
+    'about.grow': 'រីកចម្រើន',
+    'about.growHint': 'កសាងជំនាញ និងសម្រេចគោលដៅ',
+    'about.manage': 'គ្រប់គ្រង',
+    'about.manageHint': 'តាមដានចំណាយ និងរៀបចំថវិកា',
+    'about.enjoy': 'រីករាយ',
+    'about.enjoyHint': 'ចូលរួមក្នុងសំណួរ និងការប្រកួតប្រជែង',
+    'about.builtTitle': 'បង្កើតសម្រាប់កម្ពុជា',
+    'about.builtBody':
+        'GenLink KH ត្រូវបានរចនាឡើងដោយផ្តោតលើបទពិសោធន៍ភាសាខ្មែរ និងគាំទ្រ '
+        'ទាំងភាសាខ្មែរ និងអង់គ្លេស ដើម្បីឲ្យអ្នកប្រើកម្មវិធីតាមភាសារបស់អ្នកបានធម្មជាតិ។',
+    'about.visionTitle': 'ចក្ខុវិស័យរបស់យើង',
+    'about.visionBody':
+        '“ប្រព័ន្ធឌីជីថលដែលភ្ជាប់គ្នា ដើម្បីឲ្យយុវជនកម្ពុជាអាចតភ្ជាប់ '
+        'រីកចម្រើន និងរុងរឿងជាមួយគ្នា។”',
+    'about.valuesTitle': 'គុណតម្លៃរបស់យើង',
+    'about.connection': 'ការតភ្ជាប់',
+    'about.connectionHint': 'សហគមន៍កាន់តែរឹងមាំ',
+    'about.growth': 'ការរីកចម្រើន',
+    'about.growthHint': 'ការរៀន និងអភិវឌ្ឍខ្លួន',
+    'about.opportunity': 'ឱកាស',
+    'about.opportunityHint': 'សកម្មភាព និងផ្លូវថ្មីៗ',
+    'about.financialAwareness': 'ការយល់ដឹងហិរញ្ញវត្ថុ',
+    'about.financialAwarenessHint': 'ទម្លាប់ដែលមានសុខភាពល្អ',
+    'about.localIdentity': 'អត្តសញ្ញាណមូលដ្ឋាន',
+    'about.localIdentityHint': 'បង្កើតសម្រាប់កម្ពុជា',
+    'about.licenses': 'មើលអាជ្ញាបណ្ណប្រភពបើកចំហ',
+    'about.licensesHint': 'មើលកម្មវិធីភាគីទីបីដែល GenLink KH ប្រើប្រាស់',
+    'about.version': 'កំណែ 1.0.0  •  © 2026 GenLink KH',
 
     // ── Community Extended ──────────────────────────────────────────────
     'community.title': 'សហគមន៍',

@@ -19,6 +19,7 @@ import '../../features/profile/presentation/screens/portfolio_screen.dart';
 import '../../features/profile/presentation/screens/profile_setup_screen.dart';
 import '../../features/profile/presentation/screens/saved_items_screen.dart';
 import '../../features/settings/presentation/screens/account_settings_screen.dart';
+import '../../features/settings/presentation/screens/about_screen.dart';
 import '../../features/settings/presentation/bindings/settings_binding.dart';
 import '../../features/settings/presentation/screens/appearance_settings_screen.dart';
 import '../../features/settings/presentation/screens/language_settings_screen.dart';
@@ -304,6 +305,11 @@ abstract final class AppPages {
       name: AppRoutes.settingsAccount,
       page: () => const AccountSettingsScreen(),
       binding: SettingsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.settingsAbout,
+      page: () => const AboutScreen(),
       middlewares: [AuthMiddleware()],
     ),
   ];

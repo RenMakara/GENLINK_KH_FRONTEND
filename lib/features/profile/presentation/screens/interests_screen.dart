@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
@@ -93,6 +94,33 @@ class _InterestsScreenState extends State<InterestsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: 96,
+        titleSpacing: 0,
+        leading: const Center(child: AppBackButton()),
+        leadingWidth: 74,
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'interests.title'.tr,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'interests.subtitle'.tr,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.58),
+              ),
+            ),
+          ],
+        ),
+      ),
       body: Obx(() {
         if (_controller.interestCatalog.isEmpty &&
             _controller.isLoading.value) {
@@ -113,26 +141,7 @@ class _InterestsScreenState extends State<InterestsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: AppSpacing.md),
-                        child: AppBackButton(),
-                      ),
-                      Text(
-                        'interests.title'.tr,
-                        style: theme.textTheme.displaySmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        'interests.subtitle'.tr,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.65,
-                          ),
-                        ),
-                      ),
+                      _SelectionSummary(count: _selected.length),
                       const SizedBox(height: AppSpacing.lg),
                       _SearchBar(
                         controller: _search,
@@ -140,18 +149,11 @@ class _InterestsScreenState extends State<InterestsScreen> {
                         onAdd: _addSearchResult,
                       ),
                       const SizedBox(height: AppSpacing.xl),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'interests.technicalSkills'.tr,
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          _CountPill(count: _selected.length),
-                        ],
+                      _SectionHeader(
+                        title: 'interests.technicalSkills'.tr,
+                        icon: Icons.bar_chart_rounded,
+                        accent: AppColors.brandPrimary,
+                        trailing: _CountPill(count: _selected.length),
                       ),
                       const SizedBox(height: AppSpacing.md + 4),
                       _SkillChips(
@@ -162,11 +164,10 @@ class _InterestsScreenState extends State<InterestsScreen> {
                         onShowMore: () => setState(() => _showAllSkills = true),
                       ),
                       const SizedBox(height: AppSpacing.xl + 4),
-                      Text(
-                        'interests.coreInterests'.tr,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      _SectionHeader(
+                        title: 'interests.coreInterests'.tr,
+                        icon: Icons.category_outlined,
+                        accent: AppColors.productivityAccent,
                       ),
                       const SizedBox(height: AppSpacing.md + 4),
                       _CoreInterestGrid(
@@ -175,39 +176,30 @@ class _InterestsScreenState extends State<InterestsScreen> {
                         onToggle: _toggle,
                       ),
                       const SizedBox(height: AppSpacing.xl + 4),
-                      Text(
-                        'interests.suggested'.tr,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      _SectionHeader(
+                        title: 'interests.suggested'.tr,
+                        icon: Icons.auto_awesome_rounded,
+                        accent: AppColors.growthAccent,
                       ),
                       const SizedBox(height: AppSpacing.md),
                       if (_filtered.isEmpty)
                         Text('interests.noResults'.tr)
                       else
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              for (final interest
-                                  in _filtered
-                                      .where(
-                                        (i) =>
-                                            !_selected.contains(i.interestId),
-                                      )
-                                      .take(8)) ...[
-                                ActionChip(
-                                  avatar: Icon(
-                                    _categoryIcon(interest.category),
-                                    size: 17,
-                                  ),
-                                  label: Text(interest.name),
-                                  onPressed: () => _toggle(interest),
-                                ),
-                                const SizedBox(width: AppSpacing.sm),
-                              ],
-                            ],
-                          ),
+                        Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.sm,
+                          children: [
+                            for (final interest
+                                in _filtered
+                                    .where(
+                                      (i) => !_selected.contains(i.interestId),
+                                    )
+                                    .take(8))
+                              _SuggestionChip(
+                                interest: interest,
+                                onTap: () => _toggle(interest),
+                              ),
+                          ],
                         ),
                     ],
                   ),
@@ -226,6 +218,125 @@ class _InterestsScreenState extends State<InterestsScreen> {
   }
 }
 
+class _SelectionSummary extends StatelessWidget {
+  const _SelectionSummary({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.brandPrimary.withValues(alpha: isDark ? 0.15 : 0.06),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(
+          color: AppColors.brandPrimary.withValues(alpha: isDark ? 0.34 : 0.16),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.brandPrimary.withValues(
+                alpha: isDark ? 0.22 : 0.12,
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.tune_rounded,
+              color: AppColors.brandPrimary,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'interests.selectionTitle'.tr,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'interests.limit'.trParams({
+                    'max': '${_InterestsScreenState.maxSelections}',
+                  }),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurface.withValues(alpha: 0.66),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          _CountPill(count: count),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.icon,
+    required this.accent,
+    this.trailing,
+  });
+
+  final String title;
+  final IconData icon;
+  final Color accent;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: isDark ? 0.18 : 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: accent, size: 20),
+        ),
+        const SizedBox(width: AppSpacing.sm + 4),
+        Expanded(
+          child: Text(
+            title,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        if (trailing != null) ...[
+          const SizedBox(width: AppSpacing.sm),
+          trailing!,
+        ] else
+          Icon(
+            Icons.chevron_right_rounded,
+            color: scheme.onSurface.withValues(alpha: 0.42),
+          ),
+      ],
+    );
+  }
+}
+
 class _SearchBar extends StatelessWidget {
   const _SearchBar({
     required this.controller,
@@ -238,42 +349,82 @@ class _SearchBar extends StatelessWidget {
   final VoidCallback onAdd;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.fromLTRB(
-      AppSpacing.md,
-      AppSpacing.xs,
-      AppSpacing.xs,
-      AppSpacing.xs,
-    ),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-    ),
-    child: Row(
-      children: [
-        const Icon(Icons.search),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: TextField(
-            key: const ValueKey('expertise-search'),
-            controller: controller,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => enabled ? onAdd() : null,
-            decoration: InputDecoration.collapsed(
-              hintText: 'interests.searchHint'.tr,
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.xs,
+        AppSpacing.xs,
+        AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: scheme.outlineVariant),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.025),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.brandPrimary.withValues(
+                alpha: isDark ? 0.17 : 0.09,
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.search_rounded,
+              color: AppColors.brandPrimary,
+              size: 21,
             ),
           ),
-        ),
-        AppButton(
-          key: const ValueKey('expertise-add'),
-          label: 'interests.add'.tr,
-          expanded: false,
-          height: 46,
-          onPressed: enabled ? onAdd : null,
-        ),
-      ],
-    ),
-  );
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: TextField(
+              key: const ValueKey('expertise-search'),
+              controller: controller,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => enabled ? onAdd() : null,
+              decoration: InputDecoration.collapsed(
+                hintText: 'interests.searchHint'.tr,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          IconButton(
+            key: const ValueKey('expertise-add'),
+            onPressed: enabled ? onAdd : null,
+            tooltip: 'interests.add'.tr,
+            style: IconButton.styleFrom(
+              backgroundColor: enabled
+                  ? scheme.primary
+                  : scheme.surfaceContainerHighest,
+              foregroundColor: enabled
+                  ? scheme.onPrimary
+                  : scheme.onSurface.withValues(alpha: 0.45),
+              minimumSize: const Size(44, 44),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+            ),
+            icon: const Icon(Icons.add_rounded),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _CountPill extends StatelessWidget {
@@ -283,7 +434,6 @@ class _CountPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -291,16 +441,24 @@ class _CountPill extends StatelessWidget {
         vertical: 6,
       ),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
+        color: AppColors.brandPrimary.withValues(
+          alpha: Theme.of(context).brightness == Brightness.dark ? 0.17 : 0.08,
+        ),
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: scheme.outlineVariant),
+        border: Border.all(
+          color: AppColors.brandPrimary.withValues(
+            alpha: Theme.of(context).brightness == Brightness.dark
+                ? 0.34
+                : 0.16,
+          ),
+        ),
       ),
       child: Text(
         'interests.selectedCount'.trParams({'count': '$count'}),
         style: theme.textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.w700,
           letterSpacing: 0.5,
-          color: scheme.onSurface,
+          color: AppColors.brandPrimary,
         ),
       ),
     );
@@ -347,7 +505,12 @@ class _SkillChips extends StatelessWidget {
             onTap: () => onToggle(interest),
           ),
         if (hasMore)
-          _CustomChip(label: 'More...', selected: false, onTap: onShowMore),
+          _CustomChip(
+            label: 'interests.showMore'.tr,
+            selected: false,
+            onTap: onShowMore,
+            icon: Icons.expand_more_rounded,
+          ),
       ],
     );
   }
@@ -358,51 +521,109 @@ class _CustomChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.icon,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    final bgColor = selected ? scheme.primary : scheme.surface;
-    final textColor = selected ? scheme.onPrimary : scheme.onSurface;
+    final bgColor = selected ? AppColors.brandPrimary : scheme.surface;
+    final textColor = selected ? Colors.white : scheme.onSurface;
     final borderColor = selected ? Colors.transparent : scheme.outlineVariant;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: 10,
-        ),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: borderColor),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              selected ? Icons.close : Icons.add,
-              size: 16,
-              color: textColor,
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
+    return Material(
+      color: bgColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        side: BorderSide(color: borderColor),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: 10,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon ?? (selected ? Icons.check_rounded : Icons.add_rounded),
+                size: 17,
                 color: textColor,
-                fontWeight: FontWeight.w600,
               ),
-            ),
-          ],
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: textColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SuggestionChip extends StatelessWidget {
+  const _SuggestionChip({required this.interest, required this.onTap});
+
+  final InterestEntity interest;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final accent = _categoryAccent(interest.category);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Material(
+      color: accent.withValues(alpha: isDark ? 0.14 : 0.07),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        side: BorderSide(color: accent.withValues(alpha: 0.28)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: 10,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(_categoryIcon(interest.category), size: 17, color: accent),
+              const SizedBox(width: AppSpacing.sm),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 150),
+                child: Text(
+                  interest.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Icon(Icons.add_rounded, size: 17, color: accent),
+            ],
+          ),
         ),
       ),
     );
@@ -431,70 +652,103 @@ class _CoreInterestGrid extends StatelessWidget {
     }
     final cards = byCategory.values.take(4).toList();
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: cards.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 1.15,
-        crossAxisSpacing: AppSpacing.md,
-        mainAxisSpacing: AppSpacing.md,
-      ),
-      itemBuilder: (context, index) {
-        final interest = cards[index];
-        final active = selected.contains(interest.interestId);
-
-        final cardColor = active ? scheme.primary : scheme.surface;
-        final textColor = active ? scheme.onPrimary : scheme.onSurface;
-
-        return Material(
-          color: cardColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            side: BorderSide(
-              color: active ? Colors.transparent : scheme.outlineVariant,
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: cards.length,
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 190,
+            childAspectRatio: 1.15,
+            crossAxisSpacing: AppSpacing.md,
+            mainAxisSpacing: AppSpacing.md,
           ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: () => onToggle(interest),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md + 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          itemBuilder: (context, index) {
+            final interest = cards[index];
+            final active = selected.contains(interest.interestId);
+            final accent = _categoryAccent(interest.category);
+            final cardColor = active
+                ? accent
+                : accent.withValues(
+                    alpha: theme.brightness == Brightness.dark ? 0.12 : 0.06,
+                  );
+            final textColor = active ? Colors.white : scheme.onSurface;
+
+            return Material(
+              color: cardColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.xl),
+                side: BorderSide(
+                  color: active
+                      ? Colors.transparent
+                      : accent.withValues(alpha: 0.24),
+                ),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => onToggle(interest),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(_categoryIcon(interest.category), color: textColor),
-                      if (active)
-                        Icon(Icons.verified, size: 18, color: scheme.onPrimary),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? Colors.white.withValues(alpha: 0.16)
+                                  : accent.withValues(alpha: 0.14),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _categoryIcon(interest.category),
+                              color: active ? Colors.white : accent,
+                              size: 20,
+                            ),
+                          ),
+                          Icon(
+                            active
+                                ? Icons.check_circle_rounded
+                                : Icons.add_circle_outline_rounded,
+                            size: 20,
+                            color: active
+                                ? Colors.white
+                                : accent.withValues(alpha: 0.8),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Text(
+                        interest.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: textColor,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _categoryLabel(interest.category),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: textColor.withValues(
+                            alpha: active ? 0.74 : 0.64,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                  const Spacer(),
-                  Text(
-                    interest.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: textColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _categoryLabel(interest.category),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: textColor.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -521,53 +775,98 @@ class _SaveFooter extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surface,
         border: Border(top: BorderSide(color: scheme.outlineVariant)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.18 : 0.05,
+            ),
+            blurRadius: 18,
+            offset: const Offset(0, -6),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg,
+            AppSpacing.md,
             AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
+            AppSpacing.md,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      'interests.selectionProgress'.trParams({
-                        'count': '$count',
-                        'max': '${_InterestsScreenState.maxSelections}',
-                      }),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: scheme.onSurface.withValues(alpha: 0.8),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(
+                        alpha: theme.brightness == Brightness.dark ? 0.18 : 0.1,
                       ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      color: AppColors.success,
+                      size: 20,
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.md),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                      child: LinearProgressIndicator(
-                        value: count / _InterestsScreenState.maxSelections,
-                        minHeight: 8,
-                        backgroundColor: scheme.outlineVariant,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          scheme.primary,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'interests.selectionProgress'.trParams({
+                            'count': '$count',
+                            'max': '${_InterestsScreenState.maxSelections}',
+                          }),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'interests.limit'.trParams({
+                            'max': '${_InterestsScreenState.maxSelections}',
+                          }),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurface.withValues(alpha: 0.58),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    '$count/${_InterestsScreenState.maxSelections}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: AppColors.brandPrimary,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.sm),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                child: LinearProgressIndicator(
+                  value: count / _InterestsScreenState.maxSelections,
+                  minHeight: 7,
+                  backgroundColor: scheme.outlineVariant,
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    AppColors.brandPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
               AppButton(
                 key: const ValueKey('expertise-save'),
                 label: 'interests.saveContinue'.tr,
+                icon: Icons.check_rounded,
                 loading: saving,
                 radius: AppRadius.lg,
                 onPressed: onSave,
@@ -596,4 +895,14 @@ IconData _categoryIcon(String? category) => switch (category) {
   'ENTERTAINMENT' => Icons.auto_awesome_outlined,
   'COMMUNITY' => Icons.groups_outlined,
   _ => Icons.interests_outlined,
+};
+
+Color _categoryAccent(String? category) => switch (category) {
+  'CAREER' => AppColors.brandPrimary,
+  'FINANCE' => AppColors.financeAccent,
+  'EDUCATION' => AppColors.productivityAccent,
+  'LIFESTYLE' => AppColors.success,
+  'ENTERTAINMENT' => AppColors.warning,
+  'COMMUNITY' => AppColors.communityAccent,
+  _ => AppColors.profileAccent,
 };

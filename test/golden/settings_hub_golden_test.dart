@@ -16,6 +16,7 @@ import 'package:genlink_frontend/features/profile/presentation/screens/saved_ite
 import 'package:genlink_frontend/features/settings/domain/entities/user_settings_entity.dart';
 import 'package:genlink_frontend/features/settings/domain/repositories/settings_repository.dart';
 import 'package:genlink_frontend/features/settings/presentation/controllers/settings_controller.dart';
+import 'package:genlink_frontend/features/settings/presentation/screens/about_screen.dart';
 import 'package:genlink_frontend/features/settings/presentation/screens/settings_screen.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
@@ -136,7 +137,11 @@ void main() {
 
   tearDown(Get.reset);
 
-  Future<void> pumpScreen(WidgetTester tester, Widget child) async {
+  Future<void> pumpScreen(
+    WidgetTester tester,
+    Widget child, {
+    ThemeData? theme,
+  }) async {
     await tester.pump();
 
     tester.view.physicalSize = phone;
@@ -148,7 +153,7 @@ void main() {
         translations: AppTranslations(),
         locale: LocalizationService.englishLocale,
         fallbackLocale: LocalizationService.englishLocale,
-        theme: AppTheme.lightFor('en'),
+        theme: theme ?? AppTheme.lightFor('en'),
         home: child,
       ),
     );
@@ -161,6 +166,52 @@ void main() {
       find.byType(SettingsScreen),
       matchesGoldenFile('goldens/settings_hub.png'),
     );
+  });
+
+  testWidgets('settings hub (dark)', (tester) async {
+    await pumpScreen(
+      tester,
+      const SettingsScreen(),
+      theme: AppTheme.darkFor('en'),
+    );
+    await expectLater(
+      find.byType(SettingsScreen),
+      matchesGoldenFile('goldens/settings_hub_dark.png'),
+    );
+  });
+
+  testWidgets('about screen', (tester) async {
+    await pumpScreen(tester, const AboutScreen());
+    await expectLater(
+      find.byType(AboutScreen),
+      matchesGoldenFile('goldens/about.png'),
+    );
+  });
+
+  testWidgets('about screen (dark)', (tester) async {
+    await pumpScreen(
+      tester,
+      const AboutScreen(),
+      theme: AppTheme.darkFor('en'),
+    );
+    await expectLater(
+      find.byType(AboutScreen),
+      matchesGoldenFile('goldens/about_dark.png'),
+    );
+  });
+
+  testWidgets('about screen opens licenses', (tester) async {
+    await pumpScreen(tester, const AboutScreen());
+    final licenseAction = find.text('View open-source licenses');
+    await tester.scrollUntilVisible(
+      licenseAction,
+      320,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.tap(licenseAction);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Licenses'), findsOneWidget);
   });
 
   testWidgets('achievements', (tester) async {

@@ -742,7 +742,15 @@ class CommunityController extends GetxController {
             : (resolvedImageUrls.isNotEmpty ? 'IMAGE' : createdPost.postType),
       );
 
-      posts.insert(0, richPost);
+      // A post can already be present when the create response races with a
+      // feed refresh or another local update. Keep one list item per server ID
+      // so image Hero tags cannot be duplicated by the feed data itself.
+      final existingIdx = posts.indexWhere((post) => post.id == richPost.id);
+      if (existingIdx == -1) {
+        posts.insert(0, richPost);
+      } else {
+        posts[existingIdx] = richPost;
+      }
       uploadProgress.value = 1.0;
       isUploadingPost.value = false;
       return true;

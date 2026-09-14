@@ -174,7 +174,10 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
         if (!isCurrent && !isPrevious) {
           return Offstage(
             offstage: true,
-            child: TickerMode(enabled: false, child: widget.children[i]),
+            child: HeroMode(
+              enabled: false,
+              child: TickerMode(enabled: false, child: widget.children[i]),
+            ),
           );
         }
 
@@ -182,7 +185,10 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
           return IgnorePointer(
             child: FadeTransition(
               opacity: _reverseFadeAnimation,
-              child: TickerMode(enabled: false, child: widget.children[i]),
+              child: HeroMode(
+                enabled: false,
+                child: TickerMode(enabled: false, child: widget.children[i]),
+              ),
             ),
           );
         }
@@ -191,7 +197,10 @@ class _FadeIndexedStackState extends State<FadeIndexedStack>
           ignoring: isAnimating,
           child: FadeTransition(
             opacity: _fadeAnimation,
-            child: TickerMode(enabled: true, child: widget.children[i]),
+            child: HeroMode(
+              enabled: true,
+              child: TickerMode(enabled: true, child: widget.children[i]),
+            ),
           ),
         );
       }),

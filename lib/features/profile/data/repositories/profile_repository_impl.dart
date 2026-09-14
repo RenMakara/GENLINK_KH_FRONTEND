@@ -24,6 +24,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
     String? workStatus,
     String? location,
     String? preferredLanguage,
+    int? coverPreset,
   }) {
     return _remote.updateProfile(
       ProfileMapper.profileUpdateBody(
@@ -38,6 +39,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
         workStatus: workStatus,
         location: location,
         preferredLanguage: preferredLanguage,
+        coverPreset: coverPreset,
       ),
     );
   }
@@ -54,6 +56,15 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Future<PublicProfileEntity> getPublicProfile(String username) =>
       _remote.getPublicProfile(username);
 
+  @override
+  Future<FollowStatsEntity> getFollowStats(String userId) =>
+      _remote.getFollowStats(userId);
+
+  @override
+  Future<String?> followUser(String userId) => _remote.followUser(userId);
+
+  @override
+  Future<void> unfollowUser(String userId) => _remote.unfollowUser(userId);
 
   @override
   Future<List<InterestEntity>> getInterestCatalog() =>
@@ -65,7 +76,6 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<List<InterestEntity>> replaceInterests(List<String> interestIds) =>
       _remote.replaceInterests(interestIds);
-
 
   @override
   Future<List<PortfolioItemEntity>> getPortfolio() => _remote.getPortfolio();
@@ -110,13 +120,11 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Future<void> deletePortfolioItem(String portfolioId) =>
       _remote.deletePortfolioItem(portfolioId);
 
-
   @override
   Future<List<BadgeEntity>> getBadges() => _remote.getBadges();
 
   @override
   Future<List<SavedItemEntity>> getSavedItems() => _remote.getSavedItems();
-
 
   @override
   Future<List<SocialLinkEntity>> getSocialLinks() => _remote.getSocialLinks();

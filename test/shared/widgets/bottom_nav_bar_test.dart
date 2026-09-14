@@ -62,65 +62,61 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('navigation renders labels and preserves semantic labels in English', (
-    tester,
-  ) async {
-    final semantics = tester.ensureSemantics();
+  testWidgets(
+    'navigation renders labels and preserves semantic labels in English',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
 
-    await tester.pumpWidget(
-      createNavBar(locale: LocalizationService.englishLocale),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        createNavBar(locale: LocalizationService.englishLocale),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('LevelUp'), findsOneWidget);
-    expect(find.text('Finance'), findsOneWidget);
-    expect(find.text('Profile'), findsOneWidget);
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('LevelUp'), findsOneWidget);
+      expect(find.text('Finance'), findsOneWidget);
+      expect(find.text('Profile'), findsOneWidget);
 
-    expect(find.bySemanticsLabel('Home'), findsOneWidget);
-    expect(find.bySemanticsLabel('LevelUp'), findsOneWidget);
-    expect(find.bySemanticsLabel('Finance'), findsOneWidget);
-    expect(find.bySemanticsLabel('Profile'), findsOneWidget);
+      expect(find.bySemanticsLabel('Home'), findsOneWidget);
+      expect(find.bySemanticsLabel('LevelUp'), findsOneWidget);
+      expect(find.bySemanticsLabel('Finance'), findsOneWidget);
+      expect(find.bySemanticsLabel('Profile'), findsOneWidget);
 
-    semantics.dispose();
-  });
+      semantics.dispose();
+    },
+  );
 
-  testWidgets('navigation renders labels and preserves semantic labels in Khmer', (
-    tester,
-  ) async {
-    final semantics = tester.ensureSemantics();
+  testWidgets(
+    'navigation renders labels and preserves semantic labels in Khmer',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
 
-    await tester.pumpWidget(
-      createNavBar(locale: LocalizationService.khmerLocale),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        createNavBar(locale: LocalizationService.khmerLocale),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('ទំព័រដើម'), findsOneWidget);
-    expect(find.text('ឡើងកម្រិត'), findsOneWidget);
-    expect(find.text('ហិរញ្ញវត្ថុ'), findsOneWidget);
-    expect(find.text('ប្រវត្តិរូប'), findsOneWidget);
+      expect(find.text('ទំព័រដើម'), findsOneWidget);
+      expect(find.text('ឡើងកម្រិត'), findsOneWidget);
+      expect(find.text('ហិរញ្ញវត្ថុ'), findsOneWidget);
+      expect(find.text('ប្រវត្តិរូប'), findsOneWidget);
 
-    expect(find.bySemanticsLabel('ទំព័រដើម'), findsOneWidget);
-    expect(find.bySemanticsLabel('ឡើងកម្រិត'), findsOneWidget);
-    expect(find.bySemanticsLabel('ហិរញ្ញវត្ថុ'), findsOneWidget);
-    expect(find.bySemanticsLabel('ប្រវត្តិរូប'), findsOneWidget);
+      expect(find.bySemanticsLabel('ទំព័រដើម'), findsOneWidget);
+      expect(find.bySemanticsLabel('ឡើងកម្រិត'), findsOneWidget);
+      expect(find.bySemanticsLabel('ហិរញ្ញវត្ថុ'), findsOneWidget);
+      expect(find.bySemanticsLabel('ប្រវត្តិរូប'), findsOneWidget);
 
-    semantics.dispose();
-  });
+      semantics.dispose();
+    },
+  );
 
-  testWidgets('LevelUp navigation tab uses Trophy icon', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      createNavBar(currentIndex: 0),
-    );
+  testWidgets('LevelUp navigation tab uses Trophy icon', (tester) async {
+    await tester.pumpWidget(createNavBar(currentIndex: 0));
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.emoji_events_outlined), findsOneWidget);
 
-    await tester.pumpWidget(
-      createNavBar(currentIndex: 1),
-    );
+    await tester.pumpWidget(createNavBar(currentIndex: 1));
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
   });
@@ -128,52 +124,46 @@ void main() {
   testWidgets('Finance navigation tab uses Dollar sign in circle icon', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      createNavBar(currentIndex: 0),
-    );
+    await tester.pumpWidget(createNavBar(currentIndex: 0));
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.paid_outlined), findsOneWidget);
 
-    await tester.pumpWidget(
-      createNavBar(currentIndex: 2),
-    );
+    await tester.pumpWidget(createNavBar(currentIndex: 2));
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.paid_rounded), findsOneWidget);
   });
 
-  testWidgets('tapping each navigation tab triggers onTap with expected index', (
-    tester,
-  ) async {
-    final semantics = tester.ensureSemantics();
-    int? selectedIndex;
+  testWidgets(
+    'tapping each navigation tab triggers onTap with expected index',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      int? selectedIndex;
 
-    await tester.pumpWidget(
-      createNavBar(
-        currentIndex: 0,
-        onTap: (index) => selectedIndex = index,
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        createNavBar(currentIndex: 0, onTap: (index) => selectedIndex = index),
+      );
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.bySemanticsLabel('LevelUp'));
-    await tester.pumpAndSettle();
-    expect(selectedIndex, 1);
+      await tester.tap(find.bySemanticsLabel('LevelUp'));
+      await tester.pumpAndSettle();
+      expect(selectedIndex, 1);
 
-    await tester.tap(find.bySemanticsLabel('Finance'));
-    await tester.pumpAndSettle();
-    expect(selectedIndex, 2);
+      await tester.tap(find.bySemanticsLabel('Finance'));
+      await tester.pumpAndSettle();
+      expect(selectedIndex, 2);
 
-    await tester.tap(find.bySemanticsLabel('Profile'));
-    await tester.pumpAndSettle();
-    expect(selectedIndex, 3);
+      await tester.tap(find.bySemanticsLabel('Profile'));
+      await tester.pumpAndSettle();
+      expect(selectedIndex, 3);
 
-    await tester.tap(find.bySemanticsLabel('Home'));
-    await tester.pumpAndSettle();
-    expect(selectedIndex, 0);
+      await tester.tap(find.bySemanticsLabel('Home'));
+      await tester.pumpAndSettle();
+      expect(selectedIndex, 0);
 
-    semantics.dispose();
-  });
+      semantics.dispose();
+    },
+  );
 
   testWidgets('tapping center button triggers onCenterTap callback', (
     tester,
@@ -181,10 +171,7 @@ void main() {
     bool centerTapped = false;
 
     await tester.pumpWidget(
-      createNavBar(
-        currentIndex: 0,
-        onCenterTap: () => centerTapped = true,
-      ),
+      createNavBar(currentIndex: 0, onCenterTap: () => centerTapped = true),
     );
     await tester.pumpAndSettle();
 
@@ -206,244 +193,269 @@ void main() {
     expect(find.byType(BottomNavBar), findsOneWidget);
   });
 
-  testWidgets('responsive layout on widths 320, 360, 390, 412, 430 without overflow', (
+  testWidgets('keeps floating snackbars visible above the navigation bar', (
     tester,
   ) async {
-    const widths = [320.0, 360.0, 390.0, 412.0, 430.0];
+    await tester.pumpWidget(createNavBar());
+    await tester.pumpAndSettle();
 
-    for (final width in widths) {
-      tester.view.physicalSize = Size(width, 800);
-      tester.view.devicePixelRatio = 1.0;
+    expect(tester.getRect(find.byType(BottomNavBar)).height, lessThan(120));
 
-      await tester.pumpWidget(createNavBar(currentIndex: 1));
+    final scaffoldContext = tester.element(find.byType(Scaffold));
+    ScaffoldMessenger.of(
+      scaffoldContext,
+    ).showSnackBar(const SnackBar(content: Text('Profile cover updated')));
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Profile cover updated'), findsOneWidget);
+  });
+
+  testWidgets(
+    'responsive layout on widths 320, 360, 390, 412, 430 without overflow',
+    (tester) async {
+      const widths = [320.0, 360.0, 390.0, 412.0, 430.0];
+
+      for (final width in widths) {
+        tester.view.physicalSize = Size(width, 800);
+        tester.view.devicePixelRatio = 1.0;
+
+        await tester.pumpWidget(createNavBar(currentIndex: 1));
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'Failed at width $width',
+        );
+        expect(find.byType(BottomNavBar), findsOneWidget);
+      }
+
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+    },
+  );
+
+  testWidgets(
+    'sequential tab switching preserves stability: Home -> LevelUp -> Home -> Finance -> Profile -> Home, then Create',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      int activeIndex = 0;
+      bool createTapped = false;
+
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) {
+            return GetMaterialApp(
+              translations: AppTranslations(),
+              locale: LocalizationService.englishLocale,
+              fallbackLocale: LocalizationService.englishLocale,
+              theme: AppTheme.light,
+              home: Scaffold(
+                body: Center(child: Text('Active Tab: $activeIndex')),
+                bottomNavigationBar: BottomNavBar(
+                  currentIndex: activeIndex,
+                  onTap: (idx) => setState(() => activeIndex = idx),
+                  onCenterTap: () => createTapped = true,
+                ),
+              ),
+            );
+          },
+        ),
+      );
       await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull, reason: 'Failed at width $width');
-      expect(find.byType(BottomNavBar), findsOneWidget);
-    }
+      final navBarFinder = find.byType(BottomNavBar);
+      final initialRect = tester.getRect(navBarFinder);
 
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
-  });
+      await tester.tap(find.bySemanticsLabel('LevelUp'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 1);
+      expect(tester.getRect(navBarFinder), equals(initialRect));
 
-  testWidgets('sequential tab switching preserves stability: Home -> LevelUp -> Home -> Finance -> Profile -> Home, then Create', (
-    tester,
-  ) async {
-    final semantics = tester.ensureSemantics();
-    int activeIndex = 0;
-    bool createTapped = false;
+      await tester.tap(find.bySemanticsLabel('Home'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 0);
+      expect(tester.getRect(navBarFinder), equals(initialRect));
 
-    await tester.pumpWidget(
-      StatefulBuilder(
-        builder: (context, setState) {
-          return GetMaterialApp(
-            translations: AppTranslations(),
-            locale: LocalizationService.englishLocale,
-            fallbackLocale: LocalizationService.englishLocale,
-            theme: AppTheme.light,
-            home: Scaffold(
-              body: Center(child: Text('Active Tab: $activeIndex')),
-              bottomNavigationBar: BottomNavBar(
-                currentIndex: activeIndex,
-                onTap: (idx) => setState(() => activeIndex = idx),
-                onCenterTap: () => createTapped = true,
+      await tester.tap(find.bySemanticsLabel('Finance'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 2);
+      expect(tester.getRect(navBarFinder), equals(initialRect));
+
+      await tester.tap(find.bySemanticsLabel('Profile'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 3);
+      expect(tester.getRect(navBarFinder), equals(initialRect));
+
+      await tester.tap(find.bySemanticsLabel('Home'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 0);
+      expect(tester.getRect(navBarFinder), equals(initialRect));
+
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pumpAndSettle();
+      expect(createTapped, isTrue);
+      expect(tester.getRect(navBarFinder), equals(initialRect));
+
+      semantics.dispose();
+    },
+  );
+
+  testWidgets(
+    'verifies all required transitions: Home->LevelUp, LevelUp->Finance, Finance->Profile, Profile->Finance, Finance->LevelUp, LevelUp->Home, Home->Finance, Profile->Home',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      int activeIndex = 0;
+
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) {
+            return GetMaterialApp(
+              translations: AppTranslations(),
+              locale: LocalizationService.englishLocale,
+              fallbackLocale: LocalizationService.englishLocale,
+              theme: AppTheme.dark,
+              home: Scaffold(
+                bottomNavigationBar: BottomNavBar(
+                  currentIndex: activeIndex,
+                  onTap: (idx) => setState(() => activeIndex = idx),
+                ),
               ),
-            ),
-          );
-        },
-      ),
-    );
-    await tester.pumpAndSettle();
+            );
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    final navBarFinder = find.byType(BottomNavBar);
-    final initialRect = tester.getRect(navBarFinder);
+      // 1. Home (Inbox) -> LevelUp (Timeline) (0 -> 1)
+      await tester.tap(find.bySemanticsLabel('LevelUp'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 1);
 
-    await tester.tap(find.bySemanticsLabel('LevelUp'));
-    await tester.pumpAndSettle();
-    expect(activeIndex, 1);
-    expect(tester.getRect(navBarFinder), equals(initialRect));
+      // 2. LevelUp (Timeline) -> Finance (AI) (1 -> 2)
+      await tester.tap(find.bySemanticsLabel('Finance'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 2);
 
-    await tester.tap(find.bySemanticsLabel('Home'));
-    await tester.pumpAndSettle();
-    expect(activeIndex, 0);
-    expect(tester.getRect(navBarFinder), equals(initialRect));
+      // 3. Finance (AI) -> Profile (Settings) (2 -> 3)
+      await tester.tap(find.bySemanticsLabel('Profile'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 3);
 
-    await tester.tap(find.bySemanticsLabel('Finance'));
-    await tester.pumpAndSettle();
-    expect(activeIndex, 2);
-    expect(tester.getRect(navBarFinder), equals(initialRect));
+      // 4. Profile (Settings) -> Finance (AI) (3 -> 2)
+      await tester.tap(find.bySemanticsLabel('Finance'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 2);
 
-    await tester.tap(find.bySemanticsLabel('Profile'));
-    await tester.pumpAndSettle();
-    expect(activeIndex, 3);
-    expect(tester.getRect(navBarFinder), equals(initialRect));
+      // 5. Finance (AI) -> LevelUp (Timeline) (2 -> 1)
+      await tester.tap(find.bySemanticsLabel('LevelUp'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 1);
 
-    await tester.tap(find.bySemanticsLabel('Home'));
-    await tester.pumpAndSettle();
-    expect(activeIndex, 0);
-    expect(tester.getRect(navBarFinder), equals(initialRect));
+      // 6. LevelUp (Timeline) -> Home (Inbox) (1 -> 0)
+      await tester.tap(find.bySemanticsLabel('Home'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 0);
 
-    await tester.tap(find.byIcon(Icons.add_rounded));
-    await tester.pumpAndSettle();
-    expect(createTapped, isTrue);
-    expect(tester.getRect(navBarFinder), equals(initialRect));
+      // 7. Home (Inbox) -> Finance (AI) (0 -> 2)
+      await tester.tap(find.bySemanticsLabel('Finance'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 2);
 
-    semantics.dispose();
-  });
+      // 8. Profile (Settings) -> Home (Inbox) (3 -> 0)
+      await tester.tap(find.bySemanticsLabel('Profile'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('Home'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 0);
 
-  testWidgets('verifies all required transitions: Home->LevelUp, LevelUp->Finance, Finance->Profile, Profile->Finance, Finance->LevelUp, LevelUp->Home, Home->Finance, Profile->Home', (
-    tester,
-  ) async {
-    final semantics = tester.ensureSemantics();
-    int activeIndex = 0;
+      semantics.dispose();
+    },
+  );
 
-    await tester.pumpWidget(
-      StatefulBuilder(
-        builder: (context, setState) {
-          return GetMaterialApp(
-            translations: AppTranslations(),
-            locale: LocalizationService.englishLocale,
-            fallbackLocale: LocalizationService.englishLocale,
-            theme: AppTheme.dark,
-            home: Scaffold(
-              bottomNavigationBar: BottomNavBar(
-                currentIndex: activeIndex,
-                onTap: (idx) => setState(() => activeIndex = idx),
+  testWidgets(
+    'verifies continuous active glass capsule movement and dynamic icon transitions across user requested sequences',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      int activeIndex = 0;
+
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) {
+            return GetMaterialApp(
+              translations: AppTranslations(),
+              locale: LocalizationService.englishLocale,
+              fallbackLocale: LocalizationService.englishLocale,
+              theme: AppTheme.dark,
+              home: Scaffold(
+                bottomNavigationBar: BottomNavBar(
+                  currentIndex: activeIndex,
+                  onTap: (idx) => setState(() => activeIndex = idx),
+                ),
               ),
-            ),
-          );
-        },
-      ),
-    );
-    await tester.pumpAndSettle();
+            );
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    // 1. Home (Inbox) -> LevelUp (Timeline) (0 -> 1)
-    await tester.tap(find.bySemanticsLabel('LevelUp'));
-    await tester.pumpAndSettle();
-    expect(activeIndex, 1);
+      // Sequence 1: Home → LevelUp (0 → 1)
+      await tester.tap(find.bySemanticsLabel('LevelUp'));
+      // Advance halfway through the 340ms ease-out spring
+      await tester.pump(const Duration(milliseconds: 140));
+      expect(activeIndex, 1);
+      expect(tester.takeException(), isNull);
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
 
-    // 2. LevelUp (Timeline) -> Finance (AI) (1 -> 2)
-    await tester.tap(find.bySemanticsLabel('Finance'));
-    await tester.pumpAndSettle();
-    expect(activeIndex, 2);
+      // Sequence 2: LevelUp → Finance (1 → 2)
+      await tester.tap(find.bySemanticsLabel('Finance'));
+      await tester.pump(const Duration(milliseconds: 140));
+      expect(activeIndex, 2);
+      expect(tester.takeException(), isNull);
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.paid_rounded), findsOneWidget);
 
-    // 3. Finance (AI) -> Profile (Settings) (2 -> 3)
-    await tester.tap(find.bySemanticsLabel('Profile'));
-    await tester.pumpAndSettle();
-    expect(activeIndex, 3);
+      // Sequence 3: Finance → Profile (2 → 3)
+      await tester.tap(find.bySemanticsLabel('Profile'));
+      await tester.pump(const Duration(milliseconds: 140));
+      expect(activeIndex, 3);
+      expect(tester.takeException(), isNull);
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.person_rounded), findsOneWidget);
 
-    // 4. Profile (Settings) -> Finance (AI) (3 -> 2)
-    await tester.tap(find.bySemanticsLabel('Finance'));
-    await tester.pumpAndSettle();
-    expect(activeIndex, 2);
+      // Sequence 4: Profile → Home (3 → 0)
+      await tester.tap(find.bySemanticsLabel('Home'));
+      await tester.pump(const Duration(milliseconds: 140));
+      expect(activeIndex, 0);
+      expect(tester.takeException(), isNull);
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.home_rounded), findsOneWidget);
 
-    // 5. Finance (AI) -> LevelUp (Timeline) (2 -> 1)
-    await tester.tap(find.bySemanticsLabel('LevelUp'));
-    await tester.pumpAndSettle();
-    expect(activeIndex, 1);
+      // Sequence 5: Home → Finance (0 → 2) - Multi-slot jump across LevelUp
+      await tester.tap(find.bySemanticsLabel('Finance'));
+      await tester.pump(const Duration(milliseconds: 140));
+      expect(activeIndex, 2);
+      expect(tester.takeException(), isNull);
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.paid_rounded), findsOneWidget);
 
-    // 6. LevelUp (Timeline) -> Home (Inbox) (1 -> 0)
-    await tester.tap(find.bySemanticsLabel('Home'));
-    await tester.pumpAndSettle();
-    expect(activeIndex, 0);
+      // Sequence 6: Profile → LevelUp (via setting active to 3 then tapping LevelUp)
+      await tester.tap(find.bySemanticsLabel('Profile'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 3);
 
-    // 7. Home (Inbox) -> Finance (AI) (0 -> 2)
-    await tester.tap(find.bySemanticsLabel('Finance'));
-    await tester.pumpAndSettle();
-    expect(activeIndex, 2);
+      await tester.tap(find.bySemanticsLabel('LevelUp'));
+      await tester.pump(const Duration(milliseconds: 140));
+      expect(activeIndex, 1);
+      expect(tester.takeException(), isNull);
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
 
-    // 8. Profile (Settings) -> Home (Inbox) (3 -> 0)
-    await tester.tap(find.bySemanticsLabel('Profile'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.bySemanticsLabel('Home'));
-    await tester.pumpAndSettle();
-    expect(activeIndex, 0);
-
-    semantics.dispose();
-  });
-
-  testWidgets('verifies continuous active glass capsule movement and dynamic icon transitions across user requested sequences', (
-    tester,
-  ) async {
-    final semantics = tester.ensureSemantics();
-    int activeIndex = 0;
-
-    await tester.pumpWidget(
-      StatefulBuilder(
-        builder: (context, setState) {
-          return GetMaterialApp(
-            translations: AppTranslations(),
-            locale: LocalizationService.englishLocale,
-            fallbackLocale: LocalizationService.englishLocale,
-            theme: AppTheme.dark,
-            home: Scaffold(
-              bottomNavigationBar: BottomNavBar(
-                currentIndex: activeIndex,
-                onTap: (idx) => setState(() => activeIndex = idx),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Sequence 1: Home → LevelUp (0 → 1)
-    await tester.tap(find.bySemanticsLabel('LevelUp'));
-    // Advance halfway through the 340ms ease-out spring
-    await tester.pump(const Duration(milliseconds: 140));
-    expect(activeIndex, 1);
-    expect(tester.takeException(), isNull);
-    await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
-
-    // Sequence 2: LevelUp → Finance (1 → 2)
-    await tester.tap(find.bySemanticsLabel('Finance'));
-    await tester.pump(const Duration(milliseconds: 140));
-    expect(activeIndex, 2);
-    expect(tester.takeException(), isNull);
-    await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.paid_rounded), findsOneWidget);
-
-    // Sequence 3: Finance → Profile (2 → 3)
-    await tester.tap(find.bySemanticsLabel('Profile'));
-    await tester.pump(const Duration(milliseconds: 140));
-    expect(activeIndex, 3);
-    expect(tester.takeException(), isNull);
-    await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.person_rounded), findsOneWidget);
-
-    // Sequence 4: Profile → Home (3 → 0)
-    await tester.tap(find.bySemanticsLabel('Home'));
-    await tester.pump(const Duration(milliseconds: 140));
-    expect(activeIndex, 0);
-    expect(tester.takeException(), isNull);
-    await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.home_rounded), findsOneWidget);
-
-    // Sequence 5: Home → Finance (0 → 2) - Multi-slot jump across LevelUp
-    await tester.tap(find.bySemanticsLabel('Finance'));
-    await tester.pump(const Duration(milliseconds: 140));
-    expect(activeIndex, 2);
-    expect(tester.takeException(), isNull);
-    await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.paid_rounded), findsOneWidget);
-
-    // Sequence 6: Profile → LevelUp (via setting active to 3 then tapping LevelUp)
-    await tester.tap(find.bySemanticsLabel('Profile'));
-    await tester.pumpAndSettle();
-    expect(activeIndex, 3);
-
-    await tester.tap(find.bySemanticsLabel('LevelUp'));
-    await tester.pump(const Duration(milliseconds: 140));
-    expect(activeIndex, 1);
-    expect(tester.takeException(), isNull);
-    await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
-
-    semantics.dispose();
-  });
+      semantics.dispose();
+    },
+  );
 }
-

@@ -6,6 +6,7 @@ class ProfileEntity {
     required this.email,
     this.phoneNumber,
     this.avatarUrl,
+    this.coverPreset = 0,
     this.bio,
     this.dateOfBirth,
     this.gender,
@@ -25,6 +26,7 @@ class ProfileEntity {
   final String email;
   final String? phoneNumber;
   final String? avatarUrl;
+  final int coverPreset;
   final String? bio;
 
   final String? dateOfBirth;
@@ -122,6 +124,7 @@ class PublicProfileEntity {
     required this.fullName,
     required this.username,
     this.avatarUrl,
+    this.coverPreset = 0,
     this.bio,
     this.universityName,
     this.workStatus,
@@ -138,6 +141,7 @@ class PublicProfileEntity {
   final String fullName;
   final String username;
   final String? avatarUrl;
+  final int coverPreset;
   final String? bio;
   final String? universityName;
   final String? workStatus;
@@ -148,6 +152,30 @@ class PublicProfileEntity {
   final List<PortfolioItemEntity> portfolio;
   final List<InterestEntity> interests;
   final List<SocialLinkEntity> socialLinks;
+}
+
+/// The viewer's relationship with a public profile.
+///
+/// The API returns `ACCEPTED`, `PENDING`, or `null` for [followStatus].
+/// Keeping this data beside the public profile lets the UI render a truthful
+/// Follow / Requested / Following state instead of a placeholder action.
+class FollowStatsEntity {
+  const FollowStatsEntity({
+    required this.followers,
+    required this.following,
+    this.followStatus,
+    required this.friend,
+  });
+
+  final int followers;
+  final int following;
+  final String? followStatus;
+  final bool friend;
+
+  bool get isFollowing =>
+      followStatus == 'ACCEPTED' || followStatus == 'PENDING';
+
+  bool get isAccepted => followStatus == 'ACCEPTED';
 }
 
 class PortfolioItemEntity {

@@ -139,9 +139,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        leading: const Center(
-          child: AppBackButton(),
-        ),
+        leading: const Center(child: AppBackButton()),
         leadingWidth: 74,
         title: Text(
           'profile.edit'.tr,
@@ -255,24 +253,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         hint: 'https://…',
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      if (_githubUrl.text.isNotEmpty) ...[
-                        AppInput(
-                          label: 'GitHub',
-                          controller: _githubUrl,
-                          radius: AppRadius.lg,
-                          keyboardType: TextInputType.url,
-                          hint: 'https://github.com/…',
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                      ],
-                      if (_telegramUrl.text.isNotEmpty)
-                        AppInput(
-                          label: 'Telegram',
-                          controller: _telegramUrl,
-                          radius: AppRadius.lg,
-                          keyboardType: TextInputType.url,
-                          hint: 'https://t.me/…',
-                        ),
+                      AppInput(
+                        label: 'GitHub',
+                        controller: _githubUrl,
+                        radius: AppRadius.lg,
+                        keyboardType: TextInputType.url,
+                        hint: 'https://github.com/…',
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      AppInput(
+                        label: 'Telegram',
+                        controller: _telegramUrl,
+                        radius: AppRadius.lg,
+                        keyboardType: TextInputType.url,
+                        hint: 'https://t.me/…',
+                      ),
                       const SizedBox(height: AppSpacing.xl),
                     ],
                   ),

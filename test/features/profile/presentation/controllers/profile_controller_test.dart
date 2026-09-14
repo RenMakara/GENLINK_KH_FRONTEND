@@ -25,6 +25,7 @@ const _updatedOwnerProfile = ProfileEntity(
   username: 'updated_owner',
   email: 'owner@genlink.kh',
   avatarUrl: 'https://cdn.genlink.kh/avatar.jpg',
+  coverPreset: 7,
   emailVerified: true,
   accountStatus: 'ACTIVE',
   totalXp: 200,
@@ -108,6 +109,36 @@ void main() {
     verifyNever(() => repository.getSavedItems());
   });
 
+  test('public controller toggles the API-backed follow state', () async {
+    when(
+      () => repository.getPublicProfile('public_user'),
+    ).thenAnswer((_) async => _publicProfile);
+    when(() => repository.getFollowStats('public-1')).thenAnswer(
+      (_) async =>
+          const FollowStatsEntity(followers: 10, following: 4, friend: false),
+    );
+    when(
+      () => repository.followUser('public-1'),
+    ).thenAnswer((_) async => 'ACCEPTED');
+    when(() => repository.unfollowUser('public-1')).thenAnswer((_) async {});
+
+    final controller = ProfileController(
+      repository: repository,
+      viewingUsername: 'public_user',
+    );
+
+    await controller.load();
+    expect(await controller.toggleFollow(), isTrue);
+    expect(controller.followStats.value?.followStatus, 'ACCEPTED');
+    expect(controller.followStats.value?.followers, 11);
+
+    expect(await controller.toggleFollow(), isTrue);
+    expect(controller.followStats.value?.followStatus, isNull);
+    expect(controller.followStats.value?.followers, 10);
+    verify(() => repository.followUser('public-1')).called(1);
+    verify(() => repository.unfollowUser('public-1')).called(1);
+  });
+
   test('owner mutations notify the cached-identity synchronizer', () async {
     when(
       () => repository.updateProfile(
@@ -133,6 +164,17 @@ void main() {
     expect(result, isTrue);
     expect(controller.profile.value, same(_updatedOwnerProfile));
     expect(synchronized, same(_updatedOwnerProfile));
+  });
+
+  test('owner cover selection uses the persisted cover preset', () async {
+    when(
+      () => repository.updateProfile(coverPreset: 7),
+    ).thenAnswer((_) async => _updatedOwnerProfile);
+    final controller = ProfileController(repository: repository);
+
+    expect(await controller.updateCoverPreset(7), isTrue);
+    expect(controller.profile.value?.coverPreset, 7);
+    verify(() => repository.updateProfile(coverPreset: 7)).called(1);
   });
 
   test(

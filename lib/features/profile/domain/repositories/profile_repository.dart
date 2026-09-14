@@ -15,6 +15,7 @@ abstract class ProfileRepository {
     String? workStatus,
     String? location,
     String? preferredLanguage,
+    int? coverPreset,
   });
 
   Future<ProfileEntity> updateAvatar(String avatarUrl);
@@ -23,13 +24,17 @@ abstract class ProfileRepository {
 
   Future<PublicProfileEntity> getPublicProfile(String username);
 
+  Future<FollowStatsEntity> getFollowStats(String userId);
+
+  Future<String?> followUser(String userId);
+
+  Future<void> unfollowUser(String userId);
 
   Future<List<InterestEntity>> getInterestCatalog();
 
   Future<List<InterestEntity>> getMyInterests();
 
   Future<List<InterestEntity>> replaceInterests(List<String> interestIds);
-
 
   Future<List<PortfolioItemEntity>> getPortfolio();
 
@@ -50,11 +55,9 @@ abstract class ProfileRepository {
 
   Future<void> deletePortfolioItem(String portfolioId);
 
-
   Future<List<BadgeEntity>> getBadges();
 
   Future<List<SavedItemEntity>> getSavedItems();
-
 
   Future<List<SocialLinkEntity>> getSocialLinks();
 

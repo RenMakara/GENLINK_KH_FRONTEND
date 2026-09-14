@@ -68,15 +68,16 @@ class RingedAvatar extends StatelessWidget {
             Positioned(
               right: 0,
               bottom: size * 0.06,
-              child: Material(
-                color: scheme.primary,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: onEdit,
-                  child: Padding(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(Icons.edit, size: 13, color: scheme.onPrimary),
+              child: SizedBox(
+                height: 44,
+                width: 44,
+                child: Material(
+                  color: scheme.primary,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: onEdit,
+                    child: Icon(Icons.edit, size: 17, color: scheme.onPrimary),
                   ),
                 ),
               ),
@@ -95,13 +96,14 @@ class StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.xs + 2,
       ),
       decoration: BoxDecoration(
-        color: AppColors.accentPremium.withValues(alpha: 0.16),
+        color: scheme.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Row(
@@ -110,9 +112,9 @@ class StatusChip extends StatelessWidget {
           Container(
             height: 6,
             width: 6,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.growthAccent,
+              color: scheme.primary,
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -268,60 +270,203 @@ class BadgeTile extends StatelessWidget {
   }
 }
 
-class ExpertiseChip extends StatelessWidget {
-  const ExpertiseChip({
-    super.key,
-    required this.label,
-    this.emphasised = false,
-  });
+/// Keeps interest treatments recognisable in both profile contexts without
+/// hard-coding a light-only card colour.
+class InterestVisual {
+  const InterestVisual(this.icon, this.color);
 
-  final String label;
-  final bool emphasised;
+  final IconData icon;
+  final Color color;
+
+  static InterestVisual of(InterestEntity interest) {
+    final value = '${interest.code} ${interest.name} ${interest.category}'
+        .toUpperCase();
+    if (value.contains('BUSINESS')) {
+      return const InterestVisual(
+        Icons.business_center_outlined,
+        AppColors.brandPrimary,
+      );
+    }
+    if (value.contains('ENTREPRENEUR')) {
+      return const InterestVisual(
+        Icons.lightbulb_outline,
+        AppColors.growthAccent,
+      );
+    }
+    if (value.contains('FINANCE') || value.contains('FINTECH')) {
+      return const InterestVisual(
+        Icons.insights_outlined,
+        AppColors.financeAccent,
+      );
+    }
+    if (value.contains('CAREER') || value.contains('GROWTH')) {
+      return const InterestVisual(Icons.trending_up_rounded, Color(0xFF9546D9));
+    }
+    if (value.contains('EDUCATION') || value.contains('LEARN')) {
+      return const InterestVisual(Icons.school_outlined, Color(0xFFE65A5A));
+    }
+    if (value.contains('LANGUAGE')) {
+      return const InterestVisual(Icons.language_rounded, Color(0xFF1097DD));
+    }
+    if (value.contains('HEALTH') || value.contains('WELLNESS')) {
+      return const InterestVisual(
+        Icons.health_and_safety_outlined,
+        Color(0xFFE45A63),
+      );
+    }
+    if (value.contains('MUSIC')) {
+      return const InterestVisual(Icons.music_note_rounded, Color(0xFF8744D7));
+    }
+    if (value.contains('GAME')) {
+      return const InterestVisual(
+        Icons.sports_esports_outlined,
+        Color(0xFF148B61),
+      );
+    }
+    if (value.contains('ART') || value.contains('DESIGN')) {
+      return const InterestVisual(Icons.palette_outlined, Color(0xFFE68A00));
+    }
+    return switch (interest.category) {
+      'CAREER' => const InterestVisual(
+        Icons.rocket_launch_outlined,
+        AppColors.productivityAccent,
+      ),
+      'FINANCE' => const InterestVisual(
+        Icons.payments_outlined,
+        AppColors.financeAccent,
+      ),
+      'EDUCATION' => const InterestVisual(
+        Icons.school_outlined,
+        Color(0xFFE65A5A),
+      ),
+      'LIFESTYLE' => const InterestVisual(
+        Icons.eco_outlined,
+        AppColors.financeAccent,
+      ),
+      'ENTERTAINMENT' => const InterestVisual(
+        Icons.auto_awesome_outlined,
+        Color(0xFF9546D9),
+      ),
+      'COMMUNITY' => const InterestVisual(
+        Icons.groups_outlined,
+        AppColors.communityAccent,
+      ),
+      _ => const InterestVisual(
+        Icons.interests_outlined,
+        AppColors.brandPrimary,
+      ),
+    };
+  }
+}
+
+class InterestIconTile extends StatelessWidget {
+  const InterestIconTile({super.key, required this.interest, this.size = 48});
+
+  final InterestEntity interest;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final visual = InterestVisual.of(interest);
+    final scheme = Theme.of(context).colorScheme;
+    final tint = Color.alphaBlend(
+      visual.color.withValues(
+        alpha: Theme.of(context).brightness == Brightness.dark ? 0.22 : 0.12,
+      ),
+      scheme.surface,
+    );
+    return Container(
+      height: size,
+      width: size,
+      decoration: BoxDecoration(
+        color: tint,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Icon(visual.icon, color: visual.color, size: size * 0.44),
+    );
+  }
+}
+
+class InterestChip extends StatelessWidget {
+  const InterestChip({super.key, required this.interest, this.compact = false});
+
+  final InterestEntity interest;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-
+    final visual = InterestVisual.of(interest);
+    final tint = Color.alphaBlend(
+      visual.color.withValues(
+        alpha: theme.brightness == Brightness.dark ? 0.2 : 0.1,
+      ),
+      scheme.surface,
+    );
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm + 2,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? AppSpacing.sm + 2 : AppSpacing.md,
+        vertical: compact ? AppSpacing.xs + 3 : AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: emphasised ? scheme.primary : scheme.surface,
+        color: tint,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(
-          color: emphasised ? Colors.transparent : scheme.outlineVariant,
-        ),
+        border: Border.all(color: visual.color.withValues(alpha: 0.14)),
       ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: emphasised ? scheme.onPrimary : scheme.onSurface,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(visual.icon, color: visual.color, size: compact ? 16 : 18),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            interest.name,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: visual.color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class AddChipButton extends StatelessWidget {
-  const AddChipButton({super.key, this.onPressed});
+  const AddChipButton({super.key, this.onPressed, this.label});
 
   final VoidCallback? onPressed;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: scheme.surface,
-      shape: CircleBorder(side: BorderSide(color: scheme.outlineVariant)),
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
       child: InkWell(
-        customBorder: const CircleBorder(),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         onTap: onPressed,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.sm + 2),
-          child: Icon(Icons.add, size: 18, color: scheme.onSurface),
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(color: scheme.outlineVariant),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.add, size: 18, color: scheme.onSurface),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                label ?? 'profile.add'.tr,
+                style: theme.textTheme.labelMedium,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -382,7 +527,7 @@ class SavedItemCard extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    AppColors.darkBgPrimary.withValues(alpha: 0.88),
+                    Colors.black.withValues(alpha: 0.72),
                   ],
                 ),
               ),
@@ -396,7 +541,7 @@ class SavedItemCard extends StatelessWidget {
                   Text(
                     item.itemType.replaceAll('_', ' '),
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: AppColors.darkTextSecondary,
+                      color: Colors.white.withValues(alpha: 0.76),
                       letterSpacing: 0.6,
                     ),
                   ),
@@ -406,7 +551,7 @@ class SavedItemCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleSmall?.copyWith(
-                      color: AppColors.darkTextPrimary,
+                      color: Colors.white,
                     ),
                   ),
                 ],

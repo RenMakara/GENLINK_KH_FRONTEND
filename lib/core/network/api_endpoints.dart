@@ -59,7 +59,7 @@ abstract final class ApiEndpoints {
       '$_base/profile/portfolio/$portfolioId';
 
   // ── Social links ──────────────────────────────────────────────────────
-  /// Upsert by platform: POST replaces the existing link for that platform.
+  /// Upsert by platform: PUT replaces the existing link for that platform.
   static const profileSocialLinks = '$_base/profile/social-links';
 
   static String profileSocialLink(String platform) =>

@@ -8,7 +8,6 @@ class ProfileRemoteDatasource {
 
   final ApiClient _client;
 
-
   Future<ProfileEntity> getMyProfile() {
     return _client.get(
       ApiEndpoints.profileMe,
@@ -47,6 +46,23 @@ class ProfileRemoteDatasource {
     );
   }
 
+  Future<FollowStatsEntity> getFollowStats(String userId) {
+    return _client.get(
+      ApiEndpoints.communityFollowStats(userId),
+      parse: (data) => ProfileMapper.followStats(ApiClient.asMap(data)),
+    );
+  }
+
+  Future<String?> followUser(String userId) {
+    return _client.post<String?>(
+      ApiEndpoints.communityFollowUser(userId),
+      parse: (data) => ApiClient.asMap(data)['status'] as String?,
+    );
+  }
+
+  Future<void> unfollowUser(String userId) {
+    return _client.delete(ApiEndpoints.communityFollowUser(userId));
+  }
 
   Future<List<InterestEntity>> getInterestCatalog() {
     return _client.get(
@@ -69,7 +85,6 @@ class ProfileRemoteDatasource {
       parse: (data) => ApiClient.asList(data, ProfileMapper.interest),
     );
   }
-
 
   Future<List<PortfolioItemEntity>> getPortfolio() {
     return _client.get(
@@ -101,7 +116,6 @@ class ProfileRemoteDatasource {
     return _client.delete(ApiEndpoints.profilePortfolioItem(portfolioId));
   }
 
-
   Future<List<BadgeEntity>> getBadges() {
     return _client.get(
       ApiEndpoints.badges,
@@ -109,14 +123,12 @@ class ProfileRemoteDatasource {
     );
   }
 
-
   Future<List<SavedItemEntity>> getSavedItems() {
     return _client.get(
       ApiEndpoints.profileSaved,
       parse: (data) => ApiClient.asList(data, ProfileMapper.savedItem),
     );
   }
-
 
   Future<List<SocialLinkEntity>> getSocialLinks() {
     return _client.get(
@@ -129,7 +141,7 @@ class ProfileRemoteDatasource {
     required String platform,
     required String url,
   }) {
-    return _client.post(
+    return _client.put(
       ApiEndpoints.profileSocialLinks,
       body: {'platform': platform, 'url': url},
       parse: (data) => ProfileMapper.socialLink(ApiClient.asMap(data)),

@@ -109,6 +109,7 @@ flutter:
 
     # General Images
     - assets/images/
+    - assets/images/profile_covers/
 
   # ==============================
   # Fonts

@@ -7,6 +7,7 @@ import 'package:genlink_frontend/design_system/theme/app_theme.dart';
 import 'package:genlink_frontend/features/profile/domain/entities/profile_entity.dart';
 import 'package:genlink_frontend/features/profile/domain/repositories/profile_repository.dart';
 import 'package:genlink_frontend/features/profile/presentation/controllers/profile_controller.dart';
+import 'package:genlink_frontend/features/profile/presentation/models/profile_cover_preset.dart';
 import 'package:genlink_frontend/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:genlink_frontend/features/profile/presentation/screens/interests_screen.dart';
 import 'package:genlink_frontend/features/profile/presentation/screens/profile_screen.dart';
@@ -105,6 +106,12 @@ final _publicProfile = PublicProfileEntity(
   interests: _interests,
 );
 
+const _publicFollowStats = FollowStatsEntity(
+  followers: 248,
+  following: 127,
+  friend: false,
+);
+
 void main() {
   const phone = Size(390, 900);
 
@@ -118,10 +125,17 @@ void main() {
     when(repository.getSocialLinks).thenAnswer((_) async => []);
     when(repository.getBadges).thenAnswer((_) async => _badges);
     when(repository.getSavedItems).thenAnswer((_) async => _saved);
+    when(() => repository.getFollowStats('u1')).thenAnswer(
+      (_) async =>
+          const FollowStatsEntity(followers: 24, following: 11, friend: false),
+    );
     when(repository.getInterestCatalog).thenAnswer((_) async => _interests);
     when(
       () => repository.getPublicProfile('sopheak.link'),
     ).thenAnswer((_) async => _publicProfile);
+    when(
+      () => repository.getFollowStats('u2'),
+    ).thenAnswer((_) async => _publicFollowStats);
 
     Get
       ..put<LocalizationService>(
@@ -152,6 +166,14 @@ void main() {
         home: child,
       ),
     );
+    final context = tester.element(find.byType(GetMaterialApp));
+    await tester.runAsync(
+      () => precacheImage(
+        const AssetImage('assets/images/profile_covers/cover_city_sunset.jpg'),
+        context,
+      ),
+    );
+    await tester.pump();
     await tester.pumpAndSettle();
   }
 
@@ -173,6 +195,22 @@ void main() {
       find.byType(ProfileScreen),
       matchesGoldenFile('goldens/profile_dark.png'),
     );
+  });
+
+  testWidgets('owner cover picker offers all ten static presets', (tester) async {
+    await pumpScreen(tester, const ProfileScreen());
+
+    await tester.tap(find.text('Change cover'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Choose a cover'), findsOneWidget);
+    expect(ProfileCoverPresets.all, hasLength(10));
+    for (final preset in ProfileCoverPresets.all) {
+      expect(
+        find.byKey(ValueKey('profile-cover-preset-${preset.id}')),
+        findsOneWidget,
+      );
+    }
   });
 
   testWidgets('edit profile', (tester) async {
@@ -198,6 +236,25 @@ void main() {
     await expectLater(
       find.byType(ProfileScreen),
       matchesGoldenFile('goldens/public_profile.png'),
+    );
+  });
+
+  testWidgets('public profile (dark)', (tester) async {
+    Get.put<ProfileController>(
+      ProfileController(
+        repository: repository,
+        viewingUsername: 'sopheak.link',
+      ),
+      tag: ProfileController.publicTag('sopheak.link'),
+    );
+    await pumpScreen(
+      tester,
+      const ProfileScreen(viewingUsername: 'sopheak.link'),
+      brightness: Brightness.dark,
+    );
+    await expectLater(
+      find.byType(ProfileScreen),
+      matchesGoldenFile('goldens/public_profile_dark.png'),
     );
   });
 

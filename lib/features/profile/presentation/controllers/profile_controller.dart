@@ -36,6 +36,8 @@ class ProfileController extends GetxController {
   final socialLinks = <SocialLinkEntity>[].obs;
   final badges = <BadgeEntity>[].obs;
   final savedItems = <SavedItemEntity>[].obs;
+  final followStats = Rxn<FollowStatsEntity>();
+  final isRelationshipSaving = false.obs;
 
   final interestCatalog = <InterestEntity>[].obs;
 
@@ -48,6 +50,7 @@ class ProfileController extends GetxController {
   Future<void> load() async {
     isLoading.value = true;
     errorMessage.value = null;
+    followStats.value = null;
 
     if (!isOwner) {
       try {
@@ -56,6 +59,14 @@ class ProfileController extends GetxController {
         interests.assignAll(loaded.interests);
         portfolio.assignAll(loaded.portfolio);
         socialLinks.assignAll(loaded.socialLinks);
+        // The public profile should remain usable if the optional relationship
+        // endpoint is slow or unavailable.
+        isLoading.value = false;
+        await _loadSection(
+          () async => followStats.value = await _repository.getFollowStats(
+            loaded.userId,
+          ),
+        );
       } on AppError catch (e) {
         errorMessage.value = e.message;
       } catch (_) {
@@ -77,6 +88,11 @@ class ProfileController extends GetxController {
     }
 
     await Future.wait([
+      _loadSection(() async {
+        final owner = profile.value;
+        if (owner == null) return;
+        followStats.value = await _repository.getFollowStats(owner.userId);
+      }),
       _loadSection(
         () async => interests.value = await _repository.getMyInterests(),
       ),
@@ -94,7 +110,6 @@ class ProfileController extends GetxController {
   }
 
   Future<void> reload() => load();
-
 
   Future<bool> updateProfile({
     String? fullName,
@@ -131,6 +146,22 @@ class ProfileController extends GetxController {
     });
   }
 
+  /// Stores only the id of one of the app-bundled cover presets.  The public
+  /// profile response carries the same id, so the selected treatment survives
+  /// devices and is visible to other people.
+  Future<bool> updateCoverPreset(int coverPreset) {
+    if (!isOwner || coverPreset < 0 || coverPreset > 9) {
+      return Future.value(false);
+    }
+
+    return _save(() async {
+      _setOwnerProfile(
+        await _repository.updateProfile(coverPreset: coverPreset),
+      );
+      AppSnackbar.show('profile.coverUpdated'.tr);
+    });
+  }
+
   Future<bool> pickAndUploadAvatar({
     ImageSource source = ImageSource.gallery,
   }) async {
@@ -161,7 +192,6 @@ class ProfileController extends GetxController {
     return [...earned, ...locked];
   }
 
-
   Future<void> loadInterestCatalog() async {
     if (interestCatalog.isNotEmpty) return;
     await _loadSection(
@@ -170,12 +200,56 @@ class ProfileController extends GetxController {
     );
   }
 
+  Future<bool> toggleFollow() async {
+    final target = publicProfile.value;
+    if (isOwner || target == null || target.userId.isEmpty) return false;
+    if (isRelationshipSaving.value) return false;
+
+    final current = followStats.value;
+    final wasFollowing = current?.isFollowing ?? false;
+    final wasAccepted = current?.isAccepted ?? false;
+
+    isRelationshipSaving.value = true;
+    try {
+      if (wasFollowing) {
+        await _repository.unfollowUser(target.userId);
+        followStats.value = FollowStatsEntity(
+          followers: wasAccepted && (current?.followers ?? 0) > 0
+              ? current!.followers - 1
+              : current?.followers ?? 0,
+          following: current?.following ?? 0,
+          followStatus: null,
+          friend: false,
+        );
+      } else {
+        final status = await _repository.followUser(target.userId);
+        final accepted = (status ?? 'ACCEPTED') == 'ACCEPTED';
+        followStats.value = FollowStatsEntity(
+          followers: accepted
+              ? (current?.followers ?? 0) + 1
+              : current?.followers ?? 0,
+          following: current?.following ?? 0,
+          followStatus: status ?? 'ACCEPTED',
+          friend: current?.friend ?? false,
+        );
+      }
+      return true;
+    } on AppError catch (e) {
+      AppSnackbar.error(e.message);
+      return false;
+    } catch (_) {
+      AppSnackbar.error('common.error'.tr);
+      return false;
+    } finally {
+      isRelationshipSaving.value = false;
+    }
+  }
+
   Future<bool> replaceInterests(List<String> interestIds) {
     return _save(() async {
       interests.value = await _repository.replaceInterests(interestIds);
     });
   }
-
 
   Future<bool> addPortfolioItem({
     required String title,
@@ -227,7 +301,6 @@ class ProfileController extends GetxController {
     });
   }
 
-
   Future<bool> upsertSocialLink({
     required String platform,
     required String url,
@@ -254,7 +327,6 @@ class ProfileController extends GetxController {
       socialLinks.removeWhere((link) => link.platform == platform);
     });
   }
-
 
   void _setOwnerProfile(ProfileEntity updated) {
     profile.value = updated;
@@ -283,7 +355,6 @@ class ProfileController extends GetxController {
   Future<void> _loadSection(Future<void> Function() action) async {
     try {
       await action();
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 }

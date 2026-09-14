@@ -9,6 +9,7 @@ abstract final class ProfileMapper {
       email: json['email'] as String? ?? '',
       phoneNumber: json['phoneNumber'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
+      coverPreset: _coverPreset(json['coverPreset']),
       bio: json['bio'] as String?,
       dateOfBirth: json['dateOfBirth'] as String?,
       gender: json['gender'] as String?,
@@ -29,6 +30,7 @@ abstract final class ProfileMapper {
       fullName: json['fullName'] as String? ?? '',
       username: json['username'] as String? ?? '',
       avatarUrl: json['avatarUrl'] as String?,
+      coverPreset: _coverPreset(json['coverPreset']),
       bio: json['bio'] as String?,
       universityName: json['universityName'] as String?,
       workStatus: json['workStatus'] as String?,
@@ -39,6 +41,15 @@ abstract final class ProfileMapper {
       portfolio: _list(json['portfolio'], portfolioItem),
       interests: _list(json['interests'], interest),
       socialLinks: _list(json['socialLinks'], socialLink),
+    );
+  }
+
+  static FollowStatsEntity followStats(Map<String, dynamic> json) {
+    return FollowStatsEntity(
+      followers: (json['followers'] as num?)?.toInt() ?? 0,
+      following: (json['following'] as num?)?.toInt() ?? 0,
+      followStatus: json['followStatus'] as String?,
+      friend: json['friend'] as bool? ?? false,
     );
   }
 
@@ -105,6 +116,7 @@ abstract final class ProfileMapper {
     String? workStatus,
     String? location,
     String? preferredLanguage,
+    int? coverPreset,
   }) {
     final body = <String, dynamic>{
       'fullName': fullName,
@@ -118,6 +130,7 @@ abstract final class ProfileMapper {
       'workStatus': workStatus,
       'location': location,
       'preferredLanguage': preferredLanguage,
+      'coverPreset': coverPreset,
     }..removeWhere((_, value) => value == null);
     return body;
   }
@@ -127,5 +140,10 @@ abstract final class ProfileMapper {
     return list
         .map((e) => item((e as Map).cast<String, dynamic>()))
         .toList(growable: false);
+  }
+
+  static int _coverPreset(dynamic value) {
+    final preset = (value as num?)?.toInt() ?? 0;
+    return preset.clamp(0, 9).toInt();
   }
 }

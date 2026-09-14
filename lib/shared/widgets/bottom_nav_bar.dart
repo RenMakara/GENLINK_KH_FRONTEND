@@ -117,8 +117,7 @@ class BottomNavBar extends StatelessWidget {
       builder: (ctx) => Material(
         color: surface,
         clipBehavior: Clip.antiAlias,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: Column(
@@ -136,8 +135,7 @@ class BottomNavBar extends StatelessWidget {
                 ),
               ),
               ListTile(
-                leading:
-                    Icon(Icons.group_add_outlined, color: textPrimary),
+                leading: Icon(Icons.group_add_outlined, color: textPrimary),
                 title: Text('auth.switchAccount'.tr),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -171,7 +169,9 @@ class BottomNavBar extends StatelessWidget {
   }
 
   static void _showLogoutConfirm(
-      BuildContext context, AuthController authController) {
+    BuildContext context,
+    AuthController authController,
+  ) {
     Get.dialog(
       AlertDialog(
         title: Text('auth.logout'.tr),
@@ -304,8 +304,9 @@ class _NavBarContentState extends State<_NavBarContent>
           ),
           // Subtle top highlight
           BoxShadow(
-            color: (isDark ? Colors.white : Colors.white)
-                .withValues(alpha: isDark ? 0.04 : 0.60),
+            color: (isDark ? Colors.white : Colors.white).withValues(
+              alpha: isDark ? 0.04 : 0.60,
+            ),
             blurRadius: 1,
             offset: const Offset(0, -1),
           ),
@@ -327,8 +328,9 @@ class _NavBarContentState extends State<_NavBarContent>
           ),
           // Inner top highlight for glass depth
           BoxShadow(
-            color: (isDark ? Colors.white : Colors.white)
-                .withValues(alpha: isDark ? 0.22 : 0.90),
+            color: (isDark ? Colors.white : Colors.white).withValues(
+              alpha: isDark ? 0.22 : 0.90,
+            ),
             blurRadius: 1,
             offset: const Offset(0, -0.5),
           ),
@@ -341,163 +343,187 @@ class _NavBarContentState extends State<_NavBarContent>
             ? const Color(0x99FFFFFF) // 60% white
             : const Color(0x88141517); // 53% dark
 
-        return Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 540),
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                horizontalMargin,
-                0,
-                horizontalMargin,
-                bottomMargin,
-              ),
-              child: SizedBox(
-                height: totalBarHeight,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // ── Main Glass Pill Bar with 4 tabs ─────────────
-                    Expanded(
-                      child: SizedBox(
-                        height: totalBarHeight,
-                        child: LayoutBuilder(
-                          builder: (context, barConstraints) {
-                            final barWidth = barConstraints.maxWidth;
-                            final slotWidth = barWidth / _kTabs.length;
-                            // Capsule width = slot minus small H padding
-                            // Capsule height = barHeight minus vertical inset
-                            // → width > height → pill shape not circle
-                            final capsuleWidth = (slotWidth - 8.0)
-                                .clamp(56.0, 88.0);
-                            const verticalInset = 8.0;
-                            final capsuleHeight = barHeight - verticalInset * 2;
-                            const capsuleRadius = Radius.circular(24.0);
+        // Scaffold gives a bottomNavigationBar loose height constraints. Keep
+        // this slot limited to the actual bar plus its safe-area margin so a
+        // floating SnackBar can calculate a visible position above it.
+        return SizedBox(
+          height: totalBarHeight + bottomMargin,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 540),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  horizontalMargin,
+                  0,
+                  horizontalMargin,
+                  bottomMargin,
+                ),
+                child: SizedBox(
+                  height: totalBarHeight,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // ── Main Glass Pill Bar with 4 tabs ─────────────
+                      Expanded(
+                        child: SizedBox(
+                          height: totalBarHeight,
+                          child: LayoutBuilder(
+                            builder: (context, barConstraints) {
+                              final barWidth = barConstraints.maxWidth;
+                              final slotWidth = barWidth / _kTabs.length;
+                              // Capsule width = slot minus small H padding
+                              // Capsule height = barHeight minus vertical inset
+                              // → width > height → pill shape not circle
+                              final capsuleWidth = (slotWidth - 8.0).clamp(
+                                56.0,
+                                88.0,
+                              );
+                              const verticalInset = 8.0;
+                              final capsuleHeight =
+                                  barHeight - verticalInset * 2;
+                              const capsuleRadius = Radius.circular(24.0);
 
-                            final pos = currentPos;
-                            final capsuleCenter = (pos + 0.5) * slotWidth;
-                            final capsuleLeft = capsuleCenter - capsuleWidth / 2;
+                              final pos = currentPos;
+                              final capsuleCenter = (pos + 0.5) * slotWidth;
+                              final capsuleLeft =
+                                  capsuleCenter - capsuleWidth / 2;
 
-                            return Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                // Layer 1: Fixed Glass Pill Background
-                                Positioned(
-                                  left: 0,
-                                  right: 0,
-                                  top: topProtrusion,
-                                  height: barHeight,
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      borderRadius:
-                                          BorderRadius.circular(barHeight / 2),
-                                      boxShadow: pillShadow,
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius:
-                                          BorderRadius.circular(barHeight / 2),
-                                      child: BackdropFilter(
-                                        filter: ImageFilter.blur(
-                                          sigmaX: 18,
-                                          sigmaY: 18,
+                              return Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  // Layer 1: Fixed Glass Pill Background
+                                  Positioned(
+                                    left: 0,
+                                    right: 0,
+                                    top: topProtrusion,
+                                    height: barHeight,
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                          barHeight / 2,
                                         ),
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: pillBg,
-                                            borderRadius:
-                                                BorderRadius.circular(barHeight / 2),
-                                            border: Border.all(
-                                              color: pillBorder,
-                                              width: 1.0,
+                                        boxShadow: pillShadow,
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(
+                                          barHeight / 2,
+                                        ),
+                                        child: BackdropFilter(
+                                          filter: ImageFilter.blur(
+                                            sigmaX: 18,
+                                            sigmaY: 18,
+                                          ),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: pillBg,
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    barHeight / 2,
+                                                  ),
+                                              border: Border.all(
+                                                color: pillBorder,
+                                                width: 1.0,
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
 
-                                // Layer 2: ONE Shared Sliding Active Glass Capsule
-                                Positioned(
-                                  left: capsuleLeft,
-                                  top: verticalInset,
-                                  width: capsuleWidth,
-                                  height: capsuleHeight,
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      borderRadius:
-                                          const BorderRadius.all(capsuleRadius),
-                                      boxShadow: capsuleShadow,
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius:
-                                          const BorderRadius.all(capsuleRadius),
-                                      child: BackdropFilter(
-                                        filter: ImageFilter.blur(
-                                          sigmaX: 14,
-                                          sigmaY: 14,
+                                  // Layer 2: ONE Shared Sliding Active Glass Capsule
+                                  Positioned(
+                                    left: capsuleLeft,
+                                    top: verticalInset,
+                                    width: capsuleWidth,
+                                    height: capsuleHeight,
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        borderRadius: const BorderRadius.all(
+                                          capsuleRadius,
                                         ),
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: capsuleBg,
-                                            borderRadius: const BorderRadius.all(
-                                                capsuleRadius),
-                                            border: Border.all(
-                                              color: capsuleBorder,
-                                              width: 1.0,
+                                        boxShadow: capsuleShadow,
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: const BorderRadius.all(
+                                          capsuleRadius,
+                                        ),
+                                        child: BackdropFilter(
+                                          filter: ImageFilter.blur(
+                                            sigmaX: 14,
+                                            sigmaY: 14,
+                                          ),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: capsuleBg,
+                                              borderRadius:
+                                                  const BorderRadius.all(
+                                                    capsuleRadius,
+                                                  ),
+                                              border: Border.all(
+                                                color: capsuleBorder,
+                                                width: 1.0,
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
 
-                                // Layer 3: 4 Tab Items (Icons + Labels)
-                                // Each _TabItem has its own spring-bounce
-                                // animation that triggers when it becomes active.
-                                Positioned.fill(
-                                  child: Row(
-                                    children: List.generate(_kTabs.length, (i) {
-                                      final dist = (pos - i).abs();
-                                      final weight =
-                                          (1.0 - dist).clamp(0.0, 1.0);
-                                      return _TabItem(
-                                        tab: _kTabs[i],
-                                        isSelected: widget.currentIndex == i,
-                                        activeWeight: weight,
-                                        iconSize: iconSize,
-                                        fontSize: fontSize,
-                                        activeColor: activeColor,
-                                        inactiveColor: inactiveColor,
-                                        onTap: () => widget.onTap(i),
-                                        onLongPress: i == 3
-                                            ? () => BottomNavBar
-                                                ._showProfileMenu(context)
-                                            : null,
-                                        avatarUrl: widget.avatarUrl,
-                                        isProfile: i == 3,
-                                      );
-                                    }),
+                                  // Layer 3: 4 Tab Items (Icons + Labels)
+                                  // Each _TabItem has its own spring-bounce
+                                  // animation that triggers when it becomes active.
+                                  Positioned.fill(
+                                    child: Row(
+                                      children: List.generate(_kTabs.length, (
+                                        i,
+                                      ) {
+                                        final dist = (pos - i).abs();
+                                        final weight = (1.0 - dist).clamp(
+                                          0.0,
+                                          1.0,
+                                        );
+                                        return _TabItem(
+                                          tab: _kTabs[i],
+                                          isSelected: widget.currentIndex == i,
+                                          activeWeight: weight,
+                                          iconSize: iconSize,
+                                          fontSize: fontSize,
+                                          activeColor: activeColor,
+                                          inactiveColor: inactiveColor,
+                                          onTap: () => widget.onTap(i),
+                                          onLongPress: i == 3
+                                              ? () =>
+                                                    BottomNavBar._showProfileMenu(
+                                                      context,
+                                                    )
+                                              : null,
+                                          avatarUrl: widget.avatarUrl,
+                                          isProfile: i == 3,
+                                        );
+                                      }),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            );
-                          },
+                                ],
+                              );
+                            },
+                          ),
                         ),
                       ),
-                    ),
 
-                    SizedBox(width: plusGap),
+                      SizedBox(width: plusGap),
 
-                    // ── Separate + button on the RIGHT ──────────────
-                    _PlusButton(
-                      size: plusSize,
-                      iconSize: plusIconSize,
-                      isDark: isDark,
-                      onTap: widget.onCenterTap,
-                    ),
-                  ],
+                      // ── Separate + button on the RIGHT ──────────────
+                      _PlusButton(
+                        size: plusSize,
+                        iconSize: plusIconSize,
+                        isDark: isDark,
+                        onTap: widget.onCenterTap,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -555,18 +581,24 @@ class _TabItemState extends State<_TabItem>
     // Spring sequence: grow → overshoot → settle
     _bounceAnim = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.30)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.30,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 28,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.30, end: 0.88)
-            .chain(CurveTween(curve: Curves.easeInOut)),
+        tween: Tween<double>(
+          begin: 1.30,
+          end: 0.88,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
         weight: 32,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.88, end: 1.0)
-            .chain(CurveTween(curve: Curves.elasticOut)),
+        tween: Tween<double>(
+          begin: 0.88,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.elasticOut)),
         weight: 40,
       ),
     ]).animate(_bounce);
@@ -601,23 +633,22 @@ class _TabItemState extends State<_TabItem>
     final showActive = widget.isSelected || widget.activeWeight > 0.5;
 
     final Widget iconWidget =
-        (widget.isProfile && widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty)
-            ? Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: itemColor, width: 1.5),
-                ),
-                child: AppAvatar(
-                  imageUrl: widget.avatarUrl,
-                  size: widget.iconSize,
-                ),
-              )
-            : Icon(
-                showActive ? widget.tab.filledIcon : widget.tab.outlineIcon,
-                size: widget.iconSize,
-                color: itemColor,
-                semanticLabel: labelText,
-              );
+        (widget.isProfile &&
+            widget.avatarUrl != null &&
+            widget.avatarUrl!.isNotEmpty)
+        ? Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: itemColor, width: 1.5),
+            ),
+            child: AppAvatar(imageUrl: widget.avatarUrl, size: widget.iconSize),
+          )
+        : Icon(
+            showActive ? widget.tab.filledIcon : widget.tab.outlineIcon,
+            size: widget.iconSize,
+            color: itemColor,
+            semanticLabel: labelText,
+          );
 
     return Expanded(
       child: Semantics(
@@ -644,8 +675,9 @@ class _TabItemState extends State<_TabItem>
                     animation: _bounceAnim,
                     builder: (context, child) {
                       final weightScale = 1.0 + 0.08 * widget.activeWeight;
-                      final springScale =
-                          _bounce.isAnimating ? _bounceAnim.value : 1.0;
+                      final springScale = _bounce.isAnimating
+                          ? _bounceAnim.value
+                          : 1.0;
                       return Transform.scale(
                         scale: weightScale * springScale,
                         child: child,
@@ -666,8 +698,9 @@ class _TabItemState extends State<_TabItem>
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: itemColor,
-                          fontWeight:
-                              showActive ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: showActive
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                           fontSize: widget.fontSize,
                           letterSpacing: showActive ? 0.1 : -0.1,
                           height: 1.15,
@@ -717,13 +750,17 @@ class _PlusButtonState extends State<_PlusButton>
     );
     _scale = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 0.92)
-            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 0.92,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 50,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.92, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeOutBack)),
+        tween: Tween<double>(
+          begin: 0.92,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeOutBack)),
         weight: 50,
       ),
     ]).animate(_press);
@@ -743,7 +780,9 @@ class _PlusButtonState extends State<_PlusButton>
 
   @override
   Widget build(BuildContext context) {
-    final bg = widget.isDark ? const Color(0xFFF0F2F5) : const Color(0xFF141517);
+    final bg = widget.isDark
+        ? const Color(0xFFF0F2F5)
+        : const Color(0xFF141517);
     final iconColor = widget.isDark ? const Color(0xFF141517) : Colors.white;
     final border = widget.isDark
         ? const Color(0x33FFFFFF)
@@ -793,4 +832,3 @@ class _PlusButtonState extends State<_PlusButton>
     );
   }
 }
-

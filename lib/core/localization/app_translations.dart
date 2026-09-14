@@ -20,6 +20,7 @@ class AppTranslations extends Translations {
     // ── Common ──────────────────────────────────────────────────────────
     'common.continue': 'Continue',
     'common.cancel': 'Cancel',
+    'common.close': 'Close',
     'common.save': 'Save',
     'common.retry': 'Retry',
     'common.skip': 'Skip',
@@ -202,7 +203,8 @@ class AppTranslations extends Translations {
     'community.unrepost': 'Unrepost',
     'community.cannotRepostOwnPost': 'You cannot repost your own post.',
     'community.postReported': 'Post Reported',
-    'community.postReportedMsg': 'Thank you for reporting. Our team will review this post.',
+    'community.postReportedMsg':
+        'Thank you for reporting. Our team will review this post.',
     'community.unreposted': 'Unreposted',
     'community.unrepostedMsg': 'Post has been removed from your reposts.',
     'community.shareWithCommunity': 'Share something with your community.',
@@ -219,13 +221,15 @@ class AppTranslations extends Translations {
     'community.feeling': 'Feeling',
     'community.location': 'Location',
     'community.trendingDiscussions': 'Trending Discussions',
-    'community.registeredSuccessfullyFor': 'You are successfully registered for',
+    'community.registeredSuccessfullyFor':
+        'You are successfully registered for',
     'community.youAreRegisteredFor': "You're registered for:",
     'community.done': 'Done',
     'community.registered': 'Registered',
     'community.youAreRegistered': "You're Registered",
     'community.youAreOrganizer': "You're the Organizer",
-    'community.registrationFailed': 'Unable to complete registration. Please try again.',
+    'community.registrationFailed':
+        'Unable to complete registration. Please try again.',
 
     // ── Home ────────────────────────────────────────────────────────────
     'date.weekdays': 'Mon,Tue,Wed,Thu,Fri,Sat,Sun',
@@ -298,7 +302,8 @@ class AppTranslations extends Translations {
     'home.checkConnection': 'Check your connection and try again.',
     'home.retry': 'Retry',
     'home.todaysChallenge': "Today's Challenge",
-    'home.habitCheckInError': 'Unable to update habit check-in. Please try again.',
+    'home.habitCheckInError':
+        'Unable to update habit check-in. Please try again.',
     'home.feedPreview': 'COMMUNITY FEED',
     'home.goodMorning': 'Good morning',
     'home.goodAfternoon': 'Good afternoon',
@@ -308,7 +313,8 @@ class AppTranslations extends Translations {
     'home.budgetAlertWarning': "You've used @percent% of your monthly budget.",
     'home.budgetAlertLimit': "You've reached your monthly budget limit.",
     'home.habitStreakAlertTitle': 'Habit Streak at Risk',
-    'home.habitStreakAlertMsg': "Complete today's habits to protect your streak!",
+    'home.habitStreakAlertMsg':
+        "Complete today's habits to protect your streak!",
     'home.tapOpenFinance': 'Tap → Open Finance',
     'home.communityHighlight': 'COMMUNITY HIGHLIGHT',
     'home.campusHub': 'CAMPUS HUB',
@@ -317,11 +323,13 @@ class AppTranslations extends Translations {
     'home.savingGoalUpdate': 'Saving Goal Update',
     'home.savingGoalMsg': '@percent% saved (@current of @target)',
     'home.noCommunityHighlightTitle': 'Campus Discussions',
-    'home.noCommunityHighlightSubtitle': 'Discover campus conversations and connect.',
+    'home.noCommunityHighlightSubtitle':
+        'Discover campus conversations and connect.',
 
     // ── Profile ─────────────────────────────────────────────────────────
     'profile.title': 'Profile',
     'profile.edit': 'Edit profile',
+    'profile.add': 'Add',
     'profile.bio': 'Bio',
     'profile.location': 'Location',
     'profile.university': 'University',
@@ -350,6 +358,15 @@ class AppTranslations extends Translations {
     'profile.editCareer': 'Edit Career Profile',
     'profile.noCareerDetails': 'Add your career path',
     'profile.publicProfile': 'Public profile',
+    'profile.about': 'About',
+    'profile.memberSince': 'Member since',
+    'profile.follow': 'Follow',
+    'profile.following': 'Following',
+    'profile.requested': 'Requested',
+    'profile.followers': 'Followers',
+    'profile.followingCount': 'Following',
+    'profile.copyLink': 'Copy link',
+    'profile.linkCopied': 'Link copied',
     'profile.professionalBio': 'Professional Bio',
     'profile.coreCompetencies': 'Core Competencies',
     'profile.portfolioPreview': 'Portfolio Preview',
@@ -374,6 +391,11 @@ class AppTranslations extends Translations {
     'profile.updated': 'Profile updated',
     'profile.viewAvatar': 'View profile picture',
     'profile.changeAvatar': 'Change profile picture',
+    'profile.changeCover': 'Change cover',
+    'profile.chooseCover': 'Choose a cover',
+    'profile.coverSelectionHint':
+        'Pick one of the ten cover styles for your public profile.',
+    'profile.coverUpdated': 'Profile cover updated',
     'profile.addPortfolio': 'Add item',
     'profile.portfolioTitle': 'Title',
     'profile.portfolioDescription': 'Description',
@@ -743,7 +765,8 @@ class AppTranslations extends Translations {
     'community.aboutEvent': 'About Event',
     'community.organizer': 'Organizer',
     'community.noUpcomingEvents': 'No upcoming events',
-    'community.discoverEventsMsg': 'Discover events happening around your campus and community.',
+    'community.discoverEventsMsg':
+        'Discover events happening around your campus and community.',
     'community.saveEvent': 'Save event',
     'community.savedToBookmarks': 'Saved to Bookmarks',
     'community.removedFromBookmarks': 'Removed from Bookmarks',
@@ -780,12 +803,15 @@ class AppTranslations extends Translations {
     'community.applyFilters': 'Apply Filters',
     'community.registerForEvent': 'Register for Event',
     'community.registrationFee': 'Registration Fee',
-    'community.insufficientBalance': 'Insufficient demo wallet balance. Please top up your wallet.',
-    'community.walletNotFound': 'Demo wallet not found. Please open your wallet first.',
+    'community.insufficientBalance':
+        'Insufficient demo wallet balance. Please top up your wallet.',
+    'community.walletNotFound':
+        'Demo wallet not found. Please open your wallet first.',
     'community.eventCancelled': 'This event has been cancelled.',
     'community.eventPast': 'This event has already taken place.',
     'community.eventNotFound': 'Event not found.',
-    'community.networkError': 'Network error. Please check your connection and try again.',
+    'community.networkError':
+        'Network error. Please check your connection and try again.',
     'community.yourInformation': 'Your Information',
     'community.academicInformation': 'Academic Information',
     'community.contactInformation': 'Contact Information',
@@ -810,12 +836,15 @@ class AppTranslations extends Translations {
     'community.emailRequired': 'Please enter your email address.',
     'community.invalidEmail': 'Please enter a valid email address.',
     'community.phoneRequired': 'Please enter your phone number.',
-    'community.invalidPhone': 'Please enter a valid phone number (8-10 digits).',
-    'community.termsRequired': 'You must agree to the Event Terms & Conditions.',
+    'community.invalidPhone':
+        'Please enter a valid phone number (8-10 digits).',
+    'community.termsRequired':
+        'You must agree to the Event Terms & Conditions.',
     'community.registering': 'Registering...',
     'community.creatingRegistration': 'Creating registration...',
     'community.alreadyRegistered': "You're already registered",
-    'community.alreadyRegisteredMsg': 'You have already secured your spot for this event.',
+    'community.alreadyRegisteredMsg':
+        'You have already secured your spot for this event.',
     'community.eventFull': 'Event Full',
     'community.eventFullMsg': 'This event has reached its maximum capacity.',
     'community.searchUniversity': 'Search university...',
@@ -835,7 +864,8 @@ class AppTranslations extends Translations {
     'community.freshGraduate': 'Fresh Graduate / Alumni',
     'community.other': 'Other',
     'community.eventTermsTitle': 'Event Terms & Conditions',
-    'community.eventTermsContent': 'By registering for this event, you agree to attend punctually, follow campus and event guidelines, and understand that media recordings may be captured for educational and promotional use.',
+    'community.eventTermsContent':
+        'By registering for this event, you agree to attend punctually, follow campus and event guidelines, and understand that media recordings may be captured for educational and promotional use.',
     'community.understand': 'I Understand',
     'community.iAgreeTerms': 'I agree to the ',
     'community.termsAndConditions': 'Event Terms & Conditions',
@@ -918,14 +948,16 @@ class AppTranslations extends Translations {
     'community.moreOptions': 'More Post Options',
     // ── Create Discussion (Forum) ────────────────────────────────────────
     'community.noDiscussionsYet': 'No discussions yet',
-    'community.startConversation': 'Start a conversation with the GenLink community.',
+    'community.startConversation':
+        'Start a conversation with the GenLink community.',
     'community.createDiscussion': 'Create Discussion',
     'community.publishDiscussion': 'Publish',
     'community.discussionCategory': 'Category',
     'community.discussionTitle': 'Title',
     'community.discussionTitleHint': 'What do you want to talk about?',
     'community.discussionContent': 'Content',
-    'community.discussionContentHint': 'Share your thoughts, question, or idea...',
+    'community.discussionContentHint':
+        'Share your thoughts, question, or idea...',
     'community.selectCategory': 'Select a category',
     'community.categoryTech': 'Tech & Coding',
     'community.categoryCampus': 'Campus Life',
@@ -943,7 +975,8 @@ class AppTranslations extends Translations {
     'community.discussionDeleted': 'Discussion Deleted',
     'community.discussionDeletedMsg': 'Your discussion has been removed.',
     'community.discussionUpdated': 'Discussion Updated',
-    'community.discussionUpdatedMsg': 'Your discussion changes have been saved.',
+    'community.discussionUpdatedMsg':
+        'Your discussion changes have been saved.',
     'community.couldNotPublishDiscussion':
         "Couldn't publish your discussion. Please check your connection and try again.",
     'community.couldNotUpdateDiscussion':
@@ -951,7 +984,8 @@ class AppTranslations extends Translations {
     'community.couldNotDeleteDiscussion':
         "Couldn't delete discussion. Please try again.",
     'community.discardChanges': 'Discard changes?',
-    'community.discardChangesMsg': 'Your discussion has not been published yet.',
+    'community.discardChangesMsg':
+        'Your discussion has not been published yet.',
     'community.publishing': 'Publishing...',
     'community.public': 'Public',
     'community.selectCategoryPrompt': 'Please select a category.',
@@ -1453,8 +1487,10 @@ class AppTranslations extends Translations {
     'create.actionChallengeDesc': 'Join and complete daily challenges',
     'create.actionShortContent': 'Short Content',
     'create.actionShortContentDesc': 'Create a short video or reel',
-    'create.dialogChallengeDesc': 'Daily challenges are automatically assigned to your Today Hub on the Home dashboard. Complete tasks and habits to earn XP and level up.',
-    'create.dialogShortContentDesc': 'Create and share short video clips or reels directly to your Story or Community feed.',
+    'create.dialogChallengeDesc':
+        'Daily challenges are automatically assigned to your Today Hub on the Home dashboard. Complete tasks and habits to earn XP and level up.',
+    'create.dialogShortContentDesc':
+        'Create and share short video clips or reels directly to your Story or Community feed.',
     'create.openStoryCreator': 'Open Story Creator',
 
     // ── Productivity ───────────────────────────────────────────────────────
@@ -1533,7 +1569,8 @@ class AppTranslations extends Translations {
     'chat.activeNow': 'Active now',
     'chat.offline': 'Offline',
     'chat.noMessages': 'No messages yet',
-    'chat.noMessagesSubtitle': 'Connect with student peers and join group discussions.',
+    'chat.noMessagesSubtitle':
+        'Connect with student peers and join group discussions.',
     'chat.noSearchResults': 'No chats found',
     'chat.newGroup': 'New Group',
     'chat.muteChat': 'Mute',
@@ -1541,7 +1578,8 @@ class AppTranslations extends Translations {
     'chat.archiveChat': 'Archive',
     'chat.deleteChat': 'Delete',
     'chat.deleteConversationTitle': 'Delete conversation?',
-    'chat.deleteConversationPrompt': 'This conversation will be removed from your chat list.',
+    'chat.deleteConversationPrompt':
+        'This conversation will be removed from your chat list.',
     'chat.conversationDeleted': 'Conversation deleted',
     'chat.notificationsMuted': 'Notifications muted',
     'chat.notificationsUnmuted': 'Notifications unmuted',
@@ -1571,7 +1609,8 @@ class AppTranslations extends Translations {
     'chat.unpin': 'Unpin',
     'chat.pinnedMessage': 'Pinned message',
     'chat.report': 'Report',
-    'chat.reportSubmitted': 'Thank you for reporting. Our team will review this.',
+    'chat.reportSubmitted':
+        'Thank you for reporting. Our team will review this.',
     'chat.deleteMessage': 'Delete',
     'chat.deleteMessageTitle': 'Delete message?',
     'chat.deleteMessagePrompt': 'Are you sure you want to delete this message?',
@@ -1613,6 +1652,7 @@ class AppTranslations extends Translations {
     // ── Common ──────────────────────────────────────────────────────────
     'common.continue': 'បន្ត',
     'common.cancel': 'បោះបង់',
+    'common.close': 'បិទ',
     'common.save': 'រក្សាទុក',
     'common.retry': 'ព្យាយាមម្តងទៀត',
     'common.skip': 'រំលង',
@@ -1767,7 +1807,8 @@ class AppTranslations extends Translations {
     'community.addReply': 'បន្ថែមការឆ្លើយតប...',
     'community.noCommentsYet': 'មិនទាន់មានមតិយោបល់ទេ',
     'community.beFirstComment': 'សូមធ្វើជាអ្នកដំបូងដែលបញ្ចេញមតិ',
-    'community.firstToStartDiscussion': 'សូមធ្វើជាអ្នកដំបូងដែលចាប់ផ្តើមការពិភាក្សា!',
+    'community.firstToStartDiscussion':
+        'សូមធ្វើជាអ្នកដំបូងដែលចាប់ផ្តើមការពិភាក្សា!',
     'community.couldNotLoadDiscussions': 'មិនអាចទាញយកការពិភាក្សាបានទេ។',
     'community.couldNotLoadDiscussionDetail': 'មិនអាចទាញយកការពិភាក្សានេះបានទេ។',
     'community.saveBookmark': 'រក្សាទុក',
@@ -1792,9 +1833,11 @@ class AppTranslations extends Translations {
     'community.following': 'បានតាមដាន',
     'community.reportPost': 'រាយការណ៍ប្រកាស',
     'community.unrepost': 'លុបការចែករំលែកឡើងវិញ',
-    'community.cannotRepostOwnPost': 'អ្នកមិនអាចចែករំលែកប្រកាសផ្ទាល់ខ្លួនឡើងវិញបានទេ។',
+    'community.cannotRepostOwnPost':
+        'អ្នកមិនអាចចែករំលែកប្រកាសផ្ទាល់ខ្លួនឡើងវិញបានទេ។',
     'community.postReported': 'បានរាយការណ៍ប្រកាស',
-    'community.postReportedMsg': 'សូមអរគុណសម្រាប់ការរាយការណ៍។ ក្រុមការងារនឹងពិនិត្យមើលប្រកាសនេះ។',
+    'community.postReportedMsg':
+        'សូមអរគុណសម្រាប់ការរាយការណ៍។ ក្រុមការងារនឹងពិនិត្យមើលប្រកាសនេះ។',
     'community.unreposted': 'បានលុបការចែករំលែកឡើងវិញ',
     'community.unrepostedMsg': 'ប្រកាសត្រូវបានដកចេញពីការចែករំលែករបស់អ្នក។',
     'community.shareWithCommunity': 'ចែករំលែកអ្វីមួយជាមួយសហគមន៍របស់អ្នក។',
@@ -1817,7 +1860,8 @@ class AppTranslations extends Translations {
     'community.registered': 'បានចុះឈ្មោះ',
     'community.youAreRegistered': 'អ្នកបានចុះឈ្មោះហើយ',
     'community.youAreOrganizer': 'អ្នកជាអ្នករៀបចំកម្មវិធី',
-    'community.registrationFailed': 'មិនអាចបញ្ចប់ការចុះឈ្មោះបានទេ។ សូមព្យាយាមម្តងទៀត។',
+    'community.registrationFailed':
+        'មិនអាចបញ្ចប់ការចុះឈ្មោះបានទេ។ សូមព្យាយាមម្តងទៀត។',
 
     // ── Home ────────────────────────────────────────────────────────────
     'date.weekdays': 'ចន្ទ,អង្គារ,ពុធ,ព្រហ,សុក្រ,សៅរ៍,អាទិត្យ',
@@ -1853,7 +1897,8 @@ class AppTranslations extends Translations {
     'home.keepStreakAlive': 'រក្សាការបន្តជាប់លាប់របស់អ្នក',
     'home.habitStreakMsg': 'បំពេញទម្លាប់ថ្ងៃនេះដើម្បីបន្តវឌ្ឍនភាពរបស់អ្នក។',
     'home.quizAvailable': 'កម្រងសំណួររួចរាល់ហើយ',
-    'home.quizAvailableMsg': 'សាកល្បងចំណេះដឹងរបស់អ្នក និងទទួលបាន XP បន្ថែមថ្ងៃនេះ។',
+    'home.quizAvailableMsg':
+        'សាកល្បងចំណេះដឹងរបស់អ្នក និងទទួលបាន XP បន្ថែមថ្ងៃនេះ។',
     'home.yourProgress': 'វឌ្ឍនភាពរបស់អ្នក',
     'home.tasksCompletedToday': 'កិច្ចការបានបញ្ចប់ថ្ងៃនេះ',
     'home.progressTowardLevel': 'ឆ្ពោះទៅកម្រិត @level',
@@ -1883,7 +1928,8 @@ class AppTranslations extends Translations {
     'home.noTasksTitle': 'គ្មានកិច្ចការសម្រាប់ថ្ងៃនេះទេ',
     'home.noTasksSubtitle': 'អ្នកបានបញ្ចប់អ្វីៗទាំងអស់ហើយ។',
     'home.noEventsTitle': 'គ្មានព្រឹត្តិការណ៍ខាងមុខទេ',
-    'home.noEventsSubtitle': 'សូមពិនិត្យមើលឡើងវិញនៅពេលក្រោយសម្រាប់សកម្មភាពក្នុងសាលា។',
+    'home.noEventsSubtitle':
+        'សូមពិនិត្យមើលឡើងវិញនៅពេលក្រោយសម្រាប់សកម្មភាពក្នុងសាលា។',
     'home.dailyMotivation': 'ការលើកទឹកចិត្តប្រចាំថ្ងៃ',
     'home.recommendedCommunities': 'សហគមន៍ដែលបានណែនាំ',
     'home.membersCount': '@count សមាជិក',
@@ -1891,17 +1937,21 @@ class AppTranslations extends Translations {
     'home.checkConnection': 'សូមពិនិត្យការតភ្ជាប់របស់អ្នក ហើយព្យាយាមម្តងទៀត។',
     'home.retry': 'ព្យាយាមម្តងទៀត',
     'home.todaysChallenge': 'បញ្ហាប្រឈមថ្ងៃនេះ',
-    'home.habitCheckInError': 'មិនអាចកត់ត្រាការចុះឈ្មោះទម្លាប់បានទេ។ សូមព្យាយាមម្តងទៀត។',
+    'home.habitCheckInError':
+        'មិនអាចកត់ត្រាការចុះឈ្មោះទម្លាប់បានទេ។ សូមព្យាយាមម្តងទៀត។',
     'home.feedPreview': 'ផ្ទាំងព័ត៌មានសហគមន៍',
     'home.goodMorning': 'អរុណសួស្តី',
     'home.goodAfternoon': 'ទិវាសួស្តី',
     'home.goodEvening': 'សាយណ្ហសួស្តី',
     'home.greetingSubtitle': 'នេះជាអ្វីដែលសំខាន់សម្រាប់ថ្ងៃនេះ។',
     'home.budgetAlertTitle': 'ការជូនដំណឹងអំពីថវិកា',
-    'home.budgetAlertWarning': 'អ្នកបានប្រើប្រាស់អស់ @percent% នៃថវិកាប្រចាំខែរបស់អ្នក។',
-    'home.budgetAlertLimit': 'អ្នកបានឈានដល់កម្រិតកំណត់ថវិកាប្រចាំខែរបស់អ្នកហើយ។',
+    'home.budgetAlertWarning':
+        'អ្នកបានប្រើប្រាស់អស់ @percent% នៃថវិកាប្រចាំខែរបស់អ្នក។',
+    'home.budgetAlertLimit':
+        'អ្នកបានឈានដល់កម្រិតកំណត់ថវិកាប្រចាំខែរបស់អ្នកហើយ។',
     'home.habitStreakAlertTitle': 'ការបន្តទម្លាប់កំពុងប្រឈមហានិភ័យ',
-    'home.habitStreakAlertMsg': 'ចុះឈ្មោះទម្លាប់ថ្ងៃនេះដើម្បីការពារការបន្តជាប់លាប់របស់អ្នក!',
+    'home.habitStreakAlertMsg':
+        'ចុះឈ្មោះទម្លាប់ថ្ងៃនេះដើម្បីការពារការបន្តជាប់លាប់របស់អ្នក!',
     'home.tapOpenFinance': 'ចុច → បើកហិរញ្ញវត្ថុ',
     'home.communityHighlight': 'ចំណុចលេចធ្លោនៃសហគមន៍',
     'home.campusHub': 'មជ្ឈមណ្ឌលបរិវេណសាលា',
@@ -1910,11 +1960,13 @@ class AppTranslations extends Translations {
     'home.savingGoalUpdate': 'បច្ចុប្បន្នភាពគោលដៅសន្សំ',
     'home.savingGoalMsg': 'សន្សំបាន @percent% (@current នៃ @target)',
     'home.noCommunityHighlightTitle': 'ការពិភាក្សាក្នុងបរិវេណសាលា',
-    'home.noCommunityHighlightSubtitle': 'ស្វែងរកការពិភាក្សា និងភ្ជាប់ទំនាក់ទំនងជាមួយមិត្តភក្តិ។',
+    'home.noCommunityHighlightSubtitle':
+        'ស្វែងរកការពិភាក្សា និងភ្ជាប់ទំនាក់ទំនងជាមួយមិត្តភក្តិ។',
 
     // ── Profile ─────────────────────────────────────────────────────────
     'profile.title': 'ប្រវត្តិរូប',
     'profile.edit': 'កែសម្រួលប្រវត្តិរូប',
+    'profile.add': 'បន្ថែម',
     'profile.bio': 'អំពីខ្ញុំ',
     'profile.location': 'ទីតាំង',
     'profile.university': 'សាកលវិទ្យាល័យ',
@@ -1944,6 +1996,15 @@ class AppTranslations extends Translations {
     'profile.editCareer': 'កែសម្រួលអាជីព',
     'profile.noCareerDetails': 'បន្ថែមផ្លូវអាជីពរបស់អ្នក',
     'profile.publicProfile': 'ប្រវត្តិរូបសាធារណៈ',
+    'profile.about': 'អំពីខ្ញុំ',
+    'profile.memberSince': 'ជាសមាជិកចាប់ពី',
+    'profile.follow': 'តាមដាន',
+    'profile.following': 'កំពុងតាមដាន',
+    'profile.requested': 'បានស្នើសុំ',
+    'profile.followers': 'អ្នកតាមដាន',
+    'profile.followingCount': 'កំពុងតាមដាន',
+    'profile.copyLink': 'ចម្លងតំណ',
+    'profile.linkCopied': 'បានចម្លងតំណ',
     'profile.professionalBio': 'ប្រវត្តិវិជ្ជាជីវៈ',
     'profile.coreCompetencies': 'ជំនាញស្នូល',
     'profile.portfolioPreview': 'ការមើលស្នាដៃជាមុន',
@@ -1968,6 +2029,11 @@ class AppTranslations extends Translations {
     'profile.updated': 'បានធ្វើបច្ចុប្បន្នភាពប្រវត្តិរូប',
     'profile.viewAvatar': 'មើលរូបភាពប្រវត្តិរូប',
     'profile.changeAvatar': 'ប្តូររូបភាពប្រវត្តិរូប',
+    'profile.changeCover': 'ប្តូររូបភាពគម្រប',
+    'profile.chooseCover': 'ជ្រើសរើសរូបភាពគម្រប',
+    'profile.coverSelectionHint':
+        'ជ្រើសរើសរចនាប័ទ្មគម្របមួយក្នុងចំណោម ១០ សម្រាប់ប្រវត្តិរូបសាធារណៈរបស់អ្នក។',
+    'profile.coverUpdated': 'បានធ្វើបច្ចុប្បន្នភាពរូបភាពគម្រប',
     'profile.addPortfolio': 'បន្ថែមស្នាដៃ',
     'profile.portfolioTitle': 'ចំណងជើង',
     'profile.portfolioDescription': 'ការពិពណ៌នា',
@@ -2338,7 +2404,8 @@ class AppTranslations extends Translations {
     'community.aboutEvent': 'អំពីព្រឹត្តិការណ៍',
     'community.organizer': 'អ្នករៀបចំ',
     'community.noUpcomingEvents': 'មិនមានព្រឹត្តិការណ៍ខាងមុខទេ',
-    'community.discoverEventsMsg': 'ស្វែងរកព្រឹត្តិការណ៍ដែលកំពុងកើតឡើងនៅជុំវិញសាកលវិទ្យាល័យ និងសហគមន៍របស់អ្នក។',
+    'community.discoverEventsMsg':
+        'ស្វែងរកព្រឹត្តិការណ៍ដែលកំពុងកើតឡើងនៅជុំវិញសាកលវិទ្យាល័យ និងសហគមន៍របស់អ្នក។',
     'community.saveEvent': 'រក្សាទុកព្រឹត្តិការណ៍',
     'community.savedToBookmarks': 'បានរក្សាទុកក្នុងចំណាំ',
     'community.removedFromBookmarks': 'បានដកចេញពីចំណាំ',
@@ -2375,12 +2442,15 @@ class AppTranslations extends Translations {
     'community.applyFilters': 'អនុវត្តតម្រង',
     'community.registerForEvent': 'ចុះឈ្មោះចូលរួមព្រឹត្តិការណ៍',
     'community.registrationFee': 'តម្លៃចុះឈ្មោះ',
-    'community.insufficientBalance': 'សមតុល្យកាបូបសាកល្បងមិនគ្រប់គ្រាន់ទេ។ សូមបញ្ចូលទឹកប្រាក់ក្នុងកាបូបរបស់អ្នក។',
-    'community.walletNotFound': 'រកមិនឃើញកាបូបសាកល្បងទេ។ សូមបើកកាបូបរបស់អ្នកជាមុនសិន។',
+    'community.insufficientBalance':
+        'សមតុល្យកាបូបសាកល្បងមិនគ្រប់គ្រាន់ទេ។ សូមបញ្ចូលទឹកប្រាក់ក្នុងកាបូបរបស់អ្នក។',
+    'community.walletNotFound':
+        'រកមិនឃើញកាបូបសាកល្បងទេ។ សូមបើកកាបូបរបស់អ្នកជាមុនសិន។',
     'community.eventCancelled': 'កម្មវិធីនេះត្រូវបានលុបចោល។',
     'community.eventPast': 'កម្មវិធីនេះបានបញ្ចប់រួចហើយ។',
     'community.eventNotFound': 'រកមិនឃើញព្រឹត្តិការណ៍នេះទេ។',
-    'community.networkError': 'បញ្ហាបណ្តាញ។ សូមពិនិត្យមើលការតភ្ជាប់របស់អ្នក ហើយព្យាយាមម្តងទៀត។',
+    'community.networkError':
+        'បញ្ហាបណ្តាញ។ សូមពិនិត្យមើលការតភ្ជាប់របស់អ្នក ហើយព្យាយាមម្តងទៀត។',
     'community.yourInformation': 'ព័ត៌មានរបស់អ្នក',
     'community.academicInformation': 'ព័ត៌មានសិក្សា',
     'community.contactInformation': 'ព័ត៌មានទំនាក់ទំនង',
@@ -2409,7 +2479,8 @@ class AppTranslations extends Translations {
     'community.termsRequired': 'អ្នកត្រូវតែយល់ព្រមតាមលក្ខខណ្ឌប្រើប្រាស់។',
     'community.registering': 'កំពុងចុះឈ្មោះ...',
     'community.alreadyRegistered': 'អ្នកបានចុះឈ្មោះរួចហើយ',
-    'community.alreadyRegisteredMsg': 'អ្នកបានចុះឈ្មោះសម្រាប់ព្រឹត្តិការណ៍នេះរួចហើយ។',
+    'community.alreadyRegisteredMsg':
+        'អ្នកបានចុះឈ្មោះសម្រាប់ព្រឹត្តិការណ៍នេះរួចហើយ។',
     'community.eventFull': 'កម្មវិធីពេញហើយ',
     'community.eventFullMsg': 'ព្រឹត្តិការណ៍នេះបានដល់កម្រិតកំណត់អ្នកចូលរួមហើយ។',
     'community.searchUniversity': 'ស្វែងរកសាកលវិទ្យាល័យ...',
@@ -2429,7 +2500,8 @@ class AppTranslations extends Translations {
     'community.freshGraduate': 'និស្សិតទើបបញ្ចប់ការសិក្សា / អតីតនិស្សិត',
     'community.other': 'ផ្សេងៗ',
     'community.eventTermsTitle': 'លក្ខខណ្ឌនៃព្រឹត្តិការណ៍',
-    'community.eventTermsContent': 'តាមរយៈការចុះឈ្មោះចូលរួមព្រឹត្តិការណ៍នេះ អ្នកយល់ព្រមគោរពតាមគោលការណ៍ណែនាំសហគមន៍ គោរពអ្នកចូលរួមដទៃទៀត និងយល់ព្រមឲ្យថតរូបសម្រាប់ផ្សព្វផ្សាយសកម្មភាពសាកលវិទ្យាល័យ។',
+    'community.eventTermsContent':
+        'តាមរយៈការចុះឈ្មោះចូលរួមព្រឹត្តិការណ៍នេះ អ្នកយល់ព្រមគោរពតាមគោលការណ៍ណែនាំសហគមន៍ គោរពអ្នកចូលរួមដទៃទៀត និងយល់ព្រមឲ្យថតរូបសម្រាប់ផ្សព្វផ្សាយសកម្មភាពសាកលវិទ្យាល័យ។',
     'community.understand': 'ខ្ញុំយល់ព្រម',
     'community.iAgreeTerms': 'ខ្ញុំយល់ព្រមតាម ',
     'community.termsAndConditions': 'លក្ខខណ្ឌនៃព្រឹត្តិការណ៍',
@@ -2518,7 +2590,8 @@ class AppTranslations extends Translations {
     'community.discussionTitle': 'ចំណងជើង',
     'community.discussionTitleHint': 'តើអ្នកចង់និយាយអំពីអ្វី?',
     'community.discussionContent': 'ខ្លឹមសារ',
-    'community.discussionContentHint': 'ចែករំលែកការយល់ឃើញ សំណួរ ឬគំនិតរបស់អ្នក...',
+    'community.discussionContentHint':
+        'ចែករំលែកការយល់ឃើញ សំណួរ ឬគំនិតរបស់អ្នក...',
     'community.selectCategory': 'ជ្រើសរើសប្រភេទ',
     'community.categoryTech': 'បច្ចេកទេស & ការសរសេរកូដ',
     'community.categoryCampus': 'ជីវិតសិស្ស',
@@ -2546,7 +2619,8 @@ class AppTranslations extends Translations {
     'community.couldNotDeleteDiscussion':
         'មិនអាចលុបការពិភាក្សាបានទេ។ សូមព្យាយាមម្តងទៀត។',
     'community.discardChanges': 'បោះបង់ការផ្លាស់ប្តូរ?',
-    'community.discardChangesMsg': 'ការពិភាក្សារបស់អ្នកមិនទាន់ត្រូវបានបោះពុម្ពនៅឡើយទេ។',
+    'community.discardChangesMsg':
+        'ការពិភាក្សារបស់អ្នកមិនទាន់ត្រូវបានបោះពុម្ពនៅឡើយទេ។',
     'community.publishing': 'កំពុងបោះពុម្ព...',
     'community.public': 'សាធារណៈ',
     'community.selectCategoryPrompt': 'សូមជ្រើសរើសប្រភេទ។',
@@ -3054,8 +3128,10 @@ class AppTranslations extends Translations {
     'create.actionChallengeDesc': 'ចូលរួម និងបំពេញបញ្ហាប្រឈមប្រចាំថ្ងៃ',
     'create.actionShortContent': 'វីដេអូខ្លី',
     'create.actionShortContentDesc': 'បង្កើតវីដេអូខ្លី ឬ Reel',
-    'create.dialogChallengeDesc': 'បញ្ហាប្រឈមប្រចាំថ្ងៃត្រូវបានកំណត់ដោយស្វ័យប្រវត្តិទៅកាន់ Today Hub នៅលើផ្ទាំងព័ត៌មានដើម។ បំពេញភារកិច្ច និងទម្លាប់ដើម្បីទទួលបាន XP និងបង្កើនកម្រិត។',
-    'create.dialogShortContentDesc': 'បង្កើត និងចែករំលែកវីដេអូខ្លី ឬ Reel ដោយផ្ទាល់ទៅកាន់ស្តូរី ឬផ្ទាំងសហគមន៍របស់អ្នក។',
+    'create.dialogChallengeDesc':
+        'បញ្ហាប្រឈមប្រចាំថ្ងៃត្រូវបានកំណត់ដោយស្វ័យប្រវត្តិទៅកាន់ Today Hub នៅលើផ្ទាំងព័ត៌មានដើម។ បំពេញភារកិច្ច និងទម្លាប់ដើម្បីទទួលបាន XP និងបង្កើនកម្រិត។',
+    'create.dialogShortContentDesc':
+        'បង្កើត និងចែករំលែកវីដេអូខ្លី ឬ Reel ដោយផ្ទាល់ទៅកាន់ស្តូរី ឬផ្ទាំងសហគមន៍របស់អ្នក។',
     'create.openStoryCreator': 'បើកកម្មវិធីបង្កើតស្តូរី',
 
     // ── Productivity ───────────────────────────────────────────────────────
@@ -3136,7 +3212,8 @@ class AppTranslations extends Translations {
     'chat.activeNow': 'សកម្មឥឡូវនេះ',
     'chat.offline': 'ក្រៅបណ្តាញ',
     'chat.noMessages': 'មិនទាន់មានសារនៅឡើយទេ',
-    'chat.noMessagesSubtitle': 'ភ្ជាប់ទំនាក់ទំនងជាមួយមិត្តភក្តិ និងចូលរួមការពិភាក្សាជាក្រុម។',
+    'chat.noMessagesSubtitle':
+        'ភ្ជាប់ទំនាក់ទំនងជាមួយមិត្តភក្តិ និងចូលរួមការពិភាក្សាជាក្រុម។',
     'chat.noSearchResults': 'រកមិនឃើញការជជែកទេ',
     'chat.newGroup': 'បង្កើតក្រុមថ្មី',
     'chat.muteChat': 'បិទសំឡេង',
@@ -3144,7 +3221,8 @@ class AppTranslations extends Translations {
     'chat.archiveChat': 'ទុកក្នុងប័ណ្ណសារ',
     'chat.deleteChat': 'លុប',
     'chat.deleteConversationTitle': 'លុបការសន្ទនា?',
-    'chat.deleteConversationPrompt': 'ការសន្ទនានេះនឹងត្រូវបានដកចេញពីបញ្ជីជជែករបស់អ្នក។',
+    'chat.deleteConversationPrompt':
+        'ការសន្ទនានេះនឹងត្រូវបានដកចេញពីបញ្ជីជជែករបស់អ្នក។',
     'chat.conversationDeleted': 'ការសន្ទនាត្រូវបានលុប',
     'chat.notificationsMuted': 'ការជូនដំណឹងត្រូវបានបិទសំឡេង',
     'chat.notificationsUnmuted': 'ការជូនដំណឹងត្រូវបានបើកសំឡេង',
@@ -3174,7 +3252,8 @@ class AppTranslations extends Translations {
     'chat.unpin': 'ដោះខ្ទាស់',
     'chat.pinnedMessage': 'សារដែលបានខ្ទាស់',
     'chat.report': 'រាយការណ៍',
-    'chat.reportSubmitted': 'អរគុណសម្រាប់ការរាយការណ៍។ ក្រុមការងារយើងនឹងពិនិត្យមើល។',
+    'chat.reportSubmitted':
+        'អរគុណសម្រាប់ការរាយការណ៍។ ក្រុមការងារយើងនឹងពិនិត្យមើល។',
     'chat.deleteMessage': 'លុប',
     'chat.deleteMessageTitle': 'លុបសារនេះ?',
     'chat.deleteMessagePrompt': 'តើអ្នកពិតជាចង់លុបសារនេះមែនទេ?',

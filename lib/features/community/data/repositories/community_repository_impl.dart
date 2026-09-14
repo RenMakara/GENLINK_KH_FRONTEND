@@ -270,6 +270,11 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<bool> cancelRsvpEvent(String eventId) {
+    return remoteDataSource.cancelRsvpEvent(eventId);
+  }
+
+  @override
   Future<List<CommentModel>> getDiscussionCommentReplies(String commentId) async {
     return const [];
   }

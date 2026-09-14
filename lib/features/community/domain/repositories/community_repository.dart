@@ -119,6 +119,8 @@ abstract class CommunityRepository {
     EventRegistrationRequest? request,
   });
 
+  Future<bool> cancelRsvpEvent(String eventId) async => true;
+
   Future<EventModel> createEvent(EventCreateRequest request);
 
   Future<List<EventModel>> getEvents({

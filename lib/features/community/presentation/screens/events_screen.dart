@@ -65,6 +65,12 @@ class _EventsScreenState extends State<EventsScreen> {
                             : 'Search events...',
                         hintStyle: TextStyle(color: textMuted, fontSize: 15),
                         prefixIcon: Icon(Icons.search, color: textMuted, size: 20),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(Icons.clear_rounded, color: textMuted, size: 18),
+                                onPressed: () => _searchController.clear(),
+                              )
+                            : null,
                         filled: true,
                         fillColor: inputBg,
                         contentPadding: const EdgeInsets.symmetric(vertical: 12),
@@ -230,11 +236,18 @@ class _EventCard extends StatelessWidget {
         : 'In Person';
     final String locationDisplay = isOnline
         ? '🌐 $onlineLabel'
-        : '📍 ${event.location.isNotEmpty ? event.location : inPersonLabel}';
+        : '📍 ${event.effectiveLocationName.isNotEmpty ? event.effectiveLocationName : (event.location.isNotEmpty ? event.location : inPersonLabel)}';
 
-    final String dateDisplay = event.timeString.isNotEmpty
-        ? '📅 ${event.dateString} · ${event.timeString}'
-        : (event.dateString.isNotEmpty ? '📅 ${event.dateString}' : '');
+    String dateDisplay = '';
+    if (event.formattedDateRange.isNotEmpty && event.formattedTimeRange.isNotEmpty) {
+      dateDisplay = '📅 ${event.formattedDateRange} · ${event.formattedTimeRange}';
+    } else if (event.formattedDateRange.isNotEmpty) {
+      dateDisplay = '📅 ${event.formattedDateRange}';
+    } else if (event.timeString.isNotEmpty && event.dateString.isNotEmpty) {
+      dateDisplay = '📅 ${event.dateString} · ${event.timeString}';
+    } else if (event.dateString.isNotEmpty) {
+      dateDisplay = '📅 ${event.dateString}';
+    }
 
     final String rawCat = event.category.isNotEmpty ? event.category : 'Event';
     final String catKey = 'community.${rawCat.toLowerCase()}';

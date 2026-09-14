@@ -426,11 +426,18 @@ class _EventSuccessScreenState extends State<EventSuccessScreen>
 
     final String locationDisplay = isOnline
         ? '🌐 $onlineLabel'
-        : '📍 ${widget.event.location.isNotEmpty ? widget.event.location : inPersonLabel}';
+        : '📍 ${widget.event.effectiveLocationName.isNotEmpty ? widget.event.effectiveLocationName : (widget.event.location.isNotEmpty ? widget.event.location : inPersonLabel)}';
 
-    final String dateDisplay = widget.event.timeString.isNotEmpty
-        ? '📅 ${widget.event.dateString} · ${widget.event.timeString}'
-        : (widget.event.dateString.isNotEmpty ? '📅 ${widget.event.dateString}' : '');
+    String dateDisplay = '';
+    if (widget.event.formattedDateRange.isNotEmpty && widget.event.formattedTimeRange.isNotEmpty) {
+      dateDisplay = '📅 ${widget.event.formattedDateRange} · ${widget.event.formattedTimeRange}';
+    } else if (widget.event.formattedDateRange.isNotEmpty) {
+      dateDisplay = '📅 ${widget.event.formattedDateRange}';
+    } else if (widget.event.timeString.isNotEmpty && widget.event.dateString.isNotEmpty) {
+      dateDisplay = '📅 ${widget.event.dateString} · ${widget.event.timeString}';
+    } else if (widget.event.dateString.isNotEmpty) {
+      dateDisplay = '📅 ${widget.event.dateString}';
+    }
 
     return Container(
       padding: const EdgeInsets.all(14),

@@ -957,6 +957,23 @@ class CommunityRemoteDataSource {
     );
   }
 
+  Future<bool> cancelRsvpEvent(String eventId) async {
+    final response = await guardDio(
+      () => dio.delete<dynamic>(
+        ApiEndpoints.communityEventRsvp(eventId),
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    }
+
+    throw const AppError(
+      message: 'Failed to cancel event RSVP.',
+      errorCode: 'CANCEL_RSVP_FAILED',
+    );
+  }
+
   Future<EventModel> createEvent(EventCreateRequest request) async {
     final response = await guardDio(
       () => dio.post<dynamic>(

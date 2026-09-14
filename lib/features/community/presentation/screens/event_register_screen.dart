@@ -11,11 +11,13 @@ import 'event_success_screen.dart';
 class EventRegisterScreen extends StatefulWidget {
   final EventModel event;
   final Future<RsvpResponseModel> Function(String eventId, EventRegistrationRequest request)? onRegister;
+  final Future<bool> Function(String eventId)? onCancelRsvp;
 
   const EventRegisterScreen({
     super.key,
     required this.event,
     this.onRegister,
+    this.onCancelRsvp,
   });
 
   @override
@@ -27,14 +29,18 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _notesController = TextEditingController();
 
   final _scrollController = ScrollController();
 
+  String _selectedTicketType = 'FREE';
+  String _selectedPaymentMethod = 'Bakong KHQR';
   String? _selectedUniversity;
   String? _selectedFaculty;
   String? _selectedYear;
   bool _agreedToTerms = false;
   bool _isSubmitting = false;
+  bool _isCancellingRsvp = false;
 
   String? _fullNameError;
   String? _universityError;
@@ -47,6 +53,14 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
   final _fullNameFocus = FocusNode();
   final _emailFocus = FocusNode();
   final _phoneFocus = FocusNode();
+  final _notesFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTicketType = widget.event.isPaid ? 'STANDARD' : 'FREE';
+    _selectedPaymentMethod = 'Bakong KHQR';
+  }
 
   final List<String> _universities = const [
     'ACLEDA University of Business (AUB)',
@@ -97,9 +111,11 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     _fullNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _notesController.dispose();
     _fullNameFocus.dispose();
     _emailFocus.dispose();
     _phoneFocus.dispose();
+    _notesFocus.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -339,13 +355,122 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             ),
           ],
         ),
-        backgroundColor: isError ? AppColors.danger : AppColors.warning,
+        backgroundColor: isError ? AppColors.danger : AppColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 4),
       ),
     );
+  }
+
+  Future<void> _handleCancelRegistration(bool isDark) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E22) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'community.cancelRegistrationTitle'.tr,
+          style: TextStyle(
+            color: isDark ? Colors.white : AppColors.lightTextPrimary,
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+          ),
+        ),
+        content: Text(
+          'community.cancelRegistrationConfirm'.tr,
+          style: TextStyle(
+            color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
+            fontSize: 14,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: Text(
+              'common.cancel'.tr,
+              style: TextStyle(
+                color: isDark ? Colors.white60 : Colors.black54,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
+            ),
+            child: Text(
+              'community.confirmCancel'.tr,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isCancellingRsvp = true);
+
+    try {
+      bool success = false;
+      if (widget.onCancelRsvp != null) {
+        success = await widget.onCancelRsvp!(widget.event.id);
+      } else if (Get.isRegistered<CommunityController>()) {
+        final ctrl = Get.find<CommunityController>();
+        success = await ctrl.cancelEventRegistration(widget.event.id);
+      } else {
+        success = true;
+      }
+
+      if (!mounted) return;
+
+      if (success) {
+        setState(() {
+          _isCancellingRsvp = false;
+          widget.event.isRsvped = false;
+          widget.event.myRsvpStatus = 'CANCELLED';
+          widget.event.attendeesCount = (widget.event.attendeesCount - 1).clamp(0, 999999);
+        });
+
+        if (Get.isRegistered<CommunityController>()) {
+          final ctrl = Get.find<CommunityController>();
+          ctrl.syncEventRsvp(
+            widget.event.id,
+            isRsvped: false,
+            attendeesCount: widget.event.attendeesCount,
+            status: 'CANCELLED',
+          );
+        }
+
+        _showFloatingSnackBar(
+          context,
+          'community.registrationCancelled'.tr,
+          isError: false,
+        );
+      } else {
+        setState(() => _isCancellingRsvp = false);
+        _showFloatingSnackBar(
+          context,
+          'community.cancelRsvpFailed'.tr,
+          isError: true,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isCancellingRsvp = false);
+      _showFloatingSnackBar(
+        context,
+        'community.cancelRsvpFailed'.tr,
+        isError: true,
+      );
+    }
   }
 
   void _openUniversitySelector() {
@@ -717,6 +842,16 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
 
                     const SizedBox(height: 20),
 
+                    // ── Ticket Selection ─────────────────────────────────────
+                    _buildTicketSelectionSection(isDark: isDark, borderSubtle: borderSubtle),
+                    const SizedBox(height: 20),
+
+                    if (widget.event.isPaid) ...[
+                      // ── Payment Method & Price Banner ───────────────────────
+                      _buildPaymentSection(isDark: isDark, borderSubtle: borderSubtle),
+                      const SizedBox(height: 20),
+                    ],
+
                     if (isAlreadyRegistered) ...[
                       Container(
                         padding: const EdgeInsets.all(14),
@@ -728,31 +863,65 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                             color: const Color(0xFF22C55E).withValues(alpha: 0.35),
                           ),
                         ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 22),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'community.alreadyRegistered'.tr,
-                                    style: const TextStyle(
-                                      color: Color(0xFF22C55E),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13.5,
-                                    ),
+                            Row(
+                              children: [
+                                const Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 22),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'community.alreadyRegistered'.tr,
+                                        style: const TextStyle(
+                                          color: Color(0xFF22C55E),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'community.alreadyRegisteredMsg'.tr,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
+                                          fontSize: 11.5,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'community.alreadyRegisteredMsg'.tr,
-                                    style: TextStyle(
-                                      color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
-                                      fontSize: 11.5,
-                                    ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton.icon(
+                                onPressed: _isCancellingRsvp
+                                    ? null
+                                    : () => _handleCancelRegistration(isDark),
+                                icon: _isCancellingRsvp
+                                    ? const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFEF4444)),
+                                        ),
+                                      )
+                                    : const Icon(Icons.cancel_outlined, size: 16, color: Color(0xFFEF4444)),
+                                label: Text(
+                                  _isCancellingRsvp
+                                      ? 'community.cancellingRegistration'.tr
+                                      : 'community.cancelRegistration'.tr,
+                                  style: const TextStyle(
+                                    color: Color(0xFFEF4444),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                           ],
@@ -856,6 +1025,20 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                           setState(() => _phoneError = null);
                         }
                       },
+                    ),
+                    const SizedBox(height: 14),
+
+                    _buildModernTextField(
+                      label: 'community.attendeeNotes'.tr,
+                      hint: 'community.attendeeNotesHint'.tr,
+                      controller: _notesController,
+                      focusNode: _notesFocus,
+                      keyboardType: TextInputType.multiline,
+                      inputFormatters: [LengthLimitingTextInputFormatter(300)],
+                      errorText: null,
+                      isDark: isDark,
+                      maxLines: 3,
+                      onChanged: (_) {},
                     ),
 
                     const SizedBox(height: 20),
@@ -1136,7 +1319,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isPaid ? (isDark ? const Color(0xFFFACC15) : const Color(0xFFB45309)) : textSecondary,
+                    color: isPaid ? textPrimary : textSecondary,
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1201,6 +1384,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     required bool isDark,
     required ValueChanged<String> onChanged,
     TextCapitalization textCapitalization = TextCapitalization.none,
+    int maxLines = 1,
   }) {
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
     final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
@@ -1223,6 +1407,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
           controller: controller,
           focusNode: focusNode,
           keyboardType: keyboardType,
+          maxLines: maxLines,
           textCapitalization: textCapitalization,
           inputFormatters: inputFormatters,
           onChanged: onChanged,
@@ -1367,6 +1552,344 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             ),
           ),
         ],
+      ],
+    );
+  }
+
+  Widget _buildTicketSelectionSection({
+    required bool isDark,
+    required Color borderSubtle,
+  }) {
+    final isPaid = widget.event.isPaid;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final cardBg = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightSurfacePrimary;
+
+    final price = widget.event.price ?? 0.0;
+    final tickets = isPaid
+        ? [
+            {
+              'id': 'STANDARD',
+              'title': 'community.ticketStandard'.tr,
+              'badge': 'community.ticketStandard'.tr,
+              'price': widget.event.displayPriceString,
+              'desc': 'community.ticketStandardDesc'.tr,
+            },
+            {
+              'id': 'VIP',
+              'title': 'community.ticketVip'.tr,
+              'badge': 'community.ticketVip'.tr,
+              'price': price > 0
+                  ? '\$${(price * 1.5).toStringAsFixed(2)}'
+                  : 'VIP',
+              'desc': 'community.ticketVipDesc'.tr,
+            },
+          ]
+        : [
+            {
+              'id': 'FREE',
+              'title': 'community.ticketFree'.tr,
+              'badge': 'community.ticketFree'.tr,
+              'price': 'community.freeEntry'.tr,
+              'desc': 'community.ticketFreeDesc'.tr,
+            },
+          ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('community.ticketType'.tr, isDark),
+        const SizedBox(height: 10),
+        Column(
+          children: tickets.map((t) {
+            final isSelected = _selectedTicketType == t['id'];
+            return InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _selectedTicketType = t['id']!);
+              },
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04))
+                      : cardBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSelected
+                        ? (isDark ? Colors.white : Colors.black87)
+                        : borderSubtle,
+                    width: isSelected ? 1.5 : 0.8,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected ? (isDark ? Colors.white : Colors.black87) : borderSubtle,
+                          width: 2,
+                        ),
+                        color: isSelected ? (isDark ? Colors.white : Colors.black87) : Colors.transparent,
+                      ),
+                      child: isSelected
+                          ? Icon(
+                              Icons.check,
+                              size: 12,
+                              color: isDark ? Colors.black : Colors.white,
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                t['title']!,
+                                style: TextStyle(
+                                  color: textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? (isDark ? Colors.white : Colors.black87)
+                                      : (isDark ? Colors.white12 : Colors.black12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  t['badge']!,
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? (isDark ? Colors.black : Colors.white)
+                                        : textSecondary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            t['desc']!,
+                            style: TextStyle(
+                              color: textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      t['price']!,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaymentSection({
+    required bool isDark,
+    required Color borderSubtle,
+  }) {
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final cardBg = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightSurfacePrimary;
+
+    final basePrice = widget.event.price ?? 0.0;
+    final multiplier = _selectedTicketType == 'VIP' ? 1.5 : 1.0;
+    final effectivePrice = basePrice * multiplier;
+    final khrPrice = (effectivePrice * 4000).toInt();
+    final khrFormatted = khrPrice.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]},',
+    );
+
+    final paymentMethods = [
+      {
+        'id': 'Bakong KHQR',
+        'title': 'community.payBakong'.tr,
+        'subtitle': 'National Payment Gateway',
+        'icon': Icons.qr_code_2_rounded,
+      },
+      {
+        'id': 'ACLEDA Mobile',
+        'title': 'community.payAcleda'.tr,
+        'subtitle': 'Direct Bank Account Debit',
+        'icon': Icons.account_balance_rounded,
+      },
+      {
+        'id': 'Demo Campus Wallet',
+        'title': 'community.payDemoWallet'.tr,
+        'subtitle': 'Instant Student Credit',
+        'icon': Icons.account_balance_wallet_rounded,
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Price & Currency Breakdown Banner ───────────────────────────────
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: borderSubtle, width: 1),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white10 : Colors.black12,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.payments_rounded,
+                  color: textPrimary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '\$${effectivePrice.toStringAsFixed(2)} USD  /  $khrFormatted ៛',
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Official Exchange: 1 USD ≈ 4,000 KHR',
+                      style: TextStyle(
+                        color: textSecondary,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 18),
+
+        // ── Payment Method Selector ─────────────────────────────────────────
+        _buildSectionHeader('community.paymentMethod'.tr, isDark),
+        const SizedBox(height: 10),
+
+        Column(
+          children: paymentMethods.map((pm) {
+            final isSelected = _selectedPaymentMethod == pm['id'];
+            return InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _selectedPaymentMethod = pm['id'] as String);
+              },
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04))
+                      : cardBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSelected
+                        ? (isDark ? Colors.white : Colors.black87)
+                        : borderSubtle,
+                    width: isSelected ? 1.5 : 0.8,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      pm['icon'] as IconData,
+                      color: isSelected ? (isDark ? Colors.white : Colors.black87) : textSecondary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            pm['title'] as String,
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                          Text(
+                            pm['subtitle'] as String,
+                            style: TextStyle(
+                              color: textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected ? (isDark ? Colors.white : Colors.black87) : borderSubtle,
+                          width: 2,
+                        ),
+                        color: isSelected ? (isDark ? Colors.white : Colors.black87) : Colors.transparent,
+                      ),
+                      child: isSelected
+                          ? Icon(
+                              Icons.check,
+                              size: 11,
+                              color: isDark ? Colors.black : Colors.white,
+                            )
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
       ],
     );
   }

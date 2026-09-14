@@ -49,13 +49,7 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
     final borderSubtle =
         isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 
-    final isKhmer = Get.locale?.languageCode == 'km';
-    final sectionTitle = isKhmer
-        ? ('home.featuredEvents'.tr.isNotEmpty &&
-                'home.featuredEvents'.tr != 'home.featuredEvents'
-            ? 'home.featuredEvents'.tr
-            : 'ព្រឹត្តិការណ៍លេចធ្លោ')
-        : 'FEATURED EVENTS';
+    final sectionTitle = 'home.featuredEvents'.tr;
 
     if (upcomingEvent != null) {
       final adapted = _convertLegacyUpcomingEvent(upcomingEvent!);
@@ -68,7 +62,6 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
         textMuted: textMuted,
         cardSurface: cardSurface,
         borderSubtle: borderSubtle,
-        isKhmer: isKhmer,
         event: adapted,
       );
     }
@@ -100,7 +93,6 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
           textMuted: textMuted,
           cardSurface: cardSurface,
           borderSubtle: borderSubtle,
-          isKhmer: isKhmer,
           event: targetEvent,
         );
       });
@@ -115,7 +107,6 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
       textMuted: textMuted,
       cardSurface: cardSurface,
       borderSubtle: borderSubtle,
-      isKhmer: isKhmer,
       event: null,
     );
   }
@@ -129,7 +120,6 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
     required Color textMuted,
     required Color cardSurface,
     required Color borderSubtle,
-    required bool isKhmer,
     required EventModel? event,
   }) {
     return Column(
@@ -151,7 +141,7 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
               GestureDetector(
                 onTap: onViewAll,
                 child: Text(
-                  isKhmer ? 'មើលទាំងអស់' : 'See all',
+                  'home.seeAll'.tr,
                   style: TextStyle(
                     color: textSecondary,
                     fontSize: 12,
@@ -180,7 +170,6 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
             textMuted: textMuted,
             cardSurface: cardSurface,
             borderSubtle: borderSubtle,
-            isKhmer: isKhmer,
           ),
       ],
     );
@@ -366,7 +355,6 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
     required Color textMuted,
     required Color cardSurface,
     required Color borderSubtle,
-    required bool isKhmer,
   }) {
     final heroTag = 'event-cover-${event.id}';
 
@@ -377,12 +365,7 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
 
     final String locationDisplay;
     if (isOnline) {
-      locationDisplay = isKhmer
-          ? ('home.onlineEvent'.tr.isNotEmpty &&
-                  'home.onlineEvent'.tr != 'home.onlineEvent'
-              ? 'home.onlineEvent'.tr
-              : 'ព្រឹត្តិការណ៍អនឡាញ')
-          : 'Online Event';
+      locationDisplay = 'home.onlineEvent'.tr;
     } else if (event.location.trim().isNotEmpty) {
       locationDisplay = event.location.trim();
     } else if (event.locationName != null &&
@@ -405,12 +388,7 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
       categoryDisplay = 'GenLink Event';
     }
 
-    final viewEventLabel = isKhmer
-        ? ('home.viewEvent'.tr.isNotEmpty &&
-                'home.viewEvent'.tr != 'home.viewEvent'
-            ? 'home.viewEvent'.tr
-            : 'មើលព្រឹត្តិការណ៍')
-        : 'View Event';
+    final viewEventLabel = 'home.viewEvent'.tr;
 
     final descriptionText = event.subtitle.trim().isNotEmpty
         ? event.subtitle.trim()
@@ -757,8 +735,19 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
     Color textMuted,
   ) {
     if (imageUrl != null && imageUrl.trim().isNotEmpty) {
+      final trimmed = imageUrl.trim();
+      if (trimmed.startsWith('assets/')) {
+        return Image.asset(
+          trimmed,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: 155,
+          errorBuilder: (context, error, stackTrace) =>
+              _buildPlaceholder(isDark, textMuted),
+        );
+      }
       return Image.network(
-        imageUrl.trim(),
+        trimmed,
         fit: BoxFit.cover,
         width: double.infinity,
         height: 155,
@@ -803,6 +792,9 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
       attendeesCount: legacy.participantCount ?? 0,
     );
   }
+
+  static EventModel? resolveFeaturedEvent(List<EventModel> events) =>
+      _resolveFeaturedEvent(events);
 
   static EventModel? _resolveFeaturedEvent(List<EventModel> events) {
     final published = events.where((e) {

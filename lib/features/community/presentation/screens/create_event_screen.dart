@@ -952,6 +952,14 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                     ),
                     textInputAction: TextInputAction.next,
                   ),
+                  const SizedBox(height: 5),
+                  Text(
+                    'community.locationHelper'.tr.isNotEmpty &&
+                            'community.locationHelper'.tr != 'community.locationHelper'
+                        ? 'community.locationHelper'.tr
+                        : 'Specify venue, building, room or address for in-person attendees.',
+                    style: TextStyle(color: textMuted, fontSize: 12),
+                  ),
                 ] else ...[
                   _buildFieldLabel('Online event link*', textPrimary),
                   const SizedBox(height: 6),
@@ -971,6 +979,14 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       prefixIcon: Icon(Icons.link_rounded, color: textMuted, size: 20),
                     ),
                     textInputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    'community.onlineLinkHelper'.tr.isNotEmpty &&
+                            'community.onlineLinkHelper'.tr != 'community.onlineLinkHelper'
+                        ? 'community.onlineLinkHelper'.tr
+                        : 'Provide a valid meeting link (Google Meet, Zoom, MS Teams, etc.).',
+                    style: TextStyle(color: textMuted, fontSize: 12),
                   ),
                 ],
 

@@ -425,6 +425,7 @@ class CommunityController extends GetxController {
   }
 
   final isRegisteringEvent = false.obs;
+  final isCancellingEventRsvp = false.obs;
 
   void syncEventRsvp(
     String eventId, {
@@ -435,13 +436,16 @@ class CommunityController extends GetxController {
     final idx = events.indexWhere((e) => e.id == eventId);
     if (idx != -1) {
       final ev = events[idx];
+      final wasRsvped = ev.isRsvped;
       ev.isRsvped = isRsvped;
-      if (attendeesCount != null && attendeesCount > 0) {
+      if (attendeesCount != null && attendeesCount >= 0) {
         ev.attendeesCount = attendeesCount;
-      } else if (isRsvped && !ev.isRsvped) {
+      } else if (isRsvped && !wasRsvped) {
         ev.attendeesCount += 1;
+      } else if (!isRsvped && wasRsvped) {
+        ev.attendeesCount = ev.attendeesCount > 0 ? ev.attendeesCount - 1 : 0;
       }
-      if (status != null) ev.myRsvpStatus = status;
+      ev.myRsvpStatus = status ?? (isRsvped ? 'JOINED' : 'CANCELLED');
       events.refresh();
     }
 
@@ -449,12 +453,21 @@ class CommunityController extends GetxController {
     for (int i = 0; i < posts.length; i++) {
       if (posts[i].attachedEvent?.id == eventId) {
         final ev = posts[i].attachedEvent!;
+        final wasRsvped = ev.isRsvped;
+        final int targetCount;
+        if (attendeesCount != null && attendeesCount >= 0) {
+          targetCount = attendeesCount;
+        } else if (isRsvped && !wasRsvped) {
+          targetCount = ev.attendeesCount + 1;
+        } else if (!isRsvped && wasRsvped) {
+          targetCount = ev.attendeesCount > 0 ? ev.attendeesCount - 1 : 0;
+        } else {
+          targetCount = ev.attendeesCount;
+        }
         final updated = ev.copyWith(
           isRsvped: isRsvped,
-          attendeesCount: attendeesCount != null && attendeesCount > 0
-              ? attendeesCount
-              : (isRsvped && !ev.isRsvped ? ev.attendeesCount + 1 : ev.attendeesCount),
-          myRsvpStatus: status ?? ev.myRsvpStatus,
+          attendeesCount: targetCount,
+          myRsvpStatus: status ?? (isRsvped ? 'JOINED' : 'CANCELLED'),
         );
         posts[i] = posts[i].copyWith(attachedEvent: updated);
         changedInPosts = true;
@@ -467,6 +480,12 @@ class CommunityController extends GetxController {
     String eventId,
     EventRegistrationRequest request,
   ) async {
+    if (isRegisteringEvent.value) {
+      throw const AppError(
+        message: 'Registration is already in progress.',
+        errorCode: 'REGISTRATION_IN_PROGRESS',
+      );
+    }
     isRegisteringEvent.value = true;
     try {
       final response = await repository.rsvpEvent(eventId, request: request);
@@ -479,6 +498,24 @@ class CommunityController extends GetxController {
       return response;
     } finally {
       isRegisteringEvent.value = false;
+    }
+  }
+
+  Future<bool> cancelEventRegistration(String eventId) async {
+    if (isCancellingEventRsvp.value) return false;
+    isCancellingEventRsvp.value = true;
+    try {
+      final success = await repository.cancelRsvpEvent(eventId);
+      if (success) {
+        syncEventRsvp(
+          eventId,
+          isRsvped: false,
+          status: 'CANCELLED',
+        );
+      }
+      return success;
+    } finally {
+      isCancellingEventRsvp.value = false;
     }
   }
 
@@ -829,6 +866,7 @@ class CommunityController extends GetxController {
     scrollController.addListener(_onScrollListener);
     fetchPosts();
     fetchDiscussions();
+    loadEvents();
   }
 
   @override

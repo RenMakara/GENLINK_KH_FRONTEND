@@ -371,7 +371,7 @@ void main() {
       GetMaterialApp(
         translations: AppTranslations(),
         locale: const Locale('en'),
-        home: const GrowthScreen(),
+        home: const LevelUpScreen(),
       ),
     );
 

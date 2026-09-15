@@ -69,38 +69,36 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
   late DateTime selectedDate;
   late DateTime today;
   bool showDateDetail = false;
-
-  // ========== MOCK DATA (no .tr – normal text) ==========
-  static const List<GrowthCategory> categories = [
+  static final List<GrowthCategory> categories = [
     GrowthCategory(
-      label: 'levelup.categoryAll',
+      label: 'levelup.categoryAll'.tr,
       icon: Icons.apps_rounded,
-      color: Color(0xFF777777),
+      color: const Color(0xFF777777),
     ),
     GrowthCategory(
-      label: 'levelup.categoryTask',
+      label: 'levelup.categoryTask'.tr,
       icon: Icons.check_circle_outline_rounded,
-      color: Color(0xFF3B82F6),
+      color: const Color(0xFF3B82F6),
     ),
     GrowthCategory(
-      label: 'levelup.categoryHabit',
+      label: 'levelup.categoryHabit'.tr,
       icon: Icons.repeat_rounded,
-      color: Color(0xFFF97316),
+      color: const Color(0xFFF97316),
     ),
     GrowthCategory(
-      label: 'levelup.categoryGoal',
-      icon: Icons.flag_outlined,
-      color: Color(0xFF10B981),
-    ),
-    GrowthCategory(
-      label: 'levelup.categoryFocus',
+      label: 'levelup.categoryFocus'.tr,
       icon: Icons.timer_outlined,
-      color: Color(0xFF8B5CF6),
+      color: const Color(0xFF8B5CF6),
     ),
     GrowthCategory(
-      label: 'levelup.categoryQuiz',
+      label: 'levelup.categoryGoal'.tr,
+      icon: Icons.flag_outlined,
+      color: const Color(0xFF10B981),
+    ),
+    GrowthCategory(
+      label: 'levelup.categoryQuiz'.tr,
       icon: Icons.quiz_outlined,
-      color: Color(0xFFF2B84B),
+      color: const Color(0xFFF2B84B),
     ),
   ];
 

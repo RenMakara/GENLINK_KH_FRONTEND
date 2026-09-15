@@ -9,14 +9,17 @@ import '../../domain/entities/profile_entity.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../controllers/profile_controller.dart';
 import '../controllers/profile_setup_controller.dart';
+import '../utils/profile_navigation.dart';
 
 class ProfileBinding extends Bindings {
   @override
   void dependencies() {
     _registerRepository();
 
-    final publicUsername = Get.parameters['username']?.trim();
-    if (publicUsername != null && publicUsername.isNotEmpty) {
+    final publicUsername = ProfileNavigation.ownerAwareUsername(
+      username: Get.parameters['username'],
+    );
+    if (publicUsername != null) {
       Get.lazyPut<ProfileController>(
         () => ProfileController(
           repository: Get.find<ProfileRepository>(),

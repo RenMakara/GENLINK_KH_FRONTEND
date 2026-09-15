@@ -51,10 +51,19 @@ class AppTranslations extends Translations {
     'onboarding.stepOf': 'Step @step of @total',
     'onboarding.chooseLanguage': 'Choose your language',
     'onboarding.chooseLanguageHint': 'You can change this anytime in settings.',
+    'onboarding.chooseAppearance': 'Choose your appearance',
+    'onboarding.chooseAppearanceHint':
+        'Pick a theme that feels right for you. You can change this anytime in Settings.',
     'onboarding.bothLanguages':
         'Both languages are supported throughout the app.',
     'onboarding.getStarted': 'Get started',
     'onboarding.skipForNow': 'Skip for now',
+    'onboarding.welcomeMessage': 'Same opportunities.\nBrighter tomorrows.',
+    'onboarding.allSet': "You're all set!",
+    'onboarding.allSetBody':
+        "Let's build a brighter future together on GenLink.",
+    'onboarding.goToGenLink': 'Go to GenLink',
+    'onboarding.moreOpportunities': 'More opportunities ahead',
 
     'onboarding.networkTitle': 'Your youth network,\nin one place',
     'onboarding.networkBody':
@@ -66,6 +75,12 @@ class AppTranslations extends Translations {
     'onboarding.rowEventsDetail': '3 upcoming near you',
     'onboarding.rowMentors': 'Mentors',
     'onboarding.rowMentorsDetail': 'Connect with leaders',
+    'onboarding.impactTitle': 'Learn, connect,\nmake an impact.',
+    'onboarding.impactBody':
+        'Join communities, attend events, learn from mentors, and find real '
+        'opportunities.',
+    'onboarding.rowOpportunities': 'Opportunities',
+    'onboarding.rowOpportunitiesDetail': "Find what's next",
 
     'onboarding.growTitle': 'Grow your money,\nfocus, and future',
     'onboarding.growBody':
@@ -77,6 +92,17 @@ class AppTranslations extends Translations {
     'onboarding.rowFocusDetail': '2h 18m today',
     'onboarding.rowXp': 'Growth XP',
     'onboarding.rowXpDetail': 'Level 4 Builder',
+    'onboarding.futureTitle': 'A brighter future\nfor Cambodian youth.',
+    'onboarding.futureBody':
+        'Be part of a growing community that believes in your potential.',
+    'onboarding.rowTogether': 'Together',
+    'onboarding.rowTogetherDetail': 'Grow with your community',
+    'onboarding.rowPotential': 'Your potential',
+    'onboarding.rowPotentialDetail': 'Build skills that matter',
+    'onboarding.rowGrowth': 'Your future',
+    'onboarding.rowGrowthDetail': 'Make a brighter tomorrow',
+    'onboarding.togetherWeGrow': 'Together we grow',
+    'onboarding.growthSnapshot': 'Your progress',
 
     // ── Auth ────────────────────────────────────────────────────────────
     'auth.login': 'Log in',
@@ -1795,9 +1821,17 @@ class AppTranslations extends Translations {
     'onboarding.chooseLanguage': 'ជ្រើសរើសភាសារបស់អ្នក',
     'onboarding.chooseLanguageHint':
         'អ្នកអាចប្តូរវានៅពេលណាក៏បាន ក្នុងការកំណត់។',
+    'onboarding.chooseAppearance': 'ជ្រើសរើសរូបរាងរបស់អ្នក',
+    'onboarding.chooseAppearanceHint':
+        'ជ្រើសរើសផ្ទាំងពណ៌ដែលសមនឹងអ្នក។ អ្នកអាចប្តូរបានគ្រប់ពេលក្នុងការកំណត់។',
     'onboarding.bothLanguages': 'ភាសាទាំងពីរត្រូវបានគាំទ្រពេញកម្មវិធី។',
     'onboarding.getStarted': 'ចាប់ផ្តើម',
     'onboarding.skipForNow': 'រំលងសិន',
+    'onboarding.welcomeMessage': 'ឱកាសដូចគ្នា។\nថ្ងៃស្អែកកាន់តែភ្លឺស្វាង។',
+    'onboarding.allSet': 'រួចរាល់ហើយ!',
+    'onboarding.allSetBody': 'តោះបង្កើតអនាគតដ៏ភ្លឺស្វាងជាមួយគ្នា នៅលើ GenLink។',
+    'onboarding.goToGenLink': 'ចូលទៅ GenLink',
+    'onboarding.moreOpportunities': 'ឱកាសកាន់តែច្រើននៅខាងមុខ',
 
     'onboarding.networkTitle': 'បណ្តាញយុវជនរបស់អ្នក\nក្នុងកន្លែងតែមួយ',
     'onboarding.networkBody':
@@ -1809,6 +1843,11 @@ class AppTranslations extends Translations {
     'onboarding.rowEventsDetail': 'ព្រឹត្តិការណ៍ ៣ នៅជិតអ្នក',
     'onboarding.rowMentors': 'អ្នកណែនាំ',
     'onboarding.rowMentorsDetail': 'ភ្ជាប់ជាមួយអ្នកដឹកនាំ',
+    'onboarding.impactTitle': 'រៀន ភ្ជាប់ទំនាក់ទំនង\nនិងបង្កើតផលវិជ្ជមាន',
+    'onboarding.impactBody':
+        'ចូលរួមសហគមន៍ ព្រឹត្តិការណ៍ រៀនពីអ្នកណែនាំ និងស្វែងរកឱកាសពិតប្រាកដ។',
+    'onboarding.rowOpportunities': 'ឱកាស',
+    'onboarding.rowOpportunitiesDetail': 'ស្វែងរកអ្វីដែលបន្ទាប់',
 
     'onboarding.growTitle': 'បង្កើនលុយ ការផ្តោតអារម្មណ៍\nនិងអនាគតរបស់អ្នក',
     'onboarding.growBody':
@@ -1820,6 +1859,17 @@ class AppTranslations extends Translations {
     'onboarding.rowFocusDetail': 'ថ្ងៃនេះ ២ម៉ោង ១៨នាទី',
     'onboarding.rowXp': 'ពិន្ទុរីកចម្រើន',
     'onboarding.rowXpDetail': 'កម្រិត ៤ អ្នកកសាង',
+    'onboarding.futureTitle': 'អនាគតកាន់តែភ្លឺស្វាង\nសម្រាប់យុវជនកម្ពុជា។',
+    'onboarding.futureBody':
+        'ចូលរួមជាមួយសហគមន៍ដែលកំពុងរីកចម្រើន និងជឿជាក់លើសក្តានុពលរបស់អ្នក។',
+    'onboarding.rowTogether': 'រួមគ្នា',
+    'onboarding.rowTogetherDetail': 'រីកចម្រើនជាមួយសហគមន៍',
+    'onboarding.rowPotential': 'សក្តានុពលរបស់អ្នក',
+    'onboarding.rowPotentialDetail': 'កសាងជំនាញដែលមានតម្លៃ',
+    'onboarding.rowGrowth': 'អនាគតរបស់អ្នក',
+    'onboarding.rowGrowthDetail': 'បង្កើតថ្ងៃស្អែកកាន់តែភ្លឺ',
+    'onboarding.togetherWeGrow': 'រួមគ្នា យើងរីកចម្រើន',
+    'onboarding.growthSnapshot': 'ការរីកចម្រើនរបស់អ្នក',
 
     // ── Auth ────────────────────────────────────────────────────────────
     'auth.login': 'ចូលគណនី',

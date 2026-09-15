@@ -6,9 +6,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:get/get.dart';
-import '../../../../app/routes/app_routes.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
+import 'package:genlink_frontend/features/profile/presentation/utils/profile_navigation.dart';
 import '../../../chat/presentation/bindings/chat_binding.dart';
 import '../../../chat/presentation/controllers/chat_controller.dart';
 import '../../../chat/presentation/screens/chat_detail_screen.dart';
@@ -3562,14 +3562,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                           GestureDetector(
                             onTap: () async {
                               _pauseStory();
-                              await Get.toNamed(
-                                AppRoutes.profile,
-                                parameters: {
-                                  'username': group.userName.replaceAll(
-                                    '@',
-                                    '',
-                                  ),
-                                },
+                              await ProfileNavigation.open(
+                                username: group.userName.replaceAll('@', ''),
+                                userId: group.userId,
                               );
                               _resumeStory();
                             },

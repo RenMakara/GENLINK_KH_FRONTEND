@@ -8,6 +8,6 @@ class StartupRouteResolver {
 
   Future<String> resolve() async {
     final preferencesSeen = await localStorage.readInitialPreferencesSeen();
-    return preferencesSeen ? AppRoutes.splash : AppRoutes.languageSelect;
+    return preferencesSeen ? AppRoutes.splash : AppRoutes.welcome;
   }
 }

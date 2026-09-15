@@ -8,9 +8,10 @@ import 'package:genlink_frontend/app/startup_route_resolver.dart';
 import 'package:genlink_frontend/core/storage/local_storage.dart';
 import 'package:genlink_frontend/core/theme/theme_controller.dart';
 import 'package:genlink_frontend/features/onboarding/presentation/controllers/language_select_controller.dart';
+import 'package:genlink_frontend/features/onboarding/presentation/screens/completion_screen.dart';
 import 'package:genlink_frontend/features/onboarding/presentation/screens/language_select_screen.dart';
-import 'package:genlink_frontend/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:genlink_frontend/features/splash/presentation/screens/splash_screen.dart';
+import 'package:genlink_frontend/features/splash/presentation/screens/welcome_screen.dart';
 import 'package:get/get.dart';
 
 void main() {
@@ -56,26 +57,23 @@ void main() {
     Get.reset();
   });
 
-  testWidgets('clean install opens preferences before the in-app splash', (
-    tester,
-  ) async {
+  testWidgets('clean install opens welcome before preferences', (tester) async {
     final initialRoute = await StartupRouteResolver(
       localStorage: Get.find<LocalStorage>(),
     ).resolve();
 
-    expect(initialRoute, AppRoutes.languageSelect);
+    expect(initialRoute, AppRoutes.welcome);
 
     await tester.pumpWidget(GenLinkKhApp(initialRoute: initialRoute));
     await tester.pumpAndSettle();
 
-    expect(find.byType(LanguageSelectScreen), findsOneWidget);
+    expect(find.byType(WelcomeScreen), findsOneWidget);
+    expect(find.byType(LanguageSelectScreen), findsNothing);
     expect(find.byType(SplashScreen), findsNothing);
-    expect(find.byIcon(Icons.light_mode_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.dark_mode_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.brightness_auto_outlined), findsOneWidget);
+    expect(find.text('Get started'), findsOneWidget);
   });
 
-  testWidgets('theme choice persists and continues through splash', (
+  testWidgets('theme choice persists and continues through completion', (
     tester,
   ) async {
     tester.view
@@ -88,7 +86,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final darkThemeOption = find.byIcon(Icons.dark_mode_outlined);
+    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+    await tester.pumpAndSettle();
+
+    final darkThemeOption = find.text('Dark');
     await tester.ensureVisible(darkThemeOption);
     await tester.pumpAndSettle();
     await tester.tap(darkThemeOption);
@@ -107,13 +108,15 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.byType(SplashScreen), findsOneWidget);
+    expect(find.byType(CompletionScreen), findsOneWidget);
+    expect(
+      await Get.find<LocalStorage>().readInitialPreferencesSeen(),
+      isFalse,
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Go to GenLink'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(await Get.find<LocalStorage>().readInitialPreferencesSeen(), isTrue);
-
-    await tester.pump(const Duration(seconds: 1));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(OnboardingScreen), findsOneWidget);
     expect(find.byType(LanguageSelectScreen), findsNothing);
   });
 
@@ -137,6 +140,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(SplashScreen), findsNothing);
-    expect(find.byType(LanguageSelectScreen), findsOneWidget);
+    expect(find.byType(WelcomeScreen), findsOneWidget);
+    expect(find.byType(LanguageSelectScreen), findsNothing);
   });
 }

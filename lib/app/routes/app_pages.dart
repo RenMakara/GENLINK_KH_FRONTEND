@@ -10,6 +10,7 @@ import '../../features/auth/presentation/screens/reset_password_screen.dart';
 import '../../features/auth/presentation/screens/verify_otp_screen.dart';
 import '../../features/onboarding/presentation/screens/language_select_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
+import '../../features/onboarding/presentation/screens/completion_screen.dart';
 import '../../features/profile/presentation/bindings/profile_binding.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
@@ -51,6 +52,7 @@ import '../../features/leaderboard/presentation/screens/achievements_screen.dart
 import '../../features/leaderboard/presentation/screens/invite_friends_screen.dart';
 import '../../features/splash/presentation/bindings/splash_binding.dart';
 import '../../features/splash/presentation/screens/splash_screen.dart';
+import '../../features/splash/presentation/screens/welcome_screen.dart';
 import '../../main_screen.dart';
 import '../bindings/main_binding.dart';
 import 'app_routes.dart';
@@ -65,6 +67,11 @@ abstract final class AppPages {
       binding: SplashBinding(),
     ),
     GetPage<dynamic>(
+      name: AppRoutes.welcome,
+      page: () => const WelcomeScreen(),
+      binding: WelcomeBinding(),
+    ),
+    GetPage<dynamic>(
       name: AppRoutes.languageSelect,
       page: () => const LanguageSelectScreen(),
       binding: LanguageSelectBinding(),
@@ -73,6 +80,11 @@ abstract final class AppPages {
       name: AppRoutes.onboarding,
       page: () => const OnboardingScreen(),
       binding: OnboardingBinding(),
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.completion,
+      page: () => const CompletionScreen(),
+      binding: CompletionBinding(),
     ),
 
     GetPage<dynamic>(

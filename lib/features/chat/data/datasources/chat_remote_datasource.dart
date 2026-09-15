@@ -26,7 +26,10 @@ class ChatRemoteDataSource {
         () => dio.post<dynamic>('${ApiEndpoints.chats}/private/$userId'),
       );
       final data = _dataOf(response.data);
-      return ChatConversationModel.fromRoomResponse(data);
+      return ChatConversationModel.fromRoomResponse(
+        data,
+        participantUserId: userId,
+      );
     } catch (_) {
       final isSokny = userId == 'user_sokny' || userId.toLowerCase().contains('sokny');
       final isChansela = userId == 'user_chansela' || userId.toLowerCase().contains('chansela');
@@ -38,6 +41,7 @@ class ChatRemoteDataSource {
             : (isChansela
                 ? 'assets/images/heng_chansela_profile.png'
                 : 'assets/images/user_profile.png'),
+        profileUserId: userId,
         isGroup: false,
         isOnline: true,
         lastMessage: '',

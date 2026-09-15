@@ -29,7 +29,6 @@ class SplashController extends GetxController {
 
     var restored = false;
     var initialPreferencesSeen = false;
-    var onboardingSeen = false;
 
     try {
       debugPrint('[SPLASH] Restoring token...');
@@ -46,12 +45,6 @@ class SplashController extends GetxController {
         '[SPLASH] Initial preferences check completed: '
         'seen=$initialPreferencesSeen',
       );
-
-      debugPrint('[SPLASH] Checking onboarding status...');
-      onboardingSeen = await _storage.readOnboardingSeen().timeout(
-        const Duration(seconds: 5),
-      );
-      debugPrint('[SPLASH] Onboarding check completed: seen=$onboardingSeen');
     } catch (e) {
       debugPrint('[SPLASH] Session restore/onboarding check failed: $e');
     }
@@ -64,11 +57,8 @@ class SplashController extends GetxController {
       debugPrint('[SPLASH] Navigating to Home');
       Get.offAllNamed<void>(AppRoutes.home);
     } else if (!initialPreferencesSeen) {
-      debugPrint('[SPLASH] Navigating to Language Select');
-      Get.offAllNamed<void>(AppRoutes.languageSelect);
-    } else if (!onboardingSeen) {
-      debugPrint('[SPLASH] Navigating to Onboarding');
-      Get.offAllNamed<void>(AppRoutes.onboarding);
+      debugPrint('[SPLASH] Navigating to Welcome');
+      Get.offAllNamed<void>(AppRoutes.welcome);
     } else {
       debugPrint('[SPLASH] Navigating to Auth Choice');
       Get.offAllNamed<void>(AppRoutes.authChoice);

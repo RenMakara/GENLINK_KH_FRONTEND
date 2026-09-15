@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
-import '../../../profile/presentation/screens/profile_screen.dart';
+import 'package:genlink_frontend/features/profile/presentation/utils/profile_navigation.dart';
 
 class FriendRequestItem {
   final String id;
@@ -226,8 +226,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () =>
-                Get.to(() => ProfileScreen(viewingUsername: item.username)),
+            onTap: () => ProfileNavigation.open(username: item.username),
             borderRadius: BorderRadius.circular(12),
             child: Row(
               children: [

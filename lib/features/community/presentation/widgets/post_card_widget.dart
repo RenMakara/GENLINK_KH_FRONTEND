@@ -3,7 +3,6 @@ import 'poll_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/utils/date_formatter.dart';
-import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/shadows/app_shadows.dart';
@@ -16,6 +15,7 @@ import '../screens/create_discussion_screen.dart';
 import '../screens/create_post_screen.dart';
 import '../screens/event_details_screen.dart';
 import '../controllers/community_controller.dart';
+import 'package:genlink_frontend/features/profile/presentation/utils/profile_navigation.dart';
 import 'comments_bottom_sheet.dart';
 import 'full_screen_image_viewer.dart';
 
@@ -84,6 +84,13 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     _likeAnimController.dispose();
     _bookmarkAnimController.dispose();
     super.dispose();
+  }
+
+  void _openAuthorProfile() {
+    ProfileNavigation.open(
+      username: widget.post.authorTag.replaceAll('@', ''),
+      userId: widget.post.userId,
+    );
   }
 
   String _formatTimeAgo(String raw) {
@@ -668,10 +675,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     GestureDetector(
-                      onTap: () {
-                        final username = widget.post.authorTag.replaceAll('@', '');
-                        Get.toNamed(AppRoutes.profile, parameters: {'username': username});
-                      },
+                      onTap: _openAuthorProfile,
                       child: CircleAvatar(
                         radius: avatarRadius,
                         backgroundImage: widget.post.authorAvatar.startsWith('assets/')
@@ -707,10 +711,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                             children: [
                               Flexible(
                                 child: GestureDetector(
-                                  onTap: () {
-                                    final username = widget.post.authorTag.replaceAll('@', '');
-                                    Get.toNamed(AppRoutes.profile, parameters: {'username': username});
-                                  },
+                                  onTap: _openAuthorProfile,
                                   child: Text(
                                     widget.post.authorName,
                                     maxLines: 1,

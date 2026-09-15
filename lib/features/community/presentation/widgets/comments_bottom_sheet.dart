@@ -395,6 +395,193 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                   ],
                                 ),
                               ),
+                              if (comment.replies.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: comment.replies.map((reply) {
+                                      final replyInitial = reply.userName.isNotEmpty
+                                          ? reply.userName[0].toUpperCase()
+                                          : 'U';
+                                      return Padding(
+                                        padding: const EdgeInsets.only(bottom: 8),
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 14,
+                                              backgroundColor: AppColors.communityAccent.withValues(alpha: 0.2),
+                                              backgroundImage: (reply.userAvatar.isNotEmpty && reply.userAvatar.startsWith('http'))
+                                                  ? NetworkImage(reply.userAvatar)
+                                                  : null,
+                                              child: (reply.userAvatar.isEmpty || !reply.userAvatar.startsWith('http'))
+                                                  ? Text(
+                                                      replyInitial,
+                                                      style: const TextStyle(
+                                                        color: AppColors.communityAccent,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 11,
+                                                      ),
+                                                    )
+                                                  : null,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                    decoration: BoxDecoration(
+                                                      color: surfaceSecondary,
+                                                      borderRadius: BorderRadius.circular(AppRadius.md),
+                                                      border: Border.all(color: borderSubtle, width: 0.8),
+                                                    ),
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Builder(
+                                                          builder: (context) {
+                                                            final formattedTime = formatCommunityTimestamp(
+                                                              reply.createdAt ?? reply.timeAgo,
+                                                            );
+                                                            return Text.rich(
+                                                              TextSpan(
+                                                                children: [
+                                                                  TextSpan(
+                                                                    text: reply.userName,
+                                                                    style: theme.textTheme.labelMedium?.copyWith(
+                                                                          color: textPrimary,
+                                                                          fontWeight: FontWeight.bold,
+                                                                          fontSize: 12,
+                                                                        ) ??
+                                                                        TextStyle(
+                                                                          color: textPrimary,
+                                                                          fontWeight: FontWeight.bold,
+                                                                          fontSize: 12,
+                                                                        ),
+                                                                  ),
+                                                                  if (formattedTime.isNotEmpty)
+                                                                    TextSpan(
+                                                                      text: ' · $formattedTime',
+                                                                      style: theme.textTheme.labelSmall?.copyWith(
+                                                                            color: textMuted,
+                                                                            fontSize: 10,
+                                                                          ) ??
+                                                                          TextStyle(color: textMuted, fontSize: 10),
+                                                                    ),
+                                                                ],
+                                                              ),
+                                                              maxLines: 1,
+                                                              overflow: TextOverflow.ellipsis,
+                                                            );
+                                                          },
+                                                        ),
+                                                        const SizedBox(height: 2),
+                                                        Text(
+                                                          reply.text,
+                                                          style: theme.textTheme.bodySmall?.copyWith(
+                                                                color: textPrimary,
+                                                                height: 1.35,
+                                                                fontSize: 12.5,
+                                                              ) ??
+                                                              TextStyle(
+                                                                color: textPrimary,
+                                                                fontSize: 12.5,
+                                                                height: 1.35,
+                                                              ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(left: 8, top: 4),
+                                                    child: Row(
+                                                      children: [
+                                                        GestureDetector(
+                                                          onTap: () => controller.toggleCommentLike(
+                                                            widget.postId,
+                                                            reply.id,
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              Icon(
+                                                                reply.isLiked
+                                                                    ? Icons.favorite_rounded
+                                                                    : Icons.favorite_outline_rounded,
+                                                                size: 13,
+                                                                color: reply.isLiked
+                                                                    ? AppColors.likedAccent
+                                                                    : textMuted,
+                                                              ),
+                                                              const SizedBox(width: 3),
+                                                              Text(
+                                                                reply.likesCount > 0
+                                                                    ? "${reply.likesCount}"
+                                                                    : 'community.like'.tr,
+                                                                style: theme.textTheme.labelSmall?.copyWith(
+                                                                      color: reply.isLiked
+                                                                          ? AppColors.likedAccent
+                                                                          : textMuted,
+                                                                      fontSize: 10.5,
+                                                                      fontWeight: FontWeight.bold,
+                                                                    ) ??
+                                                                    TextStyle(
+                                                                      color: reply.isLiked
+                                                                          ? AppColors.likedAccent
+                                                                          : textMuted,
+                                                                      fontSize: 10.5,
+                                                                      fontWeight: FontWeight.bold,
+                                                                    ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        const SizedBox(width: 16),
+                                                        GestureDetector(
+                                                          onTap: () => _onReplyTo(
+                                                            reply.userName,
+                                                            commentId: comment.id,
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              Icon(
+                                                                Icons.reply_rounded,
+                                                                size: 13,
+                                                                color: textMuted,
+                                                              ),
+                                                              const SizedBox(width: 3),
+                                                              Text(
+                                                                'community.reply'.tr,
+                                                                style: theme.textTheme.labelSmall?.copyWith(
+                                                                      color: textMuted,
+                                                                      fontSize: 10.5,
+                                                                      fontWeight: FontWeight.bold,
+                                                                    ) ??
+                                                                    TextStyle(
+                                                                      color: textMuted,
+                                                                      fontSize: 10.5,
+                                                                      fontWeight: FontWeight.bold,
+                                                                    ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
                             ],
                           ),
                         ),

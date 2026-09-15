@@ -51,6 +51,12 @@ abstract class CommunityRepository {
 
   Future<bool> deleteComment(String postId, String commentId);
 
+  Future<bool> toggleCommentLike(
+    String commentId, {
+    required bool isCurrentlyLiked,
+  }) =>
+      Future.value(true);
+
   Future<List<ForumTopicModel>> getDiscussions({
     String? category,
     int page = 1,

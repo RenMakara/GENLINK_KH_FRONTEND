@@ -1962,7 +1962,11 @@ class _VideoPostMediaState extends State<VideoPostMedia> {
 
   Future<void> _initController() async {
     try {
-      final ctrl = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+      final isNetwork = widget.videoUrl.startsWith('http://') ||
+          widget.videoUrl.startsWith('https://');
+      final ctrl = isNetwork
+          ? VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
+          : VideoPlayerController.file(File(widget.videoUrl));
       await ctrl.initialize();
       if (!mounted) {
         await ctrl.dispose();

@@ -124,7 +124,17 @@ class CommunityRepositoryImpl implements CommunityRepository {
 
   @override
   Future<bool> deleteComment(String postId, String commentId) async {
-    return true;
+    return remoteDataSource.deleteComment(commentId);
+  }
+
+  @override
+  Future<bool> toggleCommentLike(
+    String commentId, {
+    required bool isCurrentlyLiked,
+  }) {
+    return isCurrentlyLiked
+        ? remoteDataSource.unlikeComment(commentId)
+        : remoteDataSource.likeComment(commentId);
   }
 
   @override

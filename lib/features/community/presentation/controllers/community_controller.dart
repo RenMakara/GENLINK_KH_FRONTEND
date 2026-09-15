@@ -1778,7 +1778,21 @@ class CommunityController extends GetxController {
         text,
         parentCommentId: parentCommentId,
       );
-      activeComments.add(comment);
+      if (parentCommentId != null && parentCommentId.isNotEmpty) {
+        final parentIdx =
+            activeComments.indexWhere((c) => c.id == parentCommentId);
+        if (parentIdx != -1) {
+          final parent = activeComments[parentIdx];
+          final updatedReplies = List<CommentModel>.from(parent.replies)
+            ..add(comment);
+          activeComments[parentIdx] = parent.copyWith(replies: updatedReplies);
+          activeComments.refresh();
+        } else {
+          activeComments.add(comment);
+        }
+      } else {
+        activeComments.add(comment);
+      }
 
       final idx = posts.indexWhere((p) => p.id == postId);
       if (idx != -1) {
@@ -1793,10 +1807,67 @@ class CommunityController extends GetxController {
     final idx = activeComments.indexWhere((c) => c.id == commentId);
     if (idx != -1) {
       final comment = activeComments[idx];
+      final wasLiked = comment.isLiked;
       comment.isLiked = !comment.isLiked;
       comment.likesCount += comment.isLiked ? 1 : -1;
       activeComments[idx] = comment;
       activeComments.refresh();
+      repository.toggleCommentLike(commentId, isCurrentlyLiked: wasLiked);
+      return;
+    }
+
+    for (int i = 0; i < activeComments.length; i++) {
+      final parent = activeComments[i];
+      final replyIdx = parent.replies.indexWhere((r) => r.id == commentId);
+      if (replyIdx != -1) {
+        final reply = parent.replies[replyIdx];
+        final wasLiked = reply.isLiked;
+        final updatedReply = reply.copyWith(
+          isLiked: !wasLiked,
+          likesCount: reply.likesCount + (!wasLiked ? 1 : -1),
+        );
+        final updatedReplies = List<CommentModel>.from(parent.replies);
+        updatedReplies[replyIdx] = updatedReply;
+        activeComments[i] = parent.copyWith(replies: updatedReplies);
+        activeComments.refresh();
+        repository.toggleCommentLike(commentId, isCurrentlyLiked: wasLiked);
+        return;
+      }
+    }
+  }
+
+  Future<bool> deleteComment(String postId, String commentId) async {
+    try {
+      final success = await repository.deleteComment(postId, commentId);
+      if (success) {
+        final topIdx = activeComments.indexWhere((c) => c.id == commentId);
+        if (topIdx != -1) {
+          activeComments.removeAt(topIdx);
+        } else {
+          for (int i = 0; i < activeComments.length; i++) {
+            final parent = activeComments[i];
+            if (parent.replies.any((r) => r.id == commentId)) {
+              final updatedReplies = List<CommentModel>.from(parent.replies)
+                ..removeWhere((r) => r.id == commentId);
+              activeComments[i] = parent.copyWith(replies: updatedReplies);
+              break;
+            }
+          }
+        }
+        activeComments.refresh();
+
+        final idx = posts.indexWhere((p) => p.id == postId);
+        if (idx != -1) {
+          final p = posts[idx];
+          if (p.commentsCount > 0) {
+            p.commentsCount -= 1;
+            posts[idx] = p.copyWith();
+          }
+        }
+      }
+      return success;
+    } catch (_) {
+      return false;
     }
   }
 

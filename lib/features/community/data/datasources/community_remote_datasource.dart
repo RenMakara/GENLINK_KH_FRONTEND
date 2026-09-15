@@ -438,19 +438,64 @@ class CommunityRemoteDataSource {
       );
       if (response.statusCode == 200 && response.data != null) {
         final body = response.data;
-        final rawData = body is Map<String, dynamic>
+        final dynamic rawData = body is Map<String, dynamic>
             ? (body['data'] ?? body)
             : body;
-        if (rawData is List) {
-          return rawData
-              .map(
-                (json) => CommentModel.fromJson(json as Map<String, dynamic>),
-              )
-              .toList();
+        List<dynamic> content = [];
+        if (rawData is Map<String, dynamic>) {
+          content = (rawData['content'] as List<dynamic>?) ?? [];
+        } else if (rawData is List) {
+          content = rawData;
         }
+
+        final topLevel = content
+            .map(
+              (json) => CommentModel.fromJson(json as Map<String, dynamic>),
+            )
+            .toList();
+
+        final commentsWithReplies = await Future.wait(
+          topLevel.map((comment) async {
+            if (comment.id.isEmpty) return comment;
+            final replies = await fetchPostCommentReplies(comment.id);
+            return comment.copyWith(replies: replies);
+          }),
+        );
+        return commentsWithReplies;
       }
     } catch (_) {}
 
+    return [];
+  }
+
+  Future<List<CommentModel>> fetchPostCommentReplies(String commentId) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityPostCommentReplies(commentId),
+        ),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final dynamic rawData =
+            body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+
+        List<dynamic> content = [];
+        if (rawData is Map<String, dynamic>) {
+          content = (rawData['content'] as List<dynamic>?) ?? [];
+        } else if (rawData is List) {
+          content = rawData;
+        }
+
+        return content
+            .map(
+              (json) => CommentModel.fromJson(json as Map<String, dynamic>),
+            )
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch replies for post comment $commentId: $e');
+    }
     return [];
   }
 
@@ -462,7 +507,7 @@ class CommunityRemoteDataSource {
     final currentUserName = CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
         ? CurrentUser.name
         : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'User');
-    final comment = CommentModel(
+    final fallbackComment = CommentModel(
       id: 'c_${DateTime.now().millisecondsSinceEpoch}',
       postId: postId,
       userId: CurrentUser.id.isNotEmpty ? CurrentUser.id : 'current_user',
@@ -478,7 +523,7 @@ class CommunityRemoteDataSource {
         () => dio.post<dynamic>(
           ApiEndpoints.communityPostComments(postId),
           data: {
-            'text': text,
+            'content': text,
             if (parentCommentId != null && parentCommentId.isNotEmpty)
               'parentCommentId': parentCommentId,
           },
@@ -487,7 +532,7 @@ class CommunityRemoteDataSource {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final body = response.data;
         if (body != null) {
-          final rawData = body is Map<String, dynamic>
+          final dynamic rawData = body is Map<String, dynamic>
               ? (body['data'] ?? body)
               : body;
           if (rawData is Map<String, dynamic>) {
@@ -497,7 +542,40 @@ class CommunityRemoteDataSource {
       }
     } catch (_) {}
 
-    return comment;
+    return fallbackComment;
+  }
+
+  Future<bool> likeComment(String commentId) async {
+    try {
+      final response = await guardDio(
+        () => dio.post<dynamic>(ApiEndpoints.communityCommentLike(commentId)),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> unlikeComment(String commentId) async {
+    try {
+      final response = await guardDio(
+        () => dio.delete<dynamic>(ApiEndpoints.communityCommentLike(commentId)),
+      );
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> deleteComment(String commentId) async {
+    try {
+      final response = await guardDio(
+        () => dio.delete<dynamic>(ApiEndpoints.communityComment(commentId)),
+      );
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<List<CommentModel>> fetchDiscussionCommentReplies(

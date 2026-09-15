@@ -192,6 +192,15 @@ abstract final class ApiEndpoints {
   static String communityPostComments(String postId) =>
       '$_base/community/posts/$postId/comments';
 
+  static String communityPostCommentReplies(String commentId) =>
+      '$_base/community/comments/$commentId/replies';
+
+  static String communityCommentLike(String commentId) =>
+      '$_base/community/comments/$commentId/like';
+
+  static String communityComment(String commentId) =>
+      '$_base/community/comments/$commentId';
+
   static String communityFollowUser(String userId) =>
       '$_base/community/users/$userId/follow';
 

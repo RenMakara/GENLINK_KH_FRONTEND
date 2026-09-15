@@ -70,7 +70,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
   late DateTime today;
   bool showDateDetail = false;
 
-  // ========== TEXT / DATA ==========
+  // ========== MOCK DATA (no .tr – normal text) ==========
   static const List<GrowthCategory> categories = [
     GrowthCategory(
       label: 'All',
@@ -187,22 +187,23 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
     final user = widget.home.user;
 
     final subtitle = user.fullName?.trim().isNotEmpty == true
-        ? 'Welcome, ${user.fullName!.trim().split(' ').first} · Your personal growth journey'
-        : 'Your personal growth journey';
+        ? 'levelup.subtitleWelcome'.trParams({
+            'name': user.fullName!.trim().split(' ').first,
+          })
+        : 'levelup.subtitleDefault'.tr;
 
     // Level progress data
     final nextLevel = user.safeLevel + 1;
-    final levelLabel = 'home.levelLabel'.trParams({
+    final levelDisplay = 'levelup.levelLabel'.trParams({
       'level': '${user.safeLevel}',
     });
-    final levelDisplay =
-        (levelLabel.isNotEmpty && levelLabel != 'home.levelLabel')
-        ? levelLabel
-        : 'Level ${user.safeLevel}';
     final xpDiff = user.xpForNextLevel - user.safeTotalXp;
     final progressCopy = xpDiff > 0
-        ? 'Only $xpDiff XP to Level $nextLevel'
-        : 'Progress toward Level $nextLevel';
+        ? 'levelup.onlyXpToLevel'.trParams({
+            'xp': '$xpDiff',
+            'level': '$nextLevel',
+          })
+        : 'levelup.progressTowardLevel'.trParams({'level': '$nextLevel'});
 
     // Today checklist data
     final progress = widget.home.todayProgress;
@@ -212,11 +213,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
     final tasksDone = progress.tasksCompleted;
     final percent = progress.percent;
 
-    final todayTitle =
-        'home.todayJourney'.tr.isNotEmpty &&
-            'home.todayJourney'.tr != 'home.todayJourney'
-        ? 'home.todayJourney'.tr.toUpperCase()
-        : "TODAY'S JOURNEY";
+    final todayTitle = 'levelup.todayJourney'.tr;
 
     final habitItems = widget.controller.habits;
     final activitiesList = <TimelineActivityItem>[];
@@ -225,11 +222,15 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
     if (habitItems.isNotEmpty) {
       for (final habit in habitItems) {
         final streakText = habit.streakCount > 0
-            ? '${habit.streakCount} day streak'
+            ? 'levelup.habitStreak'.trParams({'streak': '${habit.streakCount}'})
             : null;
+
         final sub = habit.checkedInToday
-            ? 'Habit · Completed today${streakText != null ? ' · $streakText' : ''}'
-            : 'Habit · ${streakText ?? (habit.category ?? 'Daily routine')}';
+            ? 'levelup.habitCompletedToday'.tr +
+                  (streakText != null ? ' · $streakText' : '')
+            : 'levelup.habitPrefix'.tr +
+                  (streakText ??
+                      (habit.category ?? 'levelup.habitDailyRoutine'.tr));
 
         activitiesList.add(
           TimelineActivityItem(
@@ -247,16 +248,14 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
       }
     } else if (habitsTotal > 0) {
       final isHabitDone = habitsDone >= habitsTotal;
-      final title =
-          'home.rowHabits'.tr.isNotEmpty &&
-              'home.rowHabits'.tr != 'home.rowHabits'
-          ? 'home.rowHabits'.tr
-          : 'Check in your habits';
 
       activitiesList.add(
         TimelineActivityItem(
-          title: title,
-          subtitle: 'Habit · $habitsDone of $habitsTotal completed',
+          title: 'levelup.checkInHabits'.tr,
+          subtitle: 'levelup.habitProgress'.trParams({
+            'done': '$habitsDone',
+            'total': '$habitsTotal',
+          }),
           isCompleted: isHabitDone,
           accentColor: const Color(0xFFF97316),
           onTap: () => Get.to(() => const HabitHomeScreen()),
@@ -271,11 +270,14 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
       activitiesList.add(
         TimelineActivityItem(
           title: isTaskDone
-              ? "Today's tasks completed"
-              : "Finish today's tasks",
+              ? 'levelup.tasksCompleted'.tr
+              : 'levelup.finishTasks'.tr,
           subtitle: isTaskDone
-              ? 'Task · All $tasksTotal completed'
-              : 'Task · $tasksDone of $tasksTotal completed',
+              ? 'levelup.taskAllCompleted'.trParams({'total': '$tasksTotal'})
+              : 'levelup.taskProgress'.trParams({
+                  'done': '$tasksDone',
+                  'total': '$tasksTotal',
+                }),
           isCompleted: isTaskDone,
           accentColor: const Color(0xFF3B82F6),
           onTap: () => Get.to(() => const TasksPage()),
@@ -295,10 +297,10 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
     final challenge = widget.home.dailyChallenge;
     final challengeTitle = challenge?.title.trim().isNotEmpty == true
         ? challenge!.title
-        : "Today's Challenge";
+        : 'levelup.todaysChallenge'.tr;
     final challengeDesc = challenge?.description?.trim().isNotEmpty == true
         ? challenge!.description!
-        : 'Complete your daily objectives to earn XP and level up.';
+        : 'levelup.challengeDefaultDesc'.tr;
     final xpReward = challenge?.xpReward;
 
     return Scaffold(
@@ -333,7 +335,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'LEVEL UP',
+                              'levelup.title'.tr,
                               style: TextStyle(
                                 color: isDark
                                     ? AppColors.darkTextPrimary
@@ -387,21 +389,23 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                       onDateSelected: _selectDate,
                       onEdit: (a) => Get.snackbar(
                         '',
-                        'Edit ${a.title}',
+                        'levelup.editActivity'.trParams({'title': a.title}),
                         snackPosition: SnackPosition.BOTTOM,
                         margin: const EdgeInsets.all(12),
                         duration: const Duration(seconds: 1),
                       ),
                       onDelete: (a) => Get.snackbar(
                         '',
-                        'Delete ${a.title}',
+                        'levelup.deleteActivity'.trParams({'title': a.title}),
                         snackPosition: SnackPosition.BOTTOM,
                         margin: const EdgeInsets.all(12),
                         duration: const Duration(seconds: 1),
                       ),
                       onMarkDone: (a) => Get.snackbar(
                         '',
-                        a.completed ? 'Already completed' : 'Marked as done',
+                        a.completed
+                            ? 'levelup.alreadyCompleted'.tr
+                            : 'levelup.markedAsDone'.tr,
                         snackPosition: SnackPosition.BOTTOM,
                         margin: const EdgeInsets.all(12),
                         duration: const Duration(seconds: 1),
@@ -429,10 +433,12 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                   // TODAY CHECKLIST
                   GrowthTodayChecklist(
                     title: todayTitle,
-                    subtitle: "What can I do today to Level Up?",
+                    subtitle: 'levelup.whatCanIDoToday'.tr,
                     percentText: '$percent%',
                     progress: progress.progress,
                     activities: activitiesList,
+                    emptyTitle: 'levelup.allCaughtUp'.tr,
+                    emptyMessage: 'levelup.noHabitsOrTasks'.tr,
                   ),
 
                   const SizedBox(height: 12),
@@ -444,17 +450,16 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                       child: GrowthAlertCard(
                         icon: Icons.local_fire_department_rounded,
                         iconColor: const Color(0xFFF97316),
-                        title: 'Habit Streak at Risk',
-                        message:
-                            "Complete today's habit check-in to protect your streak!",
-                        actionText: 'Tap → Check in habits',
+                        title: 'levelup.streakAtRiskTitle'.tr,
+                        message: 'levelup.streakAtRiskMessage'.tr,
+                        actionText: 'levelup.streakAtRiskAction'.tr,
                         onTap: () => Get.to(() => const HabitHomeScreen()),
                       ),
                     ),
 
                   // PRODUCTIVITY TOOLS
                   Text(
-                    'GROW',
+                    'levelup.grow'.tr,
                     style: TextStyle(
                       color: isDark
                           ? AppColors.darkTextPrimary
@@ -470,7 +475,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                       Expanded(
                         child: GrowthToolTile(
                           icon: Icons.repeat_rounded,
-                          label: 'Habits',
+                          label: 'levelup.habits'.tr,
                           accentColor: const Color(0xFFF97316),
                           onTap: () => Get.to(() => const HabitHomeScreen()),
                         ),
@@ -479,7 +484,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                       Expanded(
                         child: GrowthToolTile(
                           icon: Icons.check_circle_outline_rounded,
-                          label: 'Tasks',
+                          label: 'levelup.tasks'.tr,
                           accentColor: const Color(0xFF3B82F6),
                           onTap: () => Get.to(() => const TasksPage()),
                         ),
@@ -488,7 +493,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                       Expanded(
                         child: GrowthToolTile(
                           icon: Icons.timer_outlined,
-                          label: 'Focus',
+                          label: 'levelup.focus'.tr,
                           accentColor: const Color(0xFF06B6D4),
                           onTap: () => Get.to(() => const FocusPage()),
                         ),
@@ -497,7 +502,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                       Expanded(
                         child: GrowthToolTile(
                           icon: Icons.flag_outlined,
-                          label: 'Goals',
+                          label: 'levelup.goals'.tr,
                           accentColor: const Color(0xFF10B981),
                           onTap: () => Get.to(() => const PlanGoalScreen()),
                         ),
@@ -513,7 +518,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                       children: [
                         Expanded(
                           child: Text(
-                            'YOUR NEXT MOVE',
+                            'levelup.yourNextMove'.tr,
                             style: TextStyle(
                               color: isDark
                                   ? AppColors.darkTextPrimary
@@ -525,7 +530,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                           ),
                         ),
                         Text(
-                          'RECOMMENDED FOR YOU',
+                          'levelup.recommendedForYou'.tr,
                           style: TextStyle(
                             color: isDark
                                 ? AppColors.darkTextMuted
@@ -564,7 +569,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                                   .isNotEmpty ==
                               true
                           ? widget.home.dailyMotivation!.title!
-                          : 'Daily Mindset',
+                          : 'levelup.dailyMindset'.tr,
                       content: widget.home.dailyMotivation!.content ?? '',
                     ),
                   ],
@@ -578,7 +583,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
   }
 }
 
-// SKELETON & ERROR (kept simple)
+// SKELETON
 class _GrowthSkeletonView extends StatelessWidget {
   const _GrowthSkeletonView();
 
@@ -608,7 +613,6 @@ class _GrowthSkeletonView extends StatelessWidget {
             120,
           ),
           children: [
-            // simple skeleton placeholders
             Container(height: 44, color: skeletonBase),
             const SizedBox(height: 12),
             Container(
@@ -635,6 +639,7 @@ class _GrowthSkeletonView extends StatelessWidget {
   }
 }
 
+// ERROR
 class _GrowthErrorView extends StatelessWidget {
   const _GrowthErrorView({required this.errorMessage, required this.onRetry});
 
@@ -667,7 +672,7 @@ class _GrowthErrorView extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  'Unable to load Growth',
+                  'levelup.unableToLoad'.tr,
                   style: TextStyle(
                     color: textPrimary,
                     fontSize: 17,
@@ -676,12 +681,15 @@ class _GrowthErrorView extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Check your connection and try again.',
+                  'levelup.checkConnection'.tr,
                   textAlign: TextAlign.center,
                   style: TextStyle(color: textSecondary, fontSize: 13),
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+                ElevatedButton(
+                  onPressed: onRetry,
+                  child: Text('levelup.retry'.tr),
+                ),
               ],
             ),
           ),

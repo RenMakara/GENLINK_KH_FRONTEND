@@ -73,32 +73,32 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
   // ========== MOCK DATA (no .tr – normal text) ==========
   static const List<GrowthCategory> categories = [
     GrowthCategory(
-      label: 'All',
+      label: 'levelup.categoryAll',
       icon: Icons.apps_rounded,
       color: Color(0xFF777777),
     ),
     GrowthCategory(
-      label: 'Task',
+      label: 'levelup.categoryTask',
       icon: Icons.check_circle_outline_rounded,
       color: Color(0xFF3B82F6),
     ),
     GrowthCategory(
-      label: 'Habit',
+      label: 'levelup.categoryHabit',
       icon: Icons.repeat_rounded,
       color: Color(0xFFF97316),
     ),
     GrowthCategory(
-      label: 'Focus',
-      icon: Icons.timer_outlined,
-      color: Color(0xFF8B5CF6),
-    ),
-    GrowthCategory(
-      label: 'Goal',
+      label: 'levelup.categoryGoal',
       icon: Icons.flag_outlined,
       color: Color(0xFF10B981),
     ),
     GrowthCategory(
-      label: 'Quiz',
+      label: 'levelup.categoryFocus',
+      icon: Icons.timer_outlined,
+      color: Color(0xFF8B5CF6),
+    ),
+    GrowthCategory(
+      label: 'levelup.categoryQuiz',
       icon: Icons.quiz_outlined,
       color: Color(0xFFF2B84B),
     ),
@@ -469,47 +469,52 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                       letterSpacing: 0.6,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: GrowthToolTile(
-                          icon: Icons.repeat_rounded,
-                          label: 'levelup.habits'.tr,
-                          accentColor: const Color(0xFFF97316),
-                          onTap: () => Get.to(() => const HabitHomeScreen()),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: GrowthToolTile(
+                  const SizedBox(height: 12),
+
+                  SizedBox(
+                    height: 92,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.only(right: 4),
+                      children: [
+                        _buildToolItem(
+                          context: context,
                           icon: Icons.check_circle_outline_rounded,
                           label: 'levelup.tasks'.tr,
-                          accentColor: const Color(0xFF3B82F6),
+                          color: const Color(0xFF3B82F6),
                           onTap: () => Get.to(() => const TasksPage()),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: GrowthToolTile(
-                          icon: Icons.timer_outlined,
-                          label: 'levelup.focus'.tr,
-                          accentColor: const Color(0xFF06B6D4),
-                          onTap: () => Get.to(() => const FocusPage()),
+                        const SizedBox(width: 5),
+
+                        _buildToolItem(
+                          context: context,
+                          icon: Icons.repeat_rounded,
+                          label: 'levelup.habits'.tr,
+                          color: const Color(0xFFF97316),
+                          onTap: () => Get.to(() => const HabitHomeScreen()),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: GrowthToolTile(
+                        const SizedBox(width: 5),
+
+                        _buildToolItem(
+                          context: context,
                           icon: Icons.flag_outlined,
                           label: 'levelup.goals'.tr,
-                          accentColor: const Color(0xFF10B981),
+                          color: const Color(0xFF10B981),
                           onTap: () => Get.to(() => const PlanGoalScreen()),
                         ),
-                      ),
-                    ],
-                  ),
+                        const SizedBox(width: 5),
 
+                        _buildToolItem(
+                          context: context,
+                          icon: Icons.timer_outlined,
+                          label: 'levelup.focus'.tr,
+                          color: const Color(0xFF06B6D4),
+                          onTap: () => Get.to(() => const FocusPage()),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.lg),
 
                   // YOUR NEXT MOVE
@@ -697,4 +702,75 @@ class _GrowthErrorView extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _buildToolItem({
+  required BuildContext context,
+  required IconData icon,
+  required String label,
+  required Color color,
+  required VoidCallback onTap,
+}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final cardSurface = isDark
+      ? AppColors.darkSurfacePrimary
+      : AppColors.lightSurfacePrimary;
+  final border = isDark
+      ? AppColors.darkBorderSubtle
+      : AppColors.lightBorderSubtle;
+  final textSecondary = isDark
+      ? AppColors.darkTextSecondary
+      : AppColors.lightTextSecondary;
+
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      width: 78,
+      decoration: BoxDecoration(
+        color: cardSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: border, width: 0.8),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: isDark ? 0.18 : 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 20, color: color),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: textSecondary,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }

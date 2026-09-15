@@ -79,6 +79,8 @@ void main() {
       expect(conv.id, 'room-xyz');
       expect(conv.name, 'Heng Chansela');
       expect(conv.avatar, 'https://example.com/chansela.png');
+      expect(conv.profileUserId, 'user-2');
+      expect(conv.profileUsername, 'chansela');
       expect(conv.isGroup, isFalse);
       expect(conv.lastMessage, 'See you at the university library!');
       expect(conv.unreadCount, 2);

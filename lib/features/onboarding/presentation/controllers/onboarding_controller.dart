@@ -5,6 +5,8 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../core/storage/local_storage.dart';
 import '../../../../design_system/colors/app_colors.dart';
 
+enum OnboardingVisual { network, growth, impact, future }
+
 class OnboardingRow {
   const OnboardingRow({
     required this.icon,
@@ -26,11 +28,13 @@ class OnboardingSlide {
     required this.titleKey,
     required this.bodyKey,
     required this.rows,
+    required this.visual,
   });
 
   final String titleKey;
   final String bodyKey;
   final List<OnboardingRow> rows;
+  final OnboardingVisual visual;
 }
 
 class OnboardingController extends GetxController {
@@ -46,6 +50,7 @@ class OnboardingController extends GetxController {
     OnboardingSlide(
       titleKey: 'onboarding.networkTitle',
       bodyKey: 'onboarding.networkBody',
+      visual: OnboardingVisual.network,
       rows: [
         OnboardingRow(
           icon: Icons.groups_outlined,
@@ -70,6 +75,7 @@ class OnboardingController extends GetxController {
     OnboardingSlide(
       titleKey: 'onboarding.growTitle',
       bodyKey: 'onboarding.growBody',
+      visual: OnboardingVisual.growth,
       rows: [
         OnboardingRow(
           icon: Icons.attach_money,
@@ -91,6 +97,56 @@ class OnboardingController extends GetxController {
           detailKey: 'onboarding.rowXpDetail',
           accent: AppColors.growthAccent,
           progress: 0.45,
+        ),
+      ],
+    ),
+    OnboardingSlide(
+      titleKey: 'onboarding.impactTitle',
+      bodyKey: 'onboarding.impactBody',
+      visual: OnboardingVisual.impact,
+      rows: [
+        OnboardingRow(
+          icon: Icons.groups_outlined,
+          titleKey: 'onboarding.rowCommunity',
+          detailKey: 'onboarding.rowCommunityDetail',
+          accent: AppColors.communityAccent,
+        ),
+        OnboardingRow(
+          icon: Icons.event_available_outlined,
+          titleKey: 'onboarding.rowEvents',
+          detailKey: 'onboarding.rowEventsDetail',
+          accent: AppColors.growthAccent,
+        ),
+        OnboardingRow(
+          icon: Icons.rocket_launch_outlined,
+          titleKey: 'onboarding.rowOpportunities',
+          detailKey: 'onboarding.rowOpportunitiesDetail',
+          accent: AppColors.financeAccent,
+        ),
+      ],
+    ),
+    OnboardingSlide(
+      titleKey: 'onboarding.futureTitle',
+      bodyKey: 'onboarding.futureBody',
+      visual: OnboardingVisual.future,
+      rows: [
+        OnboardingRow(
+          icon: Icons.groups_outlined,
+          titleKey: 'onboarding.rowTogether',
+          detailKey: 'onboarding.rowTogetherDetail',
+          accent: AppColors.communityAccent,
+        ),
+        OnboardingRow(
+          icon: Icons.auto_awesome_outlined,
+          titleKey: 'onboarding.rowPotential',
+          detailKey: 'onboarding.rowPotentialDetail',
+          accent: AppColors.productivityAccent,
+        ),
+        OnboardingRow(
+          icon: Icons.trending_up_rounded,
+          titleKey: 'onboarding.rowGrowth',
+          detailKey: 'onboarding.rowGrowthDetail',
+          accent: AppColors.growthAccent,
         ),
       ],
     ),

@@ -7,7 +7,7 @@ import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.d
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../media/domain/entities/media_entity.dart';
 import '../../../media/domain/media_upload_service.dart';
-import '../../../profile/presentation/screens/profile_screen.dart';
+import '../../../profile/presentation/utils/profile_navigation.dart';
 import '../../domain/models/chat_models.dart';
 import '../controllers/chat_controller.dart';
 import '../widgets/chat_avatar.dart';
@@ -162,7 +162,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         icon: Icons.event_rounded,
       );
     } else {
-      Get.to(() => const ProfileScreen());
+      ProfileNavigation.open(
+        username: conv.profileUsername,
+        userId: conv.profileUserId,
+      );
     }
   }
 

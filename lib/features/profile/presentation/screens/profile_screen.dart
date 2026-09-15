@@ -17,6 +17,7 @@ import 'package:genlink_frontend/features/community/presentation/widgets/full_sc
 import 'package:genlink_frontend/features/community/presentation/widgets/post_card_widget.dart';
 import '../controllers/profile_controller.dart';
 import '../models/profile_cover_preset.dart';
+import '../utils/profile_navigation.dart';
 import '../widgets/profile_widgets.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -25,8 +26,10 @@ class ProfileScreen extends StatelessWidget {
   final String? viewingUsername;
 
   ProfileController get controller {
-    final username = viewingUsername?.trim();
-    return username == null || username.isEmpty
+    final username = ProfileNavigation.ownerAwareUsername(
+      username: viewingUsername,
+    );
+    return username == null
         ? Get.find<ProfileController>()
         : Get.find<ProfileController>(
             tag: ProfileController.publicTag(username),

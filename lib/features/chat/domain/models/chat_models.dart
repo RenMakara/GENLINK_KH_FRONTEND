@@ -332,6 +332,8 @@ class ChatConversationModel {
   final String id;
   final String name;
   final String avatar;
+  final String? profileUserId;
+  final String? profileUsername;
   final bool isGroup;
   final bool isOnline;
   String lastMessage;
@@ -348,6 +350,8 @@ class ChatConversationModel {
     required this.id,
     required this.name,
     required this.avatar,
+    this.profileUserId,
+    this.profileUsername,
     this.isGroup = false,
     this.isOnline = false,
     required this.lastMessage,
@@ -376,6 +380,7 @@ class ChatConversationModel {
         DateTime.tryParse(json['lastActivityAt']?.toString() ?? '') ??
         lastCreatedAt;
     final lastType = (lastMessage?['type'] as String?) ?? 'TEXT';
+    final isGroup = type == 'GROUP' || (json['isGroup'] as bool? ?? false);
     return ChatConversationModel(
       id: json['roomId']?.toString() ?? json['id']?.toString() ?? '',
       name:
@@ -388,7 +393,9 @@ class ChatConversationModel {
           counterpart['avatarUrl'] as String? ??
           (json['avatar'] as String?) ??
           'assets/images/user_profile.png',
-      isGroup: type == 'GROUP' || (json['isGroup'] as bool? ?? false),
+      profileUserId: isGroup ? null : counterpart['userId']?.toString(),
+      profileUsername: isGroup ? null : counterpart['username']?.toString(),
+      isGroup: isGroup,
       isOnline: json['isOnline'] as bool? ?? false,
       lastMessage: lastMessage == null
           ? (json['lastMessage'] as String? ?? '')
@@ -409,20 +416,33 @@ class ChatConversationModel {
     );
   }
 
-  factory ChatConversationModel.fromRoomResponse(Map<String, dynamic> json) {
+  factory ChatConversationModel.fromRoomResponse(
+    Map<String, dynamic> json, {
+    String? participantUserId,
+  }) {
     final type = (json['type'] as String?) ?? 'PRIVATE';
     final isGroup = type == 'GROUP';
     final members = json['members'] is List ? json['members'] as List : const [];
-    
+
     Map<String, dynamic> counterpart = const {};
-    if (members.isNotEmpty) {
-      for (final m in members) {
-        if (m is Map) {
-          counterpart = m.cast<String, dynamic>();
-          break;
-        }
+    Map<String, dynamic>? firstParticipant;
+    final targetUserId = participantUserId?.trim();
+    for (final member in members) {
+      if (member is! Map) continue;
+      final rawParticipant = member['user'] is Map ? member['user'] : member;
+      if (rawParticipant is! Map) continue;
+      final participant = rawParticipant.cast<String, dynamic>();
+      firstParticipant ??= participant;
+      final userId =
+          participant['userId']?.toString() ?? participant['id']?.toString();
+      if (targetUserId == null || userId == targetUserId) {
+        counterpart = participant;
+        break;
       }
     }
+    counterpart = counterpart.isEmpty
+        ? (firstParticipant ?? const {})
+        : counterpart;
 
     final name = (json['name'] as String?) ??
         (counterpart['fullName'] as String?) ??
@@ -435,6 +455,10 @@ class ChatConversationModel {
       id: json['roomId']?.toString() ?? json['id']?.toString() ?? '',
       name: name,
       avatar: avatar,
+      profileUserId: isGroup
+          ? null
+          : counterpart['userId']?.toString() ?? counterpart['id']?.toString(),
+      profileUsername: isGroup ? null : counterpart['username']?.toString(),
       isGroup: isGroup,
       isOnline: false,
       lastMessage: '',
@@ -452,6 +476,8 @@ class ChatConversationModel {
     String? id,
     String? name,
     String? avatar,
+    String? profileUserId,
+    String? profileUsername,
     bool? isGroup,
     bool? isOnline,
     String? lastMessage,
@@ -468,6 +494,8 @@ class ChatConversationModel {
       id: id ?? this.id,
       name: name ?? this.name,
       avatar: avatar ?? this.avatar,
+      profileUserId: profileUserId ?? this.profileUserId,
+      profileUsername: profileUsername ?? this.profileUsername,
       isGroup: isGroup ?? this.isGroup,
       isOnline: isOnline ?? this.isOnline,
       lastMessage: lastMessage ?? this.lastMessage,
@@ -487,6 +515,8 @@ class ChatConversationModel {
       'id': id,
       'name': name,
       'avatar': avatar,
+      if (profileUserId != null) 'profileUserId': profileUserId,
+      if (profileUsername != null) 'profileUsername': profileUsername,
       'isGroup': isGroup,
       'isOnline': isOnline,
       'lastMessage': lastMessage,

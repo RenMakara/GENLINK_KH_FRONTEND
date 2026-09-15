@@ -10,6 +10,7 @@ import 'package:genlink_frontend/features/profile/domain/repositories/profile_re
 import 'package:genlink_frontend/features/profile/presentation/bindings/profile_binding.dart';
 import 'package:genlink_frontend/features/profile/presentation/controllers/profile_controller.dart';
 import 'package:genlink_frontend/features/profile/presentation/screens/profile_screen.dart';
+import 'package:genlink_frontend/features/profile/presentation/utils/profile_navigation.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -198,6 +199,28 @@ void main() {
       );
     },
   );
+
+  test('profile navigation resolves the signed-in user as the owner', () {
+    final auth = AuthController(
+      authRepository: _MockAuthRepository(),
+      secureStorage: _MockSecureStorage(),
+      localization: LocalizationService(localStorage: LocalStorage()),
+    )..currentUser.value = _cachedUser;
+    Get.put<AuthController>(auth);
+
+    expect(ProfileNavigation.ownerAwareUsername(username: 'OLD_OWNER'), isNull);
+    expect(
+      ProfileNavigation.ownerAwareUsername(username: 'public_user'),
+      'public_user',
+    );
+    expect(
+      ProfileNavigation.ownerAwareUsername(
+        username: 'renamed_user',
+        userId: _cachedUser.id,
+      ),
+      isNull,
+    );
+  });
 
   test(
     'owner binding synchronizes profile responses into AuthController',

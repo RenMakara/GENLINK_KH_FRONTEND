@@ -11,12 +11,12 @@ void main() {
 
   setUp(() => storage = _MockLocalStorage());
 
-  test('new installation starts at initial preferences', () async {
+  test('new installation starts at welcome', () async {
     when(storage.readInitialPreferencesSeen).thenAnswer((_) async => false);
 
     final route = await StartupRouteResolver(localStorage: storage).resolve();
 
-    expect(route, AppRoutes.languageSelect);
+    expect(route, AppRoutes.welcome);
   });
 
   test('returning installation starts at splash', () async {

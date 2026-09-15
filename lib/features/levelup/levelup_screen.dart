@@ -69,7 +69,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
   late DateTime selectedDate;
   late DateTime today;
   bool showDateDetail = false;
-  static final List<GrowthCategory> categories = [
+  List<GrowthCategory> get categories => [
     GrowthCategory(
       label: 'levelup.categoryAll'.tr,
       icon: Icons.apps_rounded,

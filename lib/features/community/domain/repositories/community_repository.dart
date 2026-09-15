@@ -11,6 +11,34 @@ abstract class CommunityRepository {
     String community = 'All GenLink',
   });
 
+  /// Optional video-aware extension. Existing repository fakes can continue
+  /// implementing [createPost] while production uses the media-aware path.
+  Future<CommunityPostModel> createPostWithVideo({
+    required String content,
+    List<String> imageUrls = const [],
+    String? videoUrl,
+    String visibility = 'Public',
+    String community = 'All GenLink',
+  }) => createPost(
+    content: content,
+    imageUrls: imageUrls,
+    visibility: visibility,
+    community: community,
+  );
+
+  Future<CommunityPostModel> createPollPost({
+    required String question,
+    required List<String> options,
+    String? caption,
+    String visibility = 'Public',
+    String? communityId,
+  }) => throw UnimplementedError();
+
+  Future<CommunityPostModel> votePoll({
+    required String postId,
+    required String optionId,
+  }) => throw UnimplementedError();
+
   Future<CommunityPostModel> getPostDetails(String postId);
 
   Future<CommunityPostModel> updatePost(
@@ -25,7 +53,10 @@ abstract class CommunityRepository {
   Future<bool> toggleBookmark(String postId);
   Future<bool> repostPost(String postId, {String? caption, String? reposterId});
   Future<bool> unrepostPost(String postId, {String? reposterId});
-  Future<bool> reportPost(String postId, {String reason = 'INAPPROPRIATE_CONTENT'});
+  Future<bool> reportPost(
+    String postId, {
+    String reason = 'INAPPROPRIATE_CONTENT',
+  });
 
   Future<List<CommentModel>> getComments(String postId);
 
@@ -80,6 +111,14 @@ abstract class CommunityRepository {
     String? parentCommentId,
   });
 
+  Future<List<CommentModel>> getDiscussionCommentReplies(String commentId) =>
+      Future.value([]);
+
+  Future<CommentModel> updateDiscussionComment(
+    String commentId,
+    String content,
+  ) => throw UnimplementedError();
+
   Future<bool> toggleDiscussionCommentLike(
     String commentId, {
     required bool isCurrentlyLiked,
@@ -95,4 +134,16 @@ abstract class CommunityRepository {
     String eventId, {
     EventRegistrationRequest? request,
   });
+
+  Future<bool> cancelRsvpEvent(String eventId) async => true;
+
+  Future<EventModel> createEvent(EventCreateRequest request) =>
+      throw UnimplementedError();
+
+  Future<List<EventModel>> getEvents({
+    int page = 1,
+    int limit = 20,
+    String? category,
+    String? status,
+  }) async => const [];
 }

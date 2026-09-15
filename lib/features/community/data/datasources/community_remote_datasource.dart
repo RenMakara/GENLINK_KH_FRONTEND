@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../core/network/api_endpoints.dart';
@@ -133,7 +134,8 @@ class CommunityRemoteDataSource {
       attachedEvent: EventModel(
         id: 'ev2',
         title: 'AI in Everyday Life',
-        subtitle: 'Exploring practical AI applications for students & creators.',
+        subtitle:
+            'Exploring practical AI applications for students & creators.',
         organizerName: 'CADT Innovation Lab',
         eventType: 'Online',
         onlineLink: 'https://meet.google.com/genlink-ai-2026',
@@ -182,8 +184,7 @@ class CommunityRemoteDataSource {
 
       return content
           .map(
-            (json) =>
-                CommunityPostModel.fromJson(json as Map<String, dynamic>),
+            (json) => CommunityPostModel.fromJson(json as Map<String, dynamic>),
           )
           .toList();
     }
@@ -193,6 +194,7 @@ class CommunityRemoteDataSource {
   Future<CommunityPostModel> createPost({
     required String content,
     List<String> imageUrls = const [],
+    String? videoUrl,
     String visibility = 'Public',
     String community = 'All GenLink',
   }) async {
@@ -208,7 +210,9 @@ class CommunityRemoteDataSource {
         resolvedVisibility = 'PUBLIC';
     }
 
-    final postType = imageUrls.isNotEmpty ? 'IMAGE' : 'TEXT';
+    final postType = videoUrl != null && videoUrl.isNotEmpty
+        ? 'VIDEO'
+        : (imageUrls.isNotEmpty ? 'IMAGE' : 'TEXT');
 
     final response = await guardDio(
       () => dio.post<dynamic>(
@@ -216,6 +220,7 @@ class CommunityRemoteDataSource {
         data: {
           'contentText': content,
           'imageUrl': imageUrls.isNotEmpty ? imageUrls.join(',') : null,
+          'videoUrl': videoUrl != null && videoUrl.isNotEmpty ? videoUrl : null,
           'visibility': resolvedVisibility,
           'postType': postType,
         },
@@ -236,6 +241,81 @@ class CommunityRemoteDataSource {
     throw const AppError(
       message: 'Failed to create post on server.',
       errorCode: 'POST_CREATION_FAILED',
+    );
+  }
+
+  Future<CommunityPostModel> createPollPost({
+    required String question,
+    required List<String> options,
+    String? caption,
+    String visibility = 'Public',
+    String? communityId,
+  }) async {
+    final resolvedVisibility = switch (visibility.toUpperCase()) {
+      'FRIENDS' => 'FRIENDS',
+      'COMMUNITY' => 'COMMUNITY',
+      _ => 'PUBLIC',
+    };
+    final payload = <String, dynamic>{
+      'question': question.trim(),
+      'options': options
+          .map((option) => option.trim())
+          .where((option) => option.isNotEmpty)
+          .toList(),
+      if (caption != null && caption.trim().isNotEmpty)
+        'caption': caption.trim(),
+      'visibility': resolvedVisibility,
+      if (communityId != null && communityId.isNotEmpty)
+        'communityId': communityId,
+    };
+
+    final response = await guardDio(
+      () => dio.post<dynamic>(ApiEndpoints.communityPoll, data: payload),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final data = body is Map<String, dynamic> ? body['data'] : null;
+      if (data is Map<String, dynamic>) {
+        return CommunityPostModel.fromJson(data);
+      }
+      if (body is Map<String, dynamic>) {
+        return CommunityPostModel.fromJson(body);
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to create poll on server.',
+      errorCode: 'POLL_CREATION_FAILED',
+    );
+  }
+
+  Future<CommunityPostModel> votePoll({
+    required String postId,
+    required String optionId,
+  }) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityPollVote(postId),
+        data: {'optionId': optionId},
+      ),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final data = body is Map<String, dynamic> ? body['data'] : null;
+      if (data is Map<String, dynamic>) {
+        if (data.containsKey('pollId') || data.containsKey('options')) {
+          return CommunityPostModel.fromJson({'postId': postId, 'poll': data});
+        }
+        return CommunityPostModel.fromJson(data);
+      }
+      if (body is Map<String, dynamic>) {
+        return CommunityPostModel.fromJson({'postId': postId, 'poll': body});
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to record vote on server.',
+      errorCode: 'POLL_VOTE_FAILED',
     );
   }
 
@@ -292,10 +372,13 @@ class CommunityRemoteDataSource {
     } catch (_) {}
     final idx = _mockPosts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
-      final currentUserName = CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
+      final currentUserName =
+          CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
           ? CurrentUser.name
           : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'User');
-      final effectiveReposterId = reposterId ?? (CurrentUser.id.isNotEmpty ? CurrentUser.id : 'current_user');
+      final effectiveReposterId =
+          reposterId ??
+          (CurrentUser.id.isNotEmpty ? CurrentUser.id : 'current_user');
       final p = _mockPosts[idx];
       _mockPosts[idx] = p.copyWith(
         sharesCount: p.sharesCount + 1,
@@ -312,9 +395,7 @@ class CommunityRemoteDataSource {
   Future<bool> unrepostPost(String postId, {String? reposterId}) async {
     try {
       await guardDio(
-        () => dio.delete<dynamic>(
-          ApiEndpoints.communityPostRepost(postId),
-        ),
+        () => dio.delete<dynamic>(ApiEndpoints.communityPostRepost(postId)),
       );
     } catch (_) {}
     final idx = _mockPosts.indexWhere((p) => p.id == postId);
@@ -392,7 +473,8 @@ class CommunityRemoteDataSource {
     String text, {
     String? parentCommentId,
   }) async {
-    final currentUserName = CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
+    final currentUserName =
+        CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
         ? CurrentUser.name
         : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'User');
     final comment = CommentModel(
@@ -432,8 +514,9 @@ class CommunityRemoteDataSource {
     );
     if (response.statusCode == 200 && response.data != null) {
       final body = response.data;
-      dynamic rawData =
-          body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+      dynamic rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
 
       List<dynamic> content = [];
       if (rawData is Map<String, dynamic>) {
@@ -443,9 +526,7 @@ class CommunityRemoteDataSource {
       }
 
       return content
-          .map(
-            (json) => CommentModel.fromJson(json as Map<String, dynamic>),
-          )
+          .map((json) => CommentModel.fromJson(json as Map<String, dynamic>))
           .toList();
     }
     return [];
@@ -483,15 +564,67 @@ class CommunityRemoteDataSource {
     );
   }
 
+  Future<List<CommentModel>> fetchDiscussionCommentReplies(
+    String commentId,
+  ) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityDiscussionCommentReplies(commentId),
+        ),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final rawData = body is Map<String, dynamic>
+            ? (body['data'] ?? body)
+            : body;
+        final content = rawData is Map<String, dynamic>
+            ? (rawData['content'] as List<dynamic>?) ?? const []
+            : rawData is List
+            ? rawData
+            : const [];
+        return content
+            .whereType<Map<String, dynamic>>()
+            .map(CommentModel.fromJson)
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch replies for comment $commentId: $e');
+    }
+    return [];
+  }
+
+  Future<CommentModel> updateDiscussionComment(
+    String commentId,
+    String content,
+  ) async {
+    final response = await guardDio(
+      () => dio.put<dynamic>(
+        ApiEndpoints.communityDiscussionCommentDetail(commentId),
+        data: {'content': content},
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final data = body is Map<String, dynamic> ? (body['data'] ?? body) : null;
+      if (data is Map<String, dynamic>) {
+        return CommentModel.fromJson(data);
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to update comment',
+      errorCode: 'COMMENT_UPDATE_FAILED',
+    );
+  }
+
   Future<List<ForumTopicModel>> fetchDiscussions({
     String? category,
     int page = 1,
     int limit = 20,
   }) async {
-    final query = <String, dynamic>{
-      'page': page - 1,
-      'size': limit,
-    };
+    final query = <String, dynamic>{'page': page - 1, 'size': limit};
     if (category != null && category.isNotEmpty && category != 'All') {
       query['category'] = category;
     }
@@ -503,8 +636,9 @@ class CommunityRemoteDataSource {
     );
     if (response.statusCode == 200 && response.data != null) {
       final body = response.data;
-      dynamic rawData =
-          body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+      dynamic rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
       List<dynamic> content = [];
       if (rawData is Map<String, dynamic>) {
         content = (rawData['content'] as List<dynamic>?) ?? [];
@@ -512,8 +646,7 @@ class CommunityRemoteDataSource {
         content = rawData;
       }
       return content
-          .map((json) =>
-              ForumTopicModel.fromJson(json as Map<String, dynamic>))
+          .map((json) => ForumTopicModel.fromJson(json as Map<String, dynamic>))
           .toList();
     }
     return [];
@@ -538,8 +671,7 @@ class CommunityRemoteDataSource {
     );
     if (response.statusCode == 200 || response.statusCode == 201) {
       final body = response.data;
-      final data =
-          body is Map<String, dynamic> ? (body['data'] ?? body) : null;
+      final data = body is Map<String, dynamic> ? (body['data'] ?? body) : null;
       if (data is Map<String, dynamic>) {
         return ForumTopicModel.fromJson(data);
       }
@@ -559,17 +691,12 @@ class CommunityRemoteDataSource {
     final response = await guardDio(
       () => dio.put<dynamic>(
         ApiEndpoints.communityDiscussionDetail(discussionId),
-        data: {
-          'title': title,
-          'content': content,
-          'category': category,
-        },
+        data: {'title': title, 'content': content, 'category': category},
       ),
     );
     if (response.statusCode == 200) {
       final body = response.data;
-      final data =
-          body is Map<String, dynamic> ? (body['data'] ?? body) : null;
+      final data = body is Map<String, dynamic> ? (body['data'] ?? body) : null;
       if (data is Map<String, dynamic>) {
         return ForumTopicModel.fromJson(data);
       }
@@ -625,8 +752,7 @@ class CommunityRemoteDataSource {
     );
     if (response.statusCode == 200 && response.data != null) {
       final body = response.data;
-      final data =
-          body is Map<String, dynamic> ? (body['data'] ?? body) : null;
+      final data = body is Map<String, dynamic> ? (body['data'] ?? body) : null;
       if (data is Map<String, dynamic>) {
         return ForumTopicModel.fromJson(data);
       }
@@ -806,5 +932,80 @@ class CommunityRemoteDataSource {
       message: 'Failed to complete event RSVP.',
       errorCode: 'RSVP_FAILED',
     );
+  }
+
+  Future<bool> cancelRsvpEvent(String eventId) async {
+    final response = await guardDio(
+      () => dio.delete<dynamic>(ApiEndpoints.communityEventRsvp(eventId)),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    }
+
+    throw const AppError(
+      message: 'Failed to cancel event RSVP.',
+      errorCode: 'CANCEL_RSVP_FAILED',
+    );
+  }
+
+  Future<EventModel> createEvent(EventCreateRequest request) async {
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityEvents,
+        data: request.toJson(),
+      ),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      if (rawData is Map<String, dynamic>) {
+        return EventModel.fromJson(rawData);
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to create event.',
+      errorCode: 'EVENT_CREATION_FAILED',
+    );
+  }
+
+  Future<List<EventModel>> fetchEvents({
+    int page = 1,
+    int limit = 20,
+    String? category,
+    String? status,
+  }) async {
+    final query = <String, dynamic>{'page': page - 1, 'size': limit};
+    if (category != null && category.isNotEmpty && category != 'All') {
+      query['category'] = category;
+    }
+    if (status != null && status.isNotEmpty) {
+      query['status'] = status;
+    }
+
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityEvents,
+        queryParameters: query,
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      final content = rawData is Map<String, dynamic>
+          ? (rawData['content'] as List<dynamic>?) ?? const []
+          : rawData is List
+          ? rawData
+          : const [];
+      return content
+          .whereType<Map<String, dynamic>>()
+          .map(EventModel.fromJson)
+          .toList();
+    }
+    return const <EventModel>[];
   }
 }

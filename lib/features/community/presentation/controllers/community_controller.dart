@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -22,7 +23,7 @@ class CommunityController extends GetxController {
   final CommunityRepository? _injectedRepository;
 
   CommunityController({CommunityRepository? repository})
-      : _injectedRepository = repository {
+    : _injectedRepository = repository {
     if (repository != null) {
       this.repository = repository;
     }
@@ -145,7 +146,8 @@ class CommunityController extends GetxController {
     EventModel(
       id: 'ev2',
       title: 'AI in Everyday Life',
-      subtitle: 'Explore the future of intelligent student & campus applications',
+      subtitle:
+          'Explore the future of intelligent student & campus applications',
       organizerName: 'Cambodia Academy of Digital Technology',
       eventType: 'Online',
       onlineLink: 'https://meet.google.com/abc-defg-hij',
@@ -165,7 +167,8 @@ class CommunityController extends GetxController {
     EventModel(
       id: 'ev3',
       title: 'GenLink Hackathon 2026',
-      subtitle: 'Code, collaborate, and build solutions for community challenges',
+      subtitle:
+          'Code, collaborate, and build solutions for community challenges',
       organizerName: 'GenLink Developer Community',
       eventType: 'In person',
       location: 'Diamond Island Convention Center, Phnom Penh',
@@ -186,7 +189,8 @@ class CommunityController extends GetxController {
     EventModel(
       id: 'ev4',
       title: 'Career Talk Series: Tech in Banking',
-      subtitle: 'Navigating software engineering opportunities in Cambodia\'s leading financial institutions',
+      subtitle:
+          'Navigating software engineering opportunities in Cambodia\'s leading financial institutions',
       organizerName: 'ACLEDA Bank Plc.',
       eventType: 'In person',
       location: 'ACLEDA University Campus, Phnom Penh',
@@ -218,47 +222,283 @@ class CommunityController extends GetxController {
       imageUrl:
           'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
       attendeesCount: 68,
-      attendeeAvatars: [
-        'assets/images/heng_chansela_profile.png',
-      ],
+      attendeeAvatars: ['assets/images/heng_chansela_profile.png'],
     ),
   ].obs;
 
-  void createEvent(EventModel event) {
-    events.insert(0, event);
+  final isCreatingEvent = false.obs;
+
+  Future<EventModel> createEvent(
+    EventCreateRequest request, {
+    File? coverImageFile,
+  }) async {
+    isCreatingEvent.value = true;
+    try {
+      String? uploadedCoverUrl = request.coverImageUrl;
+
+      if (coverImageFile != null &&
+          (uploadedCoverUrl == null || uploadedCoverUrl.isEmpty) &&
+          Get.isRegistered<MediaUploadService>()) {
+        final uploadService = Get.find<MediaUploadService>();
+        final bytes = await coverImageFile.readAsBytes();
+        final path = coverImageFile.path.toLowerCase();
+        final contentType = path.endsWith('.png')
+            ? 'image/png'
+            : path.endsWith('.webp')
+            ? 'image/webp'
+            : 'image/jpeg';
+        final media = await uploadService.upload(
+          bytes: bytes,
+          contentType: contentType,
+          purpose: MediaPurpose.eventCover,
+        );
+        uploadedCoverUrl = media.url;
+      }
+
+      final finalRequest = EventCreateRequest(
+        title: request.title,
+        description: request.description,
+        category: request.category,
+        coverImageUrl: uploadedCoverUrl,
+        startDateTime: request.startDateTime,
+        endDateTime: request.endDateTime,
+        mode: request.mode,
+        meetingUrl: request.meetingUrl,
+        locationName: request.locationName,
+        latitude: request.latitude,
+        longitude: request.longitude,
+        attendeeLimit: request.attendeeLimit,
+        status: request.status,
+        language: request.language,
+        paid: request.paid,
+        price: request.price,
+        currency: request.currency,
+      );
+
+      EventModel createdEvent;
+      try {
+        createdEvent = await repository.createEvent(finalRequest);
+      } on UnimplementedError {
+        // Keep repository test doubles/local-only flows usable while the
+        // production repository performs the real request above.
+        createdEvent = EventModel(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          title: finalRequest.title,
+          description: finalRequest.description ?? '',
+          category: finalRequest.category ?? '',
+          eventType: finalRequest.mode == 'ONLINE' ? 'Online' : 'In person',
+          mode: finalRequest.mode,
+          location: finalRequest.locationName ?? '',
+          locationName: finalRequest.locationName,
+          onlineLink: finalRequest.meetingUrl ?? '',
+          meetingUrl: finalRequest.meetingUrl,
+          startDateTime: finalRequest.startDateTime,
+          endDateTime: finalRequest.endDateTime,
+          isPaid: finalRequest.paid,
+          price: finalRequest.price,
+          currency: finalRequest.currency,
+          imageUrl: finalRequest.coverImageUrl ?? '',
+          attendeesCount: 0,
+        );
+      }
+
+      final eventToStore =
+          coverImageFile != null && createdEvent.coverImageFile == null
+          ? createdEvent.copyWith(coverImageFile: coverImageFile)
+          : createdEvent;
+      events.insert(0, eventToStore);
+      events.refresh();
+
+      final currentUid = CurrentUser.id;
+      final currentName = CurrentUser.name;
+      final currentAvatar = CurrentUser.avatarUrl;
+      final currentUsername = CurrentUser.username;
+      final eventPost = CommunityPostModel(
+        id: 'post_event_${eventToStore.id}',
+        userId: currentUid.isNotEmpty
+            ? currentUid
+            : (eventToStore.organizerId ?? 'user_1'),
+        authorName: eventToStore.organizerName.isNotEmpty
+            ? eventToStore.organizerName
+            : (currentName.isNotEmpty && currentName != 'Guest'
+                  ? currentName
+                  : 'Organizer'),
+        authorTag: currentUsername.isNotEmpty
+            ? '@$currentUsername'
+            : '@organizer',
+        authorAvatar: eventToStore.organizerAvatar?.isNotEmpty == true
+            ? eventToStore.organizerAvatar!
+            : (currentAvatar?.isNotEmpty == true ? currentAvatar! : ''),
+        timeAgo: 'Just now',
+        content: eventToStore.description.isNotEmpty
+            ? eventToStore.description
+            : eventToStore.title,
+        postType: 'event',
+        attachedEvent: eventToStore,
+        isOwner: true,
+      );
+      final existingPostIdx = posts.indexWhere(
+        (post) =>
+            post.attachedEvent?.id == eventToStore.id ||
+            post.id == eventPost.id,
+      );
+      if (existingPostIdx == -1) {
+        posts.insert(0, eventPost);
+        posts.refresh();
+      }
+
+      return eventToStore;
+    } finally {
+      isCreatingEvent.value = false;
+    }
+  }
+
+  void addEventLocally(EventModel event) {
+    final eventToStore = event.copyWith();
+    final existingEventIndex = events.indexWhere((item) => item.id == event.id);
+    if (existingEventIndex == -1) {
+      events.insert(0, eventToStore);
+    } else {
+      events[existingEventIndex] = eventToStore;
+    }
+    events.refresh();
+
+    final existingPostIndex = posts.indexWhere(
+      (post) =>
+          post.attachedEvent?.id == eventToStore.id ||
+          post.eventId == eventToStore.id,
+    );
+    if (existingPostIndex == -1) {
+      final currentName = CurrentUser.name;
+      final currentUsername = CurrentUser.username;
+      final currentAvatar = CurrentUser.avatarUrl;
+      posts.insert(
+        0,
+        CommunityPostModel(
+          id: 'post_event_${eventToStore.id}',
+          userId: eventToStore.organizerId ?? CurrentUser.id,
+          authorName: eventToStore.organizerName.isNotEmpty
+              ? eventToStore.organizerName
+              : (currentName.isNotEmpty ? currentName : 'Organizer'),
+          authorTag: currentUsername.isNotEmpty
+              ? '@$currentUsername'
+              : '@organizer',
+          authorAvatar: eventToStore.organizerAvatar?.isNotEmpty == true
+              ? eventToStore.organizerAvatar!
+              : (currentAvatar ?? ''),
+          timeAgo: 'Just now',
+          content: eventToStore.description.isNotEmpty
+              ? eventToStore.description
+              : eventToStore.title,
+          postType: 'event',
+          eventId: eventToStore.id,
+          attachedEvent: eventToStore,
+          isOwner: true,
+        ),
+      );
+      posts.refresh();
+    }
   }
 
   void toggleRsvp(String eventId) {
     final idx = events.indexWhere((e) => e.id == eventId);
     if (idx == -1) return;
     final ev = events[idx];
-    ev.isRsvped = !ev.isRsvped;
-    ev.attendeesCount += ev.isRsvped ? 1 : -1;
-    events.refresh();
+    final nextIsRsvped = !ev.isRsvped;
+    final nextAttendeesCount = ev.attendeesCount + (nextIsRsvped ? 1 : -1);
+    syncEventRsvp(
+      eventId,
+      isRsvped: nextIsRsvped,
+      attendeesCount: nextAttendeesCount < 0 ? 0 : nextAttendeesCount,
+      status: nextIsRsvped ? 'JOINED' : 'CANCELLED',
+    );
   }
 
   final isRegisteringEvent = false.obs;
+  final isCancellingEventRsvp = false.obs;
+
+  void syncEventRsvp(
+    String eventId, {
+    required bool isRsvped,
+    int? attendeesCount,
+    String? status,
+  }) {
+    final idx = events.indexWhere((event) => event.id == eventId);
+    if (idx != -1) {
+      final event = events[idx];
+      final wasRsvped = event.isRsvped;
+      event.isRsvped = isRsvped;
+      if (attendeesCount != null && attendeesCount >= 0) {
+        event.attendeesCount = attendeesCount;
+      } else if (isRsvped && !wasRsvped) {
+        event.attendeesCount += 1;
+      } else if (!isRsvped && wasRsvped && event.attendeesCount > 0) {
+        event.attendeesCount -= 1;
+      }
+      event.myRsvpStatus = status ?? (isRsvped ? 'JOINED' : 'CANCELLED');
+      events.refresh();
+    }
+
+    var changedInPosts = false;
+    for (var i = 0; i < posts.length; i++) {
+      final attachedEvent = posts[i].attachedEvent;
+      if (attachedEvent?.id != eventId) continue;
+      final wasRsvped = attachedEvent!.isRsvped;
+      final count =
+          attendeesCount ??
+          (isRsvped && !wasRsvped
+              ? attachedEvent.attendeesCount + 1
+              : (!isRsvped && wasRsvped && attachedEvent.attendeesCount > 0
+                    ? attachedEvent.attendeesCount - 1
+                    : attachedEvent.attendeesCount));
+      posts[i] = posts[i].copyWith(
+        attachedEvent: attachedEvent.copyWith(
+          isRsvped: isRsvped,
+          attendeesCount: count,
+          myRsvpStatus: status ?? (isRsvped ? 'JOINED' : 'CANCELLED'),
+        ),
+      );
+      changedInPosts = true;
+    }
+    if (changedInPosts) posts.refresh();
+  }
 
   Future<RsvpResponseModel> registerForEvent(
     String eventId,
     EventRegistrationRequest request,
   ) async {
+    if (isRegisteringEvent.value) {
+      throw const AppError(
+        message: 'Registration is already in progress.',
+        errorCode: 'REGISTRATION_IN_PROGRESS',
+      );
+    }
     isRegisteringEvent.value = true;
     try {
       final response = await repository.rsvpEvent(eventId, request: request);
-      final idx = events.indexWhere((e) => e.id == eventId);
-      if (idx != -1) {
-        final ev = events[idx];
-        ev.isRsvped = true;
-        ev.attendeesCount = response.attendeeCount > 0
-            ? response.attendeeCount
-            : ev.attendeesCount + 1;
-        ev.myRsvpStatus = response.status;
-        events.refresh();
-      }
+      syncEventRsvp(
+        eventId,
+        isRsvped: true,
+        attendeesCount: response.attendeeCount,
+        status: response.status,
+      );
       return response;
     } finally {
       isRegisteringEvent.value = false;
+    }
+  }
+
+  Future<bool> cancelEventRegistration(String eventId) async {
+    if (isCancellingEventRsvp.value) return false;
+    isCancellingEventRsvp.value = true;
+    try {
+      final success = await repository.cancelRsvpEvent(eventId);
+      if (success) {
+        syncEventRsvp(eventId, isRsvped: false, status: 'CANCELLED');
+      }
+      return success;
+    } finally {
+      isCancellingEventRsvp.value = false;
     }
   }
 
@@ -271,6 +511,16 @@ class CommunityController extends GetxController {
   }
 
   Future<void> refreshEvents() async {
+    try {
+      final fetched = await repository.getEvents();
+      if (fetched.isNotEmpty) {
+        events.assignAll(fetched);
+      }
+    } on UnimplementedError {
+      // Local repository doubles keep the existing event list.
+    } catch (_) {
+      // Preserve the current list when the events endpoint is unavailable.
+    }
     events.refresh();
   }
 
@@ -280,7 +530,8 @@ class CommunityController extends GetxController {
   final selectedEventPrice = 'All'.obs;
 
   bool get isEventFilterActive =>
-      (selectedEventDate.value != 'All' && selectedEventDate.value.isNotEmpty) ||
+      (selectedEventDate.value != 'All' &&
+          selectedEventDate.value.isNotEmpty) ||
       selectedEventCategories.isNotEmpty ||
       selectedEventMode.value != 'All' ||
       selectedEventPrice.value != 'All';
@@ -291,7 +542,8 @@ class CommunityController extends GetxController {
         final catLower = e.category.toLowerCase();
         final matchesCategory = selectedEventCategories.any((cat) {
           final filterCatLower = cat.toLowerCase();
-          return catLower.contains(filterCatLower) || filterCatLower.contains(catLower);
+          return catLower.contains(filterCatLower) ||
+              filterCatLower.contains(catLower);
         });
         if (!matchesCategory) {
           return false;
@@ -303,7 +555,9 @@ class CommunityController extends GetxController {
         if (filterModeLower.contains('online') && !isOnline) {
           return false;
         }
-        if ((filterModeLower.contains('in person') || filterModeLower.contains('campus')) && isOnline) {
+        if ((filterModeLower.contains('in person') ||
+                filterModeLower.contains('campus')) &&
+            isOnline) {
           return false;
         }
       }
@@ -313,7 +567,8 @@ class CommunityController extends GetxController {
       if (selectedEventPrice.value == 'Paid' && !e.isPaid) {
         return false;
       }
-      if (selectedEventDate.value != 'All' && selectedEventDate.value.isNotEmpty) {
+      if (selectedEventDate.value != 'All' &&
+          selectedEventDate.value.isNotEmpty) {
         final dateLower = e.dateString.toLowerCase();
         if (selectedEventDate.value == 'Today') {
           if (!dateLower.contains('today')) {
@@ -396,8 +651,9 @@ class CommunityController extends GetxController {
     if (inFlightDiscussionLikes.contains(discussionId)) return false;
     inFlightDiscussionLikes.add(discussionId);
 
-    final latestIdx =
-        forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+    final latestIdx = forumLatestDiscussions.indexWhere(
+      (d) => d.id == discussionId,
+    );
     bool prevLiked = false;
     int prevUpvotes = 0;
 
@@ -434,8 +690,9 @@ class CommunityController extends GetxController {
     bool prevLiked,
     int prevUpvotes,
   ) {
-    final latestIdx =
-        forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+    final latestIdx = forumLatestDiscussions.indexWhere(
+      (d) => d.id == discussionId,
+    );
     if (latestIdx != -1) {
       final item = forumLatestDiscussions[latestIdx];
       item.isLiked = prevLiked;
@@ -490,8 +747,9 @@ class CommunityController extends GetxController {
         category: category,
       );
 
-      final forumIdx =
-          forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+      final forumIdx = forumLatestDiscussions.indexWhere(
+        (d) => d.id == discussionId,
+      );
       if (forumIdx != -1) {
         forumLatestDiscussions[forumIdx] = updatedTopic;
         forumLatestDiscussions.refresh();
@@ -523,16 +781,18 @@ class CommunityController extends GetxController {
     discussionDetailError.value = '';
     try {
       final detail = await repository.getDiscussionDetails(discussionId);
-      final idx =
-          forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+      final idx = forumLatestDiscussions.indexWhere(
+        (d) => d.id == discussionId,
+      );
       if (idx != -1) {
         forumLatestDiscussions[idx] = detail;
         forumLatestDiscussions.refresh();
       }
       return detail;
     } catch (e) {
-      discussionDetailError.value =
-          e is AppError ? e.message : 'Failed to load discussion details';
+      discussionDetailError.value = e is AppError
+          ? e.message
+          : 'Failed to load discussion details';
       return null;
     } finally {
       isLoadingDiscussionDetail.value = false;
@@ -551,8 +811,9 @@ class CommunityController extends GetxController {
     } else if (Get.isRegistered<CommunityRepository>()) {
       repository = Get.find<CommunityRepository>();
     } else {
-      final dio =
-          Get.isRegistered<Dio>() ? Get.find<Dio>() : DioProvider.create();
+      final dio = Get.isRegistered<Dio>()
+          ? Get.find<Dio>()
+          : DioProvider.create();
       final dataSource = CommunityRemoteDataSource(dio: dio);
       repository = CommunityRepositoryImpl(remoteDataSource: dataSource);
     }
@@ -585,6 +846,25 @@ class CommunityController extends GetxController {
     selectedCategory.value = cat;
   }
 
+  void _syncAttachedEventsFromPosts(List<CommunityPostModel> feedPosts) {
+    var changed = false;
+    for (final post in feedPosts) {
+      final attachedEvent = post.attachedEvent;
+      if (attachedEvent == null) continue;
+
+      final existingIndex = events.indexWhere(
+        (event) => event.id == attachedEvent.id,
+      );
+      if (existingIndex == -1) {
+        events.add(attachedEvent.copyWith());
+      } else {
+        events[existingIndex] = attachedEvent.copyWith();
+      }
+      changed = true;
+    }
+    if (changed) events.refresh();
+  }
+
   Future<void> fetchPosts({bool isRefresh = false}) async {
     if (isRefresh) {
       isRefreshingFeed.value = true;
@@ -598,6 +878,7 @@ class CommunityController extends GetxController {
       currentPage.value = 1;
       final fetched = await repository.getPosts(page: 1, limit: 10);
       posts.assignAll(fetched);
+      _syncAttachedEventsFromPosts(fetched);
       hasMorePosts.value = fetched.length >= 10;
       _syncFollowStates(fetched);
     } catch (e) {
@@ -627,6 +908,7 @@ class CommunityController extends GetxController {
             posts.add(item);
           }
         }
+        _syncAttachedEventsFromPosts(fetched);
         currentPage.value = nextPage;
         hasMorePosts.value = fetched.length >= 10;
         _syncFollowStates(fetched);
@@ -667,8 +949,8 @@ class CommunityController extends GetxController {
           final contentType = (ext == 'png')
               ? 'image/png'
               : (ext == 'webp')
-                  ? 'image/webp'
-                  : 'image/jpeg';
+              ? 'image/webp'
+              : 'image/jpeg';
 
           if (Get.isRegistered<MediaUploadService>()) {
             final uploadService = Get.find<MediaUploadService>();
@@ -697,9 +979,46 @@ class CommunityController extends GetxController {
     return resolved;
   }
 
+  Future<String?> _resolveVideoUrl(String? rawUrl) async {
+    if (rawUrl == null || rawUrl.isEmpty) return null;
+    if (rawUrl.startsWith('http://') ||
+        rawUrl.startsWith('https://') ||
+        rawUrl.startsWith('assets/')) {
+      return rawUrl;
+    }
+
+    try {
+      final file = File(rawUrl);
+      if (!await file.exists()) return rawUrl;
+
+      final bytes = await file.readAsBytes();
+      final path = rawUrl.toLowerCase();
+      final contentType = path.endsWith('.mov')
+          ? 'video/quicktime'
+          : path.endsWith('.webm')
+          ? 'video/webm'
+          : 'video/mp4';
+      if (!Get.isRegistered<MediaUploadService>()) return rawUrl;
+
+      final uploadService = Get.find<MediaUploadService>();
+      final media = await uploadService.upload(
+        bytes: bytes,
+        contentType: contentType,
+        purpose: MediaPurpose.post,
+        onProgress: (fraction) {
+          uploadProgress.value = 0.2 + fraction * 0.6;
+        },
+      );
+      return media.url;
+    } catch (_) {
+      return rawUrl;
+    }
+  }
+
   Future<bool> addNewPost({
     required String content,
     List<String> imageUrls = const [],
+    String? videoUrl,
     String visibility = 'Public',
     String community = 'All GenLink',
     String? location,
@@ -717,17 +1036,29 @@ class CommunityController extends GetxController {
 
     try {
       final resolvedImageUrls = await _resolveImageUrls(imageUrls);
+      final resolvedVideoUrl = await _resolveVideoUrl(videoUrl);
       uploadProgress.value = 0.8;
 
-      final createdPost = await repository.createPost(
-        content: content,
-        imageUrls: resolvedImageUrls,
-        visibility: visibility,
-        community: community,
-      );
+      final createdPost = resolvedVideoUrl == null
+          ? await repository.createPost(
+              content: content,
+              imageUrls: resolvedImageUrls,
+              visibility: visibility,
+              community: community,
+            )
+          : await repository.createPostWithVideo(
+              content: content,
+              imageUrls: resolvedImageUrls,
+              videoUrl: resolvedVideoUrl,
+              visibility: visibility,
+              community: community,
+            );
 
       final richPost = createdPost.copyWith(
-        imageUrls: resolvedImageUrls.isNotEmpty ? resolvedImageUrls : createdPost.imageUrls,
+        imageUrls: resolvedImageUrls.isNotEmpty
+            ? resolvedImageUrls
+            : createdPost.imageUrls,
+        videoUrl: resolvedVideoUrl ?? createdPost.videoUrl,
         location: location,
         linkUrl: linkUrl,
         linkPreviewTitle: linkPreviewTitle,
@@ -739,7 +1070,11 @@ class CommunityController extends GetxController {
         attachedEvent: attachedEvent,
         postType: attachedEvent != null
             ? 'event'
-            : (resolvedImageUrls.isNotEmpty ? 'IMAGE' : createdPost.postType),
+            : (resolvedVideoUrl != null && resolvedVideoUrl.isNotEmpty
+                  ? 'VIDEO'
+                  : (resolvedImageUrls.isNotEmpty
+                        ? 'IMAGE'
+                        : createdPost.postType)),
       );
 
       // A post can already be present when the create response races with a
@@ -765,6 +1100,115 @@ class CommunityController extends GetxController {
         colorText: Colors.white,
       );
       return false;
+    }
+  }
+
+  final isCreatingPoll = false.obs;
+  final inFlightPollVotes = <String>{}.obs;
+
+  Future<bool> createPollPost({
+    required String question,
+    required List<String> options,
+    String? caption,
+    String visibility = 'Public',
+    String? communityId,
+  }) async {
+    isCreatingPoll.value = true;
+    try {
+      final createdPost = await repository.createPollPost(
+        question: question,
+        options: options,
+        caption: caption,
+        visibility: visibility,
+        communityId: communityId,
+      );
+      posts.insert(0, createdPost);
+      posts.refresh();
+      return true;
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[CommunityController] createPollPost error: $error');
+      }
+      return false;
+    } finally {
+      isCreatingPoll.value = false;
+    }
+  }
+
+  Future<bool> votePoll(String postId, String optionId) async {
+    if (inFlightPollVotes.contains(postId)) return false;
+
+    final postIndex = posts.indexWhere((post) => post.id == postId);
+    if (postIndex == -1) return false;
+
+    final originalPost = posts[postIndex];
+    final previousOptions = originalPost.pollOptions == null
+        ? <PollOptionModel>[]
+        : List<PollOptionModel>.from(originalPost.pollOptions!);
+    final previousTotalVotes = originalPost.pollTotalVotes;
+    final previousHasVoted = originalPost.hasVoted;
+    final previousOptionId = originalPost.myOptionId;
+
+    if (previousHasVoted && previousOptionId == optionId) return true;
+
+    inFlightPollVotes.add(postId);
+    final updatedOptions = previousOptions.map((option) {
+      final isNewChoice = option.id == optionId;
+      final isOldChoice = option.id == previousOptionId;
+      final updatedVotes = isNewChoice
+          ? option.votes + 1
+          : (isOldChoice && option.votes > 0 ? option.votes - 1 : option.votes);
+      return option.copyWith(votes: updatedVotes, isVoted: isNewChoice);
+    }).toList();
+
+    posts[postIndex] = originalPost.copyWith(
+      pollOptions: updatedOptions,
+      pollTotalVotes: previousHasVoted
+          ? previousTotalVotes
+          : previousTotalVotes + 1,
+      hasVoted: true,
+      myOptionId: optionId,
+    );
+    posts.refresh();
+
+    try {
+      final updatedPost = await repository.votePoll(
+        postId: postId,
+        optionId: optionId,
+      );
+      final currentIndex = posts.indexWhere((post) => post.id == postId);
+      if (currentIndex != -1) {
+        final currentPost = posts[currentIndex];
+        posts[currentIndex] = currentPost.copyWith(
+          pollOptions: updatedPost.pollOptions ?? currentPost.pollOptions,
+          pollTotalVotes: updatedPost.pollTotalVotes > 0
+              ? updatedPost.pollTotalVotes
+              : currentPost.pollTotalVotes,
+          hasVoted: updatedPost.hasVoted,
+          myOptionId: updatedPost.myOptionId ?? optionId,
+        );
+        posts.refresh();
+      }
+      return true;
+    } catch (error) {
+      final currentIndex = posts.indexWhere((post) => post.id == postId);
+      if (currentIndex != -1) {
+        posts[currentIndex] = originalPost.copyWith(
+          pollOptions: previousOptions,
+          pollTotalVotes: previousTotalVotes,
+          hasVoted: previousHasVoted,
+          myOptionId: previousOptionId,
+        );
+        posts.refresh();
+      }
+      if (kDebugMode) {
+        debugPrint('[CommunityController] votePoll error: $error');
+      }
+      // Keep the optimistic state rollback above, then propagate the failure
+      // so the poll widget can show its retry feedback to the user.
+      rethrow;
+    } finally {
+      inFlightPollVotes.remove(postId);
     }
   }
 
@@ -846,6 +1290,7 @@ class CommunityController extends GetxController {
     required String postId,
     required String content,
     required List<String> imageUrls,
+    String? videoUrl,
     required String visibility,
     String? location,
     String? linkUrl,
@@ -858,11 +1303,13 @@ class CommunityController extends GetxController {
     EventModel? attachedEvent,
   }) async {
     final resolvedImageUrls = await _resolveImageUrls(imageUrls);
+    final resolvedVideoUrl = await _resolveVideoUrl(videoUrl);
     final idx = posts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
       posts[idx] = posts[idx].copyWith(
         content: content,
         imageUrls: resolvedImageUrls,
+        videoUrl: resolvedVideoUrl ?? posts[idx].videoUrl,
         visibility: visibility,
         location: location,
         linkUrl: linkUrl,
@@ -873,7 +1320,13 @@ class CommunityController extends GetxController {
         pollDuration: pollDuration,
         allowMultipleAnswers: allowMultipleAnswers,
         attachedEvent: attachedEvent,
-        postType: attachedEvent != null ? 'event' : posts[idx].postType,
+        postType: attachedEvent != null
+            ? 'event'
+            : (resolvedVideoUrl != null && resolvedVideoUrl.isNotEmpty
+                  ? 'VIDEO'
+                  : (resolvedImageUrls.isNotEmpty
+                        ? 'IMAGE'
+                        : posts[idx].postType)),
       );
       await repository.updatePost(postId, content: content);
     }
@@ -882,6 +1335,7 @@ class CommunityController extends GetxController {
   Future<bool> createPost({
     required String content,
     List<String> imageUrls = const [],
+    String? videoUrl,
     String visibility = 'Public',
     String community = 'All GenLink',
     String? location,
@@ -896,6 +1350,7 @@ class CommunityController extends GetxController {
   }) => addNewPost(
     content: content,
     imageUrls: imageUrls,
+    videoUrl: videoUrl,
     visibility: visibility,
     community: community,
     location: location,
@@ -913,6 +1368,7 @@ class CommunityController extends GetxController {
     required String postId,
     required String content,
     required List<String> imageUrls,
+    String? videoUrl,
     required String visibility,
     String? location,
     String? linkUrl,
@@ -927,6 +1383,7 @@ class CommunityController extends GetxController {
     postId: postId,
     content: content,
     imageUrls: imageUrls,
+    videoUrl: videoUrl,
     visibility: visibility,
     location: location,
     linkUrl: linkUrl,
@@ -962,11 +1419,9 @@ class CommunityController extends GetxController {
       );
       posts[idx] = updated;
 
-      repository.repostPost(
-        postId,
-        caption: caption,
-        reposterId: currentUserId,
-      ).catchError((_) => false);
+      repository
+          .repostPost(postId, caption: caption, reposterId: currentUserId)
+          .catchError((_) => false);
     }
   }
 
@@ -982,10 +1437,9 @@ class CommunityController extends GetxController {
       );
       posts[idx] = updated;
 
-      repository.unrepostPost(
-        postId,
-        reposterId: currentUserId,
-      ).catchError((_) => false);
+      repository
+          .unrepostPost(postId, reposterId: currentUserId)
+          .catchError((_) => false);
     }
   }
 
@@ -1014,7 +1468,8 @@ class CommunityController extends GetxController {
           (p.isRepostedByMe && userId.isNotEmpty && userId == currentUserId) ||
           (p.repostedBy != null &&
               username != null &&
-              p.repostedBy!.trim().toLowerCase() == username.trim().toLowerCase())) {
+              p.repostedBy!.trim().toLowerCase() ==
+                  username.trim().toLowerCase())) {
         return true;
       }
       return false;
@@ -1070,12 +1525,30 @@ class CommunityController extends GetxController {
       final current = List<CommentModel>.from(
         discussionComments[discussionId] ?? [],
       );
-      current.add(comment);
+      final effectiveParentId = comment.parentCommentId ?? parentCommentId;
+      if (effectiveParentId != null && effectiveParentId.isNotEmpty) {
+        final parentIndex = current.indexWhere(
+          (item) =>
+              item.id == effectiveParentId ||
+              item.replies.any((reply) => reply.id == effectiveParentId),
+        );
+        if (parentIndex != -1 && current[parentIndex].id == effectiveParentId) {
+          final parent = current[parentIndex];
+          current[parentIndex] = parent.copyWith(
+            replies: [...parent.replies, comment],
+          );
+        } else {
+          current.add(comment);
+        }
+      } else {
+        current.add(comment);
+      }
       discussionComments[discussionId] = current;
       discussionComments.refresh();
 
-      final forumIdx =
-          forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+      final forumIdx = forumLatestDiscussions.indexWhere(
+        (d) => d.id == discussionId,
+      );
       if (forumIdx != -1) {
         final topic = forumLatestDiscussions[forumIdx];
         topic.repliesCount += 1;
@@ -1104,18 +1577,32 @@ class CommunityController extends GetxController {
       return false;
     }
 
-    final cIdx = comments.indexWhere((c) => c.id == commentId);
-    if (cIdx == -1) {
+    CommentModel? targetComment;
+    final cIdx = comments.indexWhere((comment) => comment.id == commentId);
+    if (cIdx != -1) {
+      targetComment = comments[cIdx];
+    } else {
+      for (final parent in comments) {
+        final replyIndex = parent.replies.indexWhere(
+          (reply) => reply.id == commentId,
+        );
+        if (replyIndex != -1) {
+          targetComment = parent.replies[replyIndex];
+          break;
+        }
+      }
+    }
+
+    if (targetComment == null) {
       inFlightCommentLikes.remove(commentId);
       return false;
     }
 
-    final comment = comments[cIdx];
-    final prevLiked = comment.isLiked;
-    final prevLikesCount = comment.likesCount;
+    final prevLiked = targetComment.isLiked;
+    final prevLikesCount = targetComment.likesCount;
 
-    comment.isLiked = !prevLiked;
-    comment.likesCount += comment.isLiked ? 1 : -1;
+    targetComment.isLiked = !prevLiked;
+    targetComment.likesCount += targetComment.isLiked ? 1 : -1;
     discussionComments.refresh();
 
     try {
@@ -1124,18 +1611,62 @@ class CommunityController extends GetxController {
         isCurrentlyLiked: prevLiked,
       );
       if (!success) {
-        comment.isLiked = prevLiked;
-        comment.likesCount = prevLikesCount;
+        targetComment.isLiked = prevLiked;
+        targetComment.likesCount = prevLikesCount;
         discussionComments.refresh();
       }
       return success;
     } catch (_) {
-      comment.isLiked = prevLiked;
-      comment.likesCount = prevLikesCount;
+      targetComment.isLiked = prevLiked;
+      targetComment.likesCount = prevLikesCount;
       discussionComments.refresh();
       return false;
     } finally {
       inFlightCommentLikes.remove(commentId);
+    }
+  }
+
+  Future<CommentModel?> updateDiscussionComment(
+    String discussionId,
+    String commentId,
+    String content,
+  ) async {
+    try {
+      final updatedComment = await repository.updateDiscussionComment(
+        commentId,
+        content,
+      );
+      final current = List<CommentModel>.from(
+        discussionComments[discussionId] ?? [],
+      );
+      final topLevelIndex = current.indexWhere(
+        (comment) => comment.id == commentId,
+      );
+      if (topLevelIndex != -1) {
+        current[topLevelIndex] = updatedComment.copyWith(
+          replies: updatedComment.replies.isNotEmpty
+              ? updatedComment.replies
+              : current[topLevelIndex].replies,
+        );
+      } else {
+        for (var i = 0; i < current.length; i++) {
+          final parent = current[i];
+          final replyIndex = parent.replies.indexWhere(
+            (reply) => reply.id == commentId,
+          );
+          if (replyIndex != -1) {
+            final updatedReplies = List<CommentModel>.from(parent.replies);
+            updatedReplies[replyIndex] = updatedComment;
+            current[i] = parent.copyWith(replies: updatedReplies);
+            break;
+          }
+        }
+      }
+      discussionComments[discussionId] = current;
+      discussionComments.refresh();
+      return updatedComment;
+    } catch (_) {
+      return null;
     }
   }
 
@@ -1149,12 +1680,30 @@ class CommunityController extends GetxController {
         final current = List<CommentModel>.from(
           discussionComments[discussionId] ?? [],
         );
-        current.removeWhere((c) => c.id == commentId);
+        final topLevelIndex = current.indexWhere(
+          (comment) => comment.id == commentId,
+        );
+        if (topLevelIndex != -1) {
+          current.removeAt(topLevelIndex);
+        } else {
+          for (var i = 0; i < current.length; i++) {
+            final parent = current[i];
+            if (parent.replies.any((reply) => reply.id == commentId)) {
+              current[i] = parent.copyWith(
+                replies: parent.replies
+                    .where((reply) => reply.id != commentId)
+                    .toList(),
+              );
+              break;
+            }
+          }
+        }
         discussionComments[discussionId] = current;
         discussionComments.refresh();
 
-        final forumIdx =
-            forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+        final forumIdx = forumLatestDiscussions.indexWhere(
+          (d) => d.id == discussionId,
+        );
         if (forumIdx != -1) {
           final topic = forumLatestDiscussions[forumIdx];
           if (topic.repliesCount > 0) {
@@ -1186,10 +1735,18 @@ class CommunityController extends GetxController {
     }
   }
 
-  Future<void> addComment(String postId, String text) async {
+  Future<void> addComment(
+    String postId,
+    String text, {
+    String? parentCommentId,
+  }) async {
     if (text.trim().isEmpty) return;
     try {
-      final comment = await repository.addComment(postId, text);
+      final comment = await repository.addComment(
+        postId,
+        text,
+        parentCommentId: parentCommentId,
+      );
       activeComments.add(comment);
 
       final idx = posts.indexWhere((p) => p.id == postId);
@@ -1317,6 +1874,20 @@ class CommunityController extends GetxController {
   }
 
   void toggleUserFollow(String userId) => toggleFollowUser(userId);
+
+  DateTime? _lastFeedTapRefreshTime;
+
+  Future<void> onFeedTabTappedAgain() async {
+    scrollToTop();
+    final now = DateTime.now();
+    if (_lastFeedTapRefreshTime != null &&
+        now.difference(_lastFeedTapRefreshTime!).inMilliseconds < 800) {
+      return;
+    }
+    if (isLoadingFeed.value || isRefreshingFeed.value) return;
+    _lastFeedTapRefreshTime = now;
+    await refreshFeed();
+  }
 
   void scrollToTop() {
     if (scrollController.hasClients) {

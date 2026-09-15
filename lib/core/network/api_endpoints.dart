@@ -169,6 +169,10 @@ abstract final class ApiEndpoints {
   // ── Community ─────────────────────────────────────────────────────────
   static const communityFeed = '$_base/community/posts/feed';
   static const communityPosts = '$_base/community/posts';
+  static const communityPoll = '$_base/community/posts/poll';
+
+  static String communityPollVote(String postId) =>
+      '$_base/community/posts/$postId/poll/vote';
 
   static String communityPostDetail(String postId) =>
       '$_base/community/posts/$postId';
@@ -200,6 +204,8 @@ abstract final class ApiEndpoints {
       '$_base/community/discussions/$discussionId';
   static String communityDiscussionComments(String discussionId) =>
       '$_base/community/discussions/$discussionId/comments';
+  static String communityDiscussionCommentReplies(String commentId) =>
+      '$_base/community/discussions/comments/$commentId/replies';
   static String communityDiscussionReact(String discussionId) =>
       '$_base/community/discussions/$discussionId/react';
   static String communityDiscussionReport(String discussionId) =>
@@ -211,6 +217,8 @@ abstract final class ApiEndpoints {
   // Compatibility name used by the merged discussion datasource.
   static String communityDiscussionCommentDetail(String commentId) =>
       communityDiscussionComment(commentId);
+
+  static const communityEvents = '$_base/community/events';
 
   static String communityEventRsvp(String eventId) =>
       '$_base/community/events/$eventId/rsvp';

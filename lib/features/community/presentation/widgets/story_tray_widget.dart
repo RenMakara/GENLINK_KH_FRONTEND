@@ -52,7 +52,7 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
     return Obx(() {
       if (controller.isLoading.value && controller.storyGroups.isEmpty) {
         return SizedBox(
-          height: 100,
+          height: 88,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -61,7 +61,7 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
               padding: const EdgeInsets.only(right: 14),
               child: Column(
                 children: [
-                  CircleAvatar(radius: 32, backgroundColor: skeletonColor),
+                  CircleAvatar(radius: 28, backgroundColor: skeletonColor),
                   const SizedBox(height: 6),
                   Container(
                     width: 48,
@@ -112,7 +112,7 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
       final displayGroups = [ownerGroup, ...demoGroups, ...otherGroups];
 
       return SizedBox(
-        height: 100,
+        height: 88,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),

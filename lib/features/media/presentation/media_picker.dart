@@ -5,12 +5,14 @@ class PickedMedia {
   const PickedMedia({
     required this.bytes,
     required this.contentType,
+    this.path,
     this.width,
     this.height,
   });
 
   final Uint8List bytes;
   final String contentType;
+  final String? path;
   final int? width;
   final int? height;
 }
@@ -39,6 +41,7 @@ class MediaPicker {
     return PickedMedia(
       bytes: bytes,
       contentType: 'image/jpeg',
+      path: file.path,
     );
   }
 
@@ -53,7 +56,11 @@ class MediaPicker {
     if (file == null) return null;
 
     final bytes = await file.readAsBytes();
-    return PickedMedia(bytes: bytes, contentType: videoTypeFor(file.path));
+    return PickedMedia(
+      bytes: bytes,
+      contentType: videoTypeFor(file.path),
+      path: file.path,
+    );
   }
 
   @visibleForTesting

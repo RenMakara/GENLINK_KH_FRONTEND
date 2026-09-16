@@ -981,16 +981,21 @@ class CommunityController extends GetxController {
 
   Future<String?> _resolveVideoUrl(String? rawUrl) async {
     if (rawUrl == null || rawUrl.isEmpty) return null;
-    if (rawUrl.startsWith('http://') ||
-        rawUrl.startsWith('https://') ||
-        rawUrl.startsWith('assets/')) {
+    if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
       return rawUrl;
     }
 
     try {
       final file = File(rawUrl);
-      if (!await file.exists()) return rawUrl;
+      if (!await file.exists()) {
+        debugPrint('[CommunityController] Video file does not exist at path: $rawUrl');
+        throw AppError(
+          message: 'Video file not found at $rawUrl',
+          errorCode: 'MEDIA_FILE_NOT_FOUND',
+        );
+      }
 
+      debugPrint('[CommunityController] Uploading video from local path: $rawUrl, purpose: ${MediaPurpose.post}');
       final bytes = await file.readAsBytes();
       final path = rawUrl.toLowerCase();
       final contentType = path.endsWith('.mov')
@@ -998,7 +1003,13 @@ class CommunityController extends GetxController {
           : path.endsWith('.webm')
           ? 'video/webm'
           : 'video/mp4';
-      if (!Get.isRegistered<MediaUploadService>()) return rawUrl;
+      if (!Get.isRegistered<MediaUploadService>()) {
+        debugPrint('[CommunityController] MediaUploadService not registered; aborting video upload');
+        throw const AppError(
+          message: 'Media upload service is unavailable',
+          errorCode: 'MEDIA_SERVICE_UNAVAILABLE',
+        );
+      }
 
       final uploadService = Get.find<MediaUploadService>();
       final media = await uploadService.upload(
@@ -1009,9 +1020,11 @@ class CommunityController extends GetxController {
           uploadProgress.value = 0.2 + fraction * 0.6;
         },
       );
+      debugPrint('[CommunityController] Video upload succeeded: ${media.url}');
       return media.url;
-    } catch (_) {
-      return rawUrl;
+    } catch (e) {
+      debugPrint('[CommunityController] Video upload failed for path: $rawUrl. Error: $e');
+      rethrow;
     }
   }
 
@@ -1092,13 +1105,15 @@ class CommunityController extends GetxController {
     } catch (e) {
       isUploadingPost.value = false;
       final errorText = e is AppError ? e.message : 'Could not publish post.';
-      Get.snackbar(
-        "Upload Failed",
-        errorText,
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: AppColors.danger.withValues(alpha: 0.9),
-        colorText: Colors.white,
-      );
+      if (Get.context != null) {
+        Get.snackbar(
+          "Upload Failed",
+          errorText,
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: AppColors.danger.withValues(alpha: 0.9),
+          colorText: Colors.white,
+        );
+      }
       return false;
     }
   }

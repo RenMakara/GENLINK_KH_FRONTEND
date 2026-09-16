@@ -1759,7 +1759,7 @@ class AppTranslations extends Translations {
     'chat.yesterday': 'Yesterday',
 
     // levelup / growth
-    'levelup.title': 'LEVEL UP',
+    'levelup.title': 'Level Up',
     'levelup.subtitleWelcome': 'Welcome, @name · Your personal growth journey',
     'levelup.subtitleDefault': 'Your personal growth journey',
     'levelup.levelLabel': 'Level @level',
@@ -3558,9 +3558,9 @@ class AppTranslations extends Translations {
     'chat.yesterday': 'ម្សិលមិញ',
 
     // levelup / growth
-    'levelup.title': 'ឡើងកម្រិត',
+    'levelup.title': 'បង្កើនកម្រិត',
     'levelup.subtitleWelcome':
-        'សូមស្វាគមន៍ @name · ដំណើរការលូតលាស់ផ្ទាល់ខ្លួនរបស់អ្នក',
+        'សូមស្វាគមន៍ @name · មាគ៌ាឆ្ពោះទៅមុខរបស់អ្នក',
     'levelup.subtitleDefault': 'ដំណើរការលូតលាស់ផ្ទាល់ខ្លួនរបស់អ្នក',
     'levelup.levelLabel': 'កម្រិត @level',
     'levelup.onlyXpToLevel': 'នៅសល់តែ @xp XP ទៀតទៅកម្រិត @level',

@@ -11,14 +11,16 @@ import 'package:genlink_frontend/features/notification/data/repositories/notific
 import 'package:genlink_frontend/features/notification/domain/models/notification_model.dart';
 import 'package:genlink_frontend/features/notification/presentation/controllers/notification_controller.dart';
 
-class _MockNotificationRemoteDataSource implements NotificationRemoteDataSource {
+class _MockNotificationRemoteDataSource
+    implements NotificationRemoteDataSource {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   List<NotificationModel> stubNotifications = [];
 
   @override
-  Future<List<NotificationModel>> fetchNotifications() async => stubNotifications;
+  Future<List<NotificationModel>> fetchNotifications() async =>
+      stubNotifications;
   @override
   Future<bool> markAsRead(String id) async => true;
   @override
@@ -58,224 +60,272 @@ void main() {
   }
 
   group('GENLINK HOME FEED HEADER SPECIFICATION TESTS', () {
-    testWidgets('1. Header Structure: Renders Home title and exactly Search -> Notification -> Chat', (tester) async {
+    testWidgets(
+      '1. Header Structure: Renders greeting/name and exactly Search -> Notification -> Chat',
+      (tester) async {
+        await tester.pumpWidget(buildFeedHeaderApp());
+        await tester.pumpAndSettle();
+
+        expect(find.text('Guest'), findsOneWidget);
+        expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.sms_outlined), findsOneWidget);
+
+        final searchPos = tester.getTopLeft(find.byIcon(Icons.search_rounded));
+        final notifPos = tester.getTopLeft(
+          find.byIcon(Icons.notifications_none_rounded),
+        );
+        final chatPos = tester.getTopLeft(find.byIcon(Icons.sms_outlined));
+
+        expect(searchPos.dx, lessThan(notifPos.dx));
+        expect(notifPos.dx, lessThan(chatPos.dx));
+      },
+    );
+
+    testWidgets('2. Name Typography: Matches compact greeting design', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildFeedHeaderApp());
       await tester.pumpAndSettle();
 
-      expect(find.text('Home'), findsOneWidget);
-      expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.sms_outlined), findsOneWidget);
-
-      final searchPos = tester.getTopLeft(find.byIcon(Icons.search_rounded));
-      final notifPos = tester.getTopLeft(find.byIcon(Icons.notifications_none_rounded));
-      final chatPos = tester.getTopLeft(find.byIcon(Icons.sms_outlined));
-
-      expect(searchPos.dx, lessThan(notifPos.dx));
-      expect(notifPos.dx, lessThan(chatPos.dx));
-    });
-
-    testWidgets('2. Title Typography: Matches Finance screen (fontSize: 24, w800, letterSpacing: -0.5)', (tester) async {
-      await tester.pumpWidget(buildFeedHeaderApp());
-      await tester.pumpAndSettle();
-
-      final titleFinder = find.text('Home');
+      final titleFinder = find.text('Guest');
       expect(titleFinder, findsOneWidget);
       final Text titleWidget = tester.widget(titleFinder);
 
-      expect(titleWidget.style?.fontSize, equals(24.0));
+      expect(titleWidget.style?.fontSize, equals(25.0));
       expect(titleWidget.style?.fontWeight, equals(FontWeight.w800));
-      expect(titleWidget.style?.letterSpacing, equals(-0.5));
+      expect(titleWidget.style?.letterSpacing, equals(-0.6));
       expect(titleWidget.maxLines, equals(1));
       expect(titleWidget.overflow, equals(TextOverflow.ellipsis));
     });
 
-    testWidgets('3. Action Button Treatment: 40x40 area, 20.5px icon, radius 12, subtle border, monochrome', (tester) async {
-      await tester.pumpWidget(buildFeedHeaderApp());
-      await tester.pumpAndSettle();
-
-      final inkWidgets = tester.widgetList<Ink>(find.byType(Ink));
-      expect(inkWidgets.length, equals(3));
-
-      for (final ink in inkWidgets) {
-        expect(ink.width, equals(40.0));
-        expect(ink.height, equals(40.0));
-        final dec = ink.decoration as BoxDecoration?;
-        expect(dec, isNotNull);
-        expect(dec?.color, equals(AppColors.lightSurfacePrimary));
-        expect(dec?.border, isNotNull);
-      }
-
-      final searchIcon = tester.widget<Icon>(find.byIcon(Icons.search_rounded));
-      final chatIcon = tester.widget<Icon>(find.byIcon(Icons.sms_outlined));
-      final notifIcon = tester.widget<Icon>(find.byIcon(Icons.notifications_none_rounded));
-
-      expect(searchIcon.size, equals(20.5));
-      expect(chatIcon.size, equals(20.5));
-      expect(notifIcon.size, equals(20.5));
-
-      expect(searchIcon.color, equals(AppColors.lightTextPrimary));
-      expect(chatIcon.color, equals(AppColors.lightTextPrimary));
-      expect(notifIcon.color, equals(AppColors.lightTextPrimary));
-    });
-
-    testWidgets('4. Horizontal Alignment: 16px left and 16px right padding matching AppSpacing.md', (tester) async {
-      await tester.pumpWidget(buildFeedHeaderApp());
-      await tester.pumpAndSettle();
-
-      final containers = tester.widgetList<Container>(find.byType(Container));
-      final headerContainer = containers.firstWhere(
-        (c) => c.padding == const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      );
-      expect(headerContainer.padding, equals(const EdgeInsets.symmetric(horizontal: 16.0)));
-    });
-
-    testWidgets('5. Light Mode & Dark Mode: Monochrome design system tokens strictly applied', (tester) async {
-      // Light Mode
-      await tester.pumpWidget(buildFeedHeaderApp(theme: ThemeData.light()));
-      await tester.pumpAndSettle();
-
-      Text titleLight = tester.widget(find.text('Home'));
-      expect(titleLight.style?.color, equals(AppColors.lightTextPrimary));
-
-      // Dark Mode
-      await tester.pumpWidget(buildFeedHeaderApp(theme: ThemeData.dark()));
-      await tester.pumpAndSettle();
-
-      Text titleDark = tester.widget(find.text('Home'));
-      expect(titleDark.style?.color, equals(AppColors.darkTextPrimary));
-
-      final inkWidgetsDark = tester.widgetList<Ink>(find.byType(Ink));
-      for (final ink in inkWidgetsDark) {
-        final dec = ink.decoration as BoxDecoration?;
-        expect(dec?.color, equals(AppColors.darkSurfacePrimary));
-      }
-    });
-
-    testWidgets('6. Khmer Localization: Renders ទំព័រដើម title and localized action tooltips without overflow', (tester) async {
-      tester.view.physicalSize = const Size(320, 640);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      await tester.pumpWidget(buildFeedHeaderApp(locale: const Locale('km', 'KH')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('ទំព័រដើម'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-
-      final titleWidget = tester.widget<Text>(find.text('ទំព័រដើម'));
-      expect(titleWidget.style?.fontSize, equals(21.0));
-      expect(titleWidget.style?.fontWeight, equals(FontWeight.w800));
-    });
-
-    testWidgets('7. Responsive Viewports: 320px, 360px, 390px, 430px render cleanly with 0 overflow', (tester) async {
-      final screenSizes = [
-        const Size(320, 640),
-        const Size(360, 740),
-        const Size(390, 844),
-        const Size(430, 932),
-      ];
-
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      for (final size in screenSizes) {
-        tester.view.physicalSize = size;
+    testWidgets(
+      '3. Action Button Treatment: 40x40 area, 20.5px icon, radius 12, subtle border, monochrome',
+      (tester) async {
         await tester.pumpWidget(buildFeedHeaderApp());
         await tester.pumpAndSettle();
 
-        expect(tester.takeException(), isNull, reason: 'Failed on viewport $size');
-        expect(find.text('Home'), findsOneWidget);
-        expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.sms_outlined), findsOneWidget);
-      }
-    });
+        final inkWidgets = tester.widgetList<Ink>(find.byType(Ink));
+        expect(inkWidgets.length, equals(3));
 
-    testWidgets('8. Notification Badge: Displays unread indicator with high contrast border cutout', (tester) async {
-      final mockSource = _MockNotificationRemoteDataSource();
-      mockSource.stubNotifications = [
-        NotificationModel(
-          id: '1',
-          type: NotificationType.mention,
-          title: 'Unread Alert',
-          body: 'Someone mentioned you in Feed',
-          senderName: 'Test User',
-          timeAgo: 'Now',
-          timestamp: DateTime.now(),
-          isRead: false,
-        ),
-      ];
+        for (final ink in inkWidgets) {
+          expect(ink.width, equals(40.0));
+          expect(ink.height, equals(40.0));
+          final dec = ink.decoration as BoxDecoration?;
+          expect(dec, isNotNull);
+          expect(dec?.color, equals(AppColors.lightSurfacePrimary));
+          expect(dec?.border, isNotNull);
+        }
 
-      final notifController = NotificationController(
-        repository: NotificationRepositoryImpl(remoteDataSource: mockSource),
-      );
-      Get.put<NotificationController>(notifController);
-      await notifController.fetchNotifications();
+        final searchIcon = tester.widget<Icon>(
+          find.byIcon(Icons.search_rounded),
+        );
+        final chatIcon = tester.widget<Icon>(find.byIcon(Icons.sms_outlined));
+        final notifIcon = tester.widget<Icon>(
+          find.byIcon(Icons.notifications_none_rounded),
+        );
 
-      await tester.pumpWidget(buildFeedHeaderApp());
-      await tester.pumpAndSettle();
+        expect(searchIcon.size, equals(20.5));
+        expect(chatIcon.size, equals(20.5));
+        expect(notifIcon.size, equals(20.5));
 
-      expect(notifController.unreadCount, equals(1));
+        expect(searchIcon.color, equals(AppColors.lightTextPrimary));
+        expect(chatIcon.color, equals(AppColors.lightTextPrimary));
+        expect(notifIcon.color, equals(AppColors.lightTextPrimary));
+      },
+    );
 
-      // Verify notification bell has badge container
-      final notifInk = find.ancestor(
-        of: find.byIcon(Icons.notifications_none_rounded),
-        matching: find.byType(Ink),
-      );
-      expect(notifInk, findsOneWidget);
+    testWidgets(
+      '4. Horizontal Alignment: 16px left and 16px right padding matching AppSpacing.md',
+      (tester) async {
+        await tester.pumpWidget(buildFeedHeaderApp());
+        await tester.pumpAndSettle();
 
-      final containers = tester.widgetList<Container>(
-        find.descendant(of: notifInk, matching: find.byType(Container)),
-      );
+        final containers = tester.widgetList<Container>(find.byType(Container));
+        final headerContainer = containers.firstWhere(
+          (c) =>
+              c.padding ==
+              const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        );
+        expect(
+          headerContainer.padding,
+          equals(const EdgeInsets.symmetric(horizontal: 16.0)),
+        );
+      },
+    );
 
-      final badgeContainer = containers.firstWhere((c) {
-        final dec = c.decoration as BoxDecoration?;
-        return dec != null && dec.shape == BoxShape.circle && dec.color == AppColors.danger;
-      });
+    testWidgets(
+      '5. Light Mode & Dark Mode: Monochrome design system tokens strictly applied',
+      (tester) async {
+        // Light Mode
+        await tester.pumpWidget(buildFeedHeaderApp(theme: ThemeData.light()));
+        await tester.pumpAndSettle();
 
-      expect(badgeContainer, isNotNull);
-      final badgeDec = badgeContainer.decoration as BoxDecoration;
-      expect(badgeDec.color, equals(AppColors.danger));
-      expect(badgeDec.border, isNotNull);
-      expect(badgeContainer.constraints?.maxWidth, equals(7.5));
-    });
+        Text titleLight = tester.widget(find.text('Guest'));
+        expect(titleLight.style?.color, equals(AppColors.lightTextPrimary));
 
-    testWidgets('9. Action Navigation: Action buttons are tap-enabled with proper routes', (tester) async {
-      await tester.pumpWidget(buildFeedHeaderApp());
-      await tester.pumpAndSettle();
+        // Dark Mode
+        await tester.pumpWidget(buildFeedHeaderApp(theme: ThemeData.dark()));
+        await tester.pumpAndSettle();
 
-      final searchFinder = find.byIcon(Icons.search_rounded);
-      final notifFinder = find.byIcon(Icons.notifications_none_rounded);
-      final chatFinder = find.byIcon(Icons.sms_outlined);
+        Text titleDark = tester.widget(find.text('Guest'));
+        expect(titleDark.style?.color, equals(AppColors.darkTextPrimary));
 
-      expect(searchFinder, findsOneWidget);
-      expect(notifFinder, findsOneWidget);
-      expect(chatFinder, findsOneWidget);
+        final inkWidgetsDark = tester.widgetList<Ink>(find.byType(Ink));
+        for (final ink in inkWidgetsDark) {
+          final dec = ink.decoration as BoxDecoration?;
+          expect(dec?.color, equals(AppColors.darkSurfacePrimary));
+        }
+      },
+    );
 
-      // Search navigation
-      await tester.tap(searchFinder);
-      await tester.pumpAndSettle();
-      expect(find.byType(CommunitySearchScreen), findsOneWidget);
-    });
+    testWidgets(
+      '6. Khmer Localization: Renders greeting/name and localized action tooltips without overflow',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
 
-    testWidgets('10. Accessibility: Action buttons provide semantic labels and tooltips', (tester) async {
-      await tester.pumpWidget(buildFeedHeaderApp());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildFeedHeaderApp(locale: const Locale('km', 'KH')),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byTooltip('Search'), findsOneWidget);
-      expect(find.byTooltip('Chat'), findsOneWidget);
-      expect(find.byTooltip('Notifications'), findsOneWidget);
+        expect(find.text('Guest'), findsOneWidget);
+        expect(tester.takeException(), isNull);
 
-      expect(find.bySemanticsLabel('Search'), findsOneWidget);
-      expect(find.bySemanticsLabel('Chat'), findsOneWidget);
-      expect(find.bySemanticsLabel('Notifications'), findsOneWidget);
-    });
+        final titleWidget = tester.widget<Text>(find.text('Guest'));
+        expect(titleWidget.style?.fontSize, equals(25.0));
+        expect(titleWidget.style?.fontWeight, equals(FontWeight.w800));
+      },
+    );
+
+    testWidgets(
+      '7. Responsive Viewports: 320px, 360px, 390px, 430px render cleanly with 0 overflow',
+      (tester) async {
+        final screenSizes = [
+          const Size(320, 640),
+          const Size(360, 740),
+          const Size(390, 844),
+          const Size(430, 932),
+        ];
+
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        for (final size in screenSizes) {
+          tester.view.physicalSize = size;
+          await tester.pumpWidget(buildFeedHeaderApp());
+          await tester.pumpAndSettle();
+
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: 'Failed on viewport $size',
+          );
+          expect(find.text('Guest'), findsOneWidget);
+          expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+          expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
+          expect(find.byIcon(Icons.sms_outlined), findsOneWidget);
+        }
+      },
+    );
+
+    testWidgets(
+      '8. Notification Badge: Displays unread indicator with high contrast border cutout',
+      (tester) async {
+        final mockSource = _MockNotificationRemoteDataSource();
+        mockSource.stubNotifications = [
+          NotificationModel(
+            id: '1',
+            type: NotificationType.mention,
+            title: 'Unread Alert',
+            body: 'Someone mentioned you in Feed',
+            senderName: 'Test User',
+            timeAgo: 'Now',
+            timestamp: DateTime.now(),
+            isRead: false,
+          ),
+        ];
+
+        final notifController = NotificationController(
+          repository: NotificationRepositoryImpl(remoteDataSource: mockSource),
+        );
+        Get.put<NotificationController>(notifController);
+        await notifController.fetchNotifications();
+
+        await tester.pumpWidget(buildFeedHeaderApp());
+        await tester.pumpAndSettle();
+
+        expect(notifController.unreadCount, equals(1));
+
+        // Verify notification bell has badge container
+        final notifInk = find.ancestor(
+          of: find.byIcon(Icons.notifications_none_rounded),
+          matching: find.byType(Ink),
+        );
+        expect(notifInk, findsOneWidget);
+
+        final containers = tester.widgetList<Container>(
+          find.descendant(of: notifInk, matching: find.byType(Container)),
+        );
+
+        final badgeContainer = containers.firstWhere((c) {
+          final dec = c.decoration as BoxDecoration?;
+          return dec != null &&
+              dec.shape == BoxShape.circle &&
+              dec.color == AppColors.danger;
+        });
+
+        expect(badgeContainer, isNotNull);
+        final badgeDec = badgeContainer.decoration as BoxDecoration;
+        expect(badgeDec.color, equals(AppColors.danger));
+        expect(badgeDec.border, isNotNull);
+        expect(badgeContainer.constraints?.maxWidth, equals(7.5));
+      },
+    );
+
+    testWidgets(
+      '9. Action Navigation: Action buttons are tap-enabled with proper routes',
+      (tester) async {
+        await tester.pumpWidget(buildFeedHeaderApp());
+        await tester.pumpAndSettle();
+
+        final searchFinder = find.byIcon(Icons.search_rounded);
+        final notifFinder = find.byIcon(Icons.notifications_none_rounded);
+        final chatFinder = find.byIcon(Icons.sms_outlined);
+
+        expect(searchFinder, findsOneWidget);
+        expect(notifFinder, findsOneWidget);
+        expect(chatFinder, findsOneWidget);
+
+        // Search navigation
+        await tester.tap(searchFinder);
+        await tester.pumpAndSettle();
+        expect(find.byType(CommunitySearchScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '10. Accessibility: Action buttons provide semantic labels and tooltips',
+      (tester) async {
+        await tester.pumpWidget(buildFeedHeaderApp());
+        await tester.pumpAndSettle();
+
+        expect(find.byTooltip('Search'), findsOneWidget);
+        expect(find.byTooltip('Chat'), findsOneWidget);
+        expect(find.byTooltip('Notifications'), findsOneWidget);
+
+        expect(find.bySemanticsLabel('Search'), findsOneWidget);
+        expect(find.bySemanticsLabel('Chat'), findsOneWidget);
+        expect(find.bySemanticsLabel('Notifications'), findsOneWidget);
+      },
+    );
   });
 }

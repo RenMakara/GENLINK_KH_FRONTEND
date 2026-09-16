@@ -33,62 +33,63 @@ void main() {
     );
   }
 
-  testWidgets('FadeIndexedStack preserves page state and text input when switching tabs', (
-    tester,
-  ) async {
-    int activeIndex = 0;
-    final textController = TextEditingController();
+  testWidgets(
+    'FadeIndexedStack preserves page state and text input when switching tabs',
+    (tester) async {
+      int activeIndex = 0;
+      final textController = TextEditingController();
 
-    await tester.pumpWidget(
-      createTestApp(
-        home: StatefulBuilder(
-          builder: (context, setState) {
-            return Scaffold(
-              body: FadeIndexedStack(
-                index: activeIndex,
-                children: [
-                  TextField(
-                    key: const ValueKey('tab_0_field'),
-                    controller: textController,
-                  ),
-                  const Text('LevelUp Tab Page', key: ValueKey('tab_1_text')),
-                ],
-              ),
-              bottomNavigationBar: Row(
-                children: [
-                  TextButton(
-                    onPressed: () => setState(() => activeIndex = 0),
-                    child: const Text('Tab 0'),
-                  ),
-                  TextButton(
-                    onPressed: () => setState(() => activeIndex = 1),
-                    child: const Text('Tab 1'),
-                  ),
-                ],
-              ),
-            );
-          },
+      await tester.pumpWidget(
+        createTestApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              return Scaffold(
+                body: FadeIndexedStack(
+                  index: activeIndex,
+                  children: [
+                    TextField(
+                      key: const ValueKey('tab_0_field'),
+                      controller: textController,
+                    ),
+                    const Text('LevelUp Tab Page', key: ValueKey('tab_1_text')),
+                  ],
+                ),
+                bottomNavigationBar: Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => setState(() => activeIndex = 0),
+                      child: const Text('Tab 0'),
+                    ),
+                    TextButton(
+                      onPressed: () => setState(() => activeIndex = 1),
+                      child: const Text('Tab 1'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.byKey(const ValueKey('tab_0_field')),
-      'Preserved form state',
-    );
-    expect(textController.text, 'Preserved form state');
+      await tester.enterText(
+        find.byKey(const ValueKey('tab_0_field')),
+        'Preserved form state',
+      );
+      expect(textController.text, 'Preserved form state');
 
-    await tester.tap(find.text('Tab 1'));
-    await tester.pumpAndSettle();
-    expect(find.text('LevelUp Tab Page'), findsOneWidget);
+      await tester.tap(find.text('Tab 1'));
+      await tester.pumpAndSettle();
+      expect(find.text('LevelUp Tab Page'), findsOneWidget);
 
-    await tester.tap(find.text('Tab 0'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Tab 0'));
+      await tester.pumpAndSettle();
 
-    expect(textController.text, 'Preserved form state');
-    expect(find.byKey(const ValueKey('tab_0_field')), findsOneWidget);
-  });
+      expect(textController.text, 'Preserved form state');
+      expect(find.byKey(const ValueKey('tab_0_field')), findsOneWidget);
+    },
+  );
 
   testWidgets('QuickCreatePostCard triggers callbacks with tactile feedback', (
     tester,
@@ -110,162 +111,166 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Post'));
+    await tester.tap(find.byIcon(Icons.image_outlined));
     await tester.pumpAndSettle();
     expect(postTapped, isTrue);
 
-    await tester.tap(find.text('Discussion'));
+    await tester.tap(find.byIcon(Icons.bar_chart_rounded));
     await tester.pumpAndSettle();
     expect(discussionTapped, isTrue);
 
-    await tester.tap(find.text('Event'));
+    await tester.tap(find.byIcon(Icons.add_box_outlined));
     await tester.pumpAndSettle();
     expect(eventTapped, isTrue);
   });
 
-  testWidgets('Demo posts follow structured Feed sequence: Normal -> Discussion -> Event -> Normal -> Discussion', (
-    tester,
-  ) async {
-    final posts = DemoCommunityDataProvider.getDay15DemoPosts();
-    expect(posts.length, greaterThanOrEqualTo(5));
+  testWidgets(
+    'Demo posts follow structured Feed sequence: Normal -> Discussion -> Event -> Normal -> Discussion',
+    (tester) async {
+      final posts = DemoCommunityDataProvider.getDay15DemoPosts();
+      expect(posts.length, greaterThanOrEqualTo(5));
 
-    expect(posts[0].postType, isNull);
-    expect(posts[0].attachedEvent, isNull);
-    expect(posts[0].content, contains('Flutter workshop was amazing'));
+      expect(posts[0].postType, isNull);
+      expect(posts[0].attachedEvent, isNull);
+      expect(posts[0].content, contains('Flutter workshop was amazing'));
 
-    expect(posts[1].postType, 'DISCUSSION');
-    expect(posts[1].discussionTitle, contains('structure a large Flutter application'));
+      expect(posts[1].postType, 'DISCUSSION');
+      expect(
+        posts[1].discussionTitle,
+        contains('structure a large Flutter application'),
+      );
 
-    expect(posts[2].postType, 'event');
-    expect(posts[2].attachedEvent, isNotNull);
-    expect(posts[2].attachedEvent!.title, 'Flutter Workshop 2026');
+      expect(posts[2].postType, 'event');
+      expect(posts[2].attachedEvent, isNotNull);
+      expect(posts[2].attachedEvent!.title, 'Flutter Workshop 2026');
 
-    expect(posts[3].content, contains('Tech in Banking'));
+      expect(posts[3].content, contains('Tech in Banking'));
 
-    expect(posts[4].postType, 'DISCUSSION');
-    expect(posts[4].discussionTitle, contains('software engineering internship'));
-  });
+      expect(posts[4].postType, 'DISCUSSION');
+      expect(
+        posts[4].discussionTitle,
+        contains('software engineering internship'),
+      );
+    },
+  );
 
-  testWidgets('PostCardWidget renders Joined with check when attached event is RSVPed', (
-    tester,
-  ) async {
-    final controller = Get.find<CommunityController>();
-    final posts = DemoCommunityDataProvider.getDay15DemoPosts();
-    final eventPost = posts[2];
+  testWidgets(
+    'PostCardWidget renders Joined with check when attached event is RSVPed',
+    (tester) async {
+      final controller = Get.find<CommunityController>();
+      final posts = DemoCommunityDataProvider.getDay15DemoPosts();
+      final eventPost = posts[2];
 
-    eventPost.attachedEvent!.isRsvped = true;
+      eventPost.attachedEvent!.isRsvped = true;
 
-    await tester.pumpWidget(
-      createTestApp(
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: PostCardWidget(
-              post: eventPost,
-              controller: controller,
+      await tester.pumpWidget(
+        createTestApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PostCardWidget(post: eventPost, controller: controller),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Joined ✓'), findsOneWidget);
-    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-  });
+      expect(find.text('Joined ✓'), findsOneWidget);
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    },
+  );
 
-  testWidgets('FadeIndexedStack uses FadeTransition and has no Transform.scale warping', (
-    tester,
-  ) async {
-    int activeIndex = 0;
+  testWidgets(
+    'FadeIndexedStack uses FadeTransition and has no Transform.scale warping',
+    (tester) async {
+      int activeIndex = 0;
 
-    await tester.pumpWidget(
-      createTestApp(
-        home: StatefulBuilder(
-          builder: (context, setState) {
-            return Scaffold(
-              body: FadeIndexedStack(
-                index: activeIndex,
-                children: const [
-                  Text('Page Home', key: ValueKey('page_home')),
-                  Text('Page LevelUp', key: ValueKey('page_levelup')),
-                  Text('Page Finance', key: ValueKey('page_finance')),
-                  Text('Page Profile', key: ValueKey('page_profile')),
-                ],
-              ),
-              bottomNavigationBar: Row(
-                children: [
-                  TextButton(
-                    onPressed: () => setState(() => activeIndex = 0),
-                    child: const Text('Tab 0'),
-                  ),
-                  TextButton(
-                    onPressed: () => setState(() => activeIndex = 1),
-                    child: const Text('Tab 1'),
-                  ),
-                  TextButton(
-                    onPressed: () => setState(() => activeIndex = 2),
-                    child: const Text('Tab 2'),
-                  ),
-                  TextButton(
-                    onPressed: () => setState(() => activeIndex = 3),
-                    child: const Text('Tab 3'),
-                  ),
-                ],
-              ),
-            );
-          },
+      await tester.pumpWidget(
+        createTestApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              return Scaffold(
+                body: FadeIndexedStack(
+                  index: activeIndex,
+                  children: const [
+                    Text('Page Home', key: ValueKey('page_home')),
+                    Text('Page LevelUp', key: ValueKey('page_levelup')),
+                    Text('Page Finance', key: ValueKey('page_finance')),
+                    Text('Page Profile', key: ValueKey('page_profile')),
+                  ],
+                ),
+                bottomNavigationBar: Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => setState(() => activeIndex = 0),
+                      child: const Text('Tab 0'),
+                    ),
+                    TextButton(
+                      onPressed: () => setState(() => activeIndex = 1),
+                      child: const Text('Tab 1'),
+                    ),
+                    TextButton(
+                      onPressed: () => setState(() => activeIndex = 2),
+                      child: const Text('Tab 2'),
+                    ),
+                    TextButton(
+                      onPressed: () => setState(() => activeIndex = 3),
+                      child: const Text('Tab 3'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Page Home'), findsOneWidget);
-    expect(
-      find.descendant(
-        of: find.byType(FadeIndexedStack),
-        matching: find.byType(Transform),
-      ),
-      findsNothing,
-    );
-    expect(
-      find.descendant(
-        of: find.byType(FadeIndexedStack),
-        matching: find.byType(FadeTransition),
-      ),
-      findsWidgets,
-    );
+      expect(find.text('Page Home'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(FadeIndexedStack),
+          matching: find.byType(Transform),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(FadeIndexedStack),
+          matching: find.byType(FadeTransition),
+        ),
+        findsWidgets,
+      );
 
-    // Switch to Tab 1 (LevelUp)
-    await tester.tap(find.text('Tab 1'));
-    // Pump 100ms (halfway through 200ms transition)
-    await tester.pump(const Duration(milliseconds: 100));
-    // Verify no scale transform inside FadeIndexedStack during animation
-    expect(
-      find.descendant(
-        of: find.byType(FadeIndexedStack),
-        matching: find.byType(Transform),
-      ),
-      findsNothing,
-    );
-    // Settle transition
-    await tester.pumpAndSettle();
-    expect(find.text('Page LevelUp'), findsOneWidget);
+      // Switch to Tab 1 (LevelUp)
+      await tester.tap(find.text('Tab 1'));
+      // Pump 100ms (halfway through 200ms transition)
+      await tester.pump(const Duration(milliseconds: 100));
+      // Verify no scale transform inside FadeIndexedStack during animation
+      expect(
+        find.descendant(
+          of: find.byType(FadeIndexedStack),
+          matching: find.byType(Transform),
+        ),
+        findsNothing,
+      );
+      // Settle transition
+      await tester.pumpAndSettle();
+      expect(find.text('Page LevelUp'), findsOneWidget);
 
-    // Switch to Tab 2 (Finance)
-    await tester.tap(find.text('Tab 2'));
-    await tester.pumpAndSettle();
-    expect(find.text('Page Finance'), findsOneWidget);
+      // Switch to Tab 2 (Finance)
+      await tester.tap(find.text('Tab 2'));
+      await tester.pumpAndSettle();
+      expect(find.text('Page Finance'), findsOneWidget);
 
-    // Switch to Tab 3 (Profile)
-    await tester.tap(find.text('Tab 3'));
-    await tester.pumpAndSettle();
-    expect(find.text('Page Profile'), findsOneWidget);
+      // Switch to Tab 3 (Profile)
+      await tester.tap(find.text('Tab 3'));
+      await tester.pumpAndSettle();
+      expect(find.text('Page Profile'), findsOneWidget);
 
-    // Switch back to Tab 0 (Home)
-    await tester.tap(find.text('Tab 0'));
-    await tester.pumpAndSettle();
-    expect(find.text('Page Home'), findsOneWidget);
-  });
+      // Switch back to Tab 0 (Home)
+      await tester.tap(find.text('Tab 0'));
+      await tester.pumpAndSettle();
+      expect(find.text('Page Home'), findsOneWidget);
+    },
+  );
 }
-
-

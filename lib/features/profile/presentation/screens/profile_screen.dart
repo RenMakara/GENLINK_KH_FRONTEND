@@ -9,6 +9,7 @@ import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
+import '../../../../design_system/widgets/headers/app_screen_header.dart';
 import '../../../../design_system/widgets/loaders/app_loader.dart';
 import '../../../../design_system/widgets/surfaces/app_surface.dart';
 import '../../domain/entities/profile_entity.dart';
@@ -81,9 +82,9 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  AppBar _ownerAppBar(BuildContext context) => AppBar(
-    titleSpacing: AppSpacing.md,
-    title: Obx(() {
+  AppScreenHeader _ownerAppBar(BuildContext context) => AppScreenHeader(
+    title: '',
+    titleWidget: Obx(() {
       final profile = controller.profile.value;
       if (profile == null) return const SizedBox.shrink();
       return Row(
@@ -97,42 +98,38 @@ class ProfileScreen extends StatelessWidget {
           Expanded(
             child: Text(
               profile.fullName,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
       );
     }),
     actions: [
-      IconButton(
+      AppHeaderActionButton(
+        icon: Icons.notifications_none_rounded,
         tooltip: 'settings.notifications'.tr,
-        icon: const Icon(Icons.notifications_none),
-        onPressed: () => Get.toNamed<void>(AppRoutes.notifications),
+        onTap: () => Get.toNamed<void>(AppRoutes.notifications),
       ),
-      IconButton(
+      AppHeaderActionButton(
+        icon: Icons.settings_rounded,
         tooltip: 'settings.title'.tr,
-        icon: const Icon(Icons.settings_rounded),
-        onPressed: () => Get.toNamed<void>(AppRoutes.settings),
+        onTap: () => Get.toNamed<void>(AppRoutes.settings),
       ),
     ],
   );
 
-  AppBar _publicAppBar(BuildContext context) => AppBar(
-    titleSpacing: 0,
-    leading: const Center(child: AppBackButton()),
-    leadingWidth: 74,
-    title: Text(
-      'profile.publicProfile'.tr,
-      style: Theme.of(
-        context,
-      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-    ),
+  AppScreenHeader _publicAppBar(BuildContext context) => AppScreenHeader(
+    title: 'profile.publicProfile'.tr,
+    leading: const AppBackButton(),
     actions: [
-      IconButton(
+      AppHeaderActionButton(
+        icon: Icons.ios_share_outlined,
         tooltip: 'profile.shareProfile'.tr,
-        icon: const Icon(Icons.ios_share_outlined),
-        onPressed: _sharePublicProfile,
+        onTap: _sharePublicProfile,
       ),
     ],
   );

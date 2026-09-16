@@ -1033,7 +1033,10 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
           // isVideoPost is true only when videoUrl != null && non-empty.
           // This fires ONLY for VIDEO posts. Image/text posts unaffected.
           if (widget.post.isVideoPost)
-            VideoPostMedia(videoUrl: widget.post.videoUrl!),
+            VideoPostMedia(
+              key: ValueKey('video_${widget.post.id}_${widget.post.videoUrl}'),
+              videoUrl: widget.post.videoUrl!,
+            ),
           // Integration point for Step 3B-Backend:
           // When backend returns videoUrl in PostResponse, it will be parsed
           // into CommunityPostModel.videoUrl and rendered here automatically.
@@ -1953,34 +1956,107 @@ class _VideoPostMediaState extends State<VideoPostMedia> {
   VideoPlayerController? _ctrl;
   bool _initialized = false;
   bool _error = false;
+  int _initToken = 0;
 
   @override
   void initState() {
     super.initState();
-    _initController();
+    _initController(widget.videoUrl);
   }
 
-  Future<void> _initController() async {
+  @override
+  void didUpdateWidget(covariant VideoPostMedia oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoUrl != widget.videoUrl) {
+      _initController(widget.videoUrl);
+    }
+  }
+
+  Future<void> _initController(String url) async {
+    final currentToken = ++_initToken;
+    _cleanupController();
+
+    final trimmedUrl = url.trim();
+    if (trimmedUrl.isEmpty) {
+      if (mounted) setState(() => _error = true);
+      return;
+    }
+
+    VideoPlayerController ctrl;
+    final isRemote = trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://');
     try {
-      final ctrl = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+      if (isRemote) {
+        ctrl = VideoPlayerController.networkUrl(Uri.parse(trimmedUrl));
+      } else {
+        ctrl = VideoPlayerController.file(File(trimmedUrl));
+      }
+    } catch (e) {
+      debugPrint('[VideoPostMedia] Failed to create VideoPlayerController: $e');
+      if (mounted && currentToken == _initToken) {
+        setState(() => _error = true);
+      }
+      return;
+    }
+
+    _ctrl = ctrl;
+    ctrl.addListener(_onControllerUpdate);
+
+    if (mounted) {
+      setState(() {
+        _initialized = false;
+        _error = false;
+      });
+    }
+
+    try {
+      debugPrint('[VideoPostMedia] Initializing controller for: $trimmedUrl (isRemote: $isRemote)');
       await ctrl.initialize();
-      if (!mounted) {
+      if (!mounted || currentToken != _initToken) {
+        debugPrint('[VideoPostMedia] Widget unmounted or superseded during init for: $trimmedUrl');
         await ctrl.dispose();
         return;
       }
+      debugPrint('[VideoPostMedia] Controller initialized successfully: size=${ctrl.value.size}, duration=${ctrl.value.duration}');
       setState(() {
-        _ctrl = ctrl;
         _initialized = true;
       });
     } catch (e) {
-      debugPrint('[VideoPostMedia] init error: $e');
-      if (mounted) setState(() => _error = true);
+      debugPrint('[VideoPostMedia] Controller initialize error: $e');
+      if (mounted && currentToken == _initToken) {
+        setState(() => _error = true);
+      }
+    }
+  }
+
+  void _onControllerUpdate() {
+    if (!mounted) return;
+    final ctrl = _ctrl;
+    if (ctrl == null) return;
+
+    if (ctrl.value.hasError) {
+      debugPrint('[VideoPostMedia] Controller runtime error: ${ctrl.value.errorDescription}');
+      if (!_error) {
+        setState(() => _error = true);
+      }
+      return;
+    }
+
+    setState(() {});
+  }
+
+  void _cleanupController() {
+    final oldCtrl = _ctrl;
+    if (oldCtrl != null) {
+      oldCtrl.removeListener(_onControllerUpdate);
+      oldCtrl.dispose();
+      _ctrl = null;
     }
   }
 
   @override
   void dispose() {
-    _ctrl?.dispose();
+    _initToken++;
+    _cleanupController();
     super.dispose();
   }
 
@@ -1988,30 +2064,37 @@ class _VideoPostMediaState extends State<VideoPostMedia> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final ctrl = _ctrl;
+    final hasControllerError = ctrl != null && ctrl.value.hasError;
+    final isErrorState = _error || hasControllerError;
+    final isInitialized = ctrl != null && _initialized && !isErrorState;
+    final isBuffering = ctrl != null && ctrl.value.isBuffering;
+    final isPlaying = ctrl != null && ctrl.value.isPlaying;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.lg - 2),
         child: AspectRatio(
-          aspectRatio: (ctrl != null && _initialized) ? ctrl.value.aspectRatio : 16 / 9,
+          aspectRatio: isInitialized && ctrl.value.aspectRatio > 0
+              ? ctrl.value.aspectRatio
+              : 16 / 9,
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Video or background
-              if (ctrl != null && _initialized)
+              // Video surface or placeholder background
+              if (isInitialized)
                 VideoPlayer(ctrl)
               else
                 Container(
                   color: isDark ? const Color(0xFF0C0E12) : const Color(0xFFE0E0E0),
                 ),
 
-              // Loading
-              if (!_initialized && !_error)
+              // Loading or buffering
+              if (!isErrorState && (!_initialized || isBuffering))
                 const CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
 
               // Error
-              if (_error)
+              if (isErrorState)
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -2027,16 +2110,20 @@ class _VideoPostMediaState extends State<VideoPostMedia> {
                 ),
 
               // Play / pause overlay
-              if (ctrl != null && _initialized)
+              if (isInitialized)
                 Positioned.fill(
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: () => setState(() {
-                      ctrl.value.isPlaying ? ctrl.pause() : ctrl.play();
-                    }),
+                    onTap: () {
+                      if (ctrl.value.isPlaying) {
+                        ctrl.pause();
+                      } else {
+                        ctrl.play();
+                      }
+                    },
                     child: Center(
                       child: AnimatedOpacity(
-                        opacity: ctrl.value.isPlaying ? 0.0 : 1.0,
+                        opacity: isPlaying ? 0.0 : 1.0,
                         duration: const Duration(milliseconds: 200),
                         child: Container(
                           decoration: const BoxDecoration(
@@ -2045,7 +2132,7 @@ class _VideoPostMediaState extends State<VideoPostMedia> {
                           ),
                           padding: const EdgeInsets.all(12),
                           child: Icon(
-                            ctrl.value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                            isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                             color: Colors.white,
                             size: 28,
                           ),

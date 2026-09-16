@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../app/routes/app_routes.dart';
 import '../../design_system/colors/app_colors.dart';
 import '../../design_system/spacing/app_spacing.dart';
+import '../../design_system/widgets/headers/app_screen_header.dart';
 import '../leaderboard/presentation/bindings/leaderboard_binding.dart';
 import '../leaderboard/presentation/screens/leaderboard_home_screen.dart';
 import '../productivity/presentation/focus_feature/focus_home_screen.dart';
@@ -326,46 +327,19 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                 ),
                 children: [
                   // HEADER
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'levelup.title'.tr,
-                              style: TextStyle(
-                                color: isDark
-                                    ? AppColors.darkTextPrimary
-                                    : AppColors.lightTextPrimary,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.7,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              subtitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: isDark
-                                    ? AppColors.darkTextSecondary
-                                    : AppColors.lightTextSecondary,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      GrowthHeaderIconButton(
+                  AppScreenHeader(
+                    title: 'levelup.title'.tr,
+                    subtitle: subtitle,
+                    includeSafeArea: false,
+                    horizontalPadding: EdgeInsets.zero,
+                    actions: [
+                      AppHeaderActionButton(
                         icon: Icons.emoji_events_outlined,
                         onTap: () => Get.to(
                           () => const LeaderboardHomeScreen(),
                           binding: LeaderboardBinding(),
                         ),
+                        tooltip: 'quiz.leaderboard'.tr,
                       ),
                     ],
                   ),

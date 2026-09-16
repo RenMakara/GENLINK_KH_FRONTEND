@@ -18,7 +18,9 @@ enum MediaPurpose {
       };
 
   bool get allowsVideo =>
-      this == MediaPurpose.story || this == MediaPurpose.short;
+      this == MediaPurpose.post ||
+      this == MediaPurpose.story ||
+      this == MediaPurpose.short;
 }
 
 class PresignedUpload {

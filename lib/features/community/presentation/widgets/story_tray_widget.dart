@@ -52,7 +52,7 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
     return Obx(() {
       if (controller.isLoading.value && controller.storyGroups.isEmpty) {
         return SizedBox(
-          height: 88,
+          height: 100,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -78,7 +78,7 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
         );
       }
 
-      final allGroups = controller.storyGroups;
+      final allGroups = List<StoryGroupModel>.from(controller.storyGroups);
       final currentUserId = CurrentUser.id;
       final currentUserAvatar = CurrentUser.avatarUrl;
       final rawOwnerGroup = allGroups.firstWhereOrNull((g) => g.isOwner);
@@ -107,25 +107,31 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
         return 0;
       });
 
-      // Combine owner group, demo groups, and real backend groups
+      // Keep the create-story affordance separate from the owner's story.
+      // This lets the owner appear as a normal story profile after publishing
+      // while the first slot remains available for adding another story.
       final demoGroups = getDemoStoryGroups();
-      final displayGroups = [ownerGroup, ...demoGroups, ...otherGroups];
+      final displayGroups = <StoryGroupModel>[
+        if (ownerGroup.stories.isNotEmpty) ownerGroup,
+        ...demoGroups,
+        ...otherGroups,
+      ];
 
       return SizedBox(
-        height: 88,
+        height: 100,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          itemCount: displayGroups.length,
+          itemCount: displayGroups.length + 1,
           itemBuilder: (context, idx) {
-            final group = displayGroups[idx];
+            final isCreateStory = idx == 0;
+            final group = isCreateStory ? ownerGroup : displayGroups[idx - 1];
             return _StoryTrayItem(
               group: group,
-              index: idx,
+              index: isCreateStory ? -1 : idx - 1,
               allGroups: displayGroups,
-              controller: controller,
-              isDark: isDark,
+              isCreateStory: isCreateStory,
               bgPrimary: bgPrimary,
               border: border,
               textPrimary: textPrimary,
@@ -140,11 +146,10 @@ class _StoryTrayWidgetState extends State<StoryTrayWidget> {
 }
 
 class _StoryTrayItem extends StatefulWidget {
-  final dynamic group;
+  final StoryGroupModel group;
   final int index;
-  final List<dynamic> allGroups;
-  final StoryController controller;
-  final bool isDark;
+  final List<StoryGroupModel> allGroups;
+  final bool isCreateStory;
   final Color bgPrimary;
   final Color border;
   final Color textPrimary;
@@ -155,8 +160,7 @@ class _StoryTrayItem extends StatefulWidget {
     required this.group,
     required this.index,
     required this.allGroups,
-    required this.controller,
-    required this.isDark,
+    required this.isCreateStory,
     required this.bgPrimary,
     required this.border,
     required this.textPrimary,
@@ -172,47 +176,51 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
   bool _isPressed = false;
 
   void _onStoryTap() {
-    if (widget.group.isOwner && widget.group.stories.isEmpty) {
+    if (widget.isCreateStory) {
       StoryCreationPickerSheet.show(context);
       return;
     }
 
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        opaque: false,
-        transitionDuration: const Duration(milliseconds: 200),
-        reverseTransitionDuration: const Duration(milliseconds: 180),
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return StoryViewerScreen(
-            initialGroupIndex: widget.index,
-            groups: widget.allGroups.cast(),
-          );
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final scaleAnimation = Tween<double>(begin: 0.96, end: 1.00).animate(
-            CurvedAnimation(
-              parent: animation,
-              curve: Curves.fastOutSlowIn,
-              reverseCurve: Curves.easeInCubic,
-            ),
-          );
+    Navigator.of(context)
+        .push(
+          PageRouteBuilder(
+            opaque: false,
+            transitionDuration: const Duration(milliseconds: 200),
+            reverseTransitionDuration: const Duration(milliseconds: 180),
+            pageBuilder: (context, animation, secondaryAnimation) {
+              return StoryViewerScreen(
+                initialGroupIndex: widget.index,
+                groups: widget.allGroups,
+              );
+            },
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  final scaleAnimation = Tween<double>(begin: 0.96, end: 1.00)
+                      .animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.fastOutSlowIn,
+                          reverseCurve: Curves.easeInCubic,
+                        ),
+                      );
 
-          final fadeAnimation = CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeOut,
-            reverseCurve: Curves.easeIn,
-          );
+                  final fadeAnimation = CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOut,
+                    reverseCurve: Curves.easeIn,
+                  );
 
-          return ScaleTransition(
-            scale: scaleAnimation,
-            alignment: Alignment.center,
-            child: FadeTransition(opacity: fadeAnimation, child: child),
-          );
-        },
-      ),
-    ).then((_) {
-      if (mounted) setState(() {});
-    });
+                  return ScaleTransition(
+                    scale: scaleAnimation,
+                    alignment: Alignment.center,
+                    child: FadeTransition(opacity: fadeAnimation, child: child),
+                  );
+                },
+          ),
+        )
+        .then((_) {
+          if (mounted) setState(() {});
+        });
   }
 
   bool _containsKhmer(String text) {
@@ -222,16 +230,15 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
   @override
   Widget build(BuildContext context) {
     final group = widget.group;
-    final isDark = widget.isDark;
     final bgPrimary = widget.bgPrimary;
     final border = widget.border;
     final textPrimary = widget.textPrimary;
     final textMuted = widget.textMuted;
     final theme = widget.theme;
 
-    if (group.isOwner) {
+    if (widget.isCreateStory) {
       return Padding(
-        padding: const EdgeInsets.only(right: 14),
+        padding: const EdgeInsets.only(right: 12),
         child: GestureDetector(
           onTapDown: (_) => setState(() => _isPressed = true),
           onTapUp: (_) => setState(() => _isPressed = false),
@@ -243,55 +250,26 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
             curve: Curves.easeOutCubic,
             child: Column(
               children: [
-                Stack(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: group.stories.isNotEmpty
-                              ? AppColors.communityAccent
-                              : Colors.transparent,
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Hero(
-                        tag: 'story_avatar_${group.userId}',
-                        child: AppAvatar(
-                          imageUrl: group.userAvatar,
-                          name: group.userName,
-                          size: 52,
-                        ),
+                CustomPaint(
+                  size: const Size.square(64),
+                  painter: _DashedCirclePainter(
+                    color: AppColors.communityAccent,
+                  ),
+                  child: const SizedBox(
+                    width: 64,
+                    height: 64,
+                    child: Center(
+                      child: Icon(
+                        Icons.add_rounded,
+                        color: AppColors.communityAccent,
+                        size: 28,
                       ),
                     ),
-                    Positioned(
-                      right: 2,
-                      bottom: 2,
-                      child: GestureDetector(
-                        onTap: () => StoryCreationPickerSheet.show(context),
-                        child: Container(
-                          padding: const EdgeInsets.all(2.5),
-                          decoration: BoxDecoration(
-                            color: AppColors.communityAccent,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: bgPrimary, width: 1.5),
-                          ),
-                          child: Icon(
-                            Icons.add,
-                            color: isDark
-                                ? AppColors.darkTextInverse
-                                : AppColors.lightTextInverse,
-                            size: 12,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 6),
                 SizedBox(
-                  width: 78,
+                  width: 72,
                   child: Text(
                     'community.yourStory'.tr,
                     style:
@@ -318,7 +296,7 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(right: 14),
+      padding: const EdgeInsets.only(right: 12),
       child: GestureDetector(
         onTapDown: (_) => setState(() => _isPressed = true),
         onTapUp: (_) => setState(() => _isPressed = false),
@@ -364,15 +342,15 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
                       child: AppAvatar(
                         imageUrl: group.userAvatar,
                         name: group.userName,
-                        size: 52,
+                        size: 56,
                       ),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 6),
               SizedBox(
-                width: 78,
+                width: 72,
                 child: Text(
                   group.userName,
                   style:
@@ -407,5 +385,34 @@ class _StoryTrayItemState extends State<_StoryTrayItem> {
         ),
       ),
     );
+  }
+}
+
+class _DashedCirclePainter extends CustomPainter {
+  const _DashedCirclePainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6;
+    final radius = (size.shortestSide - paint.strokeWidth) / 2;
+    final center = Offset(size.width / 2, size.height / 2);
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    const dashSweep = 0.22;
+    const gapSweep = 0.17;
+    var start = -0.5 * 3.141592653589793;
+    while (start < 2 * 3.141592653589793) {
+      canvas.drawArc(rect, start, dashSweep, false, paint);
+      start += dashSweep + gapSweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedCirclePainter oldDelegate) {
+    return oldDelegate.color != color;
   }
 }

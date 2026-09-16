@@ -193,7 +193,7 @@ void main() {
         service.upload(
           bytes: bytes(10),
           contentType: 'video/mp4',
-          purpose: MediaPurpose.post,
+          purpose: MediaPurpose.avatar,
         ),
         throwsA(isA<AppError>().having(
             (e) => e.errorCode, 'errorCode', 'MEDIA_VIDEO_NOT_ALLOWED')),
@@ -201,11 +201,11 @@ void main() {
       expect(repository.calls, isEmpty);
     });
 
-    test('allows video for story and short', () async {
+    test('allows video for post, story and short', () async {
       await service.upload(
         bytes: bytes(10),
         contentType: 'video/mp4',
-        purpose: MediaPurpose.story,
+        purpose: MediaPurpose.post,
       );
       expect(repository.calls, contains('presign'));
     });
@@ -240,11 +240,11 @@ void main() {
       expect(MediaPurpose.communityCover.wireValue, 'COMMUNITY_COVER');
     });
 
-    test('only story and short allow video', () {
+    test('story, short, and post allow video', () {
       expect(MediaPurpose.story.allowsVideo, isTrue);
       expect(MediaPurpose.short.allowsVideo, isTrue);
+      expect(MediaPurpose.post.allowsVideo, isTrue);
       expect(MediaPurpose.avatar.allowsVideo, isFalse);
-      expect(MediaPurpose.post.allowsVideo, isFalse);
     });
   });
 

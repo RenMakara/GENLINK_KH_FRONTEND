@@ -306,9 +306,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Guest'), findsOneWidget);
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.forum_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.people_outline_rounded), findsWidgets);
       expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
 
       expect(find.text('Feed'), findsOneWidget);

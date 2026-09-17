@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:get/get.dart';
+import 'package:video_player/video_player.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../domain/models/story_model.dart';
@@ -98,6 +99,7 @@ class StoryCreatorScreen extends StatefulWidget {
   final List<String>? mediaPaths;
   final StoryItemModel? existingStory;
   final String? templateId;
+  final VideoPlayerController? videoPlayerController;
 
   const StoryCreatorScreen({
     super.key,
@@ -105,6 +107,7 @@ class StoryCreatorScreen extends StatefulWidget {
     this.mediaPaths,
     this.existingStory,
     this.templateId,
+    this.videoPlayerController,
   });
 
   @override
@@ -117,6 +120,11 @@ enum StoryBgMode { none, solid, gradient }
 
 class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   final List<MovableStoryLayer> _layers = [];
+
+  VideoPlayerController? _videoPlayerController;
+  bool _isVideoInitialized = false;
+  bool _isVideoError = false;
+  bool _ownsVideoPlayerController = true;
 
   late StoryTemplateConfig _selectedTemplate;
   List<StoryTemplateSlot> _templateSlots = [];
@@ -735,7 +743,30 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       }
     } else {
       if (widget.type != StoryType.template && widget.mediaPaths != null && widget.mediaPaths!.isNotEmpty) {
-        if (widget.mediaPaths!.length == 1) {
+        if (widget.type == StoryType.video || widget.mediaPaths!.any(_isVideoFile)) {
+          final videoIdx = widget.mediaPaths!.indexWhere(_isVideoFile);
+          final primaryVideo = videoIdx != -1 ? widget.mediaPaths![videoIdx] : widget.mediaPaths!.first;
+          _activeMediaPath = primaryVideo;
+
+          final otherPaths = widget.mediaPaths!.where((p) => p != primaryVideo).toList();
+          for (int i = 0; i < otherPaths.length; i++) {
+            final path = otherPaths[i];
+            final offset = _calculateInitialLayerOffset(i, otherPaths.length);
+            _layers.add(
+              MovableStoryLayer(
+                id: _generateUniqueLayerId('image'),
+                type: LayerType.image,
+                text: path,
+                offset: offset,
+                scale: 1.0,
+                rotation: 0.0,
+              ),
+            );
+          }
+          if (_layers.isNotEmpty) {
+            _selectedLayer = _layers.first;
+          }
+        } else if (widget.mediaPaths!.length == 1) {
           _activeMediaPath = widget.mediaPaths!.first;
         } else {
           _activeMediaPath = null;
@@ -759,6 +790,17 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         }
       }
     }
+
+    if (widget.videoPlayerController != null) {
+      _videoPlayerController = widget.videoPlayerController;
+      _ownsVideoPlayerController = false;
+      _isVideoInitialized = widget.videoPlayerController!.value.isInitialized;
+      _videoPlayerController!.setLooping(true);
+      _videoPlayerController!.play();
+    } else if (_activeMediaPath != null && (widget.type == StoryType.video || _isVideoFile(_activeMediaPath!))) {
+      _initVideoPlayer(_activeMediaPath!);
+    }
+
     _fullScreenTextController.addListener(_onTextChanged);
     if (widget.type == StoryType.text) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1284,6 +1326,9 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   @override
   void dispose() {
+    if (_ownsVideoPlayerController) {
+      _videoPlayerController?.dispose();
+    }
     _fullScreenTextController.removeListener(_onTextChanged);
     _captionController.dispose();
     _transformationController.dispose();
@@ -2320,6 +2365,15 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           _transformationController.value = Matrix4.identity();
           _imageRotation = 0.0;
         });
+        if (_isVideoFile(media.path)) {
+          _initVideoPlayer(media.path);
+        } else {
+          if (_ownsVideoPlayerController) {
+            _videoPlayerController?.dispose();
+          }
+          _videoPlayerController = null;
+          _isVideoInitialized = false;
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -2410,165 +2464,122 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     return File(clean);
   }
 
-  bool _isVideoPlaying = true;
+  Future<void> _initVideoPlayer(String path) async {
+    if (!_ownsVideoPlayerController) return;
+
+    final oldCtrl = _videoPlayerController;
+    _videoPlayerController = null;
+    _isVideoInitialized = false;
+    _isVideoError = false;
+    await oldCtrl?.dispose();
+
+    try {
+      final file = _resolveFile(path);
+      VideoPlayerController ctrl;
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        ctrl = VideoPlayerController.networkUrl(Uri.parse(path));
+      } else if (path.startsWith('assets/')) {
+        ctrl = VideoPlayerController.asset(path);
+      } else {
+        if (!file.existsSync()) {
+          if (mounted) setState(() => _isVideoError = true);
+          return;
+        }
+        ctrl = VideoPlayerController.file(file);
+      }
+
+      _videoPlayerController = ctrl;
+
+      await ctrl.initialize();
+      if (!mounted || _videoPlayerController != ctrl) {
+        await ctrl.dispose();
+        return;
+      }
+
+      await ctrl.setVolume(1.0);
+      await ctrl.setLooping(true);
+      await ctrl.play();
+
+      if (mounted) {
+        setState(() {
+          _isVideoInitialized = true;
+          _isVideoError = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('[StoryCreatorScreen] VideoPlayerController init error: $e');
+      if (mounted) {
+        setState(() {
+          _isVideoError = true;
+          _isVideoInitialized = false;
+        });
+      }
+    }
+  }
 
   Widget _buildVideoPreviewCanvas(File file) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: Container(
-            color: Colors.black,
-            child: Center(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white30, width: 2),
-                          ),
-                          child: Icon(
-                            _isVideoPlaying
-                                ? Icons.movie_rounded
-                                : Icons.play_arrow_rounded,
-                            color: Colors.white,
-                            size: 48,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black54,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: Colors.white12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.videocam_rounded,
-                                color: Colors.white70,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  file.path.split(RegExp(r'[/\\]')).last,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+    if (_isVideoError) {
+      return _buildErrorMediaPlaceholder();
+    }
+
+    final ctrl = _videoPlayerController;
+    if (ctrl == null || !_isVideoInitialized) {
+      return Container(
+        color: Colors.black,
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2.5,
+          ),
+        ),
+      );
+    }
+
+    final videoSize = ctrl.value.size;
+    final hasValidSize = videoSize.width > 0 && videoSize.height > 0;
+
+    return Container(
+      color: Colors.black,
+      child: Center(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: hasValidSize ? videoSize.width : 1080,
+                  height: hasValidSize ? videoSize.height : 1920,
+                  child: VideoPlayer(
+                    ctrl,
+                    key: const ValueKey('story_video_player'),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isVideoPlaying = !_isVideoPlaying;
-                      });
-                    },
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      opacity: _isVideoPlaying ? 0.4 : 0.9,
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: const BoxDecoration(
-                          color: Colors.black87,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _isVideoPlaying
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          color: Colors.white,
-                          size: 36,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-
-        Positioned(
-          bottom: 90,
-          left: 20,
-          right: 20,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.75),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white12),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  _isVideoPlaying
-                      ? Icons.pause_rounded
-                      : Icons.play_arrow_rounded,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                const SizedBox(width: 10),
-                const Text(
-                  "00:05",
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+            if (!ctrl.value.isPlaying)
+              GestureDetector(
+                onTap: () {
+                  ctrl.play();
+                  setState(() {});
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 48,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: _isVideoPlaying ? 0.45 : 0.0,
-                      backgroundColor: Colors.white24,
-                      color: Colors.white,
-                      minHeight: 4,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  "00:15",
-                  style: TextStyle(color: Colors.white38, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
+              ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -3535,6 +3546,20 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   bool _isInteractingLayer = false;
   bool _isHoveringDeleteZone = false;
 
+  Widget _buildLayerImageErrorPlaceholder() {
+    return Container(
+      width: 180,
+      height: 180,
+      alignment: Alignment.center,
+      color: Colors.white10,
+      child: const Icon(
+        Icons.broken_image_rounded,
+        color: Colors.white54,
+        size: 36,
+      ),
+    );
+  }
+
   Widget _buildLayerWidget(MovableStoryLayer layer) {
     final isDeleting = _deletingLayerIds.contains(layer.id);
     final isEditingThisLayer =
@@ -3560,7 +3585,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             width: 180,
             fit: BoxFit.contain,
             errorBuilder: (ctx, err, stack) =>
-                _buildErrorMediaPlaceholder(),
+                _buildLayerImageErrorPlaceholder(),
           );
         } else if (layer.text.startsWith('assets/')) {
           imgWidget = Image.asset(
@@ -3568,7 +3593,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             width: 180,
             fit: BoxFit.contain,
             errorBuilder: (ctx, err, stack) =>
-                _buildErrorMediaPlaceholder(),
+                _buildLayerImageErrorPlaceholder(),
           );
         } else {
           imgWidget = Image.network(
@@ -3576,33 +3601,21 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             width: 180,
             fit: BoxFit.contain,
             errorBuilder: (ctx, err, stack) =>
-                _buildErrorMediaPlaceholder(),
+                _buildLayerImageErrorPlaceholder(),
           );
         }
 
+        final isSelected = _selectedLayer?.id == layer.id;
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: _selectedLayer?.id == layer.id
-                    ? Colors.white
-                    : Colors.transparent,
+                color: isSelected ? Colors.white : Colors.transparent,
                 width: 2.0,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: imgWidget,
-            ),
+            child: imgWidget,
           ),
         );
         break;

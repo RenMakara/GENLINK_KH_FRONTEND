@@ -3380,22 +3380,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: imgWidget,
-            ),
-          ),
+          child: imgWidget,
         );
         break;
     }

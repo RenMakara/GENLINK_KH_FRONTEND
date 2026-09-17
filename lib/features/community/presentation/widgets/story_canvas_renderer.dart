@@ -471,24 +471,15 @@ Widget buildStoryLayerContent({
       return ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxCanvasWidth),
         child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected ? Colors.white : Colors.transparent,
-              width: 2.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: imgWidget,
-          ),
+          decoration: isSelected
+              ? BoxDecoration(
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 2.0,
+                  ),
+                )
+              : null,
+          child: imgWidget,
         ),
       );
   }

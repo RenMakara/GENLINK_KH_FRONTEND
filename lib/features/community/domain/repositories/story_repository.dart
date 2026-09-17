@@ -26,4 +26,6 @@ abstract class StoryRepository {
   Future<void> replyToStory(String storyId, String message);
   Future<void> markViewed(String storyId);
   Future<List<StoryViewerModel>> getStoryViewers(String storyId);
+  Future<List<StoryMentionUser>> searchMentionUsers({String query = ''}) async =>
+      const [];
 }

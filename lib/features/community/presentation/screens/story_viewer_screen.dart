@@ -2746,7 +2746,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             ),
           )
         else ...[
-          ...story.layers.map((layer) => _buildViewerLayerWidget(layer)),
+          ...story.layers
+              .where((layer) => layer.type != LayerType.mention)
+              .map((layer) => _buildViewerLayerWidget(layer)),
           if (!isTemplate &&
               story.layers.isEmpty &&
               story.textContent != null &&
@@ -3213,41 +3215,53 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
             ? Colors.black
             : Colors.white;
 
-        content = ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxCanvasWidth),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: layer.bgStyle == TextBgStyle.filled
-                  ? Colors.white
-                  : (layer.bgStyle == TextBgStyle.rounded
-                        ? Colors.black.withValues(alpha: 0.65)
-                        : Colors.transparent),
-              borderRadius: BorderRadius.circular(12),
-              border: layer.bgStyle == TextBgStyle.outline
-                  ? Border.all(color: Colors.white, width: 2.0)
-                  : null,
-              boxShadow: hasBg
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: AnimatedDefaultTextStyle(
+        final targetUsername = cleanMention.replaceAll('@', '').trim();
+
+        content = GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () async {
+            if (targetUsername.isNotEmpty) {
+              _pauseStory();
+              await ProfileNavigation.open(username: targetUsername);
+              _resumeStory();
+            }
+          },
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxCanvasWidth),
+            child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              style: TextStyle(
-                color: textColor,
-                fontWeight: FontWeight.w900,
-                fontSize: 18,
-                letterSpacing: 0.5,
+              curve: Curves.easeInOut,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: layer.bgStyle == TextBgStyle.filled
+                    ? Colors.white
+                    : (layer.bgStyle == TextBgStyle.rounded
+                          ? Colors.black.withValues(alpha: 0.65)
+                          : Colors.transparent),
+                borderRadius: BorderRadius.circular(12),
+                border: layer.bgStyle == TextBgStyle.outline
+                    ? Border.all(color: Colors.white, width: 2.0)
+                    : null,
+                boxShadow: hasBg
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
               ),
-              child: Text(cleanMention),
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                  letterSpacing: 0.5,
+                ),
+                child: Text(cleanMention),
+              ),
             ),
           ),
         );
@@ -3500,6 +3514,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                 ],
               ),
             ),
+
+            ...story.layers
+                .where((l) => l.type == LayerType.mention)
+                .map((layer) => _buildViewerLayerWidget(layer)),
 
             Positioned(
               top: 0,

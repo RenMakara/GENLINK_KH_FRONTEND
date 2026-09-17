@@ -74,11 +74,17 @@ class StoryRepositoryImpl implements StoryRepository {
               .map((s) => _storyFromJson((s as Map).cast<String, dynamic>()))
               .toList();
 
+          final authorUsername = (author['username'] as String?)?.trim();
+          final authorFullName = (author['fullName'] as String?)?.trim();
+
           return StoryGroupModel(
             userId: userId,
-            userName: (author['fullName'] as String?) ??
-                (author['username'] as String?) ??
-                'User',
+            userName: (authorFullName != null && authorFullName.isNotEmpty)
+                ? authorFullName
+                : (authorUsername != null && authorUsername.isNotEmpty
+                    ? authorUsername
+                    : 'User'),
+            userHandle: authorUsername,
             userAvatar: (author['avatarUrl'] as String?) ?? '',
             isOwner: isOwner,
             hasUnseen: hasUnseen,
@@ -95,7 +101,9 @@ class StoryRepositoryImpl implements StoryRepository {
           userId: currentUserId.isNotEmpty ? currentUserId : '',
           userName: currentUserName.isNotEmpty && currentUserName != 'Guest'
               ? currentUserName
-              : (currentUserId.isNotEmpty ? currentUserId : 'User'),
+              : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'User'),
+          userHandle:
+              CurrentUser.username.isNotEmpty ? CurrentUser.username : null,
           userAvatar: currentUserAvatar ?? '',
           isOwner: true,
           hasUnseen: false,
@@ -107,6 +115,8 @@ class StoryRepositoryImpl implements StoryRepository {
         final updatedOwnerGroup = StoryGroupModel(
           userId: ownerGroup.userId,
           userName: ownerGroup.userName,
+          userHandle: ownerGroup.userHandle ??
+              (CurrentUser.username.isNotEmpty ? CurrentUser.username : null),
           userAvatar: currentUserAvatar?.isNotEmpty == true
               ? currentUserAvatar!
               : ownerGroup.userAvatar,
@@ -135,7 +145,9 @@ class StoryRepositoryImpl implements StoryRepository {
         userId: currentUserId.isNotEmpty ? currentUserId : '',
         userName: currentUserName.isNotEmpty && currentUserName != 'Guest'
             ? currentUserName
-            : (currentUserId.isNotEmpty ? currentUserId : 'User'),
+            : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'User'),
+        userHandle:
+            CurrentUser.username.isNotEmpty ? CurrentUser.username : null,
         userAvatar: currentUserAvatar ?? '',
         isOwner: true,
         hasUnseen: false,
@@ -493,5 +505,77 @@ class StoryRepositoryImpl implements StoryRepository {
     final img = await picture.toImage(width, height);
     final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
     return byteData!.buffer.asUint8List();
+  }
+
+  @override
+  Future<List<StoryMentionUser>> searchMentionUsers({String query = ''}) async {
+    final client = _client;
+    final cleanQuery = query.trim().toLowerCase().replaceAll('@', '');
+    final List<StoryMentionUser> results = [];
+
+    if (client == null) {
+      return results;
+    }
+
+    final currentUserId = CurrentUser.id;
+    if (currentUserId.isNotEmpty) {
+      try {
+        final followings = await client.get(
+          ApiEndpoints.communityFollowing(currentUserId),
+          parse: (data) => ApiClient.asList(data, (json) {
+            final userMap = json['user'] is Map<String, dynamic>
+                ? json['user'] as Map<String, dynamic>
+                : json;
+            return StoryMentionUser(
+              id: userMap['userId']?.toString() ?? '',
+              displayName: (userMap['fullName'] as String?)?.trim() ?? '',
+              username: (userMap['username'] as String?)?.trim() ?? '',
+              avatarUrl: (userMap['avatarUrl'] as String?)?.trim() ?? '',
+            );
+          }),
+        );
+        for (final u in followings) {
+          if (u.id.startsWith('demo_') || u.id.startsWith('mock_')) continue;
+          if (u.cleanUsername.isNotEmpty &&
+              !results.any((r) =>
+                  r.cleanUsername.toLowerCase() ==
+                  u.cleanUsername.toLowerCase())) {
+            results.add(u);
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (cleanQuery.isNotEmpty && !cleanQuery.contains(' ')) {
+      try {
+        final profile = await client.get(
+          ApiEndpoints.publicProfile(cleanQuery),
+          parse: (data) {
+            final map = ApiClient.asMap(data);
+            final uname = (map['username'] as String?)?.trim() ?? cleanQuery;
+            final fname = (map['fullName'] as String?)?.trim() ?? uname;
+            return StoryMentionUser(
+              id: map['userId']?.toString() ?? '',
+              displayName: fname,
+              username: uname,
+              avatarUrl: (map['avatarUrl'] as String?)?.trim() ?? '',
+            );
+          },
+        );
+        if (profile.id.startsWith('demo_') || profile.id.startsWith('mock_')) {
+          // ignore mock profile
+        } else if (profile.username.isNotEmpty &&
+            !results.any((r) =>
+                r.cleanUsername.toLowerCase() ==
+                profile.cleanUsername.toLowerCase())) {
+          results.add(profile);
+        }
+      } catch (_) {}
+    }
+
+    if (cleanQuery.isEmpty) {
+      return results;
+    }
+    return results.where((u) => u.matchesQuery(cleanQuery)).toList();
   }
 }

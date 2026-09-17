@@ -198,6 +198,12 @@ abstract final class ApiEndpoints {
   static String communityFollowStats(String userId) =>
       '$_base/community/users/$userId/follow-stats';
 
+  static String communityFollowing(String userId) =>
+      '$_base/community/users/$userId/following';
+
+  static String communityFollowers(String userId) =>
+      '$_base/community/users/$userId/followers';
+
   // ── Discussions ───────────────────────────────────────────────────────
   static const communityDiscussions = '$_base/community/discussions';
   static String communityDiscussionDetail(String discussionId) =>
@@ -257,4 +263,12 @@ abstract final class ApiEndpoints {
       '$_base/entertainment/quizzes/$quizId/attempts';
   static const quizHistory = '$_base/entertainment/quizzes/history';
   static const leaderboards = '$_base/entertainment/leaderboards';
+
+  // ── Search ────────────────────────────────────────────────────────────
+  static const search = '$_base/search';
+  static const searchPeople = '$_base/search/people';
+  static const searchPosts = '$_base/search/posts';
+  static const searchEvents = '$_base/search/events';
+  static const searchDiscussions = '$_base/search/discussions';
+  static const trendingHashtags = '$_base/community/hashtags/trending';
 }

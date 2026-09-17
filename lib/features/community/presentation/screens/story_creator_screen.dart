@@ -6,8 +6,12 @@ import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../domain/models/story_model.dart';
+import '../../domain/repositories/story_repository.dart';
+import '../../data/repositories/story_repository_impl.dart';
+import '../../../../shared/utils/current_user.dart';
 import '../controllers/story_controller.dart';
 import '../controllers/story_gallery_controller.dart';
+import '../controllers/community_controller.dart';
 import '../widgets/story_template_canvas.dart';
 import '../widgets/story_template_picker_sheet.dart';
 import 'story_gallery_screen.dart';
@@ -675,13 +679,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     '🎵 Khmer Acoustic Vibe',
     '🎵 Focus Coding Ambient',
     '🎵 Hackathon Energy Beats',
-  ];
-
-  final List<String> _mentionSuggestions = [
-    '@SoknyEnat',
-    '@RenMakara',
-    '@HengChansela',
-    '@AUBClass2026',
   ];
 
   @override
@@ -1833,8 +1830,96 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     });
   }
 
+  Future<List<StoryMentionUser>> _fetchMentionUsers({String query = ''}) async {
+    final Map<String, StoryMentionUser> userMap = {};
+
+    void addUser(StoryMentionUser u) {
+      final handle = u.cleanUsername.toLowerCase().trim();
+      if (handle.isEmpty && u.displayName.trim().isEmpty) return;
+      if (u.id.startsWith('demo_') || u.id.startsWith('mock_')) return;
+      if (!userMap.containsKey(handle)) {
+        userMap[handle] = u;
+      }
+    }
+
+    // 1. Current logged-in user
+    final me = CurrentUser.get();
+    if (me != null && me.username.isNotEmpty && !me.id.startsWith('demo_') && !me.id.startsWith('mock_')) {
+      addUser(StoryMentionUser(
+        id: me.id,
+        displayName: me.fullName.isNotEmpty ? me.fullName : me.username,
+        username: me.username,
+        avatarUrl: me.avatarUrl ?? '',
+      ));
+    }
+
+    // 2. Active story groups from StoryController
+    if (Get.isRegistered<StoryController>()) {
+      final storyCtrl = Get.find<StoryController>();
+      for (final g in storyCtrl.storyGroups) {
+        if (g.userId.startsWith('demo_') || g.userId.startsWith('mock_')) continue;
+        if (g.userName.isNotEmpty &&
+            g.userName != 'User' &&
+            g.userName != 'Guest') {
+          final handle = g.userHandle?.isNotEmpty == true
+              ? g.userHandle!
+              : g.userName.toLowerCase().replaceAll(RegExp(r'\s+'), '');
+          addUser(StoryMentionUser(
+            id: g.userId,
+            displayName: g.userName,
+            username: handle,
+            avatarUrl: g.userAvatar,
+          ));
+        }
+      }
+    }
+
+    // 3. Real community post authors from CommunityController
+    if (Get.isRegistered<CommunityController>()) {
+      try {
+        final commCtrl = Get.find<CommunityController>();
+        for (final p in commCtrl.posts) {
+          if (p.userId.startsWith('demo_') || p.userId.startsWith('mock_')) continue;
+          final tag = p.authorTag.replaceAll('@', '').trim();
+          final name = p.authorName.trim();
+          if (name.isNotEmpty || tag.isNotEmpty) {
+            addUser(StoryMentionUser(
+              id: p.userId,
+              displayName: name.isNotEmpty ? name : tag,
+              username: tag.isNotEmpty
+                  ? tag
+                  : name.toLowerCase().replaceAll(RegExp(r'\s+'), ''),
+              avatarUrl: p.authorAvatar,
+            ));
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 4. Query repository for backend users / followings
+    try {
+      final repo = Get.isRegistered<StoryRepository>()
+          ? Get.find<StoryRepository>()
+          : StoryRepositoryImpl();
+      final backendUsers = await repo.searchMentionUsers(query: query);
+      for (final u in backendUsers) {
+        addUser(u);
+      }
+    } catch (_) {}
+
+    final all = userMap.values.toList();
+    if (query.trim().isEmpty) {
+      return all;
+    }
+    return all.where((u) => u.matchesQuery(query)).toList();
+  }
+
   void _showMentionSheet() {
     final inputCtrl = TextEditingController();
+    List<StoryMentionUser> allUsers = [];
+    List<StoryMentionUser> filteredUsers = [];
+    bool isLoading = true;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1843,95 +1928,250 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-            left: 20,
-            right: 20,
-            top: 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Mention Classmate / User",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            void filter(String q) {
+              final clean = q.trim().toLowerCase().replaceAll('@', '');
+              setSheetState(() {
+                if (clean.isEmpty) {
+                  filteredUsers = List.from(allUsers);
+                } else {
+                  filteredUsers =
+                      allUsers.where((u) => u.matchesQuery(clean)).toList();
+                }
+              });
+            }
+
+            if (isLoading && allUsers.isEmpty) {
+              _fetchMentionUsers().then((users) {
+                if (ctx.mounted) {
+                  setSheetState(() {
+                    allUsers = users;
+                    filteredUsers = users;
+                    isLoading = false;
+                  });
+                }
+              });
+            }
+
+            final hasInput = inputCtrl.text.trim().isNotEmpty;
+            final cleanInput = inputCtrl.text.trim().replaceAll('@', '');
+
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * 0.75,
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: inputCtrl,
-                autofocus: true,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-                decoration: const InputDecoration(
-                  hintText: "e.g. @SoknyEnat",
-                  hintStyle: TextStyle(color: Colors.white38),
-                  prefixIcon: Icon(
-                    Icons.alternate_email_rounded,
-                    color: Colors.white,
-                  ),
-                ),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+                left: 20,
+                right: 20,
+                top: 20,
               ),
-              const SizedBox(height: 16),
-              const Text(
-                "Suggested Members:",
-                style: TextStyle(color: Colors.white54, fontSize: 12),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _mentionSuggestions.map((m) {
-                  return ActionChip(
-                    backgroundColor: AppColors.darkSurfaceSecondary,
-                    label: Text(
-                      m,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    onPressed: () {
-                      _addMentionLayer(m);
-                      Navigator.pop(ctx);
-                    },
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
                   ),
-                  onPressed: () {
-                    var val = inputCtrl.text.trim();
-                    if (val.isNotEmpty) {
-                      if (!val.startsWith('@')) val = '@$val';
-                      _addMentionLayer(val);
-                    }
-                    Navigator.pop(ctx);
-                  },
-                  child: const Text(
-                    "Add Mention",
+                  const SizedBox(height: 14),
+                  const Text(
+                    "Mention Classmate / User",
                     style: TextStyle(
-                      color: Colors.black,
+                      color: Colors.white,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    key: const Key('mention_search_field'),
+                    controller: inputCtrl,
+                    autofocus: true,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    onChanged: (text) {
+                      filter(text);
+                      if (text.trim().length >= 2) {
+                        _fetchMentionUsers(query: text).then((newUsers) {
+                          if (ctx.mounted) {
+                            setSheetState(() {
+                              for (final nu in newUsers) {
+                                if (!allUsers.any((u) =>
+                                    u.cleanUsername.toLowerCase() ==
+                                    nu.cleanUsername.toLowerCase())) {
+                                  allUsers.add(nu);
+                                }
+                              }
+                              filter(inputCtrl.text);
+                            });
+                          }
+                        });
+                      }
+                    },
+                    decoration: InputDecoration(
+                      hintText: "Search name or @username...",
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      prefixIcon: const Icon(
+                        Icons.alternate_email_rounded,
+                        color: Colors.white,
+                      ),
+                      suffixIcon: hasInput
+                          ? IconButton(
+                              icon: const Icon(
+                                Icons.clear,
+                                color: Colors.white54,
+                                size: 18,
+                              ),
+                              onPressed: () {
+                                inputCtrl.clear();
+                                filter('');
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    hasInput ? "Search Results:" : "Suggested Members:",
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                  const SizedBox(height: 8),
+                  if (isLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ),
+                    )
+                  else if (filteredUsers.isNotEmpty)
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: filteredUsers.length,
+                        separatorBuilder: (_, _) => const Divider(
+                          color: Colors.white10,
+                          height: 1,
+                        ),
+                        itemBuilder: (c, idx) {
+                          final user = filteredUsers[idx];
+                          final hasAvatar = user.avatarUrl.isNotEmpty;
+                          ImageProvider? imgProvider;
+                          if (hasAvatar) {
+                            if (user.avatarUrl.startsWith('assets/')) {
+                              imgProvider = AssetImage(user.avatarUrl);
+                            } else {
+                              imgProvider = NetworkImage(user.avatarUrl);
+                            }
+                          }
+
+                          return ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            leading: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: AppColors.darkSurfaceSecondary,
+                              backgroundImage: imgProvider,
+                              child: !hasAvatar
+                                  ? Text(
+                                      user.displayName.isNotEmpty
+                                          ? user.displayName[0].toUpperCase()
+                                          : '@',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            title: Text(
+                              user.displayName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              user.handle,
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
+                            ),
+                            onTap: () {
+                              _addMentionLayer(user.handle);
+                              Navigator.pop(ctx);
+                            },
+                          );
+                        },
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: Text(
+                        hasInput
+                            ? "No users found matching \"$cleanInput\""
+                            : "No members available",
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () {
+                        var val = inputCtrl.text.trim();
+                        if (val.isNotEmpty) {
+                          if (!val.startsWith('@')) val = '@$val';
+                          _addMentionLayer(val);
+                        }
+                        Navigator.pop(ctx);
+                      },
+                      child: Text(
+                        hasInput && cleanInput.isNotEmpty
+                            ? "Mention @$cleanInput"
+                            : "Add Mention",
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

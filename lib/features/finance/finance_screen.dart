@@ -15,6 +15,7 @@ import 'package:genlink_frontend/features/finance/presentation/income_feature/in
 import 'package:genlink_frontend/features/finance/presentation/learn_finance_feature/learn_finance.dart';
 import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_screen.dart';
 import 'package:genlink_frontend/features/finance/widgets/finance_widget.dart';
+import '../home/presentation/widgets/home_header_actions.dart';
 
 class FinanceScreen extends GetView<FinanceController> {
   const FinanceScreen({super.key});
@@ -103,12 +104,8 @@ class _FinanceHeader extends StatelessWidget {
           title: 'finance.title'.tr,
           includeSafeArea: false,
           horizontalPadding: EdgeInsets.zero,
-          actions: [
-            AppHeaderActionButton(
-              icon: Icons.notifications_none_rounded,
-              onTap: () {},
-              tooltip: 'settings.notifications'.tr,
-            ),
+          actions: const [
+            AppHeaderNotificationButton(),
           ],
         ),
 

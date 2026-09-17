@@ -67,6 +67,29 @@ void main() {
       );
     });
 
+    test('routes chat and social references to chat and friend request screens', () {
+      expect(
+        MobilePushNotificationRouter.destinationFor(
+          MobilePushNotificationPayload.fromData(const {
+            'type': 'CHAT_NEW_MESSAGE',
+            'referenceType': 'CHAT_ROOM',
+            'referenceId': 'room-123',
+          }),
+        ),
+        MobilePushNotificationDestination.chat,
+      );
+      expect(
+        MobilePushNotificationRouter.destinationFor(
+          MobilePushNotificationPayload.fromData(const {
+            'type': 'COMMUNITY_FOLLOW_REQUEST',
+            'referenceType': 'USER',
+            'referenceId': 'user-456',
+          }),
+        ),
+        MobilePushNotificationDestination.friendRequests,
+      );
+    });
+
     test('falls back to the notification center for unknown metadata', () {
       expect(
         MobilePushNotificationRouter.destinationFor(

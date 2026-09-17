@@ -5,10 +5,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
+import '../../../../app/routes/app_routes.dart';
 import '../../../media/domain/entities/media_entity.dart';
 import '../../../media/domain/media_upload_service.dart';
 import '../../../profile/presentation/utils/profile_navigation.dart';
 import '../../domain/models/chat_models.dart';
+import '../bindings/chat_binding.dart';
 import '../controllers/chat_controller.dart';
 import '../widgets/chat_avatar.dart';
 import '../widgets/chat_attachment_sheet.dart';
@@ -27,6 +29,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   bool _isSearching = false;
   final TextEditingController _inChatSearchController = TextEditingController();
   String _inChatSearchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _initFromArguments();
+  }
+
+  void _initFromArguments() {
+    final args = Get.arguments;
+    final roomId = (args is Map ? args['roomId'] : args)?.toString().trim();
+    if (roomId != null && roomId.isNotEmpty) {
+      if (!Get.isRegistered<ChatController>()) {
+        ChatBinding().dependencies();
+      }
+      final controller = Get.find<ChatController>();
+      if (controller.activeConversation.value?.id != roomId) {
+        controller.openConversationById(roomId);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -185,6 +207,31 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       if (conv == null) {
         return Scaffold(
           backgroundColor: bgColor,
+          appBar: AppBar(
+            backgroundColor: surfaceColor,
+            elevation: 0,
+            leading: Center(
+              child: AppBackButton(
+                onPressed: () {
+                  if (Navigator.of(context).canPop()) {
+                    Get.back<void>();
+                  } else {
+                    Get.offAllNamed(AppRoutes.home);
+                  }
+                },
+              ),
+            ),
+            title: Text(
+              'chat.title'.tr.isNotEmpty && 'chat.title'.tr != 'chat.title'
+                  ? 'chat.title'.tr
+                  : 'Chat',
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
           body: const Center(
             child: CircularProgressIndicator(color: AppColors.chatPrimary),
           ),

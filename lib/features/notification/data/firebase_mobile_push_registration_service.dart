@@ -15,13 +15,12 @@ import '../domain/mobile_push_registration_service.dart';
 class FirebaseMobilePushRegistrationService
     implements MobilePushRegistrationService {
   FirebaseMobilePushRegistrationService({
-    required ApiClient apiClient,
-    FirebaseMessaging? messaging,
-  }) : _apiClient = apiClient,
-       _messaging = messaging;
+    required this.apiClient,
+    this.messaging,
+  });
 
-  final ApiClient _apiClient;
-  final FirebaseMessaging? _messaging;
+  final ApiClient apiClient;
+  final FirebaseMessaging? messaging;
 
   StreamSubscription<String>? _tokenRefreshSubscription;
   Future<void>? _registrationInFlight;
@@ -47,7 +46,7 @@ class FirebaseMobilePushRegistrationService
       return;
     }
 
-    final messaging = _messaging ?? FirebaseMessaging.instance;
+    final messaging = this.messaging ?? FirebaseMessaging.instance;
     final permission = await messaging.requestPermission(
       alert: true,
       badge: true,
@@ -101,7 +100,7 @@ class FirebaseMobilePushRegistrationService
       if (!_sessionActive) return;
     }
 
-    final response = await _apiClient.put<Map<String, dynamic>>(
+    final response = await apiClient.put<Map<String, dynamic>>(
       ApiEndpoints.notificationDevices,
       body: <String, dynamic>{'platform': platform, 'token': token},
       parse: ApiClient.asMap,
@@ -141,7 +140,7 @@ class FirebaseMobilePushRegistrationService
 
   Future<void> _deactivateRemotely(String deviceId) async {
     try {
-      await _apiClient.delete(ApiEndpoints.notificationDevice(deviceId));
+      await apiClient.delete(ApiEndpoints.notificationDevice(deviceId));
     } catch (error, stackTrace) {
       // The next login re-registers the token and re-associates it with the
       // new account even if logout happened while the API was unavailable.

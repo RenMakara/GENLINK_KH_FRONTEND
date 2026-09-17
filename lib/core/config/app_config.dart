@@ -6,7 +6,7 @@ abstract final class AppConfig {
 
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://18.143.33.191',
+    defaultValue: 'https://api.genlink.enat.online',
   );
 
   static const googleServerClientId = String.fromEnvironment(

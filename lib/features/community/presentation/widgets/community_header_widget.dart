@@ -4,9 +4,7 @@ import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/widgets/headers/app_screen_header.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
-import '../../../chat/presentation/screens/chat_list_screen.dart';
-import '../../../notification/presentation/controllers/notification_controller.dart';
-import '../../../notification/presentation/screens/notification_screen.dart';
+import '../../../home/presentation/widgets/home_header_actions.dart';
 import '../screens/community_search_screen.dart';
 
 class CommunityHeaderWidget extends StatelessWidget
@@ -45,16 +43,8 @@ class CommunityHeaderWidget extends StatelessWidget
             ? 'community.search'.tr
             : 'Search',
       ),
-      _buildNotificationAction(),
-      AppHeaderActionButton(
-        icon: Icons.sms_outlined,
-        onTap: () => Get.to(() => const ChatListScreen()),
-        tooltip:
-            'community.chat'.tr.isNotEmpty &&
-                'community.chat'.tr != 'community.chat'
-            ? 'community.chat'.tr
-            : 'Messages',
-      ),
+      const AppHeaderNotificationButton(),
+      const AppHeaderChatButton(),
     ];
 
     final titleText = isHomeScreen
@@ -104,32 +94,6 @@ class CommunityHeaderWidget extends StatelessWidget
               ? 'Good morning'
               : (hour < 18 ? 'Good afternoon' : 'Good evening'));
     return hour < 12 ? '$greeting ☀️' : greeting;
-  }
-
-  Widget _buildNotificationAction() {
-    final notifTooltip =
-        'community.notifications'.tr.isNotEmpty &&
-            'community.notifications'.tr != 'community.notifications'
-        ? 'community.notifications'.tr
-        : 'Notifications';
-
-    if (!Get.isRegistered<NotificationController>()) {
-      return AppHeaderActionButton(
-        icon: Icons.notifications_none_rounded,
-        onTap: () => Get.to(() => const NotificationScreen()),
-        tooltip: notifTooltip,
-      );
-    }
-
-    final notifController = Get.find<NotificationController>();
-    return Obx(
-      () => AppHeaderActionButton(
-        icon: Icons.notifications_none_rounded,
-        onTap: () => Get.to(() => const NotificationScreen()),
-        hasBadge: notifController.unreadCount > 0,
-        tooltip: notifTooltip,
-      ),
-    );
   }
 }
 

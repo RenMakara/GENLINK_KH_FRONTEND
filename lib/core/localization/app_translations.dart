@@ -409,6 +409,7 @@ class AppTranslations extends Translations {
     'profile.careerInterests': 'Career Interests',
     'profile.connect': 'Connect',
     'profile.shareProfile': 'Share Profile',
+    'profile.chat': 'Chat',
     'profile.shareCopied': 'Profile handle copied',
     'profile.connectUnavailable': 'Connections are not available yet.',
     'profile.projects': 'Projects',
@@ -713,6 +714,10 @@ class AppTranslations extends Translations {
     'notification.emptySystemDesc':
         'System announcements and event notifications will appear here.',
     'notification.errorRetry': 'Something went wrong. Pull to retry.',
+    'notification.errorTitle': 'Something went wrong',
+    'notification.errorDesc':
+        'Unable to load notifications. Please check your connection and try again.',
+    'notification.retry': 'Retry',
     'notification.typeLike': 'Post Reaction',
     'notification.typeComment': 'Comment',
     'notification.typeMention': 'Mentioned You',
@@ -2206,6 +2211,7 @@ class AppTranslations extends Translations {
     'profile.careerInterests': 'ចំណាប់អារម្មណ៍អាជីព',
     'profile.connect': 'ភ្ជាប់',
     'profile.shareProfile': 'ចែករំលែកប្រវត្តិរូប',
+    'profile.chat': 'ជជែក',
     'profile.shareCopied': 'បានចម្លងឈ្មោះប្រវត្តិរូប',
     'profile.connectUnavailable': 'មុខងារភ្ជាប់មិនទាន់មានទេ',
     'profile.projects': 'គម្រោង',
@@ -2510,6 +2516,10 @@ class AppTranslations extends Translations {
     'notification.emptySystemDesc':
         'សេចក្តីប្រកាសប្រព័ន្ធ និងការជូនដំណឹងព្រឹត្តិការណ៍នឹងបង្ហាញនៅទីនេះ',
     'notification.errorRetry': 'មានបញ្ហាកើតឡើង ទាញចុះក្រោមដើម្បីព្យាយាមម្តងទៀត',
+    'notification.errorTitle': 'មានបញ្ហាកើតឡើង',
+    'notification.errorDesc':
+        'មិនអាចទាញយកការជូនដំណឹងបានទេ។ សូមពិនិត្យការតភ្ជាប់អ៊ីនធឺណិតរបស់អ្នក ហើយព្យាយាមម្តងទៀត។',
+    'notification.retry': 'ព្យាយាមម្តងទៀត',
     'notification.typeLike': 'ប្រតិកម្មការបង្ហោះ',
     'notification.typeComment': 'មតិ',
     'notification.typeMention': 'បានលើកឡើងអ្នក',

@@ -16,6 +16,8 @@ import 'package:genlink_frontend/features/chat/presentation/widgets/chat_filter_
 import 'package:genlink_frontend/features/chat/presentation/widgets/chat_list_item.dart';
 import 'package:genlink_frontend/features/chat/presentation/widgets/group_member_tile.dart';
 import 'package:genlink_frontend/features/chat/presentation/widgets/chat_story_reply_card.dart';
+import 'package:genlink_frontend/features/chat/presentation/widgets/message_bubble.dart';
+import 'package:genlink_frontend/features/home/presentation/widgets/home_header_actions.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
 
 class MockDio extends Mock implements Dio {}
@@ -1410,6 +1412,209 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(controller.activeMessages.isEmpty, isTrue);
+    });
+  });
+
+  group('Chat Unread Count, Deep Link & Header Tests', () {
+    late MockDio mockDio;
+    late ChatRemoteDataSource dataSource;
+    late ChatRepositoryImpl repository;
+    late ChatController controller;
+
+    setUp(() {
+      Get.reset();
+      Get.testMode = true;
+      mockDio = MockDio();
+      dataSource = ChatRemoteDataSource(dio: mockDio);
+      repository = ChatRepositoryImpl(remoteDataSource: dataSource);
+      when(() => mockDio.get<dynamic>(any())).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats'),
+          statusCode: 200,
+          data: {'success': true, 'data': {'content': []}},
+        ),
+      );
+      controller = ChatController(repository: repository);
+      Get.put<ChatController>(controller);
+    });
+
+    test('ChatRemoteDataSource and Controller fetchUnreadCount successfully', () async {
+      when(() => mockDio.get<dynamic>(any(that: contains('unread-count')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/unread-count'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {'unreadCount': 7},
+          },
+        ),
+      );
+
+      final count = await dataSource.fetchUnreadCount();
+      expect(count, 7);
+
+      await controller.fetchUnreadCount();
+      expect(controller.unreadCount.value, 7);
+      expect(controller.totalUnreadCount, 7);
+    });
+
+    test('openConversationById fetches room and opens conversation', () async {
+      when(() => mockDio.get<dynamic>(any(that: contains('/api/v1/community/chats/room-deep-link')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-deep-link'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'roomId': 'room-deep-link',
+              'type': 'PRIVATE',
+              'counterpart': {
+                'userId': 'user-deep',
+                'fullName': 'Deep Link User',
+                'username': 'deeplink',
+              },
+              'unreadCount': 0,
+            },
+          },
+        ),
+      );
+
+      when(() => mockDio.post<dynamic>(any(that: contains('/read')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-deep-link/read'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
+
+      when(() => mockDio.get<dynamic>(any(that: contains('/messages')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-deep-link/messages'),
+          statusCode: 200,
+          data: {'success': true, 'data': {'content': []}},
+        ),
+      );
+
+      await controller.openConversationById('room-deep-link');
+      expect(controller.activeConversation.value, isNotNull);
+      expect(controller.activeConversation.value!.id, 'room-deep-link');
+      expect(controller.activeConversation.value!.name, 'Deep Link User');
+    });
+
+    testWidgets('AppHeaderChatButton displays unread badge and synchronizes with controller', (tester) async {
+      controller.unreadCount.value = 0;
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(
+            appBar: PreferredSize(
+              preferredSize: Size.fromHeight(56),
+              child: SafeArea(child: Row(children: [AppHeaderChatButton()])),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // At count 0, no badge text
+      expect(find.byType(AppHeaderChatButton), findsOneWidget);
+      expect(find.text('0'), findsNothing);
+
+      // At count 5, badge displays '5'
+      controller.unreadCount.value = 5;
+      await tester.pumpAndSettle();
+      expect(find.text('5'), findsOneWidget);
+
+      // At count 150, badge displays '99+'
+      controller.unreadCount.value = 150;
+      await tester.pumpAndSettle();
+      expect(find.text('99+'), findsOneWidget);
+    });
+
+    testWidgets('ChatDetailScreen initializes from Get.arguments roomId', (tester) async {
+      when(() => mockDio.get<dynamic>(any(that: contains('/api/v1/community/chats/room-arg-1')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-arg-1'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'roomId': 'room-arg-1',
+              'type': 'PRIVATE',
+              'counterpart': {
+                'userId': 'user-arg',
+                'fullName': 'Argument User',
+              },
+              'unreadCount': 0,
+            },
+          },
+        ),
+      );
+      when(() => mockDio.post<dynamic>(any())).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/read'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
+      when(() => mockDio.get<dynamic>(any(that: contains('/messages')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/messages'),
+          statusCode: 200,
+          data: {'success': true, 'data': {'content': []}},
+        ),
+      );
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(body: Text('Home')),
+          getPages: [
+            GetPage(
+              name: '/chat-detail',
+              page: () => const ChatDetailScreen(),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      Get.toNamed('/chat-detail', arguments: {'roomId': 'room-arg-1'});
+      await tester.pumpAndSettle();
+
+      expect(find.text('Argument User'), findsWidgets);
+      expect(controller.activeConversation.value?.id, 'room-arg-1');
+    });
+
+    testWidgets('MessageBubble renders error icon when deliveryStatus is failed', (tester) async {
+      final failedMessage = ChatMessageModel(
+        id: 'msg-fail',
+        conversationId: 'room-1',
+        senderId: 'user-me',
+        senderName: 'Me',
+        content: 'This message failed to send',
+        isMine: true,
+        deliveryStatus: 'failed',
+        timestamp: DateTime.now(),
+        timeAgo: 'Just now',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MessageBubble(
+              message: failedMessage,
+              onLongPress: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+      expect(find.text('This message failed to send'), findsOneWidget);
     });
   });
 }

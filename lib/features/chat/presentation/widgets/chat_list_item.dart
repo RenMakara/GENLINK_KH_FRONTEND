@@ -32,9 +32,8 @@ class _ChatListItemState extends State<ChatListItem>
   Animation<double>? _anim;
 
   double _dragOffset = 0.0;
-  double _dragStartOffset = 0.0;
-  static const double _actionWidth = 58.0;
-  static const double _maxExtent = _actionWidth * 3; // 174.0
+  static const double _actionWidth = 62.0;
+  static const double _maxExtent = _actionWidth * 3; // 186.0
 
   @override
   void initState() {
@@ -72,18 +71,19 @@ class _ChatListItemState extends State<ChatListItem>
   }
 
   void _handleHorizontalDragStart(DragStartDetails details) {
-    _dragStartOffset = _dragOffset;
+    _animController.stop();
   }
 
   void _handleHorizontalDragUpdate(DragUpdateDetails details) {
+    final delta = details.primaryDelta ?? 0.0;
     setState(() {
-      _dragOffset =
-          (_dragStartOffset + details.primaryDelta!).clamp(-_maxExtent, 0.0);
+      _dragOffset = (_dragOffset + delta).clamp(-_maxExtent, 0.0);
     });
   }
 
   void _handleHorizontalDragEnd(DragEndDetails details) {
-    if (_dragOffset < -_maxExtent / 3) {
+    final velocity = details.primaryVelocity ?? 0.0;
+    if (velocity < -300 || _dragOffset < -_maxExtent / 3) {
       _animateTo(-_maxExtent);
     } else {
       _animateTo(0.0);
@@ -104,15 +104,16 @@ class _ChatListItemState extends State<ChatListItem>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.white, size: 18),
-              const SizedBox(height: 3),
+              Icon(icon, color: Colors.white, size: 20),
+              const SizedBox(height: 4),
               Text(
                 label,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
+                  letterSpacing: -0.1,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -130,8 +131,6 @@ class _ChatListItemState extends State<ChatListItem>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary =
         isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final textMuted =
         isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
 
@@ -139,15 +138,14 @@ class _ChatListItemState extends State<ChatListItem>
     final isStoryReply =
         conversation.lastMessage.toLowerCase().contains('story') ||
             conversation.id.contains('story');
-    final isFinance = conversation.lastMessage.contains('\$') ||
+    final isFinance = conversation.lastMessage.contains(r'$') ||
         conversation.lastMessage.contains('៛') ||
         conversation.lastMessage.toLowerCase().contains('sent') ||
         conversation.lastMessage.toLowerCase().contains('request');
 
+    // 100% opaque background colors to completely prevent background button bleed
     final rowBg = hasUnread
-        ? (isDark
-            ? AppColors.darkSurfaceSecondary.withValues(alpha: 0.35)
-            : AppColors.lightBgSecondary.withValues(alpha: 0.45))
+        ? (isDark ? const Color(0xFF161F2E) : const Color(0xFFF3F7FD))
         : (isDark
             ? AppColors.darkSurfacePrimary
             : AppColors.lightSurfacePrimary);
@@ -222,6 +220,7 @@ class _ChatListItemState extends State<ChatListItem>
         Transform.translate(
           offset: Offset(_dragOffset, 0),
           child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onHorizontalDragStart: _handleHorizontalDragStart,
             onHorizontalDragUpdate: _handleHorizontalDragUpdate,
             onHorizontalDragEnd: _handleHorizontalDragEnd,
@@ -242,214 +241,247 @@ class _ChatListItemState extends State<ChatListItem>
                     widget.onLongPress!();
                   }
                 },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
-                  child: Row(
-                    children: [
-                      ChatAvatar(
-                        avatarUrl: conversation.avatar,
-                        name: conversation.name,
-                        radius: 24,
-                        isOnline: conversation.isOnline,
-                        isEventChat: conversation.isEventChat,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Row(
+                child: Stack(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          ChatAvatar(
+                            avatarUrl: conversation.avatar,
+                            name: conversation.name,
+                            radius: 25,
+                            isOnline: conversation.isOnline,
+                            isEventChat: conversation.isEventChat,
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Expanded(
-                                  child: Row(
-                                    children: [
-                                      Flexible(
-                                        child: Text(
-                                          conversation.name,
-                                          style: TextStyle(
-                                            color: textPrimary,
-                                            fontWeight: hasUnread
-                                                ? FontWeight.w700
-                                                : FontWeight.w600,
-                                            fontSize: 14.5,
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              conversation.name,
+                                              style: TextStyle(
+                                                color: textPrimary,
+                                                fontWeight: hasUnread
+                                                    ? FontWeight.w700
+                                                    : FontWeight.w600,
+                                                fontSize: 15.5,
+                                                letterSpacing: -0.2,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                                          if (conversation.isGroup) ...[
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 5, vertical: 1.5),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.brandPrimary
+                                                    .withValues(
+                                                        alpha: isDark ? 0.18 : 0.08),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                'chat.group'.tr.isNotEmpty &&
+                                                        'chat.group'.tr !=
+                                                            'chat.group'
+                                                    ? 'chat.group'.tr
+                                                    : 'GROUP',
+                                                style: const TextStyle(
+                                                  color: AppColors.brandPrimary,
+                                                  fontSize: 9.5,
+                                                  fontWeight: FontWeight.w700,
+                                                  letterSpacing: 0.3,
+                                                ),
+                                              ),
+                                            ),
+                                          ] else if (conversation.isEventChat) ...[
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 5, vertical: 1.5),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.brandPrimary
+                                                    .withValues(
+                                                        alpha: isDark ? 0.18 : 0.08),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                'chat.eventBadge'.tr.isNotEmpty &&
+                                                        'chat.eventBadge'.tr !=
+                                                            'chat.eventBadge'
+                                                    ? 'chat.eventBadge'.tr
+                                                    : 'EVENT',
+                                                style: const TextStyle(
+                                                  color: AppColors.brandPrimary,
+                                                  fontSize: 9.5,
+                                                  fontWeight: FontWeight.w700,
+                                                  letterSpacing: 0.3,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
-                                      if (conversation.isGroup) ...[
-                                        const SizedBox(width: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 5, vertical: 1.5),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.brandPrimary
-                                                .withValues(
-                                                    alpha: isDark ? 0.18 : 0.08),
-                                            borderRadius:
-                                                BorderRadius.circular(4),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (conversation.isMuted) ...[
+                                          Icon(
+                                            Icons.notifications_off_outlined,
+                                            size: 13,
+                                            color: textMuted,
                                           ),
-                                          child: Text(
-                                            'chat.group'.tr.isNotEmpty &&
-                                                    'chat.group'.tr !=
-                                                        'chat.group'
-                                                ? 'chat.group'.tr
-                                                : 'GROUP',
-                                            style: const TextStyle(
-                                              color: AppColors.brandPrimary,
-                                              fontSize: 9.5,
-                                              fontWeight: FontWeight.w700,
-                                              letterSpacing: 0.3,
-                                            ),
-                                          ),
-                                        ),
-                                      ] else if (conversation.isEventChat) ...[
-                                        const SizedBox(width: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 5, vertical: 1.5),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.brandPrimary
-                                                .withValues(
-                                                    alpha: isDark ? 0.18 : 0.08),
-                                            borderRadius:
-                                                BorderRadius.circular(4),
-                                          ),
-                                          child: Text(
-                                            'chat.eventBadge'.tr.isNotEmpty &&
-                                                    'chat.eventBadge'.tr !=
-                                                        'chat.eventBadge'
-                                                ? 'chat.eventBadge'.tr
-                                                : 'EVENT',
-                                            style: const TextStyle(
-                                              color: AppColors.brandPrimary,
-                                              fontSize: 9.5,
-                                              fontWeight: FontWeight.w700,
-                                              letterSpacing: 0.3,
-                                            ),
+                                          const SizedBox(width: 4),
+                                        ],
+                                        Text(
+                                          conversation.lastMessageTime,
+                                          style: TextStyle(
+                                            color: hasUnread
+                                                ? AppColors.brandPrimary
+                                                : textMuted,
+                                            fontSize: 12,
+                                            fontWeight: hasUnread
+                                                ? FontWeight.w600
+                                                : FontWeight.normal,
                                           ),
                                         ),
                                       ],
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(height: 4),
                                 Row(
-                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    if (conversation.isMuted) ...[
-                                      Icon(
-                                        Icons.volume_off_rounded,
+                                    if (conversation.isPinned) ...[
+                                      const Icon(
+                                        Icons.push_pin_rounded,
                                         size: 13,
-                                        color: textMuted,
+                                        color: AppColors.brandPrimary,
                                       ),
                                       const SizedBox(width: 4),
                                     ],
-                                    Text(
-                                      conversation.lastMessageTime,
-                                      style: TextStyle(
-                                        color: hasUnread
-                                            ? AppColors.brandPrimary
-                                            : textMuted,
-                                        fontSize: 11.5,
-                                        fontWeight: hasUnread
-                                            ? FontWeight.w600
-                                            : FontWeight.normal,
+                                    if (isFinance) ...[
+                                      Icon(
+                                        Icons.account_balance_wallet_outlined,
+                                        size: 13,
+                                        color: hasUnread ? textPrimary : textMuted,
+                                      ),
+                                      const SizedBox(width: 4),
+                                    ] else if (isStoryReply) ...[
+                                      Icon(
+                                        Icons.reply_rounded,
+                                        size: 14,
+                                        color: hasUnread ? textPrimary : textMuted,
+                                      ),
+                                      const SizedBox(width: 4),
+                                    ],
+                                    Expanded(
+                                      child: Text(
+                                        isStoryReply &&
+                                                !conversation.lastMessage
+                                                    .contains('Replied')
+                                            ? ('chat.repliedToYourStory'.tr.isNotEmpty &&
+                                                    'chat.repliedToYourStory'.tr !=
+                                                        'chat.repliedToYourStory'
+                                                ? '${'chat.repliedToYourStory'.tr}: ${conversation.lastMessage}'
+                                                : 'Replied to your story: ${conversation.lastMessage}')
+                                            : (conversation.lastMessage.isEmpty
+                                                ? ('chat.noMessages'.tr.isNotEmpty &&
+                                                        'chat.noMessages'.tr !=
+                                                            'chat.noMessages'
+                                                    ? 'chat.noMessages'.tr
+                                                    : 'No messages yet')
+                                                : conversation.lastMessage),
+                                        style: TextStyle(
+                                          color: conversation.lastMessage.isEmpty
+                                              ? textMuted
+                                              : (hasUnread
+                                                  ? (isDark
+                                                      ? const Color(0xFFE2E8F0)
+                                                      : const Color(0xFF334155))
+                                                  : textMuted),
+                                          fontWeight: (hasUnread &&
+                                                  conversation.lastMessage.isNotEmpty)
+                                              ? FontWeight.w500
+                                              : FontWeight.normal,
+                                          fontStyle: conversation.lastMessage.isEmpty
+                                              ? FontStyle.italic
+                                              : FontStyle.normal,
+                                          fontSize: 13.5,
+                                          height: 1.25,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
+                                    if (hasUnread) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        constraints: const BoxConstraints(
+                                            minWidth: 20, minHeight: 20),
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal:
+                                              conversation.unreadCount > 9 ? 6 : 4,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFEF4444),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          conversation.unreadCount > 99
+                                              ? '99+'
+                                              : '${conversation.unreadCount}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            height: 1,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                if (conversation.isPinned) ...[
-                                  const Icon(
-                                    Icons.push_pin_rounded,
-                                    size: 13,
-                                    color: AppColors.brandPrimary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                ],
-                                if (isFinance) ...[
-                                  Icon(
-                                    Icons.account_balance_wallet_outlined,
-                                    size: 13,
-                                    color: hasUnread ? textPrimary : textMuted,
-                                  ),
-                                  const SizedBox(width: 4),
-                                ] else if (isStoryReply) ...[
-                                  Icon(
-                                    Icons.reply_rounded,
-                                    size: 14,
-                                    color: hasUnread ? textPrimary : textMuted,
-                                  ),
-                                  const SizedBox(width: 4),
-                                ],
-                                Expanded(
-                                  child: Text(
-                                    isStoryReply &&
-                                            !conversation.lastMessage
-                                                .contains('Replied')
-                                        ? ('chat.repliedToYourStory'.tr.isNotEmpty &&
-                                                'chat.repliedToYourStory'.tr !=
-                                                    'chat.repliedToYourStory'
-                                            ? '${'chat.repliedToYourStory'.tr}: ${conversation.lastMessage}'
-                                            : 'Replied to your story: ${conversation.lastMessage}')
-                                        : (conversation.lastMessage.isEmpty
-                                            ? ('chat.noMessages'.tr.isNotEmpty &&
-                                                    'chat.noMessages'.tr !=
-                                                        'chat.noMessages'
-                                                ? 'chat.noMessages'.tr
-                                                : 'No messages yet')
-                                            : conversation.lastMessage),
-                                    style: TextStyle(
-                                      color: hasUnread
-                                          ? textPrimary
-                                          : textSecondary,
-                                      fontWeight: hasUnread
-                                          ? FontWeight.w500
-                                          : FontWeight.normal,
-                                      fontSize: 13.5,
-                                      height: 1.25,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (hasUnread) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    constraints: const BoxConstraints(
-                                        minWidth: 19, minHeight: 19),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 5.5, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.brandPrimary,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      '${conversation.unreadCount}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.bold,
-                                        height: 1,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (hasUnread)
+                      Positioned(
+                        left: 0,
+                        top: 14,
+                        bottom: 14,
+                        child: Container(
+                          width: 3.5,
+                          decoration: const BoxDecoration(
+                            color: AppColors.brandPrimary,
+                            borderRadius: BorderRadius.horizontal(
+                              right: Radius.circular(3),
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ),

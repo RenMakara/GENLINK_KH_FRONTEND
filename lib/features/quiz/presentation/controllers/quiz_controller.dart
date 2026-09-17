@@ -3,14 +3,22 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
+import '../../../../app/routes/app_routes.dart';
+import '../../../../core/errors/app_error.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../domain/models/quiz_models.dart';
 import '../../domain/repositories/quiz_repository.dart';
 
 class QuizController extends GetxController {
-  final QuizRepository _quizRepository = Get.find();
-  final AuthController _authController = Get.find<AuthController>();
+  QuizController({
+    QuizRepository? quizRepository,
+    AuthController? authController,
+  }) : _quizRepository = quizRepository ?? Get.find<QuizRepository>(),
+       _authController = authController ?? Get.find<AuthController>();
+
+  final QuizRepository _quizRepository;
+  final AuthController _authController;
 
   final userStats = const UserStats(
     name: '',
@@ -31,40 +39,23 @@ class QuizController extends GetxController {
   final quizError = RxnString();
   final submitError = RxnString();
 
-  final quizType = QuizType.random.obs;
   final selectedCategory = Rxn<QuizCategory>();
   final currentQuizId = RxnString();
 
-  final opponent = Opponent(
-    name: 'SokHeng',
-    avatarUrl: '',
-    level: 10,
-    winRate: 68,
-  ).obs;
-
-  final isFindingOpponent = true.obs;
-  final opponentSearchProgress = 0.0.obs;
-
   final questions = <QuizQuestion>[].obs;
-  final selectedAnswers = <int, int>{}.obs;
+  final selectedAnswers = <String, String>{}.obs;
   final currentQuestionIndex = 0.obs;
   int get totalQuestions => questions.length;
   final timePerQuestion = 15;
   final timeRemaining = 15.obs;
 
   Timer? _questionTimer;
-  Timer? _matchmakingTimer;
   Worker? _authUserWorker;
-  bool _matchmakingCancelled = false;
   DateTime? _quizStartTime;
 
   final quizResult = Rxn<QuizResult>();
   final isQuizSubmitted = false.obs;
   final isSubmitting = false.obs;
-  final isRewardClaimed = false.obs;
-  final showRewardAnimation = false.obs;
-
-  final leaderboard = <LeaderboardEntry>[].obs;
 
   @override
   void onInit() {
@@ -76,13 +67,11 @@ class QuizController extends GetxController {
     );
     loadQuizzes();
     loadQuizHistory();
-    _loadLeaderboard();
   }
 
   @override
   void onClose() {
     _questionTimer?.cancel();
-    _matchmakingTimer?.cancel();
     _authUserWorker?.dispose();
     super.onClose();
   }
@@ -122,7 +111,7 @@ class QuizController extends GetxController {
       );
     } catch (e) {
       _debugQuizLog('Quiz list error: $e');
-      quizListError.value = e.toString();
+      quizListError.value = _messageForError(e, 'quiz.couldNotLoadQuizzes');
       if (category == null && difficulty == null) {
         categories.clear();
       }
@@ -142,48 +131,8 @@ class QuizController extends GetxController {
     }
   }
 
-  Future<void> _loadLeaderboard() async {
-    try {
-      final entries = await _quizRepository.getLeaderboard(
-        'OVERALL_XP',
-        'ALL_TIME',
-      );
-      leaderboard.value = entries;
-    } catch (_) {}
-  }
-
   void selectCategory(QuizCategory cat) {
     selectedCategory.value = cat;
-  }
-
-  void setQuizType(QuizType type) {
-    quizType.value = type;
-  }
-
-  void startMatchmaking() {
-    _matchmakingCancelled = false;
-    isFindingOpponent.value = true;
-    opponentSearchProgress.value = 0.0;
-    _fetchFirstQuizForSelectedCategory();
-
-    _matchmakingTimer?.cancel();
-    _matchmakingTimer = Timer.periodic(const Duration(milliseconds: 80), (
-      timer,
-    ) {
-      opponentSearchProgress.value += 0.015;
-      if (opponentSearchProgress.value >= 1.0) {
-        opponentSearchProgress.value = 1.0;
-        timer.cancel();
-        Future.delayed(const Duration(milliseconds: 300), () {
-          isFindingOpponent.value = false;
-        });
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (!_matchmakingCancelled && questions.isNotEmpty) {
-            Get.toNamed('/quiz/opponent-found');
-          }
-        });
-      }
-    });
   }
 
   Future<void> _fetchFirstQuizForSelectedCategory() async {
@@ -204,7 +153,7 @@ class QuizController extends GetxController {
       currentQuizId.value = quiz.quizId;
       questions.value = await _quizRepository.getQuizDetails(quiz.quizId);
     } catch (e) {
-      quizError.value = e.toString();
+      quizError.value = _messageForError(e, 'quiz.couldNotLoadQuiz');
       questions.clear();
     } finally {
       isQuizLoading.value = false;
@@ -231,18 +180,11 @@ class QuizController extends GetxController {
         _startQuestionTimer();
       }
     } catch (e) {
-      quizError.value = e.toString();
+      quizError.value = _messageForError(e, 'quiz.couldNotLoadQuiz');
       questions.clear();
     } finally {
       isQuizLoading.value = false;
     }
-  }
-
-  void cancelMatchmaking() {
-    _matchmakingCancelled = true;
-    _matchmakingTimer?.cancel();
-    isFindingOpponent.value = true;
-    opponentSearchProgress.value = 0.0;
   }
 
   Future<void> startQuiz() async {
@@ -262,42 +204,79 @@ class QuizController extends GetxController {
     _questionTimer?.cancel();
     timeRemaining.value = timePerQuestion;
     _questionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (isQuizSubmitted.value) {
+        timer.cancel();
+        return;
+      }
       timeRemaining.value--;
       if (timeRemaining.value <= 0) {
-        nextQuestion();
+        nextQuestion(fromTimer: true);
       }
     });
   }
 
-  void selectAnswer(int questionIndex, int optionIndex) {
-    selectedAnswers[questionIndex] = optionIndex;
+  void selectAnswer(String questionId, String selectedOptionId) {
+    final question = questions.firstWhereOrNull(
+      (item) => item.id == questionId,
+    );
+    if (question == null ||
+        !question.options.any((option) => option.id == selectedOptionId)) {
+      return;
+    }
+    selectedAnswers[questionId] = selectedOptionId;
   }
 
-  void nextQuestion() {
+  int? selectedOptionIndexForQuestion(int questionIndex) {
+    if (questionIndex < 0 || questionIndex >= questions.length) return null;
+    final selectedId = selectedAnswers[questions[questionIndex].id];
+    if (selectedId == null) return null;
+    final optionIndex = questions[questionIndex].options.indexWhere(
+      (option) => option.id == selectedId,
+    );
+    return optionIndex < 0 ? null : optionIndex;
+  }
+
+  bool isQuestionAnswered(int questionIndex) =>
+      selectedOptionIndexForQuestion(questionIndex) != null;
+
+  void nextQuestion({bool fromTimer = false}) {
     _questionTimer?.cancel();
+    if (isQuizSubmitted.value) return;
     if (currentQuestionIndex.value < totalQuestions - 1) {
       currentQuestionIndex.value++;
       _startQuestionTimer();
+    } else if (fromTimer) {
+      _openReview();
     }
   }
 
   void skipQuestion() {
     _questionTimer?.cancel();
-    nextQuestion();
+    if (currentQuestionIndex.value < totalQuestions - 1) {
+      currentQuestionIndex.value++;
+      _startQuestionTimer();
+    } else {
+      _openReview();
+    }
   }
 
   void goToQuestion(int index) {
     _questionTimer?.cancel();
-    currentQuestionIndex.value = index;
+    if (index >= 0 && index < totalQuestions) {
+      currentQuestionIndex.value = index;
+      if (!isQuizSubmitted.value) _startQuestionTimer();
+    }
   }
 
   int get answeredCount => selectedAnswers.length;
   int get unansweredCount => totalQuestions - answeredCount;
 
   Future<void> submitQuiz() async {
+    final quizId = currentQuizId.value;
     if (isQuizSubmitted.value ||
         isSubmitting.value ||
-        currentQuizId.value == null) {
+        quizId == null ||
+        quizId.isEmpty) {
       return;
     }
 
@@ -306,18 +285,21 @@ class QuizController extends GetxController {
     _questionTimer?.cancel();
 
     final answersPayload = <Map<String, String>>[];
-    for (var i = 0; i < totalQuestions; i++) {
-      final selectedOptionIndex = selectedAnswers[i];
-      if (selectedOptionIndex == null) continue;
+    for (final question in questions) {
+      final selectedOptionId = selectedAnswers[question.id];
+      if (selectedOptionId == null ||
+          !question.options.any((option) => option.id == selectedOptionId)) {
+        continue;
+      }
       answersPayload.add({
-        'questionId': questions[i].id,
-        'selectedOptionId': questions[i].options[selectedOptionIndex].id,
+        'questionId': question.id,
+        'selectedOptionId': selectedOptionId,
       });
     }
 
     try {
       final result = await _quizRepository.submitQuizAttempt(
-        currentQuizId.value!,
+        quizId,
         answersPayload,
       );
       final elapsedSeconds = _quizStartTime == null
@@ -328,23 +310,15 @@ class QuizController extends GetxController {
       await loadQuizHistory();
       await _authController.refreshCurrentUser();
     } catch (e) {
-      submitError.value = e.toString();
+      submitError.value = _messageForError(e, 'quiz.submissionFailed');
     } finally {
       isSubmitting.value = false;
     }
   }
 
-  void claimReward() {
-    if (quizResult.value == null) return;
-    isRewardClaimed.value = true;
-  }
-
   void resetQuiz() {
-    _matchmakingCancelled = true;
     isQuizSubmitted.value = false;
     isSubmitting.value = false;
-    isRewardClaimed.value = false;
-    showRewardAnimation.value = false;
     quizResult.value = null;
     currentQuizId.value = null;
     submitError.value = null;
@@ -353,7 +327,25 @@ class QuizController extends GetxController {
     currentQuestionIndex.value = 0;
     selectedCategory.value = null;
     _questionTimer?.cancel();
-    _matchmakingTimer?.cancel();
+  }
+
+  void _openReview() {
+    if (isQuizSubmitted.value) return;
+    _questionTimer?.cancel();
+    Get.toNamed(AppRoutes.quizReview);
+  }
+
+  String _messageForError(Object error, String fallbackKey) {
+    if (error is AppError) {
+      if (error.isUnauthorized) return 'quiz.sessionExpired'.tr;
+      if (error.isNotFound) return 'quiz.couldNotLoadQuiz'.tr;
+      if (error.errorCode == 'NO_QUESTIONS') {
+        return 'quiz.noQuestionsAvailable'.tr;
+      }
+      if (error.isValidation) return 'quiz.invalidSubmission'.tr;
+    }
+    final translated = fallbackKey.tr;
+    return translated == fallbackKey ? 'quiz.requestFailed'.tr : translated;
   }
 
   List<QuizCategory> _buildCategories(List<QuizSummary> quizList) {
@@ -422,6 +414,7 @@ class QuizController extends GetxController {
   }
 
   String _labelFromApiValue(String value) {
+    if (value.toUpperCase() == 'FINANCE') return 'finance.title'.tr;
     return value
         .split('_')
         .where((part) => part.isNotEmpty)

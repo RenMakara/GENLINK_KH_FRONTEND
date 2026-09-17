@@ -37,7 +37,7 @@ class ChatRemoteDataSource {
       () => dio.get<dynamic>('${ApiEndpoints.chats}/$roomId'),
     );
     final data = _dataOf(response.data);
-    return ChatConversationModel.fromRoomResponse(data);
+    return ChatConversationModel.fromRoomResponse(data, roomId: roomId);
   }
 
   Future<ChatConversationModel> openPrivateChat(String userId) async {
@@ -103,7 +103,13 @@ class ChatRemoteDataSource {
           )
           .toList();
       messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      _localMessages[conversationId] = List.from(messages);
+      if (messages.isNotEmpty) {
+        _localMessages[conversationId] = List.from(messages);
+      }
+      if (messages.isEmpty &&
+          (_localMessages[conversationId]?.isNotEmpty ?? false)) {
+        return _localMessages[conversationId]!;
+      }
       return messages;
     } catch (_) {
       return _localMessages[conversationId] ?? <ChatMessageModel>[];
@@ -233,18 +239,25 @@ class ChatRemoteDataSource {
   }
 
   List<dynamic> _contentOf(dynamic body) {
-    final map = _dataOf(body);
-    final content = map['content'];
-    if (content is List) return content;
-    if (map.isEmpty && body is List) return body;
+    if (body is List) return body;
+    if (body is Map) {
+      final data = body['data'];
+      if (data is List) return data;
+      if (data is Map) {
+        final content = data['content'] ?? data['items'] ?? data['messages'];
+        if (content is List) return content;
+      }
+      final content = body['content'] ?? body['items'] ?? body['messages'];
+      if (content is List) return content;
+    }
     return const [];
   }
 
   Map<String, dynamic> _dataOf(dynamic body) {
-    if (body is Map<String, dynamic>) {
+    if (body is Map) {
       final data = body['data'];
       if (data is Map) return data.cast<String, dynamic>();
-      return const <String, dynamic>{};
+      return body.cast<String, dynamic>();
     }
     return const <String, dynamic>{};
   }

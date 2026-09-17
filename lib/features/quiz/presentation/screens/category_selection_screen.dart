@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
@@ -15,12 +16,7 @@ class CategorySelectionScreen extends GetView<QuizController> {
   const CategorySelectionScreen({super.key});
 
   void _navigateAfterCategory() {
-    if (controller.quizType.value == QuizType.single) {
-      _chooseQuizAndStart();
-    } else {
-      controller.startMatchmaking();
-      Get.toNamed('/quiz/matchmaking');
-    }
+    _chooseQuizAndStart();
   }
 
   Future<void> _chooseQuizAndStart() async {
@@ -45,7 +41,7 @@ class CategorySelectionScreen extends GetView<QuizController> {
 
     if (options.length == 1) {
       controller.startSelectedQuiz(options.first.quizId);
-      Get.toNamed('/quiz/in-progress');
+      Get.toNamed(AppRoutes.quizInProgress);
       return;
     }
 
@@ -122,7 +118,7 @@ class CategorySelectionScreen extends GetView<QuizController> {
 
     if (selected == null) return;
     controller.startSelectedQuiz(selected.quizId);
-    Get.toNamed('/quiz/in-progress');
+    Get.toNamed(AppRoutes.quizInProgress);
   }
 
   @override
@@ -303,16 +299,12 @@ class CategorySelectionScreen extends GetView<QuizController> {
                               ?.copyWith(color: QuizThemeColors.heading),
                         ),
                         const SizedBox(height: 4),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: 0.65,
-                            backgroundColor: QuizThemeColors.border,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              QuizThemeColors.primary,
-                            ),
-                            minHeight: 5,
-                          ),
+                        Text(
+                          'quiz.questionsCount'.trParams({
+                            'count': '${cat.questionCount}',
+                          }),
+                          style: Theme.of(Get.context!).textTheme.bodySmall
+                              ?.copyWith(color: QuizThemeColors.body),
                         ),
                       ],
                     ),

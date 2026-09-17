@@ -179,7 +179,7 @@ class _CommunityScreenState extends State<CommunityScreen>
               ClipRect(
                 child: SizeTransition(
                   sizeFactor: headerVisibilityAnimation,
-                  axisAlignment: -1.0,
+                  alignment: Alignment.topCenter,
                   child: SlideTransition(
                     position: headerSlideAnimation,
                     child: FadeTransition(

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +20,14 @@ import 'package:genlink_frontend/features/chat/presentation/widgets/chat_story_r
 import 'package:genlink_frontend/features/chat/presentation/widgets/message_bubble.dart';
 import 'package:genlink_frontend/features/home/presentation/widgets/home_header_actions.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
+import 'package:genlink_frontend/features/notification/domain/models/notification_model.dart';
+import 'package:genlink_frontend/features/notification/presentation/controllers/notification_controller.dart';
+import 'package:genlink_frontend/features/notification/data/repositories/notification_repository_impl.dart';
+import 'package:genlink_frontend/features/notification/data/datasources/notification_remote_datasource.dart';
+import 'package:genlink_frontend/app/routes/app_routes.dart';
+import 'package:genlink_frontend/features/chat/chat_navigation.dart';
+import 'package:genlink_frontend/features/chat/presentation/bindings/chat_binding.dart';
 
 class MockDio extends Mock implements Dio {}
 
@@ -593,7 +602,7 @@ void main() {
       controller = Get.put(ChatController(repository: repository));
     });
 
-    testWidgets('ChatListScreen renders header, online row, and empty state', (tester) async {
+    testWidgets('ChatListScreen renders header and empty state', (tester) async {
       await tester.pumpWidget(
         const GetMaterialApp(
           home: ChatListScreen(),
@@ -602,7 +611,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Messages & Chats'), findsOneWidget);
-      expect(find.text('Sokny Enat'), findsOneWidget);
       expect(find.text('No messages yet'), findsOneWidget);
     });
 
@@ -1617,5 +1625,1254 @@ void main() {
       expect(find.text('This message failed to send'), findsOneWidget);
     });
   });
+
+  group('Stale Chat State, Room Isolation & Race Condition Regression Tests', () {
+    late MockDio mockDio;
+    late ChatRemoteDataSource dataSource;
+    late ChatRepositoryImpl repository;
+    late ChatController controller;
+
+    final convA = ChatConversationModel(
+      id: 'room-A',
+      name: 'User A',
+      avatar: 'assets/images/user_profile.png',
+      lastMessage: 'Message from A',
+      lastMessageTime: '10m ago',
+      unreadCount: 0,
+    );
+
+    final convB = ChatConversationModel(
+      id: 'room-B',
+      name: 'User B',
+      avatar: 'assets/images/user_profile.png',
+      lastMessage: 'Message from B',
+      lastMessageTime: '5m ago',
+      unreadCount: 0,
+    );
+
+    final convC = ChatConversationModel(
+      id: 'room-C',
+      name: 'User C',
+      avatar: 'assets/images/user_profile.png',
+      lastMessage: 'Message from C',
+      lastMessageTime: '1m ago',
+      unreadCount: 0,
+    );
+
+    final msgB = ChatMessageModel(
+      id: 'msg-B-1',
+      conversationId: 'room-B',
+      senderId: 'user-B',
+      senderName: 'User B',
+      content: 'Hello from User B',
+      timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
+      timeAgo: '5m ago',
+      isMine: false,
+    );
+
+    setUp(() {
+      Get.reset();
+      mockDio = MockDio();
+      dataSource = ChatRemoteDataSource(dio: mockDio);
+      repository = ChatRepositoryImpl(remoteDataSource: dataSource);
+      controller = ChatController(repository: repository);
+      Get.put<ChatController>(controller);
+
+      controller.conversations.assignAll([convA, convB, convC]);
+
+      when(() => mockDio.post<dynamic>(any(that: contains('/read')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/read'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
+
+      when(() => mockDio.get<dynamic>(any(that: contains('/api/v1/community/chats/room-A/messages')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-A/messages'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'content': [
+                {
+                  'messageId': 'msg-A-1',
+                  'sender': {'userId': 'user-A', 'fullName': 'User A'},
+                  'type': 'TEXT',
+                  'content': 'Hello from User A',
+                  'createdAt': '2026-09-01T10:00:00Z',
+                },
+              ],
+            },
+          },
+        ),
+      );
+
+      when(() => mockDio.get<dynamic>(any(that: contains('/api/v1/community/chats/room-B/messages')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-B/messages'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'content': [
+                {
+                  'messageId': 'msg-B-1',
+                  'sender': {'userId': 'user-B', 'fullName': 'User B'},
+                  'type': 'TEXT',
+                  'content': 'Hello from User B',
+                  'createdAt': '2026-09-01T10:05:00Z',
+                },
+              ],
+            },
+          },
+        ),
+      );
+
+      when(() => mockDio.get<dynamic>(any(that: contains('/api/v1/community/chats/room-C/messages')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-C/messages'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'content': [
+                {
+                  'messageId': 'msg-C-1',
+                  'sender': {'userId': 'user-C', 'fullName': 'User C'},
+                  'type': 'TEXT',
+                  'content': 'Hello from User C',
+                  'createdAt': '2026-09-01T10:10:00Z',
+                },
+              ],
+            },
+          },
+        ),
+      );
+    });
+
+    test('Test 1 — A -> B: visible messages are strictly B messages without A leakage', () async {
+      await controller.openConversation(convA);
+      expect(controller.activeRoomId.value, 'room-A');
+      expect(controller.activeMessages.length, 1);
+      expect(controller.activeMessages.first.content, 'Hello from User A');
+
+      await controller.openConversation(convB);
+      expect(controller.activeRoomId.value, 'room-B');
+      expect(controller.activeMessages.length, 1);
+      expect(controller.activeMessages.first.content, 'Hello from User B');
+      expect(controller.activeMessages.any((m) => m.conversationId == 'room-A'), isFalse);
+    });
+
+    test('Test 2 — A -> B -> A: each room always displays its own history repeatedly', () async {
+      await controller.openConversation(convA);
+      expect(controller.activeRoomId.value, 'room-A');
+      expect(controller.activeMessages.first.content, 'Hello from User A');
+
+      await controller.openConversation(convB);
+      expect(controller.activeRoomId.value, 'room-B');
+      expect(controller.activeMessages.first.content, 'Hello from User B');
+
+      await controller.openConversation(convA);
+      expect(controller.activeRoomId.value, 'room-A');
+      expect(controller.activeMessages.first.content, 'Hello from User A');
+      expect(controller.activeMessages.any((m) => m.conversationId == 'room-B'), isFalse);
+    });
+
+    test('Test 3 — Async race condition: slow A response does not overwrite fast B response', () async {
+      final completerA = Completer<Response<dynamic>>();
+
+      when(() => mockDio.get<dynamic>(any(that: contains('/api/v1/community/chats/room-A/messages')))).thenAnswer(
+        (_) => completerA.future,
+      );
+
+      // Start slow request for A
+      final futureA = controller.openConversation(convA);
+
+      // Immediately switch to fast request B
+      final futureB = controller.openConversation(convB);
+      await futureB;
+
+      expect(controller.activeRoomId.value, 'room-B');
+      expect(controller.activeMessages.length, 1);
+      expect(controller.activeMessages.first.content, 'Hello from User B');
+
+      // Now complete the slow request A
+      completerA.complete(
+        Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-A/messages'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'content': [
+                {
+                  'messageId': 'msg-A-1',
+                  'sender': {'userId': 'user-A', 'fullName': 'User A'},
+                  'type': 'TEXT',
+                  'content': 'Hello from User A (stale)',
+                  'createdAt': '2026-09-01T10:00:00Z',
+                },
+              ],
+            },
+          },
+        ),
+      );
+      await futureA;
+
+      // Assert B remains active and A's response was completely ignored
+      expect(controller.activeRoomId.value, 'room-B');
+      expect(controller.activeMessages.length, 1);
+      expect(controller.activeMessages.first.content, 'Hello from User B');
+      expect(controller.activeMessages.any((m) => m.conversationId == 'room-A'), isFalse);
+    });
+
+    test('Test 4 — Realtime isolation: incoming message for inactive room does not modify active room', () {
+      controller.activeRoomId.value = 'room-B';
+      controller.activeConversation.value = convB;
+      controller.activeMessages.assignAll([msgB]);
+
+      // Message for Room A arrives in the background
+      final incomingMsgA = ChatMessageModel(
+        id: 'msg-A-new',
+        conversationId: 'room-A',
+        senderId: 'user-A',
+        senderName: 'User A',
+        content: 'Background message for A',
+        timestamp: DateTime.now(),
+        timeAgo: 'Just now',
+        isMine: false,
+      );
+
+      controller.onMessageReceived(incomingMsgA);
+
+      // Assert Room B messages are completely untouched
+      expect(controller.activeMessages.length, 1);
+      expect(controller.activeMessages.first.content, 'Hello from User B');
+      expect(controller.activeMessages.any((m) => m.conversationId == 'room-A'), isFalse);
+
+      // Assert Room A's unreadCount in conversations list was incremented
+      final updatedConvA = controller.conversations.firstWhere((c) => c.id == 'room-A');
+      expect(updatedConvA.unreadCount, 1);
+      expect(updatedConvA.lastMessage, 'Background message for A');
+
+      // Now message for active Room B arrives
+      final incomingMsgB = ChatMessageModel(
+        id: 'msg-B-new',
+        conversationId: 'room-B',
+        senderId: 'user-B',
+        senderName: 'User B',
+        content: 'Live message for B',
+        timestamp: DateTime.now(),
+        timeAgo: 'Just now',
+        isMine: false,
+      );
+
+      controller.onMessageReceived(incomingMsgB);
+
+      // Assert Room B messages now has the new message appended
+      expect(controller.activeMessages.length, 2);
+      expect(controller.activeMessages.last.content, 'Live message for B');
+    });
+
+    test('Test 5 — Notification deep link: opening via deep link loads target history only', () async {
+      await controller.openConversation(convB);
+      expect(controller.activeRoomId.value, 'room-B');
+
+      when(() => mockDio.get<dynamic>(any(that: contains('/api/v1/community/chats/room-notif')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-notif'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'roomId': 'room-notif',
+              'type': 'PRIVATE',
+              'counterpart': {
+                'userId': 'user-notif',
+                'fullName': 'Notification User',
+              },
+              'unreadCount': 0,
+            },
+          },
+        ),
+      );
+
+      when(() => mockDio.get<dynamic>(any(that: contains('/api/v1/community/chats/room-notif/messages')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-notif/messages'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'content': [
+                {
+                  'messageId': 'msg-notif-1',
+                  'sender': {'userId': 'user-notif', 'fullName': 'Notification User'},
+                  'type': 'TEXT',
+                  'content': 'Urgent notification message',
+                  'createdAt': '2026-09-01T12:00:00Z',
+                },
+              ],
+            },
+          },
+        ),
+      );
+
+      await controller.openConversationById('room-notif');
+
+      expect(controller.activeRoomId.value, 'room-notif');
+      expect(controller.activeMessages.length, 1);
+      expect(controller.activeMessages.first.content, 'Urgent notification message');
+      expect(controller.activeMessages.any((m) => m.conversationId == 'room-B'), isFalse);
+    });
+
+    test('Test 6 — Repeated switching: A -> B -> C -> A -> C -> B preserves strict isolation', () async {
+      final sequence = ['room-A', 'room-B', 'room-C', 'room-A', 'room-C', 'room-B'];
+      final convMap = {'room-A': convA, 'room-B': convB, 'room-C': convC};
+      final expectedMsg = {
+        'room-A': 'Hello from User A',
+        'room-B': 'Hello from User B',
+        'room-C': 'Hello from User C',
+      };
+
+      for (final roomId in sequence) {
+        await controller.openConversation(convMap[roomId]!);
+        expect(controller.activeRoomId.value, roomId);
+        expect(controller.activeMessages.length, 1);
+        expect(controller.activeMessages.first.content, expectedMsg[roomId]);
+        expect(controller.activeMessages.every((m) => m.conversationId == roomId), isTrue);
+      }
+    });
+
+    test('Test 7 — Back navigation cleanup: leaveConversation clears activeRoomId and messages', () async {
+      await controller.openConversation(convA);
+      expect(controller.activeRoomId.value, 'room-A');
+      expect(controller.activeMessages.isNotEmpty, isTrue);
+
+      controller.leaveConversation(roomId: 'room-A');
+      expect(controller.activeRoomId.value, isNull);
+      expect(controller.activeConversation.value, isNull);
+      expect(controller.activeMessages, isEmpty);
+      expect(controller.isLoadingMessages.value, isFalse);
+    });
+
+    test('Test 8 — Empty conversation handling: conversation B with 0 messages never retains A messages', () async {
+      await controller.openConversation(convA);
+      expect(controller.activeMessages.length, 1);
+      expect(controller.activeMessages.first.content, 'Hello from User A');
+
+      // Room Empty has empty content
+      when(() => mockDio.get<dynamic>(any(that: contains('/api/v1/community/chats/room-empty/messages')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-empty/messages'),
+          statusCode: 200,
+          data: {'success': true, 'data': {'content': []}},
+        ),
+      );
+
+      final convEmpty = ChatConversationModel(
+        id: 'room-empty',
+        name: 'Empty User',
+        avatar: 'assets/images/user_profile.png',
+        lastMessage: '',
+        lastMessageTime: 'Just now',
+        unreadCount: 0,
+      );
+
+      await controller.openConversation(convEmpty);
+      expect(controller.activeRoomId.value, 'room-empty');
+      expect(controller.activeMessages, isEmpty);
+    });
+
+    testWidgets('Widget Test: ChatDetailScreen switches from A to B cleanly without displaying A messages', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(body: Text('Home')),
+          getPages: [
+            GetPage(
+              name: '/chat-detail',
+              page: () => const ChatDetailScreen(),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open Chat A
+      Get.toNamed('/chat-detail', arguments: {'roomId': 'room-A'});
+      await tester.pumpAndSettle();
+
+      expect(find.text('User A'), findsWidgets);
+      expect(find.text('Hello from User A'), findsOneWidget);
+      // Back to home via AppBackButton
+      await tester.tap(find.byType(AppBackButton));
+      await tester.pumpAndSettle();
+      expect(controller.activeRoomId.value, isNull);
+
+      // Open Chat B
+      Get.toNamed('/chat-detail', arguments: {'roomId': 'room-B'});
+      await tester.pumpAndSettle();
+
+      expect(find.text('User B'), findsWidgets);
+      expect(find.text('Hello from User B'), findsOneWidget);
+      expect(find.text('Hello from User A'), findsNothing);
+    });
+  });
+
+  group('Section I Regression: Chat & Notification Integration & Realtime Sync Tests', () {
+    late MockDio mockDio;
+    late ChatRemoteDataSource dataSource;
+    late ChatRepositoryImpl repository;
+    late ChatController controller;
+    late ChatConversationModel convA;
+    late ChatConversationModel convB;
+
+    setUp(() {
+      Get.reset();
+      mockDio = MockDio();
+      dataSource = ChatRemoteDataSource(dio: mockDio);
+      repository = ChatRepositoryImpl(remoteDataSource: dataSource);
+      controller = ChatController(repository: repository);
+      Get.put<ChatController>(controller);
+
+      convA = ChatConversationModel(
+        id: 'room-A',
+        name: 'User A',
+        avatar: 'assets/images/user_profile.png',
+        lastMessage: 'Hello from User A',
+        lastMessageTime: '10m ago',
+        unreadCount: 0,
+      );
+
+      convB = ChatConversationModel(
+        id: 'room-B',
+        name: 'User B',
+        avatar: 'assets/images/user_profile.png',
+        lastMessage: 'Hello from User B',
+        lastMessageTime: '5m ago',
+        unreadCount: 0,
+      );
+
+      controller.conversations.assignAll([convA, convB]);
+
+      when(() => mockDio.post<dynamic>(any(that: contains('/read')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/read'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
+
+      when(() => mockDio.get<dynamic>(any(that: contains('/unread-count')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/unread-count'),
+          statusCode: 200,
+          data: {'success': true, 'data': {'unreadCount': 5}},
+        ),
+      );
+
+      when(() => mockDio.get<dynamic>(any(that: contains('/room-A/messages')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-A/messages'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'content': [
+                {
+                  'messageId': 'msg-A-1',
+                  'sender': {'userId': 'user-A', 'fullName': 'User A'},
+                  'type': 'TEXT',
+                  'content': 'Hello from User A',
+                  'createdAt': '2026-09-01T10:00:00Z',
+                },
+              ],
+            },
+          },
+        ),
+      );
+
+      when(() => mockDio.get<dynamic>(any(that: contains('/room-B/messages')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-B/messages'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'content': [
+                {
+                  'messageId': 'msg-B-1',
+                  'sender': {'userId': 'user-B', 'fullName': 'User B'},
+                  'type': 'TEXT',
+                  'content': 'Hello from User B',
+                  'createdAt': '2026-09-01T11:00:00Z',
+                },
+              ],
+            },
+          },
+        ),
+      );
+
+      when(() => mockDio.get<dynamic>(any(that: equals('/api/v1/community/chats/room-A')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-A'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'roomId': 'room-A',
+              'type': 'PRIVATE',
+              'name': 'User A',
+              'members': [
+                {'userId': 'user-A', 'fullName': 'User A'},
+              ],
+            },
+          },
+        ),
+      );
+
+      when(() => mockDio.get<dynamic>(any(that: equals('/api/v1/community/chats/room-B')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-B'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'roomId': 'room-B',
+              'type': 'PRIVATE',
+              'name': 'User B',
+              'members': [
+                {'userId': 'user-B', 'fullName': 'User B'},
+              ],
+            },
+          },
+        ),
+      );
+    });
+
+    test('1. Incoming chat message increments Chat unread badge when not in active conversation', () {
+      expect(controller.unreadCount.value, 0);
+      expect(controller.totalUnreadCount, 0);
+
+      final incomingMsg = ChatMessageModel(
+        id: 'msg-realtime-1',
+        conversationId: 'room-A',
+        senderId: 'user-A',
+        senderName: 'User A',
+        content: 'New unread message from A',
+        timestamp: DateTime.now(),
+        timeAgo: 'Just now',
+        isMine: false,
+      );
+
+      controller.onMessageReceived(incomingMsg);
+
+      expect(controller.unreadCount.value, 1);
+      expect(controller.totalUnreadCount, 1);
+      expect(controller.conversations.firstWhere((c) => c.id == 'room-A').unreadCount, 1);
+      expect(controller.conversations.firstWhere((c) => c.id == 'room-A').lastMessage, 'New unread message from A');
+    });
+
+    test('2. Incoming chat message does not increment unread when active conversation is open', () async {
+      await controller.openConversation(convA);
+      expect(controller.activeRoomId.value, 'room-A');
+      expect(controller.unreadCount.value, 0);
+
+      final incomingMsg = ChatMessageModel(
+        id: 'msg-realtime-active',
+        conversationId: 'room-A',
+        senderId: 'user-A',
+        senderName: 'User A',
+        content: 'I am chatting with you live',
+        timestamp: DateTime.now(),
+        timeAgo: 'Just now',
+        isMine: false,
+      );
+
+      controller.onMessageReceived(incomingMsg);
+
+      expect(controller.unreadCount.value, 0);
+      expect(controller.activeMessages.any((m) => m.id == 'msg-realtime-active'), isTrue);
+      expect(controller.activeMessages.last.content, 'I am chatting with you live');
+    });
+
+    test('3. Chat notification increments Notification badge', () async {
+      final notifRepo = NotificationRepositoryImpl(remoteDataSource: NotificationRemoteDataSource(dio: mockDio));
+      final notifController = NotificationController(repository: notifRepo);
+      Get.put<NotificationController>(notifController);
+
+      expect(notifController.totalUnreadCount.value, 0);
+
+      final chatNotif = NotificationModel(
+        id: 'notif-chat-1',
+        type: NotificationType.chat,
+        title: 'User A',
+        body: 'Sent you a message',
+        senderName: 'User A',
+        timeAgo: 'Just now',
+        timestamp: DateTime.now(),
+        targetType: 'CHAT_ROOM',
+        targetId: 'room-A',
+      );
+
+      await notifController.onRealtimeNotificationReceived(chatNotif);
+
+      expect(notifController.totalUnreadCount.value, 1);
+      expect(notifController.notifications.length, 1);
+      expect(notifController.notifications.first.targetId, 'room-A');
+    });
+
+    test('4. Chat notification parses correct conversation/room ID', () {
+      final json = {
+        'id': 'notif-100',
+        'type': 'CHAT',
+        'referenceType': 'CHAT_ROOM',
+        'referenceId': 'room-A',
+        'title': 'User A',
+        'message': 'Hello from User A',
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+
+      final model = NotificationModel.fromJson(json);
+      expect(model.type, NotificationType.chat);
+      expect(model.targetType, 'CHAT_ROOM');
+      expect(model.targetId, 'room-A');
+    });
+
+    test('5 & 6. ChatDetailScreen with roomId parameter loads conversation messages explicitly', () async {
+      final conv = await controller.openConversationById('room-B');
+      expect(conv, isNotNull);
+      expect(controller.activeRoomId.value, 'room-B');
+      expect(controller.activeMessages.isNotEmpty, isTrue);
+      expect(controller.activeMessages.first.content, 'Hello from User B');
+    });
+
+    test('7. Chat A -> Chat B does not show A messages', () async {
+      await controller.openConversation(convA);
+      expect(controller.activeRoomId.value, 'room-A');
+      expect(controller.activeMessages.first.content, 'Hello from User A');
+
+      await controller.openConversation(convB);
+      expect(controller.activeRoomId.value, 'room-B');
+      expect(controller.activeMessages.first.content, 'Hello from User B');
+      expect(controller.activeMessages.any((m) => m.conversationId == 'room-A'), isFalse);
+    });
+
+    test('8. Chat notification A while viewing B opens A correctly and invalidates B', () async {
+      await controller.openConversation(convB);
+      expect(controller.activeRoomId.value, 'room-B');
+      expect(controller.activeMessages.first.content, 'Hello from User B');
+
+      // Tapping notification A
+      await controller.openConversationById('room-A');
+      expect(controller.activeRoomId.value, 'room-A');
+      expect(controller.activeMessages.first.content, 'Hello from User A');
+      expect(controller.activeMessages.any((m) => m.conversationId == 'room-B'), isFalse);
+    });
+
+    test('9. Realtime message appears immediately in active Chat Detail', () async {
+      await controller.openConversation(convA);
+      expect(controller.activeMessages.length, 1);
+
+      final liveMsg = ChatMessageModel(
+        id: 'msg-live-1',
+        conversationId: 'room-A',
+        senderId: 'user-A',
+        senderName: 'User A',
+        content: 'Immediate realtime text',
+        timestamp: DateTime.now(),
+        timeAgo: 'Just now',
+        isMine: false,
+      );
+
+      controller.onMessageReceived(liveMsg);
+
+      expect(controller.activeMessages.length, 2);
+      expect(controller.activeMessages.last.id, 'msg-live-1');
+      expect(controller.activeMessages.last.content, 'Immediate realtime text');
+    });
+
+    test('10. Realtime message for another conversation does NOT appear in active Chat Detail', () async {
+      await controller.openConversation(convA);
+      expect(controller.activeRoomId.value, 'room-A');
+      final beforeCount = controller.activeMessages.length;
+
+      final msgOther = ChatMessageModel(
+        id: 'msg-from-other-room',
+        conversationId: 'room-B',
+        senderId: 'user-B',
+        senderName: 'User B',
+        content: 'Secret from B',
+        timestamp: DateTime.now(),
+        timeAgo: 'Just now',
+        isMine: false,
+      );
+
+      controller.onMessageReceived(msgOther);
+
+      expect(controller.activeMessages.length, beforeCount);
+      expect(controller.activeMessages.any((m) => m.id == 'msg-from-other-room'), isFalse);
+      expect(controller.conversations.firstWhere((c) => c.id == 'room-B').unreadCount, 1);
+      expect(controller.conversations.firstWhere((c) => c.id == 'room-B').lastMessage, 'Secret from B');
+      expect(controller.unreadCount.value, 1);
+    });
+
+    test('11. Reconnect / duplicate message events do not duplicate messages or double-count unread', () {
+      final dupMsg = ChatMessageModel(
+        id: 'msg-dup-check',
+        conversationId: 'room-B',
+        senderId: 'user-B',
+        senderName: 'User B',
+        content: 'Duplicated message text',
+        timestamp: DateTime.now(),
+        timeAgo: 'Just now',
+        isMine: false,
+      );
+
+      controller.onMessageReceived(dupMsg);
+      expect(controller.unreadCount.value, 1);
+      expect(controller.conversations.firstWhere((c) => c.id == 'room-B').unreadCount, 1);
+
+      // Duplicate arrival
+      controller.onMessageReceived(dupMsg);
+      expect(controller.unreadCount.value, 1);
+      expect(controller.conversations.firstWhere((c) => c.id == 'room-B').unreadCount, 1);
+    });
+
+    test('12. Opening conversation marks it read and clears unread badge', () async {
+      controller.conversations.firstWhere((c) => c.id == 'room-A').unreadCount = 3;
+      controller.unreadCount.value = 3;
+      expect(controller.totalUnreadCount, 3);
+
+      await controller.openConversation(convA);
+
+      expect(controller.conversations.firstWhere((c) => c.id == 'room-A').unreadCount, 0);
+      expect(controller.unreadCount.value, 0);
+      expect(controller.totalUnreadCount, 0);
+    });
+
+    test('14. Message loading indicator properly resets to false even if concurrent calls occur', () async {
+      final completer = Completer<Response<dynamic>>();
+      when(() => mockDio.get<dynamic>(any(that: contains('/messages')))).thenAnswer(
+        (_) => completer.future,
+      );
+
+      final future = controller.openConversation(convA);
+      expect(controller.isLoadingMessages.value, isTrue);
+
+      completer.complete(
+        Response(
+          requestOptions: RequestOptions(path: '/messages'),
+          statusCode: 200,
+          data: {'success': true, 'data': {'content': []}},
+        ),
+      );
+      await future;
+
+      expect(controller.isLoadingMessages.value, isFalse);
+    });
+
+    testWidgets('15. ChatDetailScreen renders loaded messages and dismisses loading indicator', (tester) async {
+      when(() => mockDio.get<dynamic>(any(that: contains('/api/v1/community/chats/room-spinner-test')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-spinner-test'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'roomId': 'room-spinner-test',
+              'type': 'PRIVATE',
+              'counterpart': {
+                'userId': 'user-spinner',
+                'fullName': 'Ren Makara',
+              },
+              'unreadCount': 0,
+            },
+          },
+        ),
+      );
+      when(() => mockDio.get<dynamic>(any(that: contains('/api/v1/community/chats/room-spinner-test/messages')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-spinner-test/messages'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'content': [
+                {
+                  'messageId': 'msg-1',
+                  'sender': {'userId': 'user-spinner', 'fullName': 'Ren Makara'},
+                  'type': 'TEXT',
+                  'content': 'Hello from Ren Makara!',
+                  'createdAt': '2026-09-01T10:00:00Z',
+                },
+              ],
+            },
+          },
+        ),
+      );
+
+      await tester.pumpWidget(
+        const GetMaterialApp(
+          home: ChatDetailScreen(roomId: 'room-spinner-test'),
+        ),
+      );
+
+      // Loading initially
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      await tester.pumpAndSettle();
+
+      // Loading is gone, message is rendered
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('Hello from Ren Makara!'), findsOneWidget);
+      expect(controller.isLoadingMessages.value, isFalse);
+    });
+  });
+
+  group('Section J Regression: Chat Navigation Lifecycle & Re-entry Tests', () {
+    late MockDio mockDio;
+    late ChatRemoteDataSource dataSource;
+    late ChatRepositoryImpl repository;
+    late ChatController controller;
+    late ChatConversationModel convA;
+    late ChatConversationModel convB;
+
+    setUp(() {
+      Get.reset();
+      mockDio = MockDio();
+      dataSource = ChatRemoteDataSource(dio: mockDio);
+      repository = ChatRepositoryImpl(remoteDataSource: dataSource);
+      controller = ChatController(repository: repository);
+      Get.put<ChatController>(controller, permanent: true);
+
+      convA = ChatConversationModel(
+        id: 'room-A',
+        name: 'User A',
+        avatar: 'assets/images/user_profile.png',
+        lastMessage: 'Hello from User A',
+        lastMessageTime: '10m ago',
+        unreadCount: 0,
+      );
+
+      convB = ChatConversationModel(
+        id: 'room-B',
+        name: 'User B',
+        avatar: 'assets/images/user_profile.png',
+        lastMessage: 'Hello from User B',
+        lastMessageTime: '5m ago',
+        unreadCount: 0,
+      );
+
+      controller.conversations.assignAll([convA, convB]);
+
+      when(() => mockDio.post<dynamic>(any(that: contains('/read')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/read'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
+
+      when(() => mockDio.get<dynamic>(any(that: contains('/unread-count')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/unread-count'),
+          statusCode: 200,
+          data: {'success': true, 'data': {'unreadCount': 0}},
+        ),
+      );
+
+      when(() => mockDio.get<dynamic>(any(that: contains('/room-A/messages')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-A/messages'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'content': [
+                {
+                  'messageId': 'msg-A-1',
+                  'sender': {'userId': 'user-A', 'fullName': 'User A'},
+                  'type': 'TEXT',
+                  'content': 'Hello from User A',
+                  'createdAt': '2026-09-01T10:00:00Z',
+                },
+              ],
+            },
+          },
+        ),
+      );
+
+      when(() => mockDio.get<dynamic>(any(that: contains('/room-B/messages')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-B/messages'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'content': [
+                {
+                  'messageId': 'msg-B-1',
+                  'sender': {'userId': 'user-B', 'fullName': 'User B'},
+                  'type': 'TEXT',
+                  'content': 'Hello from User B',
+                  'createdAt': '2026-09-01T11:00:00Z',
+                },
+              ],
+            },
+          },
+        ),
+      );
+
+      when(() => mockDio.get<dynamic>(any(that: equals('/api/v1/community/chats/room-A')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-A'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'roomId': 'room-A',
+              'type': 'PRIVATE',
+              'name': 'User A',
+              'members': [
+                {'userId': 'user-A', 'fullName': 'User A'},
+              ],
+            },
+          },
+        ),
+      );
+
+      when(() => mockDio.get<dynamic>(any(that: equals('/api/v1/community/chats/room-B')))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-B'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'roomId': 'room-B',
+              'type': 'PRIVATE',
+              'name': 'User B',
+              'members': [
+                {'userId': 'user-B', 'fullName': 'User B'},
+              ],
+            },
+          },
+        ),
+      );
+    });
+
+    testWidgets('Test 1: Header Chat -> Chat Detail A -> Back -> Header Chat -> Chat Detail A loads messages on second visit', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(body: Text('Home')),
+          getPages: [
+            GetPage(
+              name: AppRoutes.chatDetail,
+              page: () => const ChatDetailScreen(),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Step 1: Open Chat A via ChatNavigation
+      ChatNavigation.openChatDetail('room-A', conversation: convA);
+      await tester.pumpAndSettle();
+
+      expect(find.text('User A'), findsWidgets);
+      expect(find.text('Hello from User A'), findsOneWidget);
+      expect(controller.activeRoomId.value, 'room-A');
+      expect(controller.activeMessages, isNotEmpty);
+
+      // Step 2: Exit / Back to Home
+      await tester.tap(find.byType(AppBackButton));
+      await tester.pumpAndSettle();
+      expect(controller.activeRoomId.value, isNull);
+
+      // Step 3: Re-enter Chat A via Header Chat -> Chat Detail
+      ChatNavigation.openChatDetail('room-A', conversation: convA);
+      await tester.pumpAndSettle();
+
+      // Verify: Messages are reliably displayed and not cleared or blank
+      expect(find.text('User A'), findsWidgets);
+      expect(find.text('Hello from User A'), findsOneWidget);
+      expect(controller.activeRoomId.value, 'room-A');
+      expect(controller.activeMessages, isNotEmpty);
+      expect(controller.isLoadingMessages.value, isFalse);
+    });
+
+    testWidgets('Test 2: Header Chat -> Chat Detail A -> Back -> Header Chat -> Chat Detail B loads only Room B messages', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(body: Text('Home')),
+          getPages: [
+            GetPage(
+              name: AppRoutes.chatDetail,
+              page: () => const ChatDetailScreen(),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open A
+      ChatNavigation.openChatDetail('room-A', conversation: convA);
+      await tester.pumpAndSettle();
+      expect(find.text('Hello from User A'), findsOneWidget);
+
+      // Back
+      await tester.tap(find.byType(AppBackButton));
+      await tester.pumpAndSettle();
+
+      // Open B
+      ChatNavigation.openChatDetail('room-B', conversation: convB);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hello from User B'), findsOneWidget);
+      expect(find.text('Hello from User A'), findsNothing);
+      expect(controller.activeRoomId.value, 'room-B');
+      expect(controller.activeMessages.any((m) => m.conversationId == 'room-A'), isFalse);
+    });
+
+    test('Test 3: Chat A -> B -> A switching restores target history cleanly', () async {
+      await controller.ensureConversationLoaded('room-A', conversation: convA);
+      expect(controller.activeRoomId.value, 'room-A');
+      expect(controller.activeMessages.first.content, 'Hello from User A');
+
+      await controller.ensureConversationLoaded('room-B', conversation: convB);
+      expect(controller.activeRoomId.value, 'room-B');
+      expect(controller.activeMessages.first.content, 'Hello from User B');
+      expect(controller.activeMessages.any((m) => m.conversationId == 'room-A'), isFalse);
+
+      await controller.ensureConversationLoaded('room-A', conversation: convA);
+      expect(controller.activeRoomId.value, 'room-A');
+      expect(controller.activeMessages.first.content, 'Hello from User A');
+      expect(controller.activeMessages.any((m) => m.conversationId == 'room-B'), isFalse);
+    });
+
+    testWidgets('Test 4: Public Profile -> Chat A -> Back -> Public Profile -> Chat A preserves message history', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(body: Text('Home')),
+          getPages: [
+            GetPage(
+              name: AppRoutes.chatDetail,
+              page: () => const ChatDetailScreen(),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Profile path initiates ChatNavigation.openChatDetail
+      ChatNavigation.openChatDetail('room-A', conversation: convA);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hello from User A'), findsOneWidget);
+
+      // Back
+      await tester.tap(find.byType(AppBackButton));
+      await tester.pumpAndSettle();
+
+      // Re-enter from Profile
+      ChatNavigation.openChatDetail('room-A', conversation: convA);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hello from User A'), findsOneWidget);
+      expect(controller.activeMessages, isNotEmpty);
+    });
+
+    testWidgets('Test 5: Header Chat -> A, then Notification -> B loads B without A leakage', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(body: Text('Home')),
+          getPages: [
+            GetPage(
+              name: AppRoutes.chatDetail,
+              page: () => const ChatDetailScreen(),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // In Room A
+      ChatNavigation.openChatDetail('room-A', conversation: convA);
+      await tester.pumpAndSettle();
+      expect(find.text('Hello from User A'), findsOneWidget);
+
+      // Push notification arrives for Room B and user taps it
+      ChatNavigation.openChatDetail('room-B');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hello from User B'), findsOneWidget);
+      expect(find.text('Hello from User A'), findsNothing);
+      expect(controller.activeRoomId.value, 'room-B');
+      expect(controller.activeMessages.any((m) => m.conversationId == 'room-A'), isFalse);
+    });
+
+    test('Test 6: Fast exit and re-entry before async fetch completes does not result in empty or corrupted state', () async {
+      final completer1 = Completer<Response<dynamic>>();
+      final completer2 = Completer<Response<dynamic>>();
+      var callCount = 0;
+
+      when(() => mockDio.get<dynamic>(any(that: contains('/room-A/messages')))).thenAnswer((_) {
+        callCount++;
+        if (callCount == 1) return completer1.future;
+        return completer2.future;
+      });
+
+      // Visit 1: Start loading A
+      final future1 = controller.ensureConversationLoaded('room-A', conversation: convA);
+      expect(controller.isLoadingMessages.value, isTrue);
+
+      // User exits immediately
+      controller.leaveConversation();
+      expect(controller.activeRoomId.value, isNull);
+
+      // Visit 2: Re-enter A immediately
+      final future2 = controller.ensureConversationLoaded('room-A', conversation: convA);
+      expect(controller.activeRoomId.value, 'room-A');
+
+      // Completer 1 resolves (stale request)
+      completer1.complete(
+        Response(
+          requestOptions: RequestOptions(path: '/room-A/messages'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'content': [
+                {
+                  'messageId': 'msg-A-old',
+                  'sender': {'userId': 'user-A', 'fullName': 'User A'},
+                  'type': 'TEXT',
+                  'content': 'Stale message from request 1',
+                  'createdAt': '2026-09-01T10:00:00Z',
+                },
+              ],
+            },
+          },
+        ),
+      );
+      await future1;
+
+      // Completer 2 resolves (current request)
+      completer2.complete(
+        Response(
+          requestOptions: RequestOptions(path: '/room-A/messages'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'content': [
+                {
+                  'messageId': 'msg-A-fresh',
+                  'sender': {'userId': 'user-A', 'fullName': 'User A'},
+                  'type': 'TEXT',
+                  'content': 'Fresh message from request 2',
+                  'createdAt': '2026-09-01T10:05:00Z',
+                },
+              ],
+            },
+          },
+        ),
+      );
+      await future2;
+
+      // Verify: Sequence token protected state, messages contain fresh data and not empty
+      expect(controller.activeMessages.length, 1);
+      expect(controller.activeMessages.first.id, 'msg-A-fresh');
+      expect(controller.activeMessages.first.content, 'Fresh message from request 2');
+      expect(controller.isLoadingMessages.value, isFalse);
+    });
+
+    test('Test 7: Realtime message after re-entering A appends immediately to active conversation', () async {
+      // First visit
+      await controller.ensureConversationLoaded('room-A', conversation: convA);
+      expect(controller.activeMessages.length, 1);
+
+      // Exit
+      controller.leaveConversation();
+      expect(controller.activeRoomId.value, isNull);
+
+      // Re-enter
+      await controller.ensureConversationLoaded('room-A', conversation: convA);
+      expect(controller.activeRoomId.value, 'room-A');
+      expect(controller.activeMessages.length, 1);
+
+      // Incoming live message
+      final liveMsg = ChatMessageModel(
+        id: 'msg-live-reentry',
+        conversationId: 'room-A',
+        senderId: 'user-A',
+        senderName: 'User A',
+        content: 'Realtime text after re-entry',
+        timestamp: DateTime.now(),
+        timeAgo: 'Just now',
+        isMine: false,
+      );
+
+      controller.onMessageReceived(liveMsg);
+
+      expect(controller.activeMessages.length, 2);
+      expect(controller.activeMessages.last.id, 'msg-live-reentry');
+      expect(controller.activeMessages.last.content, 'Realtime text after re-entry');
+      expect(controller.unreadCount.value, 0); // Active conversation does not increment unread badge
+    });
+
+    testWidgets('Test 8: ChatController permanent singleton is preserved across route transitions and not recreated', (tester) async {
+      Get.reset();
+      final mockDioInstance = MockDio();
+      Get.put<Dio>(mockDioInstance);
+
+      // Register via ChatBinding which sets permanent: true
+      ChatBinding().dependencies();
+
+      expect(Get.isRegistered<ChatController>(), isTrue);
+      final initialControllerInstance = Get.find<ChatController>();
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(body: Text('Home')),
+          getPages: [
+            GetPage(
+              name: AppRoutes.chatDetail,
+              page: () => const ChatDetailScreen(),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Navigate to chat detail
+      ChatNavigation.openChatDetail('room-A');
+      await tester.pumpAndSettle();
+
+      // Navigate back
+      await tester.tap(find.byType(AppBackButton));
+      await tester.pumpAndSettle();
+
+      // Controller should still be registered and be the exact same instance
+      expect(Get.isRegistered<ChatController>(), isTrue);
+      final postPopControllerInstance = Get.find<ChatController>();
+      expect(identical(initialControllerInstance, postPopControllerInstance), isTrue);
+    });
+  });
 }
+
 

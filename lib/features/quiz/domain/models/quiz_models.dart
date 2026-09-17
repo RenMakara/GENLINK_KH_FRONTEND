@@ -1,5 +1,3 @@
-enum QuizType { single, random }
-
 class QuizSummary {
   final String quizId;
   final String title;
@@ -45,20 +43,6 @@ class QuizCategory {
   });
 }
 
-class Opponent {
-  final String name;
-  final String avatarUrl;
-  final int level;
-  final int winRate;
-
-  const Opponent({
-    required this.name,
-    required this.avatarUrl,
-    required this.level,
-    required this.winRate,
-  });
-}
-
 class QuizOptionModel {
   final String id;
   final String text;
@@ -82,16 +66,25 @@ class QuizQuestion {
 
 class QuizQuestionResult {
   final String questionId;
-  final String selectedOptionId;
-  final String correctOptionId;
+  final String? selectedOptionId;
+  final String? correctOptionId;
   final bool correct;
 
   const QuizQuestionResult({
     required this.questionId,
-    required this.selectedOptionId,
-    required this.correctOptionId,
+    this.selectedOptionId,
+    this.correctOptionId,
     required this.correct,
   });
+
+  factory QuizQuestionResult.fromJson(Map<String, dynamic> json) {
+    return QuizQuestionResult(
+      questionId: (json['questionId'] ?? '').toString(),
+      selectedOptionId: json['selectedOptionId']?.toString(),
+      correctOptionId: json['correctOptionId']?.toString(),
+      correct: json['correct'] == true,
+    );
+  }
 }
 
 class QuizResult {
@@ -101,7 +94,6 @@ class QuizResult {
   final int total;
   final int timeTakenSeconds;
   final int xpEarned;
-  final int coinsEarned;
   final int accuracyPercent;
   final List<QuizQuestionResult> results;
 
@@ -112,7 +104,6 @@ class QuizResult {
     required this.total,
     required this.timeTakenSeconds,
     required this.xpEarned,
-    required this.coinsEarned,
     required this.accuracyPercent,
     this.results = const [],
   });
@@ -124,7 +115,6 @@ class QuizResult {
     int? total,
     int? timeTakenSeconds,
     int? xpEarned,
-    int? coinsEarned,
     int? accuracyPercent,
     List<QuizQuestionResult>? results,
   }) {
@@ -135,7 +125,6 @@ class QuizResult {
       total: total ?? this.total,
       timeTakenSeconds: timeTakenSeconds ?? this.timeTakenSeconds,
       xpEarned: xpEarned ?? this.xpEarned,
-      coinsEarned: coinsEarned ?? this.coinsEarned,
       accuracyPercent: accuracyPercent ?? this.accuracyPercent,
       results: results ?? this.results,
     );
@@ -177,32 +166,12 @@ class QuizAttemptSummary {
   }
 }
 
-class LeaderboardEntry {
-  final int rank;
-  final String name;
-  final String avatarUrl;
-  final int xp;
-  final bool isCurrentUser;
-
-  const LeaderboardEntry({
-    required this.rank,
-    required this.name,
-    required this.avatarUrl,
-    required this.xp,
-    this.isCurrentUser = false,
-  });
-}
-
 class UserStats {
   final String name;
   final String? avatarUrl;
   final int level;
   final int xp;
   final int xpToNextLevel;
-  final int? streak;
-  final int? coins;
-  final int? badges;
-  final int? totalQuizzes;
 
   const UserStats({
     required this.name,
@@ -210,10 +179,6 @@ class UserStats {
     required this.level,
     required this.xp,
     required this.xpToNextLevel,
-    this.streak,
-    this.coins,
-    this.badges,
-    this.totalQuizzes,
   });
 
   /// The backend stores total XP and derives level from 100 XP bands.

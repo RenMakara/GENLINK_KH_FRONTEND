@@ -116,33 +116,38 @@ class EventModel {
       return m == 'IN_PERSON' || m == 'INPERSON';
     }
     if (eventType.toLowerCase().contains('person') ||
-        eventType.toLowerCase().contains('campus'))
+        eventType.toLowerCase().contains('campus')) {
       return true;
+    }
     return eventMode == EventMode.inPerson;
   }
 
   String get effectiveLocation {
     if (isOnline) {
-      if (meetingUrl != null && meetingUrl!.trim().isNotEmpty)
+      if (meetingUrl != null && meetingUrl!.trim().isNotEmpty) {
         return meetingUrl!.trim();
+      }
       return onlineLink;
     } else {
-      if (locationName != null && locationName!.trim().isNotEmpty)
+      if (locationName != null && locationName!.trim().isNotEmpty) {
         return locationName!.trim();
+      }
       return location;
     }
   }
 
   String get effectiveLocationName {
-    if (locationName != null && locationName!.trim().isNotEmpty)
+    if (locationName != null && locationName!.trim().isNotEmpty) {
       return locationName!.trim();
+    }
     if (location.isNotEmpty) return location;
     return '';
   }
 
   String get effectiveMeetingUrl {
-    if (meetingUrl != null && meetingUrl!.trim().isNotEmpty)
+    if (meetingUrl != null && meetingUrl!.trim().isNotEmpty) {
       return meetingUrl!.trim();
+    }
     if (onlineLink.isNotEmpty) return onlineLink;
     return '';
   }
@@ -235,8 +240,9 @@ class EventModel {
       if (range.isNotEmpty) return range;
       return dateString.isNotEmpty ? dateString : 'Date TBC';
     }
-    if (startDateTime == null)
+    if (startDateTime == null) {
       return dateString.isNotEmpty ? dateString : 'Date TBC';
+    }
     final yearKh = _toKhmerDigits(startDateTime!.year);
     if (endDateTime == null ||
         (startDateTime!.year == endDateTime!.year &&

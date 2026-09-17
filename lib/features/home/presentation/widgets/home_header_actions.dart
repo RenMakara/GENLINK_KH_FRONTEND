@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/widgets/headers/app_screen_header.dart';
 import '../../../chat/presentation/controllers/chat_controller.dart';
+import '../../../notification/domain/models/notification_model.dart';
 import '../../../notification/presentation/controllers/notification_controller.dart';
 
 /// Reusable top-bar notification button displaying synchronized live unread badge.
@@ -33,9 +34,19 @@ class AppHeaderNotificationButton extends StatelessWidget {
 
     final notifController = Get.find<NotificationController>();
     return Obx(() {
-      final unread = notifController.totalUnreadCount.value > 0
-          ? notifController.totalUnreadCount.value
-          : notifController.unreadCount;
+      final serverUnread = notifController.totalUnreadCount.value;
+      final localUnread = notifController.notifications
+          .where((n) => !n.isRead && n.type != NotificationType.chat)
+          .length;
+      final unreadChatCount = notifController.notifications
+          .where((n) => !n.isRead && n.type == NotificationType.chat)
+          .length;
+      final adjustedServerUnread = serverUnread > unreadChatCount
+          ? serverUnread - unreadChatCount
+          : localUnread;
+      final unread = adjustedServerUnread > localUnread
+          ? adjustedServerUnread
+          : localUnread;
 
       return AppHeaderActionButton(
         icon: Icons.notifications_none_rounded,
@@ -64,21 +75,28 @@ class AppHeaderChatButton extends StatelessWidget {
     if (!Get.isRegistered<ChatController>()) {
       return AppHeaderActionButton(
         icon: Icons.sms_outlined,
-        onTap: () => Get.toNamed<void>(AppRoutes.chat),
+        onTap: () {
+          debugPrint('[CHAT-NAV] source = Header, currentRoute = ${Get.currentRoute}');
+          Get.toNamed<void>(AppRoutes.chat);
+        },
         tooltip: effectiveTooltip,
       );
     }
 
     final chatController = Get.find<ChatController>();
     return Obx(() {
-      final count = chatController.unreadCount.value > 0
-          ? chatController.unreadCount.value
-          : chatController.totalUnreadCount;
+      final serverCount = chatController.unreadCount.value;
+      final localCount = chatController.conversations
+          .fold(0, (sum, item) => sum + item.unreadCount);
+      final count = serverCount > localCount ? serverCount : localCount;
 
       return AppHeaderActionButton(
         icon: Icons.sms_outlined,
         badgeCount: count,
-        onTap: () => Get.toNamed<void>(AppRoutes.chat),
+        onTap: () {
+          debugPrint('[CHAT-NAV] source = Header, currentRoute = ${Get.currentRoute}, controller = ${identityHashCode(chatController)}');
+          Get.toNamed<void>(AppRoutes.chat);
+        },
         tooltip: effectiveTooltip,
       );
     });

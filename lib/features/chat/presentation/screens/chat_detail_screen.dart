@@ -19,7 +19,9 @@ import '../widgets/message_bubble.dart';
 import '../widgets/message_composer.dart';
 
 class ChatDetailScreen extends StatefulWidget {
-  const ChatDetailScreen({super.key});
+  const ChatDetailScreen({super.key, this.roomId});
+
+  final String? roomId;
 
   @override
   State<ChatDetailScreen> createState() => _ChatDetailScreenState();
@@ -29,30 +31,71 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   bool _isSearching = false;
   final TextEditingController _inChatSearchController = TextEditingController();
   String _inChatSearchQuery = '';
+  String? _screenRoomId;
 
   @override
   void initState() {
     super.initState();
-    _initFromArguments();
+    final args = Get.arguments;
+    final roomId = (widget.roomId ?? (args is Map ? args['roomId'] : args))?.toString().trim();
+    if (roomId != null && roomId.isNotEmpty) {
+      _screenRoomId = roomId;
+    }
+    final c = Get.isRegistered<ChatController>() ? Get.find<ChatController>() : null;
+    debugPrint('[CHAT-DETAIL] initState roomId = ${widget.roomId}, screenRoomId = $_screenRoomId, controller = ${c != null ? identityHashCode(c) : "not registered"}');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _initFromArguments();
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(ChatDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final c = Get.isRegistered<ChatController>() ? Get.find<ChatController>() : null;
+    debugPrint('[CHAT-DETAIL] didUpdateWidget roomId = ${widget.roomId} (old: ${oldWidget.roomId}), controller = ${c != null ? identityHashCode(c) : "not registered"}');
+    if (widget.roomId != oldWidget.roomId && widget.roomId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _initFromArguments();
+        }
+      });
+    }
   }
 
   void _initFromArguments() {
+    if (!mounted) return;
     final args = Get.arguments;
-    final roomId = (args is Map ? args['roomId'] : args)?.toString().trim();
+    final roomId = (widget.roomId ?? (args is Map ? args['roomId'] : args))?.toString().trim();
+    if (!Get.isRegistered<ChatController>()) {
+      ChatBinding().dependencies();
+    }
+    final controller = Get.find<ChatController>();
+    debugPrint('[CHAT-DETAIL] _initFromArguments roomId = $roomId, screenRoomId = $_screenRoomId, controller = ${identityHashCode(controller)}, activeRoomId = ${controller.activeRoomId.value}');
     if (roomId != null && roomId.isNotEmpty) {
-      if (!Get.isRegistered<ChatController>()) {
-        ChatBinding().dependencies();
-      }
-      final controller = Get.find<ChatController>();
-      if (controller.activeConversation.value?.id != roomId) {
-        controller.openConversationById(roomId);
+      _screenRoomId = roomId;
+      controller.ensureConversationLoaded(roomId);
+    } else {
+      final fallbackRoomId =
+          controller.activeRoomId.value ?? controller.activeConversation.value?.id;
+      if (fallbackRoomId != null && fallbackRoomId.isNotEmpty) {
+        _screenRoomId = fallbackRoomId;
+        controller.ensureConversationLoaded(fallbackRoomId);
       }
     }
   }
 
+
   @override
   void dispose() {
+    final c = Get.isRegistered<ChatController>() ? Get.find<ChatController>() : null;
+    debugPrint('[CHAT-DETAIL] dispose roomId = $_screenRoomId, controller = ${c != null ? identityHashCode(c) : "not registered"}');
     _inChatSearchController.dispose();
+    if (Get.isRegistered<ChatController>()) {
+      final controller = Get.find<ChatController>();
+      controller.leaveConversation(roomId: _screenRoomId);
+    }
     super.dispose();
   }
 
@@ -505,7 +548,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
                 Expanded(
                   child: Obx(() {
-                    if (chatController.isLoadingMessages.value) {
+                    final activeId = chatController.activeRoomId.value ??
+                        chatController.activeConversation.value?.id;
+                    final isRoomMismatch = activeId != null &&
+                        activeId.isNotEmpty &&
+                        conv.id.isNotEmpty &&
+                        activeId != conv.id &&
+                        activeId != 'private_${conv.id}' &&
+                        'private_$activeId' != conv.id;
+                    if (chatController.isLoadingMessages.value || isRoomMismatch) {
                       return const Center(
                         child: CircularProgressIndicator(
                           color: AppColors.chatPrimary,
@@ -514,7 +565,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       );
                     }
 
-                    final msgs = chatController.activeMessages;
+                    final msgs = chatController.activeMessages
+                        .where((m) =>
+                            m.conversationId == conv.id ||
+                            (activeId != null && m.conversationId == activeId) ||
+                            'private_${m.conversationId}' == conv.id ||
+                            m.conversationId == 'private_${conv.id}')
+                        .toList();
                     final displayMsgs = _inChatSearchQuery.isEmpty
                         ? msgs
                         : msgs.where((m) => m.content.toLowerCase().contains(_inChatSearchQuery)).toList();

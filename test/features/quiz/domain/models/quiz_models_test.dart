@@ -45,4 +45,17 @@ void main() {
       expect(attempt.completedAt, '2026-08-30T10:00:00');
     });
   });
+
+  test('parses nullable skipped answer IDs from a server result', () {
+    final result = QuizQuestionResult.fromJson({
+      'questionId': 'question-1',
+      'selectedOptionId': null,
+      'correctOptionId': 'option-correct',
+      'correct': false,
+    });
+
+    expect(result.selectedOptionId, isNull);
+    expect(result.correctOptionId, 'option-correct');
+    expect(result.correct, isFalse);
+  });
 }

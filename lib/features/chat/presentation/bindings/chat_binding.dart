@@ -7,12 +7,15 @@ import '../controllers/chat_controller.dart';
 class ChatBinding extends Bindings {
   @override
   void dependencies() {
-    final dio = Get.isRegistered<Dio>() ? Get.find<Dio>() : Dio();
-    final dataSource = ChatRemoteDataSource(dio: dio);
-    final repository = ChatRepositoryImpl(remoteDataSource: dataSource);
-    Get.lazyPut<ChatController>(
-      () => ChatController(repository: repository),
-      fenix: true,
-    );
+    if (!Get.isRegistered<ChatController>()) {
+      final dio = Get.isRegistered<Dio>() ? Get.find<Dio>() : Dio();
+      final dataSource = ChatRemoteDataSource(dio: dio);
+      final repository = ChatRepositoryImpl(remoteDataSource: dataSource);
+      Get.put<ChatController>(
+        ChatController(repository: repository),
+        permanent: true,
+      );
+    }
   }
 }
+

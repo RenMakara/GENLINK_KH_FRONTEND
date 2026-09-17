@@ -25,22 +25,14 @@ abstract final class AppRoutes {
 
   static const quizDashboard = '/quiz/dashboard';
   static const quizCategories = '/quiz/categories';
-  static const quizMatchmaking = '/quiz/matchmaking';
-  static const quizOpponentFound = '/quiz/opponent-found';
   static const quizInProgress = '/quiz/in-progress';
   static const quizReview = '/quiz/review';
   static const quizResult = '/quiz/result';
-  static const quizClaimReward = '/quiz/claim-reward';
-  static const quizRewardAnimation = '/quiz/reward-animation';
-  static const quizRewardClaimed = '/quiz/reward-claimed';
-  static const quizLeaderboard = '/quiz/leaderboard';
-  static const quizTopRank = '/quiz/top-rank';
 
   static const leaderboard = '/leaderboard';
   static const leaderboardRanking = '/leaderboard/ranking';
   static const leaderboardProfile = '/leaderboard/profile';
   static const leaderboardAchievements = '/leaderboard/achievements';
-  static const leaderboardInvite = '/leaderboard/invite';
 
   static const profileSetup = '/profile/setup';
   static const profile = '/profile';

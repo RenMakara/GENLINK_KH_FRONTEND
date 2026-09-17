@@ -26,17 +26,16 @@ class AuthController extends GetxController {
     required SecureStorage secureStorage,
     required this._localization,
     GoogleAuthService googleAuthService = const UnconfiguredGoogleAuthService(),
-    MobilePushRegistrationService? mobilePushRegistrationService,
+    this.mobilePushRegistrationService,
     this.onSessionCleared,
   }) : _storage = secureStorage,
-       _google = googleAuthService,
-       _mobilePushRegistrationService = mobilePushRegistrationService;
+       _google = googleAuthService;
 
   final AuthRepository _authRepository;
   final SecureStorage _storage;
   final LocalizationService _localization;
   final GoogleAuthService _google;
-  final MobilePushRegistrationService? _mobilePushRegistrationService;
+  final MobilePushRegistrationService? mobilePushRegistrationService;
   final void Function()? onSessionCleared;
 
   /// Seconds a user must wait before requesting another OTP.
@@ -392,7 +391,7 @@ class AuthController extends GetxController {
   }
 
   Future<void> _registerMobilePushDevice() async {
-    final service = _mobilePushRegistrationService;
+    final service = mobilePushRegistrationService;
     if (service == null) return;
 
     try {
@@ -405,7 +404,7 @@ class AuthController extends GetxController {
   }
 
   Future<void> _clearSession({bool deactivateMobilePushDevice = false}) async {
-    final pushService = _mobilePushRegistrationService;
+    final pushService = mobilePushRegistrationService;
     if (pushService != null) {
       try {
         await pushService.deactivateCurrentDevice(

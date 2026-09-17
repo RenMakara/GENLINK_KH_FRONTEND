@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 import '../core/localization/localization_service.dart';
+import '../core/network/app_realtime_service.dart';
 import '../core/theme/theme_controller.dart';
 import '../firebase_options.dart';
 import '../features/notification/data/firebase_mobile_notification_service.dart';
@@ -16,20 +17,7 @@ import 'routes/app_routes.dart';
 import 'startup_route_resolver.dart';
 
 /// Bootstraps app-level setup before rendering GenLink KH.
-///
-/// Dependency registration happens here rather than through
-/// `GetMaterialApp.initialBinding` so that [GenLinkKhApp] can resolve the
-/// theme and localization controllers during its first `build`.
-///
-/// The stored theme and language are loaded before the first frame, so the
-/// app opens directly in the user's preference instead of flashing the
-/// default and correcting itself.
-///
-/// The single hard rule here: **the app must always paint**. Every preload is
-/// a convenience — the worst case of skipping one is the wrong theme or
-/// language for a moment, which self-corrects. A preload that throws or hangs
-/// must never prevent `runApp`, because the result is an unrecoverable black
-/// screen with no error on screen and nothing in the logs.
+
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -89,6 +77,9 @@ Future<void> bootstrap() async {
   runApp(GenLinkKhApp(initialRoute: initialRoute));
   if (Get.isRegistered<FirebaseMobileNotificationService>()) {
     unawaited(Get.find<FirebaseMobileNotificationService>().initialize());
+  }
+  if (Get.isRegistered<AppRealtimeService>()) {
+    unawaited(Get.find<AppRealtimeService>().connect());
   }
 }
 

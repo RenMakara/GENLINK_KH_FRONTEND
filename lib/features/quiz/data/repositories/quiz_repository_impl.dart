@@ -27,10 +27,4 @@ class QuizRepositoryImpl implements QuizRepository {
   @override
   Future<List<QuizAttemptSummary>> getQuizHistory() =>
       _remoteDataSource.getQuizHistory();
-
-  @override
-  Future<List<LeaderboardEntry>> getLeaderboard(
-    String category,
-    String period,
-  ) => _remoteDataSource.getLeaderboard(category, period);
 }

@@ -180,12 +180,20 @@ class NotificationRemoteDataSource {
         final rawData = body is Map<String, dynamic>
             ? (body['data'] ?? body)
             : body;
-        if (rawData is List && rawData.isNotEmpty) {
-          return rawData
-              .map(
-                (json) =>
-                    NotificationModel.fromJson(json as Map<String, dynamic>),
-              )
+        List<dynamic>? list;
+        if (rawData is List) {
+          list = rawData;
+        } else if (rawData is Map<String, dynamic>) {
+          if (rawData['content'] is List) {
+            list = rawData['content'] as List<dynamic>;
+          } else if (rawData['items'] is List) {
+            list = rawData['items'] as List<dynamic>;
+          }
+        }
+        if (list != null && list.isNotEmpty) {
+          return list
+              .whereType<Map<String, dynamic>>()
+              .map(NotificationModel.fromJson)
               .toList();
         }
       }
@@ -196,7 +204,7 @@ class NotificationRemoteDataSource {
   Future<bool> markAsRead(String notificationId) async {
     try {
       await guardDio(
-        () => dio.put<dynamic>(
+        () => dio.post<dynamic>(
           '${ApiEndpoints.notifications}/$notificationId/read',
         ),
       );
@@ -211,7 +219,7 @@ class NotificationRemoteDataSource {
   Future<bool> markAllAsRead() async {
     try {
       await guardDio(
-        () => dio.put<dynamic>('${ApiEndpoints.notifications}/read-all'),
+        () => dio.post<dynamic>('${ApiEndpoints.notifications}/read-all'),
       );
     } catch (_) {}
     for (var n in _mockNotifications) {

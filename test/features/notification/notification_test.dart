@@ -504,5 +504,50 @@ void main() {
       expect(find.text('Social'), findsOneWidget);
     });
   });
+
+  group('NotificationModel backend response parsing', () {
+    test('parses backend NotificationResponse JSON with PageResponse fields', () {
+      final json = {
+        'id': 'b1234567-0000-0000-0000-000000000001',
+        'notificationType': 'COMMUNITY_POST_COMMENT',
+        'category': 'COMMUNITY',
+        'title': 'New comment on your post',
+        'message': 'Dara commented: "Great insight!"',
+        'referenceType': 'POST',
+        'referenceId': 'c1234567-0000-0000-0000-000000000002',
+        'readStatus': false,
+        'createdAt': '2026-09-17T05:30:00Z',
+      };
+
+      final model = NotificationModel.fromJson(json);
+
+      expect(model.id, 'b1234567-0000-0000-0000-000000000001');
+      expect(model.type, NotificationType.comment);
+      expect(model.category, NotificationCategory.social);
+      expect(model.title, 'New comment on your post');
+      expect(model.body, 'Dara commented: "Great insight!"');
+      expect(model.targetType, 'POST');
+      expect(model.targetId, 'c1234567-0000-0000-0000-000000000002');
+      expect(model.isRead, false);
+      expect(model.timestamp, DateTime.parse('2026-09-17T05:30:00Z'));
+    });
+
+    test('parses readStatus true and SECURITY category', () {
+      final json = {
+        'id': 'b1234567-0000-0000-0000-000000000003',
+        'notificationType': 'SECURITY_SUSPICIOUS_LOGIN',
+        'category': 'SECURITY',
+        'title': 'Suspicious login detected',
+        'message': 'A new sign-in was detected',
+        'readStatus': true,
+        'createdAt': '2026-09-17T05:31:00Z',
+      };
+
+      final model = NotificationModel.fromJson(json);
+
+      expect(model.category, NotificationCategory.updates);
+      expect(model.isRead, true);
+    });
+  });
 }
 

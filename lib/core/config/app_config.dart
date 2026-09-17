@@ -6,6 +6,7 @@ abstract final class AppConfig {
 
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
+    // defaultValue: 'https://api.genlink.enat.store',
     defaultValue: 'http://18.143.33.191',
   );
 

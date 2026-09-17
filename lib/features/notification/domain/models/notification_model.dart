@@ -136,67 +136,50 @@ class NotificationModel {
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     NotificationType parseType(String? raw) {
       final key = raw?.toLowerCase().replaceAll('_', '').replaceAll('-', '') ?? '';
-      switch (key) {
-        case 'like':
-          return NotificationType.like;
-        case 'comment':
-          return NotificationType.comment;
-        case 'reply':
-          return NotificationType.reply;
-        case 'mention':
-          return NotificationType.mention;
-        case 'friendrequest':
-        case 'friend':
-          return NotificationType.friendRequest;
-        case 'follow':
-          return NotificationType.follow;
-        case 'group':
-          return NotificationType.group;
-        case 'budgetwarning':
-        case 'budgetalert':
-          return NotificationType.budgetWarning;
-        case 'budgetexceeded':
-          return NotificationType.budgetExceeded;
-        case 'savinggoal':
-        case 'goal':
-          return NotificationType.savingGoal;
-        case 'finance':
-        case 'financeupdate':
-          return NotificationType.financeUpdate;
-        case 'eventreminder':
-          return NotificationType.eventReminder;
-        case 'eventupdate':
-          return NotificationType.eventUpdate;
-        case 'eventrsvp':
-        case 'rsvp':
-          return NotificationType.eventRsvp;
-        case 'event':
-          return NotificationType.event;
-        case 'habitreminder':
-        case 'habit':
-          return NotificationType.habitReminder;
-        case 'taskreminder':
-        case 'task':
-          return NotificationType.taskReminder;
-        case 'goalreminder':
-          return NotificationType.goalReminder;
-        case 'streakmilestone':
-        case 'streak':
-          return NotificationType.streakMilestone;
-        case 'quizresult':
-        case 'quiz':
-          return NotificationType.quizResult;
-        case 'achievement':
-          return NotificationType.achievement;
-        case 'system':
-        default:
-          return NotificationType.system;
+      if (key.contains('like')) return NotificationType.like;
+      if (key.contains('reply')) return NotificationType.reply;
+      if (key.contains('comment')) return NotificationType.comment;
+      if (key.contains('mention')) return NotificationType.mention;
+      if (key.contains('friendrequest') || key.contains('followrequest')) {
+        return NotificationType.friendRequest;
       }
+      if (key.contains('follow')) return NotificationType.follow;
+      if (key.contains('group')) return NotificationType.group;
+      if (key.contains('budgetwarning') || key.contains('budgetalert')) {
+        return NotificationType.budgetWarning;
+      }
+      if (key.contains('budgetexceeded')) return NotificationType.budgetExceeded;
+      if (key.contains('savinggoal') || key.contains('goal')) {
+        return NotificationType.savingGoal;
+      }
+      if (key.contains('finance')) return NotificationType.financeUpdate;
+      if (key.contains('eventreminder')) return NotificationType.eventReminder;
+      if (key.contains('eventupdate')) return NotificationType.eventUpdate;
+      if (key.contains('eventrsvp') || key.contains('rsvp')) {
+        return NotificationType.eventRsvp;
+      }
+      if (key.contains('event')) return NotificationType.event;
+      if (key.contains('habitreminder') || key.contains('habit')) {
+        return NotificationType.habitReminder;
+      }
+      if (key.contains('taskreminder') || key.contains('task')) {
+        return NotificationType.taskReminder;
+      }
+      if (key.contains('goalreminder')) return NotificationType.goalReminder;
+      if (key.contains('streakmilestone') || key.contains('streak')) {
+        return NotificationType.streakMilestone;
+      }
+      if (key.contains('quizresult') || key.contains('quiz')) {
+        return NotificationType.quizResult;
+      }
+      if (key.contains('achievement')) return NotificationType.achievement;
+      return NotificationType.system;
     }
 
     NotificationCategory? parseCategory(String? raw) {
       switch (raw?.toLowerCase()) {
         case 'social':
+        case 'community':
           return NotificationCategory.social;
         case 'finance':
           return NotificationCategory.finance;
@@ -208,6 +191,7 @@ class NotificationModel {
           return NotificationCategory.reminders;
         case 'updates':
         case 'update':
+        case 'security':
           return NotificationCategory.updates;
         case 'all':
           return NotificationCategory.all;
@@ -216,9 +200,19 @@ class NotificationModel {
       }
     }
 
-    final parsedType = parseType(json['type'] as String?);
+    final parsedType = parseType(json['type'] as String? ?? json['notificationType'] as String?);
     final parsedCategory = parseCategory(json['category'] as String?) ??
         _resolveCategory(parsedType);
+
+    final rawTimestamp = json['timestamp'] ?? json['createdAt'];
+    final DateTime parsedTimestamp = rawTimestamp != null
+        ? DateTime.tryParse(rawTimestamp.toString()) ?? DateTime.now()
+        : DateTime.now();
+
+    final isReadVal = json['isRead'] ?? json['readStatus'];
+    final bool parsedIsRead = isReadVal is bool
+        ? isReadVal
+        : (isReadVal == 'READ' || isReadVal == true);
 
     return NotificationModel(
       id: json['id'] as String? ?? '',
@@ -230,12 +224,10 @@ class NotificationModel {
       senderName: json['senderName'] as String? ?? 'GenLink KH',
       senderAvatar: json['senderAvatar'] as String?,
       timeAgo: json['timeAgo'] as String? ?? 'Just now',
-      timestamp: json['timestamp'] != null
-          ? DateTime.tryParse(json['timestamp'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-      isRead: json['isRead'] as bool? ?? false,
-      targetId: json['targetId'] as String?,
-      targetType: json['targetType'] as String?,
+      timestamp: parsedTimestamp,
+      isRead: parsedIsRead,
+      targetId: (json['targetId'] ?? json['referenceId'])?.toString(),
+      targetType: (json['targetType'] ?? json['referenceType'])?.toString(),
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
   }

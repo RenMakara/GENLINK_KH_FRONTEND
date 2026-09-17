@@ -178,6 +178,7 @@ enum MobilePushNotificationDestination {
   goals,
   quiz,
   achievements,
+  chat,
 }
 
 /// Maps backend reference metadata to screens that already exist in Flutter.
@@ -195,6 +196,9 @@ class MobilePushNotificationRouter {
         return MobilePushNotificationDestination.events;
       case 'FRIENDREQUEST':
         return MobilePushNotificationDestination.friendRequests;
+      case 'CHAT':
+      case 'CHATROOM':
+        return MobilePushNotificationDestination.chat;
       case 'BUDGET':
         return MobilePushNotificationDestination.budget;
       case 'SAVINGGOAL':
@@ -211,10 +215,13 @@ class MobilePushNotificationRouter {
         return MobilePushNotificationDestination.achievements;
     }
 
+    if (type.contains('CHAT')) {
+      return MobilePushNotificationDestination.chat;
+    }
     if (type.contains('EVENT')) {
       return MobilePushNotificationDestination.events;
     }
-    if (type.contains('FRIENDREQUEST')) {
+    if (type.contains('FRIENDREQUEST') || type.contains('FOLLOW')) {
       return MobilePushNotificationDestination.friendRequests;
     }
     if (type.contains('BUDGET')) {
@@ -251,6 +258,13 @@ class MobilePushNotificationRouter {
     switch (destinationFor(payload)) {
       case MobilePushNotificationDestination.notifications:
         Get.toNamed<void>(AppRoutes.notifications);
+      case MobilePushNotificationDestination.chat:
+        final roomId = payload.referenceId;
+        if (roomId != null && roomId.isNotEmpty) {
+          Get.toNamed<void>(AppRoutes.chatDetail, arguments: {'roomId': roomId});
+        } else {
+          Get.toNamed<void>(AppRoutes.chat);
+        }
       case MobilePushNotificationDestination.events:
         Get.to<void>(() => const EventsScreen());
       case MobilePushNotificationDestination.friendRequests:

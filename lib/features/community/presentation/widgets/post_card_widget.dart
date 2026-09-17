@@ -1248,10 +1248,13 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.lg - 2),
-          child: SizedBox(
-            height: 240,
-            width: double.infinity,
-            child: _buildSingleImage(images[0], index: 0, allImages: images),
+          child: _FeedPostImageView(
+            url: images[0],
+            index: 0,
+            allImages: images,
+            postId: widget.post.id,
+            isSingle: true,
+            onTap: () => _openFullScreenViewer(0, images),
           ),
         ),
       );
@@ -1264,7 +1267,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.lg - 2),
         child: SizedBox(
-          height: 260,
+          height: 350,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -1277,7 +1280,14 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                   });
                 },
                 itemBuilder: (context, idx) {
-                  return _buildSingleImage(images[idx], index: idx, allImages: images);
+                  return _FeedPostImageView(
+                    url: images[idx],
+                    index: idx,
+                    allImages: images,
+                    postId: widget.post.id,
+                    isSingle: false,
+                    onTap: () => _openFullScreenViewer(idx, images),
+                  );
                 },
               ),
               // Subtle top-right index counter badge (e.g. "1/3")
@@ -1361,55 +1371,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     );
   }
 
-  Widget _buildSingleImage(String url, {int index = 0, List<String>? allImages}) {
-    final heroTag = 'post_${widget.post.id}_$index';
-    final imagesList = allImages ?? [url];
-
-    Widget imgWidget;
-    if (url.startsWith('assets/')) {
-      imgWidget = Image.asset(
-        url,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-      );
-    } else if (url.startsWith('http')) {
-      imgWidget = Image.network(
-        url,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (context, error, stackTrace) => Container(
-          color: (Theme.of(context).brightness == Brightness.dark
-              ? AppColors.darkSurfaceSecondary
-              : AppColors.lightBgSecondary),
-          alignment: Alignment.center,
-          child: Icon(
-            Icons.broken_image_outlined,
-            color: (Theme.of(context).brightness == Brightness.dark
-                ? AppColors.darkTextMuted
-                : AppColors.lightTextMuted),
-            size: 32,
-          ),
-        ),
-      );
-    } else {
-      imgWidget = Image.file(
-        File(url),
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-      );
-    }
-
-    return GestureDetector(
-      onTap: () => _openFullScreenViewer(index, imagesList),
-      child: Hero(
-        tag: heroTag,
-        child: imgWidget,
-      ),
-    );
-  }
 
   Widget _buildLinkPreviewCard({
     required String url,
@@ -2149,3 +2110,221 @@ class _VideoPostMediaState extends State<VideoPostMedia> {
   }
 }
 // ──────────────────────────────────────────────────────────────────────────────
+
+class _FeedPostImageView extends StatefulWidget {
+  final String url;
+  final int index;
+  final List<String> allImages;
+  final String postId;
+  final bool isSingle;
+  final VoidCallback onTap;
+
+  const _FeedPostImageView({
+    required this.url,
+    required this.index,
+    required this.allImages,
+    required this.postId,
+    this.isSingle = false,
+    required this.onTap,
+  });
+
+  @override
+  State<_FeedPostImageView> createState() => _FeedPostImageViewState();
+}
+
+class _FeedPostImageViewState extends State<_FeedPostImageView> {
+  double? _aspectRatio;
+  ImageStream? _imageStream;
+  ImageStreamListener? _streamListener;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveImage();
+  }
+
+  @override
+  void didUpdateWidget(covariant _FeedPostImageView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _removeStreamListener();
+      _aspectRatio = null;
+      _hasError = false;
+      _resolveImage();
+    }
+  }
+
+  @override
+  void dispose() {
+    _removeStreamListener();
+    super.dispose();
+  }
+
+  void _removeStreamListener() {
+    if (_imageStream != null && _streamListener != null) {
+      _imageStream!.removeListener(_streamListener!);
+      _imageStream = null;
+      _streamListener = null;
+    }
+  }
+
+  ImageProvider _resolveProvider(String url) {
+    if (url.startsWith('assets/')) {
+      return AssetImage(url);
+    } else if (url.startsWith('http')) {
+      return NetworkImage(url);
+    } else {
+      return FileImage(File(url));
+    }
+  }
+
+  void _resolveImage() {
+    try {
+      final provider = _resolveProvider(widget.url);
+      final stream = provider.resolve(const ImageConfiguration());
+      _imageStream = stream;
+      _streamListener = ImageStreamListener(
+        (ImageInfo info, bool synchronousCall) {
+          if (!mounted) return;
+          final w = info.image.width;
+          final h = info.image.height;
+          if (w > 0 && h > 0) {
+            setState(() {
+              _aspectRatio = w / h;
+            });
+          }
+        },
+        onError: (dynamic error, StackTrace? stackTrace) {
+          if (mounted) {
+            setState(() {
+              _hasError = true;
+            });
+          }
+        },
+      );
+      stream.addListener(_streamListener!);
+    } catch (_) {
+      _hasError = true;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final heroTag = 'post_${widget.postId}_${widget.index}';
+    final surfaceColor = isDark
+        ? const Color(0xFF14161A)
+        : const Color(0xFFF2F4F7);
+
+    if (_hasError) {
+      return Container(
+        height: widget.isSingle ? 220 : double.infinity,
+        color: surfaceColor,
+        alignment: Alignment.center,
+        child: Icon(
+          Icons.broken_image_outlined,
+          color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+          size: 32,
+        ),
+      );
+    }
+
+    final provider = _resolveProvider(widget.url);
+
+    if (widget.isSingle) {
+      final ratio = _aspectRatio;
+
+      Widget imageContent;
+      if (ratio == null) {
+        imageContent = AspectRatio(
+          aspectRatio: 16 / 10,
+          child: Container(
+            color: surfaceColor,
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: isDark ? Colors.white38 : Colors.black38,
+              ),
+            ),
+          ),
+        );
+      } else if (ratio < 0.8) {
+        // Tall portrait / screenshot (e.g. 9:16 = 0.56)
+        // Cap height at 420 and fit with contain on neutral background so entire screenshot is visible and readable
+        imageContent = Container(
+          height: 420,
+          width: double.infinity,
+          color: surfaceColor,
+          alignment: Alignment.center,
+          child: Image(
+            image: provider,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => Icon(
+              Icons.broken_image_outlined,
+              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+              size: 32,
+            ),
+          ),
+        );
+      } else {
+        // Standard aspect ratios (4:5, 1:1, 4:3, 16:9)
+        // Render with clamped aspect ratio so there is zero cropping and no wasted space
+        final clampedRatio = ratio.clamp(0.8, 1.85);
+        imageContent = AspectRatio(
+          aspectRatio: clampedRatio,
+          child: Image(
+            image: provider,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            errorBuilder: (context, error, stackTrace) => Icon(
+              Icons.broken_image_outlined,
+              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+              size: 32,
+            ),
+          ),
+        );
+      }
+
+      return GestureDetector(
+        onTap: widget.onTap,
+        child: Hero(
+          tag: heroTag,
+          child: imageContent,
+        ),
+      );
+    }
+
+    // Carousel image: fit within consistent carousel frame without aggressive cropping
+    final ratio = _aspectRatio;
+    final BoxFit fitMode = (ratio != null && ratio >= 0.9 && ratio <= 1.25)
+        ? BoxFit.cover
+        : BoxFit.contain;
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        color: surfaceColor,
+        alignment: Alignment.center,
+        child: Hero(
+          tag: heroTag,
+          child: Image(
+            image: provider,
+            fit: fitMode,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (context, error, stackTrace) => Icon(
+              Icons.broken_image_outlined,
+              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+              size: 32,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

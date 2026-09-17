@@ -353,14 +353,28 @@ class _ChatListScreenState extends State<ChatListScreen> {
     bool isDark,
     Color textPrimary,
   ) {
+    final dynamicContacts = <Map<String, dynamic>>[];
+    for (final c in controller.conversations) {
+      if (!c.isGroup && c.profileUserId != null && c.profileUserId!.isNotEmpty) {
+        if (!dynamicContacts.any((item) => item['id'] == c.profileUserId)) {
+          dynamicContacts.add({
+            'id': c.profileUserId!,
+            'name': c.name,
+            'avatar': c.avatar,
+          });
+        }
+      }
+    }
+    final effectiveContacts = dynamicContacts.isNotEmpty ? dynamicContacts : _onlineContacts;
+
     return SizedBox(
       height: 88,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        itemCount: _onlineContacts.length,
+        itemCount: effectiveContacts.length,
         itemBuilder: (context, index) {
-          final friend = _onlineContacts[index];
+          final friend = effectiveContacts[index];
           return GestureDetector(
             onTap: () async {
               await controller.openPrivateChat(

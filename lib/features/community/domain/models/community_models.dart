@@ -116,33 +116,38 @@ class EventModel {
       return m == 'IN_PERSON' || m == 'INPERSON';
     }
     if (eventType.toLowerCase().contains('person') ||
-        eventType.toLowerCase().contains('campus'))
+        eventType.toLowerCase().contains('campus')) {
       return true;
+    }
     return eventMode == EventMode.inPerson;
   }
 
   String get effectiveLocation {
     if (isOnline) {
-      if (meetingUrl != null && meetingUrl!.trim().isNotEmpty)
+      if (meetingUrl != null && meetingUrl!.trim().isNotEmpty) {
         return meetingUrl!.trim();
+      }
       return onlineLink;
     } else {
-      if (locationName != null && locationName!.trim().isNotEmpty)
+      if (locationName != null && locationName!.trim().isNotEmpty) {
         return locationName!.trim();
+      }
       return location;
     }
   }
 
   String get effectiveLocationName {
-    if (locationName != null && locationName!.trim().isNotEmpty)
+    if (locationName != null && locationName!.trim().isNotEmpty) {
       return locationName!.trim();
+    }
     if (location.isNotEmpty) return location;
     return '';
   }
 
   String get effectiveMeetingUrl {
-    if (meetingUrl != null && meetingUrl!.trim().isNotEmpty)
+    if (meetingUrl != null && meetingUrl!.trim().isNotEmpty) {
       return meetingUrl!.trim();
+    }
     if (onlineLink.isNotEmpty) return onlineLink;
     return '';
   }
@@ -235,8 +240,9 @@ class EventModel {
       if (range.isNotEmpty) return range;
       return dateString.isNotEmpty ? dateString : 'Date TBC';
     }
-    if (startDateTime == null)
+    if (startDateTime == null) {
       return dateString.isNotEmpty ? dateString : 'Date TBC';
+    }
     final yearKh = _toKhmerDigits(startDateTime!.year);
     if (endDateTime == null ||
         (startDateTime!.year == endDateTime!.year &&
@@ -592,6 +598,63 @@ class EventModel {
   }
 }
 
+class ForumLikerModel {
+  final String id;
+  final String fullName;
+  final String username;
+  final String avatarUrl;
+
+  const ForumLikerModel({
+    required this.id,
+    required this.fullName,
+    required this.username,
+    this.avatarUrl = '',
+  });
+
+  factory ForumLikerModel.fromJson(Map<String, dynamic> json) {
+    final userObj = json['user'] is Map<String, dynamic>
+        ? json['user'] as Map<String, dynamic>
+        : (json['author'] is Map<String, dynamic>
+            ? json['author'] as Map<String, dynamic>
+            : null);
+    final id = (json['id'] ??
+            json['userId'] ??
+            userObj?['id'] ??
+            userObj?['userId'] ??
+            '')
+        .toString();
+    final fullName = (json['fullName'] ??
+            json['name'] ??
+            userObj?['fullName'] ??
+            userObj?['name'] ??
+            'User')
+        .toString();
+    final rawUsername = (json['username'] ?? userObj?['username'] ?? fullName)
+        .toString();
+    final username = rawUsername.startsWith('@') ? rawUsername : '@$rawUsername';
+    final avatarUrl = (json['avatarUrl'] ??
+            json['avatar'] ??
+            userObj?['avatarUrl'] ??
+            userObj?['avatar'] ??
+            '')
+        .toString();
+
+    return ForumLikerModel(
+      id: id,
+      fullName: fullName,
+      username: username,
+      avatarUrl: avatarUrl,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'fullName': fullName,
+    'username': username,
+    'avatarUrl': avatarUrl,
+  };
+}
+
 class ForumTopicModel {
   final String id;
   final String? authorId;
@@ -607,6 +670,7 @@ class ForumTopicModel {
   bool isLiked;
   final bool isPinned;
   final bool isOwner;
+  final List<ForumLikerModel> likers;
 
   ForumTopicModel({
     required this.id,
@@ -623,7 +687,11 @@ class ForumTopicModel {
     this.isLiked = false,
     this.isPinned = false,
     this.isOwner = false,
+    this.isBookmarked = false,
+    this.likers = const [],
   });
+
+  final bool isBookmarked;
 
   /// Evaluates whether the given user ID matches this discussion's author ID.
   /// Uses stable author ID comparison when available, and respects session ownership.
@@ -652,6 +720,8 @@ class ForumTopicModel {
     bool? isLiked,
     bool? isPinned,
     bool? isOwner,
+    bool? isBookmarked,
+    List<ForumLikerModel>? likers,
   }) {
     return ForumTopicModel(
       id: id ?? this.id,
@@ -668,6 +738,8 @@ class ForumTopicModel {
       isLiked: isLiked ?? this.isLiked,
       isPinned: isPinned ?? this.isPinned,
       isOwner: isOwner ?? this.isOwner,
+      isBookmarked: isBookmarked ?? this.isBookmarked,
+      likers: likers ?? this.likers,
     );
   }
 
@@ -695,6 +767,16 @@ class ForumTopicModel {
       parsedUtc ?? rawDate ?? 'Just now',
     );
 
+    final rawLikers = json['likers'] as List<dynamic>? ??
+        json['recentReactions'] as List<dynamic>? ??
+        json['reactions'] as List<dynamic>?;
+    final parsedLikers = rawLikers != null
+        ? rawLikers
+            .whereType<Map<String, dynamic>>()
+            .map(ForumLikerModel.fromJson)
+            .toList()
+        : <ForumLikerModel>[];
+
     return ForumTopicModel(
       id: json['discussionId'] as String? ?? json['id'] as String? ?? '',
       authorId: authorId,
@@ -721,6 +803,10 @@ class ForumTopicModel {
           json['reactedByMe'] as bool? ?? json['isLiked'] as bool? ?? false,
       isPinned: json['isPinned'] as bool? ?? false,
       isOwner: json['mine'] as bool? ?? json['isOwner'] as bool? ?? false,
+      isBookmarked: json['isBookmarked'] as bool? ??
+          json['savedByMe'] as bool? ??
+          false,
+      likers: parsedLikers,
     );
   }
 
@@ -740,6 +826,8 @@ class ForumTopicModel {
       'isLiked': isLiked,
       'isPinned': isPinned,
       'isOwner': isOwner,
+      'isBookmarked': isBookmarked,
+      'likers': likers.map((l) => l.toJson()).toList(),
     };
   }
 }

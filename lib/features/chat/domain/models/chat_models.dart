@@ -393,8 +393,14 @@ class ChatConversationModel {
           counterpart['avatarUrl'] as String? ??
           (json['avatar'] as String?) ??
           'assets/images/user_profile.png',
-      profileUserId: isGroup ? null : counterpart['userId']?.toString(),
-      profileUsername: isGroup ? null : counterpart['username']?.toString(),
+      profileUserId: isGroup
+          ? null
+          : (counterpart['userId']?.toString() ??
+              json['profileUserId']?.toString()),
+      profileUsername: isGroup
+          ? null
+          : (counterpart['username']?.toString() ??
+              json['profileUsername']?.toString()),
       isGroup: isGroup,
       isOnline: json['isOnline'] as bool? ?? false,
       lastMessage: lastMessage == null

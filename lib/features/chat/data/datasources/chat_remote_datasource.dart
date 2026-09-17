@@ -80,6 +80,7 @@ class ChatRemoteDataSource {
         '${ApiEndpoints.chats}/groups',
         data: {
           'name': name,
+          'memberIds': memberUserIds,
           'memberUserIds': memberUserIds,
         },
       ),
@@ -182,7 +183,7 @@ class ChatRemoteDataSource {
   Future<bool> deleteConversation(String conversationId) async {
     try {
       await guardDio(
-        () => dio.delete<dynamic>('${ApiEndpoints.chats}/$conversationId'),
+        () => dio.delete<dynamic>('${ApiEndpoints.chats}/$conversationId/leave'),
       );
     } catch (_) {
       // Gracefully support local mock/demo deletions

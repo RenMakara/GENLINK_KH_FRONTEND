@@ -458,4 +458,135 @@ void main() {
       semantics.dispose();
     },
   );
+
+  group('Monochrome + Glass Polish verification', () {
+    for (final mode in ['Dark', 'Light']) {
+      final isDark = mode == 'Dark';
+
+      testWidgets(
+        'verifies $mode Mode: monochrome icons, no feature colors, and glass capsule movement across all tabs',
+        (tester) async {
+          int activeIndex = 0;
+
+          await tester.pumpWidget(
+            StatefulBuilder(
+              builder: (context, setState) {
+                return GetMaterialApp(
+                  translations: AppTranslations(),
+                  locale: LocalizationService.englishLocale,
+                  fallbackLocale: LocalizationService.englishLocale,
+                  theme: isDark ? AppTheme.dark : AppTheme.light,
+                  home: Scaffold(
+                    bottomNavigationBar: BottomNavBar(
+                      currentIndex: activeIndex,
+                      onTap: (idx) => setState(() => activeIndex = idx),
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final tabs = ['Home', 'LevelUp', 'Finance', 'Profile'];
+
+          for (int targetIdx = 0; targetIdx < tabs.length; targetIdx++) {
+            await tester.tap(find.bySemanticsLabel(tabs[targetIdx]));
+            await tester.pumpAndSettle();
+            expect(activeIndex, targetIdx);
+
+            // Verify all Icon widgets in the nav bar have monochrome colors
+            final iconWidgets = tester.widgetList<Icon>(
+              find.descendant(
+                of: find.byType(BottomNavBar),
+                matching: find.byType(Icon),
+              ),
+            );
+
+            for (final icon in iconWidgets) {
+              final color = icon.color;
+              if (color != null) {
+                if (isDark) {
+                  // In dark mode: white
+                  expect(
+                    color,
+                    equals(Colors.white),
+                    reason:
+                        'Tab icon must be white in dark mode, got $color on tab $targetIdx',
+                  );
+                } else {
+                  // In light mode: dark monochrome
+                  expect(
+                    color,
+                    equals(const Color(0xFF121212)),
+                    reason:
+                        'Tab icon must be dark monochrome in light mode, got $color on tab $targetIdx',
+                  );
+                }
+              }
+            }
+
+            // Verify text label colors: active is white/dark, inactive are neutral gray
+            final textWidgets = tester.widgetList<Text>(
+              find.descendant(
+                of: find.byType(BottomNavBar),
+                matching: find.byType(Text),
+              ),
+            );
+
+            for (final text in textWidgets) {
+              if (text.style?.color != null) {
+                final textColor = text.style!.color!;
+                final isCurrentTab = text.data == tabs[targetIdx];
+
+                if (isDark) {
+                  if (isCurrentTab) {
+                    expect(
+                      textColor,
+                      equals(Colors.white),
+                      reason:
+                          'Active label must be white in dark mode, got $textColor',
+                    );
+                  } else {
+                    expect(
+                      textColor,
+                      equals(const Color(0x8AFFFFFF)),
+                      reason:
+                          'Inactive label must be soft neutral gray in dark mode, got $textColor',
+                    );
+                  }
+                } else {
+                  if (isCurrentTab) {
+                    expect(
+                      textColor,
+                      equals(const Color(0xFF121212)),
+                      reason:
+                          'Active label must be dark in light mode, got $textColor',
+                    );
+                  } else {
+                    expect(
+                      textColor,
+                      equals(const Color(0x8A121212)),
+                      reason:
+                          'Inactive label must be neutral gray in light mode, got $textColor',
+                    );
+                  }
+                }
+
+                // Verify absolutely NO feature colors (blue, green, orange, purple, pink, cyan, yellow, gold)
+                // Color hue shouldn't be saturated colored hue
+                final hsl = HSLColor.fromColor(textColor);
+                expect(
+                  hsl.saturation,
+                  lessThanOrEqualTo(0.1),
+                  reason:
+                      'Label must be neutral monochrome (no saturation), but found saturation ${hsl.saturation} in $textColor',
+                );
+              }
+            }
+          }
+        },
+      );
+    }
+  });
 }

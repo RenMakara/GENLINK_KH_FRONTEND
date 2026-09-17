@@ -239,9 +239,8 @@ void main() {
         expect(find.text('Quiz'), findsNothing);
         expect(find.text('Challenge'), findsNothing);
 
-        // Verify right-side chevron arrows are removed
-        expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
-        expect(find.byIcon(Icons.chevron_right), findsNothing);
+        // Verify right-side chevron arrows are present on the 7 options
+        expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(7));
       },
     );
 

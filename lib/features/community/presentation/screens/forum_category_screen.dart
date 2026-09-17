@@ -6,8 +6,10 @@ import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/models/community_models.dart';
+import '../../../../shared/utils/current_user.dart';
 import '../controllers/community_controller.dart';
 import 'forum_discussion_screen.dart';
+import '../widgets/forum_share_to_chat_sheet.dart';
 import 'widgets/community_widgets.dart';
 
 class ForumCategoryScreen extends StatefulWidget {
@@ -73,11 +75,42 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
   void _handleLikeTap(ForumTopicModel topic, int index) async {
     final prevLiked = topic.isLiked;
     final prevUpvotes = topic.upvotes;
+    final prevLikers = topic.likers;
+
+    final updatedLikers = List<ForumLikerModel>.from(prevLikers);
+    final currentUserId = _controller.currentUserId;
+    final currentUserName = _controller.currentUserName;
+
+    final newLiked = !prevLiked;
+    if (newLiked) {
+      if (currentUserId != null &&
+          currentUserId.isNotEmpty &&
+          !updatedLikers.any((l) => l.id == currentUserId)) {
+        updatedLikers.insert(
+          0,
+          ForumLikerModel(
+            id: currentUserId,
+            fullName: currentUserName.isNotEmpty
+                ? currentUserName
+                : CurrentUser.name,
+            username: CurrentUser.username.isNotEmpty
+                ? CurrentUser.username
+                : '@$currentUserName',
+            avatarUrl: CurrentUser.avatarUrl ?? '',
+          ),
+        );
+      }
+    } else {
+      if (currentUserId != null && currentUserId.isNotEmpty) {
+        updatedLikers.removeWhere((l) => l.id == currentUserId);
+      }
+    }
 
     setState(() {
       _discussions[index] = topic.copyWith(
-        isLiked: !prevLiked,
-        upvotes: prevUpvotes + (!prevLiked ? 1 : -1),
+        isLiked: newLiked,
+        upvotes: prevUpvotes + (newLiked ? 1 : -1),
+        likers: updatedLikers,
       );
     });
 
@@ -87,7 +120,22 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
         _discussions[index] = topic.copyWith(
           isLiked: prevLiked,
           upvotes: prevUpvotes,
+          likers: prevLikers,
         );
+      });
+    }
+  }
+
+  void _handleSaveTap(ForumTopicModel topic, int index) async {
+    final prevBookmarked = _controller.isDiscussionBookmarked(topic.id);
+    final newBookmarked = !prevBookmarked;
+    setState(() {
+      _discussions[index] = topic.copyWith(isBookmarked: newBookmarked);
+    });
+    final success = await _controller.toggleDiscussionBookmark(topic.id);
+    if (!success && mounted) {
+      setState(() {
+        _discussions[index] = topic.copyWith(isBookmarked: prevBookmarked);
       });
     }
   }
@@ -252,11 +300,18 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
           likes: topic.upvotes,
           isPinned: topic.isPinned,
           isLiked: topic.isLiked,
+          isBookmarked: _controller.isDiscussionBookmarked(topic.id),
+          likers: topic.likers,
+          discussionId: topic.id,
+          isOwner: topic.checkIsOwner(_controller.currentUserId),
           onTap: () =>
               Get.to(() => ForumDiscussionScreen(discussion: topic)),
           onCommentTap: () =>
               Get.to(() => ForumDiscussionScreen(discussion: topic)),
           onLikeTap: () => _handleLikeTap(topic, index),
+          onSaveTap: () => _handleSaveTap(topic, index),
+          onShareToChatTap: () =>
+              ForumShareToChatSheet.show(context, topic: topic),
         );
       },
     );

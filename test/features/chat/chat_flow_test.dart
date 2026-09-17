@@ -6,6 +6,8 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:genlink_frontend/features/chat/domain/models/chat_models.dart';
 import 'package:genlink_frontend/features/chat/data/datasources/chat_remote_datasource.dart';
+import 'package:genlink_frontend/features/chat/data/datasources/chat_local_datasource.dart';
+import 'package:genlink_frontend/features/chat/data/datasources/chat_websocket_client.dart';
 import 'package:genlink_frontend/features/chat/data/repositories/chat_repository_impl.dart';
 import 'package:genlink_frontend/features/chat/presentation/controllers/chat_controller.dart';
 import 'package:genlink_frontend/features/chat/presentation/screens/chat_list_screen.dart';
@@ -19,8 +21,10 @@ import 'package:genlink_frontend/features/chat/presentation/widgets/chat_story_r
 import 'package:genlink_frontend/features/chat/presentation/widgets/message_bubble.dart';
 import 'package:genlink_frontend/features/home/presentation/widgets/home_header_actions.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
+import 'package:genlink_frontend/core/storage/secure_storage.dart';
 
 class MockDio extends Mock implements Dio {}
+class MockSecureStorage extends Mock implements SecureStorage {}
 
 void main() {
   setUp(() {
@@ -1414,7 +1418,6 @@ void main() {
       expect(controller.activeMessages.isEmpty, isTrue);
     });
   });
-
   group('Chat Unread Count, Deep Link & Header Tests', () {
     late MockDio mockDio;
     late ChatRemoteDataSource dataSource;
@@ -1617,5 +1620,311 @@ void main() {
       expect(find.text('This message failed to send'), findsOneWidget);
     });
   });
-}
 
+  group('New Clone Chat Enhancements & Known Risk Fixes Tests', () {
+    test('ChatLocalDataSource persists and restores conversations and messages', () async {
+      final localDataSource = ChatLocalDataSource();
+      await localDataSource.clearAll();
+
+      final conv = ChatConversationModel(
+        id: 'room-real-123',
+        name: 'Heng Chansela',
+        avatar: 'assets/images/heng_chansela_profile.png',
+        profileUserId: 'user-chansela-uuid',
+        lastMessage: 'Let\'s meet at library',
+        lastMessageTime: '10m ago',
+      );
+
+      await localDataSource.saveConversations([conv]);
+      final restoredConvs = await localDataSource.getConversations();
+
+      expect(restoredConvs.length, 1);
+      expect(restoredConvs.first.id, 'room-real-123');
+      expect(restoredConvs.first.profileUserId, 'user-chansela-uuid');
+      expect(restoredConvs.first.name, 'Heng Chansela');
+
+      final msg = ChatMessageModel(
+        id: 'msg-uuid-1',
+        conversationId: 'room-real-123',
+        senderId: 'user-chansela-uuid',
+        senderName: 'Heng Chansela',
+        content: 'See you at 3 PM!',
+        timestamp: DateTime.now(),
+        timeAgo: 'Just now',
+        isMine: false,
+      );
+
+      await localDataSource.saveMessage('room-real-123', msg);
+      final restoredMsgs = await localDataSource.getMessages('room-real-123');
+
+      expect(restoredMsgs.length, 1);
+      expect(restoredMsgs.first.id, 'msg-uuid-1');
+      expect(restoredMsgs.first.content, 'See you at 3 PM!');
+
+      await localDataSource.deleteMessage('room-real-123', 'msg-uuid-1');
+      final afterDelete = await localDataSource.getMessages('room-real-123');
+      expect(afterDelete.isEmpty, isTrue);
+
+      await localDataSource.deleteConversation('room-real-123');
+      final afterConvDelete = await localDataSource.getConversations();
+      expect(afterConvDelete.isEmpty, isTrue);
+    });
+
+    test('ChatRepositoryImpl caches conversations and messages with localDataSource', () async {
+      final mockDio = MockDio();
+      final remoteDataSource = ChatRemoteDataSource(dio: mockDio);
+      final localDataSource = ChatLocalDataSource();
+      await localDataSource.clearAll();
+
+      final repository = ChatRepositoryImpl(
+        remoteDataSource: remoteDataSource,
+        localDataSource: localDataSource,
+      );
+
+      when(() => mockDio.get<dynamic>(any())).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'content': [
+                {
+                  'roomId': 'room-ec2-uuid',
+                  'type': 'PRIVATE',
+                  'counterpart': {
+                    'userId': 'sokny-uuid',
+                    'fullName': 'Sokny Enat',
+                  },
+                  'lastMessage': {
+                    'content': 'Good morning!',
+                    'createdAt': '2026-09-17T08:00:00Z',
+                  },
+                }
+              ]
+            }
+          },
+        ),
+      );
+
+      final result = await repository.getConversations();
+      expect(result.first.id, 'room-ec2-uuid');
+
+      // Now verify localDataSource has it cached
+      final cached = await localDataSource.getConversations();
+      expect(cached.length, 1);
+      expect(cached.first.id, 'room-ec2-uuid');
+      expect(cached.first.name, 'Sokny Enat');
+    });
+
+    test('onMessageReceived matches 1-to-1 message by senderId UUID without guessing display name', () async {
+      final mockDio = MockDio();
+      final remoteDataSource = ChatRemoteDataSource(dio: mockDio);
+      final repository = ChatRepositoryImpl(remoteDataSource: remoteDataSource);
+      final controller = ChatController(repository: repository);
+
+      final existingConv = ChatConversationModel(
+        id: 'real-room-uuid-456',
+        name: 'Heng Chansela',
+        avatar: 'assets/images/heng_chansela_profile.png',
+        profileUserId: 'chansela-real-uuid',
+        lastMessage: 'Old message',
+        lastMessageTime: '1h ago',
+      );
+      controller.conversations.add(existingConv);
+
+      // Incoming push message where conversationId is empty (Phase 3 format)
+      final incomingPush = ChatMessageModel(
+        id: 'ws-msg-1',
+        conversationId: '', // Empty room ID in push
+        senderId: 'chansela-real-uuid', // UUID match
+        senderName: 'Different Display Name', // Intentionally different display name
+        content: 'Realtime WebSocket message received!',
+        timestamp: DateTime.now(),
+        timeAgo: 'Just now',
+        isMine: false,
+      );
+
+      controller.onMessageReceived(incomingPush);
+
+      expect(controller.conversations.first.lastMessage, 'Realtime WebSocket message received!');
+      expect(controller.conversations.first.unreadCount, 1);
+      expect(controller.conversations.length, 1); // No duplicate conversation created!
+    });
+
+    test('sendStoryReply calls openPrivateChat to obtain real room UUID when conversation does not exist', () async {
+      final mockDio = MockDio();
+      final remoteDataSource = ChatRemoteDataSource(dio: mockDio);
+      final repository = ChatRepositoryImpl(remoteDataSource: remoteDataSource);
+      final controller = ChatController(repository: repository);
+
+      // Mock openPrivateChat response
+      when(() => mockDio.post<dynamic>('/api/v1/community/chats/private/chansela-real-uuid')).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/private/chansela-real-uuid'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'roomId': 'backend-room-uuid-789',
+              'type': 'PRIVATE',
+              'members': [
+                {'userId': 'sokny-uuid', 'fullName': 'Sokny Enat'},
+                {'userId': 'chansela-real-uuid', 'fullName': 'Heng Chansela'},
+              ],
+            }
+          },
+        ),
+      );
+
+      // Mock sendMessage response
+      when(() => mockDio.post<dynamic>(
+            '/api/v1/community/chats/backend-room-uuid-789/messages',
+            data: any(named: 'data'),
+          )).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/backend-room-uuid-789/messages'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'messageId': 'backend-msg-uuid',
+              'sender': {'userId': 'sokny-uuid', 'fullName': 'Sokny Enat'},
+              'type': 'TEXT',
+              'content': 'Loving this campus story!',
+              'createdAt': DateTime.now().toIso8601String(),
+            }
+          },
+        ),
+      );
+
+      final msg = await controller.sendStoryReply(
+        userName: 'Heng Chansela',
+        userAvatar: 'assets/images/heng_chansela_profile.png',
+        message: 'Loving this campus story!',
+        userId: 'chansela-real-uuid',
+        storyId: 'story-99',
+      );
+
+      expect(msg.content, 'Loving this campus story!');
+      expect(controller.conversations.first.id, 'backend-room-uuid-789'); // REAL backend room UUID!
+      expect(controller.conversations.first.id.startsWith('private_'), isFalse); // Never fabricated!
+    });
+
+    test('createGroup sends memberIds list in POST payload', () async {
+      final mockDio = MockDio();
+      final remoteDataSource = ChatRemoteDataSource(dio: mockDio);
+
+      when(() => mockDio.post<dynamic>(
+            '/api/v1/community/chats/groups',
+            data: any(named: 'data'),
+          )).thenAnswer((invocation) async {
+        final body = invocation.namedArguments[#data] as Map<String, dynamic>;
+        expect(body.containsKey('memberIds'), isTrue);
+        expect(body['memberIds'], equals(['uuid-1', 'uuid-2']));
+        return Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/groups'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'roomId': 'group-room-uuid',
+              'type': 'GROUP',
+              'name': 'Study Group',
+              'members': [
+                {'userId': 'uuid-1', 'fullName': 'Member 1'},
+                {'userId': 'uuid-2', 'fullName': 'Member 2'},
+              ],
+            }
+          },
+        );
+      });
+
+      final group = await remoteDataSource.createGroup('Study Group', ['uuid-1', 'uuid-2']);
+      expect(group.id, 'group-room-uuid');
+      expect(group.isGroup, isTrue);
+    });
+
+    test('deleteConversation calls /leave endpoint on backend', () async {
+      final mockDio = MockDio();
+      final remoteDataSource = ChatRemoteDataSource(dio: mockDio);
+
+      when(() => mockDio.delete<dynamic>('/api/v1/community/chats/test-room-id/leave')).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/test-room-id/leave'),
+          statusCode: 200,
+          data: {'success': true, 'data': null},
+        ),
+      );
+
+      final ok = await remoteDataSource.deleteConversation('test-room-id');
+      expect(ok, isTrue);
+      verify(() => mockDio.delete<dynamic>('/api/v1/community/chats/test-room-id/leave')).called(1);
+    });
+
+    test('ChatWebSocketClient parses STOMP MESSAGE frame and delivers ChatMessageModel to stream', () async {
+      final wsClient = ChatWebSocketClient();
+      final messages = <ChatMessageModel>[];
+      final sub = wsClient.messageStream.listen(messages.add);
+
+      const stompMessageFrame = 'MESSAGE\n'
+          'destination:/user/queue/chat\n'
+          'content-type:application/json\n'
+          'message-id:msg-001\n\n'
+          '{"messageId":"msg-ws-99","roomId":"room-ws-123","sender":{"userId":"user-sender-1","fullName":"Sokny Enat"},"type":"TEXT","content":"Hello via WebSocket!","mine":false,"createdAt":"2026-09-17T08:00:00Z"}\x00';
+
+      wsClient.onDataForTesting(stompMessageFrame);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(messages.length, 1);
+      expect(messages.first.id, 'msg-ws-99');
+      expect(messages.first.conversationId, 'room-ws-123');
+      expect(messages.first.senderName, 'Sokny Enat');
+      expect(messages.first.content, 'Hello via WebSocket!');
+
+      await sub.cancel();
+      wsClient.dispose();
+    });
+
+    test('ChatLocalDataSource scopes conversations per authenticated user', () async {
+      final mockSecureStorage = MockSecureStorage();
+      when(() => mockSecureStorage.readUserId()).thenAnswer((_) async => 'user-uuid-1');
+
+      final localDataSource = ChatLocalDataSource(secureStorage: mockSecureStorage);
+      final conv = ChatConversationModel(
+        id: 'room-1',
+        name: 'User 1 Room',
+        avatar: 'avatar.png',
+        lastMessage: 'Hi',
+        lastMessageTime: 'Now',
+      );
+
+      await localDataSource.saveConversations([conv]);
+      final savedUser1 = await localDataSource.getConversations();
+      expect(savedUser1.length, 1);
+      expect(savedUser1.first.name, 'User 1 Room');
+
+      // Now switch user scope to user-uuid-2
+      when(() => mockSecureStorage.readUserId()).thenAnswer((_) async => 'user-uuid-2');
+      final savedUser2 = await localDataSource.getConversations();
+      expect(savedUser2, isEmpty);
+    });
+
+    test('createGroup does not send fake IDs like user_sokny to backend and handles locally in demo', () async {
+      final mockDio = MockDio();
+      final remoteDataSource = ChatRemoteDataSource(dio: mockDio);
+      final repository = ChatRepositoryImpl(remoteDataSource: remoteDataSource);
+      final controller = ChatController(repository: repository);
+
+      // Pass fake demo IDs (non-UUIDs)
+      final group = await controller.createGroup('Study Group', ['user_sokny', 'user_chansela']);
+
+      expect(group, isNotNull);
+      expect(group!.isGroup, isTrue);
+      expect(group.name, 'Study Group');
+      expect(group.id.startsWith('group_'), isTrue);
+      // Ensure no remote HTTP request was sent with invalid UUIDs
+      verifyNever(() => mockDio.post<dynamic>('/api/v1/community/chats/groups', data: any(named: 'data')));
+    });
+  });
+}

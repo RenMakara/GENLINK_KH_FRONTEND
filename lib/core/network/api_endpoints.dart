@@ -192,6 +192,12 @@ abstract final class ApiEndpoints {
   static String communityPostComments(String postId) =>
       '$_base/community/posts/$postId/comments';
 
+  static String communityComment(String commentId) =>
+      '$_base/community/comments/$commentId';
+
+  static String communityCommentReplies(String commentId) =>
+      '$_base/community/comments/$commentId/replies';
+
   static String communityFollowUser(String userId) =>
       '$_base/community/users/$userId/follow';
 
@@ -214,6 +220,8 @@ abstract final class ApiEndpoints {
       '$_base/community/discussions/comments/$commentId/replies';
   static String communityDiscussionReact(String discussionId) =>
       '$_base/community/discussions/$discussionId/react';
+  static String communityDiscussionReactions(String discussionId) =>
+      '$_base/community/discussions/$discussionId/reactions';
   static String communityDiscussionReport(String discussionId) =>
       '$_base/community/discussions/$discussionId/report';
   static String communityDiscussionCommentLike(String commentId) =>

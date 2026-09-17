@@ -425,47 +425,150 @@ class CommunityRemoteDataSource {
   }
 
   Future<List<CommentModel>> fetchComments(String postId) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(ApiEndpoints.communityPostComments(postId)),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      dynamic rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+
+      List<dynamic> content = [];
+      if (rawData is Map<String, dynamic>) {
+        content = (rawData['content'] as List<dynamic>?) ?? [];
+      } else if (rawData is List) {
+        content = rawData;
+      }
+
+      final parsed = content
+          .whereType<Map<String, dynamic>>()
+          .map((json) {
+            final map = Map<String, dynamic>.from(json);
+            if (map['postId'] == null && map['discussionId'] == null) {
+              map['postId'] = postId;
+            }
+            return CommentModel.fromJson(map);
+          })
+          .toList();
+
+      final reconstructed = _reconstructCommentHierarchy(parsed);
+
+      final commentsWithReplies = await Future.wait(
+        reconstructed.map((comment) async {
+          if (comment.replies.isNotEmpty) return comment;
+          try {
+            final replies = await fetchCommentReplies(comment.id);
+            if (replies.isNotEmpty) {
+              return comment.copyWith(replies: replies);
+            }
+          } catch (_) {}
+          return comment;
+        }),
+      );
+
+      return commentsWithReplies;
+    }
+    return [];
+  }
+
+  Future<List<CommentModel>> fetchCommentReplies(String commentId) async {
     try {
       final response = await guardDio(
-        () => dio.get<dynamic>(ApiEndpoints.communityPostComments(postId)),
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityCommentReplies(commentId),
+        ),
       );
       if (response.statusCode == 200 && response.data != null) {
         final body = response.data;
         final rawData = body is Map<String, dynamic>
             ? (body['data'] ?? body)
             : body;
-        if (rawData is List) {
-          return rawData
-              .map(
-                (json) => CommentModel.fromJson(json as Map<String, dynamic>),
-              )
-              .toList();
-        }
+        final content = rawData is Map<String, dynamic>
+            ? (rawData['content'] as List<dynamic>?) ?? const []
+            : rawData is List
+            ? rawData
+            : const [];
+        return content
+            .whereType<Map<String, dynamic>>()
+            .map((json) {
+              final map = Map<String, dynamic>.from(json);
+              if (map['parentCommentId'] == null) {
+                map['parentCommentId'] = commentId;
+              }
+              return CommentModel.fromJson(map);
+            })
+            .toList();
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Failed to fetch replies for comment $commentId: $e');
+    }
+    return [];
+  }
 
-    return [
-      CommentModel(
-        id: 'c_1',
-        postId: postId,
-        userId: 'u_10',
-        userName: 'Rathana P.',
-        userAvatar: 'assets/images/user_profile.png',
-        text: 'Awesome post! Looking forward to seeing more updates 🔥',
-        timeAgo: '1h ago',
-        likesCount: 3,
-      ),
-      CommentModel(
-        id: 'c_2',
-        postId: postId,
-        userId: 'u_11',
-        userName: 'Sothea N.',
-        userAvatar: 'assets/images/user_profile.png',
-        text: 'Great work team! Keep it up 👏',
-        timeAgo: '30m ago',
-        likesCount: 1,
-      ),
-    ];
+  List<CommentModel> _reconstructCommentHierarchy(List<CommentModel> comments) {
+    if (comments.isEmpty) return const [];
+
+    final Map<String, List<CommentModel>> repliesByParent = {};
+    final List<CommentModel> topLevelComments = [];
+
+    for (final comment in comments) {
+      final parentId = comment.parentCommentId;
+      if (parentId != null && parentId.isNotEmpty) {
+        repliesByParent.putIfAbsent(parentId, () => []).add(comment);
+      } else {
+        topLevelComments.add(comment);
+      }
+    }
+
+    if (repliesByParent.isEmpty) {
+      return comments;
+    }
+
+    List<CommentModel> buildReplies(String parentId) {
+      final direct = repliesByParent[parentId] ?? [];
+      return direct.map((reply) {
+        final nested = buildReplies(reply.id);
+        final merged = [
+          ...reply.replies,
+          ...nested.where((n) => !reply.replies.any((r) => r.id == n.id)),
+        ];
+        return reply.copyWith(replies: merged);
+      }).toList();
+    }
+
+    final result = topLevelComments.map((parent) {
+      final replies = buildReplies(parent.id);
+      final merged = [
+        ...parent.replies,
+        ...replies.where(
+          (r) => !parent.replies.any((existing) => existing.id == r.id),
+        ),
+      ];
+      return parent.copyWith(replies: merged);
+    }).toList();
+
+    // Include any orphaned replies whose parent was not in the top-level list
+    final accountedIds = <String>{
+      ...result.map((c) => c.id),
+      ...result.expand((c) => _allCommentDescendantIds(c)),
+    };
+    for (final comment in comments) {
+      if (!accountedIds.contains(comment.id)) {
+        result.add(comment);
+      }
+    }
+
+    return result;
+  }
+
+  Set<String> _allCommentDescendantIds(CommentModel comment) {
+    final ids = <String>{};
+    for (final r in comment.replies) {
+      ids.add(r.id);
+      ids.addAll(_allCommentDescendantIds(r));
+    }
+    return ids;
   }
 
   Future<CommentModel> addComment(
@@ -473,35 +576,54 @@ class CommunityRemoteDataSource {
     String text, {
     String? parentCommentId,
   }) async {
-    final currentUserName =
-        CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
-        ? CurrentUser.name
-        : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'User');
-    final comment = CommentModel(
-      id: 'c_${DateTime.now().millisecondsSinceEpoch}',
-      postId: postId,
-      userId: CurrentUser.id.isNotEmpty ? CurrentUser.id : 'current_user',
-      userName: currentUserName,
-      userAvatar: CurrentUser.avatarUrl ?? '',
-      text: text,
-      timeAgo: 'Just now',
-      parentCommentId: parentCommentId,
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityPostComments(postId),
+        data: {
+          'content': text,
+          if (parentCommentId != null && parentCommentId.isNotEmpty)
+            'parentCommentId': parentCommentId,
+        },
+      ),
     );
 
-    try {
-      await guardDio(
-        () => dio.post<dynamic>(
-          ApiEndpoints.communityPostComments(postId),
-          data: {'text': text, 'parentCommentId': parentCommentId},
-        ),
-      );
-    } catch (_) {}
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      Map<String, dynamic>? dataMap;
+      if (body is Map<String, dynamic> &&
+          body['data'] is Map<String, dynamic>) {
+        dataMap = body['data'] as Map<String, dynamic>;
+      } else if (body is Map<String, dynamic>) {
+        dataMap = body;
+      }
 
-    final idx = _mockPosts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      _mockPosts[idx].commentsCount += 1;
+      if (dataMap != null) {
+        if (dataMap['postId'] == null && dataMap['discussionId'] == null) {
+          dataMap['postId'] = postId;
+        }
+        return CommentModel.fromJson(dataMap);
+      }
     }
-    return comment;
+
+    throw AppError(
+      message: 'Failed to add comment',
+      errorCode: 'COMMENT_CREATE_FAILED',
+    );
+  }
+
+  Future<bool> deleteComment(String commentId) async {
+    final response = await guardDio(
+      () => dio.delete<dynamic>(
+        ApiEndpoints.communityComment(commentId),
+      ),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    }
+    throw const AppError(
+      message: 'Failed to delete comment',
+      errorCode: 'COMMENT_DELETE_FAILED',
+    );
   }
 
   Future<List<CommentModel>> fetchDiscussionComments(
@@ -525,9 +647,24 @@ class CommunityRemoteDataSource {
         content = rawData;
       }
 
-      return content
-          .map((json) => CommentModel.fromJson(json as Map<String, dynamic>))
+      final topLevelComments = content
+          .whereType<Map<String, dynamic>>()
+          .map((json) => CommentModel.fromJson(json))
           .toList();
+
+      final commentsWithReplies = await Future.wait(
+        topLevelComments.map((comment) async {
+          if (comment.replies.isNotEmpty) return comment;
+          try {
+            final replies = await fetchDiscussionCommentReplies(comment.id);
+            if (replies.isNotEmpty) {
+              return comment.copyWith(replies: replies);
+            }
+          } catch (_) {}
+          return comment;
+        }),
+      );
+      return commentsWithReplies;
     }
     return [];
   }
@@ -742,6 +879,93 @@ class CommunityRemoteDataSource {
       message: 'Failed to update reaction',
       errorCode: 'DISCUSSION_REACT_FAILED',
     );
+  }
+
+  Future<List<ForumLikerModel>> fetchDiscussionLikers(
+    String discussionId, {
+    int page = 0,
+    int size = 20,
+  }) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityDiscussionReactions(discussionId),
+        queryParameters: {
+          'page': page,
+          'size': size,
+        },
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      dynamic rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      List<dynamic> content = [];
+      if (rawData is Map<String, dynamic>) {
+        content = (rawData['content'] as List<dynamic>?) ?? [];
+      } else if (rawData is List) {
+        content = rawData;
+      }
+      return content
+          .whereType<Map<String, dynamic>>()
+          .map(ForumLikerModel.fromJson)
+          .toList();
+    }
+    throw AppError(
+      message: 'Failed to fetch discussion reactions',
+      errorCode: 'FETCH_DISCUSSION_REACTIONS_FAILED',
+    );
+  }
+
+  Future<bool> toggleDiscussionBookmark(
+    String discussionId, {
+    required bool isCurrentlyBookmarked,
+  }) async {
+    final response = await guardDio(
+      () => isCurrentlyBookmarked
+          ? dio.delete<dynamic>(
+              ApiEndpoints.profileSavedItem('DISCUSSION', discussionId),
+            )
+          : dio.post<dynamic>(
+              ApiEndpoints.profileSaved,
+              data: {
+                'itemType': 'DISCUSSION',
+                'itemId': discussionId,
+              },
+            ),
+    );
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 204) {
+      return !isCurrentlyBookmarked;
+    }
+    throw const AppError(
+      message: 'Failed to update bookmark',
+      errorCode: 'BOOKMARK_UPDATE_FAILED',
+    );
+  }
+
+  Future<bool> isDiscussionBookmarked(String discussionId) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.profileSavedCheck,
+          queryParameters: {
+            'itemType': 'DISCUSSION',
+            'itemId': discussionId,
+          },
+        ),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final data =
+            body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        if (data is Map<String, dynamic>) {
+          return data['saved'] as bool? ?? false;
+        }
+      }
+    } catch (_) {}
+    return false;
   }
 
   Future<ForumTopicModel> getDiscussionDetails(String discussionId) async {

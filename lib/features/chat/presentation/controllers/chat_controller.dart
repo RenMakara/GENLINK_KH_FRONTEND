@@ -1,12 +1,20 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../data/datasources/chat_websocket_client.dart';
 import '../../data/repositories/chat_repository_impl.dart';
 import '../../domain/models/chat_models.dart';
 
 class ChatController extends GetxController {
   final ChatRepositoryImpl repository;
+  final ChatWebSocketClient? webSocketClient;
 
-  ChatController({required this.repository});
+  ChatController({
+    required this.repository,
+    this.webSocketClient,
+  });
+
+  StreamSubscription? _wsSubscription;
 
   final conversations = <ChatConversationModel>[].obs;
   final activeMessages = <ChatMessageModel>[].obs;
@@ -29,10 +37,16 @@ class ChatController extends GetxController {
     super.onInit();
     fetchConversations();
     fetchUnreadCount();
+    if (webSocketClient != null) {
+      _wsSubscription = webSocketClient!.messageStream.listen(onMessageReceived);
+      webSocketClient!.connect();
+    }
   }
 
   @override
   void onClose() {
+    _wsSubscription?.cancel();
+    webSocketClient?.disconnect();
     textController.dispose();
     scrollController.dispose();
     super.onClose();
@@ -136,6 +150,9 @@ class ChatController extends GetxController {
         if (pinned != null) {
           pinnedMessage.value = pinned;
         }
+      } else if (activeMessages.isNotEmpty &&
+          activeMessages.first.conversationId != conv.id) {
+        activeMessages.clear();
       }
       _scrollToBottom();
     } catch (e) {
@@ -166,13 +183,12 @@ class ChatController extends GetxController {
     String? avatar,
   }) async {
     // 1. Check if conversation already exists locally for this user
+    // Stable participant UUID match, never relying on display names (Risk F)
     final existingIdx = conversations.indexWhere((c) {
-      if (c.id == userId || c.id == 'private_$userId' || c.id == 'room_$userId') {
-        return true;
-      }
-      if (name != null &&
-          name.isNotEmpty &&
-          c.name.trim().toLowerCase() == name.trim().toLowerCase()) {
+      if (c.id == userId ||
+          c.profileUserId == userId ||
+          c.id == 'private_$userId' ||
+          c.id == 'room_$userId') {
         return true;
       }
       return false;
@@ -191,7 +207,9 @@ class ChatController extends GetxController {
     // 2. Otherwise open via repository or create fallback
     try {
       final conv = await repository.openPrivateChat(userId);
-      final backendIdx = conversations.indexWhere((c) => c.id == conv.id);
+      final backendIdx = conversations.indexWhere(
+        (c) => c.id == conv.id || (conv.profileUserId != null && c.profileUserId == conv.profileUserId),
+      );
       if (backendIdx != -1) {
         conversations[backendIdx] = conv.copyWith(isArchived: false);
         _moveConversationToTop(conversations[backendIdx]);
@@ -207,6 +225,7 @@ class ChatController extends GetxController {
         id: 'private_$userId',
         name: name ?? 'User',
         avatar: avatar ?? 'assets/images/user_profile.png',
+        profileUserId: userId,
         isGroup: false,
         isOnline: true,
         lastMessage: '',
@@ -224,6 +243,26 @@ class ChatController extends GetxController {
     String name,
     List<String> memberUserIds,
   ) async {
+    final uuidRegex = RegExp(r'^[0-9a-fA-F-]{36}$');
+    final hasFakeIds = memberUserIds.any((id) => !uuidRegex.hasMatch(id));
+
+    if (hasFakeIds) {
+      // Demo / offline fallback: do not send invalid UUID strings to real backend
+      final demoGroup = ChatConversationModel(
+        id: 'group_${DateTime.now().millisecondsSinceEpoch}',
+        name: name,
+        avatar: 'assets/images/group_avatar.png',
+        isGroup: true,
+        lastMessage: 'Group created',
+        lastMessageTime: 'Just now',
+        membersCount: memberUserIds.length + 1,
+      );
+      conversations.insert(0, demoGroup);
+      conversations.refresh();
+      await openConversation(demoGroup);
+      return demoGroup;
+    }
+
     try {
       final newGroup = await repository.createGroup(name, memberUserIds);
       conversations.insert(0, newGroup);
@@ -356,6 +395,8 @@ class ChatController extends GetxController {
     isSendingMessage.value = true;
 
     ChatMessageModel newMsg;
+    final isRealBackendRoom = RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(conv.id);
+
     try {
       newMsg = await repository.sendMessage(
         conv.id,
@@ -367,7 +408,7 @@ class ChatController extends GetxController {
         replyTo: effectiveReplyTo,
       );
     } catch (_) {
-      // Fallback local message for mock / demo / offline state
+      // Risk E: Do not silently disguise real backend failures as successful
       newMsg = ChatMessageModel(
         id: 'msg_local_${DateTime.now().millisecondsSinceEpoch}',
         conversationId: conv.id,
@@ -379,11 +420,19 @@ class ChatController extends GetxController {
         timestamp: DateTime.now(),
         timeAgo: 'Just now',
         isMine: true,
+        deliveryStatus: isRealBackendRoom ? 'failed' : 'read',
         messageType: type,
         mediaUrl: mediaUrl,
         replyTo: effectiveReplyTo,
-        deliveryStatus: 'failed',
       );
+
+      if (isRealBackendRoom) {
+        Get.snackbar(
+          'Message not sent',
+          'Could not deliver message to the server.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     } finally {
       isSendingMessage.value = false;
     }
@@ -479,14 +528,18 @@ class ChatController extends GetxController {
     String? storyId,
     String? userId,
   }) async {
-    // 1. Find existing conversation or create a new one
+    // 1. Find existing conversation or open real backend conversation
+    // Risk C: Never fabricate private_<id> when real userId is available
     var convIndex = conversations.indexWhere((c) {
       if (userId != null && userId.isNotEmpty) {
-        if (c.id == userId || c.id == 'private_$userId' || c.id == 'room_$userId') {
+        if (c.id == userId ||
+            c.profileUserId == userId ||
+            c.id == 'private_$userId' ||
+            c.id == 'room_$userId') {
           return true;
         }
       }
-      return c.name.trim().toLowerCase() == userName.trim().toLowerCase();
+      return false;
     });
 
     ChatConversationModel conv;
@@ -494,23 +547,40 @@ class ChatController extends GetxController {
     if (convIndex != -1) {
       conv = conversations.removeAt(convIndex);
     } else {
-      final safeId = (userId != null && userId.isNotEmpty)
-          ? userId
-          : userName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
-      conv = ChatConversationModel(
-        id: 'private_$safeId',
-        name: userName,
-        avatar: userAvatar,
-        isGroup: false,
-        isOnline: true,
-        lastMessage: message,
-        lastMessageTime: 'Just now',
-        unreadCount: 0,
-      );
+      if (userId != null && userId.isNotEmpty) {
+        try {
+          conv = await repository.openPrivateChat(userId);
+        } catch (_) {
+          conv = ChatConversationModel(
+            id: 'private_$userId',
+            name: userName,
+            avatar: userAvatar,
+            profileUserId: userId,
+            isGroup: false,
+            isOnline: true,
+            lastMessage: message,
+            lastMessageTime: 'Just now',
+            unreadCount: 0,
+          );
+        }
+      } else {
+        final safeId = userName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+        conv = ChatConversationModel(
+          id: 'private_$safeId',
+          name: userName,
+          avatar: userAvatar,
+          isGroup: false,
+          isOnline: true,
+          lastMessage: message,
+          lastMessageTime: 'Just now',
+          unreadCount: 0,
+        );
+      }
     }
 
     // 2. Call Repository send message API, with resilient fallback for local mock/demo
     ChatMessageModel newMsg;
+    final isRealBackendRoom = RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(conv.id);
     try {
       newMsg = await repository.sendMessage(
         conv.id,
@@ -529,6 +599,7 @@ class ChatController extends GetxController {
         timestamp: DateTime.now(),
         timeAgo: 'Just now',
         isMine: true,
+        deliveryStatus: isRealBackendRoom ? 'failed' : 'read',
         messageType: 'story_reply',
         mediaUrl: mediaUrl,
         storyReference: StoryReference(
@@ -537,6 +608,14 @@ class ChatController extends GetxController {
           isExpired: false,
         ),
       );
+
+      if (isRealBackendRoom) {
+        Get.snackbar(
+          'Message not sent',
+          'Could not deliver story reply to the server.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     }
 
     // 3. Update conversation metadata and place at top of list
@@ -567,24 +646,47 @@ class ChatController extends GetxController {
   }
 
   void onMessageReceived(ChatMessageModel message) {
-    if (activeConversation.value?.id == message.conversationId) {
+    // Risk A: Incoming backend ChatMessageResponse must contain enough information
+    // for the frontend to identify the actual conversation/room.
+    // Do NOT guess a conversation from display names.
+    ChatConversationModel? targetConv;
+    int targetIdx = -1;
+
+    // 1. Try matching by conversationId / roomId
+    if (message.conversationId.isNotEmpty) {
+      targetIdx = conversations.indexWhere((c) => c.id == message.conversationId);
+    }
+
+    // 2. If not matched and message is from another participant, match 1-to-1 by participant userId (UUID)
+    if (targetIdx == -1 && message.senderId.isNotEmpty) {
+      targetIdx = conversations.indexWhere(
+        (c) => !c.isGroup && (c.profileUserId == message.senderId || c.id == message.senderId),
+      );
+    }
+
+    if (targetIdx != -1) {
+      targetConv = conversations[targetIdx];
+    }
+
+    final isCurrentActive =
+        targetConv != null && activeConversation.value?.id == targetConv.id;
+
+    if (isCurrentActive) {
       final exists = activeMessages.any((m) => m.id == message.id);
       if (!exists) {
         activeMessages.add(message);
         _scrollToBottom();
       }
-      repository.markConversationRead(message.conversationId);
+      repository.markConversationRead(targetConv.id);
     }
 
-    final idx = conversations.indexWhere((c) => c.id == message.conversationId);
-    if (idx != -1) {
-      final conv = conversations[idx];
-      conv.lastMessage = message.content;
-      conv.lastMessageTime = 'Just now';
-      if (activeConversation.value?.id != message.conversationId) {
-        conv.unreadCount += 1;
+    if (targetConv != null) {
+      targetConv.lastMessage = message.content;
+      targetConv.lastMessageTime = 'Just now';
+      if (!isCurrentActive) {
+        targetConv.unreadCount += 1;
       }
-      _moveConversationToTop(conv);
+      _moveConversationToTop(targetConv);
       conversations.refresh();
     }
   }

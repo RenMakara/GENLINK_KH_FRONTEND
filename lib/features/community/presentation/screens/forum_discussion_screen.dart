@@ -12,7 +12,10 @@ import '../../domain/models/community_models.dart';
 import '../../domain/models/community_post_model.dart';
 import '../controllers/community_controller.dart';
 import '../widgets/community_design_tokens.dart';
+import '../widgets/forum_liked_by_sheet.dart';
+import '../widgets/forum_share_to_chat_sheet.dart';
 import 'create_discussion_screen.dart';
+import 'widgets/community_widgets.dart';
 
 class ForumDiscussionScreen extends StatefulWidget {
   final ForumTopicModel discussion;
@@ -32,6 +35,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   late int _repliesCount;
   late int _upvotes;
   late bool _isLiked;
+  late bool _isBookmarked;
   bool _hasText = false;
 
   @override
@@ -50,7 +54,13 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
       _controller = Get.put(CommunityController());
     }
 
+    _isBookmarked = _discussion.isBookmarked ||
+        _controller.isDiscussionBookmarked(_discussion.id);
+
     _controller.fetchDiscussionComments(_discussion.id);
+    _controller
+        .fetchDiscussionLikers(_discussion.id)
+        .catchError((_) => <ForumLikerModel>[]);
     _loadDiscussionDetail();
   }
 
@@ -62,7 +72,12 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
         _repliesCount = detail.repliesCount;
         _upvotes = detail.upvotes;
         _isLiked = detail.isLiked;
+        _isBookmarked = detail.isBookmarked ||
+            _controller.isDiscussionBookmarked(detail.id);
       });
+      _controller
+          .fetchDiscussionLikers(_discussion.id)
+          .catchError((_) => <ForumLikerModel>[]);
     }
   }
 
@@ -84,6 +99,44 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
         message: 'Failed to update reaction. Please try again.',
       );
     }
+  }
+
+  void _handleSaveTap() async {
+    setState(() {
+      _isBookmarked = !_isBookmarked;
+    });
+    final success = await _controller.toggleDiscussionBookmark(_discussion.id);
+    if (!success && mounted) {
+      setState(() {
+        _isBookmarked = !_isBookmarked;
+      });
+      AppNotificationBanner.showError(
+        context: context,
+        title: 'Error',
+        message: 'Failed to update bookmark. Please try again.',
+      );
+    } else if (mounted) {
+      final title = _isBookmarked
+          ? ('community.saveBookmark'.tr.isNotEmpty &&
+                  'community.saveBookmark'.tr != 'community.saveBookmark'
+              ? 'community.saveBookmark'.tr
+              : 'Saved')
+          : ('community.removeBookmark'.tr.isNotEmpty &&
+                  'community.removeBookmark'.tr != 'community.removeBookmark'
+              ? 'community.removeBookmark'.tr
+              : 'Bookmark Removed');
+      AppNotificationBanner.showSuccess(
+        context: context,
+        title: title,
+        message: _isBookmarked
+            ? 'Discussion added to your saved items.'
+            : 'Discussion removed from saved items.',
+      );
+    }
+  }
+
+  void _handleShareToChatTap() {
+    ForumShareToChatSheet.show(context, topic: _discussion);
   }
 
   void _onTextChanged() {
@@ -236,13 +289,25 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                 ),
               ] else ...[
                 ListTile(
-                  leading: Icon(Icons.bookmark_border_rounded,
-                      color: textPrimary, size: 22),
+                  leading: Icon(
+                    _isBookmarked
+                        ? Icons.bookmark_rounded
+                        : Icons.bookmark_border_rounded,
+                    color: _isBookmarked ? AppColors.warning : textPrimary,
+                    size: 22,
+                  ),
                   title: Text(
-                    'community.save'.tr.isNotEmpty &&
-                            'community.save'.tr != 'community.save'
-                        ? 'community.save'.tr
-                        : 'Save',
+                    _isBookmarked
+                        ? ('community.removeBookmark'.tr.isNotEmpty &&
+                                'community.removeBookmark'.tr !=
+                                    'community.removeBookmark'
+                            ? 'community.removeBookmark'.tr
+                            : 'Remove from Saved')
+                        : ('community.saveBookmark'.tr.isNotEmpty &&
+                                'community.saveBookmark'.tr !=
+                                    'community.saveBookmark'
+                            ? 'community.saveBookmark'.tr
+                            : 'Save'),
                     style: TextStyle(
                       color: textPrimary,
                       fontWeight: FontWeight.w600,
@@ -251,11 +316,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                   ),
                   onTap: () {
                     Get.back();
-                    AppNotificationBanner.showSuccess(
-                      context: context,
-                      title: 'Saved',
-                      message: 'Discussion saved to bookmarks.',
-                    );
+                    _handleSaveTap();
                   },
                 ),
                 ListTile(
@@ -439,6 +500,178 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     );
   }
 
+  void _handleRepost() {
+    final currentUserId = _controller.currentUserId ??
+        (CurrentUser.id.isNotEmpty ? CurrentUser.id : null);
+    if (_discussion.checkIsOwner(currentUserId)) {
+      AppNotificationBanner.showWarning(
+        context: context,
+        title: 'Cannot Repost',
+        message: 'community.cannotRepostOwnPost'.tr.isNotEmpty &&
+                'community.cannotRepostOwnPost'.tr !=
+                    'community.cannotRepostOwnPost'
+            ? 'community.cannotRepostOwnPost'.tr
+            : 'You cannot repost your own discussion.',
+      );
+      return;
+    }
+    _showRepostDialog();
+  }
+
+  void _showRepostDialog() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final surface =
+        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+    final surfaceSecondary =
+        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textMuted =
+        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final borderSubtle =
+        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
+    final captionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.squircle),
+          side: BorderSide(color: borderSubtle),
+        ),
+        title: Text(
+          'community.repostContent'.tr.isNotEmpty &&
+                  'community.repostContent'.tr != 'community.repostContent'
+              ? 'community.repostContent'.tr
+              : 'Repost',
+          style: theme.textTheme.titleMedium?.copyWith(
+                color: textPrimary,
+                fontWeight: FontWeight.bold,
+              ) ??
+              TextStyle(
+                color: textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'community.repostingOriginal'.tr.isNotEmpty &&
+                      'community.repostingOriginal'.tr !=
+                          'community.repostingOriginal'
+                  ? 'community.repostingOriginal'
+                      .trParams({'name': _discussion.authorName})
+                  : 'Reposting discussion by ${_discussion.authorName}',
+              style: theme.textTheme.bodySmall?.copyWith(color: textSecondary) ??
+                  TextStyle(color: textSecondary, fontSize: 13),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              decoration: BoxDecoration(
+                color: surfaceSecondary,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(color: borderSubtle),
+              ),
+              padding: const EdgeInsets.all(AppSpacing.sm + 4),
+              child: TextField(
+                controller: captionController,
+                minLines: 2,
+                maxLines: 4,
+                style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: textPrimary) ??
+                    TextStyle(color: textPrimary, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'community.repostQuoteHint'.tr.isNotEmpty &&
+                          'community.repostQuoteHint'.tr !=
+                              'community.repostQuoteHint'
+                      ? 'community.repostQuoteHint'.tr
+                      : 'Add a thought...',
+                  hintStyle: theme.textTheme.bodyMedium
+                          ?.copyWith(color: textMuted) ??
+                      TextStyle(color: textMuted, fontSize: 14),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+            child: Text(
+              'common.cancel'.tr.isNotEmpty &&
+                      'common.cancel'.tr != 'common.cancel'
+                  ? 'common.cancel'.tr
+                  : 'Cancel',
+              style: theme.textTheme.labelMedium?.copyWith(
+                    color: textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ) ??
+                  TextStyle(
+                    color: textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _controller.repostDiscussion(
+                _discussion,
+                caption: captionController.text,
+              );
+              AppNotificationBanner.showSuccess(
+                context: context,
+                title: 'community.reposted'.tr.isNotEmpty &&
+                        'community.reposted'.tr != 'community.reposted'
+                    ? 'community.reposted'.tr
+                    : '✓ Reposted',
+                message: 'Discussion has been reposted to your feed.',
+                icon: Icons.repeat_rounded,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+            ),
+            child: Text(
+              'community.repost'.tr.isNotEmpty &&
+                      'community.repost'.tr != 'community.repost'
+                  ? 'community.repost'.tr
+                  : 'Repost',
+              style: TextStyle(
+                color: isDark
+                    ? AppColors.darkTextInverse
+                    : AppColors.lightTextInverse,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -601,7 +834,25 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: AppSpacing.lg),
+                  if (_upvotes > 0) ...[
+                    const SizedBox(height: AppSpacing.sm + 2),
+                    Obx(() {
+                      final likers = _controller.discussionLikers[_discussion.id] ?? _discussion.likers;
+                      return ForumLikedByPreview(
+                        likesCount: _upvotes,
+                        likers: likers,
+                        isDark: isDark,
+                        onTap: () {
+                          ForumLikedBySheet.show(
+                            context,
+                            discussionId: _discussion.id,
+                            initialLikers: likers,
+                          );
+                        },
+                      );
+                    }),
+                  ],
+                  const SizedBox(height: AppSpacing.md),
 
                   Row(
                     children: [
@@ -647,13 +898,14 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 10),
                       Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
+                          horizontal: 6,
                           vertical: 6,
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               Icons.chat_bubble_outline_rounded,
@@ -670,6 +922,98 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                               ),
                             ),
                           ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        flex: 2,
+                        child: Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: InkWell(
+                            key: const Key('forum_discussion_repost_button'),
+                            onTap: _handleRepost,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 6,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.repeat_rounded,
+                                    color: textSecondary,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Flexible(
+                                    child: Text(
+                                      'community.repost'.tr.isNotEmpty &&
+                                              'community.repost'.tr !=
+                                                  'community.repost'
+                                          ? 'community.repost'.tr
+                                          : 'Repost',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: textSecondary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        child: InkWell(
+                          key: const Key('forum_discussion_save_button'),
+                          onTap: _handleSaveTap,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            child: Icon(
+                              _isBookmarked
+                                  ? Icons.bookmark_rounded
+                                  : Icons.bookmark_border_rounded,
+                              color: _isBookmarked
+                                  ? AppColors.warning
+                                  : textSecondary,
+                              size: 19,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        child: InkWell(
+                          key: const Key('forum_discussion_share_to_chat_button'),
+                          onTap: _handleShareToChatTap,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            child: Icon(
+                              Icons.near_me_outlined,
+                              color: textSecondary,
+                              size: 19,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -926,28 +1270,36 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                               _controller.isSendingDiscussionComment.value;
                           final canSend = _hasText && !isSending;
 
-                          return SizedBox(
-                            width: 44,
-                            height: 44,
+                          return Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: canSend
+                                  ? (isDark
+                                      ? AppColors.darkPrimary
+                                      : AppColors.lightPrimary)
+                                  : Colors.transparent,
+                              shape: BoxShape.circle,
+                            ),
                             child: IconButton(
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(
-                                minWidth: 44,
-                                minHeight: 44,
+                                minWidth: 38,
+                                minHeight: 38,
                               ),
                               icon: isSending
-                                  ? SizedBox(
+                                  ? const SizedBox(
                                       width: 18,
                                       height: 18,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: textPrimary,
+                                        color: Colors.white,
                                       ),
                                     )
                                   : Icon(
                                       Icons.send_rounded,
-                                      color: canSend ? textPrimary : textMuted,
-                                      size: 21,
+                                      color: canSend ? Colors.white : textMuted,
+                                      size: 19,
                                     ),
                               onPressed: canSend ? _handleSendComment : null,
                               tooltip: 'community.send'.tr.isNotEmpty &&

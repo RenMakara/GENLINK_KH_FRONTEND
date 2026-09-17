@@ -149,7 +149,26 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final borderColor = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 
-    final filteredContacts = _contacts.where((c) {
+    final dynamicContacts = <Map<String, dynamic>>[];
+    if (Get.isRegistered<ChatController>()) {
+      final ctrl = Get.find<ChatController>();
+      for (final c in ctrl.conversations) {
+        if (!c.isGroup && c.profileUserId != null && c.profileUserId!.isNotEmpty) {
+          if (!dynamicContacts.any((item) => item['id'] == c.profileUserId)) {
+            dynamicContacts.add({
+              'id': c.profileUserId!,
+              'name': c.name,
+              'handle': '@${c.profileUsername ?? c.name.toLowerCase().replaceAll(' ', '')}',
+              'avatar': c.avatar,
+              'isOnline': c.isOnline,
+            });
+          }
+        }
+      }
+    }
+    final effectiveContacts = dynamicContacts.isNotEmpty ? dynamicContacts : _contacts;
+
+    final filteredContacts = effectiveContacts.where((c) {
       if (_searchQuery.isEmpty) return true;
       final q = _searchQuery.toLowerCase();
       final name = (c['name'] as String).toLowerCase();
@@ -157,7 +176,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       return name.contains(q) || handle.contains(q);
     }).toList();
 
-    final selectedContactsList = _contacts
+    final selectedContactsList = effectiveContacts
         .where((c) => _selectedUserIds.contains(c['id']))
         .toList();
 

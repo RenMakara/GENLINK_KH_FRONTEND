@@ -60,6 +60,9 @@ abstract class CommunityRepository {
 
   Future<List<CommentModel>> getComments(String postId);
 
+  Future<List<CommentModel>> getCommentReplies(String commentId) =>
+      Future.value([]);
+
   Future<CommentModel> addComment(
     String postId,
     String text, {
@@ -97,6 +100,15 @@ abstract class CommunityRepository {
     bool isCurrentlyLiked = false,
   });
 
+  Future<bool> toggleDiscussionBookmark(
+    String discussionId, {
+    required bool isCurrentlyBookmarked,
+  }) =>
+      Future.value(!isCurrentlyBookmarked);
+
+  Future<bool> isDiscussionBookmarked(String discussionId) =>
+      Future.value(false);
+
   Future<bool> reportDiscussion(
     String discussionId, {
     String reason = 'INAPPROPRIATE_CONTENT',
@@ -112,6 +124,13 @@ abstract class CommunityRepository {
   });
 
   Future<List<CommentModel>> getDiscussionCommentReplies(String commentId) =>
+      Future.value([]);
+
+  Future<List<ForumLikerModel>> getDiscussionLikers(
+    String discussionId, {
+    int page = 0,
+    int size = 20,
+  }) =>
       Future.value([]);
 
   Future<CommentModel> updateDiscussionComment(

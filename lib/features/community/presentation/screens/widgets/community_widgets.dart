@@ -5,6 +5,11 @@ import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/radius/app_radius.dart';
 import 'package:genlink_frontend/design_system/spacing/app_spacing.dart';
 import '../../widgets/community_design_tokens.dart';
+import '../../widgets/forum_liked_by_sheet.dart';
+import '../../widgets/forum_share_to_chat_sheet.dart';
+import '../../../domain/models/community_models.dart';
+import '../../controllers/community_controller.dart';
+import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../community_search_screen.dart';
 
 class ForumCategoryCard extends StatelessWidget {
@@ -118,6 +123,155 @@ class ForumCategoryCard extends StatelessWidget {
   }
 }
 
+class ForumLikedByPreview extends StatelessWidget {
+  final int likesCount;
+  final List<ForumLikerModel> likers;
+  final VoidCallback? onTap;
+  final bool isDark;
+
+  const ForumLikedByPreview({
+    super.key,
+    required this.likesCount,
+    this.likers = const [],
+    this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (likesCount <= 0) return const SizedBox.shrink();
+
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final surface =
+        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+
+    final displayLikers = likers.take(3).toList();
+
+    String likedByText = '';
+    final likedByLabel = 'community.likedBy'.tr.isNotEmpty &&
+            'community.likedBy'.tr != 'community.likedBy'
+        ? 'community.likedBy'.tr
+        : 'Liked by';
+
+    if (displayLikers.isNotEmpty) {
+      if (displayLikers.length == 1) {
+        if (likesCount > 1) {
+          likedByText = '$likedByLabel ${displayLikers[0].fullName} +${likesCount - 1}';
+        } else {
+          likedByText = '$likedByLabel ${displayLikers[0].fullName}';
+        }
+      } else if (displayLikers.length == 2) {
+        if (likesCount > 2) {
+          likedByText =
+              '$likedByLabel ${displayLikers[0].fullName}, ${displayLikers[1].fullName} +${likesCount - 2}';
+        } else {
+          likedByText =
+              '$likedByLabel ${displayLikers[0].fullName}, ${displayLikers[1].fullName}';
+        }
+      } else {
+        if (likesCount > 3) {
+          likedByText =
+              '$likedByLabel ${displayLikers[0].fullName}, ${displayLikers[1].fullName} +${likesCount - 2}';
+        } else {
+          likedByText =
+              '$likedByLabel ${displayLikers[0].fullName}, ${displayLikers[1].fullName}, ${displayLikers[2].fullName}';
+        }
+      }
+    } else {
+      likedByText = '$likedByLabel $likesCount ${likesCount == 1 ? 'person' : 'people'}';
+    }
+
+    return InkWell(
+      key: const Key('forum_liked_by_preview'),
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (displayLikers.isNotEmpty) ...[
+              SizedBox(
+                height: 20,
+                width: 14.0 * (displayLikers.length - 1) + 20.0,
+                child: Stack(
+                  children: List.generate(displayLikers.length, (i) {
+                    final l = displayLikers[i];
+                    final hasAvatar = l.avatarUrl.isNotEmpty;
+                    return Positioned(
+                      left: i * 14.0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: surface, width: 1.5),
+                        ),
+                        child: CircleAvatar(
+                          radius: 9,
+                          backgroundImage: hasAvatar
+                              ? (l.avatarUrl.startsWith('assets/')
+                                  ? AssetImage(l.avatarUrl) as ImageProvider
+                                  : NetworkImage(l.avatarUrl))
+                              : null,
+                          backgroundColor:
+                              AppColors.communityAccent.withValues(alpha: 0.2),
+                          child: !hasAvatar
+                              ? Text(
+                                  l.fullName.isNotEmpty
+                                      ? l.fullName.substring(0, 1).toUpperCase()
+                                      : 'U',
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.communityAccent,
+                                  ),
+                                )
+                              : null,
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ] else ...[
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: surface, width: 1.5),
+                ),
+                child: CircleAvatar(
+                  radius: 9,
+                  backgroundColor: AppColors.communityAccent.withValues(alpha: 0.2),
+                  child: const Icon(
+                    Icons.person_rounded,
+                    size: 11,
+                    color: AppColors.communityAccent,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Flexible(
+              child: Text(
+                likedByText,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class ForumThreadCard extends StatefulWidget {
   final String title;
   final String author;
@@ -130,9 +284,17 @@ class ForumThreadCard extends StatefulWidget {
   final int likes;
   final bool isPinned;
   final bool isLiked;
+  final List<ForumLikerModel> likers;
+  final String? discussionId;
+  final bool isOwner;
+  final bool isBookmarked;
   final VoidCallback? onTap;
   final VoidCallback? onLikeTap;
   final VoidCallback? onCommentTap;
+  final VoidCallback? onLikedByTap;
+  final VoidCallback? onRepostTap;
+  final VoidCallback? onSaveTap;
+  final VoidCallback? onShareToChatTap;
   final VoidCallback? onCategoryTap;
   final VoidCallback? onAuthorTap;
   final VoidCallback? onMoreTap;
@@ -150,9 +312,17 @@ class ForumThreadCard extends StatefulWidget {
     required this.likes,
     this.isPinned = false,
     this.isLiked = false,
+    this.isBookmarked = false,
+    this.likers = const [],
+    this.discussionId,
+    this.isOwner = false,
     this.onTap,
     this.onLikeTap,
     this.onCommentTap,
+    this.onLikedByTap,
+    this.onRepostTap,
+    this.onSaveTap,
+    this.onShareToChatTap,
     this.onCategoryTap,
     this.onAuthorTap,
     this.onMoreTap,
@@ -163,9 +333,11 @@ class ForumThreadCard extends StatefulWidget {
 }
 
 class _ForumThreadCardState extends State<ForumThreadCard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _likeAnimController;
   late Animation<double> _likeScaleAnim;
+  late AnimationController _bookmarkAnimController;
+  late Animation<double> _bookmarkScaleAnim;
 
   @override
   void initState() {
@@ -186,17 +358,77 @@ class _ForumThreadCardState extends State<ForumThreadCard>
         weight: 50,
       ),
     ]).animate(_likeAnimController);
+
+    _bookmarkAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 180),
+    );
+    _bookmarkScaleAnim = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.25)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.25, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeInCubic)),
+        weight: 50,
+      ),
+    ]).animate(_bookmarkAnimController);
+  }
+
+  @override
+  void didUpdateWidget(covariant ForumThreadCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isBookmarked != widget.isBookmarked && widget.isBookmarked) {
+      _bookmarkAnimController.forward(from: 0.0);
+    }
   }
 
   @override
   void dispose() {
     _likeAnimController.dispose();
+    _bookmarkAnimController.dispose();
     super.dispose();
   }
 
   void _handleLike() {
     _likeAnimController.forward(from: 0.0);
     widget.onLikeTap?.call();
+  }
+
+  void _handleSave() {
+    _bookmarkAnimController.forward(from: 0.0);
+    if (widget.onSaveTap != null) {
+      widget.onSaveTap!();
+    } else if (widget.discussionId != null && widget.discussionId!.isNotEmpty) {
+      if (Get.isRegistered<CommunityController>()) {
+        Get.find<CommunityController>()
+            .toggleDiscussionBookmark(widget.discussionId!);
+      }
+    }
+  }
+
+  void _handleShareToChat(BuildContext context) {
+    if (widget.onShareToChatTap != null) {
+      widget.onShareToChatTap!();
+    } else {
+      final topic = ForumTopicModel(
+        id: widget.discussionId ?? '',
+        title: widget.title,
+        authorName: widget.author,
+        category: widget.category,
+        content: widget.content ?? '',
+        timeAgo: widget.timeAgo,
+        createdAt: widget.createdAt,
+        isLiked: widget.isLiked,
+        upvotes: widget.likes,
+        repliesCount: widget.replies,
+        isBookmarked: widget.isBookmarked,
+        likers: widget.likers,
+      );
+      ForumShareToChatSheet.show(context, topic: topic);
+    }
   }
 
   @override
@@ -386,116 +618,424 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                         ),
                   ),
                 ],
-                const SizedBox(height: 10),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                      child: InkWell(
-                        onTap: _handleLike,
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 4,
+                if (widget.likes > 0) ...[
+                  const SizedBox(height: 6),
+                  ForumLikedByPreview(
+                    likesCount: widget.likes,
+                    likers: widget.likers,
+                    isDark: isDark,
+                    onTap: () => _handleLikedByTap(context),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isCompact = constraints.maxWidth < 280;
+                    final hPad = isCompact ? 3.0 : 6.0;
+                    final gap = isCompact ? 4.0 : 8.0;
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: InkWell(
+                            onTap: _handleLike,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: hPad,
+                                vertical: 4,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  ScaleTransition(
+                                    scale: _likeScaleAnim,
+                                    child: Icon(
+                                      widget.isLiked
+                                          ? Icons.favorite_rounded
+                                          : Icons.favorite_border_rounded,
+                                      color: widget.isLiked
+                                          ? AppColors.likedAccent
+                                          : textSecondary,
+                                      size: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "${widget.likes}",
+                                    style: theme.textTheme.labelMedium?.copyWith(
+                                          color: widget.isLiked
+                                              ? AppColors.likedAccent
+                                              : textSecondary,
+                                          fontWeight: widget.isLiked
+                                              ? FontWeight.w700
+                                              : FontWeight.w600,
+                                          fontSize: 12.5,
+                                        ) ??
+                                        TextStyle(
+                                          color: widget.isLiked
+                                              ? AppColors.likedAccent
+                                              : textSecondary,
+                                          fontSize: 12.5,
+                                          fontWeight: widget.isLiked
+                                              ? FontWeight.w700
+                                              : FontWeight.w600,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              ScaleTransition(
-                                scale: _likeScaleAnim,
+                        ),
+                        SizedBox(width: gap),
+                        Flexible(
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            child: InkWell(
+                              onTap: widget.onCommentTap ?? widget.onTap,
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: hPad,
+                                  vertical: 4,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.chat_bubble_outline_rounded,
+                                      color: textSecondary,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        "${widget.replies} ${'community.comments'.tr.isNotEmpty && 'community.comments'.tr != 'community.comments' ? ('community.comments'.tr == 'Comments' ? 'comments' : 'community.comments'.tr) : 'comments'}",
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.labelMedium?.copyWith(
+                                              color: textSecondary,
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w600,
+                                            ) ??
+                                            TextStyle(
+                                              color: textSecondary,
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: gap),
+                        Flexible(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minWidth: 24),
+                            child: Material(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              child: InkWell(
+                                key: const Key('forum_card_repost_button'),
+                                onTap: widget.onRepostTap ?? () => _handleRepost(context),
+                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: hPad,
+                                    vertical: 4,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.repeat_rounded,
+                                        color: textSecondary,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          'community.repost'.tr.isNotEmpty &&
+                                                  'community.repost'.tr != 'community.repost'
+                                              ? 'community.repost'.tr
+                                              : 'Repost',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.labelMedium?.copyWith(
+                                                color: textSecondary,
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.w600,
+                                              ) ??
+                                              TextStyle(
+                                                color: textSecondary,
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (!isCompact)
+                          const Spacer()
+                        else
+                          const SizedBox(width: 4),
+                        Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: InkWell(
+                            key: const Key('forum_card_save_button'),
+                            onTap: _handleSave,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: hPad,
+                                vertical: 4,
+                              ),
+                              child: ScaleTransition(
+                                scale: _bookmarkScaleAnim,
                                 child: Icon(
-                                  widget.isLiked
-                                      ? Icons.favorite_rounded
-                                      : Icons.favorite_border_rounded,
-                                  color: widget.isLiked
-                                      ? AppColors.likedAccent
+                                  widget.isBookmarked
+                                      ? Icons.bookmark_rounded
+                                      : Icons.bookmark_border_rounded,
+                                  color: widget.isBookmarked
+                                      ? AppColors.warning
                                       : textSecondary,
                                   size: 18,
                                 ),
                               ),
-                              const SizedBox(width: 5),
-                              Text(
-                                "${widget.likes}",
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                      color: widget.isLiked
-                                          ? AppColors.likedAccent
-                                          : textSecondary,
-                                      fontWeight: widget.isLiked
-                                          ? FontWeight.w700
-                                          : FontWeight.w600,
-                                      fontSize: 12.5,
-                                    ) ??
-                                    TextStyle(
-                                      color: widget.isLiked
-                                          ? AppColors.likedAccent
-                                          : textSecondary,
-                                      fontSize: 12.5,
-                                      fontWeight: widget.isLiked
-                                          ? FontWeight.w700
-                                          : FontWeight.w600,
-                                    ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Material(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        child: InkWell(
-                          onTap: widget.onCommentTap ?? widget.onTap,
+                        const SizedBox(width: 4),
+                        Material(
+                          color: Colors.transparent,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 4,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.chat_bubble_outline_rounded,
-                                  color: textSecondary,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 5),
-                                Flexible(
-                                  child: Text(
-                                    "${widget.replies} ${'community.comments'.tr.isNotEmpty && 'community.comments'.tr != 'community.comments' ? ('community.comments'.tr == 'Comments' ? 'comments' : 'community.comments'.tr) : 'comments'}",
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.labelMedium?.copyWith(
-                                          color: textSecondary,
-                                          fontSize: 12.5,
-                                          fontWeight: FontWeight.w600,
-                                        ) ??
-                                        TextStyle(
-                                          color: textSecondary,
-                                          fontSize: 12.5,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                  ),
-                                ),
-                              ],
+                          child: InkWell(
+                            key: const Key('forum_card_share_to_chat_button'),
+                            onTap: () => _handleShareToChat(context),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: hPad,
+                                vertical: 4,
+                              ),
+                              child: Icon(
+                                Icons.near_me_outlined,
+                                color: textSecondary,
+                                size: 18,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _handleLikedByTap(BuildContext context) {
+    if (widget.onLikedByTap != null) {
+      widget.onLikedByTap!();
+      return;
+    }
+    if (widget.discussionId != null && widget.discussionId!.isNotEmpty) {
+      ForumLikedBySheet.show(
+        context,
+        discussionId: widget.discussionId!,
+        initialLikers: widget.likers,
+      );
+    }
+  }
+
+  void _handleRepost(BuildContext context) {
+    if (widget.isOwner) {
+      AppNotificationBanner.showWarning(
+        context: context,
+        title: 'Cannot Repost',
+        message: 'community.cannotRepostOwnPost'.tr.isNotEmpty &&
+                'community.cannotRepostOwnPost'.tr !=
+                    'community.cannotRepostOwnPost'
+            ? 'community.cannotRepostOwnPost'.tr
+            : 'You cannot repost your own discussion.',
+      );
+      return;
+    }
+    _showRepostDialog(context);
+  }
+
+  void _showRepostDialog(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final surface =
+        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
+    final surfaceSecondary =
+        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final textMuted =
+        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final borderSubtle =
+        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+
+    final captionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.squircle),
+          side: BorderSide(color: borderSubtle),
+        ),
+        title: Text(
+          'community.repostContent'.tr.isNotEmpty &&
+                  'community.repostContent'.tr != 'community.repostContent'
+              ? 'community.repostContent'.tr
+              : 'Repost',
+          style: theme.textTheme.titleMedium?.copyWith(
+                color: textPrimary,
+                fontWeight: FontWeight.bold,
+              ) ??
+              TextStyle(
+                color: textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'community.repostingOriginal'.tr.isNotEmpty &&
+                      'community.repostingOriginal'.tr !=
+                          'community.repostingOriginal'
+                  ? 'community.repostingOriginal'
+                      .trParams({'name': widget.author})
+                  : 'Reposting discussion by ${widget.author}',
+              style: theme.textTheme.bodySmall?.copyWith(color: textSecondary) ??
+                  TextStyle(color: textSecondary, fontSize: 13),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              decoration: BoxDecoration(
+                color: surfaceSecondary,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(color: borderSubtle),
+              ),
+              padding: const EdgeInsets.all(AppSpacing.sm + 4),
+              child: TextField(
+                controller: captionController,
+                minLines: 2,
+                maxLines: 4,
+                style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: textPrimary) ??
+                    TextStyle(color: textPrimary, fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'community.repostQuoteHint'.tr.isNotEmpty &&
+                          'community.repostQuoteHint'.tr !=
+                              'community.repostQuoteHint'
+                      ? 'community.repostQuoteHint'.tr
+                      : 'Add a thought...',
+                  hintStyle: theme.textTheme.bodyMedium
+                          ?.copyWith(color: textMuted) ??
+                      TextStyle(color: textMuted, fontSize: 14),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+            child: Text(
+              'common.cancel'.tr.isNotEmpty &&
+                      'common.cancel'.tr != 'common.cancel'
+                  ? 'common.cancel'.tr
+                  : 'Cancel',
+              style: theme.textTheme.labelMedium?.copyWith(
+                    color: textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ) ??
+                  TextStyle(
+                    color: textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (Get.isRegistered<CommunityController>()) {
+                final c = Get.find<CommunityController>();
+                if (widget.discussionId != null) {
+                  c.repostPost(widget.discussionId!,
+                      caption: captionController.text);
+                }
+              }
+              AppNotificationBanner.showSuccess(
+                context: context,
+                title: 'community.reposted'.tr.isNotEmpty &&
+                        'community.reposted'.tr != 'community.reposted'
+                    ? 'community.reposted'.tr
+                    : '✓ Reposted',
+                message: 'Discussion has been reposted to your feed.',
+                icon: Icons.repeat_rounded,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+            ),
+            child: Text(
+              'community.repostNow'.tr.isNotEmpty &&
+                      'community.repostNow'.tr != 'community.repostNow'
+                  ? 'community.repostNow'.tr
+                  : 'Repost Now',
+              style: TextStyle(
+                color: isDark
+                    ? AppColors.darkTextInverse
+                    : AppColors.lightTextInverse,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

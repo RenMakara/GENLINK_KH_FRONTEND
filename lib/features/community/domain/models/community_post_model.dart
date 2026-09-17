@@ -658,7 +658,9 @@ class CommentModel {
       updatedAt: parsedUpdatedUtc?.toLocal(),
       likesCount: json['likeCount'] as int? ?? json['likesCount'] as int? ?? 0,
       isLiked: json['likedByMe'] as bool? ?? json['isLiked'] as bool? ?? false,
-      parentCommentId: json['parentCommentId'] as String?,
+      parentCommentId: json['parentCommentId']?.toString() ??
+          json['parent_comment_id']?.toString() ??
+          json['parentId']?.toString(),
       isOwner: json['mine'] as bool? ?? json['isOwner'] as bool? ?? false,
       replies:
           (json['replies'] as List<dynamic>?)

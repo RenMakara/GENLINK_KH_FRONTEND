@@ -133,6 +133,11 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<List<CommentModel>> getCommentReplies(String commentId) {
+    return remoteDataSource.fetchCommentReplies(commentId);
+  }
+
+  @override
   Future<CommentModel> addComment(
     String postId,
     String text, {
@@ -146,8 +151,8 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
-  Future<bool> deleteComment(String postId, String commentId) async {
-    return true;
+  Future<bool> deleteComment(String postId, String commentId) {
+    return remoteDataSource.deleteComment(commentId);
   }
 
   @override
@@ -215,6 +220,22 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<bool> toggleDiscussionBookmark(
+    String discussionId, {
+    required bool isCurrentlyBookmarked,
+  }) {
+    return remoteDataSource.toggleDiscussionBookmark(
+      discussionId,
+      isCurrentlyBookmarked: isCurrentlyBookmarked,
+    );
+  }
+
+  @override
+  Future<bool> isDiscussionBookmarked(String discussionId) {
+    return remoteDataSource.isDiscussionBookmarked(discussionId);
+  }
+
+  @override
   Future<bool> reportDiscussion(
     String discussionId, {
     String reason = 'INAPPROPRIATE_CONTENT',
@@ -248,6 +269,19 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<List<CommentModel>> getDiscussionCommentReplies(String commentId) {
     return remoteDataSource.fetchDiscussionCommentReplies(commentId);
+  }
+
+  @override
+  Future<List<ForumLikerModel>> getDiscussionLikers(
+    String discussionId, {
+    int page = 0,
+    int size = 20,
+  }) {
+    return remoteDataSource.fetchDiscussionLikers(
+      discussionId,
+      page: page,
+      size: size,
+    );
   }
 
   @override

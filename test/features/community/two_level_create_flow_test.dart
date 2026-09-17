@@ -296,9 +296,8 @@ void main() {
         expect(find.text('Challenge'), findsNothing);
         expect(find.text('Short Content'), findsNothing);
 
-        // Verify right chevron arrows are removed
-        expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
-        expect(find.byIcon(Icons.chevron_right), findsNothing);
+        // Verify right chevron arrows are present on the 7 options
+        expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(7));
 
         await tester.tap(find.byIcon(Icons.close_rounded).last);
         await tester.pumpAndSettle();

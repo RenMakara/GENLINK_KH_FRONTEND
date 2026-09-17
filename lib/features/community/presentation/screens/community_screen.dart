@@ -22,6 +22,7 @@ import 'create_discussion_screen.dart';
 import 'event_details_screen.dart';
 import 'forum_category_screen.dart';
 import 'forum_discussion_screen.dart';
+import '../widgets/forum_share_to_chat_sheet.dart';
 import 'widgets/community_widgets.dart';
 import '../../../home/presentation/widgets/home_featured_events_carousel.dart';
 
@@ -830,11 +831,19 @@ class _CommunityScreenState extends State<CommunityScreen>
                   likes: topic.upvotes,
                   isPinned: false,
                   isLiked: topic.isLiked,
+                  isBookmarked: controller.isDiscussionBookmarked(topic.id),
+                  likers: topic.likers,
+                  discussionId: topic.id,
+                  isOwner: topic.checkIsOwner(controller.currentUserId),
                   onTap: () =>
                       Get.to(() => ForumDiscussionScreen(discussion: topic)),
                   onLikeTap: () => controller.toggleDiscussionLike(topic.id),
                   onCommentTap: () =>
                       Get.to(() => ForumDiscussionScreen(discussion: topic)),
+                  onSaveTap: () =>
+                      controller.toggleDiscussionBookmark(topic.id),
+                  onShareToChatTap: () =>
+                      ForumShareToChatSheet.show(context, topic: topic),
                   onCategoryTap: () => Get.to(
                     () => ForumCategoryScreen(categoryTitle: topic.category),
                   ),

@@ -53,6 +53,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
   String? _linkDomain;
 
   bool _isSubmitting = false;
+  bool _isInnerPopupOpen = false;
   final int _maxCharacters = 2000;
 
   bool get _isEditing => widget.initialPost != null;
@@ -2158,38 +2159,70 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                       message: 'create.title'.tr.isNotEmpty && 'create.title'.tr != 'create.title'
                           ? 'create.title'.tr
                           : 'Create',
-                      child: Material(
-                        color: isDark ? const Color(0xFF1C2028) : const Color(0xFFF0F2F5),
-                        borderRadius: BorderRadius.circular(10),
-                        child: InkWell(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            GlobalCreateSheet.show(
-                              context,
-                              fromPostComposer: true,
-                              onSelectMedia: _showMediaPickerSheet,
-                              onSelectPoll: _showPollCreatorSheet,
-                              onSelectCelebration: () {
-                                setState(() {
-                                  _selectedFeeling = '🥳 Celebrating';
-                                });
-                              },
-                              onSelectDocument: _showDocumentAttachmentNotice,
-                            );
-                          },
+                      child: Builder(
+                        builder: (btnContext) => Material(
+                          color: _isInnerPopupOpen
+                              ? (isDark ? const Color(0xFF282D37) : const Color(0xFFE2E6EE))
+                              : (isDark ? const Color(0xFF1C2028) : const Color(0xFFF0F2F5)),
                           borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            width: 38,
-                            height: 34,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: isDark ? const Color(0xFF2E3440) : const Color(0xFFD6DAE2),
-                                width: 0.8,
+                          child: InkWell(
+                            onTap: () async {
+                              HapticFeedback.lightImpact();
+                              final renderBox = btnContext.findRenderObject() as RenderBox?;
+                              final anchorRect = renderBox != null
+                                  ? (renderBox.localToGlobal(Offset.zero) & renderBox.size)
+                                  : null;
+                              setState(() {
+                                _isInnerPopupOpen = true;
+                              });
+                              try {
+                                await GlobalCreateSheet.show(
+                                  context,
+                                  fromPostComposer: true,
+                                  anchorRect: anchorRect,
+                                  onSelectMedia: _showMediaPickerSheet,
+                                  onSelectPoll: _showPollCreatorSheet,
+                                  onSelectCelebration: () {
+                                    setState(() {
+                                      _selectedFeeling = '🥳 Celebrating';
+                                    });
+                                  },
+                                  onSelectDocument: _showDocumentAttachmentNotice,
+                                  onSelectEvent: () async {
+                                    final event = await Get.to<EventModel>(
+                                      () => const CreateEventScreen(returnCreatedEvent: true),
+                                    );
+                                    if (event != null) {
+                                      setState(() {
+                                        _attachedEvent = event;
+                                      });
+                                    }
+                                  },
+                                );
+                              } finally {
+                                if (mounted) {
+                                  setState(() {
+                                    _isInnerPopupOpen = false;
+                                  });
+                                }
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              width: 38,
+                              height: 34,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: _isInnerPopupOpen
+                                      ? (isDark ? const Color(0xFF485160) : const Color(0xFFB8C0CC))
+                                      : (isDark ? const Color(0xFF2E3440) : const Color(0xFFD6DAE2)),
+                                  width: 0.8,
+                                ),
                               ),
+                              child: Icon(Icons.add_rounded, color: textPrimary, size: 22),
                             ),
-                            child: Icon(Icons.add_rounded, color: textPrimary, size: 22),
                           ),
                         ),
                       ),

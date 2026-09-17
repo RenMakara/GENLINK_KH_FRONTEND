@@ -77,9 +77,10 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      final imageFinder = find.byType(ClipRRect);
-      expect(imageFinder, findsWidgets);
-      await tester.tap(imageFinder.first);
+      final imageFinder = find.byKey(const ValueKey('layer_image_1'));
+      expect(imageFinder, findsOneWidget);
+      expect(find.descendant(of: imageFinder, matching: find.byType(ClipRRect)), findsNothing);
+      await tester.tap(imageFinder, warnIfMissed: false);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();

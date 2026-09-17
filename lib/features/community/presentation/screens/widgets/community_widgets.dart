@@ -835,7 +835,7 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                 vertical: 4,
                               ),
                               child: Icon(
-                                Icons.near_me_outlined,
+                                Icons.ios_share_rounded,
                                 color: textSecondary,
                                 size: 18,
                               ),

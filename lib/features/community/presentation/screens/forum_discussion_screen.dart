@@ -1009,7 +1009,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                               vertical: 6,
                             ),
                             child: Icon(
-                              Icons.near_me_outlined,
+                              Icons.ios_share_rounded,
                               color: textSecondary,
                               size: 19,
                             ),

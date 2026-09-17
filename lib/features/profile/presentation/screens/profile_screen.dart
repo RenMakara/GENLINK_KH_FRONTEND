@@ -13,6 +13,8 @@ import '../../../../design_system/widgets/headers/app_screen_header.dart';
 import '../../../../design_system/widgets/loaders/app_loader.dart';
 import '../../../../design_system/widgets/surfaces/app_surface.dart';
 import '../../domain/entities/profile_entity.dart';
+import '../../../chat/presentation/bindings/chat_binding.dart';
+import '../../../chat/presentation/controllers/chat_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/full_screen_image_viewer.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/post_card_widget.dart';
@@ -705,7 +707,7 @@ class _PublicProfile extends StatelessWidget {
           );
         }),
         const SizedBox(height: AppSpacing.md),
-        _PublicActionRow(controller: controller, onShare: onShare),
+        _PublicActionRow(controller: controller, profile: profile),
         if ((profile.universityName ?? '').trim().isNotEmpty ||
             _formatJoinedAt(profile.joinedAt).isNotEmpty) ...[
           const SizedBox(height: AppSpacing.lg),
@@ -815,16 +817,54 @@ class _PublicProfile extends StatelessWidget {
   }
 }
 
-class _PublicActionRow extends StatelessWidget {
-  const _PublicActionRow({required this.controller, required this.onShare});
+class _PublicActionRow extends StatefulWidget {
+  const _PublicActionRow({required this.controller, required this.profile});
 
   final ProfileController controller;
-  final VoidCallback onShare;
+  final PublicProfileEntity profile;
+
+  @override
+  State<_PublicActionRow> createState() => _PublicActionRowState();
+}
+
+class _PublicActionRowState extends State<_PublicActionRow> {
+  bool _isOpeningChat = false;
+
+  Future<void> _handleChatTap() async {
+    if (_isOpeningChat) return;
+    setState(() => _isOpeningChat = true);
+    try {
+      if (!Get.isRegistered<ChatController>()) {
+        ChatBinding().dependencies();
+      }
+      final chatController = Get.find<ChatController>();
+      final conv = await chatController.openPrivateChat(
+        widget.profile.userId,
+        name: widget.profile.fullName,
+        avatar: widget.profile.avatarUrl,
+      );
+      if (conv != null && mounted) {
+        Get.toNamed(AppRoutes.chatDetail, arguments: {'roomId': conv.id});
+      }
+    } catch (e) {
+      if (mounted) {
+        Get.snackbar(
+          'Error',
+          'Could not open conversation. Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isOpeningChat = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final stats = controller.followStats.value;
+      final stats = widget.controller.followStats.value;
       final status = stats?.followStatus;
       final isFollowing = stats?.isFollowing ?? false;
       final label = status == 'PENDING'
@@ -832,6 +872,10 @@ class _PublicActionRow extends StatelessWidget {
           : isFollowing
           ? 'profile.following'.tr
           : 'profile.follow'.tr;
+
+      final chatLabel = 'profile.chat'.tr.isNotEmpty && 'profile.chat'.tr != 'profile.chat'
+          ? 'profile.chat'.tr
+          : 'Chat';
 
       return Row(
         children: [
@@ -841,16 +885,19 @@ class _PublicActionRow extends StatelessWidget {
               icon: isFollowing
                   ? Icons.check_rounded
                   : Icons.person_add_alt_1_outlined,
-              loading: controller.isRelationshipSaving.value,
-              onPressed: () => controller.toggleFollow(),
+              height: 44,
+              loading: widget.controller.isRelationshipSaving.value,
+              onPressed: () => widget.controller.toggleFollow(),
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: AppButton.secondary(
-              label: 'profile.shareProfile'.tr,
-              icon: Icons.share_outlined,
-              onPressed: onShare,
+              label: chatLabel,
+              icon: Icons.chat_bubble_outline_rounded,
+              height: 44,
+              loading: _isOpeningChat,
+              onPressed: _handleChatTap,
             ),
           ),
         ],

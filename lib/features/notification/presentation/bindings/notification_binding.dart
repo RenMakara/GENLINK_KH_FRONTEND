@@ -12,6 +12,7 @@ class NotificationBinding extends Bindings {
     final repository = NotificationRepositoryImpl(remoteDataSource: dataSource);
     Get.lazyPut<NotificationController>(
       () => NotificationController(repository: repository),
+      fenix: true,
     );
   }
 }

@@ -272,7 +272,10 @@ class _MessageBubbleState extends State<MessageBubble> {
                               Icon(
                                 _getDeliveryIcon(msg.deliveryStatus),
                                 size: 13,
-                                color: Colors.white70,
+                                color: (msg.deliveryStatus == 'failed' ||
+                                        msg.deliveryStatus == 'error')
+                                    ? AppColors.danger
+                                    : Colors.white70,
                               ),
                             ],
                           ],
@@ -670,6 +673,9 @@ class _MessageBubbleState extends State<MessageBubble> {
         return Icons.access_time_rounded;
       case 'sent':
         return Icons.check_rounded;
+      case 'failed':
+      case 'error':
+        return Icons.error_outline_rounded;
       case 'delivered':
       case 'read':
       default:

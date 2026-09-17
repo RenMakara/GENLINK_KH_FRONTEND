@@ -20,6 +20,8 @@ import '../../productivity/presentation/focus_feature/focus_home_screen.dart';
 import '../../productivity/presentation/habit_feature/habit_screen.dart';
 import '../../productivity/presentation/task_feature/task_home_screen.dart';
 import '../../productivity/productivity_screen.dart';
+import '../../chat/presentation/controllers/chat_controller.dart';
+import '../presentation/controllers/notification_controller.dart';
 
 const _mobilePushChannelId = 'genlink_mobile_push';
 const _mobilePushChannelName = 'GenLink notifications';
@@ -402,6 +404,16 @@ class FirebaseMobileNotificationService {
         '[FCM] Foreground notification shown type=${payload.type} '
         'deliveryId=${payload.deliveryId ?? 'none'}',
       );
+
+      if (Get.isRegistered<NotificationController>()) {
+        Get.find<NotificationController>().fetchUnreadCount();
+      }
+      final isChat = payload.type.toUpperCase().contains('CHAT') ||
+          (payload.referenceType?.toUpperCase() == 'CHAT_ROOM') ||
+          (payload.referenceType?.toUpperCase() == 'CHAT');
+      if (isChat && Get.isRegistered<ChatController>()) {
+        Get.find<ChatController>().fetchUnreadCount();
+      }
     } catch (error, stackTrace) {
       debugPrint(
         '[FCM] Foreground notification display failed: $error\n$stackTrace',

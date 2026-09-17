@@ -1,3 +1,5 @@
+import '../../../../core/utils/date_formatter.dart';
+
 enum NotificationCategory {
   all,
   social,
@@ -30,6 +32,8 @@ enum NotificationType {
   quizResult,
   achievement,
   system,
+  chat,
+  security,
 }
 
 extension NotificationCategoryExtension on NotificationCategory {
@@ -127,6 +131,9 @@ class NotificationModel {
       case NotificationType.streakMilestone:
         return NotificationCategory.reminders;
       case NotificationType.quizResult:
+      case NotificationType.chat:
+        return NotificationCategory.social;
+      case NotificationType.security:
       case NotificationType.achievement:
       case NotificationType.system:
         return NotificationCategory.updates;
@@ -136,6 +143,12 @@ class NotificationModel {
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     NotificationType parseType(String? raw) {
       final key = raw?.toLowerCase().replaceAll('_', '').replaceAll('-', '') ?? '';
+      if (key.contains('chat') || key.contains('message')) {
+        return NotificationType.chat;
+      }
+      if (key.contains('security') || key.contains('login') || key.contains('auth')) {
+        return NotificationType.security;
+      }
       if (key.contains('like')) return NotificationType.like;
       if (key.contains('reply')) return NotificationType.reply;
       if (key.contains('comment')) return NotificationType.comment;
@@ -205,31 +218,81 @@ class NotificationModel {
         _resolveCategory(parsedType);
 
     final rawTimestamp = json['timestamp'] ?? json['createdAt'];
-    final DateTime parsedTimestamp = rawTimestamp != null
-        ? DateTime.tryParse(rawTimestamp.toString()) ?? DateTime.now()
-        : DateTime.now();
+    final DateTime parsedTimestamp = CommunityDateFormatter.parseToUtc(rawTimestamp)?.toLocal() ??
+        (rawTimestamp != null
+            ? DateTime.tryParse(rawTimestamp.toString())?.toLocal() ?? DateTime.now()
+            : DateTime.now());
+
+    final computedTimeAgo = (json['timeAgo'] as String?)?.trim();
+    final effectiveTimeAgo = (computedTimeAgo != null && computedTimeAgo.isNotEmpty)
+        ? computedTimeAgo
+        : (rawTimestamp != null
+            ? formatCommunityTimestamp(parsedTimestamp)
+            : 'Just now');
 
     final isReadVal = json['isRead'] ?? json['readStatus'];
     final bool parsedIsRead = isReadVal is bool
         ? isReadVal
         : (isReadVal == 'READ' || isReadVal == true);
 
+    final titleStr = json['title'] as String? ?? '';
+    final bodyStr = json['body'] as String? ?? json['message'] as String? ?? '';
+    final explicitSender = (json['senderName'] as String?)?.trim();
+    final explicitActor = (json['actorName'] as String?)?.trim();
+
+    String resolvedSenderName;
+    if (explicitSender != null && explicitSender.isNotEmpty && explicitSender != 'GenLink KH') {
+      resolvedSenderName = explicitSender;
+    } else if (explicitActor != null && explicitActor.isNotEmpty) {
+      resolvedSenderName = explicitActor;
+    } else {
+      final extracted = _extractActorName(titleStr, bodyStr);
+      resolvedSenderName = extracted ?? (explicitSender ?? (parsedCategory == NotificationCategory.social ? 'Community Member' : 'GenLink KH'));
+    }
+
+    final rawAvatar = (json['senderAvatar'] ??
+            json['actorAvatar'] ??
+            json['avatarUrl'] ??
+            json['userAvatar'] ??
+            (json['actor'] is Map ? json['actor']['avatarUrl'] : null))
+        ?.toString()
+        .trim();
+
     return NotificationModel(
-      id: json['id'] as String? ?? '',
+      id: (json['id'] ?? json['notificationId'])?.toString() ?? '',
       type: parsedType,
       category: parsedCategory,
-      title: json['title'] as String? ?? '',
-      body: json['body'] as String? ?? json['message'] as String? ?? '',
+      title: titleStr,
+      body: bodyStr,
       contextText: json['contextText'] as String? ?? json['context'] as String? ?? json['subtitle'] as String?,
-      senderName: json['senderName'] as String? ?? 'GenLink KH',
-      senderAvatar: json['senderAvatar'] as String?,
-      timeAgo: json['timeAgo'] as String? ?? 'Just now',
+      senderName: resolvedSenderName,
+      senderAvatar: (rawAvatar != null && rawAvatar.isNotEmpty) ? rawAvatar : null,
+      timeAgo: effectiveTimeAgo,
       timestamp: parsedTimestamp,
       isRead: parsedIsRead,
       targetId: (json['targetId'] ?? json['referenceId'])?.toString(),
       targetType: (json['targetType'] ?? json['referenceType'])?.toString(),
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
+  }
+
+  static String? _extractActorName(String title, String body) {
+    String? matchText(String text) {
+      if (text.isEmpty) return null;
+      final match = RegExp(
+        r'^([A-Z\u1780-\u17FF][\w\u1780-\u17FF\s]{0,30}?)\s+(?:liked|commented|replied|started following|wants to follow|accepted your follow request|shared|sent you a message|sent you a friend request)',
+        caseSensitive: false,
+      ).firstMatch(text.trim());
+      if (match != null) {
+        final name = match.group(1)?.trim();
+        if (name != null && name.isNotEmpty && name.toLowerCase() != 'someone') {
+          return name;
+        }
+      }
+      return null;
+    }
+
+    return matchText(title) ?? matchText(body);
   }
 
   Map<String, dynamic> toJson() {
@@ -285,3 +348,53 @@ class NotificationModel {
     );
   }
 }
+
+class NotificationPage {
+  final List<NotificationModel> items;
+  final int page;
+  final int size;
+  final int totalElements;
+  final int totalPages;
+  final bool hasNext;
+
+  const NotificationPage({
+    required this.items,
+    this.page = 0,
+    this.size = 20,
+    this.totalElements = 0,
+    this.totalPages = 1,
+    this.hasNext = false,
+  });
+
+  factory NotificationPage.empty() => const NotificationPage(
+        items: [],
+        page: 0,
+        size: 20,
+        totalElements: 0,
+        totalPages: 0,
+        hasNext: false,
+      );
+
+  factory NotificationPage.fromPageResponse(
+    Map<String, dynamic> json,
+    List<NotificationModel> items,
+  ) {
+    final page = (json['page'] as num?)?.toInt() ?? 0;
+    final size = (json['size'] as num?)?.toInt() ?? items.length;
+    final totalElements =
+        (json['totalElements'] as num?)?.toInt() ?? items.length;
+    final totalPages = (json['totalPages'] as num?)?.toInt() ??
+        (totalElements > 0 ? (totalElements / (size > 0 ? size : 20)).ceil() : 0);
+    final hasNext = json['hasNext'] as bool? ?? (page + 1 < totalPages);
+
+    return NotificationPage(
+      items: items,
+      page: page,
+      size: size,
+      totalElements: totalElements,
+      totalPages: totalPages,
+      hasNext: hasNext,
+    );
+  }
+}
+

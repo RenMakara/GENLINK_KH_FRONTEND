@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
+import 'package:genlink_frontend/core/utils/date_formatter.dart';
+import 'package:genlink_frontend/design_system/widgets/headers/app_screen_header.dart';
+import 'package:genlink_frontend/design_system/widgets/buttons/app_back_button.dart';
+import 'package:genlink_frontend/features/home/presentation/widgets/home_header_actions.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/friend_requests_screen.dart';
 import 'package:genlink_frontend/features/notification/data/repositories/notification_repository_impl.dart';
 import 'package:genlink_frontend/features/notification/domain/models/notification_model.dart';
@@ -158,8 +162,19 @@ void main() {
   setUp(() {
     Get.reset();
     mockRepo = _MockNotificationRepo();
-    when(() => mockRepo.getNotifications())
-        .thenAnswer((_) async => _createComprehensiveSampleNotifications());
+    when(() => mockRepo.getNotifications(
+          page: any(named: 'page'),
+          size: any(named: 'size'),
+          unreadOnly: any(named: 'unreadOnly'),
+        )).thenAnswer((_) async => NotificationPage(
+          items: _createComprehensiveSampleNotifications(),
+          page: 0,
+          size: 20,
+          totalElements: 9,
+          totalPages: 1,
+          hasNext: false,
+        ));
+    when(() => mockRepo.getUnreadCount()).thenAnswer((_) async => 5);
     when(() => mockRepo.markAsRead(any())).thenAnswer((_) async => true);
     when(() => mockRepo.markAllAsRead()).thenAnswer((_) async => true);
     when(() => mockRepo.deleteNotification(any())).thenAnswer((_) async => true);
@@ -261,6 +276,60 @@ void main() {
       expect(controller.notifications.length, 8);
       expect(controller.notifications.any((n) => n.id == 'n1'), isFalse);
     });
+
+    test('loadMoreNotifications appends subsequent pages and updates hasMore', () async {
+      when(() => mockRepo.getNotifications(
+            page: 1,
+            size: any(named: 'size'),
+            unreadOnly: any(named: 'unreadOnly'),
+          )).thenAnswer((_) async => NotificationPage(
+            items: [
+              NotificationModel(
+                id: 'n10',
+                type: NotificationType.chat,
+                category: NotificationCategory.social,
+                title: 'Vanna sent you a message',
+                body: 'Are you available today?',
+                senderName: 'Vanna',
+                timeAgo: '1m ago',
+                timestamp: DateTime.now(),
+                targetId: 'room-1',
+                targetType: 'CHAT_ROOM',
+              ),
+            ],
+            page: 1,
+            size: 20,
+            totalElements: 10,
+            totalPages: 2,
+            hasNext: false,
+          ));
+
+      await controller.fetchNotifications();
+      expect(controller.notifications.length, 9);
+      expect(controller.hasMore.value, false);
+
+      controller.hasMore.value = true;
+      await controller.loadMoreNotifications();
+
+      expect(controller.notifications.length, 10);
+      expect(controller.notifications.any((n) => n.id == 'n10'), isTrue);
+      expect(controller.hasMore.value, false);
+      expect(controller.currentPage.value, 1);
+    });
+
+    test('fetchNotifications sets isError and errorMessage on failure when list is empty', () async {
+      when(() => mockRepo.getNotifications(
+            page: any(named: 'page'),
+            size: any(named: 'size'),
+            unreadOnly: any(named: 'unreadOnly'),
+          )).thenThrow(Exception('Network connection failed'));
+
+      controller.notifications.clear();
+      await controller.fetchNotifications();
+
+      expect(controller.isError.value, isTrue);
+      expect(controller.notifications.isEmpty, isTrue);
+    });
   });
 
   Widget buildTestScreen({
@@ -283,16 +352,14 @@ void main() {
   }
 
   group('Unified NotificationScreen Widget Tests', () {
-    testWidgets('renders simple header "Notifications" without back button or unread tabs',
+    testWidgets('renders simple header "Notifications" with iOS back button and without unread tabs',
         (tester) async {
       await controller.fetchNotifications();
       await tester.pumpWidget(buildTestScreen());
       await tester.pumpAndSettle();
 
       expect(find.text('Notifications'), findsOneWidget);
-
-      expect(find.byIcon(Icons.arrow_back_ios_new_rounded), findsNothing);
-      expect(find.byIcon(Icons.arrow_back), findsNothing);
+      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
 
       expect(find.byIcon(Icons.settings), findsNothing);
       expect(find.byIcon(Icons.settings_outlined), findsNothing);
@@ -322,7 +389,7 @@ void main() {
 
       expect(find.text('TODAY'), findsOneWidget);
       expect(find.text('YESTERDAY'), findsOneWidget);
-      expect(find.text('Earlier'), findsOneWidget);
+      expect(find.text('Earlier', skipOffstage: false), findsOneWidget);
 
       expect(find.text('Dara replied to your comment'), findsOneWidget);
       expect(find.text("You've used 80% of your budget"), findsOneWidget);
@@ -421,18 +488,29 @@ void main() {
 
     testWidgets('renders contextual empty state when category has no notifications',
         (tester) async {
-      when(() => mockRepo.getNotifications()).thenAnswer((_) async => [
-            NotificationModel(
-              id: 'n1',
-              type: NotificationType.reply,
-              category: NotificationCategory.social,
-              title: 'Dara replied to your comment',
-              body: '“Great idea!”',
-              senderName: 'Dara',
-              timeAgo: '2m ago',
-              timestamp: DateTime.now(),
-            ),
-          ]);
+      when(() => mockRepo.getNotifications(
+            page: any(named: 'page'),
+            size: any(named: 'size'),
+            unreadOnly: any(named: 'unreadOnly'),
+          )).thenAnswer((_) async => NotificationPage(
+            items: [
+              NotificationModel(
+                id: 'n1',
+                type: NotificationType.reply,
+                category: NotificationCategory.social,
+                title: 'Dara replied to your comment',
+                body: '“Great idea!”',
+                senderName: 'Dara',
+                timeAgo: '2m ago',
+                timestamp: DateTime.now(),
+              ),
+            ],
+            page: 0,
+            size: 20,
+            totalElements: 1,
+            totalPages: 1,
+            hasNext: false,
+          ));
       await controller.fetchNotifications();
 
       await tester.pumpWidget(buildTestScreen());
@@ -485,7 +563,7 @@ void main() {
 
       expect(find.text('ថ្ងៃនេះ'), findsOneWidget);
       expect(find.text('ម្សិលមិញ'), findsOneWidget);
-      expect(find.text('មុននេះ'), findsOneWidget);
+      expect(find.text('មុននេះ', skipOffstage: false), findsOneWidget);
     });
 
     testWidgets('renders gracefully on small screen width (320px) without overflow',
@@ -529,7 +607,7 @@ void main() {
       expect(model.targetType, 'POST');
       expect(model.targetId, 'c1234567-0000-0000-0000-000000000002');
       expect(model.isRead, false);
-      expect(model.timestamp, DateTime.parse('2026-09-17T05:30:00Z'));
+      expect(model.timestamp, DateTime.parse('2026-09-17T05:30:00Z').toLocal());
     });
 
     test('parses readStatus true and SECURITY category', () {
@@ -547,6 +625,343 @@ void main() {
 
       expect(model.category, NotificationCategory.updates);
       expect(model.isRead, true);
+    });
+
+    test('parses CHAT_NEW_MESSAGE type correctly and maps to social category', () {
+      final json = {
+        'notificationId': 'chat-notif-uuid',
+        'type': 'CHAT_NEW_MESSAGE',
+        'title': 'New message from Vanna',
+        'message': 'Hello there!',
+        'referenceType': 'CHAT_ROOM',
+        'referenceId': 'chat-room-uuid',
+        'readStatus': false,
+        'createdAt': '2026-09-17T06:00:00Z',
+      };
+
+      final model = NotificationModel.fromJson(json);
+
+      expect(model.id, 'chat-notif-uuid');
+      expect(model.type, NotificationType.chat);
+      expect(model.category, NotificationCategory.social);
+      expect(model.targetType, 'CHAT_ROOM');
+      expect(model.targetId, 'chat-room-uuid');
+      expect(model.isRead, false);
+    });
+
+    test('parses notificationId fallback when id is absent', () {
+      final json = {
+        'notificationId': 'backend-id-999',
+        'type': 'COMMUNITY_POST_LIKE',
+        'title': 'Post liked',
+        'message': 'Someone liked your post',
+        'readStatus': false,
+      };
+
+      final model = NotificationModel.fromJson(json);
+      expect(model.id, 'backend-id-999');
+      expect(model.type, NotificationType.like);
+    });
+
+    test('parses COMMUNITY_NEW_FOLLOWER and COMMUNITY_FOLLOW_ACCEPTED', () {
+      final jsonFollower = {
+        'notificationId': 'follow-1',
+        'type': 'COMMUNITY_NEW_FOLLOWER',
+        'title': 'New follower',
+        'message': 'Dara started following you',
+        'referenceType': 'USER',
+        'referenceId': 'user-1',
+        'readStatus': false,
+      };
+
+      final modelFollower = NotificationModel.fromJson(jsonFollower);
+      expect(modelFollower.type, NotificationType.follow);
+      expect(modelFollower.category, NotificationCategory.social);
+
+      final jsonAccepted = {
+        'notificationId': 'follow-2',
+        'type': 'COMMUNITY_FOLLOW_ACCEPTED',
+        'title': 'Follow request accepted',
+        'message': 'Lina accepted your follow request',
+        'referenceType': 'USER',
+        'referenceId': 'user-2',
+        'readStatus': true,
+      };
+
+      final modelAccepted = NotificationModel.fromJson(jsonAccepted);
+      expect(modelAccepted.type, NotificationType.follow);
+      expect(modelAccepted.isRead, true);
+    });
+
+    test('parses COMMUNITY_POST_LIKE and COMMUNITY_COMMENT_REPLY', () {
+      final jsonLike = {
+        'notificationId': 'like-1',
+        'type': 'COMMUNITY_POST_LIKE',
+        'title': 'Someone liked your post',
+        'message': 'Sokchea liked your post',
+        'referenceType': 'POST',
+        'referenceId': 'post-1',
+        'readStatus': false,
+      };
+
+      final modelLike = NotificationModel.fromJson(jsonLike);
+      expect(modelLike.type, NotificationType.like);
+
+      final jsonReply = {
+        'notificationId': 'reply-1',
+        'type': 'COMMUNITY_COMMENT_REPLY',
+        'title': 'Reply on your comment',
+        'message': 'Dara replied to you',
+        'referenceType': 'POST',
+        'referenceId': 'post-1',
+        'readStatus': false,
+      };
+
+      final modelReply = NotificationModel.fromJson(jsonReply);
+      expect(modelReply.type, NotificationType.reply);
+    });
+  });
+
+  group('NotificationScreen Header Actions & Error Handling', () {
+    testWidgets('tapping Mark all read button marks all notifications as read',
+        (tester) async {
+      await controller.fetchNotifications();
+      await tester.pumpWidget(buildTestScreen());
+      await tester.pumpAndSettle();
+
+      expect(controller.unreadCount, 5);
+      expect(find.text('Mark all read'), findsOneWidget);
+
+      await tester.tap(find.text('Mark all read'));
+      await tester.pumpAndSettle();
+
+      expect(controller.unreadCount, 0);
+      expect(find.text('Mark all read'), findsNothing);
+    });
+
+    testWidgets('shows ErrorState with Retry button when loading fails',
+        (tester) async {
+      when(() => mockRepo.getNotifications(
+            page: any(named: 'page'),
+            size: any(named: 'size'),
+            unreadOnly: any(named: 'unreadOnly'),
+          )).thenThrow(Exception('Server error'));
+
+      controller.notifications.clear();
+      await controller.fetchNotifications();
+
+      await tester.pumpWidget(buildTestScreen());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Something went wrong'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+    });
+  });
+
+  group('Notification Relative-Time Formatting Tests', () {
+    test('formats relative time for English correctly across intervals', () {
+      final now = DateTime.now();
+
+      final justNow = formatCommunityTimestamp(
+        now.subtract(const Duration(seconds: 15)),
+        locale: const Locale('en', 'US'),
+      );
+      expect(justNow, 'Just now');
+
+      final fiveMin = formatCommunityTimestamp(
+        now.subtract(const Duration(minutes: 5)),
+        locale: const Locale('en', 'US'),
+      );
+      expect(fiveMin, '5m');
+
+      final twoHours = formatCommunityTimestamp(
+        now.subtract(const Duration(hours: 2)),
+        locale: const Locale('en', 'US'),
+      );
+      expect(twoHours, '2h');
+
+      final threeDays = formatCommunityTimestamp(
+        now.subtract(const Duration(days: 3)),
+        locale: const Locale('en', 'US'),
+      );
+      expect(threeDays, '3d');
+    });
+
+    test('formats relative time for Khmer correctly across intervals', () {
+      final now = DateTime.now();
+
+      final justNow = formatCommunityTimestamp(
+        now.subtract(const Duration(seconds: 20)),
+        locale: const Locale('km', 'KH'),
+      );
+      expect(justNow, 'ទើបតែឥឡូវ');
+
+      final fiveMin = formatCommunityTimestamp(
+        now.subtract(const Duration(minutes: 5)),
+        locale: const Locale('km', 'KH'),
+      );
+      expect(fiveMin, '5 នាទី');
+
+      final twoHours = formatCommunityTimestamp(
+        now.subtract(const Duration(hours: 2)),
+        locale: const Locale('km', 'KH'),
+      );
+      expect(twoHours, '2 ម៉ោង');
+
+      final threeDays = formatCommunityTimestamp(
+        now.subtract(const Duration(days: 3)),
+        locale: const Locale('km', 'KH'),
+      );
+      expect(threeDays, '3 ថ្ងៃ');
+    });
+  });
+
+  group('Header Badges & State Synchronization Tests', () {
+    testWidgets('AppHeaderActionButton displays count and caps at 99+',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: Row(
+            children: [
+              AppHeaderActionButton(
+                icon: Icons.notifications_none_rounded,
+                badgeCount: 0,
+                onTap: () {},
+                tooltip: 'Notifications',
+              ),
+              AppHeaderActionButton(
+                icon: Icons.notifications_none_rounded,
+                badgeCount: 5,
+                onTap: () {},
+                tooltip: 'Notifications',
+              ),
+              AppHeaderActionButton(
+                icon: Icons.notifications_none_rounded,
+                badgeCount: 150,
+                onTap: () {},
+                tooltip: 'Notifications',
+              ),
+            ],
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('0'), findsNothing);
+      expect(find.text('5'), findsOneWidget);
+      expect(find.text('99+'), findsOneWidget);
+    });
+
+    testWidgets('AppHeaderNotificationButton synchronizes live with controller',
+        (tester) async {
+      await controller.fetchNotifications();
+      expect(controller.unreadCount, 5);
+
+      await tester.pumpWidget(GetMaterialApp(
+        home: const Scaffold(
+          appBar: AppScreenHeader(
+            title: 'Test Header',
+            actions: [AppHeaderNotificationButton()],
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('5'), findsOneWidget);
+
+      await controller.markAsRead('n1');
+      await tester.pumpAndSettle();
+      expect(find.text('4'), findsOneWidget);
+
+      await controller.markAllAsRead();
+      await tester.pumpAndSettle();
+      expect(find.text('4'), findsNothing);
+      expect(find.text('0'), findsNothing);
+    });
+
+    testWidgets('NotificationScreen back button pops or navigates safely',
+        (tester) async {
+      await controller.fetchNotifications();
+      bool popped = false;
+
+      await tester.pumpWidget(GetMaterialApp(
+        home: Navigator(
+          // ignore: deprecated_member_use
+          onPopPage: (route, result) {
+            popped = true;
+            return route.didPop(result);
+          },
+          pages: const [
+            MaterialPage(child: Scaffold(body: Text('Home Root'))),
+            MaterialPage(child: NotificationScreen()),
+          ],
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppBackButton), findsOneWidget);
+      await tester.tap(find.byType(AppBackButton));
+      await tester.pumpAndSettle();
+
+      expect(popped, isTrue);
+    });
+
+    test('NotificationModel.fromJson parses actor name from social notification titles', () {
+      final json1 = {
+        'id': 'test-1',
+        'type': 'LIKE',
+        'title': 'Dara liked your post',
+        'message': 'Dara liked your post: Check this out',
+        'createdAt': '2026-09-17T10:00:00Z',
+      };
+      final notif1 = NotificationModel.fromJson(json1);
+      expect(notif1.senderName, 'Dara');
+      expect(notif1.type, NotificationType.like);
+      expect(notif1.category, NotificationCategory.social);
+
+      final json2 = {
+        'id': 'test-2',
+        'type': 'COMMENT',
+        'title': 'Sokchea commented on your post',
+        'message': 'Nice shot!',
+        'createdAt': '2026-09-17T10:05:00Z',
+      };
+      final notif2 = NotificationModel.fromJson(json2);
+      expect(notif2.senderName, 'Sokchea');
+      expect(notif2.type, NotificationType.comment);
+
+      final json3 = {
+        'id': 'test-3',
+        'type': 'FOLLOW',
+        'title': 'Lina started following you',
+        'message': 'Lina started following you',
+        'createdAt': '2026-09-17T10:10:00Z',
+      };
+      final notif3 = NotificationModel.fromJson(json3);
+      expect(notif3.senderName, 'Lina');
+      expect(notif3.type, NotificationType.follow);
+    });
+
+    testWidgets('NotificationScreen renders AppAvatar for social notifications and category icons for system notifications',
+        (tester) async {
+      await controller.fetchNotifications();
+
+      await tester.pumpWidget(GetMaterialApp(
+        translations: AppTranslations(),
+        locale: const Locale('en', 'US'),
+        home: const NotificationScreen(),
+      ));
+      await tester.pumpAndSettle();
+
+      // Social notifications should render CircleAvatar (used inside AppAvatar)
+      expect(find.byType(CircleAvatar), findsWidgets);
+
+      // Social notification micro badges (favorite icon for like, etc.)
+      expect(find.byIcon(Icons.favorite_rounded), findsWidgets);
+
+      // System notification icons (account balance for finance, calendar for events)
+      expect(find.byIcon(Icons.account_balance_wallet_rounded), findsWidgets);
+      expect(find.byIcon(Icons.calendar_month_rounded), findsWidgets);
     });
   });
 }

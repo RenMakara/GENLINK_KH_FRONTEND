@@ -184,12 +184,14 @@ class AppHeaderActionButton extends StatelessWidget {
     required this.onTap,
     required this.tooltip,
     this.hasBadge = false,
+    this.badgeCount,
   });
 
   final IconData icon;
   final VoidCallback onTap;
   final String tooltip;
   final bool hasBadge;
+  final int? badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -200,6 +202,9 @@ class AppHeaderActionButton extends StatelessWidget {
     final buttonSize = isVeryNarrow ? 36.0 : (isNarrow ? 38.0 : 40.0);
     final iconSize = isVeryNarrow ? 19.0 : (isNarrow ? 20.0 : 20.5);
     final borderRadius = BorderRadius.circular(buttonSize * 0.30);
+
+    final showCountBadge = badgeCount != null && badgeCount! > 0;
+    final showDotBadge = !showCountBadge && (badgeCount == null && hasBadge);
 
     return Semantics(
       button: true,
@@ -225,7 +230,39 @@ class AppHeaderActionButton extends StatelessWidget {
                   clipBehavior: Clip.none,
                   children: [
                     Icon(icon, size: iconSize, color: semantic.primaryText),
-                    if (hasBadge)
+                    if (showCountBadge) ...[
+                      Positioned(
+                        top: -4,
+                        right: -5,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.danger,
+                            borderRadius: BorderRadius.circular(9),
+                            border: Border.all(
+                              color: semantic.surface,
+                              width: 1.5,
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            badgeCount! > 99 ? '99+' : '${badgeCount!}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                              height: 1.1,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ),
+                    ] else if (showDotBadge) ...[
                       Positioned(
                         top: 1,
                         right: 1,
@@ -242,6 +279,7 @@ class AppHeaderActionButton extends StatelessWidget {
                           ),
                         ),
                       ),
+                    ],
                   ],
                 ),
               ),

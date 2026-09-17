@@ -240,6 +240,10 @@ abstract final class ApiEndpoints {
 
   // ── Notifications ─────────────────────────────────────────────────────
   static const notifications = '$_base/notifications';
+  static const notificationUnreadCount = '$_base/notifications/unread-count';
+  static const notificationReadAll = '$_base/notifications/read-all';
+  static String notificationRead(String notificationId) =>
+      '$_base/notifications/$notificationId/read';
   static const notificationDevices =
       '$_base/profile/settings/notifications/devices';
 
@@ -248,6 +252,7 @@ abstract final class ApiEndpoints {
 
   // ── Chats ─────────────────────────────────────────────────────────────
   static const chats = '$_base/community/chats';
+  static const chatUnreadCount = '$_base/community/chats/unread-count';
 
   // ── Entertainment / Gamification ──────────────────────────────────────
   static const quizzes = '$_base/entertainment/quizzes';

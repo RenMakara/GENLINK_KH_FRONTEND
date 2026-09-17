@@ -19,16 +19,28 @@ class _MockNotificationRemoteDataSource
   List<NotificationModel> stubNotifications = [];
 
   @override
-  Future<List<NotificationModel>> fetchNotifications() async =>
-      stubNotifications;
+  Future<NotificationPage> fetchNotifications({
+    int page = 0,
+    int size = 20,
+    bool unreadOnly = false,
+  }) async =>
+      NotificationPage(
+        items: stubNotifications,
+        page: page,
+        size: size,
+        totalElements: stubNotifications.length,
+        totalPages: 1,
+        hasNext: false,
+      );
+  @override
+  Future<int> fetchUnreadCount() async =>
+      stubNotifications.where((n) => !n.isRead).length;
   @override
   Future<bool> markAsRead(String id) async => true;
   @override
   Future<bool> markAllAsRead() async => true;
   @override
   Future<bool> deleteNotification(String id) async => true;
-  @override
-  Future<void> addNotification(NotificationModel notification) async {}
 }
 
 void main() {
@@ -265,12 +277,16 @@ void main() {
 
         expect(notifController.unreadCount, equals(1));
 
-        // Verify notification bell has badge container
+        // Verify notification bell has badge container with unread count
         final notifInk = find.ancestor(
           of: find.byIcon(Icons.notifications_none_rounded),
           matching: find.byType(Ink),
         );
         expect(notifInk, findsOneWidget);
+        expect(
+          find.descendant(of: notifInk, matching: find.text('1')),
+          findsOneWidget,
+        );
 
         final containers = tester.widgetList<Container>(
           find.descendant(of: notifInk, matching: find.byType(Container)),
@@ -278,16 +294,13 @@ void main() {
 
         final badgeContainer = containers.firstWhere((c) {
           final dec = c.decoration as BoxDecoration?;
-          return dec != null &&
-              dec.shape == BoxShape.circle &&
-              dec.color == AppColors.danger;
+          return dec != null && dec.color == AppColors.danger;
         });
 
         expect(badgeContainer, isNotNull);
         final badgeDec = badgeContainer.decoration as BoxDecoration;
         expect(badgeDec.color, equals(AppColors.danger));
         expect(badgeDec.border, isNotNull);
-        expect(badgeContainer.constraints?.maxWidth, equals(7.5));
       },
     );
 

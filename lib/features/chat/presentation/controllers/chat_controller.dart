@@ -19,6 +19,7 @@ class ChatController extends GetxController {
   final isLoadingConversations = false.obs;
   final isLoadingMessages = false.obs;
   final isSendingMessage = false.obs;
+  final unreadCount = 0.obs;
 
   final TextEditingController textController = TextEditingController();
   final ScrollController scrollController = ScrollController();
@@ -27,6 +28,7 @@ class ChatController extends GetxController {
   void onInit() {
     super.onInit();
     fetchConversations();
+    fetchUnreadCount();
   }
 
   @override
@@ -36,14 +38,31 @@ class ChatController extends GetxController {
     super.onClose();
   }
 
-  int get totalUnreadCount =>
-      conversations.fold(0, (sum, item) => sum + item.unreadCount);
+  int get totalUnreadCount {
+    if (unreadCount.value > 0) return unreadCount.value;
+    return conversations.fold(0, (sum, item) => sum + item.unreadCount);
+  }
+
+  Future<void> fetchUnreadCount() async {
+    try {
+      final count = await repository.getUnreadCount();
+      unreadCount.value = count;
+    } catch (_) {
+      unreadCount.value =
+          conversations.fold(0, (sum, item) => sum + item.unreadCount);
+    }
+  }
 
   Future<void> fetchConversations() async {
     isLoadingConversations.value = true;
     try {
       final list = await repository.getConversations();
       conversations.assignAll(list);
+      final localCount =
+          conversations.fold(0, (sum, item) => sum + item.unreadCount);
+      if (unreadCount.value == 0 || localCount > 0) {
+        unreadCount.value = localCount;
+      }
     } catch (e) {
       Get.snackbar(
         'Chats unavailable',
@@ -55,12 +74,55 @@ class ChatController extends GetxController {
     }
   }
 
+  Future<ChatConversationModel?> openConversationById(String roomId) async {
+    if (roomId.isEmpty) return null;
+
+    final existingIdx = conversations.indexWhere((c) => c.id == roomId);
+    if (existingIdx != -1) {
+      final conv = conversations[existingIdx];
+      await openConversation(conv);
+      return conv;
+    }
+
+    try {
+      await fetchConversations();
+      final foundIdx = conversations.indexWhere((c) => c.id == roomId);
+      if (foundIdx != -1) {
+        final conv = conversations[foundIdx];
+        await openConversation(conv);
+        return conv;
+      }
+    } catch (_) {}
+
+    try {
+      final room = await repository.getRoom(roomId);
+      conversations.insert(0, room);
+      conversations.refresh();
+      await openConversation(room);
+      return room;
+    } catch (_) {
+      final fallbackRoom = ChatConversationModel(
+        id: roomId,
+        name: 'Chat Room',
+        avatar: 'assets/images/user_profile.png',
+        lastMessage: '',
+        lastMessageTime: 'Just now',
+      );
+      conversations.insert(0, fallbackRoom);
+      conversations.refresh();
+      await openConversation(fallbackRoom);
+      return fallbackRoom;
+    }
+  }
+
   Future<void> openConversation(ChatConversationModel conv) async {
     activeConversation.value = conv;
     replyingToMessage.value = null;
     pinnedMessage.value = conv.pinnedMessage;
     conv.unreadCount = 0;
     conversations.refresh();
+    unreadCount.value =
+        conversations.fold(0, (sum, item) => sum + item.unreadCount);
     try {
       await repository.markConversationRead(conv.id);
     } catch (_) {}
@@ -320,6 +382,7 @@ class ChatController extends GetxController {
         messageType: type,
         mediaUrl: mediaUrl,
         replyTo: effectiveReplyTo,
+        deliveryStatus: 'failed',
       );
     } finally {
       isSendingMessage.value = false;

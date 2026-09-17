@@ -1,19 +1,50 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../app/routes/app_routes.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../../../design_system/colors/app_colors.dart';
+import '../../../../design_system/widgets/avatar/app_avatar.dart';
+import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/models/notification_model.dart';
 import '../bindings/notification_binding.dart';
 import '../controllers/notification_controller.dart';
 
-class NotificationScreen extends GetView<NotificationController> {
+class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
+
+  @override
+  State<NotificationScreen> createState() => _NotificationScreenState();
+}
+
+class _NotificationScreenState extends State<NotificationScreen> {
+  Timer? _relativeTimeTimer;
 
   NotificationController get _effectiveController {
     if (!Get.isRegistered<NotificationController>()) {
       NotificationBinding().dependencies();
     }
     return Get.find<NotificationController>();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Periodically refresh relative timestamps (e.g. 1m -> 2m) every 30s
+    // without triggering network re-fetches or full state resets.
+    _relativeTimeTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _relativeTimeTimer?.cancel();
+    super.dispose();
   }
 
   static const List<Map<String, String>> _categories = [
@@ -34,7 +65,7 @@ class NotificationScreen extends GetView<NotificationController> {
 
     return Scaffold(
       backgroundColor: bg,
-      appBar: _buildHeader(context, isDark),
+      appBar: _buildHeader(context, notifController, isDark),
       body: SafeArea(
         top: false,
         child: Center(
@@ -53,16 +84,26 @@ class NotificationScreen extends GetView<NotificationController> {
     );
   }
 
-
-  AppBar _buildHeader(BuildContext context, bool isDark) {
+  AppBar _buildHeader(
+    BuildContext context,
+    NotificationController notifController,
+    bool isDark,
+  ) {
     final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
     final textPrimary =
         isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted =
+        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
 
     final titleText = 'notification.title'.tr.isNotEmpty &&
             'notification.title'.tr != 'notification.title'
         ? 'notification.title'.tr
         : 'Notifications';
+
+    final markAllText = 'notification.markAllRead'.tr.isNotEmpty &&
+            'notification.markAllRead'.tr != 'notification.markAllRead'
+        ? 'notification.markAllRead'.tr
+        : 'Mark all read';
 
     return AppBar(
       backgroundColor: bg,
@@ -70,7 +111,22 @@ class NotificationScreen extends GetView<NotificationController> {
       elevation: 0,
       scrolledUnderElevation: 0,
       automaticallyImplyLeading: false,
-      titleSpacing: 20,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 14),
+        child: Center(
+          child: AppBackButton(
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else {
+                Get.offAllNamed(AppRoutes.home);
+              }
+            },
+          ),
+        ),
+      ),
+      leadingWidth: 54,
+      titleSpacing: 6,
       centerTitle: false,
       title: Text(
         titleText,
@@ -81,9 +137,40 @@ class NotificationScreen extends GetView<NotificationController> {
           letterSpacing: -0.4,
         ),
       ),
+      actions: [
+        Obx(() {
+          if (notifController.unreadCount == 0) {
+            return const SizedBox.shrink();
+          }
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: TextButton.icon(
+              onPressed: notifController.markAllAsRead,
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              icon: Icon(
+                Icons.done_all_rounded,
+                size: 16,
+                color: textMuted,
+              ),
+              label: Text(
+                markAllText,
+                style: TextStyle(
+                  color: textMuted,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
-
 
   Widget _buildCategoryNav(
     BuildContext context,
@@ -92,7 +179,7 @@ class NotificationScreen extends GetView<NotificationController> {
   ) {
     return Container(
       height: 38,
-      margin: const EdgeInsets.only(bottom: 8, top: 2),
+      margin: const EdgeInsets.only(bottom: 4, top: 2),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -158,7 +245,6 @@ class NotificationScreen extends GetView<NotificationController> {
     );
   }
 
-
   Widget _buildBody(
     BuildContext context,
     NotificationController notifController,
@@ -170,8 +256,17 @@ class NotificationScreen extends GetView<NotificationController> {
         isDark ? const Color(0xFF1C1C1C) : AppColors.lightSurfacePrimary;
 
     return Obx(() {
-      if (notifController.isLoading.value) {
+      if (notifController.isLoading.value &&
+          notifController.notifications.isEmpty) {
         return _LoadingSkeleton(isDark: isDark);
+      }
+
+      if (notifController.isError.value &&
+          notifController.notifications.isEmpty) {
+        return _ErrorState(
+          onRetry: notifController.fetchNotifications,
+          isDark: isDark,
+        );
       }
 
       final list = notifController.filteredNotifications;
@@ -221,12 +316,13 @@ class NotificationScreen extends GetView<NotificationController> {
           : 'Earlier';
 
       return RefreshIndicator(
-        onRefresh: notifController.fetchNotifications,
+        onRefresh: notifController.refreshNotifications,
         color: textPrimary,
         backgroundColor: refreshBg,
         displacement: 32,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 32),
+          controller: notifController.scrollController,
+          padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
           ),
@@ -263,13 +359,23 @@ class NotificationScreen extends GetView<NotificationController> {
                 ),
               ),
             ],
+            if (notifController.isLoadingMore.value) ...[
+              const SizedBox(height: 12),
+              const Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
           ],
         ),
       );
     });
   }
 }
-
 
 class _NotificationCard extends StatefulWidget {
   final NotificationModel notif;
@@ -336,7 +442,7 @@ class _NotificationCardState extends State<_NotificationCard> {
         background: Container(
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 20),
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: const EdgeInsets.only(bottom: 6),
           decoration: BoxDecoration(
             color: dismissBg,
             borderRadius: BorderRadius.circular(14),
@@ -361,8 +467,8 @@ class _NotificationCardState extends State<_NotificationCard> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInOut,
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: cardBg,
                 borderRadius: BorderRadius.circular(14),
@@ -378,9 +484,9 @@ class _NotificationCardState extends State<_NotificationCard> {
                     notif: notif,
                     isRead: isRead,
                     isDark: isDark,
+                    cardBg: cardBg,
                   ),
                   const SizedBox(width: 12),
-
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,7 +513,7 @@ class _NotificationCardState extends State<_NotificationCard> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              notif.timeAgo,
+                              formatCommunityTimestamp(notif.timestamp),
                               style: TextStyle(
                                 color: timeColor,
                                 fontSize: 11,
@@ -416,7 +522,6 @@ class _NotificationCardState extends State<_NotificationCard> {
                             ),
                           ],
                         ),
-
                         if (shortContext != null) ...[
                           const SizedBox(height: 3),
                           Text(
@@ -434,7 +539,6 @@ class _NotificationCardState extends State<_NotificationCard> {
                       ],
                     ),
                   ),
-
                   if (!isRead)
                     Container(
                       width: 6,
@@ -455,74 +559,75 @@ class _NotificationCardState extends State<_NotificationCard> {
   }
 }
 
-
 class _LeadingVisual extends StatelessWidget {
   final NotificationModel notif;
   final bool isRead;
   final bool isDark;
+  final Color cardBg;
 
   const _LeadingVisual({
     required this.notif,
     required this.isRead,
     required this.isDark,
+    required this.cardBg,
   });
 
   @override
   Widget build(BuildContext context) {
-    final hasAvatar = notif.senderAvatar != null &&
-        notif.senderAvatar!.isNotEmpty &&
-        (notif.category == NotificationCategory.social ||
-            notif.type == NotificationType.friendRequest ||
-            notif.type == NotificationType.reply ||
-            notif.type == NotificationType.comment ||
-            notif.type == NotificationType.like);
+    final isSocial = notif.category == NotificationCategory.social ||
+        notif.type == NotificationType.like ||
+        notif.type == NotificationType.comment ||
+        notif.type == NotificationType.reply ||
+        notif.type == NotificationType.follow ||
+        notif.type == NotificationType.friendRequest ||
+        notif.type == NotificationType.mention ||
+        notif.type == NotificationType.chat ||
+        notif.type == NotificationType.group;
 
-    if (hasAvatar) {
-      final avatarUrl = notif.senderAvatar!;
-      final hasNetwork = avatarUrl.startsWith('http');
-      final ImageProvider imgProvider = hasNetwork
-          ? NetworkImage(avatarUrl) as ImageProvider
-          : AssetImage(avatarUrl) as ImageProvider;
+    final hasActorInfo = (notif.senderAvatar != null && notif.senderAvatar!.isNotEmpty) ||
+        (notif.senderName.isNotEmpty &&
+            notif.senderName != 'GenLink KH' &&
+            notif.senderName != 'Community Member');
 
+    if (isSocial && hasActorInfo) {
       final badgeIcon = _resolveSocialBadgeIcon(notif.type);
-      final badgeBg = isDark
-          ? (isRead ? const Color(0xFF222222) : const Color(0xFF2D2D2D))
-          : (isRead ? const Color(0xFFE8E8E4) : const Color(0xFFFFFFFF));
-      final badgeBorder = isDark
-          ? const Color(0xFF141414)
-          : const Color(0xFFFFFFFF);
+      final badgeColor = _resolveSocialBadgeColor(notif.type, isDark);
 
       return SizedBox(
         width: 42,
         height: 42,
         child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            CircleAvatar(
-              radius: 21,
-              backgroundColor: isDark
-                  ? const Color(0xFF282828)
-                  : const Color(0xFFE5E5DF),
-              backgroundImage: imgProvider,
+            AppAvatar(
+              imageUrl: notif.senderAvatar,
+              name: notif.senderName,
+              size: 42,
             ),
             if (badgeIcon != null)
               Positioned(
-                right: 0,
-                bottom: 0,
+                right: -1,
+                bottom: -1,
                 child: Container(
                   width: 17,
                   height: 17,
                   decoration: BoxDecoration(
-                    color: badgeBg,
+                    color: isDark ? const Color(0xFF222222) : Colors.white,
                     shape: BoxShape.circle,
-                    border: Border.all(color: badgeBorder, width: 1.5),
+                    border: Border.all(color: cardBg, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
                   ),
                   child: Center(
                     child: Icon(
                       badgeIcon,
                       size: 9.5,
-                      color: isDark
-                          ? AppColors.darkTextPrimary
-                          : AppColors.lightTextPrimary,
+                      color: badgeColor,
                     ),
                   ),
                 ),
@@ -532,16 +637,13 @@ class _LeadingVisual extends StatelessWidget {
       );
     }
 
+    // SYSTEM / FEATURE CATEGORIES -> Beautiful Category Icon
     final iconData = _resolveCategoryIcon(notif.type, notif.category);
-    final iconBg = isDark
-        ? (isRead ? const Color(0xFF1E1E1E) : const Color(0xFF262626))
-        : (isRead ? const Color(0xFFF2F2EE) : const Color(0xFFFFFFFF));
+    final iconColor = _resolveCategoryColor(notif.type, notif.category, isDark);
+    final iconBg = _resolveCategoryBackground(notif.type, notif.category, isDark, isRead);
     final iconBorder = isDark
         ? (isRead ? const Color(0xFF262626) : const Color(0xFF333333))
         : (isRead ? const Color(0xFFE5E5DF) : const Color(0xFFDDDDDA));
-    final iconColor = isDark
-        ? (isRead ? AppColors.darkTextSecondary : AppColors.darkTextPrimary)
-        : (isRead ? AppColors.lightTextSecondary : AppColors.lightTextPrimary);
 
     return Container(
       width: 42,
@@ -549,12 +651,12 @@ class _LeadingVisual extends StatelessWidget {
       decoration: BoxDecoration(
         color: iconBg,
         shape: BoxShape.circle,
-        border: Border.all(color: iconBorder, width: 0.9),
+        border: Border.all(color: iconBorder, width: 0.8),
       ),
       child: Center(
         child: Icon(
           iconData,
-          size: 19,
+          size: 20,
           color: iconColor,
         ),
       ),
@@ -574,8 +676,28 @@ class _LeadingVisual extends StatelessWidget {
         return Icons.person_add_rounded;
       case NotificationType.mention:
         return Icons.alternate_email_rounded;
+      case NotificationType.chat:
+        return Icons.chat_bubble_rounded;
       default:
         return null;
+    }
+  }
+
+  static Color _resolveSocialBadgeColor(NotificationType type, bool isDark) {
+    switch (type) {
+      case NotificationType.like:
+        return const Color(0xFFEF4444); // Red
+      case NotificationType.comment:
+      case NotificationType.reply:
+      case NotificationType.chat:
+        return const Color(0xFF3B82F6); // Blue
+      case NotificationType.friendRequest:
+      case NotificationType.follow:
+        return const Color(0xFF10B981); // Emerald
+      case NotificationType.mention:
+        return const Color(0xFF8B5CF6); // Purple
+      default:
+        return isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     }
   }
 
@@ -583,42 +705,117 @@ class _LeadingVisual extends StatelessWidget {
     NotificationType type,
     NotificationCategory category,
   ) {
+    switch (type) {
+      // Finance
+      case NotificationType.savingGoal:
+        return Icons.savings_rounded;
+      case NotificationType.budgetWarning:
+      case NotificationType.budgetExceeded:
+        return Icons.account_balance_wallet_rounded;
+      case NotificationType.financeUpdate:
+        return Icons.receipt_long_rounded;
+
+      // Security
+      case NotificationType.security:
+        return Icons.shield_rounded;
+
+      // Events
+      case NotificationType.eventReminder:
+      case NotificationType.eventUpdate:
+      case NotificationType.eventRsvp:
+      case NotificationType.event:
+        return Icons.calendar_month_rounded;
+
+      // Habits & Tasks
+      case NotificationType.habitReminder:
+      case NotificationType.streakMilestone:
+        return Icons.local_fire_department_rounded;
+      case NotificationType.taskReminder:
+        return Icons.check_circle_rounded;
+      case NotificationType.goalReminder:
+        return Icons.flag_rounded;
+
+      // Quiz & Achievement
+      case NotificationType.quizResult:
+        return Icons.quiz_rounded;
+      case NotificationType.achievement:
+        return Icons.emoji_events_rounded;
+
+      // System / Updates
+      case NotificationType.system:
+        return Icons.system_update_rounded;
+
+      default:
+        break;
+    }
+
     switch (category) {
       case NotificationCategory.finance:
-        if (type == NotificationType.savingGoal) {
-          return Icons.savings_outlined;
-        }
-        return Icons.account_balance_wallet_outlined;
-
+        return Icons.account_balance_wallet_rounded;
       case NotificationCategory.events:
-        return Icons.calendar_today_rounded;
-
+        return Icons.calendar_month_rounded;
       case NotificationCategory.reminders:
-        if (type == NotificationType.habitReminder ||
-            type == NotificationType.streakMilestone) {
-          return Icons.local_fire_department_rounded;
-        }
-        if (type == NotificationType.taskReminder) {
-          return Icons.check_circle_outline_rounded;
-        }
-        return Icons.flag_outlined;
-
+        return Icons.notifications_active_rounded;
       case NotificationCategory.updates:
-        if (type == NotificationType.quizResult ||
-            type == NotificationType.achievement) {
-          return Icons.emoji_events_outlined;
-        }
-        return Icons.notifications_none_rounded;
-
+        return Icons.info_outline_rounded;
       case NotificationCategory.social:
         return Icons.people_outline_rounded;
-
       case NotificationCategory.all:
         return Icons.notifications_none_rounded;
     }
   }
-}
 
+  static Color _resolveCategoryColor(
+    NotificationType type,
+    NotificationCategory category,
+    bool isDark,
+  ) {
+    if (category == NotificationCategory.finance ||
+        type == NotificationType.savingGoal ||
+        type == NotificationType.budgetWarning ||
+        type == NotificationType.budgetExceeded ||
+        type == NotificationType.financeUpdate) {
+      return const Color(0xFF10B981); // Emerald
+    }
+    if (type == NotificationType.security) {
+      return const Color(0xFF6366F1); // Indigo
+    }
+    if (category == NotificationCategory.events ||
+        type == NotificationType.eventReminder ||
+        type == NotificationType.eventUpdate ||
+        type == NotificationType.eventRsvp ||
+        type == NotificationType.event) {
+      return const Color(0xFFF97316); // Orange
+    }
+    if (type == NotificationType.habitReminder ||
+        type == NotificationType.streakMilestone) {
+      return const Color(0xFFEC4899); // Rose/Pink
+    }
+    if (type == NotificationType.quizResult ||
+        type == NotificationType.achievement) {
+      return const Color(0xFFF59E0B); // Amber
+    }
+    if (category == NotificationCategory.reminders ||
+        type == NotificationType.taskReminder ||
+        type == NotificationType.goalReminder) {
+      return const Color(0xFF0EA5E9); // Sky Blue
+    }
+    return isDark ? const Color(0xFFA0A0A0) : const Color(0xFF64748B);
+  }
+
+  static Color _resolveCategoryBackground(
+    NotificationType type,
+    NotificationCategory category,
+    bool isDark,
+    bool isRead,
+  ) {
+    if (isRead) {
+      return isDark ? const Color(0xFF1C1C1C) : const Color(0xFFF2F2EE);
+    }
+    final color = _resolveCategoryColor(type, category, isDark);
+    return color.withValues(alpha: isDark ? 0.16 : 0.10);
+  }
+}
 
 class _SectionLabel extends StatelessWidget {
   final String label;
@@ -632,7 +829,7 @@ class _SectionLabel extends StatelessWidget {
         isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8, top: 6, left: 4),
+      padding: const EdgeInsets.only(bottom: 4, top: 4, left: 4),
       child: Text(
         label,
         style: TextStyle(
@@ -645,7 +842,6 @@ class _SectionLabel extends StatelessWidget {
     );
   }
 }
-
 
 class _EmptyState extends StatelessWidget {
   final String category;
@@ -733,6 +929,96 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
+class _ErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+  final bool isDark;
+
+  const _ErrorState({required this.onRetry, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted =
+        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+
+    final errorTitle = 'notification.errorTitle'.tr.isNotEmpty &&
+            'notification.errorTitle'.tr != 'notification.errorTitle'
+        ? 'notification.errorTitle'.tr
+        : 'Something went wrong';
+
+    final errorDesc = 'notification.errorDesc'.tr.isNotEmpty &&
+            'notification.errorDesc'.tr != 'notification.errorDesc'
+        ? 'notification.errorDesc'.tr
+        : 'Unable to load notifications. Please check your connection and try again.';
+
+    final retryText = 'notification.retry'.tr.isNotEmpty &&
+            'notification.retry'.tr != 'notification.retry'
+        ? 'notification.retry'.tr
+        : 'Retry';
+
+    final btnBg = isDark ? const Color(0xFFFFFFFF) : const Color(0xFF111111);
+    final btnText = isDark ? const Color(0xFF111111) : const Color(0xFFFFFFFF);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.cloud_off_rounded,
+              size: 48,
+              color: textMuted.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              errorTitle,
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.2,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              errorDesc,
+              style: TextStyle(
+                color: textMuted,
+                fontSize: 13,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: btnBg,
+                foregroundColor: btnText,
+                elevation: 0,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: Text(
+                retryText,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _LoadingSkeleton extends StatelessWidget {
   final bool isDark;
@@ -807,4 +1093,3 @@ class _LoadingSkeleton extends StatelessWidget {
     );
   }
 }
-

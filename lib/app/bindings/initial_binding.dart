@@ -25,6 +25,8 @@ import '../../features/productivity/presentation/controllers/productivity_contro
 import '../../features/community/presentation/controllers/community_controller.dart';
 import '../../features/community/presentation/controllers/story_controller.dart';
 import 'package:flutter/painting.dart';
+import '../../features/chat/presentation/bindings/chat_binding.dart';
+import '../../features/notification/presentation/bindings/notification_binding.dart';
 import '../../features/chat/presentation/controllers/chat_controller.dart';
 import '../../features/notification/presentation/controllers/notification_controller.dart';
 import '../../main_controller.dart';
@@ -53,6 +55,9 @@ class InitialBinding extends Bindings {
     Get
       ..put<Dio>(dio, permanent: true)
       ..put<ApiClient>(apiClient, permanent: true);
+
+    NotificationBinding().dependencies();
+    ChatBinding().dependencies();
 
     final mobilePushRegistrationService = FirebaseMobilePushRegistrationService(
       apiClient: apiClient,

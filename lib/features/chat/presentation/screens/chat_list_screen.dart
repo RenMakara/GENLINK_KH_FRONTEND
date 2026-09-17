@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/models/chat_models.dart';
@@ -440,7 +441,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
       conversation: conv,
       onTap: () {
         controller.openConversation(conv);
-        Get.to(() => const ChatDetailScreen());
+        Get.toNamed<void>(
+          AppRoutes.chatDetail,
+          arguments: {'roomId': conv.id},
+        );
       },
       onMute: () async {
         await controller.muteConversation(conv.id);

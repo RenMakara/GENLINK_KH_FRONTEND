@@ -20,6 +20,26 @@ class ChatRemoteDataSource {
         .toList();
   }
 
+  Future<int> fetchUnreadCount() async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(ApiEndpoints.chatUnreadCount),
+      );
+      final data = _dataOf(response.data);
+      return (data['unreadCount'] as num?)?.toInt() ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  Future<ChatConversationModel> getRoom(String roomId) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>('${ApiEndpoints.chats}/$roomId'),
+    );
+    final data = _dataOf(response.data);
+    return ChatConversationModel.fromRoomResponse(data);
+  }
+
   Future<ChatConversationModel> openPrivateChat(String userId) async {
     try {
       final response = await guardDio(

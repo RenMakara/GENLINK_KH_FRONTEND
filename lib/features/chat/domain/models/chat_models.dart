@@ -424,25 +424,29 @@ class ChatConversationModel {
     final isGroup = type == 'GROUP';
     final members = json['members'] is List ? json['members'] as List : const [];
 
-    Map<String, dynamic> counterpart = const {};
+    Map<String, dynamic> counterpart = json['counterpart'] is Map
+        ? (json['counterpart'] as Map).cast<String, dynamic>()
+        : const {};
     Map<String, dynamic>? firstParticipant;
     final targetUserId = participantUserId?.trim();
-    for (final member in members) {
-      if (member is! Map) continue;
-      final rawParticipant = member['user'] is Map ? member['user'] : member;
-      if (rawParticipant is! Map) continue;
-      final participant = rawParticipant.cast<String, dynamic>();
-      firstParticipant ??= participant;
-      final userId =
-          participant['userId']?.toString() ?? participant['id']?.toString();
-      if (targetUserId == null || userId == targetUserId) {
-        counterpart = participant;
-        break;
+    if (counterpart.isEmpty) {
+      for (final member in members) {
+        if (member is! Map) continue;
+        final rawParticipant = member['user'] is Map ? member['user'] : member;
+        if (rawParticipant is! Map) continue;
+        final participant = rawParticipant.cast<String, dynamic>();
+        firstParticipant ??= participant;
+        final userId =
+            participant['userId']?.toString() ?? participant['id']?.toString();
+        if (targetUserId == null || userId == targetUserId) {
+          counterpart = participant;
+          break;
+        }
       }
+      counterpart = counterpart.isEmpty
+          ? (firstParticipant ?? const {})
+          : counterpart;
     }
-    counterpart = counterpart.isEmpty
-        ? (firstParticipant ?? const {})
-        : counterpart;
 
     final name = (json['name'] as String?) ??
         (counterpart['fullName'] as String?) ??

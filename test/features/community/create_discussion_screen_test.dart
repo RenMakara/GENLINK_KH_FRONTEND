@@ -199,7 +199,21 @@ void main() {
       expect(find.text('Content'), findsOneWidget);
       expect(find.text('Share your thoughts, question, or idea...'), findsOneWidget);
 
-      expect(find.text('0 / 5000'), findsOneWidget);
+      // Character counter is hidden initially when empty
+      expect(find.text('0 / 5000'), findsNothing);
+      expect(find.textContaining('/ 5000'), findsNothing);
+
+      // Typing in content field dynamically shows counter
+      final contentField = find.widgetWithText(TextField, 'Share your thoughts, question, or idea...');
+      await tester.enterText(contentField, 'Hello');
+      await tester.pump();
+      expect(find.text('5 / 5000'), findsOneWidget);
+
+      // Clearing content hides counter again
+      await tester.enterText(contentField, '');
+      await tester.pump();
+      expect(find.text('0 / 5000'), findsNothing);
+      expect(find.textContaining('/ 5000'), findsNothing);
     });
 
     testWidgets('2. Category bottom sheet displays categories and updates selection', (tester) async {

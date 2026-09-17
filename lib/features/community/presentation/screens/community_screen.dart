@@ -179,7 +179,7 @@ class _CommunityScreenState extends State<CommunityScreen>
               ClipRect(
                 child: SizeTransition(
                   sizeFactor: headerVisibilityAnimation,
-                  axisAlignment: -1.0,
+                  alignment: Alignment.topCenter,
                   child: SlideTransition(
                     position: headerSlideAnimation,
                     child: FadeTransition(
@@ -625,14 +625,17 @@ class _CommunityScreenState extends State<CommunityScreen>
         : AppColors.lightSurfacePrimary;
 
     final mediaQuery = MediaQuery.of(context);
-    final safeBottom = mediaQuery.padding.bottom;
-    final isNarrow = mediaQuery.size.width < 360;
-    final isVeryNarrow = mediaQuery.size.width < 335;
+    final safeBottom = mediaQuery.padding.bottom > 0
+        ? mediaQuery.padding.bottom
+        : mediaQuery.viewPadding.bottom;
+    final screenWidth = mediaQuery.size.width;
+    final isNarrow = screenWidth < 360;
+    final isVeryNarrow = screenWidth < 335;
     final navBarHeight = isVeryNarrow ? 72.0 : (isNarrow ? 76.0 : 82.0);
-    final navBarBottomMargin = safeBottom > 0 ? safeBottom + 8.0 : 20.0;
+    final navBarBottomMargin = safeBottom > 0 ? safeBottom + 12.0 : 20.0;
     const visualBreathingRoom = 28.0;
     final bottomPadding =
-        navBarHeight + navBarBottomMargin + visualBreathingRoom;
+        navBarHeight + navBarBottomMargin + visualBreathingRoom + 24.0;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -1204,7 +1207,9 @@ class _CommunityScreenState extends State<CommunityScreen>
         ),
         padding: EdgeInsets.only(bottom: bottomPadding),
         child: Obx(() {
-          if (controller.isLoadingFeed.value && controller.events.isEmpty) {
+          if ((controller.isLoadingEvents.value ||
+                  controller.isLoadingFeed.value) &&
+              controller.events.isEmpty) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1240,7 +1245,8 @@ class _CommunityScreenState extends State<CommunityScreen>
             );
           }
 
-          if (controller.hasError.value && controller.events.isEmpty) {
+          if ((controller.hasEventsError.value || controller.hasError.value) &&
+              controller.events.isEmpty) {
             return _buildEventErrorState(
               context,
               controller,

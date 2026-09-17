@@ -222,13 +222,20 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
       );
     }
 
+    final safeBottom = MediaQuery.paddingOf(context).bottom > 0
+        ? MediaQuery.paddingOf(context).bottom
+        : MediaQuery.viewPaddingOf(context).bottom;
+    final bottomPadding = AppSpacing.md + safeBottom;
+
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
       ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.md,
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        bottomPadding,
       ),
       itemCount: _discussions.length,
       itemBuilder: (context, index) {

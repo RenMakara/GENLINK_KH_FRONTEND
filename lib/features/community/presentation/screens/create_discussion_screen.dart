@@ -780,24 +780,25 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                 ),
               ),
 
-              Align(
-                alignment: Alignment.centerRight,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    '$charCount / $maxChars',
-                    style: TextStyle(
-                      color: charCount >= maxChars
-                          ? AppColors.danger
-                          : (charCount >= 4800
-                              ? AppColors.warning
-                              : textMuted),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+              if (charCount > 0)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      '$charCount / $maxChars',
+                      style: TextStyle(
+                        color: charCount >= maxChars
+                            ? AppColors.danger
+                            : (charCount >= 4800
+                                ? AppColors.warning
+                                : textMuted),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),
-              ),
 
               const SizedBox(height: 32),
             ],

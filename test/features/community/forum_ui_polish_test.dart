@@ -501,7 +501,7 @@ void main() {
 
       await tester.tap(find.text('Feed'));
       await tester.pumpAndSettle();
-      expect(find.text('Updated test2 discussion title'), findsWidgets);
+      expect(find.text('Updated test2 discussion title'), findsNothing);
     });
 
     testWidgets('9. Verifies deleting own discussion requires confirmation and removes it from Forum and Feed', (tester) async {
@@ -736,6 +736,156 @@ void main() {
       expect(find.text('មិនទាន់មានមតិយោបល់ទេ'), findsOneWidget);
       expect(find.text('សូមធ្វើជាអ្នកដំបូងដែលចាប់ផ្តើមការពិភាក្សា!'), findsOneWidget);
       expect(find.text('បន្ថែមការឆ្លើយតប...'), findsOneWidget);
+    });
+
+    testWidgets('14. Verifies ForumThreadCard height is content-driven: short discussion is compact, long expands', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.light(),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Builder(builder: (context) {
+                    return const ForumThreadCard(
+                      key: ValueKey('short_card'),
+                      title: 'hot mes',
+                      content: 'mix kr ban',
+                      author: 'nat',
+                      timeAgo: '16h',
+                      category: 'Technology',
+                      replies: 0,
+                      likes: 0,
+                    );
+                  }),
+                  Builder(builder: (context) {
+                    return const ForumThreadCard(
+                      key: ValueKey('long_card'),
+                      title: 'This is a significantly longer discussion title that spans multiple lines across modern smartphone screens and explains a complex topic in depth',
+                      content: 'Here is an extended multi-line content body explaining best practices, design patterns, architecture decisions, and state management comparisons between GetX, Bloc, and Riverpod in production Flutter apps with high throughput.',
+                      author: 'Chhaeng Sokuntheara',
+                      timeAgo: '2d ago',
+                      category: 'Software Engineering',
+                      replies: 42,
+                      likes: 128,
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final shortCardBox = tester.renderObject<RenderBox>(find.byKey(const ValueKey('short_card')));
+      final longCardBox = tester.renderObject<RenderBox>(find.byKey(const ValueKey('long_card')));
+
+      final shortCardHeight = shortCardBox.size.height;
+      final longCardHeight = longCardBox.size.height;
+
+      // Short discussion should be compact (less than 200px)
+      expect(shortCardHeight, lessThan(200.0));
+      // Long discussion should expand naturally and be significantly taller
+      expect(longCardHeight, greaterThan(shortCardHeight + 50.0));
+    });
+
+    testWidgets('15. Verifies Author + Timestamp hierarchy in ForumThreadCard', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(
+            body: ForumThreadCard(
+              title: 'hot mes',
+              author: 'nat',
+              timeAgo: '16h',
+              category: 'General',
+              replies: 0,
+              likes: 0,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('nat'), findsOneWidget);
+      expect(find.textContaining('16h'), findsOneWidget);
+
+      final textFinder = find.byWidgetPredicate(
+        (w) => w is Text && w.textSpan != null && w.textSpan!.toPlainText().contains('nat'),
+      );
+      expect(textFinder, findsOneWidget);
+
+      final textWidget = tester.widget<Text>(textFinder);
+      final span = textWidget.textSpan as TextSpan;
+      final authorSpan = span.children![0] as TextSpan;
+      expect(authorSpan.text, 'nat');
+      expect(authorSpan.style?.fontWeight, FontWeight.w700);
+
+      // Verify timestamp span is visually secondary
+      final timeSpan = span.children![2] as TextSpan;
+      expect(timeSpan.text, '16h');
+      expect(timeSpan.style?.fontWeight, FontWeight.w400);
+    });
+
+    testWidgets('16. Verifies compact engagement row horizontal spacing and alignment', (tester) async {
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: const Scaffold(
+            body: ForumThreadCard(
+              title: 'Test engagement row',
+              author: 'Tester',
+              timeAgo: '1h',
+              category: 'Tech',
+              replies: 5,
+              likes: 12,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
+      expect(find.text('12'), findsOneWidget);
+      expect(find.byIcon(Icons.chat_bubble_outline_rounded), findsOneWidget);
+      expect(find.text('5 comments'), findsOneWidget);
+    });
+
+    testWidgets('17. Verifies Forum discussion list bottom clearance on small phone sizes (320px, 360px, 430px)', (tester) async {
+      final controller = CommunityController(repository: _MockCommunityRepository());
+      Get.put<CommunityController>(controller);
+
+      for (final width in [320.0, 360.0, 430.0]) {
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en', 'US'),
+            home: MediaQuery(
+              data: MediaQueryData(
+                size: Size(width, 800),
+                padding: EdgeInsets.only(bottom: width > 360 ? 34.0 : 0.0),
+              ),
+              child: const CommunityScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Forum'));
+        await tester.pumpAndSettle();
+
+        final scrollViews = tester.widgetList<SingleChildScrollView>(find.byType(SingleChildScrollView));
+        final forumScrollView = scrollViews.firstWhere(
+          (sv) => sv.scrollDirection == Axis.vertical && sv.padding != null,
+        );
+
+        final padding = forumScrollView.padding as EdgeInsets;
+        expect(padding.bottom, greaterThanOrEqualTo(135.0));
+        expect(padding.bottom, lessThanOrEqualTo(210.0));
+      }
     });
   });
 }

@@ -228,6 +228,7 @@ class _ForumThreadCardState extends State<ForumThreadCard>
           child: Padding(
             padding: CommunityCardStyle.cardPadding,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
@@ -268,6 +269,7 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           GestureDetector(
                             onTap: widget.onAuthorTap,
@@ -289,22 +291,31 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                                           letterSpacing: -0.2,
                                         ),
                                   ),
-                                  if (formattedTime.isNotEmpty)
+                                  if (formattedTime.isNotEmpty) ...[
                                     TextSpan(
-                                      text: " · $formattedTime",
+                                      text: " · ",
                                       style: TextStyle(
-                                        color: textMuted,
-                                        fontSize: 11.5,
+                                        color: textMuted.withValues(alpha: 0.65),
+                                        fontSize: 12.0,
                                         fontWeight: FontWeight.w400,
                                       ),
                                     ),
+                                    TextSpan(
+                                      text: formattedTime,
+                                      style: TextStyle(
+                                        color: textMuted,
+                                        fontSize: 12.0,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           CommunityCategoryBadge(
                             label: widget.category,
                             onTap: widget.onCategoryTap,
@@ -335,7 +346,7 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                     ],
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Text(
                   widget.title,
                   maxLines: 3,
@@ -358,7 +369,7 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                 if (widget.content != null &&
                     widget.content!.trim().isNotEmpty &&
                     widget.content!.trim() != widget.title.trim()) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     widget.content!.trim(),
                     maxLines: 2,
@@ -375,8 +386,9 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                         ),
                   ),
                 ],
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Material(
                       color: Colors.transparent,
@@ -386,11 +398,12 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                         borderRadius: BorderRadius.circular(AppRadius.pill),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
+                            horizontal: 6,
+                            vertical: 4,
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               ScaleTransition(
                                 scale: _likeScaleAnim,
@@ -441,11 +454,12 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
+                              horizontal: 6,
+                              vertical: 4,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Icon(
                                   Icons.chat_bubble_outline_rounded,

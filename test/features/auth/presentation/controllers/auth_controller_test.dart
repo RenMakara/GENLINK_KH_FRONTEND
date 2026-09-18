@@ -8,6 +8,7 @@ import 'package:genlink_frontend/features/auth/domain/entities/user_entity.dart'
 import 'package:genlink_frontend/features/auth/domain/repositories/auth_repository.dart';
 import 'package:genlink_frontend/features/auth/domain/services/google_auth_service.dart';
 import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:genlink_frontend/features/notification/domain/mobile_push_registration_service.dart';
 import 'package:genlink_frontend/main_controller.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
@@ -17,6 +18,9 @@ class _MockAuthRepository extends Mock implements AuthRepository {}
 class _MockSecureStorage extends Mock implements SecureStorage {}
 
 class _MockGoogleAuthService extends Mock implements GoogleAuthService {}
+
+class _MockMobilePushRegistrationService extends Mock
+    implements MobilePushRegistrationService {}
 
 const _user = UserEntity(
   id: 'user-1',
@@ -201,5 +205,34 @@ void main() {
 
     expect(mainController.currentIndex.value, MainController.defaultIndex);
     verify(() => storage.clearAll()).called(1);
+  });
+
+  test('deactivates push device before invalidating the server token', () async {
+    final push = _MockMobilePushRegistrationService();
+    final logoutController = AuthController(
+      authRepository: repository,
+      secureStorage: storage,
+      localization: LocalizationService(localStorage: LocalStorage()),
+      googleAuthService: google,
+      mobilePushRegistrationService: push,
+      onSessionCleared: mainController.reset,
+    );
+
+    when(() => google.signOut()).thenAnswer((_) async {});
+    when(() => push.deactivateCurrentDevice(remote: true))
+        .thenAnswer((_) async {});
+    when(() => push.deactivateCurrentDevice(remote: false))
+        .thenAnswer((_) async {});
+    when(() => repository.logout()).thenAnswer((_) async {});
+    when(() => storage.clearAll()).thenAnswer((_) async {});
+
+    await logoutController.logout();
+
+    verifyInOrder([
+      () => push.deactivateCurrentDevice(remote: true),
+      () => repository.logout(),
+      () => push.deactivateCurrentDevice(remote: false),
+      () => storage.clearAll(),
+    ]);
   });
 }

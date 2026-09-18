@@ -72,6 +72,31 @@ void main() {
         'Bearer real-access-token',
       );
     });
+
+    test('does not refresh an authenticated logout request after 401', () async {
+      final storage = _FakeSecureStorage(accessToken: 'real-access-token');
+      final auth = _FakeAuthRepository();
+      final adapter = _RecordingAdapter(statusCode: 401);
+      var expiredCalls = 0;
+      final dio = _dioWith(
+        storage: storage,
+        authRepository: auth,
+        adapter: adapter,
+        onSessionExpired: () => expiredCalls++,
+      );
+
+      final error = await _captureDioError(
+        () => dio.post<dynamic>('/api/v1/auth/logout'),
+      );
+
+      expect(error.response?.statusCode, 401);
+      expect(adapter.calls, 1);
+      expect(
+        adapter.lastOptions?.headers['Authorization'],
+        'Bearer real-access-token',
+      );
+      expect(expiredCalls, 0);
+    });
   });
 }
 
@@ -102,6 +127,9 @@ Future<DioException> _captureDioError(Future<void> Function() action) async {
 }
 
 class _RecordingAdapter implements HttpClientAdapter {
+  _RecordingAdapter({this.statusCode = 200});
+
+  final int statusCode;
   int calls = 0;
   RequestOptions? lastOptions;
 
@@ -115,7 +143,7 @@ class _RecordingAdapter implements HttpClientAdapter {
     lastOptions = options;
     return ResponseBody.fromString(
       jsonEncode({'success': true, 'data': []}),
-      200,
+      statusCode,
       headers: {
         Headers.contentTypeHeader: [Headers.jsonContentType],
       },

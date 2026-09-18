@@ -115,6 +115,7 @@ class AuthInterceptor extends Interceptor {
     final shouldRefresh =
         statusCode == 401 &&
         !_isAuthEndpoint(options.path) &&
+        !_isLogoutEndpoint(options.path) &&
         options.extra[_retriedFlag] != true &&
         options.extra[_missingSessionFlag] != true;
 
@@ -211,6 +212,11 @@ class AuthInterceptor extends Interceptor {
         path.contains('/auth/resend-otp') ||
         path.contains('/auth/resend-verification-otp');
   }
+
+  // Logout is authenticated, so it must still receive the bearer token, but a
+  // 401 from it must never start a refresh cycle: logout is already best effort
+  // and the local session cleanup is handled by AuthController.
+  bool _isLogoutEndpoint(String path) => path.contains('/auth/logout');
 
   bool _isDemoToken(String token) =>
       token == 'demo_access_token' ||

@@ -32,27 +32,27 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   );
 
   static final List<Map<String, dynamic>> _initialSuggestedContacts = [
-    {
-      'id': 'a0000000-0000-0000-0000-000000000001',
-      'name': 'Sokny Enat',
-      'handle': '@soknyenat',
-      'avatar': 'assets/images/user_profile.png',
-      'isOnline': true,
-    },
-    {
-      'id': 'a0000000-0000-0000-0000-000000000002',
-      'name': 'Heng Chansela',
-      'handle': '@chansela',
-      'avatar': 'assets/images/heng_chansela_profile.png',
-      'isOnline': true,
-    },
-    {
-      'id': 'a0000000-0000-0000-0000-000000000003',
-      'name': 'Ren Makara',
-      'handle': '@renmakara',
-      'avatar': 'assets/images/ren_makara_profile.png',
-      'isOnline': true,
-    },
+    // {
+    //   'id': 'a0000000-0000-0000-0000-000000000001',
+    //   'name': 'Sokny Enat',
+    //   'handle': '@soknyenat',
+    //   'avatar': 'assets/images/user_profile.png',
+    //   'isOnline': true,
+    // },
+    // {
+    //   'id': 'a0000000-0000-0000-0000-000000000002',
+    //   'name': 'Heng Chansela',
+    //   'handle': '@chansela',
+    //   'avatar': 'assets/images/heng_chansela_profile.png',
+    //   'isOnline': true,
+    // },
+    // {
+    //   'id': 'a0000000-0000-0000-0000-000000000003',
+    //   'name': 'Ren Makara',
+    //   'handle': '@renmakara',
+    //   'avatar': 'assets/images/ren_makara_profile.png',
+    //   'isOnline': true,
+    // },
   ];
 
   @override

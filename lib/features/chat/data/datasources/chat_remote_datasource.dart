@@ -56,7 +56,6 @@ class ChatRemoteDataSource {
         data: {
           'name': name,
           'memberIds': memberUserIds,
-          'memberUserIds': memberUserIds,
         },
       ),
     );

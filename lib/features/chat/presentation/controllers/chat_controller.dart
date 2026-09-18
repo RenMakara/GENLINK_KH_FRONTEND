@@ -255,26 +255,6 @@ class ChatController extends GetxController with WidgetsBindingObserver {
       }
     } catch (e) {
       debugPrint('[CHAT-API] ERROR roomId = $cleanRoomId, error = $e');
-      // Retain fallback state for demo/mock resilience if room had a preview
-      if (activeRoomId.value == cleanRoomId &&
-          _messageLoadSequence == requestId &&
-          activeMessages.isEmpty &&
-          (activeConversation.value?.lastMessage.isNotEmpty ?? false)) {
-        final conv = activeConversation.value!;
-        activeMessages.add(
-          ChatMessageModel(
-            id: 'msg_last_${conv.id}',
-            conversationId: conv.id,
-            senderId: 'other',
-            senderName: conv.name,
-            senderAvatar: conv.avatar,
-            content: conv.lastMessage,
-            timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-            timeAgo: conv.lastMessageTime,
-            isMine: false,
-          ),
-        );
-      }
     } finally {
       if (activeRoomId.value == cleanRoomId) {
         isLoadingMessages.value = false;
@@ -358,20 +338,17 @@ class ChatController extends GetxController with WidgetsBindingObserver {
       await openConversation(openedConv);
       return openedConv;
     } catch (e) {
-      final fallbackConv = ChatConversationModel(
-        id: 'private_$userId',
-        name: name ?? 'User',
-        avatar: avatar ?? 'assets/images/user_profile.png',
-        isGroup: false,
-        isOnline: true,
-        lastMessage: '',
-        lastMessageTime: 'Just now',
-        unreadCount: 0,
-      );
-      conversations.insert(0, fallbackConv);
-      conversations.refresh();
-      await openConversation(fallbackConv);
-      return fallbackConv;
+      debugPrint('[CHAT-API] openPrivateChat failed for userId=$userId: $e');
+      if (Get.context != null &&
+          Get.isSnackbarOpen != true &&
+          Get.key.currentState != null) {
+        Get.snackbar(
+          'Chat unavailable',
+          'Could not start conversation. Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      return null;
     }
   }
 
@@ -510,9 +487,8 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     replyingToMessage.value = null;
     isSendingMessage.value = true;
 
-    ChatMessageModel newMsg;
     try {
-      newMsg = await repository.sendMessage(
+      final newMsg = await repository.sendMessage(
         conv.id,
         text.isEmpty
             ? (type == 'image' ? '📷 Photo' : 'Shared attachment')
@@ -521,39 +497,47 @@ class ChatController extends GetxController with WidgetsBindingObserver {
         mediaUrl: mediaUrl,
         replyTo: effectiveReplyTo,
       );
-    } catch (_) {
-      // Fallback local message for mock / demo / offline state
-      newMsg = ChatMessageModel(
-        id: 'msg_local_${DateTime.now().millisecondsSinceEpoch}',
-        conversationId: conv.id,
-        senderId: 'current_user',
-        senderName: 'Me',
-        content: text.isEmpty
-            ? (type == 'image' ? '📷 Photo' : 'Shared attachment')
-            : text,
-        timestamp: DateTime.now(),
-        timeAgo: 'Just now',
-        isMine: true,
-        messageType: type,
-        mediaUrl: mediaUrl,
-        replyTo: effectiveReplyTo,
-        deliveryStatus: 'failed',
-      );
+
+      final currentRoom = activeRoomId.value ?? activeConversation.value?.id;
+      if (currentRoom == conv.id &&
+          !activeMessages.any((m) => m.id == newMsg.id)) {
+        activeMessages.add(newMsg);
+      }
+      conv.lastMessage = newMsg.content;
+      conv.lastMessageTime = 'Just now';
+      conv.unreadCount = 0;
+      _moveConversationToTop(conv);
+      conversations.refresh();
+      _scrollToBottom();
+    } catch (e) {
+      debugPrint('[CHAT-API] sendMessage failed for conv=${conv.id}: $e');
+      textController.text = text;
+      if (effectiveReplyTo != null) {
+        replyingToMessage.value = ChatMessageModel(
+          id: effectiveReplyTo.messageId,
+          conversationId: conv.id,
+          senderId: '',
+          senderName: effectiveReplyTo.senderName,
+          content: effectiveReplyTo.content,
+          timestamp: DateTime.now(),
+          timeAgo: '',
+          isMine: false,
+          messageType: effectiveReplyTo.messageType,
+          mediaUrl: effectiveReplyTo.mediaUrl,
+        );
+      }
+      if (Get.context != null &&
+          Get.isSnackbarOpen != true &&
+          Get.key.currentState != null) {
+        Get.snackbar(
+          'Failed to send',
+          'Unable to deliver your message. Please check your connection.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     } finally {
       isSendingMessage.value = false;
     }
-
-    final currentRoom = activeRoomId.value ?? activeConversation.value?.id;
-    if (currentRoom == conv.id &&
-        !activeMessages.any((m) => m.id == newMsg.id)) {
-      activeMessages.add(newMsg);
-    }
-    conv.lastMessage = newMsg.content;
-    conv.lastMessageTime = 'Just now';
-    conv.unreadCount = 0;
-    _moveConversationToTop(conv);
-    conversations.refresh();
-    _scrollToBottom();
   }
 
   Future<bool> deleteMessage(String messageId) async {
@@ -578,54 +562,98 @@ class ChatController extends GetxController with WidgetsBindingObserver {
   Future<bool> deleteConversation(String conversationId) async {
     try {
       await repository.deleteConversation(conversationId);
-    } catch (_) {}
-    conversations.removeWhere((c) => c.id == conversationId);
-    if (activeRoomId.value == conversationId ||
-        activeConversation.value?.id == conversationId) {
-      leaveConversation(roomId: conversationId);
+      conversations.removeWhere((c) => c.id == conversationId);
+      if (activeRoomId.value == conversationId ||
+          activeConversation.value?.id == conversationId) {
+        leaveConversation(roomId: conversationId);
+      }
+      conversations.refresh();
+      return true;
+    } catch (e) {
+      if (Get.context != null &&
+          Get.isSnackbarOpen != true &&
+          Get.key.currentState != null) {
+        Get.snackbar(
+          'Delete failed',
+          'Could not delete conversation.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      return false;
     }
-    conversations.refresh();
-    return true;
   }
 
   Future<bool> archiveConversation(String conversationId) async {
     try {
       await repository.archiveConversation(conversationId);
-    } catch (_) {}
-    final idx = conversations.indexWhere((c) => c.id == conversationId);
-    if (idx != -1) {
-      final updated = conversations[idx].copyWith(isArchived: true);
-      conversations[idx] = updated;
-      conversations.refresh();
+      final idx = conversations.indexWhere((c) => c.id == conversationId);
+      if (idx != -1) {
+        final updated = conversations[idx].copyWith(isArchived: true);
+        conversations[idx] = updated;
+        conversations.refresh();
+      }
+      return true;
+    } catch (e) {
+      if (Get.context != null &&
+          Get.isSnackbarOpen != true &&
+          Get.key.currentState != null) {
+        Get.snackbar(
+          'Archive failed',
+          'Could not archive conversation.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      return false;
     }
-    return true;
   }
 
   Future<bool> unarchiveConversation(String conversationId) async {
     try {
       await repository.unarchiveConversation(conversationId);
-    } catch (_) {}
-    final idx = conversations.indexWhere((c) => c.id == conversationId);
-    if (idx != -1) {
-      final updated = conversations[idx].copyWith(isArchived: false);
-      conversations[idx] = updated;
-      conversations.refresh();
+      final idx = conversations.indexWhere((c) => c.id == conversationId);
+      if (idx != -1) {
+        final updated = conversations[idx].copyWith(isArchived: false);
+        conversations[idx] = updated;
+        conversations.refresh();
+      }
+      return true;
+    } catch (e) {
+      if (Get.context != null &&
+          Get.isSnackbarOpen != true &&
+          Get.key.currentState != null) {
+        Get.snackbar(
+          'Unarchive failed',
+          'Could not unarchive conversation.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      return false;
     }
-    return true;
   }
 
   Future<bool> muteConversation(String conversationId) async {
     try {
       await repository.muteConversation(conversationId);
-    } catch (_) {}
-    final idx = conversations.indexWhere((c) => c.id == conversationId);
-    if (idx != -1) {
-      final current = conversations[idx];
-      final updated = current.copyWith(isMuted: !current.isMuted);
-      conversations[idx] = updated;
-      conversations.refresh();
+      final idx = conversations.indexWhere((c) => c.id == conversationId);
+      if (idx != -1) {
+        final current = conversations[idx];
+        final updated = current.copyWith(isMuted: !current.isMuted);
+        conversations[idx] = updated;
+        conversations.refresh();
+      }
+      return true;
+    } catch (e) {
+      if (Get.context != null &&
+          Get.isSnackbarOpen != true &&
+          Get.key.currentState != null) {
+        Get.snackbar(
+          'Mute failed',
+          'Could not update mute status.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      return false;
     }
-    return true;
   }
 
   Future<ChatMessageModel> sendStoryReply({
@@ -666,35 +694,13 @@ class ChatController extends GetxController with WidgetsBindingObserver {
       );
     }
 
-    // 2. Call Repository send message API, with resilient fallback for local mock/demo
-    ChatMessageModel newMsg;
-    try {
-      newMsg = await repository.sendMessage(
-        conv.id,
-        message,
-        messageType: 'story_reply',
-        mediaUrl: mediaUrl,
-      );
-    } catch (_) {
-      // Fallback local message for mock / demo / offline state
-      newMsg = ChatMessageModel(
-        id: 'msg_story_${DateTime.now().millisecondsSinceEpoch}',
-        conversationId: conv.id,
-        senderId: 'current_user',
-        senderName: 'Me',
-        content: message,
-        timestamp: DateTime.now(),
-        timeAgo: 'Just now',
-        isMine: true,
-        messageType: 'story_reply',
-        mediaUrl: mediaUrl,
-        storyReference: StoryReference(
-          storyId: storyId,
-          mediaUrl: mediaUrl,
-          isExpired: false,
-        ),
-      );
-    }
+    // 2. Call Repository send message API
+    final newMsg = await repository.sendMessage(
+      conv.id,
+      message,
+      messageType: 'story_reply',
+      mediaUrl: mediaUrl,
+    );
 
     // 3. Update conversation metadata and place at top of list
     conv.lastMessage = message;

@@ -28,6 +28,7 @@ import 'package:genlink_frontend/features/notification/data/datasources/notifica
 import 'package:genlink_frontend/app/routes/app_routes.dart';
 import 'package:genlink_frontend/features/chat/chat_navigation.dart';
 import 'package:genlink_frontend/features/chat/presentation/bindings/chat_binding.dart';
+import 'package:genlink_frontend/core/errors/app_error.dart';
 
 class MockDio extends Mock implements Dio {}
 
@@ -261,6 +262,51 @@ void main() {
 
       final result = await dataSource.deleteMessage('room-1', 'msg-1');
       expect(result, isTrue);
+    });
+
+    test('openPrivateChat propagates error on backend failure without fake fallback', () async {
+      when(() => mockDio.post<dynamic>(any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/private/user-fail'),
+          type: DioExceptionType.connectionError,
+        ),
+      );
+
+      expect(
+        () => dataSource.openPrivateChat('user-fail'),
+        throwsA(isA<AppError>()),
+      );
+    });
+
+    test('sendMessage propagates error on backend failure without creating fake local message', () async {
+      when(() => mockDio.post<dynamic>(
+        any(),
+        data: any(named: 'data'),
+      )).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-1/messages'),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      expect(
+        () => dataSource.sendMessage('room-1', 'Hello'),
+        throwsA(isA<AppError>()),
+      );
+    });
+
+    test('fetchMessages propagates error on backend failure without returning fake or cached messages', () async {
+      when(() => mockDio.get<dynamic>(any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-1/messages'),
+          type: DioExceptionType.connectionError,
+        ),
+      );
+
+      expect(
+        () => dataSource.fetchMessages('room-1'),
+        throwsA(isA<AppError>()),
+      );
     });
   });
 
@@ -544,6 +590,47 @@ void main() {
     });
 
     test('complete conversation persistence and deduplication flow', () async {
+      when(() => mockDio.post<dynamic>(
+        any(that: contains('/private/user_sokny')),
+        data: any(named: 'data'),
+      )).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/private/user_sokny'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'roomId': 'room_sokny',
+              'type': 'PRIVATE',
+              'members': [
+                {'userId': 'user_sokny', 'fullName': 'Sokny Enat', 'username': 'sokny'},
+              ],
+            },
+          },
+        ),
+      );
+
+      when(() => mockDio.post<dynamic>(
+        any(that: contains('/messages')),
+        data: any(named: 'data'),
+      )).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room_sokny/messages'),
+          statusCode: 200,
+          data: {
+            'success': true,
+            'data': {
+              'messageId': 'm-sokny-1',
+              'sender': {'userId': 'me', 'fullName': 'Me'},
+              'type': 'TEXT',
+              'content': 'Hello Sokny!',
+              'mine': true,
+              'createdAt': '2026-09-01T10:15:00Z',
+            },
+          },
+        ),
+      );
+
       // Step 1: Open private chat with Sokny Enat
       final opened = await controller.openPrivateChat(
         'user_sokny',
@@ -578,6 +665,88 @@ void main() {
       expect(controller.activeMessages.length, 1);
       expect(controller.activeMessages.first.content, 'Hello Sokny!');
     });
+
+    test('openPrivateChat returns null and does not create fake conversation on failure', () async {
+      when(() => mockDio.post<dynamic>(any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/private/user-fail'),
+          type: DioExceptionType.connectionError,
+        ),
+      );
+
+      final result = await controller.openPrivateChat('user-fail', name: 'Fake User');
+      expect(result, isNull);
+      expect(controller.conversations.any((c) => c.id.contains('user-fail')), isFalse);
+    });
+
+    test('sendMessage restores text and does not append fake message on failure', () async {
+      final conv = ChatConversationModel(
+        id: 'room-err-test',
+        name: 'Friend',
+        avatar: 'assets/images/user_profile.png',
+        lastMessage: 'Prior message',
+        lastMessageTime: '10m ago',
+        unreadCount: 0,
+      );
+      controller.conversations.add(conv);
+      controller.activeConversation.value = conv;
+      controller.activeRoomId.value = conv.id;
+      controller.textController.text = 'Unsent text';
+
+      when(() => mockDio.post<dynamic>(
+        any(),
+        data: any(named: 'data'),
+      )).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-err-test/messages'),
+          type: DioExceptionType.connectionError,
+        ),
+      );
+
+      await controller.sendMessage();
+
+      expect(controller.textController.text, 'Unsent text');
+      expect(controller.activeMessages, isEmpty);
+      expect(conv.lastMessage, 'Prior message');
+    });
+
+    test('deleteConversation, archiveConversation, muteConversation do not mutate state on failure', () async {
+      final conv = ChatConversationModel(
+        id: 'room-action-fail',
+        name: 'Friend',
+        avatar: 'assets/images/user_profile.png',
+        lastMessage: 'Hello',
+        lastMessageTime: '10m ago',
+        isArchived: false,
+        isMuted: false,
+      );
+      controller.conversations.add(conv);
+
+      when(() => mockDio.delete<dynamic>(any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-action-fail'),
+          type: DioExceptionType.connectionError,
+        ),
+      );
+      when(() => mockDio.post<dynamic>(any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats/room-action-fail/archive'),
+          type: DioExceptionType.connectionError,
+        ),
+      );
+
+      final deleteSuccess = await controller.deleteConversation('room-action-fail');
+      expect(deleteSuccess, isFalse);
+      expect(controller.conversations.any((c) => c.id == 'room-action-fail'), isTrue);
+
+      final archiveSuccess = await controller.archiveConversation('room-action-fail');
+      expect(archiveSuccess, isFalse);
+      expect(controller.conversations.firstWhere((c) => c.id == 'room-action-fail').isArchived, isFalse);
+
+      final muteSuccess = await controller.muteConversation('room-action-fail');
+      expect(muteSuccess, isFalse);
+      expect(controller.conversations.firstWhere((c) => c.id == 'room-action-fail').isMuted, isFalse);
+    });
   });
 
   group('Chat UI Widget Tests', () {
@@ -596,6 +765,36 @@ void main() {
           requestOptions: RequestOptions(path: '/api/v1/community/chats'),
           statusCode: 200,
           data: {'success': true, 'data': {'content': []}},
+        ),
+      );
+
+      when(() => mockDio.post<dynamic>(any(), data: any(named: 'data'))).thenAnswer(
+        (invocation) async {
+          final postData = invocation.namedArguments[#data] as Map<String, dynamic>?;
+          final content = postData?['content'] ?? 'mock message';
+          final type = postData?['type'] ?? 'TEXT';
+          return Response(
+            requestOptions: RequestOptions(path: '/api/v1/community/chats'),
+            statusCode: 200,
+            data: {
+              'success': true,
+              'data': {
+                'messageId': 'm-mock-post',
+                'type': type,
+                'content': content,
+                'mine': true,
+                'createdAt': '2026-09-01T10:00:00Z',
+              },
+            },
+          );
+        },
+      );
+
+      when(() => mockDio.delete<dynamic>(any())).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats'),
+          statusCode: 200,
+          data: {'success': true},
         ),
       );
 
@@ -2836,6 +3035,20 @@ void main() {
     testWidgets('Test 8: ChatController permanent singleton is preserved across route transitions and not recreated', (tester) async {
       Get.reset();
       final mockDioInstance = MockDio();
+      when(() => mockDioInstance.get<dynamic>(any())).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats'),
+          statusCode: 200,
+          data: {'success': true, 'data': {'content': []}},
+        ),
+      );
+      when(() => mockDioInstance.post<dynamic>(any(), data: any(named: 'data'))).thenAnswer(
+        (_) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/community/chats'),
+          statusCode: 200,
+          data: {'success': true},
+        ),
+      );
       Get.put<Dio>(mockDioInstance);
 
       // Register via ChatBinding which sets permanent: true

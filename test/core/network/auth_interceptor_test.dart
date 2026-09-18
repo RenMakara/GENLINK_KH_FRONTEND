@@ -97,6 +97,31 @@ void main() {
       );
       expect(expiredCalls, 0);
     });
+
+    test('does not expire the session for a push registration 401', () async {
+      final storage = _FakeSecureStorage(accessToken: 'real-access-token');
+      final auth = _FakeAuthRepository();
+      final adapter = _RecordingAdapter(statusCode: 401);
+      var expiredCalls = 0;
+      final dio = _dioWith(
+        storage: storage,
+        authRepository: auth,
+        adapter: adapter,
+        onSessionExpired: () => expiredCalls++,
+      );
+
+      final error = await _captureDioError(
+        () => dio.put<dynamic>(
+          '/api/v1/profile/settings/notifications/devices',
+          data: const {'platform': 'ANDROID', 'token': 'fcm-token'},
+        ),
+      );
+
+      expect(error.response?.statusCode, 401);
+      expect(adapter.calls, 1);
+      expect(expiredCalls, 0);
+      expect(storage.cleared, isFalse);
+    });
   });
 }
 

@@ -61,6 +61,7 @@ class AuthController extends GetxController {
 
   Timer? _cooldownTimer;
   bool _logoutInProgress = false;
+  bool _sessionPersistenceInProgress = false;
 
   // ── Lifecycle ─────────────────────────────────────────────────────────
 
@@ -309,7 +310,9 @@ class AuthController extends GetxController {
   /// Called by the network layer when a token refresh fails and the
   /// session is unrecoverable.
   Future<void> onSessionExpired() async {
-    if (_logoutInProgress) return;
+    // A late response from the previous session must not clear credentials
+    // while a new login is persisting its token pair.
+    if (_logoutInProgress || _sessionPersistenceInProgress) return;
     isAuthenticated.value = false;
     currentUser.value = null;
     await _clearSession();
@@ -377,48 +380,53 @@ class AuthController extends GetxController {
   }
 
   Future<void> _persistSession(AuthSession session) async {
-    final accessToken = session.accessToken.trim();
-    if (accessToken.isEmpty) {
-      throw const AppError(
-        message: 'Login response did not include an access token.',
-        errorCode: 'AUTH_TOKEN_MISSING',
-      );
-    }
+    _sessionPersistenceInProgress = true;
+    try {
+      final accessToken = session.accessToken.trim();
+      if (accessToken.isEmpty) {
+        throw const AppError(
+          message: 'Login response did not include an access token.',
+          errorCode: 'AUTH_TOKEN_MISSING',
+        );
+      }
 
-    await _storage.saveTokenPair(
-      accessToken: accessToken,
-      refreshToken: session.refreshToken.trim(),
-    );
-
-    // Read back the value so a successful HTTP response cannot be mistaken
-    // for an authenticated session when persistence silently fails.
-    final savedAccessToken = await _storage.readAccessToken();
-    final tokenSaved = savedAccessToken == accessToken;
-    if (kDebugMode) {
-      debugPrint(
-        '[AUTH]\n'
-        'Login successful: true\n'
-        'Access token received: true\n'
-        'Access token saved: $tokenSaved',
+      await _storage.saveTokenPair(
+        accessToken: accessToken,
+        refreshToken: session.refreshToken.trim(),
       );
-    }
-    if (!tokenSaved) {
-      throw const AppError(
-        message: 'Unable to save the login session.',
-        errorCode: 'AUTH_TOKEN_NOT_SAVED',
-      );
-    }
 
-    await _storage.saveUserEmail(session.user.email);
-    await _storage.saveUserId(session.user.id);
-    currentUser.value = session.user;
-    isAuthenticated.value = true;
-    pendingEmail.value = '';
-    // Adopt the account's language so system content comes back localized —
-    // as a sync, so device-following keeps working for users who never
-    // explicitly chose.
-    _localization.syncFromAccount(session.user.preferredLanguage);
-    unawaited(_registerMobilePushDevice());
+      // Read back the value so a successful HTTP response cannot be mistaken
+      // for an authenticated session when persistence silently fails.
+      final savedAccessToken = await _storage.readAccessToken();
+      final tokenSaved = savedAccessToken == accessToken;
+      if (kDebugMode) {
+        debugPrint(
+          '[AUTH]\n'
+          'Login successful: true\n'
+          'Access token received: true\n'
+          'Access token saved: $tokenSaved',
+        );
+      }
+      if (!tokenSaved) {
+        throw const AppError(
+          message: 'Unable to save the login session.',
+          errorCode: 'AUTH_TOKEN_NOT_SAVED',
+        );
+      }
+
+      await _storage.saveUserEmail(session.user.email);
+      await _storage.saveUserId(session.user.id);
+      currentUser.value = session.user;
+      isAuthenticated.value = true;
+      pendingEmail.value = '';
+      // Adopt the account's language so system content comes back localized —
+      // as a sync, so device-following keeps working for users who never
+      // explicitly chose.
+      _localization.syncFromAccount(session.user.preferredLanguage);
+      unawaited(_registerMobilePushDevice());
+    } finally {
+      _sessionPersistenceInProgress = false;
+    }
   }
 
   Future<void> _registerMobilePushDevice() async {
@@ -439,7 +447,10 @@ class AuthController extends GetxController {
     if (service == null) return;
 
     try {
-      await service.deactivateCurrentDevice(remote: true);
+      await service.deactivateCurrentDevice(
+        remote: true,
+        waitForRegistration: true,
+      );
     } catch (error, stackTrace) {
       // Device cleanup is supplemental. A network or plugin failure must not
       // prevent the user from reaching the login screen.
@@ -453,6 +464,9 @@ class AuthController extends GetxController {
       try {
         await pushService.deactivateCurrentDevice(
           remote: deactivateMobilePushDevice,
+          // Session-expiry callbacks can be triggered by the very request
+          // being registered. Waiting here would deadlock that request.
+          waitForRegistration: false,
         );
       } catch (error, stackTrace) {
         debugPrint('[FCM] Device cleanup failed: $error\n$stackTrace');

@@ -45,6 +45,7 @@ class AuthInterceptor extends Interceptor {
   /// the retry cannot start a refresh loop.
   static const _retriedFlag = 'genlink_auth_retried';
   static const _missingSessionFlag = 'genlink_auth_missing_session';
+  static const _sessionTokenFlag = 'genlink_auth_session_token';
 
   /// Shared in-flight refresh. Concurrent 401s await this instead of
   /// each firing their own refresh call.
@@ -75,11 +76,20 @@ class AuthInterceptor extends Interceptor {
     }
 
     if (!hasRealToken) {
-      if (token != null && token.isNotEmpty) {
+      final isPushRegistration = _isPushRegistrationEndpoint(options.path);
+      final callback = onSessionExpired;
+      // Let the session callback own cleanup when it exists. Clearing here
+      // independently can race with a login that is persisting a new token.
+      if (!isPushRegistration &&
+          callback == null &&
+          token != null &&
+          token.isNotEmpty) {
         await _storage.clearAll();
       }
       options.extra[_missingSessionFlag] = true;
-      onSessionExpired?.call();
+      if (!isPushRegistration && callback != null) {
+        await callback();
+      }
       handler.reject(
         DioException(
           requestOptions: options,
@@ -104,6 +114,9 @@ class AuthInterceptor extends Interceptor {
     }
 
     options.headers['Authorization'] = 'Bearer $token';
+    // Keep the token used by this request so a late 401 from an older
+    // session cannot expire the credentials that belong to a newer login.
+    options.extra[_sessionTokenFlag] = token;
     handler.next(options);
   }
 
@@ -111,11 +124,17 @@ class AuthInterceptor extends Interceptor {
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     final statusCode = err.response?.statusCode;
     final options = err.requestOptions;
+    final capturedToken = options.extra[_sessionTokenFlag] as String?;
+    final isStaleSessionRequest = statusCode == 401 &&
+        capturedToken != null &&
+        capturedToken != await _storage.readAccessToken();
 
     final shouldRefresh =
         statusCode == 401 &&
         !_isAuthEndpoint(options.path) &&
         !_isLogoutEndpoint(options.path) &&
+        !_isPushRegistrationEndpoint(options.path) &&
+        !isStaleSessionRequest &&
         options.extra[_retriedFlag] != true &&
         options.extra[_missingSessionFlag] != true;
 
@@ -217,6 +236,12 @@ class AuthInterceptor extends Interceptor {
   // 401 from it must never start a refresh cycle: logout is already best effort
   // and the local session cleanup is handled by AuthController.
   bool _isLogoutEndpoint(String path) => path.contains('/auth/logout');
+
+  // Device registration is supplemental. Its 401 must not invalidate a user
+  // session, especially when a request from the previous session completes
+  // during logout/login.
+  bool _isPushRegistrationEndpoint(String path) =>
+      path.contains('/profile/settings/notifications/devices');
 
   bool _isDemoToken(String token) =>
       token == 'demo_access_token' ||

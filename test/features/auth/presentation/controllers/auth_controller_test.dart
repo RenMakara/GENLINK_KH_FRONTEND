@@ -219,9 +219,19 @@ void main() {
     );
 
     when(() => google.signOut()).thenAnswer((_) async {});
-    when(() => push.deactivateCurrentDevice(remote: true))
+    when(
+      () => push.deactivateCurrentDevice(
+        remote: true,
+        waitForRegistration: true,
+      ),
+    )
         .thenAnswer((_) async {});
-    when(() => push.deactivateCurrentDevice(remote: false))
+    when(
+      () => push.deactivateCurrentDevice(
+        remote: false,
+        waitForRegistration: false,
+      ),
+    )
         .thenAnswer((_) async {});
     when(() => repository.logout()).thenAnswer((_) async {});
     when(() => storage.clearAll()).thenAnswer((_) async {});
@@ -229,9 +239,15 @@ void main() {
     await logoutController.logout();
 
     verifyInOrder([
-      () => push.deactivateCurrentDevice(remote: true),
+      () => push.deactivateCurrentDevice(
+        remote: true,
+        waitForRegistration: true,
+      ),
       () => repository.logout(),
-      () => push.deactivateCurrentDevice(remote: false),
+      () => push.deactivateCurrentDevice(
+        remote: false,
+        waitForRegistration: false,
+      ),
       () => storage.clearAll(),
     ]);
   });

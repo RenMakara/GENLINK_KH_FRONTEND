@@ -60,6 +60,7 @@ class AuthController extends GetxController {
   final resendCooldown = 0.obs;
 
   Timer? _cooldownTimer;
+  bool _logoutInProgress = false;
 
   // ── Lifecycle ─────────────────────────────────────────────────────────
 
@@ -263,22 +264,52 @@ class AuthController extends GetxController {
   // ── Logout ───────────────────────────────────────────────────────────
 
   Future<void> logout() async {
+    if (_logoutInProgress) return;
+    _logoutInProgress = true;
+
     try {
-      // Clear the cached Google account too, otherwise the next sign-in
-      // silently reuses it and the account picker never appears.
-      await _google.signOut();
-      await _authRepository.logout();
-    } catch (_) {
-      // Always clear local state, even if the server call fails —
-      // otherwise a network blip would trap the user in the session.
+      try {
+        // Clear the cached Google account too, otherwise the next sign-in
+        // silently reuses it and the account picker never appears.
+        await _google.signOut();
+      } catch (_) {
+        // A local provider failure must not prevent the session from ending.
+      }
+
+      // The backend invalidates the current access token as part of logout.
+      // Deactivate the push device while that token is still valid; doing it
+      // afterwards makes the device DELETE enter the refresh-token flow.
+      await _deactivateMobilePushDeviceBeforeLogout();
+
+      try {
+        await _authRepository.logout();
+      } catch (_) {
+        // Logout is best effort on the server. Local state must still clear.
+      }
+
+      try {
+        // Push cleanup already ran above, so do not issue another authenticated
+        // device request after the server has invalidated the token.
+        await _clearSession();
+      } catch (error, stackTrace) {
+        // Navigation must not be blocked by a controller cleanup callback.
+        debugPrint('[AUTH] Local session cleanup failed: $error\n$stackTrace');
+        try {
+          await _storage.clearAll();
+        } catch (_) {}
+        currentUser.value = null;
+        isAuthenticated.value = false;
+      }
+    } finally {
+      _logoutInProgress = false;
+      Get.offAllNamed<void>(AppRoutes.login);
     }
-    await _clearSession(deactivateMobilePushDevice: true);
-    Get.offAllNamed<void>(AppRoutes.login);
   }
 
   /// Called by the network layer when a token refresh fails and the
   /// session is unrecoverable.
   Future<void> onSessionExpired() async {
+    if (_logoutInProgress) return;
     isAuthenticated.value = false;
     currentUser.value = null;
     await _clearSession();
@@ -400,6 +431,19 @@ class AuthController extends GetxController {
       // Push registration is supplemental. A Firebase or network failure must
       // never turn a successful authentication into a failed login.
       debugPrint('[FCM] Device registration failed: $error\n$stackTrace');
+    }
+  }
+
+  Future<void> _deactivateMobilePushDeviceBeforeLogout() async {
+    final service = mobilePushRegistrationService;
+    if (service == null) return;
+
+    try {
+      await service.deactivateCurrentDevice(remote: true);
+    } catch (error, stackTrace) {
+      // Device cleanup is supplemental. A network or plugin failure must not
+      // prevent the user from reaching the login screen.
+      debugPrint('[FCM] Device cleanup failed: $error\n$stackTrace');
     }
   }
 

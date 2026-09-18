@@ -32,6 +32,7 @@ import '../../features/notification/notification_feature.dart';
 import '../../features/quiz/presentation/bindings/quiz_binding.dart';
 import '../../features/quiz/presentation/screens/quiz_dashboard_screen.dart';
 import '../../features/quiz/presentation/screens/category_selection_screen.dart';
+import '../../features/quiz/presentation/screens/multiplayer_quiz_screen.dart';
 import '../../features/quiz/presentation/screens/quiz_in_progress_screen.dart';
 import '../../features/quiz/presentation/screens/review_submit_screen.dart';
 import '../../features/quiz/presentation/screens/result_screen.dart';
@@ -144,6 +145,12 @@ abstract final class AppPages {
     GetPage<dynamic>(
       name: AppRoutes.quizCategories,
       page: () => const CategorySelectionScreen(),
+      binding: QuizBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage<dynamic>(
+      name: AppRoutes.quizMultiplayer,
+      page: () => const MultiplayerQuizScreen(),
       binding: QuizBinding(),
       middlewares: [AuthMiddleware()],
     ),

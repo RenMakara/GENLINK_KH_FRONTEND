@@ -61,6 +61,8 @@ class QuizDashboardScreen extends GetView<QuizController> {
             _buildStatsRow(context),
             const SizedBox(height: AppSpacing.lg),
             _buildStartCard(context),
+            const SizedBox(height: AppSpacing.md),
+            _buildMultiplayerCard(context),
             const SizedBox(height: AppSpacing.lg),
             _buildLearningProgress(context),
             const SizedBox(height: AppSpacing.lg),
@@ -332,6 +334,50 @@ class QuizDashboardScreen extends GetView<QuizController> {
         ),
       );
     });
+  }
+
+  Widget _buildMultiplayerCard(BuildContext context) {
+    return QuizCustomCard(
+      padding: const EdgeInsets.all(16),
+      onTap: () => Get.toNamed(AppRoutes.quizMultiplayer),
+      child: Row(
+        children: [
+          QuizIconContainer(
+            icon: Icons.people_alt_outlined,
+            accentColor: QuizThemeColors.gold,
+            size: 46,
+            iconSize: 24,
+            borderRadius: AppRadius.lg,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'quiz.multiplayerQuiz'.tr,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: QuizThemeColors.heading,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'quiz.playAgainstOpponent'.tr,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: QuizThemeColors.body,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 14,
+            color: QuizThemeColors.muted,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildCategoriesPreview() {

@@ -10,6 +10,7 @@ class ChatListItem extends StatefulWidget {
   final VoidCallback? onLongPress;
   final VoidCallback? onMute;
   final VoidCallback? onArchive;
+  final VoidCallback? onUnarchive;
   final VoidCallback? onDelete;
 
   const ChatListItem({
@@ -19,6 +20,7 @@ class ChatListItem extends StatefulWidget {
     this.onLongPress,
     this.onMute,
     this.onArchive,
+    this.onUnarchive,
     this.onDelete,
   });
 
@@ -193,12 +195,18 @@ class _ChatListItemState extends State<ChatListItem>
                     },
                   ),
                   _buildActionButton(
-                    icon: Icons.archive_rounded,
-                    label: archiveLabel,
+                    icon: conversation.isArchived
+                        ? Icons.unarchive_rounded
+                        : Icons.archive_rounded,
+                    label: conversation.isArchived ? 'Unarchive' : archiveLabel,
                     color: AppColors.brandPrimary,
                     onTap: () {
                       _animateTo(0.0);
-                      widget.onArchive?.call();
+                      if (conversation.isArchived) {
+                        widget.onUnarchive?.call();
+                      } else {
+                        widget.onArchive?.call();
+                      }
                     },
                   ),
                   _buildActionButton(

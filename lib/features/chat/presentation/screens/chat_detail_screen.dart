@@ -385,6 +385,24 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         : 'Notifications muted.',
                     icon: Icons.notifications_off_rounded,
                   );
+                } else if (val == 'archive') {
+                  if (conv.isArchived) {
+                    chatController.unarchiveConversation(conv.id);
+                    AppNotificationBanner.showSuccess(
+                      context: context,
+                      title: 'Unarchived',
+                      message: 'Conversation unarchived.',
+                      icon: Icons.unarchive_rounded,
+                    );
+                  } else {
+                    chatController.archiveConversation(conv.id);
+                    AppNotificationBanner.showSuccess(
+                      context: context,
+                      title: 'Archived',
+                      message: 'Conversation archived.',
+                      icon: Icons.archive_rounded,
+                    );
+                  }
                 } else if (val == 'clear') {
                   AppNotificationBanner.showInfo(
                     context: context,
@@ -424,6 +442,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         'chat.muteChat'.tr.isNotEmpty && 'chat.muteChat'.tr != 'chat.muteChat'
                             ? 'chat.muteChat'.tr
                             : 'Mute',
+                        style: TextStyle(color: textPrimary, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'archive',
+                  child: Row(
+                    children: [
+                      Icon(
+                        conv.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
+                        size: 18,
+                        color: AppColors.chatPrimary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        conv.isArchived ? 'Unarchive Chat' : 'Archive Chat',
                         style: TextStyle(color: textPrimary, fontSize: 13),
                       ),
                     ],

@@ -55,6 +55,7 @@ class ChatRemoteDataSource {
         '${ApiEndpoints.chats}/groups',
         data: {
           'name': name,
+          'memberIds': memberUserIds,
           'memberUserIds': memberUserIds,
         },
       ),
@@ -165,6 +166,32 @@ class ChatRemoteDataSource {
     );
     final data = _dataOf(response.data);
     return (data['unreadCount'] as num?)?.toInt() ?? 0;
+  }
+
+  Future<List<Map<String, dynamic>>> searchUsers(String query) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          '/api/v1/search/people',
+          queryParameters: {'q': query.trim(), 'size': 20},
+        ),
+      );
+      final content = _contentOf(response.data);
+      return content.map((e) {
+        final map = (e as Map).cast<String, dynamic>();
+        return {
+          'id': map['userId']?.toString() ?? '',
+          'name': (map['fullName'] as String?)?.isNotEmpty == true
+              ? map['fullName']
+              : (map['username'] ?? 'User'),
+          'handle': '@${map['username'] ?? ''}',
+          'avatar': map['avatarUrl'] ?? 'assets/images/user_profile.png',
+          'isOnline': false,
+        };
+      }).toList();
+    } catch (_) {
+      return const [];
+    }
   }
 
   List<dynamic> _contentOf(dynamic body) {

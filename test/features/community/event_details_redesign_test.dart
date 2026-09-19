@@ -55,7 +55,8 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      final event = EventModel(
+      // 1a. Unregistered user: Meeting action hidden, message shown
+      final unregisteredEvent = EventModel(
         id: 'online-1',
         title: 'Virtual Tech Conference 2026',
         subtitle: 'Global livestream on mobile innovation',
@@ -67,12 +68,22 @@ void main() {
         dateString: '10 Oct 2026',
         timeString: '2:00 PM – 4:00 PM',
         description: 'Explore the future of tech with live demos and keynotes.',
+        isRsvped: false,
       );
 
-      await tester.pumpWidget(createWidget(event: event));
+      await tester.pumpWidget(createWidget(event: unregisteredEvent));
       await tester.pumpAndSettle();
 
       expect(find.text('ONLINE EVENT'), findsOneWidget);
+      expect(find.text('Join Online Event'), findsNothing);
+      expect(find.text('Meeting link available after registration'), findsOneWidget);
+      expect(find.text('https://meet.google.com/xyz-abcd-efg'), findsNothing);
+
+      // 1b. Registered user: Join Online Event action rendered, no raw URL
+      final registeredEvent = unregisteredEvent.copyWith(isRsvped: true);
+      await tester.pumpWidget(createWidget(event: registeredEvent));
+      await tester.pumpAndSettle();
+
       expect(find.text('Join Online Event'), findsOneWidget);
       expect(find.text('https://meet.google.com/xyz-abcd-efg'), findsNothing);
     });

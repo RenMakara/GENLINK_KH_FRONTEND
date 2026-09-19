@@ -168,10 +168,30 @@ abstract class CommunityRepository {
   Future<EventModel> createEvent(EventCreateRequest request) =>
       throw UnimplementedError();
 
+  Future<EventModel> updateEvent(String eventId, EventCreateRequest request) =>
+      throw UnimplementedError();
+
+  Future<bool> deleteEvent(String eventId) async => true;
+
+  Future<List<EventAttendeeModel>> getEventAttendees(
+    String eventId, {
+    int page = 1,
+    int limit = 50,
+  }) async => const [];
+
+  Future<bool> toggleEventBookmark(
+    String eventId, {
+    required bool isCurrentlyBookmarked,
+  }) async => true;
+
+  Future<Set<String>> getSavedEventIds() async => const {};
+
   Future<List<EventModel>> getEvents({
     int page = 1,
     int limit = 20,
     String? category,
     String? status,
   }) async => const [];
+
+  Future<EventModel> getEventDetails(String eventId);
 }

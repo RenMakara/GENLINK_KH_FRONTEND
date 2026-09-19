@@ -237,8 +237,14 @@ abstract final class ApiEndpoints {
 
   static const communityEvents = '$_base/community/events';
 
+  static String communityEventDetail(String eventId) =>
+      '$_base/community/events/$eventId';
+
   static String communityEventRsvp(String eventId) =>
       '$_base/community/events/$eventId/rsvp';
+
+  static String communityEventAttendees(String eventId) =>
+      '$_base/community/events/$eventId/attendees';
 
   // ── Stories ────────────────────────────────────────────────────────────
   static const stories = '$_base/community/stories';

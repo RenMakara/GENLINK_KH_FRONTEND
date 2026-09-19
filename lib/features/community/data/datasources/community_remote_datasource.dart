@@ -1327,4 +1327,152 @@ class CommunityRemoteDataSource {
     }
     return const <EventModel>[];
   }
+
+  Future<EventModel> getEventDetails(String eventId) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(ApiEndpoints.communityEventDetail(eventId)),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      if (rawData is Map<String, dynamic>) {
+        return EventModel.fromJson(rawData);
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to load event details.',
+      errorCode: 'EVENT_DETAIL_FAILED',
+    );
+  }
+
+  Future<bool> deleteEvent(String eventId) async {
+    final response = await guardDio(
+      () => dio.delete<dynamic>(ApiEndpoints.communityEventDetail(eventId)),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    }
+    throw const AppError(
+      message: 'Failed to delete event.',
+      errorCode: 'EVENT_DELETE_FAILED',
+    );
+  }
+
+  Future<EventModel> updateEvent(
+    String eventId,
+    EventCreateRequest request,
+  ) async {
+    final response = await guardDio(
+      () => dio.put<dynamic>(
+        ApiEndpoints.communityEventDetail(eventId),
+        data: request.toJson(),
+      ),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      if (rawData is Map<String, dynamic>) {
+        return EventModel.fromJson(rawData);
+      }
+    }
+    throw const AppError(
+      message: 'Failed to update event.',
+      errorCode: 'EVENT_UPDATE_FAILED',
+    );
+  }
+
+  Future<List<EventAttendeeModel>> getEventAttendees(
+    String eventId, {
+    int page = 1,
+    int limit = 50,
+  }) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityEventAttendees(eventId),
+        queryParameters: {'page': page - 1, 'size': limit},
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      final content = rawData is Map<String, dynamic>
+          ? (rawData['content'] as List<dynamic>?) ?? const []
+          : rawData is List
+              ? rawData
+              : const [];
+      return content
+          .whereType<Map<String, dynamic>>()
+          .map(EventAttendeeModel.fromJson)
+          .toList();
+    }
+    return const <EventAttendeeModel>[];
+  }
+
+  Future<bool> toggleEventBookmark(
+    String eventId, {
+    required bool isCurrentlyBookmarked,
+  }) async {
+    final response = await guardDio(
+      () => isCurrentlyBookmarked
+          ? dio.delete<dynamic>(
+              ApiEndpoints.profileSavedItem('EVENT', eventId),
+            )
+          : dio.post<dynamic>(
+              ApiEndpoints.profileSaved,
+              data: {
+                'itemType': 'EVENT',
+                'itemId': eventId,
+              },
+            ),
+    );
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 204) {
+      return true;
+    }
+    throw const AppError(
+      message: 'Failed to update bookmark',
+      errorCode: 'BOOKMARK_UPDATE_FAILED',
+    );
+  }
+
+  Future<Set<String>> getSavedEventIds() async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.profileSaved,
+          queryParameters: {'type': 'EVENT'},
+        ),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final rawData = body is Map<String, dynamic>
+            ? (body['data'] ?? body)
+            : body;
+        final list = rawData is List
+            ? rawData
+            : (rawData is Map<String, dynamic> && rawData['content'] is List
+                ? rawData['content'] as List
+                : const []);
+        final set = <String>{};
+        for (final item in list) {
+          if (item is Map<String, dynamic>) {
+            final id = item['itemId']?.toString() ?? item['id']?.toString();
+            if (id != null && id.isNotEmpty) {
+              set.add(id);
+            }
+          }
+        }
+        return set;
+      }
+    } catch (_) {}
+    return const <String>{};
+  }
 }

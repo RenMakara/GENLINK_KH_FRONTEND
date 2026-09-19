@@ -41,14 +41,30 @@ void main() {
     await tester.tap(inkWellFinder);
     await tester.pumpAndSettle();
 
-    final okDialogButton = find.text('OK');
-    expect(okDialogButton, findsWidgets);
-    await tester.tap(okDialogButton.first);
+    final confirmDate = find.byKey(const ValueKey('confirm_date_button'));
+    if (confirmDate.evaluate().isNotEmpty) {
+      await tester.tap(confirmDate);
+    } else {
+      final confirmText = find.text('Confirm');
+      if (confirmText.evaluate().isNotEmpty) {
+        await tester.tap(confirmText.first);
+      } else {
+        await tester.tap(find.text('OK').first);
+      }
+    }
     await tester.pumpAndSettle();
 
-    final okSheetButton = find.text('OK');
-    expect(okSheetButton, findsWidgets);
-    await tester.tap(okSheetButton.first);
+    final confirmTime = find.byKey(const ValueKey('confirm_time_button'));
+    if (confirmTime.evaluate().isNotEmpty) {
+      await tester.tap(confirmTime);
+    } else {
+      final confirmText = find.text('Confirm');
+      if (confirmText.evaluate().isNotEmpty) {
+        await tester.tap(confirmText.first);
+      } else {
+        await tester.tap(find.text('OK').first);
+      }
+    }
     await tester.pumpAndSettle();
   }
 

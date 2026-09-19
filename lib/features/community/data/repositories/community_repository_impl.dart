@@ -379,4 +379,48 @@ class CommunityRepositoryImpl implements CommunityRepository {
       status: status,
     );
   }
+
+  @override
+  Future<EventModel> getEventDetails(String eventId) {
+    return remoteDataSource.getEventDetails(eventId);
+  }
+
+  @override
+  Future<EventModel> updateEvent(String eventId, EventCreateRequest request) {
+    return remoteDataSource.updateEvent(eventId, request);
+  }
+
+  @override
+  Future<bool> deleteEvent(String eventId) {
+    return remoteDataSource.deleteEvent(eventId);
+  }
+
+  @override
+  Future<List<EventAttendeeModel>> getEventAttendees(
+    String eventId, {
+    int page = 1,
+    int limit = 50,
+  }) {
+    return remoteDataSource.getEventAttendees(
+      eventId,
+      page: page,
+      limit: limit,
+    );
+  }
+
+  @override
+  Future<bool> toggleEventBookmark(
+    String eventId, {
+    required bool isCurrentlyBookmarked,
+  }) {
+    return remoteDataSource.toggleEventBookmark(
+      eventId,
+      isCurrentlyBookmarked: isCurrentlyBookmarked,
+    );
+  }
+
+  @override
+  Future<Set<String>> getSavedEventIds() {
+    return remoteDataSource.getSavedEventIds();
+  }
 }

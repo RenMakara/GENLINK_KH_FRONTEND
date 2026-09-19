@@ -1216,9 +1216,7 @@ class _CommunityScreenState extends State<CommunityScreen>
         ),
         padding: EdgeInsets.only(bottom: bottomPadding),
         child: Obx(() {
-          if ((controller.isLoadingEvents.value ||
-                  controller.isLoadingFeed.value) &&
-              controller.events.isEmpty) {
+          if (controller.isLoadingEvents.value && controller.events.isEmpty) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1254,8 +1252,7 @@ class _CommunityScreenState extends State<CommunityScreen>
             );
           }
 
-          if ((controller.hasEventsError.value || controller.hasError.value) &&
-              controller.events.isEmpty) {
+          if (controller.hasEventsError.value && controller.events.isEmpty) {
             return _buildEventErrorState(
               context,
               controller,

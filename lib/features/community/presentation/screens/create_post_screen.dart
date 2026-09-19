@@ -87,6 +87,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
 
   @override
   void dispose() {
+    GlobalCreateSheet.closeComposerPopup();
     _textController.dispose();
     _editorFocusNode.dispose();
     _previewVideoController?.dispose(); // Step 3B: no controller leak
@@ -96,23 +97,58 @@ class CreatePostScreenState extends State<CreatePostScreen> {
   final ImagePicker _picker = ImagePicker();
   late final MediaPicker _mediaPicker = widget.mediaPicker ?? MediaPicker(picker: _picker);
 
-  Future<void> _pickGalleryImages() async {
-    // If a video is attached, ask user before replacing it with images
-    if (_attachedVideo != null) {
-      final replace = await _showMediaConflictDialog(videoReplacingImages: false);
-      if (!replace) return;
-      await _clearVideo();
-    }
+  @visibleForTesting
+  MediaPicker get mediaPicker => _mediaPicker;
+
+  static bool _isVideoPath(String path) {
+    final lower = path.toLowerCase();
+    return lower.endsWith('.mp4') ||
+        lower.endsWith('.mov') ||
+        lower.endsWith('.webm') ||
+        lower.endsWith('.avi') ||
+        lower.endsWith('.mkv') ||
+        lower.endsWith('.3gp') ||
+        lower.endsWith('.m4v');
+  }
+
+  /// Unified gallery picker: allows the user to select images OR video.
+  Future<void> _pickGalleryMedia() async {
     try {
-      final List<XFile> selected = await _picker.pickMultiImage();
-      if (selected.isNotEmpty) {
+      List<XFile> selected = [];
+      try {
+        selected = await _picker.pickMultipleMedia();
+      } catch (e) {
+        debugPrint('[CreatePostScreen] pickMultipleMedia fallback to pickMultiImage: $e');
+        selected = await _picker.pickMultiImage();
+      }
+      if (selected.isEmpty) return;
+
+      final videoFiles = selected
+          .where((f) =>
+              _isVideoPath(f.path) ||
+              (f.mimeType != null && f.mimeType!.toLowerCase().startsWith('video/')))
+          .toList();
+      final imageFiles = selected.where((f) => !videoFiles.contains(f)).toList();
+
+      if (videoFiles.isNotEmpty) {
+        // User selected a video (or video + images). Video post is priority.
+        if (_attachedImages.isNotEmpty) {
+          final replace = await _showMediaConflictDialog(videoReplacingImages: true);
+          if (!replace) return;
+        }
+        await _setVideoFile(videoFiles.first.path);
+      } else if (imageFiles.isNotEmpty) {
+        // User selected photos
+        if (_attachedVideo != null) {
+          final replace = await _showMediaConflictDialog(videoReplacingImages: false);
+          if (!replace) return;
+          await _clearVideo();
+        }
         setState(() {
-          _attachedImages.addAll(selected.map((e) => e.path));
+          _attachedImages.addAll(imageFiles.map((e) => e.path));
         });
       }
     } on PlatformException catch (e) {
-      // Permission denied or picker unavailable
-
       debugPrint('[CreatePostScreen] Gallery pick PlatformException: ${e.code} — ${e.message}');
       if (!mounted) return;
       final bool isPermissionError =
@@ -136,14 +172,13 @@ class CreatePostScreenState extends State<CreatePostScreen> {
             ? ('community.photoPermissionDeniedMsg'.tr.isNotEmpty &&
                 'community.photoPermissionDeniedMsg'.tr != 'community.photoPermissionDeniedMsg'
                     ? 'community.photoPermissionDeniedMsg'.tr
-                    : 'Please allow photo access in your device settings to attach images.')
+                    : 'Please allow media access in your device settings.')
             : ('community.galleryUnavailableMsg'.tr.isNotEmpty &&
                 'community.galleryUnavailableMsg'.tr != 'community.galleryUnavailableMsg'
                     ? 'community.galleryUnavailableMsg'.tr
-                    : 'Could not open photo gallery. Please try again.'),
+                    : 'Could not open media gallery. Please try again.'),
       );
     } catch (e) {
-      // Unexpected error — log but do not crash; picker cancellation is not an error
       debugPrint('[CreatePostScreen] Gallery pick unexpected error: $e');
     }
   }
@@ -178,51 +213,6 @@ class CreatePostScreenState extends State<CreatePostScreen> {
           message: errorMessage,
         );
       }
-    }
-  }
-
-  // ─── Video picking using existing MediaPicker ────────────────────────────
-
-  /// Picks a video from the gallery using [MediaPicker.pickVideo].
-  /// If images are already attached, asks the user to confirm replacement.
-  Future<void> _pickGalleryVideo() async {
-    // Conflict: images exist — ask user
-    if (_attachedImages.isNotEmpty) {
-      final replace = await _showMediaConflictDialog(videoReplacingImages: true);
-      if (!replace) return;
-    }
-
-    try {
-      final PickedMedia? picked = await _mediaPicker.pickVideo(
-        source: ImageSource.gallery,
-        maxDuration: const Duration(minutes: 5),
-      );
-      if (picked == null) return; // user cancelled — not an error
-
-      if (picked.path != null && picked.path!.isNotEmpty) {
-        await _setVideoFile(picked.path!);
-      }
-    } on PlatformException catch (e) {
-      debugPrint('[CreatePostScreen] Video pick PlatformException: ${e.code} — ${e.message}');
-      if (!mounted) return;
-      final bool isPermission =
-          e.code == 'photo_access_denied' ||
-          e.code == 'access_denied' ||
-          e.code == 'permission_denied' ||
-          (e.message ?? '').toLowerCase().contains('permission') ||
-          (e.message ?? '').toLowerCase().contains('denied');
-      AppNotificationBanner.showDanger(
-        context: context,
-        title: 'community.videoPermissionDenied'.tr != 'community.videoPermissionDenied'
-            ? 'community.videoPermissionDenied'.tr
-            : isPermission ? 'Video Access Denied' : 'Video Unavailable',
-        message: 'community.videoPermissionDeniedMsg'.tr != 'community.videoPermissionDeniedMsg'
-            ? 'community.videoPermissionDeniedMsg'.tr
-            : 'Please allow video access in your device settings.',
-      );
-    } catch (e) {
-      // Cancellation / unexpected — do not crash or show error for simple cancel
-      debugPrint('[CreatePostScreen] Video pick: $e');
     }
   }
 
@@ -370,14 +360,20 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                 'community.keepEditing'.tr != 'community.keepEditing'
                     ? 'community.keepEditing'.tr
                     : 'Cancel',
-                style: const TextStyle(color: Colors.white60),
+                style: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black54,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
               child: Text(
                 'community.done'.tr != 'community.done' ? 'community.done'.tr : 'Replace',
-                style: const TextStyle(color: Colors.redAccent),
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black87,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -388,134 +384,6 @@ class CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-
-  void _showMediaPickerSheet() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark ? const Color(0xFF16181C) : Colors.white;
-    final textPrimary = isDark ? Colors.white : Colors.black87;
-    final textSecondary = isDark ? const Color(0xFF8E9297) : const Color(0xFF65676B);
-    final borderColor = isDark ? const Color(0xFF2B313A) : const Color(0xFFE2E4E8);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Material(
-        color: surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-          decoration: BoxDecoration(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: borderColor, width: 0.8),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white24 : Colors.black12,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Text(
-                'community.photoVideo'.tr.isNotEmpty && 'community.photoVideo'.tr != 'community.photoVideo'
-                    ? 'community.photoVideo'.tr
-                    : 'Add Photos or Video',
-                style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 14),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF22262E) : const Color(0xFFF0F2F5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(Icons.photo_library_outlined, color: textPrimary, size: 20),
-                ),
-                title: Text(
-                  'Choose from Gallery',
-                  style: TextStyle(color: textPrimary, fontWeight: FontWeight.w600, fontSize: 14.5),
-                ),
-                subtitle: Text(
-                  'Select multiple photos from your library',
-                  style: TextStyle(color: textSecondary, fontSize: 12),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickGalleryImages();
-                },
-              ),
-              const SizedBox(height: 6),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF22262E) : const Color(0xFFF0F2F5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(Icons.camera_alt_outlined, color: textPrimary, size: 20),
-                ),
-                title: Text(
-                  'Take Photo',
-                  style: TextStyle(color: textPrimary, fontWeight: FontWeight.w600, fontSize: 14.5),
-                ),
-                subtitle: Text(
-                  'Capture a new photo with your camera',
-                  style: TextStyle(color: textSecondary, fontSize: 12),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickCameraImage();
-                },
-              ),
-              const SizedBox(height: 6),
-              // ─── Step 3B-Frontend: Video picker option ─────────────────
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF22262E) : const Color(0xFFF0F2F5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(Icons.videocam_outlined, color: textPrimary, size: 20),
-                ),
-                title: Text(
-                  'community.selectVideo'.tr != 'community.selectVideo'
-                      ? 'community.selectVideo'.tr
-                      : 'Select Video',
-                  style: TextStyle(color: textPrimary, fontWeight: FontWeight.w600, fontSize: 14.5),
-                ),
-                subtitle: Text(
-                  'community.videoFromGallery'.tr != 'community.videoFromGallery'
-                      ? 'community.videoFromGallery'.tr
-                      : 'Choose a video from your gallery',
-                  style: TextStyle(color: textSecondary, fontSize: 12),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickGalleryVideo();
-                },
-              ),
-              // ──────────────────────────────────────────────────────────
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   void _removeImageAt(int index) {
     if (index >= 0 && index < _attachedImages.length) {
@@ -1274,12 +1142,18 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                           ),
                           TextButton(
                             onPressed: validateAndSave,
+                            style: TextButton.styleFrom(
+                              foregroundColor: textPrimary,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
                             child: Text(
                               'common.done'.tr.isNotEmpty && 'common.done'.tr != 'common.done'
                                   ? 'common.done'.tr
                                   : 'Done',
-                              style: const TextStyle(
-                                color: Color(0xFF1E88E5),
+                              style: TextStyle(
+                                color: textPrimary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
@@ -1349,6 +1223,13 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(color: borderColor, width: 0.8),
                           ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: isDark ? Colors.white70 : Colors.black87,
+                              width: 1.0,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 18),
@@ -1392,12 +1273,19 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide(color: borderColor, width: 0.8),
                                     ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: isDark ? Colors.white70 : Colors.black87,
+                                        width: 1.0,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                               if (optionControllers.length > 2)
                                 IconButton(
-                                  icon: Icon(Icons.close_rounded, color: textSecondary, size: 20),
+                                  icon: Icon(Icons.remove_circle_outline_rounded, color: textSecondary, size: 20),
                                   tooltip: 'Remove Option',
                                   onPressed: () {
                                     setSheetState(() {
@@ -1427,9 +1315,9 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.add_circle_outline_rounded,
-                                    color: Color(0xFF1E88E5),
+                                    color: textPrimary,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
@@ -1438,8 +1326,8 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                             'community.pollAddOption'.tr != 'community.pollAddOption'
                                         ? 'community.pollAddOption'.tr
                                         : 'Add Option',
-                                    style: const TextStyle(
-                                      color: Color(0xFF1E88E5),
+                                    style: TextStyle(
+                                      color: textPrimary,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
                                     ),
@@ -1492,6 +1380,10 @@ class CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   void _onBackPress() {
+    if (GlobalCreateSheet.isComposerPopupOpen) {
+      GlobalCreateSheet.closeComposerPopup();
+      return;
+    }
     if (_canPost) {
       showDialog(
         context: context,
@@ -1668,7 +1560,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     final charCount = _textController.text.length;
 
     return PopScope(
-      canPop: !_canPost || _isSubmitting,
+      canPop: (!_canPost || _isSubmitting) && !GlobalCreateSheet.isComposerPopupOpen,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
           _onBackPress();
@@ -1816,419 +1708,507 @@ class CreatePostScreenState extends State<CreatePostScreen> {
           child: Column(
             children: [
               Expanded(
-                child: SingleChildScrollView(
-                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextField(
-                        controller: _textController,
-                        focusNode: _editorFocusNode,
-                        autofocus: !_isEditing,
-                        minLines: 6,
-                        maxLines: null,
-                        maxLength: _maxCharacters,
-                        buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 18,
-                          height: 1.45,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'community.whatsOnYourMind'.tr.isNotEmpty &&
-                                  'community.whatsOnYourMind'.tr != 'community.whatsOnYourMind'
-                              ? 'community.whatsOnYourMind'.tr
-                              : "What's on your mind?",
-                          hintStyle: TextStyle(
-                            color: isDark ? const Color(0xFF6B7280) : const Color(0xFF9CA3AF),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    if (!_editorFocusNode.hasFocus) {
+                      _editorFocusNode.requestFocus();
+                    }
+                  },
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextField(
+                          controller: _textController,
+                          focusNode: _editorFocusNode,
+                          autofocus: !_isEditing,
+                          minLines: 1,
+                          maxLines: null,
+                          maxLength: _maxCharacters,
+                          buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
+                          style: TextStyle(
+                            color: textPrimary,
                             fontSize: 18,
                             height: 1.45,
                             fontWeight: FontWeight.w400,
                           ),
-                          filled: false,
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
-
-                      if (charCount > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8, bottom: 8),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              "$charCount / $_maxCharacters",
-                              style: TextStyle(
-                                color: textSecondary.withValues(alpha: 0.7),
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w500,
-                              ),
+                          decoration: InputDecoration(
+                            hintText: 'community.whatsOnYourMind'.tr.isNotEmpty &&
+                                    'community.whatsOnYourMind'.tr != 'community.whatsOnYourMind'
+                                ? 'community.whatsOnYourMind'.tr
+                                : "What's on your mind?",
+                            hintStyle: TextStyle(
+                              color: isDark ? const Color(0xFF6B7280) : const Color(0xFF9CA3AF),
+                              fontSize: 18,
+                              height: 1.45,
+                              fontWeight: FontWeight.w400,
                             ),
+                            filled: false,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
                           ),
                         ),
 
-                      const SizedBox(height: 12),
-
-                      // ─── Step 3B-Frontend: Video preview ────────────────────
-                      if (_attachedVideo != null) _buildVideoPreview(isDark, cardBg, cardBorder, textSecondary),
-                      if (_attachedVideo != null) const SizedBox(height: 12),
-                      // ────────────────────────────────────────────────────────
-
-                      if (_attachedImages.isNotEmpty ||
-
-                          _pollQuestion != null ||
-                          _attachedEvent != null ||
-                          _attachedLink != null ||
-                          _selectedLocation != null ||
-                          _selectedFeeling != null ||
-                          _taggedPeople.isNotEmpty)
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: [
-                            ..._attachedImages.asMap().entries.map((entry) {
-                              final idx = entry.key;
-                              final imgPath = entry.value;
-                              return ClipRRect(
-                                borderRadius: BorderRadius.circular(14),
-                                child: Container(
-                                  width: 100,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    color: cardBg,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: cardBorder, width: 0.8),
-                                  ),
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      imgPath.startsWith('http')
-                                          ? Image.network(
-                                              imgPath,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) =>
-                                                  Icon(Icons.broken_image_outlined, color: textSecondary),
-                                            )
-                                          : imgPath.startsWith('assets/')
-                                              ? Image.asset(imgPath, fit: BoxFit.cover)
-                                              : Image.file(File(imgPath), fit: BoxFit.cover),
-                                      Container(
-                                        decoration: const BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topRight,
-                                            end: Alignment.bottomLeft,
-                                            colors: [Color(0x99000000), Colors.transparent],
-                                            stops: [0.0, 0.5],
-                                          ),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        top: 5,
-                                        right: 5,
-                                        child: GestureDetector(
-                                          onTap: () => _removeImageAt(idx),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: const BoxDecoration(
-                                              color: Color(0xCC000000),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Icon(Icons.close, color: Colors.white, size: 12),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }),
-
-                            if (_selectedLocation != null)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: cardBg,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: cardBorder, width: 0.8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.location_on_outlined, color: textPrimary, size: 16),
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        _selectedLocation!,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(color: textPrimary, fontSize: 12.5, fontWeight: FontWeight.w500),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    GestureDetector(
-                                      onTap: () => setState(() => _selectedLocation = null),
-                                      child: Icon(Icons.close, color: textSecondary, size: 15),
-                                    ),
-                                  ],
+                        if (charCount > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4, bottom: 4),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                "$charCount / $_maxCharacters",
+                                style: TextStyle(
+                                  color: textSecondary.withValues(alpha: 0.7),
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
+                            ),
+                          ),
 
-                            if (_selectedFeeling != null)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: cardBg,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: cardBorder, width: 0.8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.sentiment_satisfied_alt_outlined, color: textPrimary, size: 16),
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        _selectedFeeling!,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(color: textPrimary, fontSize: 12.5, fontWeight: FontWeight.w500),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    GestureDetector(
-                                      onTap: () => setState(() => _selectedFeeling = null),
-                                      child: Icon(Icons.close, color: textSecondary, size: 15),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                        // ─── Poll Preview (Compact & naturally placed directly under text) ───
+                        if (_pollQuestion != null) ...[
+                          const SizedBox(height: 8),
+                          _buildPollPreviewCard(isDark, cardBg, cardBorder, textPrimary, textSecondary),
+                        ],
 
-                            if (_attachedEvent != null)
-                              _buildAttachedEventCard(isDark, cardBg, cardBorder),
+                        // ─── Video preview ──────────────────────────────────────
+                        if (_attachedVideo != null) ...[
+                          const SizedBox(height: 8),
+                          _buildVideoPreview(isDark, cardBg, cardBorder, textSecondary),
+                        ],
 
-                            if (_pollQuestion != null)
-                              Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: _showPollCreatorSheet,
+                        // ─── Multiple Image Preview: Horizontal Scrollable Strip ───
+                        if (_attachedImages.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 104,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: _attachedImages.length,
+                              separatorBuilder: (_, _) => const SizedBox(width: 8),
+                              itemBuilder: (context, idx) {
+                                final imgPath = _attachedImages[idx];
+                                return ClipRRect(
                                   borderRadius: BorderRadius.circular(14),
                                   child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(12),
+                                    width: 104,
+                                    height: 104,
                                     decoration: BoxDecoration(
                                       color: cardBg,
                                       borderRadius: BorderRadius.circular(14),
                                       border: Border.all(color: cardBorder, width: 0.8),
                                     ),
-                                    child: Row(
+                                    child: Stack(
+                                      fit: StackFit.expand,
                                       children: [
-                                        Icon(Icons.poll_rounded, color: textPrimary, size: 22),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                _pollQuestion!,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(color: textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600),
+                                        imgPath.startsWith('http')
+                                            ? Image.network(
+                                                imgPath,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) =>
+                                                    Icon(Icons.broken_image_outlined, color: textSecondary),
+                                              )
+                                            : imgPath.startsWith('assets/')
+                                                ? Image.asset(imgPath, fit: BoxFit.cover)
+                                                : Image.file(File(imgPath), fit: BoxFit.cover),
+                                        Positioned(
+                                          top: 5,
+                                          right: 5,
+                                          child: GestureDetector(
+                                            onTap: () => _removeImageAt(idx),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: const BoxDecoration(
+                                                color: Color(0xCC000000),
+                                                shape: BoxShape.circle,
                                               ),
-                                              Text(
-                                                '${_pollOptionsList.length} options · $_pollDuration',
-                                                style: TextStyle(color: textSecondary, fontSize: 11.5),
-                                              ),
-                                            ],
+                                              child: const Icon(Icons.close, color: Colors.white, size: 12),
+                                            ),
                                           ),
-                                        ),
-                                        GestureDetector(
-                                          onTap: () => setState(() {
-                                            _pollQuestion = null;
-                                            _pollOptionsList = [];
-                                          }),
-                                          child: Icon(Icons.close, color: textSecondary, size: 18),
                                         ),
                                       ],
                                     ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
 
-                            if (_attachedLink != null)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: cardBg,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: cardBorder, width: 0.8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.link_rounded, color: textPrimary, size: 16),
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        _linkDomain ?? _attachedLink!,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(color: textPrimary, fontSize: 12.5, fontWeight: FontWeight.w500),
-                                      ),
+                        // ─── Other Attachment Chips ─────────────────────────────
+                        if (_attachedEvent != null ||
+                            _attachedLink != null ||
+                            _selectedLocation != null ||
+                            _selectedFeeling != null ||
+                            _taggedPeople.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                if (_selectedLocation != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: cardBg,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: cardBorder, width: 0.8),
                                     ),
-                                    const SizedBox(width: 8),
-                                    GestureDetector(
-                                      onTap: () => setState(() {
-                                        _attachedLink = null;
-                                        _linkTitle = null;
-                                        _linkDomain = null;
-                                      }),
-                                      child: Icon(Icons.close, color: textSecondary, size: 15),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.location_on_outlined, color: textPrimary, size: 16),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            _selectedLocation!,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(color: textPrimary, fontSize: 12.5, fontWeight: FontWeight.w500),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        GestureDetector(
+                                          onTap: () => setState(() => _selectedLocation = null),
+                                          child: Icon(Icons.close, color: textSecondary, size: 15),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                              ),
-                          ],
-                        ),
-                    ],
+                                  ),
+
+                                if (_selectedFeeling != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: cardBg,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: cardBorder, width: 0.8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.sentiment_satisfied_alt_outlined, color: textPrimary, size: 16),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            _selectedFeeling!,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(color: textPrimary, fontSize: 12.5, fontWeight: FontWeight.w500),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        GestureDetector(
+                                          onTap: () => setState(() => _selectedFeeling = null),
+                                          child: Icon(Icons.close, color: textSecondary, size: 15),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                if (_attachedEvent != null)
+                                  _buildAttachedEventCard(isDark, cardBg, cardBorder),
+
+                                if (_attachedLink != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: cardBg,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: cardBorder, width: 0.8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.link_rounded, color: textPrimary, size: 16),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            _linkDomain ?? _attachedLink!,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(color: textPrimary, fontSize: 12.5, fontWeight: FontWeight.w500),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        GestureDetector(
+                                          onTap: () => setState(() {
+                                            _attachedLink = null;
+                                            _linkTitle = null;
+                                            _linkDomain = null;
+                                          }),
+                                          child: Icon(Icons.close, color: textSecondary, size: 15),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
 
+              // ─── Bottom Attachment Toolbar ────────────────────────────────
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 decoration: BoxDecoration(
                   color: bottomBarBg,
                   border: Border(top: BorderSide(color: cardBorder, width: 0.8)),
                 ),
-                child: Row(
-                  children: [
-                    _ToolbarBtn(
-                      icon: Icons.image_outlined,
-                      tooltip: 'Media / Image',
-                      color: textPrimary.withValues(alpha: 0.85),
-                      onPressed: _showMediaPickerSheet,
-                    ),
-                    _ToolbarBtn(
-                      icon: Icons.gif_box_outlined,
-                      tooltip: 'GIF',
-                      color: textPrimary.withValues(alpha: 0.85),
-                      onPressed: _showGifPickerSheet,
-                    ),
-                    _ToolbarBtn(
-                      icon: Icons.poll_outlined,
-                      tooltip: 'Poll',
-                      color: textPrimary.withValues(alpha: 0.85),
-                      onPressed: _showPollCreatorSheet,
-                    ),
-                    _ToolbarBtn(
-                      icon: Icons.sentiment_satisfied_alt_outlined,
-                      tooltip: 'Feeling / Activity',
-                      color: textPrimary.withValues(alpha: 0.85),
-                      onPressed: _showFeelingActivitySheet,
-                    ),
-                    _ToolbarBtn(
-                      icon: Icons.event_outlined,
-                      tooltip: 'Event',
-                      color: textPrimary.withValues(alpha: 0.85),
-                      onPressed: () async {
-                        final event = await Get.to<EventModel>(
-                          () => const CreateEventScreen(returnCreatedEvent: true),
-                        );
-                        if (event != null) {
-                          setState(() {
-                            _attachedEvent = event;
-                          });
-                        }
-                      },
-                    ),
-                    _ToolbarBtn(
-                      icon: Icons.location_on_outlined,
-                      tooltip: 'Location',
-                      color: textPrimary.withValues(alpha: 0.85),
-                      onPressed: _showLocationPickerSheet,
-                    ),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: [
+                      // 1. Camera
+                      _ToolbarBtn(
+                        icon: Icons.camera_alt_outlined,
+                        tooltip: 'community.camera'.tr.isNotEmpty && 'community.camera'.tr != 'community.camera'
+                            ? 'community.camera'.tr
+                            : 'Camera',
+                        color: textPrimary.withValues(alpha: 0.85),
+                        onPressed: _pickCameraImage,
+                      ),
+                      // 2. Gallery (Images or Video)
+                      _ToolbarBtn(
+                        icon: Icons.photo_library_outlined,
+                        tooltip: 'community.gallery'.tr.isNotEmpty && 'community.gallery'.tr != 'community.gallery'
+                            ? 'community.gallery'.tr
+                            : 'Gallery',
+                        color: textPrimary.withValues(alpha: 0.85),
+                        onPressed: _pickGalleryMedia,
+                      ),
+                      // 3. GIF
+                      _ToolbarBtn(
+                        icon: Icons.gif_box_outlined,
+                        tooltip: 'GIF',
+                        color: textPrimary.withValues(alpha: 0.85),
+                        onPressed: _showGifPickerSheet,
+                      ),
+                      // 4. Poll
+                      _ToolbarBtn(
+                        icon: Icons.poll_outlined,
+                        tooltip: 'community.poll'.tr.isNotEmpty && 'community.poll'.tr != 'community.poll'
+                            ? 'community.poll'.tr
+                            : 'Poll',
+                        color: textPrimary.withValues(alpha: 0.85),
+                        onPressed: _showPollCreatorSheet,
+                      ),
+                      // 5. Emoji / Feeling
+                      _ToolbarBtn(
+                        icon: Icons.sentiment_satisfied_alt_outlined,
+                        tooltip: 'Feeling / Activity',
+                        color: textPrimary.withValues(alpha: 0.85),
+                        onPressed: _showFeelingActivitySheet,
+                      ),
+                      // 6. Event
+                      _ToolbarBtn(
+                        icon: Icons.event_outlined,
+                        tooltip: 'Event',
+                        color: textPrimary.withValues(alpha: 0.85),
+                        onPressed: () async {
+                          final event = await Get.to<EventModel>(
+                            () => const CreateEventScreen(returnCreatedEvent: true),
+                          );
+                          if (event != null) {
+                            setState(() {
+                              _attachedEvent = event;
+                            });
+                          }
+                        },
+                      ),
+                      // 7. Location
+                      _ToolbarBtn(
+                        icon: Icons.location_on_outlined,
+                        tooltip: 'Location',
+                        color: textPrimary.withValues(alpha: 0.85),
+                        onPressed: _showLocationPickerSheet,
+                      ),
 
-                    const Spacer(),
+                      const SizedBox(width: 4),
 
-                    Tooltip(
-                      message: 'create.title'.tr.isNotEmpty && 'create.title'.tr != 'create.title'
-                          ? 'create.title'.tr
-                          : 'Create',
-                      child: Builder(
-                        builder: (btnContext) => Material(
-                          color: _isInnerPopupOpen
-                              ? (isDark ? const Color(0xFF282D37) : const Color(0xFFE2E6EE))
-                              : (isDark ? const Color(0xFF1C2028) : const Color(0xFFF0F2F5)),
-                          borderRadius: BorderRadius.circular(10),
-                          child: InkWell(
-                            onTap: () async {
-                              HapticFeedback.lightImpact();
-                              final renderBox = btnContext.findRenderObject() as RenderBox?;
-                              final anchorRect = renderBox != null
-                                  ? (renderBox.localToGlobal(Offset.zero) & renderBox.size)
-                                  : null;
-                              setState(() {
-                                _isInnerPopupOpen = true;
-                              });
-                              try {
-                                await GlobalCreateSheet.show(
-                                  context,
-                                  fromPostComposer: true,
-                                  anchorRect: anchorRect,
-                                  onSelectMedia: _showMediaPickerSheet,
-                                  onSelectPoll: _showPollCreatorSheet,
-                                  onSelectCelebration: () {
-                                    setState(() {
-                                      _selectedFeeling = '🥳 Celebrating';
-                                    });
-                                  },
-                                  onSelectDocument: _showDocumentAttachmentNotice,
-                                  onSelectEvent: () async {
-                                    final event = await Get.to<EventModel>(
-                                      () => const CreateEventScreen(returnCreatedEvent: true),
-                                    );
-                                    if (event != null) {
-                                      setState(() {
-                                        _attachedEvent = event;
-                                      });
-                                    }
-                                  },
-                                );
-                              } finally {
-                                if (mounted) {
-                                  setState(() {
-                                    _isInnerPopupOpen = false;
-                                  });
-                                }
-                              }
-                            },
+                      // 8. Inner "+" Button
+                      Tooltip(
+                        message: 'create.title'.tr.isNotEmpty && 'create.title'.tr != 'create.title'
+                            ? 'create.title'.tr
+                            : 'Create',
+                        child: Builder(
+                          builder: (btnContext) => Material(
+                            color: _isInnerPopupOpen
+                                ? (isDark ? const Color(0xFF282D37) : const Color(0xFFE2E6EE))
+                                : (isDark ? const Color(0xFF1C2028) : const Color(0xFFF0F2F5)),
                             borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              width: 38,
-                              height: 34,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: _isInnerPopupOpen
-                                      ? (isDark ? const Color(0xFF485160) : const Color(0xFFB8C0CC))
-                                      : (isDark ? const Color(0xFF2E3440) : const Color(0xFFD6DAE2)),
-                                  width: 0.8,
+                            child: InkWell(
+                              canRequestFocus: false,
+                              onTap: () async {
+                                HapticFeedback.lightImpact();
+                                if (GlobalCreateSheet.isComposerPopupOpen) {
+                                  GlobalCreateSheet.closeComposerPopup();
+                                  if (mounted) {
+                                    setState(() {
+                                      _isInnerPopupOpen = false;
+                                    });
+                                  }
+                                  return;
+                                }
+                                final renderBox = btnContext.findRenderObject() as RenderBox?;
+                                final anchorRect = renderBox != null
+                                    ? (renderBox.localToGlobal(Offset.zero) & renderBox.size)
+                                    : null;
+                                setState(() {
+                                  _isInnerPopupOpen = true;
+                                });
+                                try {
+                                  await GlobalCreateSheet.show(
+                                    context,
+                                    fromPostComposer: true,
+                                    anchorRect: anchorRect,
+                                    focusNode: _editorFocusNode,
+                                    onSelectMedia: _pickGalleryMedia,
+                                    onSelectPoll: _showPollCreatorSheet,
+                                    onSelectCelebration: () {
+                                      setState(() {
+                                        _selectedFeeling = '🥳 Celebrating';
+                                      });
+                                    },
+                                    onSelectDocument: _showDocumentAttachmentNotice,
+                                    onSelectEvent: () async {
+                                      final event = await Get.to<EventModel>(
+                                        () => const CreateEventScreen(returnCreatedEvent: true),
+                                      );
+                                      if (event != null) {
+                                        setState(() {
+                                          _attachedEvent = event;
+                                        });
+                                      }
+                                    },
+                                  );
+                                } finally {
+                                  if (mounted) {
+                                    setState(() {
+                                      _isInnerPopupOpen = false;
+                                    });
+                                  }
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(10),
+                              child: Container(
+                                width: 38,
+                                height: 34,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: _isInnerPopupOpen
+                                        ? (isDark ? const Color(0xFF485160) : const Color(0xFFB8C0CC))
+                                        : (isDark ? const Color(0xFF2E3440) : const Color(0xFFD6DAE2)),
+                                    width: 0.8,
+                                  ),
                                 ),
+                                child: Icon(Icons.add_rounded, color: textPrimary, size: 22),
                               ),
-                              child: Icon(Icons.add_rounded, color: textPrimary, size: 22),
                             ),
                           ),
                         ),
                       ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPollPreviewCard(
+    bool isDark,
+    Color cardBg,
+    Color cardBorder,
+    Color textPrimary,
+    Color textSecondary,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _showPollCreatorSheet,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: cardBorder, width: 0.8),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF22262E) : const Color(0xFFF0F2F5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.poll_rounded,
+                    color: textPrimary,
+                    size: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _pollQuestion!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${_pollOptionsList.length} options · $_pollDuration',
+                      style: TextStyle(
+                        color: textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: Icon(Icons.close_rounded, color: textSecondary, size: 18),
+                tooltip: 'Remove Poll',
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                padding: EdgeInsets.zero,
+                onPressed: () => setState(() {
+                  _pollQuestion = null;
+                  _pollOptionsList = [];
+                }),
               ),
             ],
           ),

@@ -329,19 +329,65 @@ class CommunityRemoteDataSource {
     return true;
   }
 
-  Future<bool> toggleLike(String postId) async {
-    try {
-      await guardDio(
-        () => dio.post<dynamic>(ApiEndpoints.communityPostLike(postId)),
-      );
-    } catch (_) {}
-    final idx = _mockPosts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      final p = _mockPosts[idx];
-      p.isLiked = !p.isLiked;
-      p.likesCount += p.isLiked ? 1 : -1;
+  Future<bool> toggleLike(String postId, {bool isCurrentlyLiked = false}) async {
+    final response = await guardDio(
+      () => isCurrentlyLiked
+          ? dio.delete<dynamic>(ApiEndpoints.communityPostLike(postId))
+          : dio.post<dynamic>(ApiEndpoints.communityPostLike(postId)),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      final idx = _mockPosts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        final p = _mockPosts[idx];
+        p.isLiked = !isCurrentlyLiked;
+        p.likesCount =
+            (p.likesCount + (!isCurrentlyLiked ? 1 : -1)).clamp(0, 9999999);
+      }
+      return true;
     }
-    return true;
+    throw AppError(
+      message: 'Failed to update post like',
+      errorCode: 'POST_LIKE_FAILED',
+    );
+  }
+
+  Future<List<PostLikerModel>> fetchPostLikers(
+    String postId, {
+    int page = 0,
+    int size = 20,
+  }) async {
+    if (postId.trim().isEmpty) {
+      return [];
+    }
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityPostLikes(postId),
+        queryParameters: {
+          'page': page,
+          'size': size,
+        },
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      dynamic rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      List<dynamic> content = [];
+      if (rawData is Map<String, dynamic>) {
+        content = (rawData['content'] as List<dynamic>?) ?? [];
+      } else if (rawData is List) {
+        content = rawData;
+      }
+      return content
+          .whereType<Map<String, dynamic>>()
+          .map(PostLikerModel.fromJson)
+          .toList();
+    }
+    throw AppError(
+      message: 'Failed to fetch post likes',
+      errorCode: 'FETCH_POST_LIKES_FAILED',
+    );
   }
 
   Future<bool> toggleBookmark(String postId) async {
@@ -363,50 +409,99 @@ class CommunityRemoteDataSource {
     String? reposterId,
   }) async {
     try {
-      await guardDio(
+      final response = await guardDio(
         () => dio.post<dynamic>(
           ApiEndpoints.communityPostRepost(postId),
-          data: {'caption': caption},
+          data: (caption != null && caption.trim().isNotEmpty)
+              ? {'caption': caption.trim()}
+              : <String, dynamic>{},
         ),
       );
-    } catch (_) {}
-    final idx = _mockPosts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      final currentUserName =
-          CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
-          ? CurrentUser.name
-          : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'User');
-      final effectiveReposterId =
-          reposterId ??
-          (CurrentUser.id.isNotEmpty ? CurrentUser.id : 'current_user');
-      final p = _mockPosts[idx];
-      _mockPosts[idx] = p.copyWith(
-        sharesCount: p.sharesCount + 1,
-        isRepostedByMe: true,
-        repostedBy: currentUserName,
-        repostCaption: caption,
-        reposterId: effectiveReposterId,
-        originalPostId: p.id,
-      );
+      final ok = response.statusCode == 200 || response.statusCode == 201;
+      if (ok) {
+        _updateMockPostRepost(
+          postId,
+          isReposted: true,
+          caption: caption,
+          reposterId: reposterId,
+        );
+      }
+      return ok;
+    } catch (e) {
+      final idx = _mockPosts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        _updateMockPostRepost(
+          postId,
+          isReposted: true,
+          caption: caption,
+          reposterId: reposterId,
+        );
+        return true;
+      }
+      rethrow;
     }
-    return true;
   }
 
   Future<bool> unrepostPost(String postId, {String? reposterId}) async {
     try {
-      await guardDio(
+      final response = await guardDio(
         () => dio.delete<dynamic>(ApiEndpoints.communityPostRepost(postId)),
       );
-    } catch (_) {}
+      final ok = response.statusCode == 200 || response.statusCode == 204;
+      if (ok) {
+        _updateMockPostRepost(
+          postId,
+          isReposted: false,
+          reposterId: reposterId,
+        );
+      }
+      return ok;
+    } catch (e) {
+      final idx = _mockPosts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        _updateMockPostRepost(
+          postId,
+          isReposted: false,
+          reposterId: reposterId,
+        );
+        return true;
+      }
+      rethrow;
+    }
+  }
+
+  void _updateMockPostRepost(
+    String postId, {
+    required bool isReposted,
+    String? caption,
+    String? reposterId,
+  }) {
     final idx = _mockPosts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
       final p = _mockPosts[idx];
-      _mockPosts[idx] = p.copyWith(
-        sharesCount: p.sharesCount > 0 ? p.sharesCount - 1 : 0,
-        clearRepostInfo: true,
-      );
+      if (isReposted) {
+        final currentUserName =
+            CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
+                ? CurrentUser.name
+                : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'User');
+        final effectiveReposterId =
+            reposterId ??
+            (CurrentUser.id.isNotEmpty ? CurrentUser.id : 'current_user');
+        _mockPosts[idx] = p.copyWith(
+          sharesCount: p.sharesCount + 1,
+          isRepostedByMe: true,
+          repostedBy: currentUserName,
+          repostCaption: caption,
+          reposterId: effectiveReposterId,
+          originalPostId: p.id,
+        );
+      } else {
+        _mockPosts[idx] = p.copyWith(
+          sharesCount: p.sharesCount > 0 ? p.sharesCount - 1 : 0,
+          clearRepostInfo: true,
+        );
+      }
     }
-    return true;
   }
 
   Future<bool> reportPost(

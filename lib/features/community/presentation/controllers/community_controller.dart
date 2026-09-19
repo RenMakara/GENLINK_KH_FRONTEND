@@ -583,6 +583,43 @@ class CommunityController extends GetxController {
   final discussionLikers = <String, List<ForumLikerModel>>{}.obs;
   final isLoadingDiscussionLikers = <String, bool>{}.obs;
 
+  final postLikers = <String, List<PostLikerModel>>{}.obs;
+  final isLoadingPostLikers = <String, bool>{}.obs;
+
+  Future<List<PostLikerModel>> fetchPostLikers(
+    String postId, {
+    int page = 0,
+    int size = 20,
+  }) async {
+    if (postId.trim().isEmpty) {
+      return [];
+    }
+    isLoadingPostLikers[postId] = true;
+    try {
+      final likers = await repository.getPostLikers(
+        postId,
+        page: page,
+        size: size,
+      );
+
+      final currentList = page == 0
+          ? <PostLikerModel>[]
+          : (postLikers[postId] ?? <PostLikerModel>[]);
+      final mergedLikers = List<PostLikerModel>.from(currentList);
+      for (final liker in likers) {
+        if (!mergedLikers.any((l) => l.id == liker.id)) {
+          mergedLikers.add(liker);
+        }
+      }
+
+      postLikers[postId] = mergedLikers;
+      postLikers.refresh();
+      return mergedLikers;
+    } finally {
+      isLoadingPostLikers[postId] = false;
+    }
+  }
+
   Future<List<ForumLikerModel>> fetchDiscussionLikers(
     String discussionId, {
     int page = 0,
@@ -1403,20 +1440,39 @@ class CommunityController extends GetxController {
       final previousState = p.isLiked;
       final previousCount = p.likesCount;
 
-      p.isLiked = !p.isLiked;
-      p.likesCount += p.isLiked ? 1 : -1;
-      posts[idx] = p.copyWith();
+      final nextState = !previousState;
+      final nextCount = (previousCount + (nextState ? 1 : -1)).clamp(0, 9999999);
+      p.isLiked = nextState;
+      p.likesCount = nextCount;
+      posts[idx] = p.copyWith(
+        isLiked: nextState,
+        likesCount: nextCount,
+      );
+      posts.refresh();
+      postLikers.remove(postId);
 
-      repository.toggleLike(postId).catchError((_) {
+      final future = previousState
+          ? repository.unlikePost(postId)
+          : repository.toggleLike(postId);
+
+      future.catchError((_) {
         final currentIdx = posts.indexWhere((item) => item.id == postId);
         if (currentIdx != -1) {
           final item = posts[currentIdx];
           item.isLiked = previousState;
           item.likesCount = previousCount;
-          posts[currentIdx] = item.copyWith();
+          posts[currentIdx] = item.copyWith(
+            isLiked: previousState,
+            likesCount: previousCount,
+          );
+          posts.refresh();
+          postLikers.remove(postId);
         }
         return false;
       });
+    } else {
+      postLikers.remove(postId);
+      repository.toggleLike(postId).catchError((_) => false);
     }
   }
 
@@ -1605,7 +1661,25 @@ class CommunityController extends GetxController {
 
       repository
           .repostPost(postId, caption: caption, reposterId: currentUserId)
-          .catchError((_) => false);
+          .then<void>((success) {
+            if (!success) {
+              final revertIdx = posts.indexWhere((p) => p.id == postId);
+              if (revertIdx != -1) {
+                posts[revertIdx] = original;
+              }
+            }
+          })
+          .catchError((_) {
+            final revertIdx = posts.indexWhere((p) => p.id == postId);
+            if (revertIdx != -1) {
+              posts[revertIdx] = original;
+            }
+          });
+    } else {
+      repository
+          .repostPost(postId, caption: caption, reposterId: currentUserId)
+          .then<void>((_) {})
+          .catchError((_) {});
     }
   }
 
@@ -1623,7 +1697,25 @@ class CommunityController extends GetxController {
 
       repository
           .unrepostPost(postId, reposterId: currentUserId)
-          .catchError((_) => false);
+          .then<void>((success) {
+            if (!success) {
+              final revertIdx = posts.indexWhere((p) => p.id == postId);
+              if (revertIdx != -1) {
+                posts[revertIdx] = original;
+              }
+            }
+          })
+          .catchError((_) {
+            final revertIdx = posts.indexWhere((p) => p.id == postId);
+            if (revertIdx != -1) {
+              posts[revertIdx] = original;
+            }
+          });
+    } else {
+      repository
+          .unrepostPost(postId, reposterId: currentUserId)
+          .then<void>((_) {})
+          .catchError((_) {});
     }
   }
 

@@ -238,6 +238,156 @@ void main() {
       );
     });
   });
+
+  group('CommunityRemoteDataSource.repostPost and unrepostPost', () {
+    test('repostPost sends correct endpoint and payload and returns true on 200', () async {
+      Map<String, dynamic>? capturedPayload;
+      String? capturedPath;
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = _CapturingMockAdapter(
+          statusCode: 200,
+          responseBody: {
+            'success': true,
+            'message': 'Post reposted',
+            'data': {
+              'postId': 'post-uuid-99',
+              'repostCount': 1,
+              'repostedByMe': true,
+            },
+          },
+          onFetch: (options) {
+            capturedPath = options.path;
+            if (options.data is Map<String, dynamic>) {
+              capturedPayload = options.data as Map<String, dynamic>;
+            }
+          },
+        );
+
+      final dataSource = CommunityRemoteDataSource(dio: dio);
+      final result = await dataSource.repostPost(
+        'post-uuid-99',
+        caption: 'Great insight on Flutter',
+      );
+
+      expect(result, isTrue);
+      expect(capturedPath, '/api/v1/community/posts/post-uuid-99/repost');
+      expect(capturedPayload!['caption'], 'Great insight on Flutter');
+    });
+
+    test('repostPost throws AppError when backend returns 400', () async {
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = _ErrorAdapter(
+          DioException(
+            requestOptions: RequestOptions(path: '/api/v1/community/posts/post-uuid-my-post/repost'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/api/v1/community/posts/post-uuid-my-post/repost'),
+              statusCode: 400,
+              data: {
+                'success': false,
+                'message': 'Cannot repost your own post',
+                'errorCode': 'CANNOT_REPOST_OWN_POST',
+              },
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+      final dataSource = CommunityRemoteDataSource(dio: dio);
+
+      expect(
+        () => dataSource.repostPost('post-uuid-my-post'),
+        throwsA(isA<AppError>().having((e) => e.statusCode, 'statusCode', 400)),
+      );
+    });
+
+    test('unrepostPost sends DELETE request to repost endpoint and returns true', () async {
+      String? capturedPath;
+      String? capturedMethod;
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = _CapturingMockAdapter(
+          statusCode: 200,
+          responseBody: {
+            'success': true,
+            'message': 'Post unreposted',
+            'data': {
+              'postId': 'post-uuid-99',
+              'repostCount': 0,
+              'repostedByMe': false,
+            },
+          },
+          onFetch: (options) {
+            capturedPath = options.path;
+            capturedMethod = options.method;
+          },
+        );
+
+      final dataSource = CommunityRemoteDataSource(dio: dio);
+      final result = await dataSource.unrepostPost('post-uuid-99');
+
+      expect(result, isTrue);
+      expect(capturedMethod, 'DELETE');
+      expect(capturedPath, '/api/v1/community/posts/post-uuid-99/repost');
+    });
+
+    test('fetchPosts parses repostCount and repostedByMe from real backend response', () async {
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = _MockAdapter(
+          statusCode: 200,
+          responseBody: {
+            'success': true,
+            'message': 'Feed retrieved',
+            'data': {
+              'content': [
+                {
+                  'postId': 'post-uuid-reposted',
+                  'author': {
+                    'userId': 'author-uuid-1',
+                    'fullName': 'Author Name',
+                    'username': 'authorname',
+                    'avatarUrl': 'https://example.com/avatar.png',
+                  },
+                  'contentText': 'Original post content',
+                  'imageUrl': null,
+                  'postType': 'TEXT',
+                  'visibility': 'PUBLIC',
+                  'likeCount': 5,
+                  'commentCount': 2,
+                  'repostCount': 3,
+                  'likedByMe': false,
+                  'savedByMe': false,
+                  'repostedByMe': true,
+                  'repostedBy': 'You',
+                  'repostCaption': 'Must read!',
+                  'reposterId': 'viewer-uuid',
+                  'originalPostId': 'post-uuid-reposted',
+                  'hashtags': [],
+                  'createdAt': '2026-09-09T08:00:00Z',
+                },
+              ],
+              'page': 0,
+              'size': 10,
+              'totalElements': 1,
+              'totalPages': 1,
+              'hasNext': false,
+            },
+          },
+        );
+
+      final dataSource = CommunityRemoteDataSource(dio: dio);
+      final posts = await dataSource.fetchPosts(page: 1, limit: 10);
+
+      expect(posts.length, 1);
+      final post = posts.first;
+      expect(post.id, 'post-uuid-reposted');
+      expect(post.sharesCount, 3);
+      expect(post.repostsCount, 3);
+      expect(post.isRepostedByMe, isTrue);
+      expect(post.repostedBy, 'You');
+      expect(post.repostCaption, 'Must read!');
+      expect(post.originalPostId, 'post-uuid-reposted');
+      expect(post.reposterId, 'viewer-uuid');
+    });
+  });
 }
 
 class _MockAdapter implements HttpClientAdapter {

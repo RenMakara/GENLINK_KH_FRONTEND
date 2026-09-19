@@ -180,6 +180,9 @@ abstract final class ApiEndpoints {
   static String communityPostLike(String postId) =>
       '$_base/community/posts/$postId/like';
 
+  static String communityPostLikes(String postId) =>
+      '$_base/community/posts/$postId/likes';
+
   static String communityPostBookmark(String postId) =>
       '$_base/community/posts/$postId/bookmark';
 

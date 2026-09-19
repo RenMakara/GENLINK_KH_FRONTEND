@@ -655,6 +655,64 @@ class ForumLikerModel {
   };
 }
 
+class PostLikerModel {
+  final String id;
+  final String fullName;
+  final String username;
+  final String avatarUrl;
+
+  const PostLikerModel({
+    required this.id,
+    required this.fullName,
+    required this.username,
+    this.avatarUrl = '',
+  });
+
+  factory PostLikerModel.fromJson(Map<String, dynamic> json) {
+    final userObj = json['user'] is Map<String, dynamic>
+        ? json['user'] as Map<String, dynamic>
+        : (json['author'] is Map<String, dynamic>
+            ? json['author'] as Map<String, dynamic>
+            : null);
+    final id = (json['id'] ??
+            json['userId'] ??
+            userObj?['id'] ??
+            userObj?['userId'] ??
+            '')
+        .toString();
+    final fullName = (json['fullName'] ??
+            json['name'] ??
+            userObj?['fullName'] ??
+            userObj?['name'] ??
+            'User')
+        .toString();
+    final rawUsername = (json['username'] ?? userObj?['username'] ?? fullName)
+        .toString();
+    final username = rawUsername.startsWith('@') ? rawUsername : '@$rawUsername';
+    final avatarUrl = (json['avatarUrl'] ??
+            json['avatar'] ??
+            userObj?['avatarUrl'] ??
+            userObj?['avatar'] ??
+            '')
+        .toString();
+
+    return PostLikerModel(
+      id: id,
+      fullName: fullName,
+      username: username,
+      avatarUrl: avatarUrl,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'userId': id,
+    'fullName': fullName,
+    'username': username,
+    'avatarUrl': avatarUrl,
+  };
+}
+
 class ForumTopicModel {
   final String id;
   final String? authorId;

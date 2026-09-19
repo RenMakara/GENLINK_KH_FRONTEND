@@ -19,6 +19,7 @@ import '../controllers/community_controller.dart';
 import 'comments_bottom_sheet.dart';
 import 'community_design_tokens.dart';
 import 'full_screen_image_viewer.dart';
+import 'post_liked_by_sheet.dart';
 
 class PostCardWidget extends StatefulWidget {
   final CommunityPostModel post;
@@ -1073,47 +1074,98 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
           if (resolvedEvent != null)
             _buildAttachedEventCard(context, resolvedEvent),
 
+          if (widget.post.likesCount > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+              child: GestureDetector(
+                key: Key('post_liked_by_preview_${widget.post.id}'),
+                onTap: () {
+                  PostLikedBySheet.show(
+                    context,
+                    postId: widget.post.id,
+                    initialLikesCount: widget.post.likesCount,
+                  );
+                },
+                child: Builder(
+                  builder: (context) {
+                    final count = widget.post.likesCount;
+                    final isKm = Get.locale?.languageCode == 'km';
+                    final label = 'community.likedBy'.tr.isNotEmpty &&
+                            'community.likedBy'.tr != 'community.likedBy'
+                        ? 'community.likedBy'.tr
+                        : 'Liked by';
+                    final countText = isKm
+                        ? '$count នាក់'
+                        : '$count ${count == 1 ? 'person' : 'people'}';
+                    return Text(
+                      '$label $countText',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                            color: textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ) ??
+                          TextStyle(
+                            color: textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    );
+                  },
+                ),
+              ),
+            ),
+
           const SizedBox(height: 2),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             child: Row(
               children: [
                 InkWell(
+                  key: Key('post_like_button_${widget.post.id}'),
                   onTap: _onLikeTap,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    child: Row(
-                      children: [
-                        ScaleTransition(
-                          scale: _likeScaleAnim,
-                          child: Icon(
-                            widget.post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                    child: ScaleTransition(
+                      scale: _likeScaleAnim,
+                      child: Icon(
+                        widget.post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                        color: widget.post.isLiked
+                            ? AppColors.likedAccent
+                            : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ),
+                InkWell(
+                  key: Key('post_like_count_${widget.post.id}'),
+                  onTap: () {
+                    PostLikedBySheet.show(
+                      context,
+                      postId: widget.post.id,
+                      initialLikesCount: widget.post.likesCount,
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                    child: Text(
+                      "${widget.post.likesCount}",
+                      style: theme.textTheme.labelMedium?.copyWith(
                             color: widget.post.isLiked
                                 ? AppColors.likedAccent
                                 : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
-                            size: 18,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12.5,
+                          ) ??
+                          TextStyle(
+                            color: widget.post.isLiked
+                                ? AppColors.likedAccent
+                                : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          "${widget.post.likesCount}",
-                          style: theme.textTheme.labelMedium?.copyWith(
-                                color: widget.post.isLiked
-                                    ? AppColors.likedAccent
-                                    : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12.5,
-                              ) ??
-                              TextStyle(
-                                color: widget.post.isLiked
-                                    ? AppColors.likedAccent
-                                    : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                      ],
                     ),
                   ),
                 ),

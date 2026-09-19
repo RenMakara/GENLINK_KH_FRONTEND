@@ -50,6 +50,15 @@ abstract class CommunityRepository {
 
   Future<bool> toggleLike(String postId);
 
+  Future<bool> unlikePost(String postId) => toggleLike(postId);
+
+  Future<List<PostLikerModel>> getPostLikers(
+    String postId, {
+    int page = 0,
+    int size = 20,
+  }) =>
+      Future.value([]);
+
   Future<bool> toggleBookmark(String postId);
   Future<bool> repostPost(String postId, {String? caption, String? reposterId});
   Future<bool> unrepostPost(String postId, {String? reposterId});

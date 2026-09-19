@@ -623,8 +623,9 @@ void main() {
       // In idle state (empty query), trending section renders
       expect(find.text('Trending'), findsOneWidget);
 
-      // Typing a query activates the category tabs
+      // Submitting search query activates the category tabs
       await tester.enterText(find.byType(TextField), 'enat');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 

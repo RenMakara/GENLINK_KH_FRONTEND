@@ -31,6 +31,7 @@ class CommunitySearchController extends GetxController {
   final Rx<SearchCategory> selectedCategory = SearchCategory.all.obs;
   final RxBool isLoading = false.obs;
   final RxBool hasSearched = false.obs;
+  final RxBool isSubmitted = false.obs;
   final RxString errorMessage = ''.obs;
   final Rx<CombinedSearchResults?> searchResults = Rx<CombinedSearchResults?>(null);
 
@@ -60,6 +61,9 @@ class CommunitySearchController extends GetxController {
     query.value = text;
     final trimmed = text.trim();
 
+    // Reset submitted status when user types to switch to typing suggestions
+    isSubmitted.value = false;
+
     if (trimmed.isEmpty) {
       _debounceTimer?.cancel();
       _cancelToken?.cancel();
@@ -76,12 +80,47 @@ class CommunitySearchController extends GetxController {
     });
   }
 
+  void clearQuery() {
+    query.value = '';
+    isSubmitted.value = false;
+    isLoading.value = false;
+    hasSearched.value = false;
+    errorMessage.value = '';
+    searchResults.value = null;
+    _debounceTimer?.cancel();
+    _cancelToken?.cancel();
+  }
+
+  void submitSearch([String? explicitQuery]) {
+    final target = (explicitQuery ?? query.value).trim();
+    if (target.isEmpty) return;
+
+    if (explicitQuery != null && explicitQuery != query.value) {
+      query.value = explicitQuery;
+    }
+
+    isSubmitted.value = true;
+    _debounceTimer?.cancel();
+    addRecentSearch(target);
+
+    // If search results are already cached and fresh for this exact query, display them immediately
+    if (searchResults.value != null &&
+        searchResults.value!.query == target &&
+        !isLoading.value &&
+        errorMessage.value.isEmpty) {
+      return;
+    }
+
+    performSearch();
+  }
+
   Future<void> selectCategory(SearchCategory category) async {
     if (selectedCategory.value == category) return;
     selectedCategory.value = category;
 
     if (query.value.trim().isNotEmpty) {
       _debounceTimer?.cancel();
+      isSubmitted.value = true;
       await performSearch();
     }
   }
@@ -127,6 +166,76 @@ class CommunitySearchController extends GetxController {
       isLoading.value = false;
       errorMessage.value = 'community.searchError'.tr;
     }
+  }
+
+  /// Query suggestions derived dynamically from matching recent searches,
+  /// current query, and backend search result titles.
+  List<String> getQuerySuggestions() {
+    final q = query.value.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+
+    final suggestions = <String>{};
+
+    // 1. Current query itself
+    suggestions.add(query.value.trim());
+
+    // 2. Real matching recent searches
+    for (final item in recentSearches) {
+      final itemTrimmed = item.trim();
+      if (itemTrimmed.toLowerCase().contains(q) &&
+          itemTrimmed.toLowerCase() != q) {
+        suggestions.add(itemTrimmed);
+      }
+      if (suggestions.length >= 4) break;
+    }
+
+    // 3. Matching real titles from discussions, events, or posts
+    final results = searchResults.value;
+    if (results != null) {
+      for (final d in results.discussions) {
+        final title = d.title.trim();
+        if (title.toLowerCase().contains(q) &&
+            !suggestions.any((s) => s.toLowerCase() == title.toLowerCase())) {
+          suggestions.add(title);
+        }
+        if (suggestions.length >= 4) break;
+      }
+
+      if (suggestions.length < 4) {
+        for (final e in results.events) {
+          final title = e.title.trim();
+          if (title.toLowerCase().contains(q) &&
+              !suggestions.any((s) => s.toLowerCase() == title.toLowerCase())) {
+            suggestions.add(title);
+          }
+          if (suggestions.length >= 4) break;
+        }
+      }
+
+      if (suggestions.length < 4) {
+        for (final p in results.posts) {
+          final content = p.content.trim();
+          if (content.toLowerCase().contains(q)) {
+            final firstLine = content.split('\n').first.trim();
+            final clean = firstLine.length > 36 ? '${firstLine.substring(0, 36)}...' : firstLine;
+            if (clean.isNotEmpty &&
+                !suggestions.any((s) => s.toLowerCase() == clean.toLowerCase())) {
+              suggestions.add(clean);
+            }
+          }
+          if (suggestions.length >= 4) break;
+        }
+      }
+    }
+
+    return suggestions.toList();
+  }
+
+  /// Compact People suggestions derived from real backend users
+  List<UserSearchResultModel> getPeopleSuggestions() {
+    final results = searchResults.value;
+    if (results == null || results.people.isEmpty) return const [];
+    return results.people.take(4).toList();
   }
 
   Future<void> loadRecentSearches() async {

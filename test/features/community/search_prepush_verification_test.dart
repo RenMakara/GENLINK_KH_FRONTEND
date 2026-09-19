@@ -380,7 +380,7 @@ void main() {
       controller.onQueryChanged('chan');
       expect(controller.isLoading.value, isFalse); // Has not triggered yet
 
-      await Future<void>.delayed(const Duration(milliseconds: 400));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
       expect(controller.hasSearched.value, isTrue);
       expect(controller.searchResults.value?.people.first.username, 'chansela');
     });
@@ -498,6 +498,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField), 'en');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
@@ -557,6 +558,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField), 'Spring Boot');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
@@ -583,6 +585,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField), 'Hackathon');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
@@ -609,6 +612,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField), 'GetX');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
@@ -668,8 +672,9 @@ void main() {
       // Verify Khmer text
       expect(find.text('ពេញនិយម'), findsOneWidget); // "Trending" in Khmer
 
-      // Enter query to check Khmer category tabs
+      // Enter query and submit to check Khmer category tabs
       await tester.enterText(find.byType(TextField), 'en');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 

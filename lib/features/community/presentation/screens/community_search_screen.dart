@@ -70,13 +70,17 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
     super.dispose();
   }
 
-  void _applyQuery(String newQuery) {
+  void _applyQuery(String newQuery, {bool submit = true}) {
     _textController.text = newQuery;
     _textController.selection = TextSelection.fromPosition(
       TextPosition(offset: newQuery.length),
     );
-    controller.onQueryChanged(newQuery);
-    controller.performSearch();
+    if (submit) {
+      _focusNode.unfocus();
+      controller.submitSearch(newQuery);
+    } else {
+      controller.onQueryChanged(newQuery);
+    }
   }
 
   @override
@@ -104,15 +108,17 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: const Center(child: AppBackButton()),
-        leadingWidth: 72,
+        leadingWidth: 58,
         titleSpacing: 0,
         title: Padding(
           padding: const EdgeInsets.only(right: 16),
           child: SizedBox(
-            height: 46,
+            height: 44,
             child: TextField(
               controller: _textController,
               focusNode: _focusNode,
+              textAlignVertical: TextAlignVertical.center,
+              textInputAction: TextInputAction.search,
               style: TextStyle(
                 color: textPrimary,
                 fontSize: 14,
@@ -122,15 +128,15 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
               onChanged: controller.onQueryChanged,
               onSubmitted: (val) {
                 if (val.trim().isNotEmpty) {
-                  controller.addRecentSearch(val.trim());
-                  controller.performSearch();
+                  _focusNode.unfocus();
+                  controller.submitSearch(val.trim());
                 }
               },
               decoration: InputDecoration(
                 hintText: 'community.searchHint'.tr,
                 hintStyle: TextStyle(
                   color: textMuted,
-                  fontSize: 14,
+                  fontSize: 13.5,
                   fontWeight: FontWeight.normal,
                 ),
                 prefixIcon: Icon(
@@ -148,27 +154,35 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                       color: textSecondary,
                       size: 18,
                     ),
+                    splashRadius: 18,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
                     onPressed: () {
                       _textController.clear();
-                      controller.onQueryChanged('');
+                      controller.clearQuery();
+                      _focusNode.requestFocus();
                     },
                   );
                 }),
+                isDense: true,
                 filled: true,
                 fillColor: searchBarBg,
                 contentPadding: const EdgeInsets.symmetric(
-                  vertical: 0,
-                  horizontal: 16,
+                  vertical: 10,
+                  horizontal: 14,
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(22),
                   borderSide: BorderSide(
                     color: searchBarBorder,
                     width: 1,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(22),
                   borderSide: BorderSide(
                     color: isDark
                         ? AppColors.darkBorderStrong
@@ -184,30 +198,304 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
       body: Obx(() {
         final query = controller.query.value.trim();
         final isSearching = query.isNotEmpty;
+        final isSubmitted = controller.isSubmitted.value;
 
+        if (!isSearching) {
+          return _buildIdleState();
+        }
+
+        if (!isSubmitted) {
+          // STATE 1: TYPING — Lightweight suggestions UI
+          return _buildTypingSuggestionsView(query);
+        }
+
+        // STATE 2: SUBMITTED SEARCH — Full result categories & cards
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (isSearching) ...[
-              const SizedBox(height: 6),
-              _buildCategoryTabs(),
-              const SizedBox(height: 6),
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: isDark
-                    ? AppColors.darkBorderSubtle
-                    : AppColors.lightBorderSubtle,
-              ),
-            ],
+            const SizedBox(height: 6),
+            _buildCategoryTabs(),
+            const SizedBox(height: 8),
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: isDark
+                  ? AppColors.darkBorderSubtle
+                  : AppColors.lightBorderSubtle,
+            ),
             Expanded(
-              child: isSearching
-                  ? _buildSearchResultsArea(query)
-                  : _buildIdleState(),
+              child: _buildSearchResultsArea(query),
             ),
           ],
         );
       }),
+    );
+  }
+
+  // Lightweight suggestions UI while typing (STATE 1)
+  Widget _buildTypingSuggestionsView(String query) {
+    if (controller.isLoading.value && controller.searchResults.value == null) {
+      return _buildSuggestionLoadingSkeleton();
+    }
+
+    if (controller.errorMessage.value.isNotEmpty) {
+      return _buildCompactErrorState();
+    }
+
+    final querySuggestions = controller.getQuerySuggestions();
+    final peopleSuggestions = controller.getPeopleSuggestions();
+    final results = controller.searchResults.value;
+
+    final hasNoRealResults = results != null &&
+        results.isEmpty &&
+        peopleSuggestions.isEmpty &&
+        (querySuggestions.isEmpty ||
+            (querySuggestions.length == 1 &&
+                querySuggestions.first.toLowerCase() == query.toLowerCase() &&
+                !controller.recentSearches
+                    .any((s) => s.toLowerCase() == query.toLowerCase())));
+
+    if (hasNoRealResults) {
+      return _buildCompactNoSuggestions();
+    }
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (querySuggestions.isNotEmpty) ...[
+            _buildSuggestionSectionHeader('community.suggestions'.tr),
+            const SizedBox(height: 4),
+            ...querySuggestions.map((s) => _buildQuerySuggestionTile(s)),
+            const SizedBox(height: 16),
+          ],
+          if (peopleSuggestions.isNotEmpty) ...[
+            _buildSuggestionSectionHeader('community.searchPeople'.tr),
+            const SizedBox(height: 4),
+            ...peopleSuggestions.map((u) => _buildCompactPersonSuggestion(u)),
+            const SizedBox(height: 16),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestionSectionHeader(String title) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 4),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: textSecondary,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuerySuggestionTile(String suggestion) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted =
+        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+
+    return InkWell(
+      onTap: () => _applyQuery(suggestion, submit: true),
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+        child: Row(
+          children: [
+            Icon(
+              Icons.search_rounded,
+              color: textMuted,
+              size: 18,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                suggestion,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.north_west_rounded,
+              color: textMuted,
+              size: 15,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactPersonSuggestion(UserSearchResultModel user) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
+    return InkWell(
+      onTap: () => controller.openUserProfile(user),
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
+        child: Row(
+          children: [
+            AppAvatar(
+              imageUrl: user.avatarUrl,
+              name: user.fullName.isNotEmpty ? user.fullName : user.username,
+              size: 36,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    user.fullName.isNotEmpty ? user.fullName : user.username,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    user.username.startsWith('@')
+                        ? user.username
+                        : '@${user.username}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactNoSuggestions() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textMuted =
+        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+        child: Text(
+          'community.noSuggestions'.tr,
+          style: TextStyle(
+            color: textMuted,
+            fontSize: 13.5,
+            fontWeight: FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactErrorState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted =
+        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'community.suggestionsError'.tr,
+              style: TextStyle(
+                color: textMuted,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(width: 12),
+            GestureDetector(
+              onTap: controller.retry,
+              child: Text(
+                'community.retry'.tr,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuggestionLoadingSkeleton() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final skeletonColor = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.black.withValues(alpha: 0.05);
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: 4,
+      separatorBuilder: (_, _) => const SizedBox(height: 14),
+      itemBuilder: (_, index) {
+        return Row(
+          children: [
+            Container(
+              width: index % 2 == 0 ? 18 : 32,
+              height: index % 2 == 0 ? 18 : 32,
+              decoration: BoxDecoration(
+                color: skeletonColor,
+                shape: index % 2 == 0 ? BoxShape.rectangle : BoxShape.circle,
+                borderRadius: index % 2 == 0 ? BorderRadius.circular(4) : null,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              width: 120.0 + (index * 25.0),
+              height: 12,
+              decoration: BoxDecoration(
+                color: skeletonColor,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -230,18 +518,23 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
 
   // Compact horizontal category selector with GenLink Black/White/Neutral identity
   Widget _buildCategoryTabs() {
-    // Only display categories that have real backend support
-    final categories =
-        SearchCategory.values.where((c) => c.isSupported).toList();
+    // Categories strictly kept: All, People, Posts, Events, Forum (Media removed)
+    const categories = [
+      SearchCategory.all,
+      SearchCategory.people,
+      SearchCategory.posts,
+      SearchCategory.events,
+      SearchCategory.forum,
+    ];
 
     return SizedBox(
-      height: 36,
+      height: 32,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: categories.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
           final cat = categories[index];
           return Obx(() {
@@ -271,30 +564,31 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
 
             return InkWell(
               onTap: () => controller.selectCategory(cat),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
+                alignment: Alignment.center,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 7,
+                  horizontal: 11,
+                  vertical: 4,
                 ),
                 decoration: BoxDecoration(
                   color: isSelected ? activeBg : inactiveBg,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isSelected ? activeBorder : inactiveBorder,
                     width: 1,
                   ),
                 ),
-                child: Center(
-                  child: Text(
-                    cat.label,
-                    style: TextStyle(
-                      color: isSelected ? activeText : inactiveText,
-                      fontSize: 12.5,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w500,
-                    ),
+                child: Text(
+                  cat.label,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(
+                    color: isSelected ? activeText : inactiveText,
+                    fontSize: 13,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
               ),
@@ -678,8 +972,11 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                   controller.selectCategory(SearchCategory.people),
             ),
             const SizedBox(height: 8),
-            ...results.people.take(3).map(_buildPersonCard),
-            const SizedBox(height: 16),
+            ...results.people.take(3).map((u) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _buildPersonCard(u),
+                )),
+            const SizedBox(height: 10),
           ],
           if (results.posts.isNotEmpty) ...[
             _buildSectionHeader(
@@ -691,8 +988,11 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                   controller.selectCategory(SearchCategory.posts),
             ),
             const SizedBox(height: 8),
-            ...results.posts.take(3).map(_buildPostCard),
-            const SizedBox(height: 16),
+            ...results.posts.take(3).map((p) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _buildPostCard(p),
+                )),
+            const SizedBox(height: 10),
           ],
           if (results.events.isNotEmpty) ...[
             _buildSectionHeader(
@@ -704,8 +1004,11 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                   controller.selectCategory(SearchCategory.events),
             ),
             const SizedBox(height: 8),
-            ...results.events.take(3).map(_buildEventCard),
-            const SizedBox(height: 16),
+            ...results.events.take(3).map((e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _buildEventCard(e),
+                )),
+            const SizedBox(height: 10),
           ],
           if (results.discussions.isNotEmpty) ...[
             _buildSectionHeader(
@@ -717,8 +1020,11 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                   controller.selectCategory(SearchCategory.forum),
             ),
             const SizedBox(height: 8),
-            ...results.discussions.take(3).map(_buildForumCard),
-            const SizedBox(height: 16),
+            ...results.discussions.take(3).map((d) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _buildForumCard(d),
+                )),
+            const SizedBox(height: 10),
           ],
         ],
       ),
@@ -742,6 +1048,7 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: Row(
@@ -755,16 +1062,16 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                   style: TextStyle(
                     color: textPrimary,
                     fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                 decoration: BoxDecoration(
                   color: countBg,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: countBorder),
                 ),
                 child: Text(
@@ -780,11 +1087,11 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        GestureDetector(
+        InkWell(
           onTap: onSeeAll,
-          behavior: HitTestBehavior.opaque,
+          borderRadius: BorderRadius.circular(6),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -837,18 +1144,12 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
         isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
     final border =
         isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-    final badgeBg =
-        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
-    final badgeBorder =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-
-    final subtitle = user.bio?.isNotEmpty == true
-        ? user.bio!
-        : (user.universityName?.isNotEmpty == true
-            ? user.universityName!
-            : (user.workStatus?.isNotEmpty == true
-                ? user.workStatus!
-                : ''));
+    final badgeBg = isDark
+        ? AppColors.brandPrimary.withValues(alpha: 0.14)
+        : AppColors.brandPrimary.withValues(alpha: 0.10);
+    final badgeBorder = isDark
+        ? AppColors.brandPrimary.withValues(alpha: 0.28)
+        : AppColors.brandPrimary.withValues(alpha: 0.20);
 
     final cleanUsername = user.username.trim().replaceFirst(RegExp(r'^@+'), '');
     final displayUsername = cleanUsername.isNotEmpty ? '@$cleanUsername' : '';
@@ -856,101 +1157,106 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
         ? user.fullName.trim()
         : (cleanUsername.isNotEmpty ? cleanUsername : 'GenLink User');
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: surface,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: () => controller.openUserProfile(user),
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: border),
-            ),
-            child: Row(
-              children: [
-                AppAvatar(
-                  imageUrl: user.avatarUrl,
-                  name: displayName,
-                  size: 44,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
+    final roleText = user.workStatus?.trim().isNotEmpty == true
+        ? user.workStatus!.trim()
+        : (user.universityName?.trim().isNotEmpty == true
+            ? user.universityName!.trim()
+            : (user.bio?.trim().isNotEmpty == true ? user.bio!.trim() : ''));
+
+    return Material(
+      color: surface,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () => controller.openUserProfile(user),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: border, width: 1),
+          ),
+          child: Row(
+            children: [
+              AppAvatar(
+                imageUrl: user.avatarUrl,
+                name: displayName,
+                size: 46,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ),
+                        if (user.level > 0) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: badgeBg,
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(color: badgeBorder, width: 0.8),
+                            ),
                             child: Text(
-                              displayName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: textPrimary,
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.bold,
+                              'Lv.${user.level}',
+                              style: const TextStyle(
+                                color: AppColors.brandPrimary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
-                          if (user.level > 0) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 1.5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: badgeBg,
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: badgeBorder),
-                              ),
-                              child: Text(
-                                'Lv.${user.level}',
-                                style: const TextStyle(
-                                  color: AppColors.brandPrimary,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
                         ],
+                      ],
+                    ),
+                    if (displayUsername.isNotEmpty) ...[
+                      const SizedBox(height: 1.5),
+                      Text(
+                        displayUsername,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: textMuted,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
-                      if (displayUsername.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          displayUsername,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: textMuted, fontSize: 12),
-                        ),
-                      ],
-                      if (subtitle.isNotEmpty) ...[
-                        const SizedBox(height: 3),
-                        Text(
-                          subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: textSecondary,
-                            fontSize: 11.5,
-                          ),
-                        ),
-                      ],
                     ],
-                  ),
+                    if (roleText.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        roleText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: textMuted,
-                  size: 18,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -980,127 +1286,127 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
         isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final textMuted =
         isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark
-        ? AppColors.darkSurfaceSecondary
-        : AppColors.lightSurfacePrimary;
+    final surface =
+        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
     final borderSubtle = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: surfaceSecondary,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: () => controller.openPostComments(context, post),
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: borderSubtle),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    AppAvatar(
-                      imageUrl: post.authorAvatar,
-                      name: post.authorName,
-                      size: 32,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            post.authorName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: textPrimary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            post.timeAgo,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: textMuted,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  post.content,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 12.5,
-                    height: 1.35,
+    final subtitle = post.authorTag.isNotEmpty
+        ? '${post.authorTag} • ${post.timeAgo}'
+        : post.timeAgo;
+
+    return Material(
+      color: surface,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () => controller.openPostComments(context, post),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(11),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderSubtle, width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  AppAvatar(
+                    imageUrl: post.authorAvatar,
+                    name: post.authorName,
+                    size: 34,
                   ),
-                ),
-                if (post.imageUrls.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      post.imageUrls.first,
-                      height: 120,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (ctx, err, stack) => const SizedBox.shrink(),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          post.authorName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: textMuted,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.favorite_border_rounded,
-                      size: 14,
-                      color: textMuted,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${post.likesCount}',
-                      style: TextStyle(color: textMuted, fontSize: 11),
-                    ),
-                    const SizedBox(width: 14),
-                    Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      size: 14,
-                      color: textMuted,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${post.commentsCount}',
-                      style: TextStyle(color: textMuted, fontSize: 11),
-                    ),
-                    const Spacer(),
-                    Text(
-                      'community.searchPosts'.tr,
-                      style: TextStyle(
-                        color: textSecondary,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                post.content,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 12.5,
+                  height: 1.35,
+                ),
+              ),
+              if (post.imageUrls.isNotEmpty) ...[
+                const SizedBox(height: 7),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    post.imageUrls.first,
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (ctx, err, stack) => const SizedBox.shrink(),
+                  ),
                 ),
               ],
-            ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.favorite_border_rounded,
+                    size: 13.5,
+                    color: textMuted,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${post.likesCount}',
+                    style: TextStyle(
+                      color: textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    size: 13.5,
+                    color: textMuted,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${post.commentsCount}',
+                    style: TextStyle(
+                      color: textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -1130,150 +1436,146 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
         isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final textMuted =
         isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark
-        ? AppColors.darkSurfaceSecondary
-        : AppColors.lightSurfacePrimary;
+    final surface =
+        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
     final borderSubtle = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: surfaceSecondary,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: () => controller.openEvent(event),
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: borderSubtle),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 54,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.darkBorderSubtle
-                        : AppColors.lightBgSecondary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: event.imageUrl.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.network(
-                            event.imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (ctx, err, stack) => Icon(
-                              Icons.event_available_rounded,
-                              color: textSecondary,
-                              size: 24,
-                            ),
-                          ),
-                        )
-                      : Icon(
-                          Icons.event_available_rounded,
-                          color: textSecondary,
-                          size: 24,
-                        ),
+    return Material(
+      color: surface,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () => controller.openEvent(event),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(11),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderSubtle, width: 1),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.darkBorderSubtle
+                      : AppColors.lightBgSecondary,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        event.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: textPrimary,
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.bold,
+                child: event.imageUrl.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          event.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (ctx, err, stack) => Icon(
+                            Icons.event_available_rounded,
+                            color: textSecondary,
+                            size: 22,
+                          ),
                         ),
+                      )
+                    : Icon(
+                        Icons.event_available_rounded,
+                        color: textSecondary,
+                        size: 22,
                       ),
-                      const SizedBox(height: 4),
-                      if (event.dateString.isNotEmpty) ...[
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.schedule_rounded,
-                              color: textMuted,
-                              size: 13,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                event.dateString,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: textSecondary,
-                                  fontSize: 11.5,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                      ],
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    if (event.dateString.isNotEmpty) ...[
                       Row(
                         children: [
                           Icon(
-                            Icons.location_on_outlined,
+                            Icons.schedule_rounded,
                             color: textMuted,
-                            size: 13,
+                            size: 12,
                           ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              event.location.isNotEmpty
-                                  ? event.location
-                                  : event.eventType,
+                              event.dateString,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: textSecondary,
-                                fontSize: 11.5,
+                                fontSize: 11,
                               ),
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 2),
                     ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  constraints: const BoxConstraints(maxWidth: 90),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.08)
-                        : AppColors.lightBgSecondary,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    event.eventType,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: textSecondary,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w600,
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          color: textMuted,
+                          size: 12,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            event.location.isNotEmpty
+                                ? event.location
+                                : event.eventType,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                constraints: const BoxConstraints(maxWidth: 86),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 7,
+                  vertical: 2.5,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : AppColors.lightBgSecondary,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  event.eventType,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1303,122 +1605,126 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
         isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final textMuted =
         isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark
-        ? AppColors.darkSurfaceSecondary
-        : AppColors.lightSurfacePrimary;
+    final surface =
+        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
     final borderSubtle = isDark
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: surfaceSecondary,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: () => controller.openDiscussion(topic),
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: borderSubtle),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2.5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.brandPrimary
-                            .withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        topic.category,
-                        style: const TextStyle(
-                          color: AppColors.brandPrimary,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.bold,
-                        ),
+    return Material(
+      color: surface,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () => controller.openDiscussion(topic),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(11),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderSubtle, width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.brandPrimary.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text(
+                      topic.category,
+                      style: const TextStyle(
+                        color: AppColors.brandPrimary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const Spacer(),
-                    Text(
-                      topic.timeAgo,
-                      style: TextStyle(color: textMuted, fontSize: 11),
-                    ),
-                  ],
+                  ),
+                  const Spacer(),
+                  Text(
+                    topic.timeAgo,
+                    style: TextStyle(color: textMuted, fontSize: 11),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                topic.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
                 ),
-                const SizedBox(height: 6),
+              ),
+              if (topic.content.isNotEmpty) ...[
+                const SizedBox(height: 4),
                 Text(
-                  topic.title,
+                  topic.content,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.bold,
+                    color: textSecondary,
+                    fontSize: 11.5,
                   ),
                 ),
-                if (topic.content.isNotEmpty) ...[
-                  const SizedBox(height: 4),
+              ],
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      topic.authorName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.thumb_up_alt_outlined,
+                    size: 13,
+                    color: textMuted,
+                  ),
+                  const SizedBox(width: 4),
                   Text(
-                    topic.content,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    '${topic.upvotes}',
                     style: TextStyle(
-                      color: textSecondary,
-                      fontSize: 12,
+                      color: textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    size: 13,
+                    color: textMuted,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${topic.repliesCount}',
+                    style: TextStyle(
+                      color: textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        topic.authorName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: textMuted,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.thumb_up_alt_outlined,
-                      size: 13,
-                      color: textMuted,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${topic.upvotes}',
-                      style: TextStyle(color: textMuted, fontSize: 11),
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      size: 13,
-                      color: textMuted,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${topic.repliesCount}',
-                      style: TextStyle(color: textMuted, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

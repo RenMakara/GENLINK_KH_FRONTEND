@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
@@ -13,22 +14,31 @@ import '../../domain/models/community_post_model.dart';
 import '../controllers/community_controller.dart';
 import 'create_event_screen.dart';
 import 'event_details_screen.dart';
+import '../../../media/presentation/media_picker.dart';
 
 class CreatePostScreen extends StatefulWidget {
   final CommunityPostModel? initialPost;
+  final MediaPicker? mediaPicker;
 
-  const CreatePostScreen({super.key, this.initialPost});
+  const CreatePostScreen({super.key, this.initialPost, this.mediaPicker});
 
   @override
-  State<CreatePostScreen> createState() => _CreatePostScreenState();
+  State<CreatePostScreen> createState() => CreatePostScreenState();
 }
 
-class _CreatePostScreenState extends State<CreatePostScreen> {
+class CreatePostScreenState extends State<CreatePostScreen> {
   final TextEditingController _textController = TextEditingController();
   final FocusNode _editorFocusNode = FocusNode();
 
   String _selectedAudience = 'Public';
   List<String> _attachedImages = [];
+  // ─── Step 3B-Frontend: Video state ────────────────────────────────────────
+  String? _attachedVideo;          // local file path of the selected video
+  VideoPlayerController? _previewVideoController; // preview controller
+  bool _videoInitialized = false;  // controller ready to render
+  bool _videoInitError = false;    // init failed (bad codec, corrupt, etc.)
+  // ──────────────────────────────────────────────────────────────────────────
+
   String? _selectedLocation;
   EventModel? _attachedEvent;
   String? _selectedFeeling;
@@ -65,6 +75,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       if (widget.initialPost!.attachedEvent != null) {
         _attachedEvent = widget.initialPost!.attachedEvent;
       }
+      if (widget.initialPost!.videoUrl != null && widget.initialPost!.videoUrl!.isNotEmpty) {
+        _attachedVideo = widget.initialPost!.videoUrl;
+      }
     }
     _textController.addListener(() {
       setState(() {});
@@ -75,12 +88,20 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   void dispose() {
     _textController.dispose();
     _editorFocusNode.dispose();
+    _previewVideoController?.dispose(); // Step 3B: no controller leak
     super.dispose();
   }
 
   final ImagePicker _picker = ImagePicker();
+  late final MediaPicker _mediaPicker = widget.mediaPicker ?? MediaPicker(picker: _picker);
 
   Future<void> _pickGalleryImages() async {
+    // If a video is attached, ask user before replacing it with images
+    if (_attachedVideo != null) {
+      final replace = await _showMediaConflictDialog(videoReplacingImages: false);
+      if (!replace) return;
+      await _clearVideo();
+    }
     try {
       final List<XFile> selected = await _picker.pickMultiImage();
       if (selected.isNotEmpty) {
@@ -90,6 +111,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       }
     } on PlatformException catch (e) {
       // Permission denied or picker unavailable
+
       debugPrint('[CreatePostScreen] Gallery pick PlatformException: ${e.code} — ${e.message}');
       if (!mounted) return;
       final bool isPermissionError =
@@ -126,6 +148,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Future<void> _pickCameraImage() async {
+    // If a video is attached, ask user before replacing it with camera photo
+    if (_attachedVideo != null) {
+      final replace = await _showMediaConflictDialog(videoReplacingImages: false);
+      if (!replace) return;
+      await _clearVideo();
+    }
     try {
       final XFile? captured = await _picker.pickImage(
         source: ImageSource.camera,
@@ -151,6 +179,214 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       }
     }
   }
+
+  // ─── Video picking using existing MediaPicker ────────────────────────────
+
+  /// Picks a video from the gallery using [MediaPicker.pickVideo].
+  /// If images are already attached, asks the user to confirm replacement.
+  Future<void> _pickGalleryVideo() async {
+    // Conflict: images exist — ask user
+    if (_attachedImages.isNotEmpty) {
+      final replace = await _showMediaConflictDialog(videoReplacingImages: true);
+      if (!replace) return;
+    }
+
+    try {
+      final PickedMedia? picked = await _mediaPicker.pickVideo(
+        source: ImageSource.gallery,
+        maxDuration: const Duration(minutes: 5),
+      );
+      if (picked == null) return; // user cancelled — not an error
+
+      if (picked.path != null && picked.path!.isNotEmpty) {
+        await _setVideoFile(picked.path!);
+      }
+    } on PlatformException catch (e) {
+      debugPrint('[CreatePostScreen] Video pick PlatformException: ${e.code} — ${e.message}');
+      if (!mounted) return;
+      final bool isPermission =
+          e.code == 'photo_access_denied' ||
+          e.code == 'access_denied' ||
+          e.code == 'permission_denied' ||
+          (e.message ?? '').toLowerCase().contains('permission') ||
+          (e.message ?? '').toLowerCase().contains('denied');
+      AppNotificationBanner.showDanger(
+        context: context,
+        title: 'community.videoPermissionDenied'.tr != 'community.videoPermissionDenied'
+            ? 'community.videoPermissionDenied'.tr
+            : isPermission ? 'Video Access Denied' : 'Video Unavailable',
+        message: 'community.videoPermissionDeniedMsg'.tr != 'community.videoPermissionDeniedMsg'
+            ? 'community.videoPermissionDeniedMsg'.tr
+            : 'Please allow video access in your device settings.',
+      );
+    } catch (e) {
+      // Cancellation / unexpected — do not crash or show error for simple cancel
+      debugPrint('[CreatePostScreen] Video pick: $e');
+    }
+  }
+
+  /// Initializes the [VideoPlayerController] for preview from [path].
+  /// Disposes any previous controller first to prevent leaks.
+  Future<void> _setVideoFile(String path) async {
+    // Dispose old controller cleanly
+    final old = _previewVideoController;
+    setState(() {
+      _attachedVideo = path;
+      _attachedImages = []; // clear any images — video/image mutual exclusion
+      _previewVideoController = null;
+      _videoInitialized = false;
+      _videoInitError = false;
+    });
+    await old?.dispose();
+
+    try {
+      final ctrl = VideoPlayerController.file(File(path));
+      await ctrl.initialize();
+      if (!mounted) {
+        await ctrl.dispose();
+        return;
+      }
+      setState(() {
+        _previewVideoController = ctrl;
+        _videoInitialized = true;
+      });
+    } catch (e) {
+      debugPrint('[CreatePostScreen] VideoPlayerController init error: $e');
+      if (mounted) setState(() => _videoInitError = true);
+    }
+  }
+
+  /// Removes the selected video and disposes its controller.
+  Future<void> _clearVideo() async {
+    final ctrl = _previewVideoController;
+    setState(() {
+      _attachedVideo = null;
+      _previewVideoController = null;
+      _videoInitialized = false;
+      _videoInitError = false;
+    });
+    await ctrl?.dispose();
+  }
+
+  @visibleForTesting
+  String? get attachedVideo => _attachedVideo;
+
+  @visibleForTesting
+  List<String> get attachedImages => _attachedImages;
+
+  @visibleForTesting
+  bool get videoInitError => _videoInitError;
+
+  @visibleForTesting
+  Future<void> setVideoFileForTesting(String path) => _setVideoFile(path);
+
+  @visibleForTesting
+  Future<void> clearVideoForTesting() => _clearVideo();
+
+  @visibleForTesting
+  void setVideoInitErrorForTesting(bool error) {
+    setState(() {
+      _videoInitError = error;
+    });
+  }
+
+  @visibleForTesting
+  void setAttachedVideoForTesting(String? path) {
+    setState(() {
+      _attachedVideo = path;
+    });
+  }
+
+  @visibleForTesting
+  void setVideoInitializedForTesting(bool initialized) {
+    setState(() {
+      _videoInitialized = initialized;
+    });
+  }
+
+  @visibleForTesting
+  void setAttachedImagesForTesting(List<String> images) {
+    setState(() {
+      _attachedImages = List.from(images);
+    });
+  }
+
+  @visibleForTesting
+  void setPollForTesting(String question, List<String> options) {
+    setState(() {
+      _pollQuestion = question;
+      _pollOptionsList = List.from(options);
+    });
+  }
+
+  @visibleForTesting
+  String? get pollQuestion => _pollQuestion;
+
+  @visibleForTesting
+  List<String> get pollOptionsList => _pollOptionsList;
+
+  /// Shows a conflict dialog when the user tries to switch between media types.
+  /// Returns true if the user confirms the replacement.
+  Future<bool> _showMediaConflictDialog({required bool videoReplacingImages}) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E2228) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            videoReplacingImages
+                ? ('community.videoReplaceImages'.tr != 'community.videoReplaceImages'
+                    ? 'community.videoReplaceImages'.tr
+                    : 'Replace photos with video?')
+                : ('community.imagesReplaceVideo'.tr != 'community.imagesReplaceVideo'
+                    ? 'community.imagesReplaceVideo'.tr
+                    : 'Replace video with photos?'),
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            videoReplacingImages
+                ? ('community.videoReplaceImagesMsg'.tr != 'community.videoReplaceImagesMsg'
+                    ? 'community.videoReplaceImagesMsg'.tr
+                    : 'Selecting a video will remove your selected photos. Continue?')
+                : ('community.imagesReplaceVideoMsg'.tr != 'community.imagesReplaceVideoMsg'
+                    ? 'community.imagesReplaceVideoMsg'.tr
+                    : 'Selecting photos will remove your selected video. Continue?'),
+            style: TextStyle(
+              color: isDark ? Colors.white70 : Colors.black54,
+              fontSize: 14,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(
+                'community.keepEditing'.tr != 'community.keepEditing'
+                    ? 'community.keepEditing'.tr
+                    : 'Cancel',
+                style: const TextStyle(color: Colors.white60),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(
+                'community.done'.tr != 'community.done' ? 'community.done'.tr : 'Replace',
+                style: const TextStyle(color: Colors.redAccent),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    return result == true;
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
 
   void _showMediaPickerSheet() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -242,6 +478,37 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   _pickCameraImage();
                 },
               ),
+              const SizedBox(height: 6),
+              // ─── Step 3B-Frontend: Video picker option ─────────────────
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF22262E) : const Color(0xFFF0F2F5),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.videocam_outlined, color: textPrimary, size: 20),
+                ),
+                title: Text(
+                  'community.selectVideo'.tr != 'community.selectVideo'
+                      ? 'community.selectVideo'.tr
+                      : 'Select Video',
+                  style: TextStyle(color: textPrimary, fontWeight: FontWeight.w600, fontSize: 14.5),
+                ),
+                subtitle: Text(
+                  'community.videoFromGallery'.tr != 'community.videoFromGallery'
+                      ? 'community.videoFromGallery'.tr
+                      : 'Choose a video from your gallery',
+                  style: TextStyle(color: textSecondary, fontSize: 12),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickGalleryVideo();
+                },
+              ),
+              // ──────────────────────────────────────────────────────────
             ],
           ),
         ),
@@ -692,7 +959,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
-  void _showGifPickerSheet() {
+  void _showGifPickerSheet() async {
+    if (_attachedVideo != null) {
+      final replace = await _showMediaConflictDialog(videoReplacingImages: false);
+      if (!replace) return;
+      await _clearVideo();
+    }
+    if (!mounted) return;
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? const Color(0xFF16181C) : Colors.white;
     final cardBg = isDark ? const Color(0xFF1E2228) : const Color(0xFFF2F4F7);
@@ -859,6 +1133,332 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
+  void _showDocumentAttachmentNotice() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'community.documentNotice'.tr.isNotEmpty &&
+                  'community.documentNotice'.tr != 'community.documentNotice'
+              ? 'community.documentNotice'.tr
+              : 'Documents and files can be attached as media or shared via links.',
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showPollCreatorSheet() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? const Color(0xFF16181C) : Colors.white;
+    final textPrimary = isDark ? Colors.white : Colors.black87;
+    final textSecondary = isDark ? const Color(0xFF8E9297) : const Color(0xFF65676B);
+    final borderColor = isDark ? const Color(0xFF2B313A) : const Color(0xFFE2E4E8);
+    final inputBg = isDark ? const Color(0xFF1E2228) : const Color(0xFFF2F4F7);
+
+    final questionController = TextEditingController(text: _pollQuestion ?? '');
+    final List<TextEditingController> optionControllers = [];
+    if (_pollOptionsList.isNotEmpty) {
+      for (final opt in _pollOptionsList) {
+        optionControllers.add(TextEditingController(text: opt));
+      }
+    } else {
+      optionControllers.add(TextEditingController());
+      optionControllers.add(TextEditingController());
+    }
+
+    String? validationError;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          void validateAndSave() {
+            final question = questionController.text.trim();
+            if (question.isEmpty) {
+              setSheetState(() {
+                validationError = 'community.pollEmptyQuestion'.tr.isNotEmpty &&
+                        'community.pollEmptyQuestion'.tr != 'community.pollEmptyQuestion'
+                    ? 'community.pollEmptyQuestion'.tr
+                    : 'Please enter a poll question';
+              });
+              return;
+            }
+
+            final cleanOptions = optionControllers
+                .map((c) => c.text.trim())
+                .where((t) => t.isNotEmpty)
+                .toList();
+
+            if (cleanOptions.length < 2) {
+              setSheetState(() {
+                validationError = 'community.pollMinOptions'.tr.isNotEmpty &&
+                        'community.pollMinOptions'.tr != 'community.pollMinOptions'
+                    ? 'community.pollMinOptions'.tr
+                    : 'Please provide at least 2 options';
+              });
+              return;
+            }
+
+            final uniqueOptions = <String>{};
+            for (final opt in cleanOptions) {
+              if (!uniqueOptions.add(opt.toLowerCase())) {
+                setSheetState(() {
+                  validationError = 'community.pollDuplicateOptions'.tr.isNotEmpty &&
+                          'community.pollDuplicateOptions'.tr != 'community.pollDuplicateOptions'
+                      ? 'community.pollDuplicateOptions'.tr
+                      : 'Poll options must be unique';
+                });
+                return;
+              }
+            }
+
+            setState(() {
+              _pollQuestion = question;
+              _pollOptionsList = cleanOptions;
+            });
+            Navigator.pop(ctx);
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            child: Material(
+              color: surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+                ),
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  border: Border.all(color: borderColor, width: 0.8),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white24 : Colors.black12,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.poll_rounded, color: textPrimary, size: 22),
+                              const SizedBox(width: 8),
+                              Text(
+                                'community.createPoll'.tr.isNotEmpty &&
+                                        'community.createPoll'.tr != 'community.createPoll'
+                                    ? 'community.createPoll'.tr
+                                    : 'Create Poll',
+                                style: TextStyle(
+                                  color: textPrimary,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          TextButton(
+                            onPressed: validateAndSave,
+                            child: Text(
+                              'common.done'.tr.isNotEmpty && 'common.done'.tr != 'common.done'
+                                  ? 'common.done'.tr
+                                  : 'Done',
+                              style: const TextStyle(
+                                color: Color(0xFF1E88E5),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+
+                      if (validationError != null)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.4)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  validationError!,
+                                  style: const TextStyle(
+                                    color: Colors.redAccent,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      Text(
+                        'community.pollQuestion'.tr.isNotEmpty &&
+                                'community.pollQuestion'.tr != 'community.pollQuestion'
+                            ? 'community.pollQuestion'.tr
+                            : 'Question',
+                        style: TextStyle(color: textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: questionController,
+                        onChanged: (_) {
+                          if (validationError != null) {
+                            setSheetState(() => validationError = null);
+                          }
+                        },
+                        style: TextStyle(color: textPrimary, fontSize: 14.5),
+                        decoration: InputDecoration(
+                          hintText: 'community.pollQuestionHint'.tr.isNotEmpty &&
+                                  'community.pollQuestionHint'.tr != 'community.pollQuestionHint'
+                              ? 'community.pollQuestionHint'.tr
+                              : 'Ask a question...',
+                          hintStyle: TextStyle(color: textSecondary, fontSize: 13.5),
+                          filled: true,
+                          fillColor: inputBg,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: borderColor, width: 0.8),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: borderColor, width: 0.8),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+
+                      Text(
+                        'community.pollOptions'.tr.isNotEmpty &&
+                                'community.pollOptions'.tr != 'community.pollOptions'
+                            ? 'community.pollOptions'.tr
+                            : 'Options',
+                        style: TextStyle(color: textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+
+                      ...optionControllers.asMap().entries.map((entry) {
+                        final idx = entry.key;
+                        final ctrl = entry.value;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: ctrl,
+                                  onChanged: (_) {
+                                    if (validationError != null) {
+                                      setSheetState(() => validationError = null);
+                                    }
+                                  },
+                                  style: TextStyle(color: textPrimary, fontSize: 14),
+                                  decoration: InputDecoration(
+                                    hintText: 'Option ${idx + 1}',
+                                    hintStyle: TextStyle(color: textSecondary, fontSize: 13),
+                                    filled: true,
+                                    fillColor: inputBg,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(color: borderColor, width: 0.8),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(color: borderColor, width: 0.8),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (optionControllers.length > 2)
+                                IconButton(
+                                  icon: Icon(Icons.close_rounded, color: textSecondary, size: 20),
+                                  tooltip: 'Remove Option',
+                                  onPressed: () {
+                                    setSheetState(() {
+                                      optionControllers.removeAt(idx);
+                                      if (validationError != null) validationError = null;
+                                    });
+                                  },
+                                ),
+                            ],
+                          ),
+                        );
+                      }),
+
+                      if (optionControllers.length < 6)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4, bottom: 8),
+                          child: InkWell(
+                            onTap: () {
+                              setSheetState(() {
+                                optionControllers.add(TextEditingController());
+                                if (validationError != null) validationError = null;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(10),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.add_circle_outline_rounded,
+                                    color: Color(0xFF1E88E5),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'community.pollAddOption'.tr.isNotEmpty &&
+                                            'community.pollAddOption'.tr != 'community.pollAddOption'
+                                        ? 'community.pollAddOption'.tr
+                                        : 'Add Option',
+                                    style: const TextStyle(
+                                      color: Color(0xFF1E88E5),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _showScheduleDialog() async {
     final pickedTime = await showTimePicker(
       context: context,
@@ -881,6 +1481,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     final text = _textController.text.trim();
     return text.isNotEmpty ||
         _attachedImages.isNotEmpty ||
+        _attachedVideo != null || // Step 3B: video-only post is valid
         _pollQuestion != null ||
         _attachedEvent != null ||
         _selectedLocation != null ||
@@ -974,6 +1575,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         postId: widget.initialPost!.id,
         content: _textController.text.trim(),
         imageUrls: _attachedImages,
+        videoUrl: _attachedVideo,
         visibility: visibilityValue,
         location: _selectedLocation,
         linkUrl: _attachedLink,
@@ -998,19 +1600,32 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         Navigator.pop(context);
       }
     } else {
-      final success = await controller.createPost(
-        content: _textController.text.trim(),
-        imageUrls: _attachedImages,
-        visibility: visibilityValue,
-        location: _selectedLocation,
-        linkUrl: _attachedLink,
-        linkPreviewTitle: _linkTitle,
-        linkPreviewDomain: _linkDomain,
-        pollQuestion: _pollQuestion,
-        pollOptions: pollOpts,
-        pollDuration: _pollDuration,
-        attachedEvent: _attachedEvent,
-      );
+      bool success = false;
+      if (_pollQuestion != null && _pollOptionsList.length >= 2) {
+        success = await controller.createPollPost(
+          question: _pollQuestion!,
+          options: _pollOptionsList,
+          caption: _textController.text.trim().isNotEmpty
+              ? _textController.text.trim()
+              : null,
+          visibility: visibilityValue,
+        );
+      } else {
+        success = await controller.createPost(
+          content: _textController.text.trim(),
+          imageUrls: _attachedImages,
+          videoUrl: _attachedVideo,
+          visibility: visibilityValue,
+          location: _selectedLocation,
+          linkUrl: _attachedLink,
+          linkPreviewTitle: _linkTitle,
+          linkPreviewDomain: _linkDomain,
+          pollQuestion: _pollQuestion,
+          pollOptions: pollOpts,
+          pollDuration: _pollDuration,
+          attachedEvent: _attachedEvent,
+        );
+      }
 
       if (mounted) {
         if (success) {
@@ -1028,6 +1643,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           setState(() {
             _isSubmitting = false;
           });
+          AppNotificationBanner.showDanger(
+            context: context,
+            title: 'common.error'.tr.isNotEmpty && 'common.error'.tr != 'common.error'
+                ? 'common.error'.tr
+                : 'Failed',
+            message: 'Could not publish your post. Please try again.',
+          );
         }
       }
     }
@@ -1077,7 +1699,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     onTap: _showAudiencePickerSheet,
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF1C2028) : const Color(0xFFF0F2F5),
                         borderRadius: BorderRadius.circular(20),
@@ -1091,9 +1713,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                 ? Icons.public
                                 : (_selectedAudience == 'Friends' ? Icons.group_outlined : Icons.lock_outline),
                             color: textSecondary,
-                            size: 12,
+                            size: 11,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 3),
                           Flexible(
                             child: Text(
                               _selectedAudience == 'Public'
@@ -1251,7 +1873,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
                       const SizedBox(height: 12),
 
+                      // ─── Step 3B-Frontend: Video preview ────────────────────
+                      if (_attachedVideo != null) _buildVideoPreview(isDark, cardBg, cardBorder, textSecondary),
+                      if (_attachedVideo != null) const SizedBox(height: 12),
+                      // ────────────────────────────────────────────────────────
+
                       if (_attachedImages.isNotEmpty ||
+
                           _pollQuestion != null ||
                           _attachedEvent != null ||
                           _attachedLink != null ||
@@ -1383,43 +2011,50 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               _buildAttachedEventCard(isDark, cardBg, cardBorder),
 
                             if (_pollQuestion != null)
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: cardBg,
+                              Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: _showPollCreatorSheet,
                                   borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: cardBorder, width: 0.8),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.bar_chart_rounded, color: textPrimary, size: 22),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            _pollQuestion!,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(color: textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600),
-                                          ),
-                                          Text(
-                                            '${_pollOptionsList.length} options · $_pollDuration',
-                                            style: TextStyle(color: textSecondary, fontSize: 11.5),
-                                          ),
-                                        ],
-                                      ),
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: cardBg,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: cardBorder, width: 0.8),
                                     ),
-                                    GestureDetector(
-                                      onTap: () => setState(() {
-                                        _pollQuestion = null;
-                                        _pollOptionsList = [];
-                                      }),
-                                      child: Icon(Icons.close, color: textSecondary, size: 18),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.poll_rounded, color: textPrimary, size: 22),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                _pollQuestion!,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(color: textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600),
+                                              ),
+                                              Text(
+                                                '${_pollOptionsList.length} options · $_pollDuration',
+                                                style: TextStyle(color: textSecondary, fontSize: 11.5),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        GestureDetector(
+                                          onTap: () => setState(() {
+                                            _pollQuestion = null;
+                                            _pollOptionsList = [];
+                                          }),
+                                          child: Icon(Icons.close, color: textSecondary, size: 18),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
 
@@ -1484,6 +2119,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       onPressed: _showGifPickerSheet,
                     ),
                     _ToolbarBtn(
+                      icon: Icons.poll_outlined,
+                      tooltip: 'Poll',
+                      color: textPrimary.withValues(alpha: 0.85),
+                      onPressed: _showPollCreatorSheet,
+                    ),
+                    _ToolbarBtn(
                       icon: Icons.sentiment_satisfied_alt_outlined,
                       tooltip: 'Feeling / Activity',
                       color: textPrimary.withValues(alpha: 0.85),
@@ -1523,7 +2164,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         child: InkWell(
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            GlobalCreateSheet.show(context, fromPostComposer: true);
+                            GlobalCreateSheet.show(
+                              context,
+                              fromPostComposer: true,
+                              onSelectMedia: _showMediaPickerSheet,
+                              onSelectPoll: _showPollCreatorSheet,
+                              onSelectCelebration: () {
+                                setState(() {
+                                  _selectedFeeling = '🥳 Celebrating';
+                                });
+                              },
+                              onSelectDocument: _showDocumentAttachmentNotice,
+                            );
                           },
                           borderRadius: BorderRadius.circular(10),
                           child: Container(
@@ -1662,6 +2314,127 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       ),
     );
   }
+
+  // ─── Step 3B-Frontend: Video preview widget ───────────────────────────────
+  Widget _buildVideoPreview(bool isDark, Color cardBg, Color cardBorder, Color textSecondary) {
+    final ctrl = _previewVideoController;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF16181C) : const Color(0xFFF2F4F7),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: cardBorder, width: 0.8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Video area ──────────────────────────────────────────────
+            AspectRatio(
+              aspectRatio: (ctrl != null && _videoInitialized)
+                  ? ctrl.value.aspectRatio
+                  : 16 / 9,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Video or placeholder background
+                  if (ctrl != null && _videoInitialized)
+                    VideoPlayer(ctrl)
+                  else
+                    Container(
+                      color: isDark ? const Color(0xFF0C0E12) : const Color(0xFFE0E0E0),
+                    ),
+
+                  // Loading spinner
+                  if (_attachedVideo != null && !_videoInitialized && !_videoInitError)
+                    const CircularProgressIndicator(strokeWidth: 2),
+
+                  // Error state
+                  if (_videoInitError)
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 32),
+                        const SizedBox(height: 6),
+                        Text(
+                          'community.videoLoadError'.tr != 'community.videoLoadError'
+                              ? 'community.videoLoadError'.tr
+                              : 'Unable to play video',
+                          style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                        ),
+                      ],
+                    ),
+
+                  // Play / pause overlay
+                  if (ctrl != null && _videoInitialized)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          setState(() {
+                            ctrl.value.isPlaying ? ctrl.pause() : ctrl.play();
+                          });
+                        },
+                        child: Center(
+                          child: AnimatedOpacity(
+                            opacity: ctrl.value.isPlaying ? 0.0 : 1.0,
+                            duration: const Duration(milliseconds: 200),
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Color(0x88000000),
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(14),
+                              child: Icon(
+                                ctrl.value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                color: Colors.white,
+                                size: 32,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // ── Footer: label + remove ─────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.videocam_outlined, size: 16, color: textSecondary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'community.videoReady'.tr != 'community.videoReady'
+                          ? 'community.videoReady'.tr
+                          : 'Video ready to post',
+                      style: TextStyle(color: textSecondary, fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _clearVideo,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Color(0xCC000000),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close, color: Colors.white, size: 14),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  // ──────────────────────────────────────────────────────────────────────────
 }
 
 class _ToolbarBtn extends StatefulWidget {

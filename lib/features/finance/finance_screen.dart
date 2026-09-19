@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
+import 'package:genlink_frontend/design_system/widgets/headers/app_screen_header.dart';
 import 'package:genlink_frontend/design_system/widgets/buttons/app_button.dart';
 import 'package:genlink_frontend/design_system/widgets/loaders/app_loader.dart';
 import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
@@ -14,6 +15,7 @@ import 'package:genlink_frontend/features/finance/presentation/income_feature/in
 import 'package:genlink_frontend/features/finance/presentation/learn_finance_feature/learn_finance.dart';
 import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_screen.dart';
 import 'package:genlink_frontend/features/finance/widgets/finance_widget.dart';
+import '../home/presentation/widgets/home_header_actions.dart';
 
 class FinanceScreen extends GetView<FinanceController> {
   const FinanceScreen({super.key});
@@ -93,58 +95,17 @@ class _FinanceHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final surface = isDark
-        ? AppColors.darkSurfacePrimary
-        : AppColors.lightSurfacePrimary;
-
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
-
-    final border = isDark
-        ? AppColors.darkBorderSubtle
-        : AppColors.lightBorderSubtle;
+    final semantic = context.semanticColors;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'finance.title'.tr,
-                style: TextStyle(
-                  color: textPrimary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
-
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {},
-                borderRadius: BorderRadius.circular(13),
-                child: Ink(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: surface,
-                    borderRadius: BorderRadius.circular(13),
-                    border: Border.all(color: border),
-                  ),
-                  child: Icon(
-                    Icons.notifications_none_rounded,
-                    size: 23,
-                    color: textPrimary,
-                  ),
-                ),
-              ),
-            ),
+        AppScreenHeader(
+          title: 'finance.title'.tr,
+          includeSafeArea: false,
+          horizontalPadding: EdgeInsets.zero,
+          actions: const [
+            AppHeaderNotificationButton(),
           ],
         ),
 
@@ -153,12 +114,10 @@ class _FinanceHeader extends StatelessWidget {
         _CurrencySelector(
           selectedCurrency: selectedCurrency,
           onChanged: onCurrencyChanged,
-          background: surface,
-          selectedBackground: isDark
-              ? AppColors.darkSurfaceSecondary
-              : AppColors.lightSurfaceSecondary,
-          border: border,
-          textColor: textPrimary,
+          background: semantic.surface,
+          selectedBackground: semantic.surfaceElevated,
+          border: semantic.borderSubtle,
+          textColor: semantic.primaryText,
         ),
       ],
     );

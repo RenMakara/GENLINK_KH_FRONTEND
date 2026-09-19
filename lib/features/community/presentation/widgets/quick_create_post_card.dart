@@ -4,14 +4,12 @@ import 'package:get/get.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
-import '../../../../design_system/widgets/avatar/app_avatar.dart';
-import '../../../auth/presentation/controllers/auth_controller.dart';
 import 'community_creation_flow.dart';
 
-/// "What's happening in your community?" Quick Post Card.
+/// Compact "Share something" entry point for the community feed.
 ///
-/// Used on both Home dashboard and Community feed screen to trigger
-/// instant Create Post composer navigation directly with one tap.
+/// The card keeps the existing create-post and optional creation callbacks;
+/// only their visual presentation is condensed into the Home feed design.
 class QuickCreatePostCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onTapPost;
@@ -34,177 +32,182 @@ class QuickCreatePostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final surfaceSecondary = isDark ? AppColors.darkSurfaceSecondary : AppColors.lightSurfacePrimary;
-    final borderSubtle = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
+    final semantic = context.semanticColors;
+    final hasOptionalActions =
+        onTapPost != null || onTapDiscussion != null || onTapEvent != null;
 
-    final authController =
-        Get.isRegistered<AuthController>() ? Get.find<AuthController>() : null;
-
-    Widget buildCardContent(String? effectiveAvatar, String? effectiveName) {
-      return Padding(
-        padding: padding,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap ?? () => CommunityCreationFlow.openCreatePost(context),
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 10,
-              ),
-              decoration: BoxDecoration(
-                color: surfaceSecondary,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: borderSubtle),
-                boxShadow: isDark
-                    ? []
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+    return Padding(
+      padding: padding,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap ?? () => CommunityCreationFlow.openCreatePost(context),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: Ink(
+            height: 64,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.chatPrimarySoft,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: semantic.borderSubtle),
+              boxShadow: semantic.cardShadow,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.brandPrimary,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _prompt,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: semantic.secondaryText,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w500,
+                        ) ??
+                        TextStyle(
+                          color: semantic.secondaryText,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w500,
                         ),
-                      ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      AppAvatar(
-                        imageUrl: effectiveAvatar,
-                        name: effectiveName,
-                        size: 36,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              effectiveName != null &&
-                                      effectiveName.isNotEmpty &&
-                                      effectiveName != 'Guest'
-                                  ? (Get.locale?.languageCode == 'km'
-                                      ? 'តើមានអ្វីកំពុងកើតឡើងក្នុងសហគមន៍របស់អ្នក, $effectiveName?'
-                                      : "What's happening in your community, $effectiveName?")
-                                  : 'community.whatsHappening'.tr,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: textPrimary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13.5,
-                                  ) ??
-                                  TextStyle(
-                                    color: textPrimary,
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                            const SizedBox(height: 1),
-                            Text(
-                              'community.shareWithCommunity'.tr,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                    color: textMuted,
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w400,
-                                  ) ??
-                                  TextStyle(
-                                    color: textMuted,
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.edit_note_rounded,
-                        color: textMuted.withValues(alpha: 0.7),
-                        size: 20,
-                      ),
-                    ],
                   ),
-                  if (onTapPost != null || onTapDiscussion != null || onTapEvent != null) ...[
-                    const SizedBox(height: 8),
-                    const Divider(height: 1),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        if (onTapPost != null)
-                          InkWell(
-                            onTap: onTapPost,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              child: Text(
-                                'Post',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: textPrimary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        if (onTapDiscussion != null)
-                          InkWell(
-                            onTap: onTapDiscussion,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              child: Text(
-                                'Discussion',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: textPrimary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        if (onTapEvent != null)
-                          InkWell(
-                            onTap: onTapEvent,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              child: Text(
-                                'Event',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: textPrimary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
+                ),
+                const SizedBox(width: 8),
+                if (hasOptionalActions)
+                  _buildOptionalActionIcons(semantic)
+                else
+                  _buildDecorativeActionIcons(semantic),
+              ],
             ),
           ),
         ),
-      );
+      ),
+    );
+  }
+
+  String get _prompt {
+    final name = userName?.trim();
+    if (name != null && name.isNotEmpty && name != 'Guest') {
+      final personalized = 'community.whatsHappeningWithName'.trParams({
+        'name': name,
+      });
+      if (personalized.isNotEmpty &&
+          personalized != 'community.whatsHappeningWithName') {
+        return personalized;
+      }
     }
 
-    if (authController == null) {
-      return buildCardContent(avatarUrl, userName);
+    final translated = 'community.shareWithCommunity'.tr;
+    return translated.isNotEmpty && translated != 'community.shareWithCommunity'
+        ? translated
+        : 'Share something with your community.';
+  }
+
+  Widget _buildDecorativeActionIcons(AppSemanticColors semantic) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _QuickCreateActionIcon(
+          icon: Icons.image_outlined,
+          tooltip: 'Post',
+          color: AppColors.brandPrimary,
+        ),
+        _buildDivider(semantic),
+        _QuickCreateActionIcon(
+          icon: Icons.bar_chart_rounded,
+          tooltip: 'Discussion',
+          color: AppColors.brandPrimary,
+        ),
+        _buildDivider(semantic),
+        _QuickCreateActionIcon(
+          icon: Icons.add_box_outlined,
+          tooltip: 'Event',
+          color: AppColors.brandPrimary,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOptionalActionIcons(AppSemanticColors semantic) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _QuickCreateActionIcon(
+          icon: Icons.image_outlined,
+          tooltip: 'Post',
+          color: AppColors.brandPrimary,
+          onTap: onTapPost,
+        ),
+        _buildDivider(semantic),
+        _QuickCreateActionIcon(
+          icon: Icons.bar_chart_rounded,
+          tooltip: 'Discussion',
+          color: AppColors.brandPrimary,
+          onTap: onTapDiscussion,
+        ),
+        _buildDivider(semantic),
+        _QuickCreateActionIcon(
+          icon: Icons.add_box_outlined,
+          tooltip: 'Event',
+          color: AppColors.brandPrimary,
+          onTap: onTapEvent,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDivider(AppSemanticColors semantic) {
+    return Container(
+      width: 1,
+      height: 24,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: semantic.borderSubtle,
+    );
+  }
+}
+
+class _QuickCreateActionIcon extends StatelessWidget {
+  const _QuickCreateActionIcon({
+    required this.icon,
+    required this.tooltip,
+    required this.color,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconWidget = SizedBox(
+      width: 32,
+      height: 40,
+      child: Center(child: Icon(icon, color: color, size: 22)),
+    );
+
+    if (onTap == null) {
+      return Semantics(label: tooltip, child: iconWidget);
     }
 
-    return Obx(() {
-      final user = authController.currentUser.value;
-      final effectiveAvatar = avatarUrl ?? user?.avatarUrl;
-      final effectiveName = userName ?? user?.fullName;
-      return buildCardContent(effectiveAvatar, effectiveName);
-    });
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: Tooltip(
+        message: tooltip,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: iconWidget,
+        ),
+      ),
+    );
   }
 }

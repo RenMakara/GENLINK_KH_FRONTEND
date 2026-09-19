@@ -5,9 +5,11 @@ import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/models/chat_models.dart';
 import '../controllers/chat_controller.dart';
 import '../bindings/chat_binding.dart';
-import 'chat_detail_screen.dart';
 import 'create_group_screen.dart';
+import 'archived_chats_screen.dart';
 import '../widgets/chat_list_item.dart';
+import '../../chat_navigation.dart';
+
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -19,20 +21,6 @@ class ChatListScreen extends StatefulWidget {
 class _ChatListScreenState extends State<ChatListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-
-  // Exactly 2 intentional demo contacts for demo consistency
-  final List<Map<String, String>> _onlineContacts = const [
-    {
-      'id': 'user_sokny',
-      'name': 'Sokny Enat',
-      'avatar': 'assets/images/user_profile.png',
-    },
-    {
-      'id': 'user_chansela',
-      'name': 'Heng Chansela',
-      'avatar': 'assets/images/heng_chansela_profile.png',
-    },
-  ];
 
   ChatController get _effectiveController {
     if (!Get.isRegistered<ChatController>()) {
@@ -50,6 +38,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   @override
   Widget build(BuildContext context) {
     final chatController = _effectiveController;
+    debugPrint('[CHAT-LIST] build controller = ${identityHashCode(chatController)}');
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bgColor = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
@@ -92,8 +81,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
           style: TextStyle(
             color: textPrimary,
             fontWeight: FontWeight.w700,
-            fontSize: 18,
-            letterSpacing: -0.2,
+            fontSize: 19,
+            letterSpacing: -0.3,
           ),
         ),
         actions: [
@@ -104,21 +93,21 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 message: 'chat.newGroup'.tr.isNotEmpty &&
                         'chat.newGroup'.tr != 'chat.newGroup'
                     ? 'chat.newGroup'.tr
-                    : 'New Group',
+                    : 'New Chat',
                 child: SizedBox(
                   width: 38,
                   height: 38,
                   child: Material(
                     color: isDark
                         ? AppColors.darkSurfaceSecondary
-                        : AppColors.lightBgSecondary,
-                    shape: const StadiumBorder(),
+                        : const Color(0xFFF2F4F7),
+                    shape: const CircleBorder(),
                     child: InkWell(
-                      customBorder: const StadiumBorder(),
+                      customBorder: const CircleBorder(),
                       onTap: () => Get.to(() => const CreateGroupScreen()),
                       child: Center(
                         child: Icon(
-                          Icons.group_add_outlined,
+                          Icons.person_add_alt_1_outlined,
                           color: textPrimary,
                           size: 20,
                         ),
@@ -136,9 +125,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
           constraints: const BoxConstraints(maxWidth: 680),
           child: Column(
             children: [
-              // Clean Single-Layer Search Field
+              // Clean iOS-Style Search Field
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
                 child: TextField(
                   controller: _searchController,
                   onChanged: (val) {
@@ -152,11 +141,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     filled: true,
                     fillColor: isDark
                         ? AppColors.darkSurfaceSecondary
-                        : AppColors.lightBgSecondary,
+                        : const Color(0xFFF2F4F7),
                     hintText: searchPlaceholder,
                     hintStyle: TextStyle(
                       color: textMuted,
-                      fontSize: 13.5,
+                      fontSize: 14,
+                      fontWeight: FontWeight.normal,
                     ),
                     prefixIcon: Icon(
                       Icons.search_rounded,
@@ -182,33 +172,22 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 10),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: borderColor, width: 1),
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: borderColor, width: 1),
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: isDark
-                            ? AppColors.darkBorderStrong
-                            : AppColors.lightBorderStrong,
+                        color: AppColors.brandPrimary.withValues(alpha: 0.6),
                         width: 1.2,
                       ),
                     ),
                   ),
                 ),
-              ),
-
-              // Active demo contacts horizontal row
-              _buildOnlineContactsRow(chatController, isDark, textPrimary),
-
-              Divider(
-                height: 1,
-                thickness: 0.5,
-                color: borderColor.withValues(alpha: isDark ? 0.35 : 0.5),
               ),
 
               // Conversations list
@@ -223,7 +202,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     );
                   }
 
-                  final allConversations = chatController.conversations;
+                   final allConversations = chatController.conversations;
+                  final archivedCount =
+                      allConversations.where((c) => c.isArchived).length;
+                  final showArchivedRow =
+                      _searchQuery.isEmpty && archivedCount > 0;
 
                   final filtered = allConversations.where((conv) {
                     if (conv.isArchived) return false;
@@ -240,7 +223,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
                   if (filtered.isEmpty) {
                     final isSearching = _searchQuery.isNotEmpty;
-                    return Center(
+                    final emptyContent = Center(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 32),
                         child: Column(
@@ -307,7 +290,34 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         ),
                       ),
                     );
+
+                    if (showArchivedRow) {
+                      return RefreshIndicator(
+                        onRefresh: () => chatController.fetchConversations(),
+                        color: AppColors.brandPrimary,
+                        backgroundColor: surfaceColor,
+                        child: ListView(
+                          children: [
+                            _buildArchivedRow(
+                              context,
+                              archivedCount,
+                              isDark,
+                              textPrimary,
+                              textMuted,
+                              borderColor,
+                            ),
+                            const SizedBox(height: 60),
+                            emptyContent,
+                          ],
+                        ),
+                      );
+                    }
+
+                    return emptyContent;
                   }
+
+                  final totalItemCount =
+                      filtered.length + (showArchivedRow ? 1 : 0);
 
                   return RefreshIndicator(
                     onRefresh: () => chatController.fetchConversations(),
@@ -315,7 +325,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     backgroundColor: surfaceColor,
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(vertical: 4),
-                      itemCount: filtered.length,
+                      itemCount: totalItemCount,
                       separatorBuilder: (context, index) => Divider(
                         height: 1,
                         thickness: 0.5,
@@ -325,7 +335,19 @@ class _ChatListScreenState extends State<ChatListScreen> {
                             alpha: isDark ? 0.35 : 0.5),
                       ),
                       itemBuilder: (context, index) {
-                        final conv = filtered[index];
+                        if (showArchivedRow && index == 0) {
+                          return _buildArchivedRow(
+                            context,
+                            archivedCount,
+                            isDark,
+                            textPrimary,
+                            textMuted,
+                            borderColor,
+                          );
+                        }
+                        final convIndex =
+                            showArchivedRow ? index - 1 : index;
+                        final conv = filtered[convIndex];
                         return _buildConversationTile(
                           context,
                           conv,
@@ -347,82 +369,71 @@ class _ChatListScreenState extends State<ChatListScreen> {
     );
   }
 
-  Widget _buildOnlineContactsRow(
-    ChatController controller,
+  Widget _buildArchivedRow(
+    BuildContext context,
+    int count,
     bool isDark,
     Color textPrimary,
+    Color textMuted,
+    Color borderColor,
   ) {
-    return SizedBox(
-      height: 88,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        itemCount: _onlineContacts.length,
-        itemBuilder: (context, index) {
-          final friend = _onlineContacts[index];
-          return GestureDetector(
-            onTap: () async {
-              await controller.openPrivateChat(
-                friend['id']!,
-                name: friend['name'],
-                avatar: friend['avatar'],
-              );
-              Get.to(() => const ChatDetailScreen());
-            },
-            child: Container(
-              width: 88,
-              margin: const EdgeInsets.only(right: 12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 23,
-                        backgroundColor: isDark
-                            ? AppColors.darkSurfaceSecondary
-                            : AppColors.lightBgSecondary,
-                        backgroundImage: AssetImage(friend['avatar']!),
-                      ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: AppColors.success,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isDark
-                                  ? AppColors.darkBgPrimary
-                                  : AppColors.lightBgPrimary,
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    friend['name']!,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: textPrimary,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w500,
-                      height: 1.25,
-                    ),
-                  ),
-                ],
+    return InkWell(
+      onTap: () => Get.to(() => const ArchivedChatsScreen()),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: borderColor.withValues(alpha: isDark ? 0.35 : 0.5),
+              width: 0.5,
+            ),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppColors.brandPrimary.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.archive_outlined,
+                color: AppColors.brandPrimary,
+                size: 20,
               ),
             ),
-          );
-        },
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                'Archived Chats',
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.brandPrimary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$count',
+                style: const TextStyle(
+                  color: AppColors.brandPrimary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right_rounded, size: 20, color: textMuted),
+          ],
+        ),
       ),
     );
   }
@@ -438,10 +449,13 @@ class _ChatListScreenState extends State<ChatListScreen> {
   ) {
     return ChatListItem(
       conversation: conv,
-      onTap: () {
-        controller.openConversation(conv);
-        Get.to(() => const ChatDetailScreen());
+      onTap: () async {
+        debugPrint('[CHAT-NAV] source = ChatList, roomId = ${conv.id}, currentRoute = ${Get.currentRoute}, controller = ${identityHashCode(controller)}');
+        await controller.openConversation(conv);
+        if (!context.mounted) return;
+        ChatNavigation.openChatDetail(conv.id, conversation: conv);
       },
+
       onMute: () async {
         await controller.muteConversation(conv.id);
         if (!Get.testMode) {
@@ -489,6 +503,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 ),
               ),
             ),
+          );
+        }
+      },
+      onUnarchive: () async {
+        await controller.unarchiveConversation(conv.id);
+        if (!Get.testMode) {
+          Get.snackbar(
+            'Unarchived',
+            'Conversation unarchived',
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(seconds: 2),
           );
         }
       },

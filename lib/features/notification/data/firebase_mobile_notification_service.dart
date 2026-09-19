@@ -20,6 +20,10 @@ import '../../productivity/presentation/focus_feature/focus_home_screen.dart';
 import '../../productivity/presentation/habit_feature/habit_screen.dart';
 import '../../productivity/presentation/task_feature/task_home_screen.dart';
 import '../../productivity/productivity_screen.dart';
+import '../../chat/presentation/controllers/chat_controller.dart';
+import '../../chat/chat_navigation.dart';
+
+import '../presentation/controllers/notification_controller.dart';
 
 const _mobilePushChannelId = 'genlink_mobile_push';
 const _mobilePushChannelName = 'GenLink notifications';
@@ -178,6 +182,7 @@ enum MobilePushNotificationDestination {
   goals,
   quiz,
   achievements,
+  chat,
 }
 
 /// Maps backend reference metadata to screens that already exist in Flutter.
@@ -195,6 +200,9 @@ class MobilePushNotificationRouter {
         return MobilePushNotificationDestination.events;
       case 'FRIENDREQUEST':
         return MobilePushNotificationDestination.friendRequests;
+      case 'CHAT':
+      case 'CHATROOM':
+        return MobilePushNotificationDestination.chat;
       case 'BUDGET':
         return MobilePushNotificationDestination.budget;
       case 'SAVINGGOAL':
@@ -211,10 +219,13 @@ class MobilePushNotificationRouter {
         return MobilePushNotificationDestination.achievements;
     }
 
+    if (type.contains('CHAT')) {
+      return MobilePushNotificationDestination.chat;
+    }
     if (type.contains('EVENT')) {
       return MobilePushNotificationDestination.events;
     }
-    if (type.contains('FRIENDREQUEST')) {
+    if (type.contains('FRIENDREQUEST') || type.contains('FOLLOW')) {
       return MobilePushNotificationDestination.friendRequests;
     }
     if (type.contains('BUDGET')) {
@@ -251,6 +262,14 @@ class MobilePushNotificationRouter {
     switch (destinationFor(payload)) {
       case MobilePushNotificationDestination.notifications:
         Get.toNamed<void>(AppRoutes.notifications);
+      case MobilePushNotificationDestination.chat:
+        final roomId = payload.referenceId;
+        if (roomId != null && roomId.isNotEmpty) {
+          ChatNavigation.openChatDetail(roomId);
+        } else {
+          Get.toNamed<void>(AppRoutes.chat);
+        }
+
       case MobilePushNotificationDestination.events:
         Get.to<void>(() => const EventsScreen());
       case MobilePushNotificationDestination.friendRequests:
@@ -388,6 +407,17 @@ class FirebaseMobileNotificationService {
         '[FCM] Foreground notification shown type=${payload.type} '
         'deliveryId=${payload.deliveryId ?? 'none'}',
       );
+
+      if (Get.isRegistered<NotificationController>()) {
+        Get.find<NotificationController>()
+            .onRealtimeNotificationReceivedFromPayload(payload);
+      }
+      final isChat = payload.type.toUpperCase().contains('CHAT') ||
+          (payload.referenceType?.toUpperCase() == 'CHAT_ROOM') ||
+          (payload.referenceType?.toUpperCase() == 'CHAT');
+      if (isChat && Get.isRegistered<ChatController>()) {
+        Get.find<ChatController>().fetchUnreadCount();
+      }
     } catch (error, stackTrace) {
       debugPrint(
         '[FCM] Foreground notification display failed: $error\n$stackTrace',

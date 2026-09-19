@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
@@ -18,63 +19,84 @@ class CreateGroupScreen extends StatefulWidget {
 class _CreateGroupScreenState extends State<CreateGroupScreen> {
   final TextEditingController _groupNameController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
-  final Set<String> _selectedUserIds = {};
+  final Map<String, Map<String, dynamic>> _selectedMembers = {};
+  final List<Map<String, dynamic>> _defaultContacts = [];
+  final List<Map<String, dynamic>> _searchResults = [];
+  Timer? _debounceTimer;
   String _searchQuery = '';
   bool _isCreating = false;
+  bool _isSearching = false;
 
-  final List<Map<String, dynamic>> _contacts = [
-    {
-      'id': 'user_sokny',
-      'name': 'Sokny Enat',
-      'handle': '@soknyenat',
-      'avatar': 'assets/images/user_profile.png',
-      'isOnline': true,
-    },
-    {
-      'id': 'user_chansela',
-      'name': 'Heng Chansela',
-      'handle': '@chansela',
-      'avatar': 'assets/images/heng_chansela_profile.png',
-      'isOnline': true,
-    },
-    {
-      'id': 'user_makara',
-      'name': 'Ren Makara',
-      'handle': '@renmakara',
-      'avatar': 'assets/images/ren_makara_profile.png',
-      'isOnline': true,
-    },
-    {
-      'id': 'user_dara',
-      'name': 'Dara Heng',
-      'handle': '@daraheng',
-      'avatar': 'assets/images/user_profile.png',
-      'isOnline': false,
-    },
-    {
-      'id': 'user_sophea',
-      'name': 'Sophea Kim',
-      'handle': '@sopheakim',
-      'avatar': 'assets/images/user_profile.png',
-      'isOnline': false,
-    },
-    {
-      'id': 'user_visal',
-      'name': 'Visal Meas',
-      'handle': '@visalmeas',
-      'avatar': 'assets/images/user_profile.png',
-      'isOnline': true,
-    },
+  static final RegExp _uuidRegex = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+
+  static final List<Map<String, dynamic>> _initialSuggestedContacts = [
+    // {
+    //   'id': 'a0000000-0000-0000-0000-000000000001',
+    //   'name': 'Sokny Enat',
+    //   'handle': '@soknyenat',
+    //   'avatar': 'assets/images/user_profile.png',
+    //   'isOnline': true,
+    // },
+    // {
+    //   'id': 'a0000000-0000-0000-0000-000000000002',
+    //   'name': 'Heng Chansela',
+    //   'handle': '@chansela',
+    //   'avatar': 'assets/images/heng_chansela_profile.png',
+    //   'isOnline': true,
+    // },
+    // {
+    //   'id': 'a0000000-0000-0000-0000-000000000003',
+    //   'name': 'Ren Makara',
+    //   'handle': '@renmakara',
+    //   'avatar': 'assets/images/ren_makara_profile.png',
+    //   'isOnline': true,
+    // },
   ];
 
   @override
   void initState() {
     super.initState();
     _groupNameController.addListener(() => setState(() {}));
+    _initDefaultContacts();
+  }
+
+  void _initDefaultContacts() {
+    final Set<String> seenIds = {};
+
+    if (Get.isRegistered<ChatController>()) {
+      final chatController = Get.find<ChatController>();
+      for (final conv in chatController.conversations) {
+        final uid = conv.profileUserId;
+        if (!conv.isGroup &&
+            uid != null &&
+            _uuidRegex.hasMatch(uid) &&
+            !seenIds.contains(uid)) {
+          seenIds.add(uid);
+          _defaultContacts.add({
+            'id': uid,
+            'name': conv.name,
+            'handle': conv.profileUsername?.isNotEmpty == true
+                ? '@${conv.profileUsername}'
+                : '@user',
+            'avatar': conv.avatar,
+            'isOnline': conv.isOnline,
+          });
+        }
+      }
+    }
+
+    for (final c in _initialSuggestedContacts) {
+      if (seenIds.add(c['id'] as String)) {
+        _defaultContacts.add(c);
+      }
+    }
   }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _groupNameController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -82,8 +104,57 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
   bool get _canCreate =>
       _groupNameController.text.trim().isNotEmpty &&
-      _selectedUserIds.isNotEmpty &&
+      _selectedMembers.isNotEmpty &&
       !_isCreating;
+
+  void _onSearchChanged(String val) {
+    final q = val.trim();
+    setState(() {
+      _searchQuery = q;
+    });
+
+    _debounceTimer?.cancel();
+    if (q.isEmpty) {
+      setState(() {
+        _searchResults.clear();
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () async {
+      try {
+        if (!Get.isRegistered<ChatController>()) {
+          if (mounted) setState(() => _isSearching = false);
+          return;
+        }
+        final chatController = Get.find<ChatController>();
+        final results = await chatController.repository.searchUsers(q);
+        final validResults = results.where((u) {
+          final id = u['id']?.toString() ?? '';
+          return _uuidRegex.hasMatch(id);
+        }).toList();
+
+        if (mounted) {
+          setState(() {
+            _searchResults.clear();
+            _searchResults.addAll(validResults);
+            _isSearching = false;
+          });
+        }
+      } catch (_) {
+        if (mounted) {
+          setState(() {
+            _isSearching = false;
+          });
+        }
+      }
+    });
+  }
 
   Future<void> _onCreateGroup() async {
     final name = _groupNameController.text.trim();
@@ -103,7 +174,11 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       return;
     }
 
-    if (_selectedUserIds.isEmpty) {
+    final validMemberIds = _selectedMembers.keys
+        .where((id) => _uuidRegex.hasMatch(id))
+        .toList();
+
+    if (validMemberIds.isEmpty) {
       AppNotificationBanner.showWarning(
         context: context,
         title: 'chat.selectMembers'.tr.isNotEmpty &&
@@ -123,19 +198,37 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       _isCreating = true;
     });
 
-    final chatController = Get.find<ChatController>();
-    final newGroup = await chatController.createGroup(
-      name,
-      _selectedUserIds.toList(),
-    );
+    try {
+      if (!Get.isRegistered<ChatController>()) {
+        setState(() => _isCreating = false);
+        return;
+      }
+      final chatController = Get.find<ChatController>();
+      final newGroup = await chatController.createGroup(
+        name,
+        validMemberIds,
+      );
 
-    setState(() {
-      _isCreating = false;
-    });
+      setState(() {
+        _isCreating = false;
+      });
 
-    if (newGroup != null) {
-      Get.back();
-      Get.to(() => const ChatDetailScreen());
+      if (newGroup != null) {
+        Get.back();
+        Get.to(() => const ChatDetailScreen());
+      }
+    } catch (_) {
+      setState(() {
+        _isCreating = false;
+      });
+      if (mounted) {
+        AppNotificationBanner.showError(
+          context: context,
+          title: 'Error',
+          message: 'Failed to create group. Please check your connection and try again.',
+          icon: Icons.error_outline_rounded,
+        );
+      }
     }
   }
 
@@ -149,17 +242,29 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     final textMuted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final borderColor = isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
 
-    final filteredContacts = _contacts.where((c) {
-      if (_searchQuery.isEmpty) return true;
-      final q = _searchQuery.toLowerCase();
-      final name = (c['name'] as String).toLowerCase();
-      final handle = (c['handle'] as String).toLowerCase();
-      return name.contains(q) || handle.contains(q);
-    }).toList();
+    final selectedContactsList = _selectedMembers.values.toList();
 
-    final selectedContactsList = _contacts
-        .where((c) => _selectedUserIds.contains(c['id']))
-        .toList();
+    final List<Map<String, dynamic>> displayContacts;
+    if (_searchQuery.isEmpty) {
+      displayContacts = _defaultContacts;
+    } else {
+      final seenIds = <String>{};
+      final combined = <Map<String, dynamic>>[];
+      final q = _searchQuery.toLowerCase();
+      for (final c in _defaultContacts) {
+        final id = c['id'] as String;
+        final name = (c['name'] as String).toLowerCase();
+        final handle = (c['handle'] as String).toLowerCase();
+        if (name.contains(q) || handle.contains(q)) {
+          if (seenIds.add(id)) combined.add(c);
+        }
+      }
+      for (final c in _searchResults) {
+        final id = c['id'] as String;
+        if (seenIds.add(id)) combined.add(c);
+      }
+      displayContacts = combined;
+    }
 
     final titleText = 'chat.newGroupChat'.tr.isNotEmpty && 'chat.newGroupChat'.tr != 'chat.newGroupChat'
         ? 'chat.newGroupChat'.tr
@@ -304,7 +409,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                 ),
               ),
 
-              if (_selectedUserIds.isNotEmpty) ...[
+              if (_selectedMembers.isNotEmpty) ...[
                 Container(
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
                   decoration: BoxDecoration(
@@ -320,8 +425,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                           Text(
                             'chat.selectedCount'.tr.isNotEmpty &&
                                     'chat.selectedCount'.tr != 'chat.selectedCount'
-                                ? 'chat.selectedCount'.trParams({'count': '${_selectedUserIds.length}'})
-                                : 'Selected · ${_selectedUserIds.length}',
+                                ? 'chat.selectedCount'.trParams({'count': '${_selectedMembers.length}'})
+                                : 'Selected · ${_selectedMembers.length}',
                             style: TextStyle(
                               color: textPrimary,
                               fontSize: 12.5,
@@ -331,7 +436,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                           GestureDetector(
                             onTap: () {
                               setState(() {
-                                _selectedUserIds.clear();
+                                _selectedMembers.clear();
                               });
                             },
                             child: Text(
@@ -389,7 +494,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                                   child: GestureDetector(
                                     onTap: () {
                                       setState(() {
-                                        _selectedUserIds.remove(contact['id']);
+                                        _selectedMembers.remove(contact['id']);
                                       });
                                     },
                                     child: Container(
@@ -427,11 +532,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                   ),
                   child: TextField(
                     controller: _searchController,
-                    onChanged: (val) {
-                      setState(() {
-                        _searchQuery = val.trim();
-                      });
-                    },
+                    onChanged: _onSearchChanged,
                     style: TextStyle(color: textPrimary, fontSize: 13),
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -447,9 +548,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                               icon: Icon(Icons.close_rounded, size: 16, color: textMuted),
                               onPressed: () {
                                 _searchController.clear();
-                                setState(() {
-                                  _searchQuery = '';
-                                });
+                                _onSearchChanged('');
                               },
                             )
                           : null,
@@ -477,32 +576,76 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
               ),
 
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                  itemCount: filteredContacts.length,
-                  itemBuilder: (context, index) {
-                    final contact = filteredContacts[index];
-                    final contactId = contact['id'] as String;
-                    final isSelected = _selectedUserIds.contains(contactId);
+                child: _isSearching
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(24.0),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.chatPrimary,
+                          ),
+                        ),
+                      )
+                    : displayContacts.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 32),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _searchQuery.isNotEmpty
+                                        ? Icons.search_off_rounded
+                                        : Icons.person_search_rounded,
+                                    size: 38,
+                                    color: textMuted.withValues(alpha: 0.6),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    _searchQuery.isNotEmpty
+                                        ? 'No students found for "$_searchQuery"'
+                                        : 'Search students to add to your group',
+                                    style: TextStyle(
+                                      color: textMuted,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 2),
+                            itemCount: displayContacts.length,
+                            itemBuilder: (context, index) {
+                              final contact = displayContacts[index];
+                              final contactId = contact['id'] as String;
+                              final isSelected =
+                                  _selectedMembers.containsKey(contactId);
 
-                    return GroupMemberTile(
-                      name: contact['name'] as String,
-                      handle: contact['handle'] as String,
-                      avatarUrl: contact['avatar'] as String?,
-                      isOnline: contact['isOnline'] as bool? ?? false,
-                      isSelected: isSelected,
-                      onTap: () {
-                        setState(() {
-                          if (isSelected) {
-                            _selectedUserIds.remove(contactId);
-                          } else {
-                            _selectedUserIds.add(contactId);
-                          }
-                        });
-                      },
-                    );
-                  },
-                ),
+                              return GroupMemberTile(
+                                name: contact['name'] as String,
+                                handle: contact['handle'] as String,
+                                avatarUrl: contact['avatar'] as String?,
+                                isOnline:
+                                    contact['isOnline'] as bool? ?? false,
+                                isSelected: isSelected,
+                                onTap: () {
+                                  setState(() {
+                                    if (isSelected) {
+                                      _selectedMembers.remove(contactId);
+                                    } else {
+                                      _selectedMembers[contactId] = contact;
+                                    }
+                                  });
+                                },
+                              );
+                            },
+                          ),
               ),
             ],
           ),

@@ -65,7 +65,15 @@ class ChatRepositoryImpl {
     return remoteDataSource.muteConversation(conversationId);
   }
 
+  Future<ChatConversationModel> getRoom(String roomId) {
+    return remoteDataSource.getRoom(roomId);
+  }
+
   Future<int> getUnreadCount() {
-    return remoteDataSource.getUnreadCount();
+    return remoteDataSource.fetchUnreadCount();
+  }
+
+  Future<List<Map<String, dynamic>>> searchUsers(String query) {
+    return remoteDataSource.searchUsers(query);
   }
 }

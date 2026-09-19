@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../controllers/quiz_controller.dart';
@@ -98,7 +99,7 @@ class ReviewSubmitScreen extends GetView<QuizController> {
 
   Widget _buildQuestionRow(BuildContext context, int index) {
     return Obx(() {
-      final isAnswered = controller.selectedAnswers.containsKey(index);
+      final isAnswered = controller.isQuestionAnswered(index);
       return QuizCustomCard(
         margin: const EdgeInsets.only(bottom: AppSpacing.sm + 2),
         padding: const EdgeInsets.symmetric(
@@ -194,7 +195,7 @@ class ReviewSubmitScreen extends GetView<QuizController> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Text(
-                    'quiz.submissionFailed'.tr,
+                    controller.submitError.value!,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
@@ -221,7 +222,7 @@ class ReviewSubmitScreen extends GetView<QuizController> {
     if (controller.isQuizSubmitted.value) return;
     await controller.submitQuiz();
     if (controller.quizResult.value != null) {
-      Get.offAndToNamed('/quiz/result');
+      Get.offAndToNamed(AppRoutes.quizResult);
     }
   }
 }

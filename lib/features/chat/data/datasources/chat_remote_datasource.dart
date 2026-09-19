@@ -5,7 +5,6 @@ import '../../domain/models/chat_models.dart';
 
 class ChatRemoteDataSource {
   final Dio dio;
-  final Map<String, List<ChatMessageModel>> _localMessages = {};
 
   ChatRemoteDataSource({required this.dio});
 
@@ -20,35 +19,31 @@ class ChatRemoteDataSource {
         .toList();
   }
 
+  Future<int> fetchUnreadCount() async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(ApiEndpoints.chatUnreadCount),
+    );
+    final data = _dataOf(response.data);
+    return (data['unreadCount'] as num?)?.toInt() ?? 0;
+  }
+
+  Future<ChatConversationModel> getRoom(String roomId) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>('${ApiEndpoints.chats}/$roomId'),
+    );
+    final data = _dataOf(response.data);
+    return ChatConversationModel.fromRoomResponse(data, roomId: roomId);
+  }
+
   Future<ChatConversationModel> openPrivateChat(String userId) async {
-    try {
-      final response = await guardDio(
-        () => dio.post<dynamic>('${ApiEndpoints.chats}/private/$userId'),
-      );
-      final data = _dataOf(response.data);
-      return ChatConversationModel.fromRoomResponse(
-        data,
-        participantUserId: userId,
-      );
-    } catch (_) {
-      final isSokny = userId == 'user_sokny' || userId.toLowerCase().contains('sokny');
-      final isChansela = userId == 'user_chansela' || userId.toLowerCase().contains('chansela');
-      return ChatConversationModel(
-        id: 'private_$userId',
-        name: isSokny ? 'Sokny Enat' : (isChansela ? 'Heng Chansela' : 'User'),
-        avatar: isSokny
-            ? 'assets/images/user_profile.png'
-            : (isChansela
-                ? 'assets/images/heng_chansela_profile.png'
-                : 'assets/images/user_profile.png'),
-        profileUserId: userId,
-        isGroup: false,
-        isOnline: true,
-        lastMessage: '',
-        lastMessageTime: 'Just now',
-        unreadCount: 0,
-      );
-    }
+    final response = await guardDio(
+      () => dio.post<dynamic>('${ApiEndpoints.chats}/private/$userId'),
+    );
+    final data = _dataOf(response.data);
+    return ChatConversationModel.fromRoomResponse(
+      data,
+      participantUserId: userId,
+    );
   }
 
   Future<ChatConversationModel> createGroup(
@@ -60,7 +55,7 @@ class ChatRemoteDataSource {
         '${ApiEndpoints.chats}/groups',
         data: {
           'name': name,
-          'memberUserIds': memberUserIds,
+          'memberIds': memberUserIds,
         },
       ),
     );
@@ -69,25 +64,20 @@ class ChatRemoteDataSource {
   }
 
   Future<List<ChatMessageModel>> fetchMessages(String conversationId) async {
-    try {
-      final response = await guardDio(
-        () => dio.get<dynamic>('${ApiEndpoints.chats}/$conversationId/messages'),
-      );
-      final content = _contentOf(response.data);
-      final messages = content
-          .map(
-            (json) => ChatMessageModel.fromJson(
-              json.cast<String, dynamic>(),
-              conversationId: conversationId,
-            ),
-          )
-          .toList();
-      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      _localMessages[conversationId] = List.from(messages);
-      return messages;
-    } catch (_) {
-      return _localMessages[conversationId] ?? <ChatMessageModel>[];
-    }
+    final response = await guardDio(
+      () => dio.get<dynamic>('${ApiEndpoints.chats}/$conversationId/messages'),
+    );
+    final content = _contentOf(response.data);
+    final messages = content
+        .map(
+          (json) => ChatMessageModel.fromJson(
+            json.cast<String, dynamic>(),
+            conversationId: conversationId,
+          ),
+        )
+        .toList();
+    messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    return messages;
   }
 
   Future<ChatMessageModel> sendMessage(
@@ -97,134 +87,132 @@ class ChatRemoteDataSource {
     String? mediaUrl,
     ChatReplyReference? replyTo,
   }) async {
-    try {
-      final response = await guardDio(
-        () => dio.post<dynamic>(
-          '${ApiEndpoints.chats}/$conversationId/messages',
-          data: {
-            'type': _toBackendType(messageType),
-            'content': content,
-            'mediaUrl': mediaUrl,
-            if (replyTo != null) ...{
-              'replyToMessageId': replyTo.messageId,
-              'replyTo': replyTo.toJson(),
-            },
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        '${ApiEndpoints.chats}/$conversationId/messages',
+        data: {
+          'type': _toBackendType(messageType),
+          'content': content,
+          'mediaUrl': mediaUrl,
+          if (replyTo != null) ...{
+            'replyToMessageId': replyTo.messageId,
+            'replyTo': replyTo.toJson(),
           },
-        ),
-      );
-      final data = _dataOf(response.data);
-      var msg = ChatMessageModel.fromJson(data, conversationId: conversationId);
-      if (replyTo != null && msg.replyTo == null) {
-        msg = msg.copyWith(replyTo: replyTo);
-      }
-      _localMessages.putIfAbsent(conversationId, () => []).add(msg);
-      return msg;
-    } catch (_) {
-      final fallbackMsg = ChatMessageModel(
-        id: 'msg_local_${DateTime.now().millisecondsSinceEpoch}',
-        conversationId: conversationId,
-        senderId: 'current_user',
-        senderName: 'Me',
-        content: content,
-        timestamp: DateTime.now(),
-        timeAgo: 'Just now',
-        isMine: true,
-        messageType: messageType,
-        mediaUrl: mediaUrl,
-        replyTo: replyTo,
-      );
-      _localMessages.putIfAbsent(conversationId, () => []).add(fallbackMsg);
-      return fallbackMsg;
+        },
+      ),
+    );
+    final data = _dataOf(response.data);
+    var msg = ChatMessageModel.fromJson(data, conversationId: conversationId);
+    if (replyTo != null && msg.replyTo == null) {
+      msg = msg.copyWith(replyTo: replyTo);
     }
+    if (messageType != 'text' && (msg.messageType == 'text' || msg.messageType.isEmpty)) {
+      msg = msg.copyWith(messageType: messageType);
+    }
+    if (mediaUrl != null && (msg.mediaUrl == null || msg.mediaUrl!.isEmpty)) {
+      msg = msg.copyWith(mediaUrl: mediaUrl);
+    }
+    return msg;
   }
 
   Future<bool> markConversationRead(String conversationId) async {
-    try {
-      await guardDio(
-        () => dio.post<dynamic>('${ApiEndpoints.chats}/$conversationId/read'),
-      );
-    } catch (_) {}
+    await guardDio(
+      () => dio.post<dynamic>('${ApiEndpoints.chats}/$conversationId/read'),
+    );
     return true;
   }
 
   Future<bool> deleteMessage(String conversationId, String messageId) async {
-    try {
-      await guardDio(
-        () => dio.delete<dynamic>(
-          '${ApiEndpoints.chats}/$conversationId/messages/$messageId',
-        ),
-      );
-    } catch (_) {}
-    _localMessages[conversationId]?.removeWhere((m) => m.id == messageId);
+    await guardDio(
+      () => dio.delete<dynamic>(
+        '${ApiEndpoints.chats}/$conversationId/messages/$messageId',
+      ),
+    );
     return true;
   }
 
   Future<bool> deleteConversation(String conversationId) async {
-    try {
-      await guardDio(
-        () => dio.delete<dynamic>('${ApiEndpoints.chats}/$conversationId'),
-      );
-    } catch (_) {
-      // Gracefully support local mock/demo deletions
-    }
-    _localMessages.remove(conversationId);
+    await guardDio(
+      () => dio.delete<dynamic>('${ApiEndpoints.chats}/$conversationId'),
+    );
     return true;
   }
 
   Future<bool> archiveConversation(String conversationId) async {
-    try {
-      await guardDio(
-        () => dio.post<dynamic>('${ApiEndpoints.chats}/$conversationId/archive'),
-      );
-    } catch (_) {
-      // Gracefully support local mock/demo archiving
-    }
+    await guardDio(
+      () => dio.post<dynamic>('${ApiEndpoints.chats}/$conversationId/archive'),
+    );
     return true;
   }
 
   Future<bool> unarchiveConversation(String conversationId) async {
-    try {
-      await guardDio(
-        () => dio.post<dynamic>('${ApiEndpoints.chats}/$conversationId/unarchive'),
-      );
-    } catch (_) {
-      // Gracefully support local mock/demo unarchiving
-    }
+    await guardDio(
+      () => dio.post<dynamic>('${ApiEndpoints.chats}/$conversationId/unarchive'),
+    );
     return true;
   }
 
   Future<bool> muteConversation(String conversationId) async {
-    try {
-      await guardDio(
-        () => dio.post<dynamic>('${ApiEndpoints.chats}/$conversationId/mute'),
-      );
-    } catch (_) {
-      // Gracefully support local mock/demo muting
-    }
+    await guardDio(
+      () => dio.post<dynamic>('${ApiEndpoints.chats}/$conversationId/mute'),
+    );
     return true;
   }
 
   Future<int> getUnreadCount() async {
     final response = await guardDio(
-      () => dio.get<dynamic>('${ApiEndpoints.chats}/unread-count'),
+      () => dio.get<dynamic>(ApiEndpoints.chatUnreadCount),
     );
     final data = _dataOf(response.data);
     return (data['unreadCount'] as num?)?.toInt() ?? 0;
   }
 
+  Future<List<Map<String, dynamic>>> searchUsers(String query) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          '/api/v1/search/people',
+          queryParameters: {'q': query.trim(), 'size': 20},
+        ),
+      );
+      final content = _contentOf(response.data);
+      return content.map((e) {
+        final map = (e as Map).cast<String, dynamic>();
+        return {
+          'id': map['userId']?.toString() ?? '',
+          'name': (map['fullName'] as String?)?.isNotEmpty == true
+              ? map['fullName']
+              : (map['username'] ?? 'User'),
+          'handle': '@${map['username'] ?? ''}',
+          'avatar': map['avatarUrl'] ?? 'assets/images/user_profile.png',
+          'isOnline': false,
+        };
+      }).toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
   List<dynamic> _contentOf(dynamic body) {
-    final map = _dataOf(body);
-    final content = map['content'];
-    if (content is List) return content;
-    if (map.isEmpty && body is List) return body;
+    if (body is List) return body;
+    if (body is Map) {
+      final data = body['data'];
+      if (data is List) return data;
+      if (data is Map) {
+        final content = data['content'] ?? data['items'] ?? data['messages'];
+        if (content is List) return content;
+      }
+      final content = body['content'] ?? body['items'] ?? body['messages'];
+      if (content is List) return content;
+    }
     return const [];
   }
 
   Map<String, dynamic> _dataOf(dynamic body) {
-    if (body is Map<String, dynamic>) {
+    if (body is Map) {
       final data = body['data'];
       if (data is Map) return data.cast<String, dynamic>();
-      return const <String, dynamic>{};
+      return body.cast<String, dynamic>();
     }
     return const <String, dynamic>{};
   }

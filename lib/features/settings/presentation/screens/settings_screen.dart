@@ -251,7 +251,10 @@ class _ProfileSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: scheme.outlineVariant),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.56),
+          width: 0.7,
+        ),
       ),
       child: Row(
         children: [
@@ -381,22 +384,23 @@ class _SettingsGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final borderColor = scheme.outlineVariant.withValues(alpha: 0.56);
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: scheme.outlineVariant),
+        border: Border.all(color: borderColor, width: 0.7),
       ),
       child: Column(
         children: [
           for (var index = 0; index < rows.length; index++) ...[
             if (index > 0)
               Divider(
-                height: 1,
+                height: 0.5,
                 indent: 76,
                 endIndent: AppSpacing.md,
-                color: scheme.outlineVariant,
+                color: borderColor,
               ),
             rows[index],
           ],
@@ -526,7 +530,10 @@ class _LogOutButton extends StatelessWidget {
           height: 58,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.xl),
-            border: Border.all(color: error.withValues(alpha: 0.24)),
+            border: Border.all(
+              color: error.withValues(alpha: 0.16),
+              width: 0.7,
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,

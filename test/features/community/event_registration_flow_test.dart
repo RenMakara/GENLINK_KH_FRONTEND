@@ -20,6 +20,7 @@ void main() {
     required EventModel event,
     Locale locale = const Locale('en', 'US'),
     ThemeMode themeMode = ThemeMode.dark,
+    Future<bool> Function(String eventId)? onCancelRsvp,
   }) {
     return GetMaterialApp(
       translations: AppTranslations(),
@@ -27,7 +28,10 @@ void main() {
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       themeMode: themeMode,
-      home: EventRegisterScreen(event: event),
+      home: EventRegisterScreen(
+        event: event,
+        onCancelRsvp: onCancelRsvp,
+      ),
     );
   }
 
@@ -245,5 +249,55 @@ void main() {
     expect(find.text('ព័ត៌មានទំនាក់ទំនង'), findsOneWidget);
     expect(find.text('ឈ្មោះពេញ *'), findsOneWidget);
     expect(find.text('ចុះឈ្មោះឥឡូវនេះ'), findsOneWidget);
+  });
+
+  testWidgets('9. Registered user can cancel registration from registered banner with confirmation', (tester) async {
+    final event = sampleEvent(isRsvped: true);
+    await tester.pumpWidget(createTestWidget(event: event));
+    await tester.pumpAndSettle();
+
+    expect(find.text("You're already registered"), findsAtLeastNWidgets(1));
+    expect(find.text('Cancel Registration'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel Registration'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cancel Registration?'), findsOneWidget);
+    expect(find.text('Are you sure you want to cancel your registration? Your spot will be released.'), findsOneWidget);
+
+    // Cancel dialog
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cancel Registration?'), findsNothing);
+    expect(event.isRsvped, isTrue);
+  });
+
+  testWidgets('10. Confirming cancellation restores form state and enables Register Now CTA', (tester) async {
+    bool cancelCalled = false;
+    final event = sampleEvent(isRsvped: true);
+
+    await tester.pumpWidget(createTestWidget(
+      event: event,
+      onCancelRsvp: (id) async {
+        cancelCalled = true;
+        return true;
+      },
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cancel Registration'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel Registration'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Yes, Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(cancelCalled, isTrue);
+    expect(event.isRsvped, isFalse);
+    expect(event.attendeesCount, equals(44));
+    expect(find.text("You're already registered"), findsNothing);
+    expect(find.text('Register Now'), findsOneWidget);
   });
 }

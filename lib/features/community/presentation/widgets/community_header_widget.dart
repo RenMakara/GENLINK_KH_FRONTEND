@@ -2,213 +2,158 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
-import '../../../../design_system/spacing/app_spacing.dart';
-import '../../../chat/presentation/screens/chat_list_screen.dart';
-import '../../../notification/presentation/controllers/notification_controller.dart';
-import '../../../notification/presentation/screens/notification_screen.dart';
+import '../../../../design_system/widgets/headers/app_screen_header.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../home/presentation/widgets/home_header_actions.dart';
 import '../screens/community_search_screen.dart';
 
 class CommunityHeaderWidget extends StatelessWidget
     implements PreferredSizeWidget {
+  static const double standardHeaderHeight = 52.0;
+  static const double homeHeaderHeight = 76.0;
+
   final String activeCategory;
+  final String Function()? activeCategoryBuilder;
   final bool isHomeScreen;
 
   const CommunityHeaderWidget({
     super.key,
     required this.activeCategory,
-    this.isHomeScreen = false,
+    this.activeCategoryBuilder,
+    this.isHomeScreen = true,
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(64.0);
+  Size get preferredSize =>
+      Size.fromHeight(isHomeScreen ? homeHeaderHeight : standardHeaderHeight);
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    final bg = isDark ? AppColors.darkBgPrimary : AppColors.lightBgPrimary;
-
-    final textPrimary = isDark
-        ? AppColors.darkTextPrimary
-        : AppColors.lightTextPrimary;
+    final actions = <Widget>[
+      AppHeaderActionButton(
+        icon: Icons.search_rounded,
+        onTap: () => Get.to(
+          () => CommunitySearchScreen(
+            activeTab: activeCategoryBuilder?.call() ?? activeCategory,
+          ),
+        ),
+        tooltip:
+            'community.search'.tr.isNotEmpty &&
+                'community.search'.tr != 'community.search'
+            ? 'community.search'.tr
+            : 'Search',
+      ),
+      const AppHeaderNotificationButton(),
+      const AppHeaderChatButton(),
+    ];
 
     final titleText = isHomeScreen
         ? ('nav.home'.tr.isNotEmpty && 'nav.home'.tr != 'nav.home'
-            ? 'nav.home'.tr
-            : 'Home')
+              ? 'nav.home'.tr
+              : 'Home')
         : ('community.title'.tr.isNotEmpty &&
-                'community.title'.tr != 'community.title'
-            ? 'community.title'.tr
-            : 'Community');
+                  'community.title'.tr != 'community.title'
+              ? 'community.title'.tr
+              : 'Community');
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isNarrow = screenWidth < 360;
-    final isVeryNarrow = screenWidth < 335;
-    final buttonSize = isVeryNarrow ? 32.0 : (isNarrow ? 36.0 : 42.0);
-    final buttonGap = isVeryNarrow
-        ? 2.0
-        : (isNarrow ? 4.0 : AppSpacing.sm);
-    final iconSize = isVeryNarrow ? 18.0 : (isNarrow ? 20.0 : 22.0);
-    final titleFontSize = isVeryNarrow
-        ? 18.0
-        : (isNarrow ? 20.0 : 22.0);
-    final horizontalPadding = isVeryNarrow ? 8.0 : (isNarrow ? 10.0 : AppSpacing.md);
-
-    return Container(
-      color: bg,
-      child: SafeArea(
-        bottom: false,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: Container(
-              height: preferredSize.height,
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      titleText,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: titleFontSize,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 6),
-
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _HeaderActionButton(
-                        icon: Icons.search_rounded,
-                        onTap: () => Get.to(
-                          () => CommunitySearchScreen(
-                            activeTab: activeCategory,
-                          ),
-                        ),
-                        iconColor: textPrimary,
-                        buttonSize: buttonSize,
-                        iconSize: iconSize,
-                        tooltip: 'community.search'.tr,
-                      ),
-
-                      SizedBox(width: buttonGap),
-
-                      _HeaderActionButton(
-                        icon: Icons.forum_outlined,
-                        onTap: () => Get.to(() => const ChatListScreen()),
-                        iconColor: textPrimary,
-                        buttonSize: buttonSize,
-                        iconSize: iconSize,
-                        tooltip: 'community.chat'.tr,
-                      ),
-
-                      SizedBox(width: buttonGap),
-
-                      Builder(builder: (context) {
-                        if (!Get.isRegistered<NotificationController>()) {
-                          return _HeaderActionButton(
-                            icon: Icons.notifications_none_rounded,
-                            onTap: () =>
-                                Get.to(() => const NotificationScreen()),
-                            iconColor: textPrimary,
-                            buttonSize: buttonSize,
-                            iconSize: iconSize,
-                            tooltip: 'community.notifications'.tr,
-                          );
-                        }
-                        final notifController =
-                            Get.find<NotificationController>();
-                        return Obx(() {
-                          final unread = notifController.unreadCount;
-                          return _HeaderActionButton(
-                            icon: unread > 0
-                                ? Icons.notifications_active_outlined
-                                : Icons.notifications_none_rounded,
-                            onTap: () =>
-                                Get.to(() => const NotificationScreen()),
-                            iconColor: textPrimary,
-                            buttonSize: buttonSize,
-                            iconSize: iconSize,
-                            hasBadge: unread > 0,
-                            tooltip: 'community.notifications'.tr,
-                          );
-                        });
-                      }),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+    return AppScreenHeader(
+      title: titleText,
+      titleWidget: isHomeScreen ? _buildHomeTitle() : null,
+      toolbarHeight: isHomeScreen ? homeHeaderHeight : standardHeaderHeight,
+      actions: actions,
     );
+  }
+
+  Widget _buildHomeTitle() {
+    final greeting = _homeGreeting();
+    if (!Get.isRegistered<AuthController>()) {
+      return _HomeGreetingTitle(greeting: greeting, name: 'Guest');
+    }
+
+    final authController = Get.find<AuthController>();
+    return Obx(() {
+      final user = authController.currentUser.value;
+      final fullName = user?.fullName.trim() ?? '';
+      final username = user?.username.trim() ?? '';
+      final name = fullName.isNotEmpty && fullName != 'Guest'
+          ? fullName
+          : (username.isNotEmpty ? username : 'Guest');
+      return _HomeGreetingTitle(greeting: greeting, name: name);
+    });
+  }
+
+  String _homeGreeting() {
+    final hour = DateTime.now().hour;
+    final key = hour < 12
+        ? 'home.goodMorning'
+        : (hour < 18 ? 'home.goodAfternoon' : 'home.goodEvening');
+    final translated = key.tr;
+    final greeting = translated.isNotEmpty && translated != key
+        ? translated
+        : (hour < 12
+              ? 'Good morning'
+              : (hour < 18 ? 'Good afternoon' : 'Good evening'));
+    return hour < 12 ? '$greeting ☀️' : greeting;
   }
 }
 
-class _HeaderActionButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final Color iconColor;
-  final double buttonSize;
-  final double iconSize;
-  final String tooltip;
-  final bool hasBadge;
+class _HomeGreetingTitle extends StatelessWidget {
+  const _HomeGreetingTitle({required this.greeting, required this.name});
 
-  const _HeaderActionButton({
-    required this.icon,
-    required this.onTap,
-    required this.iconColor,
-    this.buttonSize = 44.0,
-    this.iconSize = 24.0,
-    required this.tooltip,
-    this.hasBadge = false,
-  });
+  final String greeting;
+  final String name;
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(buttonSize / 2),
-          child: SizedBox(
-            width: buttonSize,
-            height: buttonSize,
-            child: Center(
-              child: Stack(
-                alignment: Alignment.center,
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(icon, size: iconSize, color: iconColor),
-                  if (hasBadge)
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: Container(
-                        width: 7,
-                        height: 7,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xFFF97316),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
+    final semantic = context.semanticColors;
+    final theme = Theme.of(context);
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            greeting,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style:
+                theme.textTheme.bodyLarge?.copyWith(
+                  color: semantic.secondaryText,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  height: 1.15,
+                ) ??
+                TextStyle(
+                  color: semantic.secondaryText,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  height: 1.15,
+                ),
           ),
-        ),
+          const SizedBox(height: 2),
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style:
+                theme.textTheme.headlineSmall?.copyWith(
+                  color: semantic.primaryText,
+                  fontSize: 25,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.6,
+                  height: 1.12,
+                ) ??
+                TextStyle(
+                  color: semantic.primaryText,
+                  fontSize: 25,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.6,
+                  height: 1.12,
+                ),
+          ),
+        ],
       ),
     );
   }

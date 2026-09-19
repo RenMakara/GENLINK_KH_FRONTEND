@@ -6,8 +6,20 @@ class NotificationRepositoryImpl {
 
   NotificationRepositoryImpl({required this.remoteDataSource});
 
-  Future<List<NotificationModel>> getNotifications() {
-    return remoteDataSource.fetchNotifications();
+  Future<NotificationPage> getNotifications({
+    int page = 0,
+    int size = 20,
+    bool unreadOnly = false,
+  }) {
+    return remoteDataSource.fetchNotifications(
+      page: page,
+      size: size,
+      unreadOnly: unreadOnly,
+    );
+  }
+
+  Future<int> getUnreadCount() {
+    return remoteDataSource.fetchUnreadCount();
   }
 
   Future<bool> markAsRead(String id) {
@@ -20,9 +32,5 @@ class NotificationRepositoryImpl {
 
   Future<bool> deleteNotification(String id) {
     return remoteDataSource.deleteNotification(id);
-  }
-
-  Future<void> addNotification(NotificationModel notification) {
-    return remoteDataSource.addNotification(notification);
   }
 }

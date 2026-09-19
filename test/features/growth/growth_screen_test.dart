@@ -257,16 +257,20 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('LEVEL UP'), findsOneWidget);
+      expect(find.text('Level Up'), findsOneWidget);
       expect(find.text('GROWTH'), findsNothing);
       expect(find.text('GROW'), findsOneWidget);
       expect(find.text('PRODUCTIVITY TOOLS'), findsNothing);
 
-      await tester.scrollUntilVisible(find.text('Goals'), 300);
-      expect(find.text('Goals'), findsOneWidget);
-      expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Goals').last,
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Goals'), findsWidgets);
+      expect(find.byIcon(Icons.flag_outlined), findsWidgets);
 
-      await tester.tap(find.byIcon(Icons.flag_outlined));
+      await tester.tap(find.byIcon(Icons.flag_outlined).first);
       await tester.pumpAndSettle();
 
       expect(find.byType(PlanGoalScreen), findsOneWidget);
@@ -300,14 +304,14 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('LEVEL UP'), findsOneWidget);
+      expect(find.text('Level Up'), findsOneWidget);
       expect(
         find.textContaining('Your personal growth journey'),
         findsOneWidget,
       );
       expect(find.byIcon(Icons.emoji_events_outlined), findsOneWidget);
       expect(find.text('Level 3'), findsOneWidget);
-      expect(find.text('TODAY'), findsOneWidget);
+      expect(find.textContaining("TODAY'S"), findsOneWidget);
       expect(find.text('GROW'), findsOneWidget);
     },
   );
@@ -334,8 +338,8 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('LEVEL UP'), findsOneWidget);
-    expect(find.text('TODAY'), findsOneWidget);
+    expect(find.text('Level Up'), findsOneWidget);
+    expect(find.textContaining("TODAY'S"), findsOneWidget);
   });
 
   testWidgets(
@@ -361,11 +365,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('LEVEL UP'), findsOneWidget);
-      expect(
-        find.textContaining('Your personal growth journey'),
-        findsOneWidget,
-      );
+      expect(find.text('បង្កើនកម្រិត'), findsOneWidget);
+      expect(find.textContaining('មាគ៌ាឆ្ពោះទៅមុខ'), findsOneWidget);
     },
   );
 
@@ -425,9 +426,13 @@ void main() {
     await tester.pumpAndSettle();
 
     // Tap Focus
-    await tester.scrollUntilVisible(find.text('Focus'), 200);
-    expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.timer_outlined));
+    await tester.scrollUntilVisible(
+      find.byIcon(Icons.timer_outlined).last,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.byIcon(Icons.timer_outlined), findsWidgets);
+    await tester.tap(find.byIcon(Icons.timer_outlined).last);
     await tester.pumpAndSettle();
 
     expect(find.byType(FocusPage), findsOneWidget);
@@ -457,10 +462,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Subtitle requirement
-      expect(
-        find.text('What can I do today to make progress?'),
-        findsOneWidget,
-      );
+      expect(find.text('What can I do today to Level Up?'), findsOneWidget);
 
       // Saving Goal should NOT be on Level Up screen
       expect(find.text('Saving Goal Update'), findsNothing);
@@ -470,6 +472,11 @@ void main() {
       expect(find.text('+50 XP'), findsOneWidget);
 
       // Daily Mindset should be present
+      await tester.scrollUntilVisible(
+        find.text('Small consistent efforts lead to mastery.'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(
         find.text('Small consistent efforts lead to mastery.'),
         findsOneWidget,
@@ -524,16 +531,16 @@ void main() {
       expect(find.text('Your day is clear'), findsNothing);
 
       // Should show compact activity-oriented empty state
-      expect(find.text('No activities scheduled'), findsOneWidget);
+      expect(find.text("You're all caught up"), findsOneWidget);
       expect(
-        find.text('Start building momentum with a habit or task.'),
+        find.text('No habits or tasks need attention right now.'),
         findsOneWidget,
       );
       expect(
-        find.text('Habit'),
+        find.text('Habits'),
         findsWidgets,
       ); // chip in empty state and/or GROW
-      expect(find.text('Task'), findsWidgets);
+      expect(find.text('Tasks'), findsWidgets);
     },
   );
 }

@@ -10,12 +10,18 @@ import 'event_success_screen.dart';
 
 class EventRegisterScreen extends StatefulWidget {
   final EventModel event;
-  final Future<RsvpResponseModel> Function(String eventId, EventRegistrationRequest request)? onRegister;
+  final Future<RsvpResponseModel> Function(
+    String eventId,
+    EventRegistrationRequest request,
+  )?
+  onRegister;
+  final Future<bool> Function(String eventId)? onCancelRsvp;
 
   const EventRegisterScreen({
     super.key,
     required this.event,
     this.onRegister,
+    this.onCancelRsvp,
   });
 
   @override
@@ -27,14 +33,18 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _notesController = TextEditingController();
 
   final _scrollController = ScrollController();
 
+  String _selectedTicketType = 'FREE';
+  String _selectedPaymentMethod = 'Bakong KHQR';
   String? _selectedUniversity;
   String? _selectedFaculty;
   String? _selectedYear;
   bool _agreedToTerms = false;
   bool _isSubmitting = false;
+  bool _isCancellingRsvp = false;
 
   String? _fullNameError;
   String? _universityError;
@@ -47,6 +57,14 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
   final _fullNameFocus = FocusNode();
   final _emailFocus = FocusNode();
   final _phoneFocus = FocusNode();
+  final _notesFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTicketType = widget.event.isPaid ? 'STANDARD' : 'FREE';
+    _selectedPaymentMethod = 'Bakong KHQR';
+  }
 
   final List<String> _universities = const [
     'ACLEDA University of Business (AUB)',
@@ -97,9 +115,11 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     _fullNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _notesController.dispose();
     _fullNameFocus.dispose();
     _emailFocus.dispose();
     _phoneFocus.dispose();
+    _notesFocus.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -122,7 +142,10 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
       // 2. Email (standard regex)
       if (email.isEmpty) {
         _emailError = 'community.emailRequired'.tr;
-      } else if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(email) || email.length > 320) {
+      } else if (!RegExp(
+            r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+          ).hasMatch(email) ||
+          email.length > 320) {
         _emailError = 'community.invalidEmail'.tr;
       } else {
         _emailError = null;
@@ -139,10 +162,14 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
       }
 
       // 4. University
-      _universityError = _selectedUniversity == null ? 'community.universityRequired'.tr : null;
+      _universityError = _selectedUniversity == null
+          ? 'community.universityRequired'.tr
+          : null;
 
       // 5. Faculty
-      _facultyError = _selectedFaculty == null ? 'community.facultyRequired'.tr : null;
+      _facultyError = _selectedFaculty == null
+          ? 'community.facultyRequired'.tr
+          : null;
 
       // 6. Study Year
       _yearError = _selectedYear == null ? 'community.yearRequired'.tr : null;
@@ -179,7 +206,8 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
       _showFloatingSnackBar(
         context,
         'community.alreadyRegistered'.tr.isNotEmpty &&
-                'community.alreadyRegistered'.tr != 'community.alreadyRegistered'
+                'community.alreadyRegistered'.tr !=
+                    'community.alreadyRegistered'
             ? 'community.alreadyRegistered'.tr
             : 'You are already registered for this event.',
         isError: false,
@@ -261,43 +289,51 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
       if (e is AppError) {
         switch (e.errorCode) {
           case 'EVENT_FULL':
-            errorMessage = 'community.eventFullMsg'.tr.isNotEmpty &&
+            errorMessage =
+                'community.eventFullMsg'.tr.isNotEmpty &&
                     'community.eventFullMsg'.tr != 'community.eventFullMsg'
                 ? 'community.eventFullMsg'.tr
                 : 'This event has reached its maximum capacity.';
             break;
           case 'DEMO_WALLET_INSUFFICIENT_BALANCE':
-            errorMessage = 'community.insufficientBalance'.tr.isNotEmpty &&
-                    'community.insufficientBalance'.tr != 'community.insufficientBalance'
+            errorMessage =
+                'community.insufficientBalance'.tr.isNotEmpty &&
+                    'community.insufficientBalance'.tr !=
+                        'community.insufficientBalance'
                 ? 'community.insufficientBalance'.tr
                 : 'Insufficient demo wallet balance. Please top up your wallet.';
             break;
           case 'DEMO_WALLET_NOT_FOUND':
-            errorMessage = 'community.walletNotFound'.tr.isNotEmpty &&
+            errorMessage =
+                'community.walletNotFound'.tr.isNotEmpty &&
                     'community.walletNotFound'.tr != 'community.walletNotFound'
                 ? 'community.walletNotFound'.tr
                 : 'Demo wallet not found. Please open your wallet first.';
             break;
           case 'EVENT_CANCELLED':
-            errorMessage = 'community.eventCancelled'.tr.isNotEmpty &&
+            errorMessage =
+                'community.eventCancelled'.tr.isNotEmpty &&
                     'community.eventCancelled'.tr != 'community.eventCancelled'
                 ? 'community.eventCancelled'.tr
                 : 'This event has been cancelled.';
             break;
           case 'EVENT_PAST':
-            errorMessage = 'community.eventPast'.tr.isNotEmpty &&
+            errorMessage =
+                'community.eventPast'.tr.isNotEmpty &&
                     'community.eventPast'.tr != 'community.eventPast'
                 ? 'community.eventPast'.tr
                 : 'This event has already taken place.';
             break;
           case 'NETWORK_ERROR':
-            errorMessage = 'community.networkError'.tr.isNotEmpty &&
+            errorMessage =
+                'community.networkError'.tr.isNotEmpty &&
                     'community.networkError'.tr != 'community.networkError'
                 ? 'community.networkError'.tr
                 : 'Network error. Please check your connection and try again.';
             break;
           case 'EVENT_NOT_FOUND':
-            errorMessage = 'community.eventNotFound'.tr.isNotEmpty &&
+            errorMessage =
+                'community.eventNotFound'.tr.isNotEmpty &&
                     'community.eventNotFound'.tr != 'community.eventNotFound'
                 ? 'community.eventNotFound'.tr
                 : 'Event not found.';
@@ -306,13 +342,16 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             errorMessage = e.message.isNotEmpty
                 ? e.message
                 : ('community.registrationFailed'.tr.isNotEmpty &&
-                        'community.registrationFailed'.tr != 'community.registrationFailed'
-                    ? 'community.registrationFailed'.tr
-                    : 'Unable to complete registration. Please try again.');
+                          'community.registrationFailed'.tr !=
+                              'community.registrationFailed'
+                      ? 'community.registrationFailed'.tr
+                      : 'Unable to complete registration. Please try again.');
         }
       } else {
-        errorMessage = 'community.registrationFailed'.tr.isNotEmpty &&
-                'community.registrationFailed'.tr != 'community.registrationFailed'
+        errorMessage =
+            'community.registrationFailed'.tr.isNotEmpty &&
+                'community.registrationFailed'.tr !=
+                    'community.registrationFailed'
             ? 'community.registrationFailed'.tr
             : 'Unable to complete registration. Please try again.';
       }
@@ -321,13 +360,19 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     }
   }
 
-  void _showFloatingSnackBar(BuildContext context, String message, {bool isError = true}) {
+  void _showFloatingSnackBar(
+    BuildContext context,
+    String message, {
+    bool isError = true,
+  }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
             Icon(
-              isError ? Icons.error_outline_rounded : Icons.info_outline_rounded,
+              isError
+                  ? Icons.error_outline_rounded
+                  : Icons.info_outline_rounded,
               color: Colors.white,
               size: 20,
             ),
@@ -335,18 +380,136 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
         ),
-        backgroundColor: isError ? AppColors.danger : AppColors.warning,
+        backgroundColor: isError ? AppColors.danger : AppColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 4),
       ),
     );
+  }
+
+  Future<void> _handleCancelRegistration(bool isDark) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E22) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'community.cancelRegistrationTitle'.tr,
+          style: TextStyle(
+            color: isDark ? Colors.white : AppColors.lightTextPrimary,
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+          ),
+        ),
+        content: Text(
+          'community.cancelRegistrationConfirm'.tr,
+          style: TextStyle(
+            color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
+            fontSize: 14,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: Text(
+              'common.cancel'.tr,
+              style: TextStyle(
+                color: isDark ? Colors.white60 : Colors.black54,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              'community.confirmCancel'.tr,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isCancellingRsvp = true);
+
+    try {
+      bool success = false;
+      if (widget.onCancelRsvp != null) {
+        success = await widget.onCancelRsvp!(widget.event.id);
+      } else if (Get.isRegistered<CommunityController>()) {
+        final ctrl = Get.find<CommunityController>();
+        success = await ctrl.cancelEventRegistration(widget.event.id);
+      } else {
+        success = true;
+      }
+
+      if (!mounted) return;
+
+      if (success) {
+        setState(() {
+          _isCancellingRsvp = false;
+          widget.event.isRsvped = false;
+          widget.event.myRsvpStatus = 'CANCELLED';
+          widget.event.attendeesCount = (widget.event.attendeesCount - 1).clamp(
+            0,
+            999999,
+          );
+        });
+
+        if (Get.isRegistered<CommunityController>()) {
+          final ctrl = Get.find<CommunityController>();
+          ctrl.syncEventRsvp(
+            widget.event.id,
+            isRsvped: false,
+            attendeesCount: widget.event.attendeesCount,
+            status: 'CANCELLED',
+          );
+        }
+
+        _showFloatingSnackBar(
+          context,
+          'community.registrationCancelled'.tr,
+          isError: false,
+        );
+      } else {
+        setState(() => _isCancellingRsvp = false);
+        _showFloatingSnackBar(
+          context,
+          'community.cancelRsvpFailed'.tr,
+          isError: true,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isCancellingRsvp = false);
+      _showFloatingSnackBar(
+        context,
+        'community.cancelRsvpFailed'.tr,
+        isError: true,
+      );
+    }
   }
 
   void _openUniversitySelector() {
@@ -411,11 +574,17 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF1E1E24) : Colors.white;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final textSecondary = isDark
+        ? Colors.white70
+        : AppColors.lightTextSecondary;
     final textMuted = isDark ? Colors.white38 : AppColors.lightTextMuted;
     final borderSubtle = isDark ? Colors.white12 : AppColors.lightBorderSubtle;
-    final searchBg = isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.lightBgSecondary;
-    final selectedTileBg = isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05);
+    final searchBg = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : AppColors.lightBgSecondary;
+    final selectedTileBg = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.05);
 
     showModalBottomSheet<void>(
       context: context,
@@ -430,7 +599,13 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
           builder: (context, setSheetState) {
             final filtered = query.isEmpty
                 ? items
-                : items.where((i) => i.toLowerCase().contains(query.toLowerCase().trim())).toList();
+                : items
+                      .where(
+                        (i) => i.toLowerCase().contains(
+                          query.toLowerCase().trim(),
+                        ),
+                      )
+                      .toList();
 
             return SafeArea(
               child: Container(
@@ -472,7 +647,11 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                             ),
                           ),
                           IconButton(
-                            icon: Icon(Icons.close_rounded, color: textSecondary, size: 22),
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: textSecondary,
+                              size: 22,
+                            ),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                             onPressed: () => Navigator.pop(ctx),
@@ -483,7 +662,10 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
 
                     if (isSearchable) ...[
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
                         child: Container(
                           height: 44,
                           decoration: BoxDecoration(
@@ -493,13 +675,23 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                           ),
                           child: TextField(
                             style: TextStyle(color: textPrimary, fontSize: 14),
-                            onChanged: (val) => setSheetState(() => query = val),
+                            onChanged: (val) =>
+                                setSheetState(() => query = val),
                             decoration: InputDecoration(
                               hintText: searchHint,
-                              hintStyle: TextStyle(color: textMuted, fontSize: 13.5),
-                              prefixIcon: Icon(Icons.search_rounded, color: textMuted, size: 19),
+                              hintStyle: TextStyle(
+                                color: textMuted,
+                                fontSize: 13.5,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.search_rounded,
+                                color: textMuted,
+                                size: 19,
+                              ),
                               border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                              ),
                             ),
                           ),
                         ),
@@ -511,12 +703,19 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                     Flexible(
                       child: filtered.isEmpty
                           ? Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 36,
+                                horizontal: 20,
+                              ),
                               child: Center(
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.search_off_rounded, color: textMuted, size: 36),
+                                    Icon(
+                                      Icons.search_off_rounded,
+                                      color: textMuted,
+                                      size: 36,
+                                    ),
                                     const SizedBox(height: 10),
                                     Text(
                                       emptyMessage,
@@ -532,10 +731,14 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                             )
                           : ListView.separated(
                               shrinkWrap: true,
-                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                              ),
                               itemCount: filtered.length,
-                              separatorBuilder: (context, index) =>
-                                  Divider(height: 1, color: borderSubtle.withValues(alpha: 0.5)),
+                              separatorBuilder: (context, index) => Divider(
+                                height: 1,
+                                color: borderSubtle.withValues(alpha: 0.5),
+                              ),
                               itemBuilder: (context, idx) {
                                 final item = filtered[idx];
                                 final isSelected = item == selectedItem;
@@ -547,9 +750,14 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                                   },
                                   borderRadius: BorderRadius.circular(10),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 13,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: isSelected ? selectedTileBg : Colors.transparent,
+                                      color: isSelected
+                                          ? selectedTileBg
+                                          : Colors.transparent,
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Row(
@@ -559,7 +767,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                                             item,
                                             style: TextStyle(
                                               color: textPrimary,
-                                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w600
+                                                  : FontWeight.normal,
                                               fontSize: 14,
                                             ),
                                           ),
@@ -568,7 +778,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                                           const SizedBox(width: 8),
                                           Icon(
                                             Icons.check_rounded,
-                                            color: isDark ? Colors.white : Colors.black87,
+                                            color: isDark
+                                                ? Colors.white
+                                                : Colors.black87,
                                             size: 20,
                                           ),
                                         ],
@@ -594,7 +806,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF1E1E24) : Colors.white;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final textSecondary = isDark
+        ? Colors.white70
+        : AppColors.lightTextSecondary;
 
     showModalBottomSheet<void>(
       context: context,
@@ -646,13 +860,13 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isDark ? Colors.white : Colors.black87,
                     foregroundColor: isDark ? Colors.black : Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: Text(
                     'community.understand'.tr,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -667,10 +881,14 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final textSecondary = isDark
+        ? Colors.white70
+        : AppColors.lightTextSecondary;
     final textMuted = isDark ? Colors.white54 : AppColors.lightTextMuted;
     final bgPrimary = Theme.of(context).scaffoldBackgroundColor;
-    final cardBg = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightSurfacePrimary;
+    final cardBg = isDark
+        ? Colors.white.withValues(alpha: 0.04)
+        : AppColors.lightSurfacePrimary;
     final borderSubtle = isDark ? Colors.white12 : AppColors.lightBorderSubtle;
 
     final isAlreadyRegistered = widget.event.isRsvped;
@@ -681,7 +899,11 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
         backgroundColor: bgPrimary,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: textPrimary, size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: textPrimary,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -701,7 +923,10 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
               child: SingleChildScrollView(
                 controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 12,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -718,42 +943,110 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
 
                     const SizedBox(height: 20),
 
+                    // ── Ticket Selection ─────────────────────────────────────
+                    _buildTicketSelectionSection(
+                      isDark: isDark,
+                      borderSubtle: borderSubtle,
+                    ),
+                    const SizedBox(height: 20),
+
+                    if (widget.event.isPaid) ...[
+                      // ── Payment Method & Price Banner ───────────────────────
+                      _buildPaymentSection(
+                        isDark: isDark,
+                        borderSubtle: borderSubtle,
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+
                     if (isAlreadyRegistered) ...[
                       Container(
                         padding: const EdgeInsets.all(14),
                         margin: const EdgeInsets.only(bottom: 20),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF22C55E).withValues(alpha: 0.12),
+                          color: const Color(
+                            0xFF22C55E,
+                          ).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: const Color(0xFF22C55E).withValues(alpha: 0.35),
+                            color: const Color(
+                              0xFF22C55E,
+                            ).withValues(alpha: 0.35),
                           ),
                         ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 22),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'community.alreadyRegistered'.tr,
-                                    style: const TextStyle(
-                                      color: Color(0xFF22C55E),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13.5,
-                                    ),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: Color(0xFF22C55E),
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'community.alreadyRegistered'.tr,
+                                        style: const TextStyle(
+                                          color: Color(0xFF22C55E),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'community.alreadyRegisteredMsg'.tr,
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white70
+                                              : AppColors.lightTextSecondary,
+                                          fontSize: 11.5,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'community.alreadyRegisteredMsg'.tr,
-                                    style: TextStyle(
-                                      color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
-                                      fontSize: 11.5,
-                                    ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton.icon(
+                                onPressed: _isCancellingRsvp
+                                    ? null
+                                    : () => _handleCancelRegistration(isDark),
+                                icon: _isCancellingRsvp
+                                    ? const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Color(0xFFEF4444),
+                                              ),
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.cancel_outlined,
+                                        size: 16,
+                                        color: Color(0xFFEF4444),
+                                      ),
+                                label: Text(
+                                  _isCancellingRsvp
+                                      ? 'community.cancellingRegistration'.tr
+                                      : 'community.cancelRegistration'.tr,
+                                  style: const TextStyle(
+                                    color: Color(0xFFEF4444),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                           ],
@@ -795,7 +1088,10 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                     const SizedBox(height: 22),
 
                     // ── 2. Academic Information ──────────────────────────────
-                    _buildSectionHeader('community.academicInformation'.tr, isDark),
+                    _buildSectionHeader(
+                      'community.academicInformation'.tr,
+                      isDark,
+                    ),
                     const SizedBox(height: 10),
 
                     _buildModernSelectorTile(
@@ -820,7 +1116,10 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                     const SizedBox(height: 22),
 
                     // ── 3. Contact Information ───────────────────────────────
-                    _buildSectionHeader('community.contactInformation'.tr, isDark),
+                    _buildSectionHeader(
+                      'community.contactInformation'.tr,
+                      isDark,
+                    ),
                     const SizedBox(height: 10),
 
                     _buildModernTextField(
@@ -858,6 +1157,20 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                         }
                       },
                     ),
+                    const SizedBox(height: 14),
+
+                    _buildModernTextField(
+                      label: 'community.attendeeNotes'.tr,
+                      hint: 'community.attendeeNotesHint'.tr,
+                      controller: _notesController,
+                      focusNode: _notesFocus,
+                      keyboardType: TextInputType.multiline,
+                      inputFormatters: [LengthLimitingTextInputFormatter(300)],
+                      errorText: null,
+                      isDark: isDark,
+                      maxLines: 3,
+                      onChanged: (_) {},
+                    ),
 
                     const SizedBox(height: 20),
 
@@ -880,8 +1193,12 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                               height: 24,
                               child: Checkbox(
                                 value: _agreedToTerms,
-                                activeColor: isDark ? Colors.white : Colors.black87,
-                                checkColor: isDark ? Colors.black : Colors.white,
+                                activeColor: isDark
+                                    ? Colors.white
+                                    : Colors.black87,
+                                checkColor: isDark
+                                    ? Colors.black
+                                    : Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(5),
                                 ),
@@ -955,7 +1272,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: _isSubmitting || isAlreadyRegistered ? null : _handleSubmit,
+                  onPressed: _isSubmitting || isAlreadyRegistered
+                      ? null
+                      : _handleSubmit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isAlreadyRegistered
                         ? (isDark ? Colors.white12 : Colors.grey.shade300)
@@ -999,7 +1318,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                               : 'community.registerNow'.tr,
                           style: TextStyle(
                             color: isAlreadyRegistered
-                                ? (isDark ? Colors.white38 : Colors.grey.shade600)
+                                ? (isDark
+                                      ? Colors.white38
+                                      : Colors.grey.shade600)
                                 : (isDark ? Colors.black : Colors.white),
                             fontWeight: FontWeight.bold,
                             fontSize: 15.5,
@@ -1036,7 +1357,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     required Color textSecondary,
     required Color textMuted,
   }) {
-    final isOnline = widget.event.isOnline || widget.event.eventType.toLowerCase().contains('online');
+    final isOnline =
+        widget.event.isOnline ||
+        widget.event.eventType.toLowerCase().contains('online');
     final String locationDisplay = isOnline
         ? '🌐 ${'community.onlineEvent'.tr}'
         : '📍 ${widget.event.effectiveLocationName.isNotEmpty ? widget.event.effectiveLocationName : (widget.event.location.isNotEmpty ? widget.event.location : 'community.inPerson'.tr)}';
@@ -1137,7 +1460,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isPaid ? (isDark ? const Color(0xFFFACC15) : const Color(0xFFB45309)) : textSecondary,
+                    color: isPaid ? textPrimary : textSecondary,
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1183,7 +1506,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
       ),
       child: Center(
         child: Icon(
-          widget.event.isOnline ? Icons.laptop_chromebook_rounded : Icons.event_rounded,
+          widget.event.isOnline
+              ? Icons.laptop_chromebook_rounded
+              : Icons.event_rounded,
           color: textMuted,
           size: 26,
         ),
@@ -1202,10 +1527,15 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     required bool isDark,
     required ValueChanged<String> onChanged,
     TextCapitalization textCapitalization = TextCapitalization.none,
+    int maxLines = 1,
   }) {
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
-    final inputBg = isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.lightBgSecondary;
+    final textSecondary = isDark
+        ? Colors.white70
+        : AppColors.lightTextSecondary;
+    final inputBg = isDark
+        ? Colors.white.withValues(alpha: 0.05)
+        : AppColors.lightBgSecondary;
     final borderSubtle = isDark ? Colors.white12 : AppColors.lightBorderSubtle;
 
     return Column(
@@ -1224,10 +1554,15 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
           controller: controller,
           focusNode: focusNode,
           keyboardType: keyboardType,
+          maxLines: maxLines,
           textCapitalization: textCapitalization,
           inputFormatters: inputFormatters,
           onChanged: onChanged,
-          style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
@@ -1236,17 +1571,24 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             ),
             filled: true,
             fillColor: inputBg,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 13,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: errorText != null ? const Color(0xFFEF4444) : borderSubtle,
+                color: errorText != null
+                    ? const Color(0xFFEF4444)
+                    : borderSubtle,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: errorText != null ? const Color(0xFFEF4444) : borderSubtle,
+                color: errorText != null
+                    ? const Color(0xFFEF4444)
+                    : borderSubtle,
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -1265,7 +1607,11 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             padding: const EdgeInsets.only(top: 4, left: 4),
             child: Row(
               children: [
-                const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 13),
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: Color(0xFFEF4444),
+                  size: 13,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -1293,8 +1639,12 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
     required VoidCallback onTap,
   }) {
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
-    final inputBg = isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.lightBgSecondary;
+    final textSecondary = isDark
+        ? Colors.white70
+        : AppColors.lightTextSecondary;
+    final inputBg = isDark
+        ? Colors.white.withValues(alpha: 0.05)
+        : AppColors.lightBgSecondary;
     final borderSubtle = isDark ? Colors.white12 : AppColors.lightBorderSubtle;
 
     final isSelected = value != null && value.isNotEmpty;
@@ -1320,7 +1670,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
               color: inputBg,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: errorText != null ? const Color(0xFFEF4444) : borderSubtle,
+                color: errorText != null
+                    ? const Color(0xFFEF4444)
+                    : borderSubtle,
               ),
             ),
             child: Row(
@@ -1333,9 +1685,13 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                     style: TextStyle(
                       color: isSelected
                           ? textPrimary
-                          : (isDark ? Colors.white30 : AppColors.lightTextMuted),
+                          : (isDark
+                                ? Colors.white30
+                                : AppColors.lightTextMuted),
                       fontSize: 13.5,
-                      fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.w500
+                          : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -1353,7 +1709,11 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             padding: const EdgeInsets.only(top: 4, left: 4),
             child: Row(
               children: [
-                const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 13),
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: Color(0xFFEF4444),
+                  size: 13,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -1368,6 +1728,377 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             ),
           ),
         ],
+      ],
+    );
+  }
+
+  Widget _buildTicketSelectionSection({
+    required bool isDark,
+    required Color borderSubtle,
+  }) {
+    final isPaid = widget.event.isPaid;
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? Colors.white70
+        : AppColors.lightTextSecondary;
+    final cardBg = isDark
+        ? Colors.white.withValues(alpha: 0.04)
+        : AppColors.lightSurfacePrimary;
+
+    final price = widget.event.price ?? 0.0;
+    final tickets = isPaid
+        ? [
+            {
+              'id': 'STANDARD',
+              'title': 'community.ticketStandard'.tr,
+              'badge': 'community.ticketStandard'.tr,
+              'price': widget.event.displayPriceString,
+              'desc': 'community.ticketStandardDesc'.tr,
+            },
+            {
+              'id': 'VIP',
+              'title': 'community.ticketVip'.tr,
+              'badge': 'community.ticketVip'.tr,
+              'price': price > 0
+                  ? '\$${(price * 1.5).toStringAsFixed(2)}'
+                  : 'VIP',
+              'desc': 'community.ticketVipDesc'.tr,
+            },
+          ]
+        : [
+            {
+              'id': 'FREE',
+              'title': 'community.ticketFree'.tr,
+              'badge': 'community.ticketFree'.tr,
+              'price': 'community.freeEntry'.tr,
+              'desc': 'community.ticketFreeDesc'.tr,
+            },
+          ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('community.ticketType'.tr, isDark),
+        const SizedBox(height: 10),
+        Column(
+          children: tickets.map((t) {
+            final isSelected = _selectedTicketType == t['id'];
+            return InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _selectedTicketType = t['id']!);
+              },
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? (isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.04))
+                      : cardBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSelected
+                        ? (isDark ? Colors.white : Colors.black87)
+                        : borderSubtle,
+                    width: isSelected ? 1.5 : 0.8,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected
+                              ? (isDark ? Colors.white : Colors.black87)
+                              : borderSubtle,
+                          width: 2,
+                        ),
+                        color: isSelected
+                            ? (isDark ? Colors.white : Colors.black87)
+                            : Colors.transparent,
+                      ),
+                      child: isSelected
+                          ? Icon(
+                              Icons.check,
+                              size: 12,
+                              color: isDark ? Colors.black : Colors.white,
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  t['title']!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: textPrimary,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? (isDark ? Colors.white : Colors.black87)
+                                      : (isDark
+                                            ? Colors.white12
+                                            : Colors.black12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  t['badge']!,
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? (isDark ? Colors.black : Colors.white)
+                                        : textSecondary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            t['desc']!,
+                            style: TextStyle(
+                              color: textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      t['price']!,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaymentSection({
+    required bool isDark,
+    required Color borderSubtle,
+  }) {
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark
+        ? Colors.white70
+        : AppColors.lightTextSecondary;
+    final cardBg = isDark
+        ? Colors.white.withValues(alpha: 0.04)
+        : AppColors.lightSurfacePrimary;
+
+    final basePrice = widget.event.price ?? 0.0;
+    final multiplier = _selectedTicketType == 'VIP' ? 1.5 : 1.0;
+    final effectivePrice = basePrice * multiplier;
+    final khrPrice = (effectivePrice * 4000).toInt();
+    final khrFormatted = khrPrice.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]},',
+    );
+
+    final paymentMethods = [
+      {
+        'id': 'Bakong KHQR',
+        'title': 'community.payBakong'.tr,
+        'subtitle': 'National Payment Gateway',
+        'icon': Icons.qr_code_2_rounded,
+      },
+      {
+        'id': 'ACLEDA Mobile',
+        'title': 'community.payAcleda'.tr,
+        'subtitle': 'Direct Bank Account Debit',
+        'icon': Icons.account_balance_rounded,
+      },
+      {
+        'id': 'Demo Campus Wallet',
+        'title': 'community.payDemoWallet'.tr,
+        'subtitle': 'Instant Student Credit',
+        'icon': Icons.account_balance_wallet_rounded,
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Price & Currency Breakdown Banner ───────────────────────────────
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.black.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: borderSubtle, width: 1),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white10 : Colors.black12,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.payments_rounded,
+                  color: textPrimary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '\$${effectivePrice.toStringAsFixed(2)} USD  /  $khrFormatted ៛',
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Official Exchange: 1 USD ≈ 4,000 KHR',
+                      style: TextStyle(color: textSecondary, fontSize: 11.5),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 18),
+
+        // ── Payment Method Selector ─────────────────────────────────────────
+        _buildSectionHeader('community.paymentMethod'.tr, isDark),
+        const SizedBox(height: 10),
+
+        Column(
+          children: paymentMethods.map((pm) {
+            final isSelected = _selectedPaymentMethod == pm['id'];
+            return InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _selectedPaymentMethod = pm['id'] as String);
+              },
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? (isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.04))
+                      : cardBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSelected
+                        ? (isDark ? Colors.white : Colors.black87)
+                        : borderSubtle,
+                    width: isSelected ? 1.5 : 0.8,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      pm['icon'] as IconData,
+                      color: isSelected
+                          ? (isDark ? Colors.white : Colors.black87)
+                          : textSecondary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            pm['title'] as String,
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                          Text(
+                            pm['subtitle'] as String,
+                            style: TextStyle(
+                              color: textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected
+                              ? (isDark ? Colors.white : Colors.black87)
+                              : borderSubtle,
+                          width: 2,
+                        ),
+                        color: isSelected
+                            ? (isDark ? Colors.white : Colors.black87)
+                            : Colors.transparent,
+                      ),
+                      child: isSelected
+                          ? Icon(
+                              Icons.check,
+                              size: 11,
+                              color: isDark ? Colors.black : Colors.white,
+                            )
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
       ],
     );
   }

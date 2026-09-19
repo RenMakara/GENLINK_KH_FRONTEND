@@ -25,6 +25,7 @@ void main() {
     bool isLoading = false,
     String? errorMessage,
     VoidCallback? onRetry,
+    Future<bool> Function(String eventId)? onCancelRsvp,
   }) {
     return MediaQuery(
       data: MediaQueryData(size: screenSize),
@@ -39,6 +40,7 @@ void main() {
           isLoading: isLoading,
           errorMessage: errorMessage,
           onRetry: onRetry,
+          onCancelRsvp: onCancelRsvp,
         ),
       ),
     );
@@ -474,6 +476,100 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(retryCalled, isTrue);
+    });
+
+    testWidgets('19. Registered user displays Cancel Registration and opens confirmation dialog', (tester) async {
+      final registeredEvent = EventModel(
+        id: 'cancel-test-1',
+        title: 'Cancel RSVP Test Event',
+        organizerName: 'Tech Academy',
+        dateString: '1 Nov 2026',
+        timeString: '10:00 AM',
+        isRsvped: true,
+        attendeesCount: 25,
+      );
+
+      await tester.pumpWidget(createWidget(event: registeredEvent));
+      await tester.pumpAndSettle();
+
+      expect(find.text("You're Registered"), findsOneWidget);
+      expect(find.text('Cancel Registration'), findsOneWidget);
+
+      await tester.tap(find.text('Cancel Registration'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cancel Registration?'), findsOneWidget);
+      expect(find.text('Are you sure you want to cancel your registration? Your spot will be released.'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Yes, Cancel'), findsOneWidget);
+
+      // Dismiss dialog
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cancel Registration?'), findsNothing);
+      expect(find.text("You're Registered"), findsOneWidget);
+    });
+
+    testWidgets('20. Confirming Cancel Registration triggers callback and restores Register Now CTA', (tester) async {
+      bool cancelCallbackCalled = false;
+      String? cancelledId;
+
+      final registeredEvent = EventModel(
+        id: 'cancel-test-2',
+        title: 'RSVP Callback Verification',
+        organizerName: 'Dev Guild',
+        dateString: '5 Nov 2026',
+        timeString: '2:00 PM',
+        isRsvped: true,
+        attendeesCount: 50,
+      );
+
+      await tester.pumpWidget(createWidget(
+        event: registeredEvent,
+        onCancelRsvp: (id) async {
+          cancelCallbackCalled = true;
+          cancelledId = id;
+          return true;
+        },
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cancel Registration'), findsOneWidget);
+
+      await tester.tap(find.text('Cancel Registration'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Yes, Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(cancelCallbackCalled, isTrue);
+      expect(cancelledId, equals('cancel-test-2'));
+      expect(find.text('Registration cancelled successfully.'), findsOneWidget);
+      expect(find.text('Register Now'), findsOneWidget);
+      expect(find.text("You're Registered"), findsNothing);
+    });
+
+    testWidgets('21. Compact mobile screen (320x568) with registered state renders without overflow', (tester) async {
+      final registeredEvent = EventModel(
+        id: 'cancel-test-compact',
+        title: 'Compact Screen RSVP Test',
+        organizerName: 'Club',
+        dateString: '10 Nov 2026',
+        timeString: '3:00 PM',
+        isRsvped: true,
+        attendeesCount: 12,
+      );
+
+      await tester.pumpWidget(createWidget(
+        event: registeredEvent,
+        screenSize: const Size(320, 568),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text("You're Registered"), findsOneWidget);
+      expect(find.text('Cancel Registration'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

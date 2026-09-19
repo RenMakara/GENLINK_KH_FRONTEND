@@ -11,6 +11,7 @@ class EventModel {
   final String subtitle;
   final String organizerName;
   final String? organizerId;
+  final String? organizerAvatar;
 
   /// 'Online' or 'In person'
   final String eventType;
@@ -55,7 +56,7 @@ class EventModel {
   int attendeesCount;
   final String status;
   final String language;
-  String? myRsvpStatus;   // mutable — updated after RSVP response
+  String? myRsvpStatus; // mutable — updated after RSVP response
   bool isRsvped;
   final bool isFull;
   bool isBookmarked;
@@ -67,6 +68,7 @@ class EventModel {
     this.subtitle = '',
     this.organizerName = '',
     this.organizerId,
+    this.organizerAvatar,
     this.eventType = 'In person',
     this.mode,
     this.location = '',
@@ -113,40 +115,71 @@ class EventModel {
       final m = mode!.toUpperCase();
       return m == 'IN_PERSON' || m == 'INPERSON';
     }
-    if (eventType.toLowerCase().contains('person') || eventType.toLowerCase().contains('campus')) return true;
+    if (eventType.toLowerCase().contains('person') ||
+        eventType.toLowerCase().contains('campus')) {
+      return true;
+    }
     return eventMode == EventMode.inPerson;
   }
 
   String get effectiveLocation {
     if (isOnline) {
-      if (meetingUrl != null && meetingUrl!.trim().isNotEmpty) return meetingUrl!.trim();
+      if (meetingUrl != null && meetingUrl!.trim().isNotEmpty) {
+        return meetingUrl!.trim();
+      }
       return onlineLink;
     } else {
-      if (locationName != null && locationName!.trim().isNotEmpty) return locationName!.trim();
+      if (locationName != null && locationName!.trim().isNotEmpty) {
+        return locationName!.trim();
+      }
       return location;
     }
   }
 
   String get effectiveLocationName {
-    if (locationName != null && locationName!.trim().isNotEmpty) return locationName!.trim();
+    if (locationName != null && locationName!.trim().isNotEmpty) {
+      return locationName!.trim();
+    }
     if (location.isNotEmpty) return location;
     return '';
   }
 
   String get effectiveMeetingUrl {
-    if (meetingUrl != null && meetingUrl!.trim().isNotEmpty) return meetingUrl!.trim();
+    if (meetingUrl != null && meetingUrl!.trim().isNotEmpty) {
+      return meetingUrl!.trim();
+    }
     if (onlineLink.isNotEmpty) return onlineLink;
     return '';
   }
 
   static const _enMonths = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   static const _kmMonths = [
-    'មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា',
-    'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'
+    'មករា',
+    'កុម្ភៈ',
+    'មីនា',
+    'មេសា',
+    'ឧសភា',
+    'មិថុនា',
+    'កក្កដា',
+    'សីហា',
+    'កញ្ញា',
+    'តុលា',
+    'វិច្ឆិកា',
+    'ធ្នូ',
   ];
 
   String get formattedStartDate {
@@ -207,7 +240,9 @@ class EventModel {
       if (range.isNotEmpty) return range;
       return dateString.isNotEmpty ? dateString : 'Date TBC';
     }
-    if (startDateTime == null) return dateString.isNotEmpty ? dateString : 'Date TBC';
+    if (startDateTime == null) {
+      return dateString.isNotEmpty ? dateString : 'Date TBC';
+    }
     final yearKh = _toKhmerDigits(startDateTime!.year);
     if (endDateTime == null ||
         (startDateTime!.year == endDateTime!.year &&
@@ -247,10 +282,14 @@ class EventModel {
 
   static String _toKhmerDigits(int number) {
     const khDigits = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'];
-    return number.toString().split('').map((c) {
-      final d = int.tryParse(c);
-      return d != null ? khDigits[d] : c;
-    }).join('');
+    return number
+        .toString()
+        .split('')
+        .map((c) {
+          final d = int.tryParse(c);
+          return d != null ? khDigits[d] : c;
+        })
+        .join('');
   }
 
   static String _formatThousands(num number) {
@@ -268,7 +307,9 @@ class EventModel {
     if (!isPaid) return 'Free';
     final effectiveP = price ?? priceKhr;
     if (currency == 'USD') {
-      final pStr = effectiveP % 1 == 0 ? effectiveP.toInt().toString() : effectiveP.toStringAsFixed(2);
+      final pStr = effectiveP % 1 == 0
+          ? effectiveP.toInt().toString()
+          : effectiveP.toStringAsFixed(2);
       return '\$$pStr USD';
     } else if (currency == 'KHR') {
       final formatted = _formatThousands(effectiveP.toInt());
@@ -276,7 +317,9 @@ class EventModel {
     } else if (currency == null) {
       return '\$${effectiveP.toStringAsFixed(2)}';
     } else {
-      final pStr = effectiveP % 1 == 0 ? effectiveP.toInt().toString() : effectiveP.toStringAsFixed(2);
+      final pStr = effectiveP % 1 == 0
+          ? effectiveP.toInt().toString()
+          : effectiveP.toStringAsFixed(2);
       return '$pStr $currency';
     }
   }
@@ -285,13 +328,17 @@ class EventModel {
     if (!isPaid) return 'Free Entry';
     final effectiveP = price ?? priceKhr;
     if (currency == 'USD') {
-      final pStr = effectiveP % 1 == 0 ? effectiveP.toInt().toString() : effectiveP.toStringAsFixed(2);
+      final pStr = effectiveP % 1 == 0
+          ? effectiveP.toInt().toString()
+          : effectiveP.toStringAsFixed(2);
       return '\$$pStr USD';
     } else if (currency == 'KHR') {
       final formatted = _formatThousands(effectiveP.toInt());
       return '$formatted KHR';
     } else if (currency != null && currency!.isNotEmpty) {
-      final pStr = effectiveP % 1 == 0 ? effectiveP.toInt().toString() : effectiveP.toStringAsFixed(2);
+      final pStr = effectiveP % 1 == 0
+          ? effectiveP.toInt().toString()
+          : effectiveP.toStringAsFixed(2);
       return '$pStr $currency';
     } else {
       return '${effectiveP.toInt()} KHR';
@@ -330,26 +377,34 @@ class EventModel {
         ? json['organizer'] as Map<String, dynamic>
         : null;
 
-    final orgId = json['organizerId']?.toString() ??
+    final orgId =
+        json['organizerId']?.toString() ??
         organizerObj?['id']?.toString() ??
         organizerObj?['userId']?.toString();
 
-    final orgName = organizerObj?['fullName'] as String? ??
+    final orgName =
+        organizerObj?['fullName'] as String? ??
         organizerObj?['username'] as String? ??
         json['organizerName'] as String? ??
         '';
+    final orgAvatar =
+        organizerObj?['avatarUrl'] as String? ??
+        json['organizerAvatar'] as String?;
 
-    final parsedStart = parseDt(json['startDateTime']) ?? parseDt(json['dateTime']);
+    final parsedStart =
+        parseDt(json['startDateTime']) ?? parseDt(json['dateTime']);
     final parsedEnd = parseDt(json['endDateTime']);
 
     final modeVal = json['mode'] as String?;
-    final eventTypeVal = json['eventType'] as String? ??
+    final eventTypeVal =
+        json['eventType'] as String? ??
         (modeVal != null
             ? (modeVal.toUpperCase() == 'ONLINE'
-                ? 'Online'
-                : ((modeVal.toUpperCase() == 'IN_PERSON' || modeVal.toUpperCase() == 'INPERSON')
-                    ? 'In person'
-                    : modeVal))
+                  ? 'Online'
+                  : ((modeVal.toUpperCase() == 'IN_PERSON' ||
+                            modeVal.toUpperCase() == 'INPERSON')
+                        ? 'In person'
+                        : modeVal))
             : 'In person');
 
     final locName = json['locationName'] as String?;
@@ -363,10 +418,12 @@ class EventModel {
     final curr = json['currency'] as String?;
     final pKhr = (curr == 'KHR' && parsedPrice != null)
         ? parsedPrice
-        : (parseDouble(json['priceKhr']) ?? (isPaidVal ? (parsedPrice ?? 0.0) : 0.0));
+        : (parseDouble(json['priceKhr']) ??
+              (isPaidVal ? (parsedPrice ?? 0.0) : 0.0));
 
     final rsvpStatus = json['myRsvpStatus']?.toString();
-    final isRsvpedVal = json['isRsvped'] as bool? ??
+    final isRsvpedVal =
+        json['isRsvped'] as bool? ??
         (rsvpStatus != null && rsvpStatus.toUpperCase() == 'JOINED');
 
     final isFullVal = json['full'] as bool? ?? json['isFull'] as bool? ?? false;
@@ -379,6 +436,7 @@ class EventModel {
       subtitle: json['subtitle'] as String? ?? '',
       organizerName: orgName,
       organizerId: orgId,
+      organizerAvatar: orgAvatar,
       eventType: eventTypeVal,
       mode: modeVal,
       location: loc,
@@ -397,16 +455,21 @@ class EventModel {
       price: parsedPrice,
       priceKhr: pKhr,
       currency: curr,
-      imageUrl: json['coverImageUrl'] as String? ?? json['imageUrl'] as String? ?? '',
+      imageUrl:
+          json['coverImageUrl'] as String? ?? json['imageUrl'] as String? ?? '',
       attendeeLimit: parseInt(json['attendeeLimit']),
-      attendeesCount: parseInt(json['attendeeCount']) ?? parseInt(json['attendeesCount']) ?? 0,
+      attendeesCount:
+          parseInt(json['attendeeCount']) ??
+          parseInt(json['attendeesCount']) ??
+          0,
       status: json['status'] as String? ?? 'PUBLISHED',
       language: json['language'] as String? ?? 'ENGLISH',
       myRsvpStatus: rsvpStatus,
       isRsvped: isRsvpedVal,
       isFull: isFullVal,
       isBookmarked: json['isBookmarked'] as bool? ?? false,
-      attendeeAvatars: (json['attendeeAvatars'] as List<dynamic>?)
+      attendeeAvatars:
+          (json['attendeeAvatars'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],
@@ -429,10 +492,13 @@ class EventModel {
       if (subtitle.isNotEmpty) 'subtitle': subtitle,
       if (organizerId != null) 'organizerId': organizerId,
       if (organizerName.isNotEmpty) 'organizerName': organizerName,
+      if (organizerAvatar != null && organizerAvatar!.isNotEmpty)
+        'organizerAvatar': organizerAvatar,
       'description': description,
       'category': category,
       if (imageUrl.isNotEmpty) 'coverImageUrl': imageUrl,
-      if (startDateTime != null) 'startDateTime': startDateTime!.toIso8601String(),
+      if (startDateTime != null)
+        'startDateTime': startDateTime!.toIso8601String(),
       if (endDateTime != null) 'endDateTime': endDateTime!.toIso8601String(),
       if (mode != null) 'mode': mode,
       'eventType': eventType,
@@ -461,6 +527,7 @@ class EventModel {
     String? subtitle,
     String? organizerName,
     String? organizerId,
+    String? organizerAvatar,
     String? eventType,
     String? mode,
     String? location,
@@ -497,6 +564,7 @@ class EventModel {
       subtitle: subtitle ?? this.subtitle,
       organizerName: organizerName ?? this.organizerName,
       organizerId: organizerId ?? this.organizerId,
+      organizerAvatar: organizerAvatar ?? this.organizerAvatar,
       eventType: eventType ?? this.eventType,
       mode: mode ?? this.mode,
       location: location ?? this.location,
@@ -613,20 +681,25 @@ class ForumTopicModel {
     final authorObj = json['author'] is Map<String, dynamic>
         ? json['author'] as Map<String, dynamic>
         : null;
-    final authorName = authorObj?['fullName'] as String? ??
+    final authorName =
+        authorObj?['fullName'] as String? ??
         json['authorName'] as String? ??
         json['username'] as String? ??
         'User';
-    final authorAvatar = authorObj?['avatarUrl'] as String? ??
+    final authorAvatar =
+        authorObj?['avatarUrl'] as String? ??
         json['authorAvatar'] as String? ??
         'assets/images/user_profile.png';
-    final authorId = authorObj?['userId'] as String? ??
+    final authorId =
+        authorObj?['userId'] as String? ??
         json['authorId'] as String? ??
         json['userId'] as String?;
 
     final rawDate = json['createdAt'] as String? ?? json['timeAgo'] as String?;
     final parsedUtc = CommunityDateFormatter.parseToUtc(rawDate);
-    final formattedTime = formatCommunityTimestamp(parsedUtc ?? rawDate ?? 'Just now');
+    final formattedTime = formatCommunityTimestamp(
+      parsedUtc ?? rawDate ?? 'Just now',
+    );
 
     return ForumTopicModel(
       id: json['discussionId'] as String? ?? json['id'] as String? ?? '',
@@ -638,19 +711,20 @@ class ForumTopicModel {
           : 'assets/images/user_profile.png',
       category: json['category'] as String? ?? 'General',
       content: json['content'] as String? ?? '',
-      upvotes: json['reactionCount'] as int? ??
+      upvotes:
+          json['reactionCount'] as int? ??
           json['upvotes'] as int? ??
           json['likesCount'] as int? ??
           0,
-      repliesCount: json['commentCount'] as int? ??
+      repliesCount:
+          json['commentCount'] as int? ??
           json['repliesCount'] as int? ??
           json['commentsCount'] as int? ??
           0,
       timeAgo: formattedTime.isNotEmpty ? formattedTime : 'Just now',
       createdAt: parsedUtc?.toLocal(),
-      isLiked: json['reactedByMe'] as bool? ??
-          json['isLiked'] as bool? ??
-          false,
+      isLiked:
+          json['reactedByMe'] as bool? ?? json['isLiked'] as bool? ?? false,
       isPinned: json['isPinned'] as bool? ?? false,
       isOwner: json['mine'] as bool? ?? json['isOwner'] as bool? ?? false,
     );

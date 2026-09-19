@@ -17,7 +17,9 @@ void main() {
   });
 
   group('CommunityCreationBottomSheet Widget Tests', () {
-    testWidgets('renders Create Post, Create Story, and Create Event options', (tester) async {
+    testWidgets('renders Create Post, Create Story, and Create Event options', (
+      tester,
+    ) async {
       bool postSelected = false;
       bool storySelected = false;
       bool eventSelected = false;
@@ -60,71 +62,73 @@ void main() {
   });
 
   group('QuickCreatePostCard Widget Tests', () {
-    testWidgets('renders generic What\'s happening in your community? when userName is null', (tester) async {
+    testWidgets('renders compact share composer when userName is null', (
+      tester,
+    ) async {
       bool tapped = false;
 
       await tester.pumpWidget(
         GetMaterialApp(
           translations: AppTranslations(),
           locale: const Locale('en', 'US'),
-          home: Scaffold(
-            body: QuickCreatePostCard(
-              onTap: () => tapped = true,
-            ),
-          ),
+          home: Scaffold(body: QuickCreatePostCard(onTap: () => tapped = true)),
         ),
       );
 
-      expect(find.text("What's happening in your community?"), findsOneWidget);
       expect(find.text('Share something with your community.'), findsOneWidget);
-      expect(find.byIcon(Icons.edit_note_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.image_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.bar_chart_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.add_box_outlined), findsOneWidget);
 
       await tester.tap(find.byType(QuickCreatePostCard));
       await tester.pumpAndSettle();
       expect(tapped, isTrue);
     });
 
-    testWidgets('renders personalized headline when userName is provided', (tester) async {
+    testWidgets('keeps the compact share composer when userName is provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         GetMaterialApp(
           translations: AppTranslations(),
           locale: const Locale('en', 'US'),
-          home: const Scaffold(
-            body: QuickCreatePostCard(
-              userName: 'Sokny',
-            ),
-          ),
+          home: const Scaffold(body: QuickCreatePostCard(userName: 'Sokny')),
         ),
       );
 
-      expect(find.text("What's happening in your community, Sokny?"), findsOneWidget);
+      expect(find.text('Share something with your community.'), findsOneWidget);
     });
   });
 
   group('CommunityCreationFlow Tests', () {
-    testWidgets('openCreateMenu displays bottom sheet with 3 creation actions', (tester) async {
-      await tester.pumpWidget(
-        GetMaterialApp(
-          translations: AppTranslations(),
-          locale: const Locale('en', 'US'),
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () => CommunityCreationFlow.openCreateMenu(context),
-                child: const Text('Open Menu'),
+    testWidgets(
+      'openCreateMenu displays bottom sheet with 3 creation actions',
+      (tester) async {
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            locale: const Locale('en', 'US'),
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () =>
+                      CommunityCreationFlow.openCreateMenu(context),
+                  child: const Text('Open Menu'),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Open Menu'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Menu'));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(CommunityCreationBottomSheet), findsOneWidget);
-      expect(find.text('Create Post'), findsOneWidget);
-      expect(find.text('Create Story'), findsOneWidget);
-      expect(find.text('Create Event'), findsOneWidget);
-    });
+        expect(find.byType(CommunityCreationBottomSheet), findsOneWidget);
+        expect(find.text('Create Post'), findsOneWidget);
+        expect(find.text('Create Story'), findsOneWidget);
+        expect(find.text('Create Event'), findsOneWidget);
+      },
+    );
   });
 }

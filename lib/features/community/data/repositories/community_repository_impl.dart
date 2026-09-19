@@ -29,6 +29,48 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<CommunityPostModel> createPostWithVideo({
+    required String content,
+    List<String> imageUrls = const [],
+    String? videoUrl,
+    String visibility = 'Public',
+    String community = 'All GenLink',
+  }) {
+    return remoteDataSource.createPost(
+      content: content,
+      imageUrls: imageUrls,
+      videoUrl: videoUrl,
+      visibility: visibility,
+      community: community,
+    );
+  }
+
+  @override
+  Future<CommunityPostModel> createPollPost({
+    required String question,
+    required List<String> options,
+    String? caption,
+    String visibility = 'Public',
+    String? communityId,
+  }) {
+    return remoteDataSource.createPollPost(
+      question: question,
+      options: options,
+      caption: caption,
+      visibility: visibility,
+      communityId: communityId,
+    );
+  }
+
+  @override
+  Future<CommunityPostModel> votePoll({
+    required String postId,
+    required String optionId,
+  }) {
+    return remoteDataSource.votePoll(postId: postId, optionId: optionId);
+  }
+
+  @override
   Future<CommunityPostModel> getPostDetails(String postId) async {
     final posts = await remoteDataSource.fetchPosts();
     return posts.firstWhere((p) => p.id == postId, orElse: () => posts.first);
@@ -60,8 +102,16 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
-  Future<bool> repostPost(String postId, {String? caption, String? reposterId}) {
-    return remoteDataSource.repostPost(postId, caption: caption, reposterId: reposterId);
+  Future<bool> repostPost(
+    String postId, {
+    String? caption,
+    String? reposterId,
+  }) {
+    return remoteDataSource.repostPost(
+      postId,
+      caption: caption,
+      reposterId: reposterId,
+    );
   }
 
   @override
@@ -70,7 +120,10 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
-  Future<bool> reportPost(String postId, {String reason = 'INAPPROPRIATE_CONTENT'}) {
+  Future<bool> reportPost(
+    String postId, {
+    String reason = 'INAPPROPRIATE_CONTENT',
+  }) {
     return remoteDataSource.reportPost(postId, reason: reason);
   }
 
@@ -193,6 +246,19 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<List<CommentModel>> getDiscussionCommentReplies(String commentId) {
+    return remoteDataSource.fetchDiscussionCommentReplies(commentId);
+  }
+
+  @override
+  Future<CommentModel> updateDiscussionComment(
+    String commentId,
+    String content,
+  ) {
+    return remoteDataSource.updateDiscussionComment(commentId, content);
+  }
+
+  @override
   Future<bool> toggleDiscussionCommentLike(
     String commentId, {
     required bool isCurrentlyLiked,
@@ -229,5 +295,30 @@ class CommunityRepositoryImpl implements CommunityRepository {
     EventRegistrationRequest? request,
   }) {
     return remoteDataSource.rsvpEvent(eventId, request: request);
+  }
+
+  @override
+  Future<bool> cancelRsvpEvent(String eventId) {
+    return remoteDataSource.cancelRsvpEvent(eventId);
+  }
+
+  @override
+  Future<EventModel> createEvent(EventCreateRequest request) {
+    return remoteDataSource.createEvent(request);
+  }
+
+  @override
+  Future<List<EventModel>> getEvents({
+    int page = 1,
+    int limit = 20,
+    String? category,
+    String? status,
+  }) {
+    return remoteDataSource.fetchEvents(
+      page: page,
+      limit: limit,
+      category: category,
+      status: status,
+    );
   }
 }

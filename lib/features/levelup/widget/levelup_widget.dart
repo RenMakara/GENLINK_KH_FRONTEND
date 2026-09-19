@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/radius/app_radius.dart';
 import 'package:genlink_frontend/design_system/shadows/app_shadows.dart';
@@ -17,30 +18,6 @@ class GrowthCategory {
   final Color color;
 }
 
-class GrowthTimelineActivity {
-  const GrowthTimelineActivity({
-    required this.title,
-    required this.subtitle,
-    required this.time,
-    required this.endTime,
-    required this.type,
-    required this.icon,
-    required this.color,
-    required this.completed,
-    required this.xp,
-  });
-
-  final String title;
-  final String subtitle;
-  final String time;
-  final String endTime;
-  final String type;
-  final IconData icon;
-  final Color color;
-  final bool completed;
-  final int xp;
-}
-
 class TimelineActivityItem {
   const TimelineActivityItem({
     required this.title,
@@ -50,6 +27,7 @@ class TimelineActivityItem {
     required this.onTap,
     this.onToggle,
     this.xpReward,
+    this.category,
   });
 
   final String title;
@@ -59,6 +37,33 @@ class TimelineActivityItem {
   final VoidCallback onTap;
   final VoidCallback? onToggle;
   final int? xpReward;
+  final String? category;
+}
+
+/// Data shape reserved for a future date-specific activity API.
+/// The current Home contract does not populate this model.
+class GrowthTimelineActivity {
+  const GrowthTimelineActivity({
+    required this.title,
+    required this.type,
+    required this.subtitle,
+    required this.time,
+    required this.endTime,
+    required this.xp,
+    required this.icon,
+    required this.color,
+    required this.completed,
+  });
+
+  final String title;
+  final String type;
+  final String subtitle;
+  final String time;
+  final String endTime;
+  final int xp;
+  final IconData icon;
+  final Color color;
+  final bool completed;
 }
 
 // HEADER ICON BUTTON
@@ -132,8 +137,6 @@ class GrowthDateButton extends StatelessWidget {
         ? AppColors.darkBorderSubtle
         : AppColors.lightBorderSubtle;
 
-    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -141,7 +144,7 @@ class GrowthDateButton extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            weekdays[date.weekday % 7],
+            MaterialLocalizations.of(context).narrowWeekdays[date.weekday % 7],
             style: TextStyle(
               color: textMuted,
               fontSize: 8.5,
@@ -285,7 +288,7 @@ class GrowthDateCardHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _monthYear(selectedDate),
+                      _monthYear(context, selectedDate),
                       style: TextStyle(
                         color: textPrimary,
                         fontSize: 15.5,
@@ -295,7 +298,9 @@ class GrowthDateCardHeader extends StatelessWidget {
                     ),
                     const SizedBox(height: 1),
                     Text(
-                      showDateDetail ? 'Hide day details' : 'View day details',
+                      showDateDetail
+                          ? 'levelup.hideDayDetails'.tr
+                          : 'levelup.viewDayDetails'.tr,
                       style: TextStyle(
                         color: textMuted,
                         fontSize: 9.5,
@@ -322,22 +327,8 @@ class GrowthDateCardHeader extends StatelessWidget {
     );
   }
 
-  String _monthYear(DateTime date) {
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return '${months[date.month - 1]} ${date.year}';
+  String _monthYear(BuildContext context, DateTime date) {
+    return MaterialLocalizations.of(context).formatMonthYear(date);
   }
 }
 
@@ -436,7 +427,6 @@ class GrowthDateDetailLayout extends StatefulWidget {
 
 class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
   int selectedCategory = 0;
-  int selectedActivity = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -456,11 +446,6 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
         : widget.activities
               .where((e) => e.type == widget.categories[selectedCategory].label)
               .toList();
-
-    final safeIndex = filtered.isEmpty
-        ? 0
-        : selectedActivity.clamp(0, filtered.length - 1);
-    final activity = filtered.isEmpty ? null : filtered[safeIndex];
     final completedCount = filtered.where((e) => e.completed).length;
 
     return Container(
@@ -499,7 +484,9 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _formatDate(widget.selectedDate),
+                              MaterialLocalizations.of(
+                                context,
+                              ).formatMediumDate(widget.selectedDate),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -510,7 +497,7 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Your activity for this day',
+                              'levelup.activityForDay'.tr,
                               style: TextStyle(
                                 color: textSecondary,
                                 fontSize: 9.5,
@@ -534,7 +521,10 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    '$completedCount/${filtered.length} Done',
+                    'levelup.completedCount'.trParams({
+                      'done': '$completedCount',
+                      'total': '${filtered.length}',
+                    }),
                     style: TextStyle(
                       color: textSecondary,
                       fontSize: 9,
@@ -580,14 +570,13 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               itemCount: widget.categories.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 5),
+              separatorBuilder: (_, _) => const SizedBox(width: 5),
               itemBuilder: (context, index) {
                 final cat = widget.categories[index];
                 final selected = selectedCategory == index;
                 return GestureDetector(
                   onTap: () => setState(() {
                     selectedCategory = index;
-                    selectedActivity = 0;
                   }),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
@@ -630,18 +619,20 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
             ),
           ),
 
-          // Timeline
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 2, 14, 4),
-            child: _buildTimeline(isDark, textSecondary),
-          ),
-
-          // Activity card
-          if (activity != null)
+          if (filtered.isEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
-              child: _buildActivityCard(
-                activity: activity,
+              padding: const EdgeInsets.fromLTRB(14, 20, 14, 24),
+              child: _buildEmptyState(
+                isDark: isDark,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 2, 14, 14),
+              child: _buildActivities(
+                activities: filtered,
                 isDark: isDark,
                 textPrimary: textPrimary,
                 textSecondary: textSecondary,
@@ -652,165 +643,18 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
     );
   }
 
-  Widget _buildTimeline(bool isDark, Color textSecondary) {
-    final lineColor = isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : Colors.black.withValues(alpha: 0.08);
-    final positions = [8.0, 62.0, 112.0, 174.0, 238.0];
-
-    return SizedBox(
-      height: 305,
-      child: Stack(
-        children: [
-          Column(
-            children: [
-              for (int i = 0; i < 7; i++)
-                Expanded(
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 48,
-                        child: Text(
-                          _timelineTime(i),
-                          style: TextStyle(
-                            color: textSecondary.withValues(alpha: 0.65),
-                            fontSize: 7.5,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border(
-                              top: BorderSide(color: lineColor, width: 0.5),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          Positioned(
-            left: 65,
-            top: 5,
-            bottom: 5,
-            child: Container(
-              width: 1.2,
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.12)
-                  : Colors.black.withValues(alpha: 0.10),
-            ),
-          ),
-          for (
-            int i = 0;
-            i < widget.activities.length && i < positions.length;
-            i++
-          )
-            _timelineNode(
-              index: i,
-              activity: widget.activities[i],
-              position: positions[i],
-              isDark: isDark,
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _timelineNode({
-    required int index,
-    required GrowthTimelineActivity activity,
-    required double position,
-    required bool isDark,
-  }) {
-    final selected = selectedActivity == index;
-
-    return Positioned(
-      left: 52,
-      top: position,
-      child: GestureDetector(
-        onTap: () => setState(() => selectedActivity = index),
-        child: Row(
-          children: [
-            Container(
-              width: 13,
-              height: 1,
-              color: activity.color.withValues(alpha: 0.45),
-            ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              width: selected ? 30 : 24,
-              height: selected ? 30 : 24,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: activity.color,
-                shape: BoxShape.circle,
-                border: selected
-                    ? Border.all(
-                        color: isDark ? Colors.white : Colors.black,
-                        width: 2,
-                      )
-                    : null,
-                boxShadow: selected
-                    ? [
-                        BoxShadow(
-                          color: activity.color.withValues(alpha: 0.28),
-                          blurRadius: 10,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Icon(
-                activity.icon,
-                size: selected ? 14 : 12,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (selected)
-              Container(
-                constraints: const BoxConstraints(maxWidth: 145),
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.black.withValues(alpha: 0.65)
-                      : Colors.white.withValues(alpha: 0.94),
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: isDark ? null : AppShadows.cardLight,
-                ),
-                child: Text(
-                  activity.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: isDark ? Colors.white : Colors.black,
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActivityCard({
-    required GrowthTimelineActivity activity,
+  Widget _buildEmptyState({
     required bool isDark,
     required Color textPrimary,
     required Color textSecondary,
   }) {
-    final surface = isDark
-        ? Colors.white.withValues(alpha: 0.025)
-        : Colors.black.withValues(alpha: 0.018);
-
     return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
       decoration: BoxDecoration(
-        color: surface,
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.025)
+            : Colors.black.withValues(alpha: 0.018),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isDark
@@ -821,14 +665,63 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
       ),
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+          Icon(Icons.event_busy_outlined, size: 28, color: textSecondary),
+          const SizedBox(height: 10),
+          Text(
+            'levelup.noActivitiesForDate'.tr,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'levelup.activityTimelineUnavailable'.tr,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: textSecondary,
+              fontSize: 10.5,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivities({
+    required List<GrowthTimelineActivity> activities,
+    required bool isDark,
+    required Color textPrimary,
+    required Color textSecondary,
+  }) {
+    final surface = isDark
+        ? Colors.white.withValues(alpha: 0.025)
+        : Colors.black.withValues(alpha: 0.018);
+    final border = isDark
+        ? Colors.white.withValues(alpha: 0.07)
+        : Colors.black.withValues(alpha: 0.06);
+
+    return Column(
+      children: [
+        for (final activity in activities)
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: border, width: 0.7),
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 38,
-                  height: 38,
+                  width: 36,
+                  height: 36,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: activity.color.withValues(
@@ -836,7 +729,7 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
                     ),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(activity.icon, color: activity.color, size: 20),
+                  child: Icon(activity.icon, color: activity.color, size: 19),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -852,22 +745,14 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: textPrimary,
-                                fontSize: 14,
+                                fontSize: 13.5,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 7),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: activity.color.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Text(
+                          if (activity.type.trim().isNotEmpty) ...[
+                            const SizedBox(width: 7),
+                            Text(
                               activity.type,
                               style: TextStyle(
                                 color: activity.color,
@@ -875,7 +760,7 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                          ),
+                          ],
                         ],
                       ),
                       const SizedBox(height: 3),
@@ -883,199 +768,33 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
                         activity.subtitle,
                         style: TextStyle(color: textSecondary, fontSize: 10.5),
                       ),
-                      const SizedBox(height: 5),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.access_time_rounded,
-                            size: 11,
-                            color: textSecondary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${activity.time} - ${activity.endTime}',
-                            style: TextStyle(
-                              color: textSecondary,
-                              fontSize: 9.5,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            '+${activity.xp} XP',
-                            style: TextStyle(
-                              color: activity.color,
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
+                      if (activity.time.trim().isNotEmpty ||
+                          activity.endTime.trim().isNotEmpty) ...[
+                        const SizedBox(height: 5),
+                        Text(
+                          [activity.time, activity.endTime]
+                              .where((value) => value.trim().isNotEmpty)
+                              .join(' - '),
+                          style: TextStyle(color: textSecondary, fontSize: 9.5),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Progress',
-                        style: TextStyle(
-                          color: textSecondary,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                if (activity.completed)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8, top: 2),
+                    child: Icon(
+                      Icons.check_circle_rounded,
+                      size: 17,
+                      color: activity.color,
                     ),
-                    Text(
-                      '${widget.activities.where((e) => e.completed).length} / ${widget.activities.length} completed',
-                      style: TextStyle(
-                        color: textSecondary,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: LinearProgressIndicator(
-                    value: widget.activities.isEmpty
-                        ? 0
-                        : widget.activities.where((e) => e.completed).length /
-                              widget.activities.length,
-                    minHeight: 4,
-                    backgroundColor: isDark
-                        ? Colors.white.withValues(alpha: 0.08)
-                        : Colors.black.withValues(alpha: 0.06),
-                    valueColor: AlwaysStoppedAnimation<Color>(activity.color),
                   ),
-                ),
               ],
             ),
           ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _smallAction(
-                    label: 'Edit',
-                    icon: Icons.edit_outlined,
-                    filled: false,
-                    isDark: isDark,
-                    textPrimary: textPrimary,
-                    onTap: () => widget.onEdit?.call(activity),
-                  ),
-                ),
-                const SizedBox(width: 7),
-                Expanded(
-                  child: _smallAction(
-                    label: 'Delete',
-                    icon: Icons.delete_outline,
-                    filled: false,
-                    isDark: isDark,
-                    textPrimary: textPrimary,
-                    onTap: () => widget.onDelete?.call(activity),
-                  ),
-                ),
-                const SizedBox(width: 7),
-                Expanded(
-                  flex: 2,
-                  child: _smallAction(
-                    label: activity.completed ? 'Completed' : 'Mark as Done',
-                    icon: activity.completed
-                        ? Icons.check_circle_rounded
-                        : Icons.check_rounded,
-                    filled: true,
-                    isDark: isDark,
-                    textPrimary: textPrimary,
-                    onTap: () => widget.onMarkDone?.call(activity),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
-      ),
+      ],
     );
-  }
-
-  Widget _smallAction({
-    required String label,
-    required IconData icon,
-    required bool filled,
-    required bool isDark,
-    required Color textPrimary,
-    required VoidCallback onTap,
-  }) {
-    final background = filled
-        ? (isDark ? Colors.white : Colors.black)
-        : (isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.black.withValues(alpha: 0.035));
-    final foreground = filled
-        ? (isDark ? Colors.black : Colors.white)
-        : textPrimary;
-
-    return Material(
-      color: background,
-      borderRadius: BorderRadius.circular(9),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(9),
-        child: Container(
-          height: 34,
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 13, color: foreground),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: TextStyle(
-                  color: foreground,
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
-  }
-
-  String _timelineTime(int index) {
-    const times = ['8 AM', '10 AM', '12 PM', '2 PM', '4 PM', '6 PM', '8 PM'];
-    return index < times.length ? times[index] : '';
   }
 }
 
@@ -1489,7 +1208,7 @@ class GrowthTodayChecklist extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Daily progress',
+                          'levelup.dailyProgress'.tr,
                           style: TextStyle(
                             color: textMuted,
                             fontSize: 11.5,
@@ -1547,7 +1266,7 @@ class GrowthTodayChecklist extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                emptyTitle ?? "You're all caught up",
+                emptyTitle ?? 'levelup.allCaughtUp'.tr,
                 style: TextStyle(
                   color: textPrimary,
                   fontSize: 13.5,
@@ -1556,7 +1275,7 @@ class GrowthTodayChecklist extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                emptyMessage ?? 'No habits or tasks need attention right now.',
+                emptyMessage ?? 'levelup.noHabitsOrTasks'.tr,
                 style: TextStyle(
                   color: textSecondary,
                   fontSize: 12,
@@ -1763,7 +1482,7 @@ class GrowthActionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.badgeText,
-    required this.onTap,
+    this.onTap,
   });
 
   final IconData icon;
@@ -1771,7 +1490,7 @@ class GrowthActionCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final String? badgeText;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1862,11 +1581,12 @@ class GrowthActionCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 7),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 10,
-                color: textSecondary.withValues(alpha: 0.4),
-              ),
+              if (onTap != null)
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 10,
+                  color: textSecondary.withValues(alpha: 0.4),
+                ),
             ],
           ),
         ),
@@ -1954,7 +1674,7 @@ class DailyMindsetCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Reflection for today',
+                  'levelup.reflectionForToday'.tr,
                   style: TextStyle(
                     color: textSecondary,
                     fontSize: 10.5,

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../app/routes/app_routes.dart';
 import '../../design_system/colors/app_colors.dart';
 import '../../design_system/spacing/app_spacing.dart';
+import '../../design_system/widgets/headers/app_screen_header.dart';
 import '../leaderboard/presentation/bindings/leaderboard_binding.dart';
 import '../leaderboard/presentation/screens/leaderboard_home_screen.dart';
 import '../productivity/presentation/focus_feature/focus_home_screen.dart';
@@ -102,64 +103,6 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
     ),
   ];
 
-  static const List<GrowthTimelineActivity> activities = [
-    GrowthTimelineActivity(
-      title: 'Rise and Shine',
-      subtitle: 'Morning meditation',
-      time: '8:00 AM',
-      endTime: '8:30 AM',
-      type: 'Habit',
-      icon: Icons.wb_sunny_outlined,
-      color: Color(0xFFF97316),
-      completed: true,
-      xp: 15,
-    ),
-    GrowthTimelineActivity(
-      title: 'Go for a walk',
-      subtitle: 'Clear your mind',
-      time: '11:00 AM',
-      endTime: '11:15 AM',
-      type: 'Task',
-      icon: Icons.directions_walk_rounded,
-      color: Color(0xFF3B82F6),
-      completed: false,
-      xp: 10,
-    ),
-    GrowthTimelineActivity(
-      title: 'Study session',
-      subtitle: 'Focus for 25 minutes',
-      time: '2:00 PM',
-      endTime: '2:25 PM',
-      type: 'Focus',
-      icon: Icons.menu_book_rounded,
-      color: Color(0xFF8B5CF6),
-      completed: false,
-      xp: 20,
-    ),
-    GrowthTimelineActivity(
-      title: 'Update portfolio',
-      subtitle: 'Work on your goal',
-      time: '6:00 PM',
-      endTime: '6:30 PM',
-      type: 'Goal',
-      icon: Icons.track_changes_rounded,
-      color: Color(0xFF10B981),
-      completed: false,
-      xp: 15,
-    ),
-    GrowthTimelineActivity(
-      title: "Today's Challenge",
-      subtitle: 'Test your knowledge',
-      time: '8:00 PM',
-      endTime: '8:20 PM',
-      type: 'Quiz',
-      icon: Icons.extension_rounded,
-      color: Color(0xFFF2B84B),
-      completed: false,
-      xp: 20,
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -241,6 +184,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
               habitId: habit.habitId,
               targetState: !habit.checkedInToday,
             ),
+            category: 'levelup.categoryHabit'.tr,
           ),
         );
       }
@@ -258,6 +202,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
           accentColor: const Color(0xFFF97316),
           onTap: () => Get.to(() => const HabitHomeScreen()),
           onToggle: () => widget.controller.toggleHabitCheckIn(),
+          category: 'levelup.categoryHabit'.tr,
         ),
       );
     }
@@ -279,9 +224,15 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
           isCompleted: isTaskDone,
           accentColor: const Color(0xFF3B82F6),
           onTap: () => Get.to(() => const TasksPage()),
+          category: 'levelup.categoryTask'.tr,
         ),
       );
     }
+
+    // The Home API exposes today's habit/task summaries, but it does not
+    // expose a date-specific activity timeline. Keep Day Detail honest until
+    // that backend contract exists instead of inventing activities.
+    const dateActivities = <GrowthTimelineActivity>[];
 
     // Alert
     final isStreakAtRisk =
@@ -326,46 +277,19 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                 ),
                 children: [
                   // HEADER
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'levelup.title'.tr,
-                              style: TextStyle(
-                                color: isDark
-                                    ? AppColors.darkTextPrimary
-                                    : AppColors.lightTextPrimary,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.7,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              subtitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: isDark
-                                    ? AppColors.darkTextSecondary
-                                    : AppColors.lightTextSecondary,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      GrowthHeaderIconButton(
+                  AppScreenHeader(
+                    title: 'levelup.title'.tr,
+                    subtitle: subtitle,
+                    includeSafeArea: false,
+                    horizontalPadding: EdgeInsets.zero,
+                    actions: [
+                      AppHeaderActionButton(
                         icon: Icons.emoji_events_outlined,
                         onTap: () => Get.to(
                           () => const LeaderboardHomeScreen(),
                           binding: LeaderboardBinding(),
                         ),
+                        tooltip: 'quiz.leaderboard'.tr,
                       ),
                     ],
                   ),
@@ -383,31 +307,8 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                       selectedDate: selectedDate,
                       today: today,
                       categories: categories,
-                      activities: activities,
+                      activities: dateActivities,
                       onDateSelected: _selectDate,
-                      onEdit: (a) => Get.snackbar(
-                        '',
-                        'levelup.editActivity'.trParams({'title': a.title}),
-                        snackPosition: SnackPosition.BOTTOM,
-                        margin: const EdgeInsets.all(12),
-                        duration: const Duration(seconds: 1),
-                      ),
-                      onDelete: (a) => Get.snackbar(
-                        '',
-                        'levelup.deleteActivity'.trParams({'title': a.title}),
-                        snackPosition: SnackPosition.BOTTOM,
-                        margin: const EdgeInsets.all(12),
-                        duration: const Duration(seconds: 1),
-                      ),
-                      onMarkDone: (a) => Get.snackbar(
-                        '',
-                        a.completed
-                            ? 'levelup.alreadyCompleted'.tr
-                            : 'levelup.markedAsDone'.tr,
-                        snackPosition: SnackPosition.BOTTOM,
-                        margin: const EdgeInsets.all(12),
-                        duration: const Duration(seconds: 1),
-                      ),
                     ),
                   ),
 
@@ -510,6 +411,15 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                           color: const Color(0xFF06B6D4),
                           onTap: () => Get.to(() => const FocusPage()),
                         ),
+                        const SizedBox(width: 5),
+
+                        _buildToolItem(
+                          context: context,
+                          icon: Icons.quiz_outlined,
+                          label: 'levelup.quiz'.tr,
+                          color: const Color(0xFFF2B84B),
+                          onTap: () => Get.toNamed(AppRoutes.quizDashboard),
+                        ),
                       ],
                     ),
                   ),
@@ -547,14 +457,13 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                     ),
                     const SizedBox(height: 10),
                     GrowthActionCard(
-                      icon: Icons.quiz_outlined,
+                      icon: Icons.flag_outlined,
                       accentColor: const Color(0xFFF97316),
                       title: challengeTitle,
                       subtitle: challengeDesc,
                       badgeText: xpReward != null && xpReward > 0
                           ? '+$xpReward XP'
                           : null,
-                      onTap: () => Get.toNamed(AppRoutes.quizDashboard),
                     ),
                   ],
 

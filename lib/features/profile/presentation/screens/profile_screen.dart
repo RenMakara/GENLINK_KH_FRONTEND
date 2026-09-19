@@ -9,9 +9,14 @@ import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/avatar/app_avatar.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
+import '../../../../design_system/widgets/headers/app_screen_header.dart';
 import '../../../../design_system/widgets/loaders/app_loader.dart';
 import '../../../../design_system/widgets/surfaces/app_surface.dart';
 import '../../domain/entities/profile_entity.dart';
+import '../../../chat/presentation/bindings/chat_binding.dart';
+import '../../../chat/presentation/controllers/chat_controller.dart';
+import '../../../chat/chat_navigation.dart';
+
 import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/full_screen_image_viewer.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/post_card_widget.dart';
@@ -81,9 +86,9 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  AppBar _ownerAppBar(BuildContext context) => AppBar(
-    titleSpacing: AppSpacing.md,
-    title: Obx(() {
+  AppScreenHeader _ownerAppBar(BuildContext context) => AppScreenHeader(
+    title: '',
+    titleWidget: Obx(() {
       final profile = controller.profile.value;
       if (profile == null) return const SizedBox.shrink();
       return Row(
@@ -97,42 +102,38 @@ class ProfileScreen extends StatelessWidget {
           Expanded(
             child: Text(
               profile.fullName,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
       );
     }),
     actions: [
-      IconButton(
+      AppHeaderActionButton(
+        icon: Icons.notifications_none_rounded,
         tooltip: 'settings.notifications'.tr,
-        icon: const Icon(Icons.notifications_none),
-        onPressed: () => Get.toNamed<void>(AppRoutes.notifications),
+        onTap: () => Get.toNamed<void>(AppRoutes.notifications),
       ),
-      IconButton(
+      AppHeaderActionButton(
+        icon: Icons.settings_rounded,
         tooltip: 'settings.title'.tr,
-        icon: const Icon(Icons.settings_rounded),
-        onPressed: () => Get.toNamed<void>(AppRoutes.settings),
+        onTap: () => Get.toNamed<void>(AppRoutes.settings),
       ),
     ],
   );
 
-  AppBar _publicAppBar(BuildContext context) => AppBar(
-    titleSpacing: 0,
-    leading: const Center(child: AppBackButton()),
-    leadingWidth: 74,
-    title: Text(
-      'profile.publicProfile'.tr,
-      style: Theme.of(
-        context,
-      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-    ),
+  AppScreenHeader _publicAppBar(BuildContext context) => AppScreenHeader(
+    title: 'profile.publicProfile'.tr,
+    leading: const AppBackButton(),
     actions: [
-      IconButton(
+      AppHeaderActionButton(
+        icon: Icons.ios_share_outlined,
         tooltip: 'profile.shareProfile'.tr,
-        icon: const Icon(Icons.ios_share_outlined),
-        onPressed: _sharePublicProfile,
+        onTap: _sharePublicProfile,
       ),
     ],
   );
@@ -708,7 +709,7 @@ class _PublicProfile extends StatelessWidget {
           );
         }),
         const SizedBox(height: AppSpacing.md),
-        _PublicActionRow(controller: controller, onShare: onShare),
+        _PublicActionRow(controller: controller, profile: profile),
         if ((profile.universityName ?? '').trim().isNotEmpty ||
             _formatJoinedAt(profile.joinedAt).isNotEmpty) ...[
           const SizedBox(height: AppSpacing.lg),
@@ -818,16 +819,57 @@ class _PublicProfile extends StatelessWidget {
   }
 }
 
-class _PublicActionRow extends StatelessWidget {
-  const _PublicActionRow({required this.controller, required this.onShare});
+class _PublicActionRow extends StatefulWidget {
+  const _PublicActionRow({required this.controller, required this.profile});
 
   final ProfileController controller;
-  final VoidCallback onShare;
+  final PublicProfileEntity profile;
+
+  @override
+  State<_PublicActionRow> createState() => _PublicActionRowState();
+}
+
+class _PublicActionRowState extends State<_PublicActionRow> {
+  bool _isOpeningChat = false;
+
+  Future<void> _handleChatTap() async {
+    if (_isOpeningChat) return;
+    setState(() => _isOpeningChat = true);
+    try {
+      if (!Get.isRegistered<ChatController>()) {
+        ChatBinding().dependencies();
+      }
+      final chatController = Get.find<ChatController>();
+      debugPrint('[CHAT-NAV] source = PublicProfile, userId = ${widget.profile.userId}, currentRoute = ${Get.currentRoute}, controller = ${identityHashCode(chatController)}');
+      final conv = await chatController.openPrivateChat(
+        widget.profile.userId,
+        name: widget.profile.fullName,
+        avatar: widget.profile.avatarUrl,
+      );
+      if (conv != null && mounted) {
+        debugPrint('[CHAT-NAV] PublicProfile openPrivateChat returned conv.id = ${conv.id}, calling openChatDetail');
+        ChatNavigation.openChatDetail(conv.id, conversation: conv);
+      }
+
+    } catch (e) {
+      if (mounted) {
+        Get.snackbar(
+          'Error',
+          'Could not open conversation. Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isOpeningChat = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final stats = controller.followStats.value;
+      final stats = widget.controller.followStats.value;
       final status = stats?.followStatus;
       final isFollowing = stats?.isFollowing ?? false;
       final label = status == 'PENDING'
@@ -835,6 +877,10 @@ class _PublicActionRow extends StatelessWidget {
           : isFollowing
           ? 'profile.following'.tr
           : 'profile.follow'.tr;
+
+      final chatLabel = 'profile.chat'.tr.isNotEmpty && 'profile.chat'.tr != 'profile.chat'
+          ? 'profile.chat'.tr
+          : 'Chat';
 
       return Row(
         children: [
@@ -844,16 +890,19 @@ class _PublicActionRow extends StatelessWidget {
               icon: isFollowing
                   ? Icons.check_rounded
                   : Icons.person_add_alt_1_outlined,
-              loading: controller.isRelationshipSaving.value,
-              onPressed: () => controller.toggleFollow(),
+              height: 44,
+              loading: widget.controller.isRelationshipSaving.value,
+              onPressed: () => widget.controller.toggleFollow(),
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: AppButton.secondary(
-              label: 'profile.shareProfile'.tr,
-              icon: Icons.share_outlined,
-              onPressed: onShare,
+              label: chatLabel,
+              icon: Icons.chat_bubble_outline_rounded,
+              height: 44,
+              loading: _isOpeningChat,
+              onPressed: _handleChatTap,
             ),
           ),
         ],

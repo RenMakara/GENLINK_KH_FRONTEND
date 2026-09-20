@@ -329,32 +329,115 @@ class CommunityRemoteDataSource {
     return true;
   }
 
-  Future<bool> toggleLike(String postId) async {
-    try {
-      await guardDio(
-        () => dio.post<dynamic>(ApiEndpoints.communityPostLike(postId)),
-      );
-    } catch (_) {}
-    final idx = _mockPosts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      final p = _mockPosts[idx];
-      p.isLiked = !p.isLiked;
-      p.likesCount += p.isLiked ? 1 : -1;
+  Future<bool> toggleLike(String postId, {bool isCurrentlyLiked = false}) async {
+    final response = await guardDio(
+      () => isCurrentlyLiked
+          ? dio.delete<dynamic>(ApiEndpoints.communityPostLike(postId))
+          : dio.post<dynamic>(ApiEndpoints.communityPostLike(postId)),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      final idx = _mockPosts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        final p = _mockPosts[idx];
+        p.isLiked = !isCurrentlyLiked;
+        p.likesCount =
+            (p.likesCount + (!isCurrentlyLiked ? 1 : -1)).clamp(0, 9999999);
+      }
+      return true;
     }
-    return true;
+    throw AppError(
+      message: 'Failed to update post like',
+      errorCode: 'POST_LIKE_FAILED',
+    );
   }
 
-  Future<bool> toggleBookmark(String postId) async {
-    try {
-      await guardDio(
-        () => dio.post<dynamic>(ApiEndpoints.communityPostBookmark(postId)),
-      );
-    } catch (_) {}
-    final idx = _mockPosts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      _mockPosts[idx].isBookmarked = !_mockPosts[idx].isBookmarked;
+  Future<List<PostLikerModel>> fetchPostLikers(
+    String postId, {
+    int page = 0,
+    int size = 20,
+  }) async {
+    if (postId.trim().isEmpty) {
+      return [];
     }
-    return true;
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityPostLikes(postId),
+        queryParameters: {
+          'page': page,
+          'size': size,
+        },
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      dynamic rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      List<dynamic> content = [];
+      if (rawData is Map<String, dynamic>) {
+        content = (rawData['content'] as List<dynamic>?) ?? [];
+      } else if (rawData is List) {
+        content = rawData;
+      }
+      return content
+          .whereType<Map<String, dynamic>>()
+          .map(PostLikerModel.fromJson)
+          .toList();
+    }
+    throw AppError(
+      message: 'Failed to fetch post likes',
+      errorCode: 'FETCH_POST_LIKES_FAILED',
+    );
+  }
+
+  Future<bool> toggleBookmark(
+    String postId, {
+    bool? isCurrentlyBookmarked,
+  }) async {
+    if (isCurrentlyBookmarked != null) {
+      try {
+        final response = await guardDio(
+          () => isCurrentlyBookmarked
+              ? dio.delete<dynamic>(
+                  ApiEndpoints.profileSavedItem('POST', postId),
+                )
+              : dio.post<dynamic>(
+                  ApiEndpoints.profileSaved,
+                  data: {
+                    'itemType': 'POST',
+                    'itemId': postId,
+                  },
+                ),
+        );
+        if (response.statusCode == 200 ||
+            response.statusCode == 201 ||
+            response.statusCode == 204) {
+          final idx = _mockPosts.indexWhere((p) => p.id == postId);
+          if (idx != -1) {
+            _mockPosts[idx].isBookmarked = !isCurrentlyBookmarked;
+          }
+          return true;
+        }
+      } catch (_) {}
+    }
+
+    final response = await guardDio(
+      () => dio.post<dynamic>(ApiEndpoints.communityPostBookmark(postId)),
+    );
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 204) {
+      final idx = _mockPosts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        _mockPosts[idx].isBookmarked = !_mockPosts[idx].isBookmarked;
+      }
+      return true;
+    }
+
+    throw const AppError(
+      message: 'Failed to update bookmark',
+      errorCode: 'BOOKMARK_UPDATE_FAILED',
+    );
   }
 
   Future<bool> repostPost(
@@ -363,50 +446,99 @@ class CommunityRemoteDataSource {
     String? reposterId,
   }) async {
     try {
-      await guardDio(
+      final response = await guardDio(
         () => dio.post<dynamic>(
           ApiEndpoints.communityPostRepost(postId),
-          data: {'caption': caption},
+          data: (caption != null && caption.trim().isNotEmpty)
+              ? {'caption': caption.trim()}
+              : <String, dynamic>{},
         ),
       );
-    } catch (_) {}
-    final idx = _mockPosts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      final currentUserName =
-          CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
-          ? CurrentUser.name
-          : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'User');
-      final effectiveReposterId =
-          reposterId ??
-          (CurrentUser.id.isNotEmpty ? CurrentUser.id : 'current_user');
-      final p = _mockPosts[idx];
-      _mockPosts[idx] = p.copyWith(
-        sharesCount: p.sharesCount + 1,
-        isRepostedByMe: true,
-        repostedBy: currentUserName,
-        repostCaption: caption,
-        reposterId: effectiveReposterId,
-        originalPostId: p.id,
-      );
+      final ok = response.statusCode == 200 || response.statusCode == 201;
+      if (ok) {
+        _updateMockPostRepost(
+          postId,
+          isReposted: true,
+          caption: caption,
+          reposterId: reposterId,
+        );
+      }
+      return ok;
+    } catch (e) {
+      final idx = _mockPosts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        _updateMockPostRepost(
+          postId,
+          isReposted: true,
+          caption: caption,
+          reposterId: reposterId,
+        );
+        return true;
+      }
+      rethrow;
     }
-    return true;
   }
 
   Future<bool> unrepostPost(String postId, {String? reposterId}) async {
     try {
-      await guardDio(
+      final response = await guardDio(
         () => dio.delete<dynamic>(ApiEndpoints.communityPostRepost(postId)),
       );
-    } catch (_) {}
+      final ok = response.statusCode == 200 || response.statusCode == 204;
+      if (ok) {
+        _updateMockPostRepost(
+          postId,
+          isReposted: false,
+          reposterId: reposterId,
+        );
+      }
+      return ok;
+    } catch (e) {
+      final idx = _mockPosts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        _updateMockPostRepost(
+          postId,
+          isReposted: false,
+          reposterId: reposterId,
+        );
+        return true;
+      }
+      rethrow;
+    }
+  }
+
+  void _updateMockPostRepost(
+    String postId, {
+    required bool isReposted,
+    String? caption,
+    String? reposterId,
+  }) {
     final idx = _mockPosts.indexWhere((p) => p.id == postId);
     if (idx != -1) {
       final p = _mockPosts[idx];
-      _mockPosts[idx] = p.copyWith(
-        sharesCount: p.sharesCount > 0 ? p.sharesCount - 1 : 0,
-        clearRepostInfo: true,
-      );
+      if (isReposted) {
+        final currentUserName =
+            CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
+                ? CurrentUser.name
+                : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'User');
+        final effectiveReposterId =
+            reposterId ??
+            (CurrentUser.id.isNotEmpty ? CurrentUser.id : 'current_user');
+        _mockPosts[idx] = p.copyWith(
+          sharesCount: p.sharesCount + 1,
+          isRepostedByMe: true,
+          repostedBy: currentUserName,
+          repostCaption: caption,
+          reposterId: effectiveReposterId,
+          originalPostId: p.id,
+        );
+      } else {
+        _mockPosts[idx] = p.copyWith(
+          sharesCount: p.sharesCount > 0 ? p.sharesCount - 1 : 0,
+          clearRepostInfo: true,
+        );
+      }
     }
-    return true;
   }
 
   Future<bool> reportPost(
@@ -425,47 +557,150 @@ class CommunityRemoteDataSource {
   }
 
   Future<List<CommentModel>> fetchComments(String postId) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(ApiEndpoints.communityPostComments(postId)),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      dynamic rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+
+      List<dynamic> content = [];
+      if (rawData is Map<String, dynamic>) {
+        content = (rawData['content'] as List<dynamic>?) ?? [];
+      } else if (rawData is List) {
+        content = rawData;
+      }
+
+      final parsed = content
+          .whereType<Map<String, dynamic>>()
+          .map((json) {
+            final map = Map<String, dynamic>.from(json);
+            if (map['postId'] == null && map['discussionId'] == null) {
+              map['postId'] = postId;
+            }
+            return CommentModel.fromJson(map);
+          })
+          .toList();
+
+      final reconstructed = _reconstructCommentHierarchy(parsed);
+
+      final commentsWithReplies = await Future.wait(
+        reconstructed.map((comment) async {
+          if (comment.replies.isNotEmpty) return comment;
+          try {
+            final replies = await fetchCommentReplies(comment.id);
+            if (replies.isNotEmpty) {
+              return comment.copyWith(replies: replies);
+            }
+          } catch (_) {}
+          return comment;
+        }),
+      );
+
+      return commentsWithReplies;
+    }
+    return [];
+  }
+
+  Future<List<CommentModel>> fetchCommentReplies(String commentId) async {
     try {
       final response = await guardDio(
-        () => dio.get<dynamic>(ApiEndpoints.communityPostComments(postId)),
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityCommentReplies(commentId),
+        ),
       );
       if (response.statusCode == 200 && response.data != null) {
         final body = response.data;
         final rawData = body is Map<String, dynamic>
             ? (body['data'] ?? body)
             : body;
-        if (rawData is List) {
-          return rawData
-              .map(
-                (json) => CommentModel.fromJson(json as Map<String, dynamic>),
-              )
-              .toList();
-        }
+        final content = rawData is Map<String, dynamic>
+            ? (rawData['content'] as List<dynamic>?) ?? const []
+            : rawData is List
+            ? rawData
+            : const [];
+        return content
+            .whereType<Map<String, dynamic>>()
+            .map((json) {
+              final map = Map<String, dynamic>.from(json);
+              if (map['parentCommentId'] == null) {
+                map['parentCommentId'] = commentId;
+              }
+              return CommentModel.fromJson(map);
+            })
+            .toList();
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Failed to fetch replies for comment $commentId: $e');
+    }
+    return [];
+  }
 
-    return [
-      CommentModel(
-        id: 'c_1',
-        postId: postId,
-        userId: 'u_10',
-        userName: 'Rathana P.',
-        userAvatar: 'assets/images/user_profile.png',
-        text: 'Awesome post! Looking forward to seeing more updates 🔥',
-        timeAgo: '1h ago',
-        likesCount: 3,
-      ),
-      CommentModel(
-        id: 'c_2',
-        postId: postId,
-        userId: 'u_11',
-        userName: 'Sothea N.',
-        userAvatar: 'assets/images/user_profile.png',
-        text: 'Great work team! Keep it up 👏',
-        timeAgo: '30m ago',
-        likesCount: 1,
-      ),
-    ];
+  List<CommentModel> _reconstructCommentHierarchy(List<CommentModel> comments) {
+    if (comments.isEmpty) return const [];
+
+    final Map<String, List<CommentModel>> repliesByParent = {};
+    final List<CommentModel> topLevelComments = [];
+
+    for (final comment in comments) {
+      final parentId = comment.parentCommentId;
+      if (parentId != null && parentId.isNotEmpty) {
+        repliesByParent.putIfAbsent(parentId, () => []).add(comment);
+      } else {
+        topLevelComments.add(comment);
+      }
+    }
+
+    if (repliesByParent.isEmpty) {
+      return comments;
+    }
+
+    List<CommentModel> buildReplies(String parentId) {
+      final direct = repliesByParent[parentId] ?? [];
+      return direct.map((reply) {
+        final nested = buildReplies(reply.id);
+        final merged = [
+          ...reply.replies,
+          ...nested.where((n) => !reply.replies.any((r) => r.id == n.id)),
+        ];
+        return reply.copyWith(replies: merged);
+      }).toList();
+    }
+
+    final result = topLevelComments.map((parent) {
+      final replies = buildReplies(parent.id);
+      final merged = [
+        ...parent.replies,
+        ...replies.where(
+          (r) => !parent.replies.any((existing) => existing.id == r.id),
+        ),
+      ];
+      return parent.copyWith(replies: merged);
+    }).toList();
+
+    // Include any orphaned replies whose parent was not in the top-level list
+    final accountedIds = <String>{
+      ...result.map((c) => c.id),
+      ...result.expand((c) => _allCommentDescendantIds(c)),
+    };
+    for (final comment in comments) {
+      if (!accountedIds.contains(comment.id)) {
+        result.add(comment);
+      }
+    }
+
+    return result;
+  }
+
+  Set<String> _allCommentDescendantIds(CommentModel comment) {
+    final ids = <String>{};
+    for (final r in comment.replies) {
+      ids.add(r.id);
+      ids.addAll(_allCommentDescendantIds(r));
+    }
+    return ids;
   }
 
   Future<CommentModel> addComment(
@@ -473,35 +708,54 @@ class CommunityRemoteDataSource {
     String text, {
     String? parentCommentId,
   }) async {
-    final currentUserName =
-        CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
-        ? CurrentUser.name
-        : (CurrentUser.username.isNotEmpty ? CurrentUser.username : 'User');
-    final comment = CommentModel(
-      id: 'c_${DateTime.now().millisecondsSinceEpoch}',
-      postId: postId,
-      userId: CurrentUser.id.isNotEmpty ? CurrentUser.id : 'current_user',
-      userName: currentUserName,
-      userAvatar: CurrentUser.avatarUrl ?? '',
-      text: text,
-      timeAgo: 'Just now',
-      parentCommentId: parentCommentId,
+    final response = await guardDio(
+      () => dio.post<dynamic>(
+        ApiEndpoints.communityPostComments(postId),
+        data: {
+          'content': text,
+          if (parentCommentId != null && parentCommentId.isNotEmpty)
+            'parentCommentId': parentCommentId,
+        },
+      ),
     );
 
-    try {
-      await guardDio(
-        () => dio.post<dynamic>(
-          ApiEndpoints.communityPostComments(postId),
-          data: {'text': text, 'parentCommentId': parentCommentId},
-        ),
-      );
-    } catch (_) {}
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      Map<String, dynamic>? dataMap;
+      if (body is Map<String, dynamic> &&
+          body['data'] is Map<String, dynamic>) {
+        dataMap = body['data'] as Map<String, dynamic>;
+      } else if (body is Map<String, dynamic>) {
+        dataMap = body;
+      }
 
-    final idx = _mockPosts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      _mockPosts[idx].commentsCount += 1;
+      if (dataMap != null) {
+        if (dataMap['postId'] == null && dataMap['discussionId'] == null) {
+          dataMap['postId'] = postId;
+        }
+        return CommentModel.fromJson(dataMap);
+      }
     }
-    return comment;
+
+    throw AppError(
+      message: 'Failed to add comment',
+      errorCode: 'COMMENT_CREATE_FAILED',
+    );
+  }
+
+  Future<bool> deleteComment(String commentId) async {
+    final response = await guardDio(
+      () => dio.delete<dynamic>(
+        ApiEndpoints.communityComment(commentId),
+      ),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    }
+    throw const AppError(
+      message: 'Failed to delete comment',
+      errorCode: 'COMMENT_DELETE_FAILED',
+    );
   }
 
   Future<List<CommentModel>> fetchDiscussionComments(
@@ -525,9 +779,24 @@ class CommunityRemoteDataSource {
         content = rawData;
       }
 
-      return content
-          .map((json) => CommentModel.fromJson(json as Map<String, dynamic>))
+      final topLevelComments = content
+          .whereType<Map<String, dynamic>>()
+          .map((json) => CommentModel.fromJson(json))
           .toList();
+
+      final commentsWithReplies = await Future.wait(
+        topLevelComments.map((comment) async {
+          if (comment.replies.isNotEmpty) return comment;
+          try {
+            final replies = await fetchDiscussionCommentReplies(comment.id);
+            if (replies.isNotEmpty) {
+              return comment.copyWith(replies: replies);
+            }
+          } catch (_) {}
+          return comment;
+        }),
+      );
+      return commentsWithReplies;
     }
     return [];
   }
@@ -673,7 +942,15 @@ class CommunityRemoteDataSource {
       final body = response.data;
       final data = body is Map<String, dynamic> ? (body['data'] ?? body) : null;
       if (data is Map<String, dynamic>) {
-        return ForumTopicModel.fromJson(data);
+        final topic = ForumTopicModel.fromJson(data);
+        if (anonymous) {
+          return topic.copyWith(
+            isAnonymous: true,
+            authorName: 'Anonymous',
+            authorAvatar: '',
+          );
+        }
+        return topic;
       }
     }
     throw AppError(
@@ -687,18 +964,33 @@ class CommunityRemoteDataSource {
     required String title,
     required String content,
     required String category,
+    bool? anonymous,
   }) async {
+    final payload = <String, dynamic>{
+      'title': title,
+      'content': content,
+      'category': category,
+      'anonymous': ?anonymous,
+    };
     final response = await guardDio(
       () => dio.put<dynamic>(
         ApiEndpoints.communityDiscussionDetail(discussionId),
-        data: {'title': title, 'content': content, 'category': category},
+        data: payload,
       ),
     );
     if (response.statusCode == 200) {
       final body = response.data;
       final data = body is Map<String, dynamic> ? (body['data'] ?? body) : null;
       if (data is Map<String, dynamic>) {
-        return ForumTopicModel.fromJson(data);
+        final topic = ForumTopicModel.fromJson(data);
+        if (anonymous == true || (anonymous == null && topic.isAnonymous)) {
+          return topic.copyWith(
+            isAnonymous: true,
+            authorName: 'Anonymous',
+            authorAvatar: '',
+          );
+        }
+        return topic;
       }
     }
     throw AppError(
@@ -742,6 +1034,96 @@ class CommunityRemoteDataSource {
       message: 'Failed to update reaction',
       errorCode: 'DISCUSSION_REACT_FAILED',
     );
+  }
+
+  Future<List<ForumLikerModel>> fetchDiscussionLikers(
+    String discussionId, {
+    int page = 0,
+    int size = 20,
+  }) async {
+    if (discussionId.trim().isEmpty) {
+      return [];
+    }
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityDiscussionReactions(discussionId),
+        queryParameters: {
+          'page': page,
+          'size': size,
+        },
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      dynamic rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      List<dynamic> content = [];
+      if (rawData is Map<String, dynamic>) {
+        content = (rawData['content'] as List<dynamic>?) ?? [];
+      } else if (rawData is List) {
+        content = rawData;
+      }
+      return content
+          .whereType<Map<String, dynamic>>()
+          .map(ForumLikerModel.fromJson)
+          .toList();
+    }
+    throw AppError(
+      message: 'Failed to fetch discussion reactions',
+      errorCode: 'FETCH_DISCUSSION_REACTIONS_FAILED',
+    );
+  }
+
+  Future<bool> toggleDiscussionBookmark(
+    String discussionId, {
+    required bool isCurrentlyBookmarked,
+  }) async {
+    final response = await guardDio(
+      () => isCurrentlyBookmarked
+          ? dio.delete<dynamic>(
+              ApiEndpoints.profileSavedItem('DISCUSSION', discussionId),
+            )
+          : dio.post<dynamic>(
+              ApiEndpoints.profileSaved,
+              data: {
+                'itemType': 'DISCUSSION',
+                'itemId': discussionId,
+              },
+            ),
+    );
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 204) {
+      return true;
+    }
+    throw const AppError(
+      message: 'Failed to update bookmark',
+      errorCode: 'BOOKMARK_UPDATE_FAILED',
+    );
+  }
+
+  Future<bool> isDiscussionBookmarked(String discussionId) async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.profileSavedCheck,
+          queryParameters: {
+            'itemType': 'DISCUSSION',
+            'itemId': discussionId,
+          },
+        ),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final data =
+            body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        if (data is Map<String, dynamic>) {
+          return data['saved'] as bool? ?? false;
+        }
+      }
+    } catch (_) {}
+    return false;
   }
 
   Future<ForumTopicModel> getDiscussionDetails(String discussionId) async {
@@ -1007,5 +1389,153 @@ class CommunityRemoteDataSource {
           .toList();
     }
     return const <EventModel>[];
+  }
+
+  Future<EventModel> getEventDetails(String eventId) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(ApiEndpoints.communityEventDetail(eventId)),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      if (rawData is Map<String, dynamic>) {
+        return EventModel.fromJson(rawData);
+      }
+    }
+
+    throw const AppError(
+      message: 'Failed to load event details.',
+      errorCode: 'EVENT_DETAIL_FAILED',
+    );
+  }
+
+  Future<bool> deleteEvent(String eventId) async {
+    final response = await guardDio(
+      () => dio.delete<dynamic>(ApiEndpoints.communityEventDetail(eventId)),
+    );
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    }
+    throw const AppError(
+      message: 'Failed to delete event.',
+      errorCode: 'EVENT_DELETE_FAILED',
+    );
+  }
+
+  Future<EventModel> updateEvent(
+    String eventId,
+    EventCreateRequest request,
+  ) async {
+    final response = await guardDio(
+      () => dio.put<dynamic>(
+        ApiEndpoints.communityEventDetail(eventId),
+        data: request.toJson(),
+      ),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      if (rawData is Map<String, dynamic>) {
+        return EventModel.fromJson(rawData);
+      }
+    }
+    throw const AppError(
+      message: 'Failed to update event.',
+      errorCode: 'EVENT_UPDATE_FAILED',
+    );
+  }
+
+  Future<List<EventAttendeeModel>> getEventAttendees(
+    String eventId, {
+    int page = 1,
+    int limit = 50,
+  }) async {
+    final response = await guardDio(
+      () => dio.get<dynamic>(
+        ApiEndpoints.communityEventAttendees(eventId),
+        queryParameters: {'page': page - 1, 'size': limit},
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final body = response.data;
+      final rawData = body is Map<String, dynamic>
+          ? (body['data'] ?? body)
+          : body;
+      final content = rawData is Map<String, dynamic>
+          ? (rawData['content'] as List<dynamic>?) ?? const []
+          : rawData is List
+              ? rawData
+              : const [];
+      return content
+          .whereType<Map<String, dynamic>>()
+          .map(EventAttendeeModel.fromJson)
+          .toList();
+    }
+    return const <EventAttendeeModel>[];
+  }
+
+  Future<bool> toggleEventBookmark(
+    String eventId, {
+    required bool isCurrentlyBookmarked,
+  }) async {
+    final response = await guardDio(
+      () => isCurrentlyBookmarked
+          ? dio.delete<dynamic>(
+              ApiEndpoints.profileSavedItem('EVENT', eventId),
+            )
+          : dio.post<dynamic>(
+              ApiEndpoints.profileSaved,
+              data: {
+                'itemType': 'EVENT',
+                'itemId': eventId,
+              },
+            ),
+    );
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 204) {
+      return true;
+    }
+    throw const AppError(
+      message: 'Failed to update bookmark',
+      errorCode: 'BOOKMARK_UPDATE_FAILED',
+    );
+  }
+
+  Future<Set<String>> getSavedEventIds() async {
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.profileSaved,
+          queryParameters: {'type': 'EVENT'},
+        ),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final rawData = body is Map<String, dynamic>
+            ? (body['data'] ?? body)
+            : body;
+        final list = rawData is List
+            ? rawData
+            : (rawData is Map<String, dynamic> && rawData['content'] is List
+                ? rawData['content'] as List
+                : const []);
+        final set = <String>{};
+        for (final item in list) {
+          if (item is Map<String, dynamic>) {
+            final id = item['itemId']?.toString() ?? item['id']?.toString();
+            if (id != null && id.isNotEmpty) {
+              set.add(id);
+            }
+          }
+        }
+        return set;
+      }
+    } catch (_) {}
+    return const <String>{};
   }
 }

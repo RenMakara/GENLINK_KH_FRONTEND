@@ -34,6 +34,9 @@ class _MockCommunityRepo implements CommunityRepository {
   );
 
   @override
+  Future<bool> toggleEventBookmark(String eventId, {required bool isCurrentlyBookmarked}) async => true;
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 

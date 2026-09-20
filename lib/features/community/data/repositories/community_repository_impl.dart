@@ -93,7 +93,31 @@ class CommunityRepositoryImpl implements CommunityRepository {
 
   @override
   Future<bool> toggleLike(String postId) {
-    return remoteDataSource.toggleLike(postId);
+    return remoteDataSource.toggleLike(
+      postId,
+      isCurrentlyLiked: false,
+    );
+  }
+
+  @override
+  Future<bool> unlikePost(String postId) {
+    return remoteDataSource.toggleLike(
+      postId,
+      isCurrentlyLiked: true,
+    );
+  }
+
+  @override
+  Future<List<PostLikerModel>> getPostLikers(
+    String postId, {
+    int page = 0,
+    int size = 20,
+  }) {
+    return remoteDataSource.fetchPostLikers(
+      postId,
+      page: page,
+      size: size,
+    );
   }
 
   @override
@@ -133,6 +157,11 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<List<CommentModel>> getCommentReplies(String commentId) {
+    return remoteDataSource.fetchCommentReplies(commentId);
+  }
+
+  @override
   Future<CommentModel> addComment(
     String postId,
     String text, {
@@ -146,8 +175,8 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
-  Future<bool> deleteComment(String postId, String commentId) async {
-    return true;
+  Future<bool> deleteComment(String postId, String commentId) {
+    return remoteDataSource.deleteComment(commentId);
   }
 
   @override
@@ -189,12 +218,14 @@ class CommunityRepositoryImpl implements CommunityRepository {
     required String title,
     required String content,
     required String category,
+    bool? anonymous,
   }) {
     return remoteDataSource.updateDiscussion(
       discussionId,
       title: title,
       content: content,
       category: category,
+      anonymous: anonymous,
     );
   }
 
@@ -212,6 +243,22 @@ class CommunityRepositoryImpl implements CommunityRepository {
       discussionId,
       isCurrentlyLiked: isCurrentlyLiked,
     );
+  }
+
+  @override
+  Future<bool> toggleDiscussionBookmark(
+    String discussionId, {
+    required bool isCurrentlyBookmarked,
+  }) {
+    return remoteDataSource.toggleDiscussionBookmark(
+      discussionId,
+      isCurrentlyBookmarked: isCurrentlyBookmarked,
+    );
+  }
+
+  @override
+  Future<bool> isDiscussionBookmarked(String discussionId) {
+    return remoteDataSource.isDiscussionBookmarked(discussionId);
   }
 
   @override
@@ -248,6 +295,19 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<List<CommentModel>> getDiscussionCommentReplies(String commentId) {
     return remoteDataSource.fetchDiscussionCommentReplies(commentId);
+  }
+
+  @override
+  Future<List<ForumLikerModel>> getDiscussionLikers(
+    String discussionId, {
+    int page = 0,
+    int size = 20,
+  }) {
+    return remoteDataSource.fetchDiscussionLikers(
+      discussionId,
+      page: page,
+      size: size,
+    );
   }
 
   @override
@@ -320,5 +380,49 @@ class CommunityRepositoryImpl implements CommunityRepository {
       category: category,
       status: status,
     );
+  }
+
+  @override
+  Future<EventModel> getEventDetails(String eventId) {
+    return remoteDataSource.getEventDetails(eventId);
+  }
+
+  @override
+  Future<EventModel> updateEvent(String eventId, EventCreateRequest request) {
+    return remoteDataSource.updateEvent(eventId, request);
+  }
+
+  @override
+  Future<bool> deleteEvent(String eventId) {
+    return remoteDataSource.deleteEvent(eventId);
+  }
+
+  @override
+  Future<List<EventAttendeeModel>> getEventAttendees(
+    String eventId, {
+    int page = 1,
+    int limit = 50,
+  }) {
+    return remoteDataSource.getEventAttendees(
+      eventId,
+      page: page,
+      limit: limit,
+    );
+  }
+
+  @override
+  Future<bool> toggleEventBookmark(
+    String eventId, {
+    required bool isCurrentlyBookmarked,
+  }) {
+    return remoteDataSource.toggleEventBookmark(
+      eventId,
+      isCurrentlyBookmarked: isCurrentlyBookmarked,
+    );
+  }
+
+  @override
+  Future<Set<String>> getSavedEventIds() {
+    return remoteDataSource.getSavedEventIds();
   }
 }

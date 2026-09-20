@@ -75,7 +75,9 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
       final controller = Get.find<CommunityController>();
       return Obx(() {
         final isLoading =
-            controller.isLoadingFeed.value && controller.events.isEmpty;
+            (controller.isLoadingEvents.value ||
+                controller.isLoadingFeed.value) &&
+            controller.events.isEmpty;
 
         if (isLoading) {
           return _buildLoadingSkeleton(
@@ -486,51 +488,69 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
+                                horizontal: 10,
+                                vertical: 4.5,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.78),
-                                borderRadius: BorderRadius.circular(6),
+                                color: Colors.black.withValues(alpha: 0.82),
+                                borderRadius: BorderRadius.circular(AppRadius.pill),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  width: 0.6,
-                                ),
-                              ),
-                              child: const Text(
-                                'UPCOMING EVENT',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.78),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.2),
+                                  color: Colors.white.withValues(alpha: 0.18),
                                   width: 0.6,
                                 ),
                               ),
                               child: Text(
-                                categoryDisplay,
+                                Get.locale?.languageCode == 'km'
+                                    ? ('community.featuredEvents'.tr.isNotEmpty &&
+                                            'community.featuredEvents'.tr != 'community.featuredEvents'
+                                        ? 'community.featuredEvents'.tr
+                                        : 'ព្រឹត្តិការណ៍លេចធ្លោ')
+                                    : 'Featured Event',
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.4,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.3,
                                 ),
                               ),
                             ),
+                            if (categoryDisplay.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 9,
+                                  vertical: 4.5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.65),
+                                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    width: 0.6,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _getCategoryIconData(event.category),
+                                      size: 11,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      categoryDisplay,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -540,12 +560,12 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
                           right: 10,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                              horizontal: 9,
+                              vertical: 4.5,
                             ),
                             decoration: BoxDecoration(
                               color: Colors.black.withValues(alpha: 0.85),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
                               border: Border.all(
                                 color: Colors.white.withValues(alpha: 0.35),
                                 width: 0.7,
@@ -900,5 +920,39 @@ class HomeFeaturedEventsCarousel extends StatelessWidget {
       return base;
     }
     return t;
+  }
+
+  static IconData _getCategoryIconData(String cat) {
+    switch (cat.toLowerCase()) {
+      case 'technology':
+        return Icons.computer_outlined;
+      case 'design':
+      case 'arts':
+      case 'art':
+        return Icons.palette_outlined;
+      case 'business':
+        return Icons.business_center_outlined;
+      case 'career':
+        return Icons.work_outline_rounded;
+      case 'education':
+        return Icons.school_outlined;
+      case 'workshop':
+        return Icons.build_outlined;
+      case 'competition':
+        return Icons.emoji_events_outlined;
+      case 'sports':
+      case 'sport':
+        return Icons.sports_soccer_outlined;
+      case 'social':
+        return Icons.people_outline_rounded;
+      case 'entertainment':
+        return Icons.movie_outlined;
+      case 'seminar':
+        return Icons.groups_outlined;
+      case 'hackathon':
+        return Icons.terminal_outlined;
+      default:
+        return Icons.category_outlined;
+    }
   }
 }

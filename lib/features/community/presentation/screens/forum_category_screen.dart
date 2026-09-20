@@ -8,6 +8,7 @@ import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import 'forum_discussion_screen.dart';
+import '../widgets/forum_share_to_chat_sheet.dart';
 import 'widgets/community_widgets.dart';
 
 class ForumCategoryScreen extends StatefulWidget {
@@ -73,11 +74,15 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
   void _handleLikeTap(ForumTopicModel topic, int index) async {
     final prevLiked = topic.isLiked;
     final prevUpvotes = topic.upvotes;
+    final prevLikers = topic.likers;
+
+    final newLiked = !prevLiked;
+    final newUpvotes = (prevUpvotes + (newLiked ? 1 : -1)).clamp(0, 999999);
 
     setState(() {
       _discussions[index] = topic.copyWith(
-        isLiked: !prevLiked,
-        upvotes: prevUpvotes + (!prevLiked ? 1 : -1),
+        isLiked: newLiked,
+        upvotes: newUpvotes,
       );
     });
 
@@ -87,7 +92,32 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
         _discussions[index] = topic.copyWith(
           isLiked: prevLiked,
           upvotes: prevUpvotes,
+          likers: prevLikers,
         );
+      });
+    } else if (mounted) {
+      final realLikers = _controller.discussionLikers[topic.id];
+      if (realLikers != null) {
+        setState(() {
+          _discussions[index] = _discussions[index].copyWith(
+            likers: realLikers,
+            upvotes: realLikers.isNotEmpty ? realLikers.length : _discussions[index].upvotes,
+          );
+        });
+      }
+    }
+  }
+
+  void _handleSaveTap(ForumTopicModel topic, int index) async {
+    final prevBookmarked = _controller.isDiscussionBookmarked(topic.id);
+    final newBookmarked = !prevBookmarked;
+    setState(() {
+      _discussions[index] = topic.copyWith(isBookmarked: newBookmarked);
+    });
+    final success = await _controller.toggleDiscussionBookmark(topic.id);
+    if (!success && mounted) {
+      setState(() {
+        _discussions[index] = topic.copyWith(isBookmarked: prevBookmarked);
       });
     }
   }
@@ -222,21 +252,30 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
       );
     }
 
+    final safeBottom = MediaQuery.paddingOf(context).bottom > 0
+        ? MediaQuery.paddingOf(context).bottom
+        : MediaQuery.viewPaddingOf(context).bottom;
+    final bottomPadding = AppSpacing.md + safeBottom;
+
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
       ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.md,
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        bottomPadding,
       ),
       itemCount: _discussions.length,
       itemBuilder: (context, index) {
         final topic = _discussions[index];
         return ForumThreadCard(
           title: topic.title,
-          author: topic.authorName,
-          avatarUrl: topic.authorAvatar,
+          author: topic.isAnonymous ? 'Anonymous' : topic.authorName,
+          avatarUrl: topic.isAnonymous
+              ? null
+              : (topic.authorAvatar.isNotEmpty ? topic.authorAvatar : null),
           timeAgo: topic.timeAgo,
           createdAt: topic.createdAt,
           content: topic.content,
@@ -245,11 +284,19 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
           likes: topic.upvotes,
           isPinned: topic.isPinned,
           isLiked: topic.isLiked,
+          isBookmarked: _controller.isDiscussionBookmarked(topic.id),
+          likers: topic.likers,
+          discussionId: topic.id,
+          isOwner: topic.checkIsOwner(_controller.currentUserId),
+          isAnonymous: topic.isAnonymous,
           onTap: () =>
               Get.to(() => ForumDiscussionScreen(discussion: topic)),
           onCommentTap: () =>
               Get.to(() => ForumDiscussionScreen(discussion: topic)),
           onLikeTap: () => _handleLikeTap(topic, index),
+          onSaveTap: () => _handleSaveTap(topic, index),
+          onShareToChatTap: () =>
+              ForumShareToChatSheet.show(context, topic: topic),
         );
       },
     );

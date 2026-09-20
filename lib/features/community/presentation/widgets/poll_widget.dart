@@ -272,25 +272,25 @@ class _PollOptionWidgetState extends State<PollOptionWidget>
     final theme = Theme.of(context);
     final isVoted = widget.isVoted;
 
-    // Light mode colors
-    final Color lightUnselectedBg = const Color(0xFFF7F8FA);
-    final Color lightSelectedBg = const Color(0xFFEBF5FF);
-    final Color lightUnselectedBorder = const Color(0xFFE2E5E9);
-    final Color lightSelectedBorder = const Color(0xFF1E88E5);
-    final Color lightUnselectedText = Colors.black87;
-    final Color lightSelectedText = const Color(0xFF0D47A1);
-    final Color lightUnselectedFill = Colors.black.withValues(alpha: 0.05);
-    final Color lightSelectedFill = const Color(0xFF1E88E5).withValues(alpha: 0.16);
+    // Light mode colors (GenLink black/white/neutral visual direction)
+    final Color lightUnselectedBg = const Color(0xFFFAFAFA);
+    final Color lightSelectedBg = const Color(0xFFF4F4F5);
+    final Color lightUnselectedBorder = const Color(0xFFE4E4E7);
+    final Color lightSelectedBorder = const Color(0xFF18181B);
+    final Color lightUnselectedText = const Color(0xFF27272A);
+    final Color lightSelectedText = const Color(0xFF09090B);
+    final Color lightUnselectedFill = Colors.black.withValues(alpha: 0.04);
+    final Color lightSelectedFill = Colors.black.withValues(alpha: 0.08);
 
-    // Dark mode colors
-    final Color darkUnselectedBg = const Color(0xFF1A1D22);
-    final Color darkSelectedBg = const Color(0xFF162536);
-    final Color darkUnselectedBorder = const Color(0xFF2C323B);
-    final Color darkSelectedBorder = const Color(0xFF1E88E5);
-    final Color darkUnselectedText = Colors.white;
-    final Color darkSelectedText = const Color(0xFF90CAF9);
-    final Color darkUnselectedFill = Colors.white.withValues(alpha: 0.07);
-    final Color darkSelectedFill = const Color(0xFF1E88E5).withValues(alpha: 0.28);
+    // Dark mode colors (monochrome neutral dark theme)
+    final Color darkUnselectedBg = const Color(0xFF18181B);
+    final Color darkSelectedBg = const Color(0xFF222226);
+    final Color darkUnselectedBorder = const Color(0xFF27272A);
+    final Color darkSelectedBorder = Colors.white.withValues(alpha: 0.85);
+    final Color darkUnselectedText = const Color(0xFFD4D4D8);
+    final Color darkSelectedText = Colors.white;
+    final Color darkUnselectedFill = Colors.white.withValues(alpha: 0.06);
+    final Color darkSelectedFill = Colors.white.withValues(alpha: 0.12);
 
     final Color bgColor = widget.isDark
         ? (isVoted ? darkSelectedBg : darkUnselectedBg)
@@ -308,7 +308,7 @@ class _PollOptionWidgetState extends State<PollOptionWidget>
         ? (isVoted ? darkSelectedFill : darkUnselectedFill)
         : (isVoted ? lightSelectedFill : lightUnselectedFill);
 
-    final primaryBlue = const Color(0xFF1E88E5);
+    final accentBlue = const Color(0xFF1E88E5);
 
     return GestureDetector(
       onTap: _handleTap,
@@ -366,14 +366,14 @@ class _PollOptionWidgetState extends State<PollOptionWidget>
                                 height: 16,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: primaryBlue,
+                                  color: accentBlue,
                                 ),
                               ),
                               const SizedBox(width: 8),
                             ] else if (isVoted) ...[
                               Icon(
                                 Icons.check_circle_rounded,
-                                color: widget.isDark ? const Color(0xFF64B5F6) : primaryBlue,
+                                color: widget.isDark ? const Color(0xFF64B5F6) : accentBlue,
                                 size: 18,
                               ),
                               const SizedBox(width: 8),

@@ -50,6 +50,15 @@ abstract class CommunityRepository {
 
   Future<bool> toggleLike(String postId);
 
+  Future<bool> unlikePost(String postId) => toggleLike(postId);
+
+  Future<List<PostLikerModel>> getPostLikers(
+    String postId, {
+    int page = 0,
+    int size = 20,
+  }) =>
+      Future.value([]);
+
   Future<bool> toggleBookmark(String postId);
   Future<bool> repostPost(String postId, {String? caption, String? reposterId});
   Future<bool> unrepostPost(String postId, {String? reposterId});
@@ -59,6 +68,9 @@ abstract class CommunityRepository {
   });
 
   Future<List<CommentModel>> getComments(String postId);
+
+  Future<List<CommentModel>> getCommentReplies(String commentId) =>
+      Future.value([]);
 
   Future<CommentModel> addComment(
     String postId,
@@ -97,6 +109,15 @@ abstract class CommunityRepository {
     bool isCurrentlyLiked = false,
   });
 
+  Future<bool> toggleDiscussionBookmark(
+    String discussionId, {
+    required bool isCurrentlyBookmarked,
+  }) =>
+      Future.value(!isCurrentlyBookmarked);
+
+  Future<bool> isDiscussionBookmarked(String discussionId) =>
+      Future.value(false);
+
   Future<bool> reportDiscussion(
     String discussionId, {
     String reason = 'INAPPROPRIATE_CONTENT',
@@ -112,6 +133,13 @@ abstract class CommunityRepository {
   });
 
   Future<List<CommentModel>> getDiscussionCommentReplies(String commentId) =>
+      Future.value([]);
+
+  Future<List<ForumLikerModel>> getDiscussionLikers(
+    String discussionId, {
+    int page = 0,
+    int size = 20,
+  }) =>
       Future.value([]);
 
   Future<CommentModel> updateDiscussionComment(
@@ -140,10 +168,30 @@ abstract class CommunityRepository {
   Future<EventModel> createEvent(EventCreateRequest request) =>
       throw UnimplementedError();
 
+  Future<EventModel> updateEvent(String eventId, EventCreateRequest request) =>
+      throw UnimplementedError();
+
+  Future<bool> deleteEvent(String eventId) async => true;
+
+  Future<List<EventAttendeeModel>> getEventAttendees(
+    String eventId, {
+    int page = 1,
+    int limit = 50,
+  }) async => const [];
+
+  Future<bool> toggleEventBookmark(
+    String eventId, {
+    required bool isCurrentlyBookmarked,
+  }) async => true;
+
+  Future<Set<String>> getSavedEventIds() async => const {};
+
   Future<List<EventModel>> getEvents({
     int page = 1,
     int limit = 20,
     String? category,
     String? status,
   }) async => const [];
+
+  Future<EventModel> getEventDetails(String eventId);
 }

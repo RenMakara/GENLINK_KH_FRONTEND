@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:video_player/video_player.dart';
 import 'package:genlink_frontend/core/storage/local_storage.dart';
 import 'package:genlink_frontend/features/community/domain/models/story_model.dart';
 import 'package:genlink_frontend/features/community/domain/repositories/story_repository.dart';
@@ -9,6 +11,39 @@ import 'package:genlink_frontend/features/community/presentation/controllers/sto
 import 'package:genlink_frontend/features/community/presentation/controllers/story_gallery_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/story_viewer_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/story_creator_screen.dart';
+
+class _FakeVideoPlayerController extends VideoPlayerController {
+  _FakeVideoPlayerController() : super.file(File('dummy.mp4'));
+
+  bool playCalled = false;
+  bool loopingSet = false;
+
+  @override
+  Future<void> initialize() async {
+    value = value.copyWith(
+      isInitialized: true,
+      duration: const Duration(seconds: 15),
+      size: const Size(1080, 1920),
+    );
+  }
+
+  @override
+  Future<void> play() async {
+    playCalled = true;
+    value = value.copyWith(isPlaying: true);
+  }
+
+  @override
+  Future<void> setLooping(bool looping) async {
+    loopingSet = looping;
+    value = value.copyWith(isLooping: looping);
+  }
+
+  @override
+  Future<void> setVolume(double volume) async {
+    value = value.copyWith(volume: volume);
+  }
+}
 
 class MockLocalStorage extends LocalStorage {
   final Map<String, dynamic> _memory = {};
@@ -129,12 +164,16 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
     });
 
-    testWidgets('Test 4: StoryCreatorScreen supports StoryType.video with media paths', (tester) async {
+    testWidgets('Test 4: StoryCreatorScreen supports StoryType.video with media paths and real video player', (tester) async {
+      final fakeCtrl = _FakeVideoPlayerController();
+      await fakeCtrl.initialize();
+
       await tester.pumpWidget(
         GetMaterialApp(
-          home: const StoryCreatorScreen(
+          home: StoryCreatorScreen(
             type: StoryType.video,
-            mediaPaths: ['assets/videos/demo_reel.mp4'],
+            mediaPaths: const ['assets/videos/demo_reel.mp4'],
+            videoPlayerController: fakeCtrl,
           ),
         ),
       );
@@ -143,8 +182,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.byType(StoryCreatorScreen), findsOneWidget);
-      expect(find.byIcon(Icons.videocam_rounded), findsWidgets);
-      expect(find.text('00:05'), findsOneWidget);
+      expect(find.byType(VideoPlayer), findsOneWidget);
+      expect(fakeCtrl.value.isPlaying, isTrue);
+      expect(fakeCtrl.loopingSet, isTrue);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 500));

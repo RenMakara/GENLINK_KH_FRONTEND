@@ -128,6 +128,56 @@ class MockCommunityRepository implements CommunityRepository {
   Future<bool> unfollowUser(String userId) async => true;
   @override
   Future<bool> checkIsFollowing(String userId) async => false;
+
+  @override
+  Future<List<EventModel>> getEvents({
+    int page = 1,
+    int limit = 20,
+    String? category,
+    String? status,
+  }) async {
+    return [
+      EventModel(
+        id: 'ev1',
+        title: 'Flutter Workshop 2026',
+        subtitle: 'Build real-world mobile apps with Flutter from scratch.',
+        organizerName: 'AUB Digital Academy',
+        eventType: 'In person',
+        location: 'ACLEDA University, Phnom Penh',
+        dateString: '25 Jul 2026',
+        timeString: '9:00 AM – 4:00 PM',
+        description: 'Join us for an intensive hands-on workshop on Flutter.',
+        category: 'Workshop',
+        imageUrl: '',
+        attendeesCount: 120,
+      ),
+      EventModel(
+        id: 'ev2',
+        title: 'AI in Everyday Life',
+        subtitle: 'Discover practical AI applications.',
+        organizerName: 'CADT Cambodia',
+        eventType: 'Online',
+        meetingUrl: 'https://meet.google.com/abc-xyz',
+        location: '',
+        dateString: '10 Aug 2026',
+        timeString: '2:00 PM – 3:30 PM',
+        description: 'Practical session exploring generative AI tools.',
+        category: 'Seminar',
+        imageUrl: '',
+        attendeesCount: 85,
+      ),
+    ];
+  }
+
+  @override
+  Future<EventModel> getEventDetails(String eventId) async {
+    final list = await getEvents();
+    return list.firstWhere((e) => e.id == eventId, orElse: () => list.first);
+  }
+
+  @override
+  Future<bool> toggleEventBookmark(String eventId, {required bool isCurrentlyBookmarked}) async => true;
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -184,7 +234,7 @@ void main() {
 
       expect(find.textContaining('120'), findsOneWidget);
 
-      expect(find.text('View details'), findsOneWidget);
+      expect(find.text('View Event'), findsOneWidget);
 
       await tester.tap(find.text('Flutter Workshop 2026'));
       await tester.pumpAndSettle();
@@ -329,6 +379,7 @@ void main() {
       final repo = MockCommunityRepository();
       final controller = CommunityController(repository: repo);
       Get.put<CommunityController>(controller);
+      await controller.fetchEvents();
 
       final event = controller.events.first;
 

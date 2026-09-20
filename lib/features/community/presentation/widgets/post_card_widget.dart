@@ -19,6 +19,7 @@ import '../controllers/community_controller.dart';
 import 'comments_bottom_sheet.dart';
 import 'community_design_tokens.dart';
 import 'full_screen_image_viewer.dart';
+import 'post_liked_by_sheet.dart';
 
 class PostCardWidget extends StatefulWidget {
   final CommunityPostModel post;
@@ -1073,47 +1074,98 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
           if (resolvedEvent != null)
             _buildAttachedEventCard(context, resolvedEvent),
 
+          if (widget.post.likesCount > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+              child: GestureDetector(
+                key: Key('post_liked_by_preview_${widget.post.id}'),
+                onTap: () {
+                  PostLikedBySheet.show(
+                    context,
+                    postId: widget.post.id,
+                    initialLikesCount: widget.post.likesCount,
+                  );
+                },
+                child: Builder(
+                  builder: (context) {
+                    final count = widget.post.likesCount;
+                    final isKm = Get.locale?.languageCode == 'km';
+                    final label = 'community.likedBy'.tr.isNotEmpty &&
+                            'community.likedBy'.tr != 'community.likedBy'
+                        ? 'community.likedBy'.tr
+                        : 'Liked by';
+                    final countText = isKm
+                        ? '$count នាក់'
+                        : '$count ${count == 1 ? 'person' : 'people'}';
+                    return Text(
+                      '$label $countText',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                            color: textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ) ??
+                          TextStyle(
+                            color: textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    );
+                  },
+                ),
+              ),
+            ),
+
           const SizedBox(height: 2),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             child: Row(
               children: [
                 InkWell(
+                  key: Key('post_like_button_${widget.post.id}'),
                   onTap: _onLikeTap,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    child: Row(
-                      children: [
-                        ScaleTransition(
-                          scale: _likeScaleAnim,
-                          child: Icon(
-                            widget.post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                    child: ScaleTransition(
+                      scale: _likeScaleAnim,
+                      child: Icon(
+                        widget.post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                        color: widget.post.isLiked
+                            ? AppColors.likedAccent
+                            : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ),
+                InkWell(
+                  key: Key('post_like_count_${widget.post.id}'),
+                  onTap: () {
+                    PostLikedBySheet.show(
+                      context,
+                      postId: widget.post.id,
+                      initialLikesCount: widget.post.likesCount,
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                    child: Text(
+                      "${widget.post.likesCount}",
+                      style: theme.textTheme.labelMedium?.copyWith(
                             color: widget.post.isLiked
                                 ? AppColors.likedAccent
                                 : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
-                            size: 18,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12.5,
+                          ) ??
+                          TextStyle(
+                            color: widget.post.isLiked
+                                ? AppColors.likedAccent
+                                : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          "${widget.post.likesCount}",
-                          style: theme.textTheme.labelMedium?.copyWith(
-                                color: widget.post.isLiked
-                                    ? AppColors.likedAccent
-                                    : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12.5,
-                              ) ??
-                              TextStyle(
-                                color: widget.post.isLiked
-                                    ? AppColors.likedAccent
-                                    : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                      ],
                     ),
                   ),
                 ),
@@ -1248,10 +1300,13 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.lg - 2),
-          child: SizedBox(
-            height: 240,
-            width: double.infinity,
-            child: _buildSingleImage(images[0], index: 0, allImages: images),
+          child: _FeedPostImageView(
+            url: images[0],
+            index: 0,
+            allImages: images,
+            postId: widget.post.id,
+            isSingle: true,
+            onTap: () => _openFullScreenViewer(0, images),
           ),
         ),
       );
@@ -1264,7 +1319,7 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.lg - 2),
         child: SizedBox(
-          height: 260,
+          height: 350,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -1277,7 +1332,14 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                   });
                 },
                 itemBuilder: (context, idx) {
-                  return _buildSingleImage(images[idx], index: idx, allImages: images);
+                  return _FeedPostImageView(
+                    url: images[idx],
+                    index: idx,
+                    allImages: images,
+                    postId: widget.post.id,
+                    isSingle: false,
+                    onTap: () => _openFullScreenViewer(idx, images),
+                  );
                 },
               ),
               // Subtle top-right index counter badge (e.g. "1/3")
@@ -1361,55 +1423,6 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     );
   }
 
-  Widget _buildSingleImage(String url, {int index = 0, List<String>? allImages}) {
-    final heroTag = 'post_${widget.post.id}_$index';
-    final imagesList = allImages ?? [url];
-
-    Widget imgWidget;
-    if (url.startsWith('assets/')) {
-      imgWidget = Image.asset(
-        url,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-      );
-    } else if (url.startsWith('http')) {
-      imgWidget = Image.network(
-        url,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (context, error, stackTrace) => Container(
-          color: (Theme.of(context).brightness == Brightness.dark
-              ? AppColors.darkSurfaceSecondary
-              : AppColors.lightBgSecondary),
-          alignment: Alignment.center,
-          child: Icon(
-            Icons.broken_image_outlined,
-            color: (Theme.of(context).brightness == Brightness.dark
-                ? AppColors.darkTextMuted
-                : AppColors.lightTextMuted),
-            size: 32,
-          ),
-        ),
-      );
-    } else {
-      imgWidget = Image.file(
-        File(url),
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-      );
-    }
-
-    return GestureDetector(
-      onTap: () => _openFullScreenViewer(index, imagesList),
-      child: Hero(
-        tag: heroTag,
-        child: imgWidget,
-      ),
-    );
-  }
 
   Widget _buildLinkPreviewCard({
     required String url,
@@ -1702,14 +1715,25 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                                   width: 0.6,
                                 ),
                               ),
-                              child: Text(
-                                categoryDisplay.toUpperCase(),
-                                style: TextStyle(
-                                  color: isDark ? Colors.white70 : textSecondary,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _getCategoryIconData(event.category),
+                                    size: 11,
+                                    color: isDark ? Colors.white70 : textSecondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    categoryDisplay.toUpperCase(),
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white70 : textSecondary,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             if (event.isPaid)
@@ -1933,6 +1957,40 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
       ),
     );
   }
+
+  IconData _getCategoryIconData(String cat) {
+    switch (cat.toLowerCase()) {
+      case 'technology':
+        return Icons.computer_outlined;
+      case 'design':
+      case 'arts':
+      case 'art':
+        return Icons.palette_outlined;
+      case 'business':
+        return Icons.business_center_outlined;
+      case 'career':
+        return Icons.work_outline_rounded;
+      case 'education':
+        return Icons.school_outlined;
+      case 'workshop':
+        return Icons.build_outlined;
+      case 'competition':
+        return Icons.emoji_events_outlined;
+      case 'sports':
+      case 'sport':
+        return Icons.sports_soccer_outlined;
+      case 'social':
+        return Icons.people_outline_rounded;
+      case 'entertainment':
+        return Icons.movie_outlined;
+      case 'seminar':
+        return Icons.groups_outlined;
+      case 'hackathon':
+        return Icons.terminal_outlined;
+      default:
+        return Icons.category_outlined;
+    }
+  }
 }
 
 // ─── Step 3B-Frontend: Feed video player ──────────────────────────────────────
@@ -2149,3 +2207,221 @@ class _VideoPostMediaState extends State<VideoPostMedia> {
   }
 }
 // ──────────────────────────────────────────────────────────────────────────────
+
+class _FeedPostImageView extends StatefulWidget {
+  final String url;
+  final int index;
+  final List<String> allImages;
+  final String postId;
+  final bool isSingle;
+  final VoidCallback onTap;
+
+  const _FeedPostImageView({
+    required this.url,
+    required this.index,
+    required this.allImages,
+    required this.postId,
+    this.isSingle = false,
+    required this.onTap,
+  });
+
+  @override
+  State<_FeedPostImageView> createState() => _FeedPostImageViewState();
+}
+
+class _FeedPostImageViewState extends State<_FeedPostImageView> {
+  double? _aspectRatio;
+  ImageStream? _imageStream;
+  ImageStreamListener? _streamListener;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveImage();
+  }
+
+  @override
+  void didUpdateWidget(covariant _FeedPostImageView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _removeStreamListener();
+      _aspectRatio = null;
+      _hasError = false;
+      _resolveImage();
+    }
+  }
+
+  @override
+  void dispose() {
+    _removeStreamListener();
+    super.dispose();
+  }
+
+  void _removeStreamListener() {
+    if (_imageStream != null && _streamListener != null) {
+      _imageStream!.removeListener(_streamListener!);
+      _imageStream = null;
+      _streamListener = null;
+    }
+  }
+
+  ImageProvider _resolveProvider(String url) {
+    if (url.startsWith('assets/')) {
+      return AssetImage(url);
+    } else if (url.startsWith('http')) {
+      return NetworkImage(url);
+    } else {
+      return FileImage(File(url));
+    }
+  }
+
+  void _resolveImage() {
+    try {
+      final provider = _resolveProvider(widget.url);
+      final stream = provider.resolve(const ImageConfiguration());
+      _imageStream = stream;
+      _streamListener = ImageStreamListener(
+        (ImageInfo info, bool synchronousCall) {
+          if (!mounted) return;
+          final w = info.image.width;
+          final h = info.image.height;
+          if (w > 0 && h > 0) {
+            setState(() {
+              _aspectRatio = w / h;
+            });
+          }
+        },
+        onError: (dynamic error, StackTrace? stackTrace) {
+          if (mounted) {
+            setState(() {
+              _hasError = true;
+            });
+          }
+        },
+      );
+      stream.addListener(_streamListener!);
+    } catch (_) {
+      _hasError = true;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final heroTag = 'post_${widget.postId}_${widget.index}';
+    final surfaceColor = isDark
+        ? const Color(0xFF14161A)
+        : const Color(0xFFF2F4F7);
+
+    if (_hasError) {
+      return Container(
+        height: widget.isSingle ? 220 : double.infinity,
+        color: surfaceColor,
+        alignment: Alignment.center,
+        child: Icon(
+          Icons.broken_image_outlined,
+          color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+          size: 32,
+        ),
+      );
+    }
+
+    final provider = _resolveProvider(widget.url);
+
+    if (widget.isSingle) {
+      final ratio = _aspectRatio;
+
+      Widget imageContent;
+      if (ratio == null) {
+        imageContent = AspectRatio(
+          aspectRatio: 16 / 10,
+          child: Container(
+            color: surfaceColor,
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: isDark ? Colors.white38 : Colors.black38,
+              ),
+            ),
+          ),
+        );
+      } else if (ratio < 0.8) {
+        // Tall portrait / screenshot (e.g. 9:16 = 0.56)
+        // Cap height at 420 and fit with contain on neutral background so entire screenshot is visible and readable
+        imageContent = Container(
+          height: 420,
+          width: double.infinity,
+          color: surfaceColor,
+          alignment: Alignment.center,
+          child: Image(
+            image: provider,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => Icon(
+              Icons.broken_image_outlined,
+              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+              size: 32,
+            ),
+          ),
+        );
+      } else {
+        // Standard aspect ratios (4:5, 1:1, 4:3, 16:9)
+        // Render with clamped aspect ratio so there is zero cropping and no wasted space
+        final clampedRatio = ratio.clamp(0.8, 1.85);
+        imageContent = AspectRatio(
+          aspectRatio: clampedRatio,
+          child: Image(
+            image: provider,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            errorBuilder: (context, error, stackTrace) => Icon(
+              Icons.broken_image_outlined,
+              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+              size: 32,
+            ),
+          ),
+        );
+      }
+
+      return GestureDetector(
+        onTap: widget.onTap,
+        child: Hero(
+          tag: heroTag,
+          child: imageContent,
+        ),
+      );
+    }
+
+    // Carousel image: fit within consistent carousel frame without aggressive cropping
+    final ratio = _aspectRatio;
+    final BoxFit fitMode = (ratio != null && ratio >= 0.9 && ratio <= 1.25)
+        ? BoxFit.cover
+        : BoxFit.contain;
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        color: surfaceColor,
+        alignment: Alignment.center,
+        child: Hero(
+          tag: heroTag,
+          child: Image(
+            image: provider,
+            fit: fitMode,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (context, error, stackTrace) => Icon(
+              Icons.broken_image_outlined,
+              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+              size: 32,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

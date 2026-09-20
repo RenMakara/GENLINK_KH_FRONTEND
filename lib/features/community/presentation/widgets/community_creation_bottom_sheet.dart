@@ -1,9 +1,10 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../design_system/colors/app_colors.dart';
-import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/typography/app_typography.dart';
 
 class CommunityCreationBottomSheet extends StatelessWidget {
@@ -29,13 +30,14 @@ class CommunityCreationBottomSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final surface = isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final cardBg = isDark ? const Color(0xFF242526) : const Color(0xFFF7F8FA);
+    final sheetBg = isDark ? const Color(0xCC16181F) : const Color(0xDAFFFFFF);
+    final cardBg = isDark ? const Color(0x14FFFFFF) : const Color(0x08000000);
     final textPrimary = colors.primaryText;
     final textSecondary = colors.secondaryText;
-    final borderSubtle = colors.borderSubtle;
-    final iconBg = isDark ? const Color(0xFF2D2F33) : const Color(0xFFEEF0F3);
-    final iconBorder = isDark ? const Color(0xFF383A3D) : const Color(0xFFE2E5E9);
+    final borderSubtle = isDark ? const Color(0x20FFFFFF) : const Color(0x12000000);
+    final sheetBorder = isDark ? const Color(0x28FFFFFF) : const Color(0x18000000);
+    final iconBg = isDark ? const Color(0x24FFFFFF) : const Color(0x0E000000);
+    final iconBorder = isDark ? const Color(0x2CFFFFFF) : const Color(0x14000000);
 
     final title = 'home.actionCreate'.tr.isNotEmpty && 'home.actionCreate'.tr != 'home.actionCreate'
         ? 'home.actionCreate'.tr
@@ -62,17 +64,28 @@ class CommunityCreationBottomSheet extends StatelessWidget {
         ? 'create.actionEventDesc'.tr
         : 'Host an event or community meetup';
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-        border: Border(
-          top: BorderSide(color: borderSubtle, width: 0.8),
-          left: BorderSide(color: borderSubtle, width: 0.8),
-          right: BorderSide(color: borderSubtle, width: 0.8),
-        ),
-      ),
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+          decoration: BoxDecoration(
+            color: sheetBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(
+              top: BorderSide(color: sheetBorder, width: 0.8),
+              left: BorderSide(color: sheetBorder, width: 0.8),
+              right: BorderSide(color: sheetBorder, width: 0.8),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
+                blurRadius: 28,
+                offset: const Offset(0, -6),
+              ),
+            ],
+          ),
       child: SafeArea(
         top: false,
         child: Column(
@@ -150,7 +163,9 @@ class CommunityCreationBottomSheet extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }
 
@@ -269,12 +284,6 @@ class _CreationOptionTile extends StatelessWidget {
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: textSecondary.withValues(alpha: 0.5),
-                  size: 20,
                 ),
               ],
             ),

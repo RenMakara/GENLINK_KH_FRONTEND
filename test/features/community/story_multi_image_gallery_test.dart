@@ -129,10 +129,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final clipRRects = find.byType(ClipRRect);
-      expect(clipRRects, findsWidgets);
+      final imageLayers = find.byWidgetPredicate(
+        (w) => w is Positioned && w.key != null && (w.key as ValueKey).value.toString().startsWith('image_'),
+      );
+      expect(imageLayers, findsNWidgets(3));
+      expect(find.descendant(of: imageLayers, matching: find.byType(ClipRRect)), findsNothing);
 
-      await tester.tap(clipRRects.first, warnIfMissed: false);
+      await tester.tap(imageLayers.first, warnIfMissed: false);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();

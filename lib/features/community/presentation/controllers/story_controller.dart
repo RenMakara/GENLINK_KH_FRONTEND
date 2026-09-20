@@ -268,4 +268,8 @@ class StoryController extends GetxController {
       await _repository.markViewed(storyId);
     } catch (_) {}
   }
+
+  Future<List<StoryMentionUser>> searchMentionUsers(String query) async {
+    return _repository.searchMentionUsers(query: query);
+  }
 }

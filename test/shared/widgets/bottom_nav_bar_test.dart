@@ -14,6 +14,7 @@ void main() {
     Locale locale = const Locale('en', 'US'),
     ThemeData? theme,
     ValueChanged<int>? onTap,
+    ValueChanged<int>? onDoubleTapActive,
     VoidCallback? onCenterTap,
   }) {
     return GetMaterialApp(
@@ -26,6 +27,7 @@ void main() {
         bottomNavigationBar: BottomNavBar(
           currentIndex: currentIndex,
           onTap: onTap ?? (_) {},
+          onDoubleTapActive: onDoubleTapActive,
           onCenterTap: onCenterTap,
         ),
       ),
@@ -458,4 +460,465 @@ void main() {
       semantics.dispose();
     },
   );
+
+  group('Monochrome + Glass Polish verification', () {
+    for (final mode in ['Dark', 'Light']) {
+      final isDark = mode == 'Dark';
+
+      testWidgets(
+        'verifies $mode Mode: monochrome icons, no feature colors, and glass capsule movement across all tabs',
+        (tester) async {
+          int activeIndex = 0;
+
+          await tester.pumpWidget(
+            StatefulBuilder(
+              builder: (context, setState) {
+                return GetMaterialApp(
+                  translations: AppTranslations(),
+                  locale: LocalizationService.englishLocale,
+                  fallbackLocale: LocalizationService.englishLocale,
+                  theme: isDark ? AppTheme.dark : AppTheme.light,
+                  home: Scaffold(
+                    bottomNavigationBar: BottomNavBar(
+                      currentIndex: activeIndex,
+                      onTap: (idx) => setState(() => activeIndex = idx),
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final tabs = ['Home', 'LevelUp', 'Finance', 'Profile'];
+
+          for (int targetIdx = 0; targetIdx < tabs.length; targetIdx++) {
+            await tester.tap(find.bySemanticsLabel(tabs[targetIdx]));
+            await tester.pumpAndSettle();
+            expect(activeIndex, targetIdx);
+
+            // Verify all Icon widgets in the nav bar have monochrome colors
+            final iconWidgets = tester.widgetList<Icon>(
+              find.descendant(
+                of: find.byType(BottomNavBar),
+                matching: find.byType(Icon),
+              ),
+            );
+
+            for (final icon in iconWidgets) {
+              final color = icon.color;
+              if (color != null) {
+                if (isDark) {
+                  // In dark mode: white
+                  expect(
+                    color,
+                    equals(Colors.white),
+                    reason:
+                        'Tab icon must be white in dark mode, got $color on tab $targetIdx',
+                  );
+                } else {
+                  // In light mode: dark monochrome
+                  expect(
+                    color,
+                    equals(const Color(0xFF121212)),
+                    reason:
+                        'Tab icon must be dark monochrome in light mode, got $color on tab $targetIdx',
+                  );
+                }
+              }
+            }
+
+            // Verify text label colors: active is white/dark, inactive are neutral gray
+            final textWidgets = tester.widgetList<Text>(
+              find.descendant(
+                of: find.byType(BottomNavBar),
+                matching: find.byType(Text),
+              ),
+            );
+
+            for (final text in textWidgets) {
+              if (text.style?.color != null) {
+                final textColor = text.style!.color!;
+                final isCurrentTab = text.data == tabs[targetIdx];
+
+                if (isDark) {
+                  if (isCurrentTab) {
+                    expect(
+                      textColor,
+                      equals(Colors.white),
+                      reason:
+                          'Active label must be white in dark mode, got $textColor',
+                    );
+                  } else {
+                    expect(
+                      textColor,
+                      equals(const Color(0x8AFFFFFF)),
+                      reason:
+                          'Inactive label must be soft neutral gray in dark mode, got $textColor',
+                    );
+                  }
+                } else {
+                  if (isCurrentTab) {
+                    expect(
+                      textColor,
+                      equals(const Color(0xFF121212)),
+                      reason:
+                          'Active label must be dark in light mode, got $textColor',
+                    );
+                  } else {
+                    expect(
+                      textColor,
+                      equals(const Color(0x8A121212)),
+                      reason:
+                          'Inactive label must be neutral gray in light mode, got $textColor',
+                    );
+                  }
+                }
+
+                // Verify absolutely NO feature colors (blue, green, orange, purple, pink, cyan, yellow, gold)
+                // Color hue shouldn't be saturated colored hue
+                final hsl = HSLColor.fromColor(textColor);
+                expect(
+                  hsl.saturation,
+                  lessThanOrEqualTo(0.1),
+                  reason:
+                      'Label must be neutral monochrome (no saturation), but found saturation ${hsl.saturation} in $textColor',
+                );
+              }
+            }
+          }
+        },
+      );
+    }
+  });
+
+  group('Double-tap active navigation tests', () {
+    testWidgets('1. single tap on inactive tab navigates normally', (
+      tester,
+    ) async {
+      int activeIndex = 0;
+      int refreshCount = 0;
+
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) {
+            return GetMaterialApp(
+              translations: AppTranslations(),
+              locale: LocalizationService.englishLocale,
+              fallbackLocale: LocalizationService.englishLocale,
+              theme: AppTheme.light,
+              home: Scaffold(
+                bottomNavigationBar: BottomNavBar(
+                  currentIndex: activeIndex,
+                  onTap: (idx) => setState(() => activeIndex = idx),
+                  onDoubleTapActive: (_) => refreshCount++,
+                ),
+              ),
+            );
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Currently on tab 0 (Home). Tap tab 1 (LevelUp)
+      await tester.tap(find.bySemanticsLabel('LevelUp'));
+      await tester.pumpAndSettle();
+
+      expect(activeIndex, equals(1));
+      expect(refreshCount, equals(0));
+    });
+
+    testWidgets('2. single tap on active tab does not accidentally refresh', (
+      tester,
+    ) async {
+      int tapCount = 0;
+      int refreshCount = 0;
+
+      await tester.pumpWidget(
+        createNavBar(
+          currentIndex: 0,
+          onTap: (_) => tapCount++,
+          onDoubleTapActive: (_) => refreshCount++,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Single tap on active tab (Home)
+      await tester.tap(find.bySemanticsLabel('Home'));
+      // Advance past the 350ms double-tap timeout
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(tapCount, equals(1));
+      expect(refreshCount, equals(0));
+    });
+
+    testWidgets('3. double tap on active tab scrolls to top', (tester) async {
+      final scrollController = ScrollController(initialScrollOffset: 300.0);
+      int refreshCount = 0;
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: LocalizationService.englishLocale,
+          fallbackLocale: LocalizationService.englishLocale,
+          theme: AppTheme.light,
+          home: Scaffold(
+            body: ListView.builder(
+              controller: scrollController,
+              itemCount: 50,
+              itemBuilder: (context, i) => ListTile(title: Text('Item $i')),
+            ),
+            bottomNavigationBar: BottomNavBar(
+              currentIndex: 0,
+              onTap: (_) {},
+              onDoubleTapActive: (index) {
+                refreshCount++;
+                if (scrollController.hasClients) {
+                  scrollController.animateTo(
+                    0.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                  );
+                }
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(scrollController.offset, equals(300.0));
+
+      // Double tap on already active tab (Home)
+      await tester.tap(find.bySemanticsLabel('Home'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(find.bySemanticsLabel('Home'));
+      await tester.pumpAndSettle();
+
+      expect(scrollController.offset, equals(0.0));
+      expect(refreshCount, equals(1));
+    });
+
+    testWidgets(
+      '4. double tap on active tab triggers refresh across all tabs',
+      (tester) async {
+        final refreshedTabs = <int>[];
+        int activeIndex = 0;
+
+        await tester.pumpWidget(
+          StatefulBuilder(
+            builder: (context, setState) {
+              return GetMaterialApp(
+                translations: AppTranslations(),
+                locale: LocalizationService.englishLocale,
+                fallbackLocale: LocalizationService.englishLocale,
+                theme: AppTheme.dark,
+                home: Scaffold(
+                  bottomNavigationBar: BottomNavBar(
+                    currentIndex: activeIndex,
+                    onTap: (idx) => setState(() => activeIndex = idx),
+                    onDoubleTapActive: (idx) => refreshedTabs.add(idx),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final tabLabels = ['Home', 'LevelUp', 'Finance', 'Profile'];
+
+        for (int i = 0; i < tabLabels.length; i++) {
+          if (activeIndex != i) {
+            // Navigate to tab
+            await tester.tap(find.bySemanticsLabel(tabLabels[i]));
+            await tester.pumpAndSettle();
+            expect(activeIndex, equals(i));
+          }
+
+          // Double-tap on the now active tab
+          await tester.tap(find.bySemanticsLabel(tabLabels[i]));
+          await tester.pump(const Duration(milliseconds: 100));
+          await tester.tap(find.bySemanticsLabel(tabLabels[i]));
+          await tester.pumpAndSettle();
+
+          expect(refreshedTabs.last, equals(i));
+        }
+
+        expect(refreshedTabs, equals([0, 1, 2, 3]));
+      },
+    );
+
+    testWidgets('5. tapping another tab still navigates normally', (
+      tester,
+    ) async {
+      int activeIndex = 0;
+      int refreshCount = 0;
+
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) {
+            return GetMaterialApp(
+              translations: AppTranslations(),
+              locale: LocalizationService.englishLocale,
+              fallbackLocale: LocalizationService.englishLocale,
+              theme: AppTheme.light,
+              home: Scaffold(
+                bottomNavigationBar: BottomNavBar(
+                  currentIndex: activeIndex,
+                  onTap: (idx) => setState(() => activeIndex = idx),
+                  onDoubleTapActive: (_) => refreshCount++,
+                ),
+              ),
+            );
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Home (0) -> LevelUp (1)
+      await tester.tap(find.bySemanticsLabel('LevelUp'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, equals(1));
+      expect(refreshCount, equals(0));
+
+      // LevelUp (1) -> Finance (2)
+      await tester.tap(find.bySemanticsLabel('Finance'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, equals(2));
+      expect(refreshCount, equals(0));
+
+      // Finance (2) -> Profile (3)
+      await tester.tap(find.bySemanticsLabel('Profile'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, equals(3));
+      expect(refreshCount, equals(0));
+
+      // Profile (3) -> Home (0)
+      await tester.tap(find.bySemanticsLabel('Home'));
+      await tester.pumpAndSettle();
+      expect(activeIndex, equals(0));
+      expect(refreshCount, equals(0));
+    });
+  });
+
+  group('Responsive Liquid Glass & Structural Verification', () {
+    testWidgets(
+      '+ button remains strictly separate from main navigation pill across all phone widths',
+      (tester) async {
+        const testWidths = [320.0, 360.0, 390.0, 412.0, 430.0, 600.0];
+
+        for (final width in testWidths) {
+          tester.view.physicalSize = Size(width, 800);
+          tester.view.devicePixelRatio = 1.0;
+
+          await tester.pumpWidget(createNavBar(currentIndex: 0));
+          await tester.pumpAndSettle();
+
+          // Find the plus button icon and the main pill items
+          final plusFinder = find.byIcon(Icons.add_rounded);
+          expect(plusFinder, findsOneWidget);
+
+          final plusRect = tester.getRect(plusFinder);
+          final profileRect = tester.getRect(find.bySemanticsLabel('Profile'));
+
+          // Plus button must be to the right of the last tab item with a gap
+          expect(
+            plusRect.left,
+            greaterThan(profileRect.right),
+            reason:
+                'Plus button must be positioned to the right of Profile on width $width',
+          );
+
+          // Plus button must have a comfortable touch target size
+          expect(plusRect.width, greaterThanOrEqualTo(20.0));
+          expect(plusRect.height, greaterThanOrEqualTo(20.0));
+        }
+
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+      },
+    );
+
+    testWidgets(
+      'labels never collide or overlap across all phone widths',
+      (tester) async {
+        const testWidths = [320.0, 360.0, 375.0, 390.0, 412.0, 430.0];
+
+        for (final width in testWidths) {
+          tester.view.physicalSize = Size(width, 800);
+          tester.view.devicePixelRatio = 1.0;
+
+          await tester.pumpWidget(createNavBar(currentIndex: 1));
+          await tester.pumpAndSettle();
+
+          final homeRect = tester.getRect(find.bySemanticsLabel('Home'));
+          final levelUpRect = tester.getRect(find.bySemanticsLabel('LevelUp'));
+          final financeRect = tester.getRect(find.bySemanticsLabel('Finance'));
+          final profileRect = tester.getRect(find.bySemanticsLabel('Profile'));
+
+          // Non-overlapping horizontal ordering: Home < LevelUp < Finance < Profile
+          expect(homeRect.right, lessThanOrEqualTo(levelUpRect.left));
+          expect(levelUpRect.right, lessThanOrEqualTo(financeRect.left));
+          expect(financeRect.right, lessThanOrEqualTo(profileRect.left));
+
+          // Each tab has positive width
+          expect(homeRect.width, greaterThan(30.0));
+          expect(levelUpRect.width, greaterThan(30.0));
+          expect(financeRect.width, greaterThan(30.0));
+          expect(profileRect.width, greaterThan(30.0));
+        }
+
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+      },
+    );
+
+    testWidgets(
+      'active glass lens smoothly animates and centers over the selected tab',
+      (tester) async {
+        int selectedIndex = 0;
+
+        await tester.pumpWidget(
+          StatefulBuilder(
+            builder: (context, setState) {
+              return GetMaterialApp(
+                translations: AppTranslations(),
+                locale: LocalizationService.englishLocale,
+                fallbackLocale: LocalizationService.englishLocale,
+                theme: AppTheme.dark,
+                home: Scaffold(
+                  bottomNavigationBar: BottomNavBar(
+                    currentIndex: selectedIndex,
+                    onTap: (i) => setState(() => selectedIndex = i),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Initially on Home (index 0)
+        expect(find.byIcon(Icons.home_rounded), findsOneWidget);
+
+        // Tap Finance (index 2)
+        await tester.tap(find.bySemanticsLabel('Finance'));
+
+        // Pump halfway through the animation (160ms of 320ms)
+        await tester.pump(const Duration(milliseconds: 160));
+        expect(selectedIndex, equals(2));
+        expect(tester.takeException(), isNull);
+
+        // Finish animation
+        await tester.pumpAndSettle();
+        expect(find.byIcon(Icons.paid_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.home_outlined), findsOneWidget);
+      },
+    );
+  });
 }

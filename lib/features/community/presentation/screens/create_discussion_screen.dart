@@ -30,6 +30,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
 
   bool _isSubmitting = false;
   String? _selectedCategory;
+  bool _isAnonymous = false;
 
   static const List<String> _categoryKeys = [
     'Technology',
@@ -52,13 +53,16 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
       final initialTitle = widget.initialDiscussion?.title.trim() ?? '';
       final initialContent = widget.initialDiscussion?.content.trim() ?? '';
       final initialCat = widget.initialDiscussion?.category;
+      final initialAnon = widget.initialDiscussion?.isAnonymous ?? false;
       return currentTitle != initialTitle ||
           currentContent != initialContent ||
-          _selectedCategory != initialCat;
+          _selectedCategory != initialCat ||
+          _isAnonymous != initialAnon;
     }
     return currentTitle.isNotEmpty ||
         currentContent.isNotEmpty ||
-        _selectedCategory != null;
+        _selectedCategory != null ||
+        _isAnonymous;
   }
 
   @override
@@ -68,6 +72,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
       _titleController.text = widget.initialDiscussion!.title;
       _contentController.text = widget.initialDiscussion!.content;
       _selectedCategory = widget.initialDiscussion!.category;
+      _isAnonymous = widget.initialDiscussion!.isAnonymous;
     }
     _titleController.addListener(() => setState(() {}));
     _contentController.addListener(() => setState(() {}));
@@ -367,6 +372,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
           title: title,
           content: content,
           category: category,
+          anonymous: _isAnonymous,
         );
 
         if (!mounted) return;
@@ -403,6 +409,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
           title: title,
           content: content,
           category: category,
+          anonymous: _isAnonymous,
         );
 
         if (!mounted) return;
@@ -582,6 +589,7 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                 isDark: isDark,
                 textPrimary: textPrimary,
                 textMuted: textMuted,
+                isAnonymous: _isAnonymous,
               ),
               const SizedBox(height: 20),
 
@@ -780,26 +788,203 @@ class _CreateDiscussionScreenState extends State<CreateDiscussionScreen> {
                 ),
               ),
 
-              Align(
-                alignment: Alignment.centerRight,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    '$charCount / $maxChars',
-                    style: TextStyle(
-                      color: charCount >= maxChars
-                          ? AppColors.danger
-                          : (charCount >= 4800
-                              ? AppColors.warning
-                              : textMuted),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+              if (charCount > 0)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      '$charCount / $maxChars',
+                      style: TextStyle(
+                        color: charCount >= maxChars
+                            ? AppColors.danger
+                            : (charCount >= 4800
+                                ? AppColors.warning
+                                : textMuted),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),
+
+              const SizedBox(height: 24),
+
+              Text(
+                'community.anonymousQuestion'.tr.isNotEmpty &&
+                        'community.anonymousQuestion'.tr !=
+                            'community.anonymousQuestion'
+                    ? 'community.anonymousQuestion'.tr
+                    : 'Anonymous?',
+                style: TextStyle(
+                  color: textMuted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.4,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              _buildIdentityOption(
+                key: const Key('create_discussion_show_profile_option'),
+                isSelected: !_isAnonymous,
+                icon: Icons.account_circle_outlined,
+                title: 'community.showProfile'.tr.isNotEmpty &&
+                        'community.showProfile'.tr != 'community.showProfile'
+                    ? 'community.showProfile'.tr
+                    : 'Show User Profile',
+                subtitle: 'community.showProfileDesc'.tr.isNotEmpty &&
+                        'community.showProfileDesc'.tr !=
+                            'community.showProfileDesc'
+                    ? 'community.showProfileDesc'.tr
+                    : 'Post publicly with your name and avatar',
+                onTap: () {
+                  if (_isAnonymous) {
+                    setState(() => _isAnonymous = false);
+                  }
+                },
+                isDark: isDark,
+                textPrimary: textPrimary,
+                textMuted: textMuted,
+                cardBorder: cardBorder,
+                inputBg: inputBg,
+              ),
+              const SizedBox(height: 10),
+
+              _buildIdentityOption(
+                key: const Key('create_discussion_hide_identity_option'),
+                isSelected: _isAnonymous,
+                icon: Icons.visibility_off_outlined,
+                title: 'community.hideIdentity'.tr.isNotEmpty &&
+                        'community.hideIdentity'.tr != 'community.hideIdentity'
+                    ? 'community.hideIdentity'.tr
+                    : 'Hide User Identity',
+                subtitle: 'community.hideIdentityDesc'.tr.isNotEmpty &&
+                        'community.hideIdentityDesc'.tr !=
+                            'community.hideIdentityDesc'
+                    ? 'community.hideIdentityDesc'.tr
+                    : 'Post anonymously without showing your profile',
+                onTap: () {
+                  if (!_isAnonymous) {
+                    setState(() => _isAnonymous = true);
+                  }
+                },
+                isDark: isDark,
+                textPrimary: textPrimary,
+                textMuted: textMuted,
+                cardBorder: cardBorder,
+                inputBg: inputBg,
               ),
 
               const SizedBox(height: 32),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIdentityOption({
+    required Key key,
+    required bool isSelected,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    required bool isDark,
+    required Color textPrimary,
+    required Color textMuted,
+    required Color cardBorder,
+    required Color inputBg,
+  }) {
+    final activeColor =
+        isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: key,
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark
+                    ? AppColors.darkSurfaceSecondary
+                    : AppColors.lightBgSecondary)
+                : inputBg,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: isSelected ? activeColor : cardBorder,
+              width: isSelected ? 1.4 : 1.0,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? activeColor.withValues(alpha: 0.15)
+                      : (isDark
+                          ? AppColors.darkBgSecondary
+                          : AppColors.lightBgSecondary),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: isSelected ? activeColor : textMuted,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 14,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: textMuted,
+                        fontSize: 12,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected ? activeColor : cardBorder,
+                    width: 1.8,
+                  ),
+                  color: isSelected ? activeColor : Colors.transparent,
+                ),
+                child: isSelected
+                    ? const Icon(
+                        Icons.check,
+                        size: 13,
+                        color: Colors.white,
+                      )
+                    : null,
+              ),
             ],
           ),
         ),

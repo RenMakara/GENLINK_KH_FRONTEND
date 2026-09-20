@@ -240,3 +240,49 @@ class RsvpResponseModel {
     };
   }
 }
+
+class EventAttendeeModel {
+  final String id;
+  final String fullName;
+  final String username;
+  final String? avatarUrl;
+  final String? role;
+  final DateTime? joinedAt;
+
+  const EventAttendeeModel({
+    required this.id,
+    required this.fullName,
+    required this.username,
+    this.avatarUrl,
+    this.role,
+    this.joinedAt,
+  });
+
+  factory EventAttendeeModel.fromJson(Map<String, dynamic> json) {
+    final userObj = json['user'] is Map<String, dynamic>
+        ? json['user'] as Map<String, dynamic>
+        : json;
+    final joinedAtStr = json['joinedAt'] as String?;
+    return EventAttendeeModel(
+      id: userObj['id']?.toString() ?? userObj['userId']?.toString() ?? '',
+      fullName: userObj['fullName'] as String? ??
+          userObj['username'] as String? ??
+          'Attendee',
+      username: userObj['username'] as String? ?? '',
+      avatarUrl: userObj['avatarUrl'] as String?,
+      role: json['role']?.toString(),
+      joinedAt: joinedAtStr != null ? DateTime.tryParse(joinedAtStr) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'fullName': fullName,
+      'username': username,
+      if (avatarUrl != null) 'avatarUrl': avatarUrl,
+      if (role != null) 'role': role,
+      if (joinedAt != null) 'joinedAt': joinedAt!.toIso8601String(),
+    };
+  }
+}

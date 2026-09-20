@@ -119,6 +119,87 @@ class _EventsScreenState extends State<EventsScreen> {
 
             Expanded(
               child: Obx(() {
+                if (_controller.isLoadingEvents.value &&
+                    _controller.events.isEmpty) {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      color: textPrimary,
+                      strokeWidth: 2.5,
+                    ),
+                  );
+                }
+
+                if (_controller.hasEventsError.value &&
+                    _controller.events.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 48,
+                        horizontal: 24,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: cardBg,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: borderSubtle),
+                            ),
+                            child: const Icon(
+                              Icons.wifi_off_rounded,
+                              size: 36,
+                              color: AppColors.danger,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _controller.eventsErrorMessage.value.isNotEmpty
+                                ? _controller.eventsErrorMessage.value
+                                : ('community.unableToLoadEvents'.tr.isNotEmpty &&
+                                        'community.unableToLoadEvents'.tr !=
+                                            'community.unableToLoadEvents'
+                                    ? 'community.unableToLoadEvents'.tr
+                                    : 'Unable to load events'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          ElevatedButton(
+                            onPressed: () => _controller.fetchEvents(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  isDark ? Colors.white : Colors.black87,
+                              foregroundColor:
+                                  isDark ? Colors.black87 : Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 22,
+                                vertical: 10,
+                              ),
+                            ),
+                            child: Text(
+                              'community.tryAgain'.tr.isNotEmpty &&
+                                      'community.tryAgain'.tr !=
+                                          'community.tryAgain'
+                                  ? 'community.tryAgain'.tr
+                                  : 'Retry',
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
                 final allEvents = _controller.events;
                 final filtered = _searchQuery.isEmpty
                     ? allEvents
@@ -130,62 +211,94 @@ class _EventsScreenState extends State<EventsScreen> {
                         .toList();
 
                 if (filtered.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.calendar_today_outlined, size: 48, color: textMuted),
-                        const SizedBox(height: 14),
-                        Text(
-                          _searchQuery.isEmpty
-                              ? ('community.noUpcomingEvents'.tr.isNotEmpty &&
-                                      'community.noUpcomingEvents'.tr !=
-                                          'community.noUpcomingEvents'
-                                  ? 'community.noUpcomingEvents'.tr
-                                  : 'No upcoming events')
-                              : 'No events match your search.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                  return RefreshIndicator(
+                    onRefresh: () => _controller.refreshEvents(),
+                    color: AppColors.communityAccent,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: BouncingScrollPhysics(),
                           ),
-                        ),
-                        if (_searchQuery.isEmpty) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            'community.newEventsAppearHere'.tr.isNotEmpty &&
-                                    'community.newEventsAppearHere'.tr !=
-                                        'community.newEventsAppearHere'
-                                ? 'community.newEventsAppearHere'.tr
-                                : 'New events will appear here.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: textSecondary, fontSize: 13.5),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today_outlined,
+                                    size: 48,
+                                    color: textMuted,
+                                  ),
+                                  const SizedBox(height: 14),
+                                  Text(
+                                    _searchQuery.isEmpty
+                                        ? ('community.noUpcomingEvents'.tr.isNotEmpty &&
+                                                'community.noUpcomingEvents'.tr !=
+                                                    'community.noUpcomingEvents'
+                                            ? 'community.noUpcomingEvents'.tr
+                                            : 'No upcoming events')
+                                        : 'No events match your search.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: textPrimary,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  if (_searchQuery.isEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'community.newEventsAppearHere'.tr.isNotEmpty &&
+                                              'community.newEventsAppearHere'.tr !=
+                                                  'community.newEventsAppearHere'
+                                          ? 'community.newEventsAppearHere'.tr
+                                          : 'New events will appear here.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: textSecondary,
+                                        fontSize: 13.5,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
                           ),
-                        ],
-                      ],
+                        );
+                      },
                     ),
                   );
                 }
 
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                  itemCount: filtered.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    return _EventCard(
-                      event: filtered[index],
-                      controller: _controller,
-                      index: index,
-                      isDark: isDark,
-                      textPrimary: textPrimary,
-                      textSecondary: textSecondary,
-                      textMuted: textMuted,
-                      cardBg: cardBg,
-                      borderSubtle: borderSubtle,
-                    );
-                  },
+                return RefreshIndicator(
+                  onRefresh: () => _controller.refreshEvents(),
+                  color: AppColors.communityAccent,
+                  child: ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                    itemCount: filtered.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      return _EventCard(
+                        event: filtered[index],
+                        controller: _controller,
+                        index: index,
+                        isDark: isDark,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        textMuted: textMuted,
+                        cardBg: cardBg,
+                        borderSubtle: borderSubtle,
+                      );
+                    },
+                  ),
                 );
               }),
             ),
@@ -319,14 +432,25 @@ class _EventCard extends StatelessWidget {
                                 width: 0.6,
                               ),
                             ),
-                            child: Text(
-                              categoryDisplay,
-                              style: TextStyle(
-                                color: isDark ? Colors.white70 : textSecondary,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.2,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _getCategoryIconData(event.category),
+                                  size: 11,
+                                  color: isDark ? Colors.white70 : textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  categoryDisplay,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white70 : textSecondary,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           if (event.isPaid) ...[
@@ -374,7 +498,7 @@ class _EventCard extends StatelessWidget {
                                         ? Icons.bookmark_rounded
                                         : Icons.bookmark_border_rounded,
                                     color: event.isBookmarked
-                                        ? AppColors.communityAccent
+                                        ? (isDark ? Colors.white : Colors.black87)
                                         : textMuted,
                                     size: 19,
                                   ),
@@ -479,5 +603,39 @@ class _EventCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  IconData _getCategoryIconData(String cat) {
+    switch (cat.toLowerCase()) {
+      case 'technology':
+        return Icons.computer_outlined;
+      case 'design':
+      case 'arts':
+      case 'art':
+        return Icons.palette_outlined;
+      case 'business':
+        return Icons.business_center_outlined;
+      case 'career':
+        return Icons.work_outline_rounded;
+      case 'education':
+        return Icons.school_outlined;
+      case 'workshop':
+        return Icons.build_outlined;
+      case 'competition':
+        return Icons.emoji_events_outlined;
+      case 'sports':
+      case 'sport':
+        return Icons.sports_soccer_outlined;
+      case 'social':
+        return Icons.people_outline_rounded;
+      case 'entertainment':
+        return Icons.movie_outlined;
+      case 'seminar':
+        return Icons.groups_outlined;
+      case 'hackathon':
+        return Icons.terminal_outlined;
+      default:
+        return Icons.category_outlined;
+    }
   }
 }

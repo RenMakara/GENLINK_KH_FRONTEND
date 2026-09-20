@@ -179,11 +179,16 @@ void main() {
 
         expect(find.byTooltip('Create'), findsOneWidget);
 
-        expect(find.byTooltip('Media / Image'), findsOneWidget);
+        expect(find.byTooltip('Camera'), findsOneWidget);
+        expect(find.byTooltip('Gallery'), findsOneWidget);
         expect(find.byTooltip('GIF'), findsOneWidget);
+        expect(find.byTooltip('Poll'), findsOneWidget);
         expect(find.byTooltip('Feeling / Activity'), findsOneWidget);
         expect(find.byTooltip('Event'), findsWidgets);
         expect(find.byTooltip('Location'), findsOneWidget);
+
+        // Verify schedule icon has been removed from header
+        expect(find.byIcon(Icons.schedule_outlined), findsNothing);
       },
     );
 
@@ -217,31 +222,26 @@ void main() {
         expect(find.text('Create'), findsWidgets);
 
         // Verify compact glass pill options exist
-        expect(find.text('Poll'), findsOneWidget);
-        expect(find.text('Discussion'), findsOneWidget);
-        expect(find.text('Celebration'), findsOneWidget);
-        expect(find.text('Job'), findsOneWidget);
-        expect(find.text('Document'), findsOneWidget);
-        expect(find.text('Media'), findsOneWidget);
+        expect(find.text('Story'), findsOneWidget);
         expect(find.text('Event'), findsWidgets);
+        expect(find.text('Discussion'), findsOneWidget);
+        expect(find.text('Goal'), findsOneWidget);
+        expect(find.text('To-Do'), findsOneWidget);
+        expect(find.text('Habit'), findsOneWidget);
+        expect(find.text('Expense'), findsOneWidget);
+        expect(find.text('Saving Goal'), findsOneWidget);
+        expect(find.text('Budget'), findsOneWidget);
+        expect(find.text('Quiz'), findsOneWidget);
+        expect(find.text('Challenge'), findsOneWidget);
 
-        // Verify removed categories and options are absent
+        // Verify removed categories are absent
         expect(find.text('COMMUNITY'), findsNothing);
         expect(find.text('PRODUCTIVITY'), findsNothing);
         expect(find.text('FINANCIAL'), findsNothing);
         expect(find.text('ENTERTAINMENT'), findsNothing);
-        expect(find.text('Goal'), findsNothing);
-        expect(find.text('To-Do'), findsNothing);
-        expect(find.text('Habit'), findsNothing);
-        expect(find.text('Expense'), findsNothing);
-        expect(find.text('Saving Goal'), findsNothing);
-        expect(find.text('Budget'), findsNothing);
-        expect(find.text('Quiz'), findsNothing);
-        expect(find.text('Challenge'), findsNothing);
 
-        // Verify right-side chevron arrows are removed
-        expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
-        expect(find.byIcon(Icons.chevron_right), findsNothing);
+        // Verify right-side chevron arrows are present on the 11 options
+        expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(11));
       },
     );
 
@@ -417,7 +417,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         expect(find.byType(GlobalCreateSheet), findsOneWidget);
-        expect(find.text('Poll'), findsOneWidget);
+        expect(find.text('Story'), findsOneWidget);
 
         await tester.tapAt(const Offset(10, 10));
         await tester.pumpAndSettle();
@@ -437,7 +437,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
         expect(find.byType(GlobalCreateSheet), findsOneWidget);
-        expect(find.text('Poll'), findsOneWidget);
+        expect(find.text('Story'), findsOneWidget);
       },
     );
 
@@ -471,13 +471,17 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(GlobalCreateSheet), findsOneWidget);
-      expect(find.text('Poll'), findsOneWidget);
-      expect(find.text('Discussion'), findsOneWidget);
-      expect(find.text('Celebration'), findsOneWidget);
-      expect(find.text('Job'), findsOneWidget);
-      expect(find.text('Document'), findsOneWidget);
-      expect(find.text('Media'), findsOneWidget);
+      expect(find.text('Story'), findsOneWidget);
       expect(find.text('Event'), findsWidgets);
+      expect(find.text('Discussion'), findsOneWidget);
+      expect(find.text('Goal'), findsOneWidget);
+      expect(find.text('To-Do'), findsOneWidget);
+      expect(find.text('Habit'), findsOneWidget);
+      expect(find.text('Expense'), findsOneWidget);
+      expect(find.text('Saving Goal'), findsOneWidget);
+      expect(find.text('Budget'), findsOneWidget);
+      expect(find.text('Quiz'), findsOneWidget);
+      expect(find.text('Challenge'), findsOneWidget);
     });
 
     testWidgets('9. Test Khmer localization renders properly', (tester) async {
@@ -502,12 +506,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(GlobalCreateSheet), findsOneWidget);
-      expect(find.text('ការស្ទង់មតិ'), findsOneWidget);
+      expect(find.text('ស្តូរី'), findsOneWidget);
       expect(find.text('ការពិភាក្សា'), findsOneWidget);
-      expect(find.text('ការអបអរសាទរ'), findsOneWidget);
-      expect(find.text('ការងារ'), findsOneWidget);
-      expect(find.text('ឯកសារ'), findsOneWidget);
-      expect(find.text('មេឌៀ'), findsOneWidget);
+      expect(find.text('គោលដៅ'), findsOneWidget);
+      expect(find.text('កិច្ចការត្រូវធ្វើ'), findsOneWidget);
+      expect(find.text('ទម្លាប់'), findsOneWidget);
+      expect(find.text('ការចំណាយ'), findsOneWidget);
+      expect(find.text('គោលដៅសន្សំ'), findsOneWidget);
+      expect(find.text('ថវិកា'), findsOneWidget);
+      expect(find.text('កម្រងសំណួរ'), findsOneWidget);
+      expect(find.text('បញ្ហាប្រឈម'), findsOneWidget);
       expect(find.text('ព្រឹត្តិការណ៍'), findsWidgets);
     });
   });

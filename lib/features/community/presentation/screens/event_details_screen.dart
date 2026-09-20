@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/config/app_config.dart';
+import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
+import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import '../../../../shared/utils/current_user.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
+import 'create_event_screen.dart';
 import 'event_register_screen.dart';
 
 class EventDetailsScreen extends StatefulWidget {
@@ -45,6 +49,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     super.initState();
     _event = widget.event;
     _isBookmarked = widget.event.isBookmarked;
+    _fetchLatestEventDetails();
   }
 
   @override
@@ -53,7 +58,24 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     if (oldWidget.event != widget.event) {
       _event = widget.event;
       _isBookmarked = widget.event.isBookmarked;
+      _fetchLatestEventDetails();
     }
+  }
+
+  Future<void> _fetchLatestEventDetails() async {
+    if (_event.id.isEmpty) return;
+    try {
+      if (Get.isRegistered<CommunityController>()) {
+        final ctrl = Get.find<CommunityController>();
+        final fresh = await ctrl.fetchEventDetails(_event.id);
+        if (mounted) {
+          setState(() {
+            _event = fresh;
+            _isBookmarked = fresh.isBookmarked;
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   void _triggerBookmarkAnimation() {
@@ -87,6 +109,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     final event = controller != null
         ? (controller.events.firstWhereOrNull((e) => e.id == _event.id) ?? _event)
         : _event;
+
+    final currentUserId = CurrentUser.id;
+    final isOrganizer = event.organizerName.trim().toLowerCase() == 'me' ||
+        (currentUserId.isNotEmpty && event.organizerId == currentUserId);
 
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
     final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
@@ -186,6 +212,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                     iconColor: isSaved ? Colors.white : Colors.white,
                                     onTap: () {
                                       _triggerBookmarkAnimation();
+                                      setState(() => _isBookmarked = !isSaved);
                                       controller.toggleEventBookmark(event.id);
                                       final nowSaved = !isSaved;
                                       _showSnackBar(
@@ -230,6 +257,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                 _showSnackBar(context, isDark, 'community.share'.tr);
                               },
                             ),
+                            if (isOrganizer) ...[
+                              const SizedBox(width: 8),
+                              _buildOwnerMoreButton(
+                                context: context,
+                                event: event,
+                                isDark: isDark,
+                                textPrimary: textPrimary,
+                                controller: controller,
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -255,14 +292,25 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                   width: 0.8,
                                 ),
                               ),
-                              child: Text(
-                                _localizedCategory(event.category).toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _getCategoryIconData(event.category),
+                                    size: 13,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    _localizedCategory(event.category).toUpperCase(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -412,6 +460,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                         textSecondary: textSecondary,
                         tileBg: tileBg,
                         borderSubtle: borderSubtle,
+                        isDark: isDark,
                       ),
 
                       const SizedBox(height: 130),
@@ -498,6 +547,233 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     );
   }
 
+  IconData _getCategoryIconData(String cat) {
+    switch (cat.toLowerCase()) {
+      case 'technology':
+        return Icons.computer_outlined;
+      case 'design':
+      case 'arts':
+      case 'art':
+        return Icons.palette_outlined;
+      case 'business':
+        return Icons.business_center_outlined;
+      case 'career':
+        return Icons.work_outline_rounded;
+      case 'education':
+        return Icons.school_outlined;
+      case 'workshop':
+        return Icons.build_outlined;
+      case 'competition':
+        return Icons.emoji_events_outlined;
+      case 'sports':
+      case 'sport':
+        return Icons.sports_soccer_outlined;
+      case 'social':
+        return Icons.people_outline_rounded;
+      case 'entertainment':
+        return Icons.movie_outlined;
+      case 'seminar':
+        return Icons.groups_outlined;
+      case 'hackathon':
+        return Icons.terminal_outlined;
+      default:
+        return Icons.category_outlined;
+    }
+  }
+
+  Widget _buildOwnerMoreButton({
+    required BuildContext context,
+    required EventModel event,
+    required bool isDark,
+    required Color textPrimary,
+    required CommunityController? controller,
+  }) {
+    return PopupMenuButton<String>(
+      icon: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.5),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.2),
+            width: 0.8,
+          ),
+        ),
+        child: const Center(
+          child: Icon(Icons.more_horiz_rounded, color: Colors.white, size: 20),
+        ),
+      ),
+      padding: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: isDark ? const Color(0xFF1E1E20) : Colors.white,
+      onSelected: (val) => _handleOwnerAction(
+        context: context,
+        action: val,
+        event: event,
+        isDark: isDark,
+        controller: controller,
+      ),
+      itemBuilder: (ctx) => [
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.edit_outlined, size: 18, color: textPrimary),
+              const SizedBox(width: 8),
+              Text(
+                'community.editEvent'.tr.isNotEmpty &&
+                        'community.editEvent'.tr != 'community.editEvent'
+                    ? 'community.editEvent'.tr
+                    : 'Edit Event',
+                style: TextStyle(color: textPrimary, fontSize: 13.5),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.delete_outline_rounded,
+                size: 18,
+                color: AppColors.danger,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'community.deleteEvent'.tr.isNotEmpty &&
+                        'community.deleteEvent'.tr != 'community.deleteEvent'
+                    ? 'community.deleteEvent'.tr
+                    : 'Delete Event',
+                style: const TextStyle(
+                  color: AppColors.danger,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleOwnerAction({
+    required BuildContext context,
+    required String action,
+    required EventModel event,
+    required bool isDark,
+    required CommunityController? controller,
+  }) async {
+    if (action == 'edit') {
+      final updated = await Get.to<EventModel?>(
+        () => CreateEventScreen(
+          eventToEdit: event,
+          returnCreatedEvent: true,
+        ),
+      );
+      if (updated != null && mounted) {
+        setState(() {
+          _event = updated;
+        });
+        if (controller != null) {
+          controller.fetchEventDetails(updated.id);
+        }
+      }
+    } else if (action == 'delete') {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E1E22) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'community.deleteEvent'.tr.isNotEmpty &&
+                    'community.deleteEvent'.tr != 'community.deleteEvent'
+                ? '${'community.deleteEvent'.tr}?'
+                : 'Delete Event?',
+            style: TextStyle(
+              color: isDark ? Colors.white : AppColors.lightTextPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 17,
+            ),
+          ),
+          content: Text(
+            'community.deleteEventConfirm'.tr.isNotEmpty &&
+                    'community.deleteEventConfirm'.tr != 'community.deleteEventConfirm'
+                ? 'community.deleteEventConfirm'.tr
+                : 'Are you sure you want to delete this event? This action cannot be undone.',
+            style: TextStyle(
+              color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx, false),
+              child: Text(
+                'common.cancel'.tr.isNotEmpty &&
+                        'common.cancel'.tr != 'common.cancel'
+                    ? 'common.cancel'.tr
+                    : 'Cancel',
+                style: TextStyle(
+                  color: isDark ? Colors.white60 : Colors.black54,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogCtx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                elevation: 0,
+              ),
+              child: Text(
+                'common.delete'.tr.isNotEmpty &&
+                        'common.delete'.tr != 'common.delete'
+                    ? 'common.delete'.tr
+                    : 'Delete',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        try {
+          if (controller != null) {
+            await controller.deleteEvent(event.id);
+          }
+          if (mounted) {
+            Navigator.pop(this.context, true);
+            AppNotificationBanner.showSuccess(
+              context: Get.context ?? this.context,
+              title: 'Event Deleted',
+              message: 'Your event has been successfully deleted.',
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            final errorMsg = e is AppError
+                ? e.message
+                : 'Failed to delete event. Please try again.';
+            AppNotificationBanner.showDanger(
+              context: this.context,
+              title: 'Error',
+              message: errorMsg,
+            );
+          }
+        }
+      }
+    }
+  }
+
   Widget _buildOrganizerCard({
     required BuildContext context,
     required EventModel event,
@@ -516,6 +792,31 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         ? event.organizerName
         : 'GenLink Community';
 
+    String? effectiveAvatar = (event.organizerAvatar != null && event.organizerAvatar!.trim().isNotEmpty)
+        ? event.organizerAvatar!.trim()
+        : null;
+
+    if (effectiveAvatar == null &&
+        currentUserId.isNotEmpty &&
+        event.organizerId == currentUserId) {
+      final currentAvatar = CurrentUser.avatarUrl?.trim();
+      if (currentAvatar != null && currentAvatar.isNotEmpty) {
+        effectiveAvatar = currentAvatar;
+      }
+    }
+
+    ImageProvider? avatarProvider;
+    if (effectiveAvatar != null && effectiveAvatar.isNotEmpty) {
+      if (effectiveAvatar.startsWith('assets/')) {
+        avatarProvider = AssetImage(effectiveAvatar);
+      } else {
+        final fullUrl = effectiveAvatar.startsWith('http')
+            ? effectiveAvatar
+            : '${AppConfig.apiBaseUrl}${effectiveAvatar.startsWith('/') ? '' : '/'}$effectiveAvatar';
+        avatarProvider = NetworkImage(fullUrl);
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -528,8 +829,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
           CircleAvatar(
             radius: 22,
             backgroundColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA),
-            backgroundImage: const AssetImage('assets/images/user_profile.png'),
-            onBackgroundImageError: (exception, stackTrace) {},
+            foregroundImage: avatarProvider,
+            onForegroundImageError: avatarProvider != null ? (exception, stackTrace) {} : null,
             child: Text(
               orgName.isNotEmpty ? orgName[0].toUpperCase() : 'G',
               style: TextStyle(
@@ -581,57 +882,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               ),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               color: isDark ? const Color(0xFF1E1E20) : Colors.white,
-              onSelected: (val) {
-                if (val == 'edit') {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('community.editEvent'.tr),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                } else if (val == 'delete') {
-                  if (controller != null) {
-                    controller.events.removeWhere((e) => e.id == event.id);
-                  }
-                  Navigator.pop(context);
-                } else if (val == 'remove_cover') {
+              onSelected: (val) async {
+                if (val == 'remove_cover') {
                   setState(() {
-                    _event = EventModel(
-                      id: event.id,
-                      title: event.title,
-                      subtitle: event.subtitle,
-                      organizerName: event.organizerName,
-                      organizerId: event.organizerId,
-                      organizerAvatar: event.organizerAvatar,
-                      eventType: event.eventType,
-                      mode: event.mode,
-                      location: event.location,
-                      locationName: event.locationName,
-                      onlineLink: event.onlineLink,
-                      meetingUrl: event.meetingUrl,
-                      latitude: event.latitude,
-                      longitude: event.longitude,
-                      dateString: event.dateString,
-                      timeString: event.timeString,
-                      startDateTime: event.startDateTime,
-                      endDateTime: event.endDateTime,
-                      description: event.description,
-                      category: event.category,
-                      isPaid: event.isPaid,
-                      price: event.price,
-                      priceKhr: event.priceKhr,
-                      currency: event.currency,
+                    _event = _event.copyWith(
                       imageUrl: '',
                       coverImageFile: null,
-                      attendeeLimit: event.attendeeLimit,
-                      attendeesCount: event.attendeesCount,
-                      status: event.status,
-                      language: event.language,
-                      myRsvpStatus: event.myRsvpStatus,
-                      isRsvped: event.isRsvped,
-                      isFull: event.isFull,
-                      isBookmarked: event.isBookmarked,
-                      attendeeAvatars: event.attendeeAvatars,
                     );
                     if (controller != null) {
                       final idx = controller.events.indexWhere((e) => e.id == event.id);
@@ -641,6 +897,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                     }
                   });
                   _showSnackBar(context, isDark, 'Cover image removed');
+                } else {
+                  await _handleOwnerAction(
+                    context: context,
+                    action: val,
+                    event: event,
+                    isDark: isDark,
+                    controller: controller,
+                  );
                 }
               },
               itemBuilder: (ctx) => [
@@ -757,6 +1021,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     required Color tileBg,
     required Color borderSubtle,
   }) {
+    final currentUserId = CurrentUser.id;
+    final isOrganizer = event.organizerName.trim().toLowerCase() == 'me' ||
+        (currentUserId.isNotEmpty && event.organizerId == currentUserId);
+    final canAccessMeeting = event.isRsvped || isOrganizer;
     final hasMeetingUrl = event.effectiveMeetingUrl.isNotEmpty;
 
     return Container(
@@ -785,7 +1053,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                     fontSize: 14,
                   ),
                 ),
-                if (hasMeetingUrl) ...[
+                if (canAccessMeeting && hasMeetingUrl) ...[
                   const SizedBox(height: 6),
                   InkWell(
                     onTap: () {
@@ -824,6 +1092,28 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                         ],
                       ),
                     ),
+                  ),
+                ] else if (!canAccessMeeting) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.lock_outline_rounded, size: 13, color: textSecondary),
+                      const SizedBox(width: 5),
+                      Flexible(
+                        child: Text(
+                          'community.meetingLinkAfterRegistration'.tr.isNotEmpty &&
+                                  'community.meetingLinkAfterRegistration'.tr != 'community.meetingLinkAfterRegistration'
+                              ? 'community.meetingLinkAfterRegistration'.tr
+                              : 'Meeting link available after registration',
+                          style: TextStyle(
+                            color: textSecondary,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ],
@@ -992,7 +1282,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     required Color textSecondary,
     required Color tileBg,
     required Color borderSubtle,
+    required bool isDark,
   }) {
+    final currentUserId = CurrentUser.id;
+    final isOrganizer = event.organizerName.trim().toLowerCase() == 'me' ||
+        (currentUserId.isNotEmpty && event.organizerId == currentUserId);
+
     Widget content(int count, int? limit, bool isFull) {
       final String line1;
       final String line2;
@@ -1017,7 +1312,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
           border: Border.all(color: borderSubtle, width: 0.8),
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             _buildIconBadge(Icons.people_alt_rounded, textPrimary, textSecondary),
             const SizedBox(width: 12),
@@ -1053,22 +1348,44 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 ],
               ),
             ),
+            if (isOrganizer) ...[
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: textSecondary,
+                size: 20,
+              ),
+            ],
           ],
         ),
       );
     }
 
+    Widget cardWidget;
     if (controller != null) {
-      return Obx(() {
+      cardWidget = Obx(() {
         final ev = controller.events.firstWhereOrNull((e) => e.id == event.id);
         final count = ev?.attendeesCount ?? event.attendeesCount;
         final limit = ev?.attendeeLimit ?? event.attendeeLimit;
         final full = ev?.isFull ?? event.isFull;
         return content(count, limit, full);
       });
+    } else {
+      cardWidget = content(event.attendeesCount, event.attendeeLimit, event.isFull);
     }
 
-    return content(event.attendeesCount, event.attendeeLimit, event.isFull);
+    if (isOrganizer) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showAttendeesSheet(context, event, isDark),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: cardWidget,
+        ),
+      );
+    }
+
+    return cardWidget;
   }
 
   Widget _buildExpandableDescription({
@@ -1570,6 +1887,294 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  void _showAttendeesSheet(
+    BuildContext context,
+    EventModel event,
+    bool isDark,
+  ) {
+    final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
+    final textMuted = isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
+    final borderSubtle = isDark ? const Color(0xFF28282A) : const Color(0xFFE6E6EA);
+    final bg = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final controller = Get.isRegistered<CommunityController>()
+                ? Get.find<CommunityController>()
+                : null;
+
+            return SafeArea(
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.65,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 12),
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white24 : Colors.black12,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'community.eventAttendees'.tr.isNotEmpty &&
+                                          'community.eventAttendees'.tr != 'community.eventAttendees'
+                                      ? 'community.eventAttendees'.tr
+                                      : 'Event Attendees',
+                                  style: TextStyle(
+                                    color: textPrimary,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${event.attendeesCount} ${'community.registered'.tr.isNotEmpty && 'community.registered'.tr != 'community.registered' ? 'community.registered'.tr : 'registered'}',
+                                  style: TextStyle(
+                                    color: textSecondary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.close, color: textPrimary, size: 20),
+                            onPressed: () => Navigator.pop(sheetCtx),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Divider(height: 1, color: borderSubtle),
+
+                    Expanded(
+                      child: controller == null
+                          ? Center(
+                              child: Text(
+                                'Controller unavailable',
+                                style: TextStyle(color: textSecondary),
+                              ),
+                            )
+                          : FutureBuilder<List<EventAttendeeModel>>(
+                              future: controller.fetchEventAttendees(event.id),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(
+                                          width: 28,
+                                          height: 28,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.5,
+                                            color: isDark ? Colors.white : Colors.black,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'community.loadingAttendees'.tr.isNotEmpty &&
+                                                  'community.loadingAttendees'.tr != 'community.loadingAttendees'
+                                              ? 'community.loadingAttendees'.tr
+                                              : 'Loading attendees...',
+                                          style: TextStyle(
+                                            color: textSecondary,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+
+                                if (snapshot.hasError) {
+                                  return Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.error_outline_rounded,
+                                            color: isDark ? Colors.white60 : Colors.black45,
+                                            size: 40,
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'Failed to load attendees',
+                                            style: TextStyle(
+                                              color: textPrimary,
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            'Please check your connection and try again.',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: textSecondary,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          ElevatedButton(
+                                            onPressed: () => setSheetState(() {}),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: isDark ? Colors.white : Colors.black,
+                                              foregroundColor: isDark ? Colors.black : Colors.white,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              elevation: 0,
+                                            ),
+                                            child: const Text('Retry'),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }
+
+                                final attendees = snapshot.data ?? [];
+                                if (attendees.isEmpty) {
+                                  return Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.people_outline_rounded,
+                                            color: isDark ? Colors.white38 : Colors.black26,
+                                            size: 48,
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'community.noAttendeesYet'.tr.isNotEmpty &&
+                                                    'community.noAttendeesYet'.tr != 'community.noAttendeesYet'
+                                                ? 'community.noAttendeesYet'.tr
+                                                : 'No attendees yet',
+                                            style: TextStyle(
+                                              color: textPrimary,
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Registered attendees will appear here.',
+                                            style: TextStyle(
+                                              color: textSecondary,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }
+
+                                return ListView.separated(
+                                  physics: const BouncingScrollPhysics(),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  itemCount: attendees.length,
+                                  separatorBuilder: (context, index) => Divider(height: 1, color: borderSubtle),
+                                  itemBuilder: (context, index) {
+                                    final attendee = attendees[index];
+                                    final displayName = attendee.fullName.isNotEmpty
+                                        ? attendee.fullName
+                                        : (attendee.username.isNotEmpty ? attendee.username : 'GenLink User');
+                                    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
+
+                                    String joinedSubtitle = '';
+                                    if (attendee.username.isNotEmpty) {
+                                      joinedSubtitle = '@${attendee.username}';
+                                    }
+                                    if (attendee.joinedAt != null) {
+                                      final jDate = attendee.joinedAt!;
+                                      final dateStr = '${jDate.day}/${jDate.month}/${jDate.year}';
+                                      joinedSubtitle = joinedSubtitle.isNotEmpty
+                                          ? '$joinedSubtitle · Joined $dateStr'
+                                          : 'Joined $dateStr';
+                                    }
+
+                                    return ListTile(
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                      leading: CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA),
+                                        backgroundImage: (attendee.avatarUrl != null && attendee.avatarUrl!.isNotEmpty)
+                                            ? NetworkImage(attendee.avatarUrl!)
+                                            : null,
+                                        child: (attendee.avatarUrl == null || attendee.avatarUrl!.isEmpty)
+                                            ? Text(
+                                                initial,
+                                                style: TextStyle(
+                                                  color: textPrimary,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 15,
+                                                ),
+                                              )
+                                            : null,
+                                      ),
+                                      title: Text(
+                                        displayName,
+                                        style: TextStyle(
+                                          color: textPrimary,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      subtitle: joinedSubtitle.isNotEmpty
+                                          ? Text(
+                                              joinedSubtitle,
+                                              style: TextStyle(
+                                                color: textMuted,
+                                                fontSize: 12,
+                                              ),
+                                            )
+                                          : null,
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );

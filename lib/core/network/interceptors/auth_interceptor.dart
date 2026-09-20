@@ -75,6 +75,16 @@ class AuthInterceptor extends Interceptor {
       );
     }
 
+    // Search endpoints support both authenticated and unauthenticated queries.
+    // Attach token if available, but do not block guest / anonymous search.
+    if (options.path.contains('/search')) {
+      if (hasRealToken) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+      handler.next(options);
+      return;
+    }
+
     if (!hasRealToken) {
       final isPushRegistration = _isPushRegistrationEndpoint(options.path);
       final callback = onSessionExpired;

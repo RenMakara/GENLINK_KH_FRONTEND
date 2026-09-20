@@ -12,7 +12,11 @@ import '../../domain/models/community_models.dart';
 import '../../domain/models/community_post_model.dart';
 import '../controllers/community_controller.dart';
 import '../widgets/community_design_tokens.dart';
+import '../widgets/forum_liked_by_sheet.dart';
+import '../widgets/forum_repost_dialog.dart';
+import '../widgets/forum_share_to_chat_sheet.dart';
 import 'create_discussion_screen.dart';
+import 'widgets/community_widgets.dart';
 
 class ForumDiscussionScreen extends StatefulWidget {
   final ForumTopicModel discussion;
@@ -32,12 +36,24 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
   late int _repliesCount;
   late int _upvotes;
   late bool _isLiked;
+  late bool _isBookmarked;
   bool _hasText = false;
 
   @override
   void initState() {
     super.initState();
-    _discussion = widget.discussion;
+    final isAnon = widget.discussion.isAnonymous ||
+        widget.discussion.authorName.trim().toLowerCase() == 'anonymous' ||
+        ('community.anonymous'.tr.isNotEmpty &&
+            widget.discussion.authorName.trim().toLowerCase() ==
+                'community.anonymous'.tr.toLowerCase());
+    _discussion = isAnon
+        ? widget.discussion.copyWith(
+            isAnonymous: true,
+            authorAvatar: '',
+            authorName: 'Anonymous',
+          )
+        : widget.discussion;
     _repliesCount = _discussion.repliesCount;
     _upvotes = _discussion.upvotes;
     _isLiked = _discussion.isLiked;
@@ -50,19 +66,69 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
       _controller = Get.put(CommunityController());
     }
 
+    _isBookmarked = _controller.isDiscussionBookmarked(_discussion.id);
+
     _controller.fetchDiscussionComments(_discussion.id);
+    if (_discussion.isOwner) {
+      _controller
+          .fetchDiscussionLikers(_discussion.id)
+          .catchError((_) => <ForumLikerModel>[]);
+    }
     _loadDiscussionDetail();
   }
 
   Future<void> _loadDiscussionDetail() async {
     final detail = await _controller.fetchDiscussionDetails(_discussion.id);
     if (detail != null && mounted) {
+      final isAnon = _discussion.isAnonymous ||
+          detail.isAnonymous ||
+          detail.authorName.trim().toLowerCase() == 'anonymous' ||
+          ('community.anonymous'.tr.isNotEmpty &&
+              detail.authorName.trim().toLowerCase() ==
+                  'community.anonymous'.tr.toLowerCase());
+      final effectiveDetail = isAnon
+          ? detail.copyWith(
+              isAnonymous: true,
+              authorAvatar: '',
+              authorName: 'Anonymous',
+            )
+          : detail;
       setState(() {
-        _discussion = detail;
-        _repliesCount = detail.repliesCount;
-        _upvotes = detail.upvotes;
-        _isLiked = detail.isLiked;
+        _discussion = effectiveDetail;
+        _repliesCount = effectiveDetail.repliesCount;
+        _upvotes = effectiveDetail.upvotes;
+        _isLiked = effectiveDetail.isLiked;
+        _isBookmarked = _controller.isDiscussionBookmarked(effectiveDetail.id);
       });
+      if (effectiveDetail.isOwner) {
+        _controller
+            .fetchDiscussionLikers(_discussion.id)
+            .catchError((_) => <ForumLikerModel>[]);
+      }
+    }
+  }
+
+  @override
+  void didUpdateWidget(ForumDiscussionScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.discussion.id != widget.discussion.id) {
+      final isAnon = widget.discussion.isAnonymous ||
+          widget.discussion.authorName.trim().toLowerCase() == 'anonymous' ||
+          ('community.anonymous'.tr.isNotEmpty &&
+              widget.discussion.authorName.trim().toLowerCase() ==
+                  'community.anonymous'.tr.toLowerCase());
+      _discussion = isAnon
+          ? widget.discussion.copyWith(
+              isAnonymous: true,
+              authorAvatar: '',
+              authorName: 'Anonymous',
+            )
+          : widget.discussion;
+      _repliesCount = _discussion.repliesCount;
+      _upvotes = _discussion.upvotes;
+      _isLiked = _discussion.isLiked;
+      _isBookmarked = _controller.isDiscussionBookmarked(_discussion.id);
+      _loadDiscussionDetail();
     }
   }
 
@@ -84,6 +150,48 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
         message: 'Failed to update reaction. Please try again.',
       );
     }
+  }
+
+  void _handleSaveTap() async {
+    final prev = _isBookmarked;
+    final next = !prev;
+    setState(() {
+      _isBookmarked = next;
+      _discussion = _discussion.copyWith(isBookmarked: next);
+    });
+    final success = await _controller.toggleDiscussionBookmark(_discussion.id);
+    if (!success && mounted) {
+      setState(() {
+        _isBookmarked = prev;
+        _discussion = _discussion.copyWith(isBookmarked: prev);
+      });
+      AppNotificationBanner.showError(
+        context: context,
+        title: 'Error',
+        message: 'Failed to update bookmark. Please try again.',
+      );
+    } else if (mounted) {
+      final title = _isBookmarked
+          ? ('community.saveBookmark'.tr.isNotEmpty &&
+                  'community.saveBookmark'.tr != 'community.saveBookmark'
+              ? 'community.saveBookmark'.tr
+              : 'Saved')
+          : ('community.removeBookmark'.tr.isNotEmpty &&
+                  'community.removeBookmark'.tr != 'community.removeBookmark'
+              ? 'community.removeBookmark'.tr
+              : 'Bookmark Removed');
+      AppNotificationBanner.showSuccess(
+        context: context,
+        title: title,
+        message: _isBookmarked
+            ? 'Discussion added to your saved items.'
+            : 'Discussion removed from saved items.',
+      );
+    }
+  }
+
+  void _handleShareToChatTap() {
+    ForumShareToChatSheet.show(context, topic: _discussion);
   }
 
   void _onTextChanged() {
@@ -236,13 +344,25 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                 ),
               ] else ...[
                 ListTile(
-                  leading: Icon(Icons.bookmark_border_rounded,
-                      color: textPrimary, size: 22),
+                  leading: Icon(
+                    _isBookmarked
+                        ? Icons.bookmark_rounded
+                        : Icons.bookmark_border_rounded,
+                    color: _isBookmarked ? AppColors.warning : textPrimary,
+                    size: 22,
+                  ),
                   title: Text(
-                    'community.save'.tr.isNotEmpty &&
-                            'community.save'.tr != 'community.save'
-                        ? 'community.save'.tr
-                        : 'Save',
+                    _isBookmarked
+                        ? ('community.removeBookmark'.tr.isNotEmpty &&
+                                'community.removeBookmark'.tr !=
+                                    'community.removeBookmark'
+                            ? 'community.removeBookmark'.tr
+                            : 'Remove from Saved')
+                        : ('community.saveBookmark'.tr.isNotEmpty &&
+                                'community.saveBookmark'.tr !=
+                                    'community.saveBookmark'
+                            ? 'community.saveBookmark'.tr
+                            : 'Save'),
                     style: TextStyle(
                       color: textPrimary,
                       fontWeight: FontWeight.w600,
@@ -251,11 +371,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                   ),
                   onTap: () {
                     Get.back();
-                    AppNotificationBanner.showSuccess(
-                      context: context,
-                      title: 'Saved',
-                      message: 'Discussion saved to bookmarks.',
-                    );
+                    _handleSaveTap();
                   },
                 ),
                 ListTile(
@@ -439,6 +555,24 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
     );
   }
 
+  void _handleRepost() {
+    final currentUserId = _controller.currentUserId ??
+        (CurrentUser.id.isNotEmpty ? CurrentUser.id : null);
+    if (_discussion.checkIsOwner(currentUserId)) {
+      AppNotificationBanner.showWarning(
+        context: context,
+        title: 'Cannot Repost',
+        message: 'community.cannotRepostOwnPost'.tr.isNotEmpty &&
+                'community.cannotRepostOwnPost'.tr !=
+                    'community.cannotRepostOwnPost'
+            ? 'community.cannotRepostOwnPost'.tr
+            : 'You cannot repost your own discussion.',
+      );
+      return;
+    }
+    ForumRepostDialog.show(context, topic: _discussion);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -483,6 +617,7 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
         centerTitle: true,
         actions: [
           IconButton(
+            key: const Key('forum_discussion_more_options_button'),
             icon: Icon(Icons.more_horiz_rounded, color: textPrimary),
             onPressed: _showOptionsSheet,
           ),
@@ -496,59 +631,86 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundImage: (_discussion.authorAvatar.isNotEmpty)
-                            ? (_discussion.authorAvatar.startsWith('assets/')
-                                ? AssetImage(_discussion.authorAvatar) as ImageProvider
-                                : NetworkImage(_discussion.authorAvatar))
-                            : null,
-                        backgroundColor: AppColors.communityAccent.withValues(
-                          alpha: 0.15,
-                        ),
-                        child: _discussion.authorAvatar.isEmpty
-                            ? Text(
-                                _discussion.authorName.isNotEmpty
-                                    ? (_discussion.authorName.startsWith('@') &&
-                                            _discussion.authorName.length > 1
-                                        ? _discussion.authorName
-                                            .substring(1, 2)
-                                            .toUpperCase()
-                                        : _discussion.authorName
-                                            .substring(0, 1)
-                                            .toUpperCase())
-                                    : 'U',
-                                style: const TextStyle(
-                                  color: AppColors.communityAccent,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: AppSpacing.sm + 2),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _discussion.authorName,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                    color: textPrimary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ) ??
-                                  TextStyle(
-                                    color: textPrimary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                  Builder(
+                    builder: (context) {
+                      final isAnonymous = _discussion.isAnonymous ||
+                          _discussion.authorName.trim().toLowerCase() == 'anonymous' ||
+                          ('community.anonymous'.tr.isNotEmpty &&
+                              _discussion.authorName.trim().toLowerCase() ==
+                                  'community.anonymous'.tr.toLowerCase());
+                      final displayAuthor = isAnonymous
+                          ? ('community.anonymous'.tr.isNotEmpty &&
+                                  'community.anonymous'.tr != 'community.anonymous'
+                              ? 'community.anonymous'.tr
+                              : 'Anonymous')
+                          : _discussion.authorName;
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (isAnonymous)
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundColor: isDark
+                                  ? AppColors.darkSurfaceSecondary
+                                  : AppColors.lightBgSecondary,
+                              child: Icon(
+                                Icons.person_outline,
+                                size: 18,
+                                color: textMuted,
+                              ),
+                            )
+                          else
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundImage: (_discussion.authorAvatar.isNotEmpty)
+                                  ? (_discussion.authorAvatar.startsWith('assets/')
+                                      ? AssetImage(_discussion.authorAvatar) as ImageProvider
+                                      : NetworkImage(_discussion.authorAvatar))
+                                  : null,
+                              backgroundColor: AppColors.communityAccent.withValues(
+                                alpha: 0.15,
+                              ),
+                              child: _discussion.authorAvatar.isEmpty
+                                  ? Text(
+                                      _discussion.authorName.isNotEmpty
+                                          ? (_discussion.authorName.startsWith('@') &&
+                                                  _discussion.authorName.length > 1
+                                              ? _discussion.authorName
+                                                  .substring(1, 2)
+                                                  .toUpperCase()
+                                              : _discussion.authorName
+                                                  .substring(0, 1)
+                                                  .toUpperCase())
+                                          : 'U',
+                                      style: const TextStyle(
+                                        color: AppColors.communityAccent,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    )
+                                  : null,
                             ),
+                          const SizedBox(width: AppSpacing.sm + 2),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  displayAuthor,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                        color: textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ) ??
+                                      TextStyle(
+                                        color: textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                             const SizedBox(height: 1),
                             Text(
                               formatCommunityTimestamp(
@@ -569,8 +731,10 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                         label: _discussion.category,
                       ),
                     ],
-                  ),
-                  const SizedBox(height: AppSpacing.md + 2),
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.md + 2),
 
                   Text(
                     _discussion.title,
@@ -601,78 +765,184 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: AppSpacing.lg),
+                  if (_discussion.isOwner && _upvotes > 0) ...[
+                    const SizedBox(height: AppSpacing.sm + 2),
+                    Obx(() {
+                      final likers = _controller.discussionLikers[_discussion.id] ?? _discussion.likers;
+                      return ForumLikedByPreview(
+                        likesCount: _upvotes,
+                        likers: likers,
+                        isDark: isDark,
+                        isOwner: _discussion.isOwner,
+                        onTap: () {
+                          if (!_discussion.isOwner || _upvotes <= 0) return;
+                          ForumLikedBySheet.show(
+                            context,
+                            discussionId: _discussion.id,
+                            initialLikers: likers,
+                            isOwner: _discussion.isOwner,
+                          );
+                        },
+                      );
+                    }),
+                  ],
+                  const SizedBox(height: AppSpacing.md),
 
-                  Row(
-                    children: [
-                      Material(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        child: InkWell(
-                          onTap: _handleLikeTap,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isCompact = constraints.maxWidth < 320;
+                      final hPad = isCompact ? 4.0 : 6.0;
+                      final gap = isCompact ? 8.0 : 16.0;
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // 1. Like (icon + real count)
+                          Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            child: InkWell(
+                              onTap: _handleLikeTap,
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: hPad,
+                                  vertical: 6,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      _isLiked
+                                          ? Icons.favorite_rounded
+                                          : Icons.favorite_border_rounded,
+                                      color: _isLiked
+                                          ? AppColors.likedAccent
+                                          : textSecondary,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '$_upvotes',
+                                      style: TextStyle(
+                                        color: _isLiked
+                                            ? (isDark
+                                                ? Colors.white
+                                                : AppColors.lightTextPrimary)
+                                            : textSecondary,
+                                        fontWeight: _isLiked
+                                            ? FontWeight.w700
+                                            : FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: gap),
+                          // 2. Comment (icon + real count, no text)
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: hPad,
                               vertical: 6,
                             ),
                             child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Icon(
-                                  _isLiked
-                                      ? Icons.favorite_rounded
-                                      : Icons.favorite_border_rounded,
-                                  color: _isLiked
-                                      ? AppColors.likedAccent
-                                      : textSecondary,
+                                  Icons.chat_bubble_outline_rounded,
+                                  color: textSecondary,
                                   size: 18,
                                 ),
-                                const SizedBox(width: 5),
+                                const SizedBox(width: 4),
                                 Text(
-                                  '$_upvotes',
+                                  '$_repliesCount',
                                   style: TextStyle(
-                                    color: _isLiked
-                                        ? (isDark
-                                            ? Colors.white
-                                            : AppColors.lightTextPrimary)
-                                        : textSecondary,
-                                    fontWeight: _isLiked
-                                        ? FontWeight.w700
-                                        : FontWeight.bold,
+                                    color: textSecondary,
+                                    fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.chat_bubble_outline_rounded,
-                              color: textSecondary,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              '$_repliesCount',
-                              style: TextStyle(
-                                color: textSecondary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                          SizedBox(width: gap),
+                          // 3. Repost (icon only, no text)
+                          Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            child: InkWell(
+                              key: const Key('forum_discussion_repost_button'),
+                              onTap: _handleRepost,
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: hPad,
+                                  vertical: 6,
+                                ),
+                                child: Icon(
+                                  Icons.repeat_rounded,
+                                  color: textSecondary,
+                                  size: 18,
+                                ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
+                          ),
+                          SizedBox(width: gap),
+                          // 4. Save (icon only, no text)
+                          Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            child: InkWell(
+                              key: const Key('forum_discussion_save_button'),
+                              onTap: _handleSaveTap,
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: hPad,
+                                  vertical: 6,
+                                ),
+                                child: Icon(
+                                  _isBookmarked
+                                      ? Icons.bookmark_rounded
+                                      : Icons.bookmark_border_rounded,
+                                  color: _isBookmarked
+                                      ? AppColors.warning
+                                      : textSecondary,
+                                  size: 19,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: gap),
+                          // 5. Share to Chat (icon only, no text)
+                          Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            child: InkWell(
+                              key: const Key('forum_discussion_share_to_chat_button'),
+                              onTap: _handleShareToChatTap,
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: hPad,
+                                  vertical: 6,
+                                ),
+                                child: Icon(
+                                  Icons.ios_share_rounded,
+                                  color: textSecondary,
+                                  size: 19,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Divider(color: borderSubtle, height: 1),
@@ -926,28 +1196,36 @@ class _ForumDiscussionScreenState extends State<ForumDiscussionScreen> {
                               _controller.isSendingDiscussionComment.value;
                           final canSend = _hasText && !isSending;
 
-                          return SizedBox(
-                            width: 44,
-                            height: 44,
+                          return Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: canSend
+                                  ? (isDark
+                                      ? AppColors.darkPrimary
+                                      : AppColors.lightPrimary)
+                                  : Colors.transparent,
+                              shape: BoxShape.circle,
+                            ),
                             child: IconButton(
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(
-                                minWidth: 44,
-                                minHeight: 44,
+                                minWidth: 38,
+                                minHeight: 38,
                               ),
                               icon: isSending
-                                  ? SizedBox(
+                                  ? const SizedBox(
                                       width: 18,
                                       height: 18,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: textPrimary,
+                                        color: Colors.white,
                                       ),
                                     )
                                   : Icon(
                                       Icons.send_rounded,
-                                      color: canSend ? textPrimary : textMuted,
-                                      size: 21,
+                                      color: canSend ? Colors.white : textMuted,
+                                      size: 19,
                                     ),
                               onPressed: canSend ? _handleSendComment : null,
                               tooltip: 'community.send'.tr.isNotEmpty &&

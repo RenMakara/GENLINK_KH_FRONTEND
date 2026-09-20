@@ -457,17 +457,23 @@ class CommunityPostModel {
           '',
       imageUrls: imagesList,
       likesCount:
-          json['likeCount'] as int? ??
-          json['likesCount'] as int? ??
-          json['likes'] as int? ??
-          json['reactionCount'] as int? ??
+          (json['likeCount'] as num?)?.toInt() ??
+          (json['likesCount'] as num?)?.toInt() ??
+          (json['likes'] as num?)?.toInt() ??
+          (json['reactionCount'] as num?)?.toInt() ??
           0,
       commentsCount:
-          json['commentCount'] as int? ??
-          json['commentsCount'] as int? ??
-          json['comments'] as int? ??
+          (json['commentCount'] as num?)?.toInt() ??
+          (json['commentsCount'] as num?)?.toInt() ??
+          (json['comments'] as num?)?.toInt() ??
           0,
-      sharesCount: json['sharesCount'] as int? ?? json['shares'] as int? ?? 0,
+      sharesCount:
+          (json['repostCount'] as num?)?.toInt() ??
+          (json['repostsCount'] as num?)?.toInt() ??
+          (json['shareCount'] as num?)?.toInt() ??
+          (json['sharesCount'] as num?)?.toInt() ??
+          (json['shares'] as num?)?.toInt() ??
+          ((json['repostedByMe'] == true || json['isRepostedByMe'] == true) ? 1 : 0),
       isLiked:
           json['likedByMe'] as bool? ??
           json['isLiked'] as bool? ??
@@ -481,14 +487,21 @@ class CommunityPostModel {
           (authorObj?['isFollowing'] as bool?) ??
           (authorObj?['following'] as bool?) ??
           false,
-      isRepostedByMe: json['isRepostedByMe'] as bool? ?? false,
+      isRepostedByMe:
+          json['repostedByMe'] as bool? ??
+          json['isRepostedByMe'] as bool? ??
+          false,
       isOwner: isPostOwner,
       visibility: json['visibility'] as String? ?? 'Public',
       community: json['community'] as String? ?? 'All GenLink',
       repostedBy: json['repostedBy'] as String?,
       repostCaption: json['repostCaption'] as String?,
-      originalPostId: json['originalPostId'] as String?,
-      reposterId: json['reposterId'] as String?,
+      originalPostId:
+          json['originalPostId']?.toString() ??
+          ((json['repostedByMe'] == true || json['isRepostedByMe'] == true)
+              ? (json['postId']?.toString() ?? json['id']?.toString())
+              : null),
+      reposterId: json['reposterId']?.toString(),
       postType:
           json['postType'] as String? ??
           (parsedEvent != null
@@ -507,6 +520,7 @@ class CommunityPostModel {
       pollTotalVotes: parsedTotalVotes,
       hasVoted: parsedHasVoted,
       myOptionId: parsedMyOptionId,
+      location: json['location'] as String? ?? json['locationName'] as String?,
       comments:
           (json['commentsList'] as List<dynamic>?)
               ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
@@ -529,12 +543,21 @@ class CommunityPostModel {
       'imageUrls': imageUrls,
       'imageUrl': imageUrls.isNotEmpty ? imageUrls.join(',') : null,
       'likes': likesCount,
+      'likeCount': likesCount,
       'comments': commentsCount,
+      'commentCount': commentsCount,
       'shares': sharesCount,
+      'shareCount': sharesCount,
+      'sharesCount': sharesCount,
+      'repostCount': sharesCount,
+      'repostsCount': sharesCount,
       'isLiked': isLiked,
+      'likedByMe': isLiked,
       'isBookmarked': isBookmarked,
+      'savedByMe': isBookmarked,
       'isFollowing': isFollowing,
       'isRepostedByMe': isRepostedByMe,
+      'repostedByMe': isRepostedByMe,
       'isOwner': isOwner,
       'visibility': visibility,
       'community': community,
@@ -547,6 +570,7 @@ class CommunityPostModel {
       'category': category,
       'videoUrl': videoUrl,
       'eventId': eventId,
+      if (location != null) 'location': location,
       if (attachedEvent != null) 'attachedEvent': attachedEvent!.toJson(),
       if (pollQuestion != null) ...{
         'pollId': pollId,
@@ -658,7 +682,9 @@ class CommentModel {
       updatedAt: parsedUpdatedUtc?.toLocal(),
       likesCount: json['likeCount'] as int? ?? json['likesCount'] as int? ?? 0,
       isLiked: json['likedByMe'] as bool? ?? json['isLiked'] as bool? ?? false,
-      parentCommentId: json['parentCommentId'] as String?,
+      parentCommentId: json['parentCommentId']?.toString() ??
+          json['parent_comment_id']?.toString() ??
+          json['parentId']?.toString(),
       isOwner: json['mine'] as bool? ?? json['isOwner'] as bool? ?? false,
       replies:
           (json['replies'] as List<dynamic>?)

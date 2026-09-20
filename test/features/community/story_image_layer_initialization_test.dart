@@ -65,7 +65,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(ClipRRect), findsWidgets);
+      // Verify image layer has no forced ClipRRect or rounded card frame
+      expect(find.descendant(of: find.byKey(const ValueKey('img_layer_single')), matching: find.byType(ClipRRect)), findsNothing);
       final positioned = tester.widget<Positioned>(
         find.byKey(const ValueKey('img_layer_single')),
       );

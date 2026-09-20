@@ -1,40 +1,135 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:genlink_frontend/app/routes/app_routes.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
+import 'package:genlink_frontend/core/storage/local_storage.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/create_discussion_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/create_event_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/create_post_screen.dart';
+import 'package:genlink_frontend/features/finance/domain/entities/finance_entities.dart';
 import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_set_screen.dart';
-import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_add_screen.dart';
-import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_create.dart'
-    as finance_goal;
-import 'package:genlink_frontend/features/productivity/presentation/goals_plan/goal_plan_create.dart';
-import 'package:genlink_frontend/features/productivity/presentation/screens/create_habit_screen.dart';
-import 'package:genlink_frontend/features/productivity/presentation/screens/create_task_screen.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:genlink_frontend/app/routes/app_routes.dart';
-import 'package:genlink_frontend/features/finance/domain/repositories/finance_repository.dart';
-import 'package:genlink_frontend/features/finance/presentation/controllers/finance_controller.dart';
+import 'package:genlink_frontend/features/finance/presentation/controllers/budget_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/expense_controller.dart';
 import 'package:genlink_frontend/features/finance/presentation/controllers/saving_goal_controller.dart';
-import 'package:genlink_frontend/features/finance/presentation/controllers/budget_controller.dart';
+import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_add_screen.dart';
+import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_create.dart'
+    as finance_saving_goal;
+import 'package:genlink_frontend/features/productivity/presentation/goals_plan/goal_plan_create.dart'
+    as productivity_goal;
+import 'package:genlink_frontend/features/productivity/presentation/screens/create_habit_screen.dart';
+import 'package:genlink_frontend/features/productivity/presentation/screens/create_task_screen.dart';
 import 'package:genlink_frontend/shared/widgets/global_create_sheet.dart';
 
-class _MockFinanceRepository extends Mock implements FinanceRepository {}
+class _FakeExpenseController extends GetxController
+    implements ExpenseController {
+  @override
+  final selectedCurrency = FinanceCurrency.usd.obs;
+
+  @override
+  final isCreateSubmitting = false.obs;
+
+  @override
+  final isUpdateSubmitting = false.obs;
+
+  @override
+  final mutationErrorMessage = RxnString();
+
+  @override
+  final listErrorMessage = RxnString();
+
+  @override
+  final selectedCategory = RxnString();
+
+  @override
+  final expenses = <FinanceExpenseEntity>[].obs;
+
+  @override
+  Future<void> refresh() async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeBudgetController extends GetxController implements BudgetController {
+  @override
+  final selectedMonth = 9.obs;
+
+  @override
+  final selectedYear = 2026.obs;
+
+  @override
+  final selectedCurrency = FinanceCurrency.usd.obs;
+
+  @override
+  final isCreateSubmitting = false.obs;
+
+  @override
+  final isUpdateSubmitting = false.obs;
+
+  @override
+  final mutationErrorMessage = RxnString();
+
+  @override
+  final listErrorMessage = RxnString();
+
+  @override
+  final budget = Rxn<FinanceBudgetEntity>();
+
+  @override
+  Future<void> refresh() async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeSavingGoalController extends GetxController
+    implements SavingGoalController {
+  @override
+  final selectedCurrency = FinanceCurrency.usd.obs;
+
+  @override
+  final isCreateSubmitting = false.obs;
+
+  @override
+  final isUpdateSubmitting = false.obs;
+
+  @override
+  final mutationErrorMessage = RxnString();
+
+  @override
+  final listErrorMessage = RxnString();
+
+  @override
+  final goals = <FinanceSavingGoalEntity>[].obs;
+
+  @override
+  Future<void> refresh() async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _MockLocalStorage extends LocalStorage {
+  _MockLocalStorage() : super(storage: const FlutterSecureStorage());
+  @override
+  Future<String?> readStoryDraft() async => null;
+  @override
+  Future<void> saveStoryDraft(String draftJson) async {}
+  @override
+  Future<void> deleteStoryDraft() async {}
+}
 
 void main() {
   setUp(() {
     Get.reset();
     Get.testMode = true;
-
-    final repo = _MockFinanceRepository();
-    final financeController = FinanceController(repository: repo);
-    Get.put<FinanceController>(financeController, permanent: true);
-    Get.put<ExpenseController>(ExpenseController(repository: repo, financeController: financeController), permanent: true);
-    Get.put<SavingGoalController>(SavingGoalController(repository: repo, financeController: financeController), permanent: true);
-    Get.put<BudgetController>(BudgetController(repository: repo, financeController: financeController), permanent: true);
+    Get.put<LocalStorage>(_MockLocalStorage(), permanent: true);
+    Get.put<ExpenseController>(_FakeExpenseController(), permanent: true);
+    Get.put<BudgetController>(_FakeBudgetController(), permanent: true);
+    Get.put<SavingGoalController>(_FakeSavingGoalController(), permanent: true);
   });
 
   tearDown(() {
@@ -54,7 +149,7 @@ void main() {
       getPages: [
         GetPage(
           name: AppRoutes.quizDashboard,
-          page: () => const Scaffold(body: Text('Quiz Dashboard')),
+          page: () => const Scaffold(body: Text('Quiz Dashboard Page')),
         ),
       ],
       home: Scaffold(
@@ -90,45 +185,54 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('GlobalCreateSheet Modal Navigation Tests', () {
-    testWidgets('renders all section headers and all 13 action buttons in English', (tester) async {
+  group('GlobalCreateSheet UI Redesign and Navigation Tests', () {
+    testWidgets('renders all 12 approved features in a clean continuous list without categories or chevrons in English', (tester) async {
       await openSheet(tester);
 
       expect(find.text('Create'), findsOneWidget);
       expect(find.text('What would you like to create?'), findsOneWidget);
 
-      expect(find.text('COMMUNITY'), findsOneWidget);
-      expect(find.text('PRODUCTIVITY'), findsOneWidget);
-      expect(find.text('FINANCIAL'), findsOneWidget);
-      expect(find.text('ENTERTAINMENT'), findsOneWidget);
+      // Verify category headers are NOT present
+      expect(find.text('COMMUNITY'), findsNothing);
+      expect(find.text('PRODUCTIVITY'), findsNothing);
+      expect(find.text('FINANCIAL'), findsNothing);
+      expect(find.text('ENTERTAINMENT'), findsNothing);
 
+      // Verify all 12 features
       expect(find.text('Post'), findsOneWidget);
       expect(find.text('Story'), findsOneWidget);
       expect(find.text('Event'), findsOneWidget);
       expect(find.text('Discussion'), findsOneWidget);
-
       expect(find.text('Goal'), findsOneWidget);
       expect(find.text('To-Do'), findsOneWidget);
       expect(find.text('Habit'), findsOneWidget);
-
       expect(find.text('Expense'), findsOneWidget);
       expect(find.text('Saving Goal'), findsOneWidget);
       expect(find.text('Budget'), findsOneWidget);
-
       expect(find.text('Quiz'), findsOneWidget);
       expect(find.text('Challenge'), findsOneWidget);
-      expect(find.text('Short Content'), findsOneWidget);
+
+      // Verify unapproved features are NOT present
+      expect(find.text('Short Content'), findsNothing);
+      expect(find.text('Job'), findsNothing);
+      expect(find.text('Document'), findsNothing);
+      expect(find.text('Poll'), findsNothing);
+      expect(find.text('Celebration'), findsNothing);
+
+      // Verify right-side chevrons are NOT present
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
     });
 
     testWidgets('renders properly in Light Mode without errors', (tester) async {
       await openSheet(tester, themeMode: ThemeMode.light);
 
       expect(find.text('Create'), findsOneWidget);
-      expect(find.text('COMMUNITY'), findsOneWidget);
+      expect(find.text('COMMUNITY'), findsNothing);
       expect(find.text('Post'), findsOneWidget);
       expect(find.text('Goal'), findsOneWidget);
       expect(find.text('Expense'), findsOneWidget);
       expect(find.text('Quiz'), findsOneWidget);
+
       expect(tester.takeException(), isNull);
     });
 
@@ -136,23 +240,40 @@ void main() {
       await openSheet(tester, themeMode: ThemeMode.dark);
 
       expect(find.text('Create'), findsOneWidget);
-      expect(find.text('COMMUNITY'), findsOneWidget);
-      expect(find.text('Post'), findsOneWidget);
-      expect(find.text('Goal'), findsOneWidget);
-      expect(find.text('Expense'), findsOneWidget);
-      expect(find.text('Quiz'), findsOneWidget);
+      expect(find.text('COMMUNITY'), findsNothing);
+      expect(find.text('Story'), findsOneWidget);
+      expect(find.text('To-Do'), findsOneWidget);
+      expect(find.text('Saving Goal'), findsOneWidget);
+      expect(find.text('Challenge'), findsOneWidget);
+
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('renders all section headers and actions in Khmer without overflow', (tester) async {
+    testWidgets('renders actions in Khmer without overflow', (tester) async {
       await openSheet(tester, locale: const Locale('km', 'KH'));
 
       expect(find.text('បង្កើត'), findsOneWidget);
       expect(find.text('តើអ្នកចង់បង្កើតអ្វី?'), findsOneWidget);
-      expect(find.text('សហគមន៍'), findsOneWidget);
-      expect(find.text('ផលិតភាព'), findsOneWidget);
-      expect(find.text('ហិរញ្ញវត្ថុ'), findsOneWidget);
-      expect(find.text('ការកម្សាន្ត'), findsOneWidget);
+
+      // Category headers should NOT be present
+      expect(find.text('សហគមន៍'), findsNothing);
+      expect(find.text('ផលិតភាព'), findsNothing);
+      expect(find.text('ហិរញ្ញវត្ថុ'), findsNothing);
+      expect(find.text('ការកម្សាន្ត'), findsNothing);
+
+      // Action items in Khmer
+      expect(find.text('ប្រកាស'), findsOneWidget);
+      expect(find.text('ស្តូរី'), findsOneWidget);
+      expect(find.text('ព្រឹត្តិការណ៍'), findsOneWidget);
+      expect(find.text('ការពិភាក្សា'), findsOneWidget);
+      expect(find.text('គោលដៅ'), findsOneWidget);
+      expect(find.text('កិច្ចការត្រូវធ្វើ'), findsOneWidget);
+      expect(find.text('ទម្លាប់'), findsOneWidget);
+      expect(find.text('ការចំណាយ'), findsOneWidget);
+      expect(find.text('គោលដៅសន្សំ'), findsOneWidget);
+      expect(find.text('ថវិកា'), findsOneWidget);
+      expect(find.text('កម្រងសំណួរ'), findsOneWidget);
+      expect(find.text('បញ្ហាប្រឈម'), findsOneWidget);
 
       expect(tester.takeException(), isNull);
     });
@@ -165,7 +286,8 @@ void main() {
       );
 
       expect(find.text('បង្កើត'), findsOneWidget);
-      expect(find.text('សហគមន៍'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('គោលដៅសន្សំ'), 50.0);
+      expect(find.text('គោលដៅសន្សំ'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -176,11 +298,13 @@ void main() {
       );
 
       expect(find.text('Create'), findsOneWidget);
-      expect(find.text('COMMUNITY'), findsOneWidget);
+      expect(find.text('COMMUNITY'), findsNothing);
+      expect(find.text('Post'), findsOneWidget);
+      expect(find.text('Quiz'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('tapping Post opens CreatePostScreen in 1 tap', (tester) async {
+    testWidgets('tapping Post opens CreatePostScreen', (tester) async {
       await openSheet(tester);
 
       await tester.tap(find.text('Post'));
@@ -189,7 +313,7 @@ void main() {
       expect(find.byType(CreatePostScreen), findsOneWidget);
     });
 
-    testWidgets('tapping Event opens CreateEventScreen in 1 tap', (tester) async {
+    testWidgets('tapping Event opens CreateEventScreen', (tester) async {
       await openSheet(tester);
 
       await tester.tap(find.text('Event'));
@@ -198,85 +322,13 @@ void main() {
       expect(find.byType(CreateEventScreen), findsOneWidget);
     });
 
-    testWidgets('tapping Discussion opens CreateDiscussionScreen in 1 tap', (tester) async {
+    testWidgets('tapping Discussion opens CreateDiscussionScreen', (tester) async {
       await openSheet(tester);
 
       await tester.tap(find.text('Discussion'));
       await tester.pumpAndSettle();
 
       expect(find.byType(CreateDiscussionScreen), findsOneWidget);
-    });
-
-    testWidgets('tapping Goal opens CreateGoalScreen in 1 tap', (tester) async {
-      await openSheet(tester);
-
-      await tester.tap(find.text('Goal'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(CreateGoalScreen), findsOneWidget);
-    });
-
-    testWidgets('tapping To-Do opens CreateTaskScreen in 1 tap', (tester) async {
-      await openSheet(tester);
-
-      await tester.tap(find.text('To-Do'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(CreateTaskScreen), findsOneWidget);
-    });
-
-    testWidgets('tapping Habit opens CreateHabitScreen in 1 tap', (tester) async {
-      await openSheet(tester);
-
-      await tester.tap(find.text('Habit'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(CreateHabitScreen), findsOneWidget);
-    });
-
-    testWidgets('tapping Expense opens AddExpenseScreen in 1 tap', (tester) async {
-      await openSheet(tester);
-
-      await tester.tap(find.text('Expense'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(AddExpenseScreen), findsOneWidget);
-    });
-
-    testWidgets('tapping Saving Goal opens CreateGoalScreen in 1 tap', (tester) async {
-      await openSheet(tester);
-
-      await tester.tap(find.text('Saving Goal'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(finance_goal.CreateGoalScreen), findsOneWidget);
-    });
-
-    testWidgets('tapping Budget opens SetBudgetScreen in 1 tap', (tester) async {
-      await openSheet(tester);
-
-      await tester.tap(find.text('Budget'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(SetBudgetScreen), findsOneWidget);
-    });
-
-    testWidgets('tapping Quiz opens quiz route in 1 tap', (tester) async {
-      await openSheet(tester);
-
-      await tester.tap(find.text('Quiz'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(GlobalCreateSheet), findsNothing);
-    });
-
-    testWidgets('tapping Challenge opens Challenge dialog in 1 tap', (tester) async {
-      await openSheet(tester);
-
-      await tester.tap(find.text('Challenge'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(AlertDialog), findsOneWidget);
     });
 
     testWidgets('tapping Story closes Create menu and invokes Story creation picker', (tester) async {
@@ -288,39 +340,87 @@ void main() {
       expect(find.byType(GlobalCreateSheet), findsNothing);
     });
 
-    testWidgets('scrolling smoothly through the Create menu reaches all 4 categories and 13 options', (tester) async {
-      await openSheet(tester, size: const Size(360, 640));
+    testWidgets('tapping Goal opens CreateGoalScreen', (tester) async {
+      await openSheet(tester);
 
-      expect(find.text('COMMUNITY'), findsOneWidget);
-      expect(find.text('Post'), findsOneWidget);
-      expect(find.text('Story'), findsOneWidget);
-      expect(find.text('Event'), findsOneWidget);
-      expect(find.text('Discussion'), findsOneWidget);
-
-      final scrollable = find.byType(ListView).last;
-      await tester.drag(scrollable, const Offset(0, -300));
+      await tester.tap(find.text('Goal'));
       await tester.pumpAndSettle();
 
-      expect(find.text('PRODUCTIVITY'), findsOneWidget);
-      expect(find.text('Goal'), findsOneWidget);
-      expect(find.text('To-Do'), findsOneWidget);
-      expect(find.text('Habit'), findsOneWidget);
+      expect(find.byType(productivity_goal.CreateGoalScreen), findsOneWidget);
+    });
 
-      await tester.drag(scrollable, const Offset(0, -300));
+    testWidgets('tapping To-Do opens CreateTaskScreen', (tester) async {
+      await openSheet(tester);
+
+      await tester.tap(find.text('To-Do'));
       await tester.pumpAndSettle();
 
-      expect(find.text('FINANCIAL'), findsOneWidget);
-      expect(find.text('Expense'), findsOneWidget);
-      expect(find.text('Saving Goal'), findsOneWidget);
-      expect(find.text('Budget'), findsOneWidget);
+      expect(find.byType(CreateTaskScreen), findsOneWidget);
+    });
 
-      await tester.drag(scrollable, const Offset(0, -300));
+    testWidgets('tapping Habit opens CreateHabitScreen', (tester) async {
+      await openSheet(tester);
+
+      await tester.tap(find.text('Habit'));
       await tester.pumpAndSettle();
 
-      expect(find.text('ENTERTAINMENT'), findsOneWidget);
-      expect(find.text('Quiz'), findsOneWidget);
-      expect(find.text('Challenge'), findsOneWidget);
-      expect(find.text('Short Content'), findsOneWidget);
+      expect(find.byType(CreateHabitScreen), findsOneWidget);
+    });
+
+    testWidgets('tapping Expense opens AddExpenseScreen', (tester) async {
+      await openSheet(tester);
+
+      await tester.tap(find.text('Expense'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AddExpenseScreen), findsOneWidget);
+    });
+
+    testWidgets('tapping Saving Goal opens saving goal CreateGoalScreen', (tester) async {
+      await openSheet(tester);
+
+      await tester.tap(find.text('Saving Goal'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(finance_saving_goal.CreateGoalScreen), findsOneWidget);
+    });
+
+    testWidgets('tapping Budget opens SetBudgetScreen', (tester) async {
+      await openSheet(tester);
+
+      await tester.tap(find.text('Budget'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SetBudgetScreen), findsOneWidget);
+    });
+
+    testWidgets('tapping Quiz routes to quizDashboard', (tester) async {
+      await openSheet(tester);
+
+      await tester.tap(find.text('Quiz'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Quiz Dashboard Page'), findsOneWidget);
+    });
+
+    testWidgets('tapping Challenge opens challenge dialog', (tester) async {
+      await openSheet(tester);
+
+      await tester.tap(find.text('Challenge'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(
+        find.text(
+          'Daily challenges are automatically assigned to your Today Hub on the Home dashboard. Complete tasks and habits to earn XP and level up.',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsNothing);
     });
 
     testWidgets('visual direction: uses neutral cards and surfaces without bright rainbow/neon colors in Dark Mode', (tester) async {
@@ -357,31 +457,40 @@ void main() {
       }), findsNothing);
     });
 
-    testWidgets('small mobile screen (320x568) in Khmer scrolls and renders without clipping or overflow', (tester) async {
-      await openSheet(
-        tester,
-        locale: const Locale('km', 'KH'),
-        size: const Size(320, 568),
+    testWidgets('fromPostComposer: true renders contextual attachment menu', (tester) async {
+      tester.view.physicalSize = const Size(600, 2000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => GlobalCreateSheet.show(
+                  context,
+                  fromPostComposer: true,
+                ),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
       );
-
-      final scrollable = find.byType(ListView).last;
-
-      expect(find.text('បង្កើត'), findsOneWidget);
-      expect(find.text('សហគមន៍'), findsOneWidget);
-
-      await tester.drag(scrollable, const Offset(0, -250));
       await tester.pumpAndSettle();
-      expect(find.text('ផលិតភាព'), findsOneWidget);
 
-      await tester.drag(scrollable, const Offset(0, -250));
+      await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
-      expect(find.text('ហិរញ្ញវត្ថុ'), findsOneWidget);
 
-      await tester.drag(scrollable, const Offset(0, -250));
-      await tester.pumpAndSettle();
-      expect(find.text('ការកម្សាន្ត'), findsOneWidget);
-
-      expect(tester.takeException(), isNull);
+      expect(find.text('Media'), findsNothing);
+      expect(find.text('Post'), findsNothing);
+      expect(find.text('Discussion'), findsOneWidget);
+      expect(find.text('Story'), findsOneWidget);
     });
   });
 }

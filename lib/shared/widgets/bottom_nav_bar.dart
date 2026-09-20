@@ -6,6 +6,11 @@ import 'package:get/get.dart';
 
 import '../../design_system/widgets/avatar/app_avatar.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
+import '../../features/community/presentation/controllers/community_controller.dart';
+import '../../features/community/presentation/widgets/community_creation_flow.dart';
+import '../../features/finance/presentation/controllers/finance_controller.dart';
+import '../../features/home/presentation/controllers/home_controller.dart';
+import '../../features/profile/presentation/controllers/profile_controller.dart';
 import '../../main_controller.dart';
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
@@ -53,14 +58,48 @@ const _kTabs = [
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final ValueChanged<int>? onDoubleTapActive;
   final VoidCallback? onCenterTap;
 
   const BottomNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.onDoubleTapActive,
     this.onCenterTap,
   });
+
+  static final Set<int> _defaultRefreshingTabs = <int>{};
+
+  /// Default handler for double tapping an already active tab:
+  /// smoothly scrolls to top if a scroll controller/position exists and triggers refresh.
+  static Future<void> defaultOnDoubleTapActive(int index) async {
+    if (_defaultRefreshingTabs.contains(index)) return;
+    _defaultRefreshingTabs.add(index);
+    try {
+      if (index == 0 && Get.isRegistered<CommunityController>()) {
+        final c = Get.find<CommunityController>();
+        if (c.scrollController.hasClients && c.scrollController.offset > 0) {
+          await c.scrollController.animateTo(
+            0.0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+          );
+        }
+        await c.refreshFeed();
+      } else if (index == 1 && Get.isRegistered<HomeController>()) {
+        await Get.find<HomeController>().reload();
+      } else if (index == 2 && Get.isRegistered<FinanceController>()) {
+        await Get.find<FinanceController>().reload();
+      } else if (index == 3 && Get.isRegistered<ProfileController>()) {
+        await Get.find<ProfileController>().reload();
+      }
+    } catch (_) {
+      // Safe fallback
+    } finally {
+      _defaultRefreshingTabs.remove(index);
+    }
+  }
 
   static String _label(String key, String fallback) {
     final tr = key.tr;
@@ -87,6 +126,7 @@ class BottomNavBar extends StatelessWidget {
           child: _NavBarContent(
             currentIndex: currentIndex,
             onTap: onTap,
+            onDoubleTapActive: onDoubleTapActive,
             onCenterTap: onCenterTap,
             avatarUrl: avatarUrl,
           ),
@@ -201,12 +241,14 @@ class BottomNavBar extends StatelessWidget {
 class _NavBarContent extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final ValueChanged<int>? onDoubleTapActive;
   final VoidCallback? onCenterTap;
   final String? avatarUrl;
 
   const _NavBarContent({
     required this.currentIndex,
     required this.onTap,
+    this.onDoubleTapActive,
     this.onCenterTap,
     this.avatarUrl,
   });
@@ -221,6 +263,9 @@ class _NavBarContentState extends State<_NavBarContent>
   late final Animation<double> _anim;
   double _fromPos = 0.0;
   double _toPos = 0.0;
+  DateTime? _lastActiveTapTime;
+  int? _lastActiveTapIndex;
+  static const Duration _kDoubleTapInterval = Duration(milliseconds: 350);
 
   @override
   void initState() {
@@ -241,10 +286,44 @@ class _NavBarContentState extends State<_NavBarContent>
   void didUpdateWidget(_NavBarContent oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.currentIndex != widget.currentIndex) {
+      _lastActiveTapTime = null;
+      _lastActiveTapIndex = null;
       _fromPos = currentPos;
       _toPos = widget.currentIndex.toDouble();
       _ctrl.forward(from: 0.0);
     }
+  }
+
+  void _handleTabTap(int i) {
+    if (i != widget.currentIndex) {
+      // Inactive tab tapped: immediate normal navigation, clear double-tap tracker
+      _lastActiveTapTime = null;
+      _lastActiveTapIndex = null;
+      widget.onTap(i);
+      return;
+    }
+
+    // Active tab tapped
+    final now = DateTime.now();
+    if (_lastActiveTapIndex == i &&
+        _lastActiveTapTime != null &&
+        now.difference(_lastActiveTapTime!) <= _kDoubleTapInterval) {
+      // Confirmed double tap on already active tab!
+      _lastActiveTapTime = null;
+      _lastActiveTapIndex = null;
+      HapticFeedback.mediumImpact();
+      if (widget.onDoubleTapActive != null) {
+        widget.onDoubleTapActive!(i);
+      } else {
+        BottomNavBar.defaultOnDoubleTapActive(i);
+      }
+      return;
+    }
+
+    // First tap on active tab: normal behavior
+    _lastActiveTapTime = now;
+    _lastActiveTapIndex = i;
+    widget.onTap(i);
   }
 
   @override
@@ -264,84 +343,94 @@ class _NavBarContentState extends State<_NavBarContent>
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final totalWidth = constraints.maxWidth;
-        final isVeryNarrow = totalWidth < 340;
-        final isNarrow = totalWidth < 370;
+        final mediaQuery = MediaQuery.of(context);
+        final totalWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : mediaQuery.size.width;
 
-        final horizontalMargin = isVeryNarrow ? 10.0 : (isNarrow ? 14.0 : 16.0);
-        final safeBottom = MediaQuery.of(context).padding.bottom;
+        // Device size tiers based on available layout width
+        final isVeryNarrow = totalWidth < 345;
+        final isNarrow = totalWidth < 375;
+
+        // Safe area insets
+        final safePadding = mediaQuery.padding;
+        final safeLeft = safePadding.left;
+        final safeRight = safePadding.right;
+        final safeBottom = safePadding.bottom;
+
+        // Dynamic horizontal padding with safe area respect
+        final baseHorizontal = isVeryNarrow ? 10.0 : (isNarrow ? 13.0 : 16.0);
+        final leftPadding = safeLeft > 0 ? safeLeft + 8.0 : baseHorizontal;
+        final rightPadding = safeRight > 0 ? safeRight + 8.0 : baseHorizontal;
+
+        // Dynamic bottom margin respecting home indicator / system nav
         final bottomMargin = safeBottom > 0 ? safeBottom + 4.0 : 16.0;
 
-        // Heights
-        final barHeight = isVeryNarrow ? 60.0 : (isNarrow ? 64.0 : 68.0);
-        // No protrusion: capsule sits inside the bar with vertical inset
-        const topProtrusion = 0.0;
-        const bottomProtrusion = 0.0;
-        final totalBarHeight = barHeight + topProtrusion + bottomProtrusion;
+        // Bar heights
+        final barHeight = isVeryNarrow ? 62.0 : (isNarrow ? 65.0 : 68.0);
+        final totalBarHeight = barHeight;
 
         // Plus button sizing
-        final plusSize = isVeryNarrow ? 44.0 : 48.0;
+        final plusSize = isVeryNarrow ? 44.0 : (isNarrow ? 47.0 : 48.0);
         final plusIconSize = isVeryNarrow ? 20.0 : (isNarrow ? 21.0 : 22.0);
         final plusGap = isVeryNarrow ? 8.0 : 10.0;
 
         // Content sizes
-        final iconSize = isVeryNarrow ? 20.0 : (isNarrow ? 22.0 : 22.0);
+        final iconSize = isVeryNarrow ? 20.0 : (isNarrow ? 21.5 : 22.0);
         final fontSize = isVeryNarrow ? 9.5 : (isNarrow ? 10.0 : 10.5);
 
-        // Glass bar styling
-        final pillBg = isDark
-            ? const Color(0xC0121418) // slightly more opaque for premium feel
-            : const Color(0xD4F5F7FA);
+        // Glass bar styling — iOS Liquid Glass material
+        final pillSurfaceGradient = isDark
+            ? const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0x281C2028), // deep translucent charcoal with optical depth
+                  Color(0x18090B0E), // translucent charcoal base
+                ],
+              )
+            : const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0x75FFFFFF), // translucent frosted white glass
+                  Color(0x4AFFFFFF),
+                ],
+              );
         final pillBorder = isDark
-            ? const Color(0x30FFFFFF) // slightly more visible border
-            : const Color(0x20000000);
+            ? const Color(0x18FFFFFF) // subtle translucent glass rim
+            : const Color(0x22000000); // subtle neutral rim
         final pillShadow = [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.10),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-            spreadRadius: -4,
+            color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.08),
+            blurRadius: isDark ? 28 : 24,
+            offset: Offset(0, isDark ? 8 : 8),
+            spreadRadius: isDark ? -4 : -3,
           ),
-          // Subtle top highlight
           BoxShadow(
-            color: (isDark ? Colors.white : Colors.white).withValues(
-              alpha: isDark ? 0.04 : 0.60,
-            ),
-            blurRadius: 1,
-            offset: const Offset(0, -1),
+            color: Colors.black.withValues(alpha: isDark ? 0.10 : 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ];
 
-        // Active capsule — premium frosted glass
-        final capsuleBg = isDark
-            ? const Color(0x48FFFFFF) // 28% white → clearly visible glass
-            : Colors.white;
-        final capsuleBorder = isDark
-            ? const Color(0x55FFFFFF) // crisp highlight on dark glass
-            : const Color(0x22000000);
+        // Active glass lens — floating glass capsule catching light
         final capsuleShadow = [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.12),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-            spreadRadius: -2,
-          ),
-          // Inner top highlight for glass depth
-          BoxShadow(
-            color: (isDark ? Colors.white : Colors.white).withValues(
-              alpha: isDark ? 0.22 : 0.90,
-            ),
-            blurRadius: 1,
-            offset: const Offset(0, -0.5),
+            color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+            spreadRadius: -1,
           ),
         ];
 
-        // Text / Icon colors
-        final activeColor = isDark ? Colors.white : const Color(0xFF141517);
-        // Inactive: slightly more visible than before (0x80 → 0x99 dark / 0x66 → 0x88 light)
-        final inactiveColor = isDark
-            ? const Color(0x99FFFFFF) // 60% white
-            : const Color(0x88141517); // 53% dark
+        // Text / Icon colors — strictly neutral monochrome (no feature colors)
+        final iconColor =
+            isDark ? Colors.white : const Color(0xFF121212);
+        final activeLabelColor =
+            isDark ? Colors.white : const Color(0xFF121212);
+        final inactiveLabelColor =
+            isDark ? const Color(0x8AFFFFFF) : const Color(0x8A121212);
 
         // Scaffold gives a bottomNavigationBar loose height constraints. Keep
         // this slot limited to the actual bar plus its safe-area margin so a
@@ -354,9 +443,9 @@ class _NavBarContentState extends State<_NavBarContent>
               constraints: const BoxConstraints(maxWidth: 540),
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
-                  horizontalMargin,
+                  leftPadding,
                   0,
-                  horizontalMargin,
+                  rightPadding,
                   bottomMargin,
                 ),
                 child: SizedBox(
@@ -372,17 +461,18 @@ class _NavBarContentState extends State<_NavBarContent>
                             builder: (context, barConstraints) {
                               final barWidth = barConstraints.maxWidth;
                               final slotWidth = barWidth / _kTabs.length;
-                              // Capsule width = slot minus small H padding
-                              // Capsule height = barHeight minus vertical inset
-                              // → width > height → pill shape not circle
-                              final capsuleWidth = (slotWidth - 8.0).clamp(
-                                56.0,
-                                88.0,
-                              );
-                              const verticalInset = 8.0;
+
+                              // Responsive active glass lens dimensions
+                              final horizontalInset =
+                                  (slotWidth * 0.08).clamp(3.5, 6.0);
+                              final capsuleWidth =
+                                  slotWidth - (horizontalInset * 2);
+                              final verticalInset =
+                                  (barHeight * 0.11).clamp(6.0, 8.5);
                               final capsuleHeight =
-                                  barHeight - verticalInset * 2;
-                              const capsuleRadius = Radius.circular(24.0);
+                                  barHeight - (verticalInset * 2);
+                              final capsuleRadius =
+                                  Radius.circular(capsuleHeight / 2);
 
                               final pos = currentPos;
                               final capsuleCenter = (pos + 0.5) * slotWidth;
@@ -396,7 +486,7 @@ class _NavBarContentState extends State<_NavBarContent>
                                   Positioned(
                                     left: 0,
                                     right: 0,
-                                    top: topProtrusion,
+                                    top: 0,
                                     height: barHeight,
                                     child: DecoratedBox(
                                       decoration: BoxDecoration(
@@ -411,20 +501,62 @@ class _NavBarContentState extends State<_NavBarContent>
                                         ),
                                         child: BackdropFilter(
                                           filter: ImageFilter.blur(
-                                            sigmaX: 18,
-                                            sigmaY: 18,
+                                            sigmaX: 26,
+                                            sigmaY: 26,
                                           ),
                                           child: Container(
                                             decoration: BoxDecoration(
-                                              color: pillBg,
+                                              gradient: pillSurfaceGradient,
                                               borderRadius:
                                                   BorderRadius.circular(
-                                                    barHeight / 2,
-                                                  ),
+                                                barHeight / 2,
+                                              ),
                                               border: Border.all(
                                                 color: pillBorder,
-                                                width: 1.0,
+                                                width: 0.75,
                                               ),
+                                            ),
+                                            child: Stack(
+                                              children: [
+                                                // Subtle specular highlight across upper surface of the glass
+                                                Positioned(
+                                                  top: 0,
+                                                  left: 0,
+                                                  right: 0,
+                                                  height: barHeight * 0.46,
+                                                  child: DecoratedBox(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          BorderRadius.vertical(
+                                                        top: Radius.circular(
+                                                          barHeight / 2,
+                                                        ),
+                                                      ),
+                                                      gradient: LinearGradient(
+                                                        begin: Alignment.topCenter,
+                                                        end: Alignment.bottomCenter,
+                                                        colors: isDark
+                                                            ? [
+                                                                const Color(
+                                                                  0x10FFFFFF,
+                                                                ),
+                                                                const Color(
+                                                                  0x00FFFFFF,
+                                                                ),
+                                                              ]
+                                                            : [
+                                                                const Color(
+                                                                  0x65FFFFFF,
+                                                                ),
+                                                                const Color(
+                                                                  0x00FFFFFF,
+                                                                ),
+                                                              ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),
@@ -432,38 +564,94 @@ class _NavBarContentState extends State<_NavBarContent>
                                     ),
                                   ),
 
-                                  // Layer 2: ONE Shared Sliding Active Glass Capsule
+                                  // Layer 2: ONE Shared Sliding Active Glass Lens (wrapped in IgnorePointer)
                                   Positioned(
                                     left: capsuleLeft,
                                     top: verticalInset,
                                     width: capsuleWidth,
                                     height: capsuleHeight,
-                                    child: DecoratedBox(
-                                      decoration: BoxDecoration(
-                                        borderRadius: const BorderRadius.all(
-                                          capsuleRadius,
-                                        ),
-                                        boxShadow: capsuleShadow,
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: const BorderRadius.all(
-                                          capsuleRadius,
-                                        ),
-                                        child: BackdropFilter(
-                                          filter: ImageFilter.blur(
-                                            sigmaX: 14,
-                                            sigmaY: 14,
+                                    child: IgnorePointer(
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.all(
+                                            capsuleRadius,
                                           ),
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              color: capsuleBg,
-                                              borderRadius:
-                                                  const BorderRadius.all(
-                                                    capsuleRadius,
+                                          boxShadow: capsuleShadow,
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.all(
+                                            capsuleRadius,
+                                          ),
+                                          child: BackdropFilter(
+                                            filter: ImageFilter.blur(
+                                              sigmaX: 18,
+                                              sigmaY: 18,
+                                            ),
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.topCenter,
+                                                  end: Alignment.bottomCenter,
+                                                  colors: isDark
+                                                      ? [
+                                                          const Color(0x1AFFFFFF),
+                                                          const Color(0x06FFFFFF),
+                                                        ]
+                                                      : [
+                                                          const Color(0x9AFFFFFF),
+                                                          const Color(0x50FFFFFF),
+                                                        ],
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.all(
+                                                  capsuleRadius,
+                                                ),
+                                                border: Border.all(
+                                                  color: isDark
+                                                      ? const Color(0x20FFFFFF)
+                                                      : const Color(0x24000000),
+                                                  width: 0.75,
+                                                ),
+                                              ),
+                                              child: Stack(
+                                                children: [
+                                                  // Soft inner specular highlight (liquid glass reflection arc)
+                                                  Positioned(
+                                                    top: 0,
+                                                    left: 0,
+                                                    right: 0,
+                                                    height: capsuleHeight * 0.46,
+                                                    child: DecoratedBox(
+                                                      decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            BorderRadius.vertical(
+                                                          top: capsuleRadius,
+                                                        ),
+                                                        gradient: LinearGradient(
+                                                          begin: Alignment.topCenter,
+                                                          end: Alignment.bottomCenter,
+                                                          colors: isDark
+                                                              ? [
+                                                                  const Color(
+                                                                    0x12FFFFFF,
+                                                                  ),
+                                                                  const Color(
+                                                                    0x00FFFFFF,
+                                                                  ),
+                                                                ]
+                                                              : [
+                                                                  const Color(
+                                                                    0x75FFFFFF,
+                                                                  ),
+                                                                  const Color(
+                                                                    0x00FFFFFF,
+                                                                  ),
+                                                                ],
+                                                        ),
+                                                      ),
+                                                    ),
                                                   ),
-                                              border: Border.all(
-                                                color: capsuleBorder,
-                                                width: 1.0,
+                                                ],
                                               ),
                                             ),
                                           ),
@@ -472,7 +660,7 @@ class _NavBarContentState extends State<_NavBarContent>
                                     ),
                                   ),
 
-                                  // Layer 3: 4 Tab Items (Icons + Labels)
+                                  // Layer 3: 4 Tab Items (Strictly Monochrome Icons + Labels)
                                   // Each _TabItem has its own spring-bounce
                                   // animation that triggers when it becomes active.
                                   Positioned.fill(
@@ -491,9 +679,10 @@ class _NavBarContentState extends State<_NavBarContent>
                                           activeWeight: weight,
                                           iconSize: iconSize,
                                           fontSize: fontSize,
-                                          activeColor: activeColor,
-                                          inactiveColor: inactiveColor,
-                                          onTap: () => widget.onTap(i),
+                                          iconColor: iconColor,
+                                          activeLabelColor: activeLabelColor,
+                                          inactiveLabelColor: inactiveLabelColor,
+                                          onTap: () => _handleTabTap(i),
                                           onLongPress: i == 3
                                               ? () =>
                                                     BottomNavBar._showProfileMenu(
@@ -542,8 +731,9 @@ class _TabItem extends StatefulWidget {
     required this.activeWeight,
     required this.iconSize,
     required this.fontSize,
-    required this.activeColor,
-    required this.inactiveColor,
+    required this.iconColor,
+    required this.activeLabelColor,
+    required this.inactiveLabelColor,
     required this.onTap,
     this.onLongPress,
     this.avatarUrl,
@@ -555,8 +745,9 @@ class _TabItem extends StatefulWidget {
   final double activeWeight; // 0.0 → 1.0 from capsule proximity
   final double iconSize;
   final double fontSize;
-  final Color activeColor;
-  final Color inactiveColor;
+  final Color iconColor;
+  final Color activeLabelColor;
+  final Color inactiveLabelColor;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
   final String? avatarUrl;
@@ -625,9 +816,9 @@ class _TabItemState extends State<_TabItem>
       widget.tab.labelKey,
       widget.tab.labelFallback,
     );
-    final itemColor = Color.lerp(
-      widget.inactiveColor,
-      widget.activeColor,
+    final labelColor = Color.lerp(
+      widget.inactiveLabelColor,
+      widget.activeLabelColor,
       widget.activeWeight,
     )!;
     final showActive = widget.isSelected || widget.activeWeight > 0.5;
@@ -639,14 +830,14 @@ class _TabItemState extends State<_TabItem>
         ? Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: itemColor, width: 1.5),
+              border: Border.all(color: widget.iconColor, width: 1.5),
             ),
             child: AppAvatar(imageUrl: widget.avatarUrl, size: widget.iconSize),
           )
         : Icon(
             showActive ? widget.tab.filledIcon : widget.tab.outlineIcon,
             size: widget.iconSize,
-            color: itemColor,
+            color: widget.iconColor,
             semanticLabel: labelText,
           );
 
@@ -696,8 +887,11 @@ class _TabItemState extends State<_TabItem>
                         maxLines: 1,
                         softWrap: false,
                         textAlign: TextAlign.center,
+                        textScaler: MediaQuery.textScalerOf(context).clamp(
+                          maxScaleFactor: 1.15,
+                        ),
                         style: TextStyle(
-                          color: itemColor,
+                          color: labelColor,
                           fontWeight: showActive
                               ? FontWeight.w700
                               : FontWeight.w500,
@@ -780,13 +974,11 @@ class _PlusButtonState extends State<_PlusButton>
 
   @override
   Widget build(BuildContext context) {
-    final bg = widget.isDark
-        ? const Color(0xFFF0F2F5)
-        : const Color(0xFF141517);
-    final iconColor = widget.isDark ? const Color(0xFF141517) : Colors.white;
-    final border = widget.isDark
-        ? const Color(0x33FFFFFF)
-        : const Color(0x1F000000);
+    final isDark = widget.isDark;
+    final iconColor = isDark ? Colors.white : const Color(0xFF121212);
+    final glassBorder = isDark
+        ? const Color(0x18FFFFFF)
+        : const Color(0x22000000);
 
     return Semantics(
       button: true,
@@ -799,29 +991,94 @@ class _PlusButtonState extends State<_PlusButton>
             height: widget.size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: bg,
-              border: Border.all(color: border, width: 1.0),
               boxShadow: [
                 BoxShadow(
-                  color: widget.isDark
-                      ? const Color(0x52000000)
-                      : const Color(0x29000000),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
+                  color: Colors.black.withValues(
+                    alpha: isDark ? 0.28 : 0.08,
+                  ),
+                  blurRadius: isDark ? 26 : 22,
+                  offset: Offset(0, isDark ? 8 : 7),
+                  spreadRadius: -3,
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(
+                    alpha: isDark ? 0.10 : 0.03,
+                  ),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: Material(
-              color: Colors.transparent,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: _handleTap,
-                child: Center(
-                  child: Icon(
-                    Icons.add_rounded,
-                    size: widget.iconSize,
-                    color: iconColor,
+            child: ClipOval(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 26, sigmaY: 26),
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isDark
+                          ? [
+                              const Color(0x281C2028),
+                              const Color(0x18090B0E),
+                            ]
+                          : [
+                              const Color(0x75FFFFFF),
+                              const Color(0x4AFFFFFF),
+                            ],
+                    ),
+                    border: Border.all(color: glassBorder, width: 0.75),
+                  ),
+                  child: Stack(
+                    children: [
+                      // Inner top specular reflection
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: widget.size * 0.46,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(widget.size / 2),
+                            ),
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: isDark
+                                  ? [
+                                      const Color(0x10FFFFFF),
+                                      const Color(0x00FFFFFF),
+                                    ]
+                                  : [
+                                      const Color(0x65FFFFFF),
+                                      const Color(0x00FFFFFF),
+                                    ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Material(
+                        color: Colors.transparent,
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: _handleTap,
+                          onLongPress: () {
+                            HapticFeedback.heavyImpact();
+                            CommunityCreationFlow.openCreateMenu(context);
+                          },
+                          child: Center(
+                            child: Icon(
+                              Icons.add_rounded,
+                              size: widget.iconSize,
+                              color: iconColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

@@ -129,12 +129,13 @@ enum StoryPrivacy {
   }
 
   static StoryPrivacy fromString(String? val) {
-    if (val == null) return StoryPrivacy.friends;
+    if (val == null) return StoryPrivacy.public;
     final lower = val.toLowerCase().replaceAll(' ', '_');
     if (lower == 'public') return StoryPrivacy.public;
+    if (lower == 'friends') return StoryPrivacy.friends;
     if (lower == 'only_me' || lower == 'onlyme') return StoryPrivacy.onlyMe;
     if (lower == 'custom') return StoryPrivacy.custom;
-    return StoryPrivacy.friends;
+    return StoryPrivacy.public;
   }
 }
 
@@ -241,7 +242,7 @@ class StoryItemModel {
   }) : settings =
            settings ??
            StorySettings(
-             visibility: StoryPrivacy.fromString(visibility ?? 'Friends'),
+             visibility: StoryPrivacy.fromString(visibility ?? 'Public'),
              replyPermission: StoryReplyPermission.fromString(
                replyPrivacy ?? 'Everyone',
              ),
@@ -295,6 +296,7 @@ class StoryGroupModel {
   final String userId;
   final String userName;
   final String userAvatar;
+  final String? userHandle;
   final bool isOwner;
   final List<StoryItemModel> stories;
 
@@ -302,6 +304,7 @@ class StoryGroupModel {
     required this.userId,
     required this.userName,
     required this.userAvatar,
+    this.userHandle,
     this.isOwner = false,
     bool hasUnseen = true,
     required this.stories,
@@ -311,7 +314,46 @@ class StoryGroupModel {
         id: userId,
         name: userName,
         avatarUrl: userAvatar,
+        handle: userHandle,
       );
 
   bool get hasUnseen => stories.any((s) => !s.isViewed);
+}
+
+class StoryMentionUser {
+  final String id;
+  final String displayName;
+  final String username;
+  final String avatarUrl;
+
+  const StoryMentionUser({
+    required this.id,
+    required this.displayName,
+    required this.username,
+    this.avatarUrl = '',
+  });
+
+  String get handle => username.startsWith('@') ? username : '@$username';
+
+  String get cleanUsername =>
+      username.startsWith('@') ? username.substring(1) : username;
+
+  bool matchesQuery(String query) {
+    final clean = query.trim().toLowerCase().replaceAll('@', '');
+    if (clean.isEmpty) return true;
+    return displayName.toLowerCase().contains(clean) ||
+        cleanUsername.toLowerCase().contains(clean);
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StoryMentionUser &&
+          (id.isNotEmpty && other.id.isNotEmpty
+              ? id == other.id
+              : cleanUsername.toLowerCase() == other.cleanUsername.toLowerCase());
+
+  @override
+  int get hashCode =>
+      id.isNotEmpty ? id.hashCode : cleanUsername.toLowerCase().hashCode;
 }

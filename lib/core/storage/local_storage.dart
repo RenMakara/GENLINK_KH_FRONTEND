@@ -41,6 +41,16 @@ class LocalStorage {
 
 
   static const _kStoryDraft = 'genlink_story_draft';
+  static const _kRecentSearchesPrefix = 'genlink_recent_searches_';
+
+  Future<String?> readRecentSearches(String userId) =>
+      _storage.read(key: '$_kRecentSearchesPrefix$userId');
+
+  Future<void> saveRecentSearches(String userId, String jsonList) =>
+      _storage.write(key: '$_kRecentSearchesPrefix$userId', value: jsonList);
+
+  Future<void> clearRecentSearches(String userId) =>
+      _storage.delete(key: '$_kRecentSearchesPrefix$userId');
 
   Future<String?> readStoryDraft() => _storage.read(key: _kStoryDraft);
 

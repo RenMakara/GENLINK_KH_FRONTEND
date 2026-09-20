@@ -9,7 +9,6 @@ import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/shadows/app_shadows.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
-import '../../../../design_system/widgets/surfaces/app_glass_surface.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
 import '../widgets/community_header_widget.dart';
@@ -22,6 +21,7 @@ import 'create_discussion_screen.dart';
 import 'event_details_screen.dart';
 import 'forum_category_screen.dart';
 import 'forum_discussion_screen.dart';
+import '../widgets/forum_share_to_chat_sheet.dart';
 import 'widgets/community_widgets.dart';
 import '../../../home/presentation/widgets/home_featured_events_carousel.dart';
 
@@ -116,7 +116,7 @@ class _CommunityScreenState extends State<CommunityScreen>
   void _onTabTapped(String cat, int index) {
     final commController = _effectiveController;
     if (commController.selectedCategory.value == cat) {
-      if (cat == 'Feed') {
+      if (cat == 'Feed' || cat == 'For You') {
         commController.onFeedTabTappedAgain();
       }
     } else {
@@ -199,127 +199,146 @@ class _CommunityScreenState extends State<CommunityScreen>
                                   isHomeScreen: widget.isHomeScreen,
                                 ),
                                 Obx(() {
-                                  final categoryIcons = <String, IconData>{
-                              'Feed': Icons.home_outlined,
-                              'Forum': Icons.people_outline_rounded,
-                              'Event': Icons.calendar_month_outlined,
-                            };
-
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.md,
-                              ),
-                              child: SizedBox(
-                                height: 44,
-                                child: AppGlassSurface(
-                                  padding: const EdgeInsets.all(3),
-                                  radius: AppRadius.xl,
-                                  blurSigma: 18,
-                                  backgroundOpacity: isDark ? 0.62 : 0.72,
-                                  border: Border.all(
-                                    color: borderSubtle.withValues(
-                                      alpha: isDark ? 0.86 : 0.72,
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.md,
                                     ),
-                                    width: 0.8,
-                                  ),
-                                  boxShadow: semantic.cardShadow,
-                                  child: Row(
-                                    children: commController.categories.map(
-                                      (cat) {
-                                        final isSelected = commController
-                                                .selectedCategory.value ==
-                                            cat;
-                                        final icon = categoryIcons[cat] ??
-                                            Icons.circle_outlined;
-                                        final tabText =
-                                            'community.${cat.toLowerCase()}'.tr;
-                                        final tabColor = isSelected
-                                            ? semantic.tabActiveText
-                                            : semantic.tabInactiveText;
+                                    child: Container(
+                                      height: 41,
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.white.withValues(alpha: 0.06)
+                                            : Colors.black.withValues(alpha: 0.04),
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadius.pill),
+                                        border: Border.all(
+                                          color: borderSubtle.withValues(
+                                            alpha: isDark ? 0.60 : 0.70,
+                                          ),
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: commController.categories.map((cat) {
+                                          final isSelected =
+                                              commController.selectedCategory.value ==
+                                                  cat;
+                                          final String tabText;
+                                          if (cat == 'For You') {
+                                            tabText = ('community.forYou'.tr.isNotEmpty &&
+                                                    'community.forYou'.tr !=
+                                                        'community.forYou')
+                                                ? 'community.forYou'.tr
+                                                : 'For You';
+                                          } else {
+                                            final key =
+                                                'community.${cat.toLowerCase()}';
+                                            tabText = (key.tr.isNotEmpty &&
+                                                    key.tr != key)
+                                                ? key.tr
+                                                : cat;
+                                          }
 
-                                        return Expanded(
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 2,
-                                            ),
-                                            child: Material(
-                                              color: Colors.transparent,
-                                              child: InkWell(
-                                                onTap: () => _onTabTapped(
-                                                  cat,
-                                                  commController.categories
-                                                      .indexOf(cat),
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                  AppRadius.pill,
-                                                ),
-                                                child: AnimatedContainer(
-                                                  duration: const Duration(
-                                                    milliseconds: 180,
+                                          final activeBg = isDark
+                                              ? Colors.white
+                                              : AppColors.lightTextPrimary;
+                                          final activeText = isDark
+                                              ? Colors.black
+                                              : Colors.white;
+                                          final inactiveText = isDark
+                                              ? AppColors.darkTextSecondary
+                                              : AppColors.lightTextSecondary;
+
+                                          final tabColor =
+                                              isSelected ? activeText : inactiveText;
+
+                                          return Expanded(
+                                            child: Padding(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 1.5,
+                                              ),
+                                              child: Material(
+                                                color: Colors.transparent,
+                                                child: InkWell(
+                                                  onTap: () => _onTabTapped(
+                                                    cat,
+                                                    commController.categories
+                                                        .indexOf(cat),
                                                   ),
-                                                  curve: Curves.easeOutCubic,
-                                                  alignment: Alignment.center,
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                    horizontal: 6,
-                                                    vertical: 4,
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                    AppRadius.pill,
                                                   ),
-                                                  decoration: BoxDecoration(
-                                                    color: isSelected
-                                                        ? semantic.tabActiveBg
-                                                        : semantic.tabInactiveBg,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                      AppRadius.pill,
+                                                  child: AnimatedContainer(
+                                                    duration: const Duration(
+                                                      milliseconds: 180,
                                                     ),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment.center,
-                                                    children: [
-                                                      Icon(
-                                                        icon,
-                                                        size: 17,
-                                                        color: tabColor,
+                                                    curve: Curves.easeOutCubic,
+                                                    alignment: Alignment.center,
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 4,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: isSelected
+                                                          ? activeBg
+                                                          : Colors.transparent,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                        AppRadius.pill,
                                                       ),
-                                                      const SizedBox(width: 4),
-                                                      Flexible(
-                                                        child: Text(
-                                                          tabText,
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                          style: TextStyle(
-                                                            color: tabColor,
-                                                            fontWeight: isSelected
-                                                                ? FontWeight.w700
-                                                                : FontWeight.w500,
-                                                            fontSize: 13,
-                                                            letterSpacing: -0.1,
-                                                            height: 1.2,
-                                                          ),
+                                                      boxShadow: isSelected
+                                                          ? [
+                                                              BoxShadow(
+                                                                color: Colors.black
+                                                                    .withValues(
+                                                                  alpha: isDark
+                                                                      ? 0.25
+                                                                      : 0.08,
+                                                                ),
+                                                                blurRadius: 4,
+                                                                offset:
+                                                                    const Offset(0, 1),
+                                                              ),
+                                                            ]
+                                                          : null,
+                                                    ),
+                                                    child: FittedBox(
+                                                      fit: BoxFit.scaleDown,
+                                                      child: Text(
+                                                        tabText,
+                                                        textAlign: TextAlign.center,
+                                                        maxLines: 1,
+                                                        overflow:
+                                                            TextOverflow.ellipsis,
+                                                        style: TextStyle(
+                                                          color: tabColor,
+                                                          fontWeight: isSelected
+                                                              ? FontWeight.w700
+                                                              : FontWeight.w500,
+                                                          fontSize: 12.5,
+                                                          letterSpacing: -0.1,
+                                                          fontFamilyFallback: const [
+                                                            'KantumruyPro',
+                                                            'Sora',
+                                                          ],
+                                                          height: 1.15,
                                                         ),
                                                       ),
-                                                    ],
+                                                    ),
                                                   ),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                        );
-                                      },
-                                    ).toList(),
-                                  ),
-                                ),
-                              ),
-                            );
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
+                                  );
                                 }),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 6),
                               ],
-                          ),
+                            ),
                           ),
                         ),
                       ),
@@ -333,24 +352,30 @@ class _CommunityScreenState extends State<CommunityScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                    _KeepAliveWrapper(
-                      child: KeyedSubtree(
-                        key: const ValueKey('FeedTab'),
-                        child: _buildFeedTab(context, commController),
+                      _KeepAliveWrapper(
+                        child: KeyedSubtree(
+                          key: const ValueKey('ForYouTab'),
+                          child: _buildFeedTab(context, commController),
+                        ),
                       ),
-                    ),
-                    _KeepAliveWrapper(
-                      child: KeyedSubtree(
-                        key: const ValueKey('ForumTab'),
-                        child: _buildForumTab(context, commController),
+                      _KeepAliveWrapper(
+                        child: KeyedSubtree(
+                          key: const ValueKey('FeedTab'),
+                          child: _buildFeedTab(context, commController),
+                        ),
                       ),
-                    ),
-                    _KeepAliveWrapper(
-                      child: KeyedSubtree(
-                        key: const ValueKey('EventTab'),
-                        child: _buildEventTab(context, commController),
+                      _KeepAliveWrapper(
+                        child: KeyedSubtree(
+                          key: const ValueKey('ForumTab'),
+                          child: _buildForumTab(context, commController),
+                        ),
                       ),
-                    ),
+                      _KeepAliveWrapper(
+                        child: KeyedSubtree(
+                          key: const ValueKey('EventTab'),
+                          child: _buildEventTab(context, commController),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -625,14 +650,17 @@ class _CommunityScreenState extends State<CommunityScreen>
         : AppColors.lightSurfacePrimary;
 
     final mediaQuery = MediaQuery.of(context);
-    final safeBottom = mediaQuery.padding.bottom;
-    final isNarrow = mediaQuery.size.width < 360;
-    final isVeryNarrow = mediaQuery.size.width < 335;
+    final safeBottom = mediaQuery.padding.bottom > 0
+        ? mediaQuery.padding.bottom
+        : mediaQuery.viewPadding.bottom;
+    final screenWidth = mediaQuery.size.width;
+    final isNarrow = screenWidth < 360;
+    final isVeryNarrow = screenWidth < 335;
     final navBarHeight = isVeryNarrow ? 72.0 : (isNarrow ? 76.0 : 82.0);
-    final navBarBottomMargin = safeBottom > 0 ? safeBottom + 8.0 : 20.0;
+    final navBarBottomMargin = safeBottom > 0 ? safeBottom + 12.0 : 20.0;
     const visualBreathingRoom = 28.0;
     final bottomPadding =
-        navBarHeight + navBarBottomMargin + visualBreathingRoom;
+        navBarHeight + navBarBottomMargin + visualBreathingRoom + 24.0;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -817,8 +845,12 @@ class _CommunityScreenState extends State<CommunityScreen>
               ...latest.map(
                 (topic) => ForumThreadCard(
                   title: topic.title,
-                  author: topic.authorName,
-                  avatarUrl: topic.authorAvatar,
+                  author: topic.isAnonymous ? 'Anonymous' : topic.authorName,
+                  avatarUrl: topic.isAnonymous
+                      ? null
+                      : (topic.authorAvatar.isNotEmpty
+                          ? topic.authorAvatar
+                          : null),
                   timeAgo: topic.timeAgo,
                   createdAt: topic.createdAt,
                   content: topic.content,
@@ -827,11 +859,20 @@ class _CommunityScreenState extends State<CommunityScreen>
                   likes: topic.upvotes,
                   isPinned: false,
                   isLiked: topic.isLiked,
+                  isBookmarked: controller.isDiscussionBookmarked(topic.id),
+                  likers: topic.likers,
+                  discussionId: topic.id,
+                  isOwner: topic.checkIsOwner(controller.currentUserId),
+                  isAnonymous: topic.isAnonymous,
                   onTap: () =>
                       Get.to(() => ForumDiscussionScreen(discussion: topic)),
                   onLikeTap: () => controller.toggleDiscussionLike(topic.id),
                   onCommentTap: () =>
                       Get.to(() => ForumDiscussionScreen(discussion: topic)),
+                  onSaveTap: () =>
+                      controller.toggleDiscussionBookmark(topic.id),
+                  onShareToChatTap: () =>
+                      ForumShareToChatSheet.show(context, topic: topic),
                   onCategoryTap: () => Get.to(
                     () => ForumCategoryScreen(categoryTitle: topic.category),
                   ),
@@ -1204,7 +1245,7 @@ class _CommunityScreenState extends State<CommunityScreen>
         ),
         padding: EdgeInsets.only(bottom: bottomPadding),
         child: Obx(() {
-          if (controller.isLoadingFeed.value && controller.events.isEmpty) {
+          if (controller.isLoadingEvents.value && controller.events.isEmpty) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1240,7 +1281,7 @@ class _CommunityScreenState extends State<CommunityScreen>
             );
           }
 
-          if (controller.hasError.value && controller.events.isEmpty) {
+          if (controller.hasEventsError.value && controller.events.isEmpty) {
             return _buildEventErrorState(
               context,
               controller,
@@ -1797,14 +1838,25 @@ class _CommunityScreenState extends State<CommunityScreen>
                                 width: 0.6,
                               ),
                             ),
-                            child: Text(
-                              categoryDisplay,
-                              style: TextStyle(
-                                color: textSecondary,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.2,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _getCategoryIconData(ev.category),
+                                  size: 11,
+                                  color: isDark ? Colors.white70 : textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  categoryDisplay,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white70 : textSecondary,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           if (ev.isPaid) ...[
@@ -1853,7 +1905,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                                         ? Icons.bookmark_rounded
                                         : Icons.bookmark_border_rounded,
                                     color: ev.isBookmarked
-                                        ? AppColors.communityAccent
+                                        ? (isDark ? Colors.white : Colors.black87)
                                         : textMuted,
                                     size: 19,
                                   ),
@@ -2021,6 +2073,40 @@ class _CommunityScreenState extends State<CommunityScreen>
         ),
       ),
     );
+  }
+
+  IconData _getCategoryIconData(String cat) {
+    switch (cat.toLowerCase()) {
+      case 'technology':
+        return Icons.computer_outlined;
+      case 'design':
+      case 'arts':
+      case 'art':
+        return Icons.palette_outlined;
+      case 'business':
+        return Icons.business_center_outlined;
+      case 'career':
+        return Icons.work_outline_rounded;
+      case 'education':
+        return Icons.school_outlined;
+      case 'workshop':
+        return Icons.build_outlined;
+      case 'competition':
+        return Icons.emoji_events_outlined;
+      case 'sports':
+      case 'sport':
+        return Icons.sports_soccer_outlined;
+      case 'social':
+        return Icons.people_outline_rounded;
+      case 'entertainment':
+        return Icons.movie_outlined;
+      case 'seminar':
+        return Icons.groups_outlined;
+      case 'hackathon':
+        return Icons.terminal_outlined;
+      default:
+        return Icons.category_outlined;
+    }
   }
 }
 

@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../config/app_config.dart';
+import 'certificate_bypass_stub.dart'
+    if (dart.library.io) 'certificate_bypass_io.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/error_interceptor.dart';
 
@@ -26,6 +28,8 @@ class DioProvider {
         },
       ),
     );
+
+    configureCertificateBypass(dio);
 
     if (errorInterceptor != null) {
       dio.interceptors.add(errorInterceptor);

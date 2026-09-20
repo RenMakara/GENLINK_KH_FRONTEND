@@ -3,11 +3,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:get/get.dart';
+import 'package:video_player/video_player.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/widgets/notifications/app_notification_banner.dart';
 import '../../domain/models/story_model.dart';
+import '../../domain/repositories/story_repository.dart';
+import '../../data/repositories/story_repository_impl.dart';
+import '../../../../shared/utils/current_user.dart';
 import '../controllers/story_controller.dart';
 import '../controllers/story_gallery_controller.dart';
+import '../controllers/community_controller.dart';
 import '../widgets/story_template_canvas.dart';
 import '../widgets/story_template_picker_sheet.dart';
 import 'story_gallery_screen.dart';
@@ -94,6 +99,7 @@ class StoryCreatorScreen extends StatefulWidget {
   final List<String>? mediaPaths;
   final StoryItemModel? existingStory;
   final String? templateId;
+  final VideoPlayerController? videoPlayerController;
 
   const StoryCreatorScreen({
     super.key,
@@ -101,6 +107,7 @@ class StoryCreatorScreen extends StatefulWidget {
     this.mediaPaths,
     this.existingStory,
     this.templateId,
+    this.videoPlayerController,
   });
 
   @override
@@ -113,6 +120,11 @@ enum StoryBgMode { none, solid, gradient }
 
 class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   final List<MovableStoryLayer> _layers = [];
+
+  VideoPlayerController? _videoPlayerController;
+  bool _isVideoInitialized = false;
+  bool _isVideoError = false;
+  bool _ownsVideoPlayerController = true;
 
   late StoryTemplateConfig _selectedTemplate;
   List<StoryTemplateSlot> _templateSlots = [];
@@ -677,13 +689,6 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     '🎵 Hackathon Energy Beats',
   ];
 
-  final List<String> _mentionSuggestions = [
-    '@SoknyEnat',
-    '@RenMakara',
-    '@HengChansela',
-    '@AUBClass2026',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -738,7 +743,30 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
       }
     } else {
       if (widget.type != StoryType.template && widget.mediaPaths != null && widget.mediaPaths!.isNotEmpty) {
-        if (widget.mediaPaths!.length == 1) {
+        if (widget.type == StoryType.video || widget.mediaPaths!.any(_isVideoFile)) {
+          final videoIdx = widget.mediaPaths!.indexWhere(_isVideoFile);
+          final primaryVideo = videoIdx != -1 ? widget.mediaPaths![videoIdx] : widget.mediaPaths!.first;
+          _activeMediaPath = primaryVideo;
+
+          final otherPaths = widget.mediaPaths!.where((p) => p != primaryVideo).toList();
+          for (int i = 0; i < otherPaths.length; i++) {
+            final path = otherPaths[i];
+            final offset = _calculateInitialLayerOffset(i, otherPaths.length);
+            _layers.add(
+              MovableStoryLayer(
+                id: _generateUniqueLayerId('image'),
+                type: LayerType.image,
+                text: path,
+                offset: offset,
+                scale: 1.0,
+                rotation: 0.0,
+              ),
+            );
+          }
+          if (_layers.isNotEmpty) {
+            _selectedLayer = _layers.first;
+          }
+        } else if (widget.mediaPaths!.length == 1) {
           _activeMediaPath = widget.mediaPaths!.first;
         } else {
           _activeMediaPath = null;
@@ -762,6 +790,17 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         }
       }
     }
+
+    if (widget.videoPlayerController != null) {
+      _videoPlayerController = widget.videoPlayerController;
+      _ownsVideoPlayerController = false;
+      _isVideoInitialized = widget.videoPlayerController!.value.isInitialized;
+      _videoPlayerController!.setLooping(true);
+      _videoPlayerController!.play();
+    } else if (_activeMediaPath != null && (widget.type == StoryType.video || _isVideoFile(_activeMediaPath!))) {
+      _initVideoPlayer(_activeMediaPath!);
+    }
+
     _fullScreenTextController.addListener(_onTextChanged);
     if (widget.type == StoryType.text) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1287,6 +1326,9 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
   @override
   void dispose() {
+    if (_ownsVideoPlayerController) {
+      _videoPlayerController?.dispose();
+    }
     _fullScreenTextController.removeListener(_onTextChanged);
     _captionController.dispose();
     _transformationController.dispose();
@@ -1833,8 +1875,96 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     });
   }
 
+  Future<List<StoryMentionUser>> _fetchMentionUsers({String query = ''}) async {
+    final Map<String, StoryMentionUser> userMap = {};
+
+    void addUser(StoryMentionUser u) {
+      final handle = u.cleanUsername.toLowerCase().trim();
+      if (handle.isEmpty && u.displayName.trim().isEmpty) return;
+      if (u.id.startsWith('demo_') || u.id.startsWith('mock_')) return;
+      if (!userMap.containsKey(handle)) {
+        userMap[handle] = u;
+      }
+    }
+
+    // 1. Current logged-in user
+    final me = CurrentUser.get();
+    if (me != null && me.username.isNotEmpty && !me.id.startsWith('demo_') && !me.id.startsWith('mock_')) {
+      addUser(StoryMentionUser(
+        id: me.id,
+        displayName: me.fullName.isNotEmpty ? me.fullName : me.username,
+        username: me.username,
+        avatarUrl: me.avatarUrl ?? '',
+      ));
+    }
+
+    // 2. Active story groups from StoryController
+    if (Get.isRegistered<StoryController>()) {
+      final storyCtrl = Get.find<StoryController>();
+      for (final g in storyCtrl.storyGroups) {
+        if (g.userId.startsWith('demo_') || g.userId.startsWith('mock_')) continue;
+        if (g.userName.isNotEmpty &&
+            g.userName != 'User' &&
+            g.userName != 'Guest') {
+          final handle = g.userHandle?.isNotEmpty == true
+              ? g.userHandle!
+              : g.userName.toLowerCase().replaceAll(RegExp(r'\s+'), '');
+          addUser(StoryMentionUser(
+            id: g.userId,
+            displayName: g.userName,
+            username: handle,
+            avatarUrl: g.userAvatar,
+          ));
+        }
+      }
+    }
+
+    // 3. Real community post authors from CommunityController
+    if (Get.isRegistered<CommunityController>()) {
+      try {
+        final commCtrl = Get.find<CommunityController>();
+        for (final p in commCtrl.posts) {
+          if (p.userId.startsWith('demo_') || p.userId.startsWith('mock_')) continue;
+          final tag = p.authorTag.replaceAll('@', '').trim();
+          final name = p.authorName.trim();
+          if (name.isNotEmpty || tag.isNotEmpty) {
+            addUser(StoryMentionUser(
+              id: p.userId,
+              displayName: name.isNotEmpty ? name : tag,
+              username: tag.isNotEmpty
+                  ? tag
+                  : name.toLowerCase().replaceAll(RegExp(r'\s+'), ''),
+              avatarUrl: p.authorAvatar,
+            ));
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 4. Query repository for backend users / followings
+    try {
+      final repo = Get.isRegistered<StoryRepository>()
+          ? Get.find<StoryRepository>()
+          : StoryRepositoryImpl();
+      final backendUsers = await repo.searchMentionUsers(query: query);
+      for (final u in backendUsers) {
+        addUser(u);
+      }
+    } catch (_) {}
+
+    final all = userMap.values.toList();
+    if (query.trim().isEmpty) {
+      return all;
+    }
+    return all.where((u) => u.matchesQuery(query)).toList();
+  }
+
   void _showMentionSheet() {
     final inputCtrl = TextEditingController();
+    List<StoryMentionUser> allUsers = [];
+    List<StoryMentionUser> filteredUsers = [];
+    bool isLoading = true;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1843,95 +1973,250 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-            left: 20,
-            right: 20,
-            top: 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Mention Classmate / User",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            void filter(String q) {
+              final clean = q.trim().toLowerCase().replaceAll('@', '');
+              setSheetState(() {
+                if (clean.isEmpty) {
+                  filteredUsers = List.from(allUsers);
+                } else {
+                  filteredUsers =
+                      allUsers.where((u) => u.matchesQuery(clean)).toList();
+                }
+              });
+            }
+
+            if (isLoading && allUsers.isEmpty) {
+              _fetchMentionUsers().then((users) {
+                if (ctx.mounted) {
+                  setSheetState(() {
+                    allUsers = users;
+                    filteredUsers = users;
+                    isLoading = false;
+                  });
+                }
+              });
+            }
+
+            final hasInput = inputCtrl.text.trim().isNotEmpty;
+            final cleanInput = inputCtrl.text.trim().replaceAll('@', '');
+
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * 0.75,
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: inputCtrl,
-                autofocus: true,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-                decoration: const InputDecoration(
-                  hintText: "e.g. @SoknyEnat",
-                  hintStyle: TextStyle(color: Colors.white38),
-                  prefixIcon: Icon(
-                    Icons.alternate_email_rounded,
-                    color: Colors.white,
-                  ),
-                ),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+                left: 20,
+                right: 20,
+                top: 20,
               ),
-              const SizedBox(height: 16),
-              const Text(
-                "Suggested Members:",
-                style: TextStyle(color: Colors.white54, fontSize: 12),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _mentionSuggestions.map((m) {
-                  return ActionChip(
-                    backgroundColor: AppColors.darkSurfaceSecondary,
-                    label: Text(
-                      m,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    onPressed: () {
-                      _addMentionLayer(m);
-                      Navigator.pop(ctx);
-                    },
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
                   ),
-                  onPressed: () {
-                    var val = inputCtrl.text.trim();
-                    if (val.isNotEmpty) {
-                      if (!val.startsWith('@')) val = '@$val';
-                      _addMentionLayer(val);
-                    }
-                    Navigator.pop(ctx);
-                  },
-                  child: const Text(
-                    "Add Mention",
+                  const SizedBox(height: 14),
+                  const Text(
+                    "Mention Classmate / User",
                     style: TextStyle(
-                      color: Colors.black,
+                      color: Colors.white,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    key: const Key('mention_search_field'),
+                    controller: inputCtrl,
+                    autofocus: true,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    onChanged: (text) {
+                      filter(text);
+                      if (text.trim().length >= 2) {
+                        _fetchMentionUsers(query: text).then((newUsers) {
+                          if (ctx.mounted) {
+                            setSheetState(() {
+                              for (final nu in newUsers) {
+                                if (!allUsers.any((u) =>
+                                    u.cleanUsername.toLowerCase() ==
+                                    nu.cleanUsername.toLowerCase())) {
+                                  allUsers.add(nu);
+                                }
+                              }
+                              filter(inputCtrl.text);
+                            });
+                          }
+                        });
+                      }
+                    },
+                    decoration: InputDecoration(
+                      hintText: "Search name or @username...",
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      prefixIcon: const Icon(
+                        Icons.alternate_email_rounded,
+                        color: Colors.white,
+                      ),
+                      suffixIcon: hasInput
+                          ? IconButton(
+                              icon: const Icon(
+                                Icons.clear,
+                                color: Colors.white54,
+                                size: 18,
+                              ),
+                              onPressed: () {
+                                inputCtrl.clear();
+                                filter('');
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    hasInput ? "Search Results:" : "Suggested Members:",
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                  const SizedBox(height: 8),
+                  if (isLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ),
+                    )
+                  else if (filteredUsers.isNotEmpty)
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: filteredUsers.length,
+                        separatorBuilder: (_, _) => const Divider(
+                          color: Colors.white10,
+                          height: 1,
+                        ),
+                        itemBuilder: (c, idx) {
+                          final user = filteredUsers[idx];
+                          final hasAvatar = user.avatarUrl.isNotEmpty;
+                          ImageProvider? imgProvider;
+                          if (hasAvatar) {
+                            if (user.avatarUrl.startsWith('assets/')) {
+                              imgProvider = AssetImage(user.avatarUrl);
+                            } else {
+                              imgProvider = NetworkImage(user.avatarUrl);
+                            }
+                          }
+
+                          return ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            leading: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: AppColors.darkSurfaceSecondary,
+                              backgroundImage: imgProvider,
+                              child: !hasAvatar
+                                  ? Text(
+                                      user.displayName.isNotEmpty
+                                          ? user.displayName[0].toUpperCase()
+                                          : '@',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            title: Text(
+                              user.displayName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              user.handle,
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
+                            ),
+                            onTap: () {
+                              _addMentionLayer(user.handle);
+                              Navigator.pop(ctx);
+                            },
+                          );
+                        },
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: Text(
+                        hasInput
+                            ? "No users found matching \"$cleanInput\""
+                            : "No members available",
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () {
+                        var val = inputCtrl.text.trim();
+                        if (val.isNotEmpty) {
+                          if (!val.startsWith('@')) val = '@$val';
+                          _addMentionLayer(val);
+                        }
+                        Navigator.pop(ctx);
+                      },
+                      child: Text(
+                        hasInput && cleanInput.isNotEmpty
+                            ? "Mention @$cleanInput"
+                            : "Add Mention",
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -2080,6 +2365,15 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
           _transformationController.value = Matrix4.identity();
           _imageRotation = 0.0;
         });
+        if (_isVideoFile(media.path)) {
+          _initVideoPlayer(media.path);
+        } else {
+          if (_ownsVideoPlayerController) {
+            _videoPlayerController?.dispose();
+          }
+          _videoPlayerController = null;
+          _isVideoInitialized = false;
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -2170,165 +2464,122 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
     return File(clean);
   }
 
-  bool _isVideoPlaying = true;
+  Future<void> _initVideoPlayer(String path) async {
+    if (!_ownsVideoPlayerController) return;
+
+    final oldCtrl = _videoPlayerController;
+    _videoPlayerController = null;
+    _isVideoInitialized = false;
+    _isVideoError = false;
+    await oldCtrl?.dispose();
+
+    try {
+      final file = _resolveFile(path);
+      VideoPlayerController ctrl;
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        ctrl = VideoPlayerController.networkUrl(Uri.parse(path));
+      } else if (path.startsWith('assets/')) {
+        ctrl = VideoPlayerController.asset(path);
+      } else {
+        if (!file.existsSync()) {
+          if (mounted) setState(() => _isVideoError = true);
+          return;
+        }
+        ctrl = VideoPlayerController.file(file);
+      }
+
+      _videoPlayerController = ctrl;
+
+      await ctrl.initialize();
+      if (!mounted || _videoPlayerController != ctrl) {
+        await ctrl.dispose();
+        return;
+      }
+
+      await ctrl.setVolume(1.0);
+      await ctrl.setLooping(true);
+      await ctrl.play();
+
+      if (mounted) {
+        setState(() {
+          _isVideoInitialized = true;
+          _isVideoError = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('[StoryCreatorScreen] VideoPlayerController init error: $e');
+      if (mounted) {
+        setState(() {
+          _isVideoError = true;
+          _isVideoInitialized = false;
+        });
+      }
+    }
+  }
 
   Widget _buildVideoPreviewCanvas(File file) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: Container(
-            color: Colors.black,
-            child: Center(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white30, width: 2),
-                          ),
-                          child: Icon(
-                            _isVideoPlaying
-                                ? Icons.movie_rounded
-                                : Icons.play_arrow_rounded,
-                            color: Colors.white,
-                            size: 48,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black54,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: Colors.white12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.videocam_rounded,
-                                color: Colors.white70,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  file.path.split(RegExp(r'[/\\]')).last,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+    if (_isVideoError) {
+      return _buildErrorMediaPlaceholder();
+    }
+
+    final ctrl = _videoPlayerController;
+    if (ctrl == null || !_isVideoInitialized) {
+      return Container(
+        color: Colors.black,
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2.5,
+          ),
+        ),
+      );
+    }
+
+    final videoSize = ctrl.value.size;
+    final hasValidSize = videoSize.width > 0 && videoSize.height > 0;
+
+    return Container(
+      color: Colors.black,
+      child: Center(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: hasValidSize ? videoSize.width : 1080,
+                  height: hasValidSize ? videoSize.height : 1920,
+                  child: VideoPlayer(
+                    ctrl,
+                    key: const ValueKey('story_video_player'),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isVideoPlaying = !_isVideoPlaying;
-                      });
-                    },
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      opacity: _isVideoPlaying ? 0.4 : 0.9,
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: const BoxDecoration(
-                          color: Colors.black87,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _isVideoPlaying
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          color: Colors.white,
-                          size: 36,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-
-        Positioned(
-          bottom: 90,
-          left: 20,
-          right: 20,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.75),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white12),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  _isVideoPlaying
-                      ? Icons.pause_rounded
-                      : Icons.play_arrow_rounded,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                const SizedBox(width: 10),
-                const Text(
-                  "00:05",
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+            if (!ctrl.value.isPlaying)
+              GestureDetector(
+                onTap: () {
+                  ctrl.play();
+                  setState(() {});
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 48,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: _isVideoPlaying ? 0.45 : 0.0,
-                      backgroundColor: Colors.white24,
-                      color: Colors.white,
-                      minHeight: 4,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  "00:15",
-                  style: TextStyle(color: Colors.white38, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
+              ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -3081,9 +3332,9 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
       if (widget.existingStory != null) {
         final newSettings = StorySettings(
-          visibility: _selectedVisibility == 'Public' ? StoryPrivacy.public : (_selectedVisibility == 'Only Me' ? StoryPrivacy.onlyMe : StoryPrivacy.friends),
-          replyPermission: widget.existingStory!.settings.replyPermission,
-          allowReactions: widget.existingStory!.settings.allowReactions,
+          visibility: _storySettings.visibility,
+          replyPermission: _storySettings.replyPermission,
+          allowReactions: _storySettings.allowReactions,
         );
         final updatedStory = StoryItemModel(
           id: widget.existingStory!.id,
@@ -3295,6 +3546,20 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
   bool _isInteractingLayer = false;
   bool _isHoveringDeleteZone = false;
 
+  Widget _buildLayerImageErrorPlaceholder() {
+    return Container(
+      width: 180,
+      height: 180,
+      alignment: Alignment.center,
+      color: Colors.white10,
+      child: const Icon(
+        Icons.broken_image_rounded,
+        color: Colors.white54,
+        size: 36,
+      ),
+    );
+  }
+
   Widget _buildLayerWidget(MovableStoryLayer layer) {
     final isDeleting = _deletingLayerIds.contains(layer.id);
     final isEditingThisLayer =
@@ -3320,7 +3585,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             width: 180,
             fit: BoxFit.contain,
             errorBuilder: (ctx, err, stack) =>
-                _buildErrorMediaPlaceholder(),
+                _buildLayerImageErrorPlaceholder(),
           );
         } else if (layer.text.startsWith('assets/')) {
           imgWidget = Image.asset(
@@ -3328,7 +3593,7 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             width: 180,
             fit: BoxFit.contain,
             errorBuilder: (ctx, err, stack) =>
-                _buildErrorMediaPlaceholder(),
+                _buildLayerImageErrorPlaceholder(),
           );
         } else {
           imgWidget = Image.network(
@@ -3336,33 +3601,21 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
             width: 180,
             fit: BoxFit.contain,
             errorBuilder: (ctx, err, stack) =>
-                _buildErrorMediaPlaceholder(),
+                _buildLayerImageErrorPlaceholder(),
           );
         }
 
+        final isSelected = _selectedLayer?.id == layer.id;
         content = ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxCanvasWidth),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: _selectedLayer?.id == layer.id
-                    ? Colors.white
-                    : Colors.transparent,
+                color: isSelected ? Colors.white : Colors.transparent,
                 width: 2.0,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: imgWidget,
-            ),
+            child: imgWidget,
           ),
         );
         break;

@@ -346,9 +346,11 @@ void main() {
           translations: AppTranslations(),
           locale: const Locale('en', 'US'),
           home: Scaffold(
-            body: PostCardWidget(
-              post: post,
-              controller: controller,
+            body: SingleChildScrollView(
+              child: PostCardWidget(
+                post: post,
+                controller: controller,
+              ),
             ),
           ),
         ),

@@ -185,6 +185,9 @@ abstract final class ApiEndpoints {
   static String communityPostLike(String postId) =>
       '$_base/community/posts/$postId/like';
 
+  static String communityPostLikes(String postId) =>
+      '$_base/community/posts/$postId/likes';
+
   static String communityPostBookmark(String postId) =>
       '$_base/community/posts/$postId/bookmark';
 
@@ -197,11 +200,23 @@ abstract final class ApiEndpoints {
   static String communityPostComments(String postId) =>
       '$_base/community/posts/$postId/comments';
 
+  static String communityComment(String commentId) =>
+      '$_base/community/comments/$commentId';
+
+  static String communityCommentReplies(String commentId) =>
+      '$_base/community/comments/$commentId/replies';
+
   static String communityFollowUser(String userId) =>
       '$_base/community/users/$userId/follow';
 
   static String communityFollowStats(String userId) =>
       '$_base/community/users/$userId/follow-stats';
+
+  static String communityFollowing(String userId) =>
+      '$_base/community/users/$userId/following';
+
+  static String communityFollowers(String userId) =>
+      '$_base/community/users/$userId/followers';
 
   // ── Discussions ───────────────────────────────────────────────────────
   static const communityDiscussions = '$_base/community/discussions';
@@ -213,6 +228,8 @@ abstract final class ApiEndpoints {
       '$_base/community/discussions/comments/$commentId/replies';
   static String communityDiscussionReact(String discussionId) =>
       '$_base/community/discussions/$discussionId/react';
+  static String communityDiscussionReactions(String discussionId) =>
+      '$_base/community/discussions/$discussionId/reactions';
   static String communityDiscussionReport(String discussionId) =>
       '$_base/community/discussions/$discussionId/report';
   static String communityDiscussionCommentLike(String commentId) =>
@@ -225,8 +242,14 @@ abstract final class ApiEndpoints {
 
   static const communityEvents = '$_base/community/events';
 
+  static String communityEventDetail(String eventId) =>
+      '$_base/community/events/$eventId';
+
   static String communityEventRsvp(String eventId) =>
       '$_base/community/events/$eventId/rsvp';
+
+  static String communityEventAttendees(String eventId) =>
+      '$_base/community/events/$eventId/attendees';
 
   // ── Stories ────────────────────────────────────────────────────────────
   static const stories = '$_base/community/stories';
@@ -293,4 +316,12 @@ abstract final class ApiEndpoints {
       '${shortContentItem(contentId)}/share';
 
   static const leaderboards = '$_base/entertainment/leaderboards';
+
+  // ── Search ────────────────────────────────────────────────────────────
+  static const search = '$_base/search';
+  static const searchPeople = '$_base/search/people';
+  static const searchPosts = '$_base/search/posts';
+  static const searchEvents = '$_base/search/events';
+  static const searchDiscussions = '$_base/search/discussions';
+  static const trendingHashtags = '$_base/community/hashtags/trending';
 }

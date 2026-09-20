@@ -572,18 +572,18 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
   }) {
     HapticFeedback.selectionClick();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF1E1E24) : Colors.white;
+    final bg = isDark ? const Color(0xFF18181B) : Colors.white;
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
     final textSecondary = isDark
         ? Colors.white70
         : AppColors.lightTextSecondary;
     final textMuted = isDark ? Colors.white38 : AppColors.lightTextMuted;
-    final borderSubtle = isDark ? Colors.white12 : AppColors.lightBorderSubtle;
+    final borderSubtle = isDark ? const Color(0xFF28282A) : const Color(0xFFE6E6EA);
     final searchBg = isDark
         ? Colors.white.withValues(alpha: 0.06)
-        : AppColors.lightBgSecondary;
+        : const Color(0xFFF4F4F5);
     final selectedTileBg = isDark
-        ? Colors.white.withValues(alpha: 0.08)
+        ? Colors.white.withValues(alpha: 0.10)
         : Colors.black.withValues(alpha: 0.05);
 
     showModalBottomSheet<void>(
@@ -591,7 +591,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
       isScrollControlled: true,
       backgroundColor: bg,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
         String query = '';
@@ -610,7 +610,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
             return SafeArea(
               child: Container(
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.80,
+                  maxHeight: MediaQuery.of(context).size.height * 0.82,
                 ),
                 padding: EdgeInsets.only(
                   bottom: MediaQuery.of(context).viewInsets.bottom + 16,
@@ -621,8 +621,8 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                   children: [
                     Center(
                       child: Container(
-                        margin: const EdgeInsets.only(top: 10, bottom: 12),
-                        width: 40,
+                        margin: const EdgeInsets.only(top: 10, bottom: 14),
+                        width: 36,
                         height: 4,
                         decoration: BoxDecoration(
                           color: isDark ? Colors.white24 : Colors.black12,
@@ -641,8 +641,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                               title,
                               style: TextStyle(
                                 color: textPrimary,
-                                fontSize: 16.5,
+                                fontSize: 17.5,
                                 fontWeight: FontWeight.bold,
+                                letterSpacing: -0.2,
                               ),
                             ),
                           ),
@@ -650,10 +651,10 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                             icon: Icon(
                               Icons.close_rounded,
                               color: textSecondary,
-                              size: 22,
+                              size: 20,
                             ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
+                            padding: const EdgeInsets.all(4),
+                            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                             onPressed: () => Navigator.pop(ctx),
                           ),
                         ],
@@ -667,11 +668,14 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                           vertical: 10,
                         ),
                         child: Container(
-                          height: 44,
+                          height: 46,
                           decoration: BoxDecoration(
                             color: searchBg,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: borderSubtle),
+                            border: Border.all(
+                              color: borderSubtle.withValues(alpha: 0.8),
+                              width: 0.8,
+                            ),
                           ),
                           child: TextField(
                             style: TextStyle(color: textPrimary, fontSize: 14),
@@ -681,16 +685,16 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                               hintText: searchHint,
                               hintStyle: TextStyle(
                                 color: textMuted,
-                                fontSize: 13.5,
+                                fontSize: 14,
                               ),
                               prefixIcon: Icon(
                                 Icons.search_rounded,
                                 color: textMuted,
-                                size: 19,
+                                size: 20,
                               ),
                               border: InputBorder.none,
                               contentPadding: const EdgeInsets.symmetric(
-                                vertical: 12,
+                                vertical: 13,
                               ),
                             ),
                           ),
@@ -704,7 +708,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                       child: filtered.isEmpty
                           ? Padding(
                               padding: const EdgeInsets.symmetric(
-                                vertical: 36,
+                                vertical: 40,
                                 horizontal: 20,
                               ),
                               child: Center(
@@ -714,9 +718,9 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                                     Icon(
                                       Icons.search_off_rounded,
                                       color: textMuted,
-                                      size: 36,
+                                      size: 40,
                                     ),
-                                    const SizedBox(height: 10),
+                                    const SizedBox(height: 12),
                                     Text(
                                       emptyMessage,
                                       style: TextStyle(
@@ -737,7 +741,10 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                               itemCount: filtered.length,
                               separatorBuilder: (context, index) => Divider(
                                 height: 1,
+                                thickness: 0.6,
                                 color: borderSubtle.withValues(alpha: 0.5),
+                                indent: 14,
+                                endIndent: 14,
                               ),
                               itemBuilder: (context, idx) {
                                 final item = filtered[idx];
@@ -752,7 +759,7 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 14,
-                                      vertical: 13,
+                                      vertical: 14,
                                     ),
                                     decoration: BoxDecoration(
                                       color: isSelected
@@ -770,14 +777,14 @@ class _EventRegisterScreenState extends State<EventRegisterScreen> {
                                               fontWeight: isSelected
                                                   ? FontWeight.w600
                                                   : FontWeight.normal,
-                                              fontSize: 14,
+                                              fontSize: 14.5,
                                             ),
                                           ),
                                         ),
                                         if (isSelected) ...[
                                           const SizedBox(width: 8),
                                           Icon(
-                                            Icons.check_rounded,
+                                            Icons.check_circle_rounded,
                                             color: isDark
                                                 ? Colors.white
                                                 : Colors.black87,

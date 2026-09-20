@@ -33,9 +33,7 @@ class CommunityHeaderWidget extends StatelessWidget
       AppHeaderActionButton(
         icon: Icons.search_rounded,
         onTap: () => Get.to(
-          () => CommunitySearchScreen(
-            activeTab: activeCategoryBuilder?.call() ?? activeCategory,
-          ),
+          () => const CommunitySearchScreen(),
         ),
         tooltip:
             'community.search'.tr.isNotEmpty &&

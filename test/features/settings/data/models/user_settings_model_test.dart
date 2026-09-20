@@ -17,4 +17,13 @@ void main() {
 
     expect(settings.language, UserSettingsEntity.languageKhmer);
   });
+
+  test('missing preference enabled defaults to the backend policy', () {
+    final preference = NotificationPreferenceMapper.fromJson(const {
+      'notificationType': 'PRODUCTIVITY_TASK',
+    });
+
+    expect(preference.notificationType, 'PRODUCTIVITY_TASK');
+    expect(preference.enabled, isTrue);
+  });
 }

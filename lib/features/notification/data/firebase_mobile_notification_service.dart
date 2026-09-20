@@ -171,6 +171,7 @@ class MobilePushNotificationPayload {
 
 enum MobilePushNotificationDestination {
   notifications,
+  challenges,
   events,
   friendRequests,
   finance,
@@ -217,10 +218,17 @@ class MobilePushNotificationRouter {
         return MobilePushNotificationDestination.quiz;
       case 'ACHIEVEMENT':
         return MobilePushNotificationDestination.achievements;
+      case 'BADGE':
+        return MobilePushNotificationDestination.achievements;
+      case 'CHALLENGE':
+        return MobilePushNotificationDestination.challenges;
     }
 
     if (type.contains('CHAT')) {
       return MobilePushNotificationDestination.chat;
+    }
+    if (type.contains('CHALLENGE')) {
+      return MobilePushNotificationDestination.challenges;
     }
     if (type.contains('EVENT')) {
       return MobilePushNotificationDestination.events;
@@ -249,6 +257,9 @@ class MobilePushNotificationRouter {
     if (type.contains('ACHIEVEMENT')) {
       return MobilePushNotificationDestination.achievements;
     }
+    if (type.contains('BADGE') || type.contains('LEVELUP')) {
+      return MobilePushNotificationDestination.achievements;
+    }
     if (type.contains('FINANCE')) {
       return MobilePushNotificationDestination.finance;
     }
@@ -262,6 +273,13 @@ class MobilePushNotificationRouter {
     switch (destinationFor(payload)) {
       case MobilePushNotificationDestination.notifications:
         Get.toNamed<void>(AppRoutes.notifications);
+      case MobilePushNotificationDestination.challenges:
+        final challengeId = payload.referenceId;
+        if (challengeId != null && challengeId.isNotEmpty) {
+          Get.toNamed<void>(AppRoutes.challengeDetail, arguments: challengeId);
+        } else {
+          Get.toNamed<void>(AppRoutes.challengeList);
+        }
       case MobilePushNotificationDestination.chat:
         final roomId = payload.referenceId;
         if (roomId != null && roomId.isNotEmpty) {
@@ -412,7 +430,8 @@ class FirebaseMobileNotificationService {
         Get.find<NotificationController>()
             .onRealtimeNotificationReceivedFromPayload(payload);
       }
-      final isChat = payload.type.toUpperCase().contains('CHAT') ||
+      final isChat =
+          payload.type.toUpperCase().contains('CHAT') ||
           (payload.referenceType?.toUpperCase() == 'CHAT_ROOM') ||
           (payload.referenceType?.toUpperCase() == 'CHAT');
       if (isChat && Get.isRegistered<ChatController>()) {

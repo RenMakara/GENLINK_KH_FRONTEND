@@ -21,6 +21,10 @@ class SettingsController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
+  final isNotificationPreferencesLoading = false.obs;
+  final notificationPreferencesError = RxnString();
+  final notificationPreferences = <String, bool>{}.obs;
+  final notificationPreferenceBusyTypes = <String>{}.obs;
 
   late final settings = UserSettingsEntity(
     theme: _theme.backendTheme,
@@ -67,7 +71,6 @@ class SettingsController extends GetxController {
     }
   }
 
-
   Future<void> setTheme(String theme) async {
     final previous = settings.value;
     if (previous.theme == theme) return;
@@ -94,7 +97,6 @@ class SettingsController extends GetxController {
     }
   }
 
-
   Future<void> setNotificationEnabled(bool value) => _toggle(
     (s) => s.copyWith(notificationEnabled: value),
     () => _patch(notificationEnabled: value),
@@ -120,6 +122,81 @@ class SettingsController extends GetxController {
     () => _patch(privacyProfile: value),
   );
 
+  bool notificationPreferenceEnabled(String notificationType) =>
+      notificationPreferences[notificationType] ?? true;
+
+  bool isNotificationPreferenceBusy(String notificationType) =>
+      notificationPreferenceBusyTypes.contains(notificationType);
+
+  Future<void> loadNotificationPreferences() async {
+    if (isNotificationPreferencesLoading.value) return;
+    isNotificationPreferencesLoading.value = true;
+    notificationPreferencesError.value = null;
+    try {
+      final loaded = await _repository.getNotificationPreferences();
+      notificationPreferences.assignAll({
+        for (final preference in loaded)
+          preference.notificationType: preference.enabled,
+      });
+    } on AppError catch (e) {
+      notificationPreferencesError.value = e.message;
+    } catch (_) {
+      notificationPreferencesError.value = 'common.error'.tr;
+    } finally {
+      isNotificationPreferencesLoading.value = false;
+    }
+  }
+
+  Future<void> setNotificationPreference(
+    String notificationType,
+    bool enabled,
+  ) async {
+    if (notificationPreferenceBusyTypes.contains(notificationType)) return;
+
+    final hadPrevious = notificationPreferences.containsKey(notificationType);
+    final previous = notificationPreferenceEnabled(notificationType);
+    notificationPreferences[notificationType] = enabled;
+    notificationPreferenceBusyTypes.add(notificationType);
+    notificationPreferencesError.value = null;
+
+    try {
+      final saved = await _repository.updateNotificationPreference(
+        notificationType: notificationType,
+        enabled: enabled,
+      );
+      notificationPreferences[notificationType] = saved.enabled;
+    } on AppError catch (e) {
+      _restoreNotificationPreference(
+        notificationType,
+        previous,
+        hadPrevious: hadPrevious,
+      );
+      notificationPreferencesError.value = e.message;
+      AppSnackbar.error(e.message);
+    } catch (_) {
+      _restoreNotificationPreference(
+        notificationType,
+        previous,
+        hadPrevious: hadPrevious,
+      );
+      notificationPreferencesError.value = 'common.error'.tr;
+      AppSnackbar.error('common.error'.tr);
+    } finally {
+      notificationPreferenceBusyTypes.remove(notificationType);
+    }
+  }
+
+  void _restoreNotificationPreference(
+    String notificationType,
+    bool previous, {
+    required bool hadPrevious,
+  }) {
+    if (hadPrevious) {
+      notificationPreferences[notificationType] = previous;
+    } else {
+      notificationPreferences.remove(notificationType);
+    }
+  }
 
   Future<void> _toggle(
     UserSettingsEntity Function(UserSettingsEntity) apply,

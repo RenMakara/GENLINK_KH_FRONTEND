@@ -46,6 +46,11 @@ abstract final class ApiEndpoints {
 
   // ── Settings ──────────────────────────────────────────────────────────
   static const profileSettings = '$_base/profile/settings';
+  static const notificationPreferences =
+      '$_base/profile/settings/notifications/preferences';
+
+  static String notificationPreference(String notificationType) =>
+      '$notificationPreferences/$notificationType';
 
   // ── Interests ─────────────────────────────────────────────────────────
   /// Full catalog, names already resolved to the caller's language.
@@ -261,5 +266,31 @@ abstract final class ApiEndpoints {
   static String quizAttempt(String quizId) =>
       '$_base/entertainment/quizzes/$quizId/attempts';
   static const quizHistory = '$_base/entertainment/quizzes/history';
+  static const challenges = '$_base/entertainment/challenges';
+  static const myChallenges = '$_base/entertainment/challenges/mine';
+
+  static String challengeJoin(String challengeId) =>
+      '$challenges/$challengeId/join';
+
+  static String challengeComplete(String challengeId) =>
+      '$challenges/$challengeId/complete';
+
+  static String challengeClaim(String challengeId) =>
+      '$challenges/$challengeId/claim';
+
+  static const shortContent = '$_base/entertainment/short-content';
+
+  static String shortContentItem(String contentId) =>
+      '$shortContent/$contentId';
+
+  static String shortContentLike(String contentId) =>
+      '${shortContentItem(contentId)}/like';
+
+  static String shortContentSave(String contentId) =>
+      '${shortContentItem(contentId)}/save';
+
+  static String shortContentShare(String contentId) =>
+      '${shortContentItem(contentId)}/share';
+
   static const leaderboards = '$_base/entertainment/leaderboards';
 }

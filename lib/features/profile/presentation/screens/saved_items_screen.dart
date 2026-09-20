@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
@@ -20,6 +23,20 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
 
   ProfileController get _controller => Get.find<ProfileController>();
 
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_controller.reloadSavedItems());
+  }
+
+  Future<void> _openItem(SavedItemEntity item) async {
+    if (item.itemType != 'SHORT_CONTENT' || item.itemId.trim().isEmpty) {
+      return;
+    }
+    await Get.toNamed(AppRoutes.shortContentDetail, arguments: item.itemId);
+    if (mounted) unawaited(_controller.reloadSavedItems());
+  }
+
   static const _typeIcons = <String, IconData>{
     'POST': Icons.article_outlined,
     'DISCUSSION': Icons.forum_outlined,
@@ -37,9 +54,7 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        leading: const Center(
-          child: AppBackButton(),
-        ),
+        leading: const Center(child: AppBackButton()),
         leadingWidth: 74,
         title: Text(
           'profile.saved'.tr,
@@ -102,8 +117,16 @@ class _SavedItemsScreenState extends State<SavedItemsScreen> {
                   itemCount: filtered.length,
                   separatorBuilder: (_, _) =>
                       const SizedBox(height: AppSpacing.sm),
-                  itemBuilder: (context, index) =>
-                      _SavedRow(item: filtered[index], theme: theme),
+                  itemBuilder: (context, index) {
+                    final item = filtered[index];
+                    return _SavedRow(
+                      item: item,
+                      theme: theme,
+                      onTap: item.available && item.itemType == 'SHORT_CONTENT'
+                          ? () => unawaited(_openItem(item))
+                          : null,
+                    );
+                  },
                 ),
               ),
             ),
@@ -158,66 +181,75 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _SavedRow extends StatelessWidget {
-  const _SavedRow({required this.item, required this.theme});
+  const _SavedRow({required this.item, required this.theme, this.onTap});
 
   final SavedItemEntity item;
   final ThemeData theme;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final scheme = theme.colorScheme;
     final muted = scheme.onSurface.withValues(alpha: 0.5);
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: scheme.surface,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: scheme.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          Container(
-            height: 40,
-            width: 40,
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
-              borderRadius: BorderRadius.circular(AppRadius.md + 2),
-            ),
-            child: Icon(
-              _SavedItemsScreenState._typeIcons[item.itemType] ??
-                  Icons.bookmark_border,
-              size: 18,
-              color: item.available ? scheme.onSurface : muted,
-            ),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: scheme.outlineVariant),
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.available
-                      ? (item.title ?? '')
-                      : 'profile.savedUnavailable'.tr,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: item.available ? null : muted,
-                  ),
+          child: Row(
+            children: [
+              Container(
+                height: 40,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(AppRadius.md + 2),
                 ),
-                Text(
-                  item.available && (item.subtitle ?? '').isNotEmpty
-                      ? item.subtitle!
-                      : 'savedType.${item.itemType}'.tr,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                child: Icon(
+                  _SavedItemsScreenState._typeIcons[item.itemType] ??
+                      Icons.bookmark_border,
+                  size: 18,
+                  color: item.available ? scheme.onSurface : muted,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.available
+                          ? (item.title ?? '')
+                          : 'profile.savedUnavailable'.tr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: item.available ? null : muted,
+                      ),
+                    ),
+                    Text(
+                      item.available && (item.subtitle ?? '').isNotEmpty
+                          ? item.subtitle!
+                          : 'savedType.${item.itemType}'.tr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                    ),
+                  ],
+                ),
+              ),
+              if (onTap != null) Icon(Icons.chevron_right, color: muted),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

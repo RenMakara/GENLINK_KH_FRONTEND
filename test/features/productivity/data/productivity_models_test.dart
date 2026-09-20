@@ -74,4 +74,34 @@ void main() {
     expect(page.content.single.durationMinutes, 25);
     expect(page.content.single.completed, isTrue);
   });
+
+  test(
+    'maps task overdue state, habit streak, and focus XP from wire values',
+    () {
+      final task = ProductivityMapper.task({
+        'taskId': 'task-1',
+        'title': 'Submit report',
+        'overdue': true,
+        'completed': false,
+      });
+      final habit = ProductivityMapper.habit({
+        'habitId': 'habit-1',
+        'title': 'Read',
+        'streakCount': '7',
+        'completionRate': '85.5',
+        'checkedInToday': true,
+      });
+      final focus = ProductivityMapper.focusSession({
+        'sessionId': 'session-1',
+        'durationMinutes': 25,
+        'completed': true,
+        'xpEarned': '5',
+      });
+
+      expect(task.overdue, isTrue);
+      expect(habit.streakCount, 7);
+      expect(habit.completionRate, 85.5);
+      expect(focus.xpEarned, 5);
+    },
+  );
 }

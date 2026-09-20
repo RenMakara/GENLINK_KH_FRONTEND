@@ -464,6 +464,7 @@ class _GrowthContentViewState extends State<_GrowthContentView> {
                       badgeText: xpReward != null && xpReward > 0
                           ? '+$xpReward XP'
                           : null,
+                      onTap: () => Get.toNamed(AppRoutes.challengeList),
                     ),
                   ],
 

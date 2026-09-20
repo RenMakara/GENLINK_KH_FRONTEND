@@ -21,10 +21,12 @@ import '../../../productivity/presentation/focus_feature/focus_home_screen.dart'
 import '../../../productivity/presentation/habit_feature/habit_screen.dart';
 import '../../../productivity/presentation/task_feature/task_home_screen.dart';
 import '../../../productivity/productivity_screen.dart';
+import '../../../profile/presentation/controllers/profile_controller.dart';
 import '../../data/repositories/notification_repository_impl.dart';
 import '../../domain/models/notification_model.dart';
 
-class NotificationController extends GetxController with WidgetsBindingObserver {
+class NotificationController extends GetxController
+    with WidgetsBindingObserver {
   final NotificationRepositoryImpl repository;
 
   NotificationController({required this.repository});
@@ -185,8 +187,9 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
       );
 
       final existingIds = notifications.map((n) => n.id).toSet();
-      final newItems =
-          pageResult.items.where((n) => !existingIds.contains(n.id)).toList();
+      final newItems = pageResult.items
+          .where((n) => !existingIds.contains(n.id))
+          .toList();
 
       notifications.addAll(newItems);
       currentPage.value = nextPage;
@@ -266,7 +269,9 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
   }
 
   /// Adapts FCM foreground push payload and dispatches it.
-  Future<void> onRealtimeNotificationReceivedFromPayload(dynamic payload) async {
+  Future<void> onRealtimeNotificationReceivedFromPayload(
+    dynamic payload,
+  ) async {
     try {
       if (payload is Map<String, dynamic>) {
         await onRealtimeNotificationReceivedFromJson(payload);
@@ -292,10 +297,7 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
         'targetId': referenceId,
         'createdAt': DateTime.now().toUtc().toIso8601String(),
         'readStatus': false,
-        'metadata': {
-          'deliveryId': ?deliveryId,
-          'dedupeKey': ?dedupeKey,
-        },
+        'metadata': {'deliveryId': ?deliveryId, 'dedupeKey': ?dedupeKey},
       };
       final model = NotificationModel.fromJson(json);
       await onRealtimeNotificationReceived(model);
@@ -316,11 +318,14 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
       final count = results[1] as int;
 
       final unreadLocal = notifications.where((n) => !n.isRead).length;
-      totalUnreadCount.value = (count > 0 || unreadLocal == 0) ? count : unreadLocal;
+      totalUnreadCount.value = (count > 0 || unreadLocal == 0)
+          ? count
+          : unreadLocal;
 
       final existingIds = notifications.map((n) => n.id).toSet();
-      final newItems =
-          pageResult.items.where((n) => !existingIds.contains(n.id)).toList();
+      final newItems = pageResult.items
+          .where((n) => !existingIds.contains(n.id))
+          .toList();
 
       if (newItems.isNotEmpty) {
         for (final item in newItems.reversed) {
@@ -433,14 +438,17 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
         targetType == 'CHAT_ROOM' ||
         targetType == 'CHATROOM') {
       if (targetId != null && targetId.isNotEmpty) {
-        debugPrint('[CHAT-NAV] source = Notification, targetId = $targetId, currentRoute = ${Get.currentRoute}');
+        debugPrint(
+          '[CHAT-NAV] source = Notification, targetId = $targetId, currentRoute = ${Get.currentRoute}',
+        );
         ChatNavigation.openChatDetail(targetId);
       } else {
-        debugPrint('[CHAT-NAV] source = Notification (empty targetId), currentRoute = ${Get.currentRoute}');
+        debugPrint(
+          '[CHAT-NAV] source = Notification (empty targetId), currentRoute = ${Get.currentRoute}',
+        );
         Get.toNamed<void>(AppRoutes.chat);
       }
       return;
-
     }
 
     // ── Post / Comments Navigation ───────────────────────────────────────
@@ -480,8 +488,9 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
       if (targetType == 'STORY' && targetId != null && targetId.isNotEmpty) {
         if (Get.isRegistered<StoryController>()) {
           final storyCtrl = Get.find<StoryController>();
-          final hasTarget = storyCtrl.storyGroups
-              .any((group) => group.stories.any((s) => s.id == targetId));
+          final hasTarget = storyCtrl.storyGroups.any(
+            (group) => group.stories.any((s) => s.id == targetId),
+          );
           if (hasTarget) {
             AppNotificationBanner.showInfo(
               context: context,
@@ -569,13 +578,11 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
         Get.to<void>(() => const HabitHomeScreen());
         return;
       }
-      if (notif.type == NotificationType.taskReminder ||
-          targetType == 'TASK') {
+      if (notif.type == NotificationType.taskReminder || targetType == 'TASK') {
         Get.to<void>(() => const TasksPage());
         return;
       }
-      if (notif.type == NotificationType.goalReminder ||
-          targetType == 'GOAL') {
+      if (notif.type == NotificationType.goalReminder || targetType == 'GOAL') {
         Get.to<void>(() => const FocusPage());
         return;
       }
@@ -584,14 +591,33 @@ class NotificationController extends GetxController with WidgetsBindingObserver 
     }
 
     // ── Updates & Gamification Navigation ────────────────────────────────
+    if (notif.type == NotificationType.challengeReward ||
+        targetType == 'CHALLENGE') {
+      if (targetId != null && targetId.isNotEmpty) {
+        Get.toNamed<void>(AppRoutes.challengeDetail, arguments: targetId);
+      } else {
+        Get.toNamed<void>(AppRoutes.challengeList);
+      }
+      return;
+    }
+
+    if (notif.type == NotificationType.badgeAwarded ||
+        notif.type == NotificationType.levelUp ||
+        targetType == 'BADGE' ||
+        targetType == 'ACHIEVEMENT') {
+      if (Get.isRegistered<ProfileController>()) {
+        unawaited(Get.find<ProfileController>().load());
+      }
+      Get.toNamed<void>(AppRoutes.profileAchievements);
+      return;
+    }
+
     if (notif.category == NotificationCategory.updates) {
-      if (notif.type == NotificationType.security ||
-          targetType == 'SECURITY') {
+      if (notif.type == NotificationType.security || targetType == 'SECURITY') {
         Get.toNamed<void>(AppRoutes.settingsPrivacy);
         return;
       }
-      if (notif.type == NotificationType.quizResult ||
-          targetType == 'QUIZ') {
+      if (notif.type == NotificationType.quizResult || targetType == 'QUIZ') {
         Get.toNamed<void>(AppRoutes.quizDashboard);
         return;
       }

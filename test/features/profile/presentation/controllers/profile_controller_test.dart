@@ -178,6 +178,23 @@ void main() {
     verify(() => repository.updateProfile(coverPreset: 7)).called(1);
   });
 
+  test('saved items can be refreshed independently from the profile', () async {
+    const saved = SavedItemEntity(
+      savedItemId: 'saved-1',
+      itemType: 'SHORT_CONTENT',
+      itemId: 'short-1',
+      available: true,
+      title: 'Study tips',
+    );
+    when(() => repository.getSavedItems()).thenAnswer((_) async => [saved]);
+    final controller = ProfileController(repository: repository);
+
+    await controller.reloadSavedItems();
+
+    expect(controller.savedItems, [saved]);
+    verify(() => repository.getSavedItems()).called(1);
+  });
+
   test(
     'profile screen resolves owner and public controllers independently',
     () {
@@ -253,6 +270,53 @@ void main() {
       expect(synchronized.avatarUrl, _updatedOwnerProfile.avatarUrl);
       expect(synchronized.role, _cachedUser.role);
       expect(synchronized.active, _cachedUser.active);
+    },
+  );
+
+  test('loads the real badge catalog with earned and locked state', () async {
+    const badges = [
+      BadgeEntity(
+        badgeId: 'badge-earned',
+        name: 'Quiz Champion',
+        description: 'Completed quizzes',
+        earned: true,
+        unlockedAt: '2026-09-18T10:00:00',
+      ),
+      BadgeEntity(
+        badgeId: 'badge-locked',
+        name: 'Productivity Hero',
+        requirement: 'Earn productivity XP',
+        earned: false,
+      ),
+    ];
+    final controller = ProfileController(repository: repository);
+
+    when(() => repository.getBadges()).thenAnswer((_) async => badges);
+
+    await controller.loadBadges();
+
+    expect(controller.badges, badges);
+    expect(controller.sortedBadges.map((badge) => badge.badgeId), [
+      'badge-earned',
+      'badge-locked',
+    ]);
+    expect(controller.badgesErrorMessage.value, isNull);
+    expect(controller.isBadgesLoading.value, isFalse);
+  });
+
+  test(
+    'keeps badge loading errors visible instead of presenting an empty catalog',
+    () async {
+      final controller = ProfileController(repository: repository);
+      when(
+        () => repository.getBadges(),
+      ).thenThrow(Exception('badge service unavailable'));
+
+      await controller.loadBadges();
+
+      expect(controller.badges, isEmpty);
+      expect(controller.badgesErrorMessage.value, isNotNull);
+      expect(controller.isBadgesLoading.value, isFalse);
     },
   );
 }

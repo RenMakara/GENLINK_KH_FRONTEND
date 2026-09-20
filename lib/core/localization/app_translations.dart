@@ -477,6 +477,22 @@ class AppTranslations extends Translations {
     'achievements.toNextLevel': '@xp XP to Level @level',
     'achievements.myBadges': 'My Badges',
     'achievements.empty': 'No badges yet — start earning XP!',
+    'achievements.headerSubtitle': 'Track your progress. Unlock more.',
+    'achievements.filterAll': 'All',
+    'achievements.filterUnlocked': 'Unlocked',
+    'achievements.filterLocked': 'Locked',
+    'achievements.unlocked': 'Unlocked',
+    'achievements.locked': 'Locked',
+    'achievements.xpProgress': '@current / @max XP',
+    'achievements.moreComingSoon': 'More achievements coming soon!',
+    'achievements.moreComingSoonSub':
+        'Keep learning and stay tuned for new badges.',
+    'achievements.motivationTitle': 'Small steps. Big achievements.',
+    'achievements.motivationSubtitle': 'Keep learning, keep growing!',
+    'achievements.noUnlockedBadges':
+        'No unlocked badges yet. Complete tasks and quizzes to earn badges!',
+    'achievements.noLockedBadges':
+        'Awesome! You have unlocked all available badges!',
     'saved.all': 'All',
     'savedType.POST': 'Posts',
     'savedType.DISCUSSION': 'Discussions',
@@ -548,6 +564,16 @@ class AppTranslations extends Translations {
     'quiz.rankGlobally': 'See how you rank globally',
     'quiz.backToDashboard': 'Back to Dashboard',
     'quiz.chooseQuizCategory': 'Choose Quiz Category',
+    'quiz.categoryHeaderSubtitle': 'Pick a category to start learning.',
+    'quiz.searchCategories': 'Search categories...',
+    'quiz.noMatchingCategories': 'No categories match your search.',
+    'quiz.noRecentQuizzes': 'No quizzes played yet.',
+    'quiz.noRecentQuizzesSubtitle': 'Start your first quiz to see it here.',
+    'quiz.challengeFriendsTitle': 'Challenge your friends!',
+    'quiz.challengeFriendsSubtitle':
+        "Play 1v1 quizzes and see who's smarter.",
+    'quiz.lastPlayed': 'Last played @time',
+    'quiz.categoryFinanceDesc': 'Build your money knowledge',
     'quiz.chooseQuiz': 'Choose a Quiz',
     'quiz.noQuizzes': 'No quizzes',
     'quiz.noQuizzesForCategory': 'No quizzes found for @category yet.',
@@ -599,10 +625,32 @@ class AppTranslations extends Translations {
     'quiz.leaderboard': 'Leaderboard',
     'quiz.challenge': 'Challenge',
     'quiz.multiplayerQuiz': '1v1 Multiplayer Quiz',
+    'quiz.multiplayerSubtitle': 'Challenge a friend or meet a new opponent.',
     'quiz.playAgainstOpponent': 'Find an opponent and compete live',
     'quiz.chooseMultiplayerQuiz': 'Choose a quiz to play 1v1',
     'quiz.chooseMultiplayerQuizDescription':
-        'Answer questions at your own pace and see your opponent\'s score update.',
+        'Answer questions at your own pace and see your opponent\'s score update in real-time.',
+    'quiz.searchQuizzes': 'Search quizzes...',
+    'quiz.noMatchingQuizzes': 'No quizzes match your search.',
+    'quiz.all': 'All',
+    'quiz.cantFindQuiz': 'Can\'t find what you want?',
+    'quiz.moreQuizzesComingSoon': 'More quizzes coming soon!',
+    'quiz.matchmakingSubtitle':
+        'We\'ll match you with a player at your level.',
+    'quiz.realtimeFeature': 'Real-time',
+    'quiz.realtimeFeatureDesc': 'See scores as you play',
+    'quiz.fairMatchFeature': 'Fair Match',
+    'quiz.fairMatchFeatureDesc': 'Players at similar level',
+    'quiz.safeFunFeature': 'Safe & Fun',
+    'quiz.safeFunFeatureDesc': 'Play and learn together',
+    'quiz.didYouKnow': 'Did you know?',
+    'quiz.didYouKnowTip':
+        '1v1 quizzes help you learn faster and stay motivated!',
+    'quiz.cancelMatch': 'Cancel Match',
+    'quiz.opponentFound': 'Opponent found!',
+    'quiz.preparingMatch': 'Preparing your match...',
+    'quiz.levelIndicator': 'Level @level',
+    'quiz.levelUnknown': '???',
     'quiz.loadingMultiplayer': 'Loading multiplayer quizzes...',
     'quiz.connectingToMatch': 'Connecting to the match service...',
     'quiz.findingOpponent': 'Finding an opponent...',
@@ -611,6 +659,19 @@ class AppTranslations extends Translations {
     'quiz.opponentAnswered': 'Your opponent answered correctly.',
     'quiz.answerTimedOut': 'Time is up. Moving to the next question.',
     'quiz.answerSubmitted': 'Answer submitted.',
+    'quiz.multiplayerGameplaySubtitle':
+        'Answer quickly and beat your opponent!',
+    'quiz.chooseCorrectAnswer': 'Choose the correct answer.',
+    'quiz.submitAnswer': 'Submit Answer',
+    'quiz.matchComplete': 'Match Complete!',
+    'quiz.matchWonSubtitle':
+        'Outstanding performance! Keep up the great streak.',
+    'quiz.matchLostSubtitle': 'Great effort! Keep learning and play again.',
+    'quiz.matchTieSubtitle':
+        'A closely matched battle! Play again to break the tie.',
+    'quiz.keepGoingTitle': 'Keep Going!',
+    'quiz.keepGoingMessage':
+        'Every quiz helps you learn and improve. Challenge another player to get a higher score!',
     'quiz.calculatingResult': 'Calculating the final result...',
     'quiz.matchWon': 'You won the match!',
     'quiz.matchLost': 'Match complete',
@@ -687,6 +748,21 @@ class AppTranslations extends Translations {
         'This leaderboard profile is unavailable.',
     'leaderboard.achievementsUnavailable':
         'Achievement details are not available from the current service.',
+    'leaderboard.globalRank': 'Global Rank',
+    'leaderboard.totalPointsEarned': 'Total points earned',
+    'leaderboard.outOfAllLearners': 'Out of all learners',
+    'leaderboard.currentLevel': 'Current level',
+    'leaderboard.xpToNextLevel': '@xp XP to next level',
+    'leaderboard.xpProgress': '@current / @max XP',
+    'leaderboard.achievements': 'Achievements',
+    'leaderboard.seeAll': 'See All',
+    'leaderboard.viewRanking': 'View Ranking',
+    'leaderboard.viewRankingSubtitle': 'See where @name stands globally',
+    'leaderboard.keepLearning': 'Keep learning, keep growing!',
+    'leaderboard.smallStepsBigKnowledge': 'SMALL STEPS\nBIG KNOWLEDGE',
+    'leaderboard.profileMotivationQuote':
+        '“A little progress each day adds up to big results.”',
+    'leaderboard.profileMotivationSub': 'Keep going!',
 
     // ── Settings ────────────────────────────────────────────────────────
     'settings.title': 'Settings',
@@ -701,6 +777,21 @@ class AppTranslations extends Translations {
     'settings.languageKhmer': 'ភាសាខ្មែរ',
     'settings.notifications': 'Notifications',
     'settings.notificationsEnabled': 'Enable notifications',
+    'settings.notificationPreferences': 'Notification preferences',
+    'settings.notificationPreferencesHint':
+        'Choose which productivity reminders you receive',
+    'settings.notificationPreferencesError':
+        'Unable to load notification preferences.',
+    'settings.retryNotificationPreferences': 'Retry',
+    'settings.productivityTaskNotifications': 'Task reminders',
+    'settings.productivityTaskNotificationsHint':
+        'Reminders when a task is due',
+    'settings.productivityHabitNotifications': 'Habit streaks',
+    'settings.productivityHabitNotificationsHint':
+        'Updates when a habit streak is recorded',
+    'settings.productivityGoalNotifications': 'Goal milestones',
+    'settings.productivityGoalNotificationsHint':
+        'Updates when a goal milestone is reached',
     'settings.interface': 'Interface',
     'settings.interfaceHint': 'Customize your navigation and effects',
     'settings.glassmorphism': 'Glassmorphism Effects',
@@ -2310,6 +2401,23 @@ class AppTranslations extends Translations {
     'achievements.toNextLevel': '@xp XP ទៀតដល់កម្រិត @level',
     'achievements.myBadges': 'ស្លាកសញ្ញារបស់ខ្ញុំ',
     'achievements.empty': 'មិនទាន់មានស្លាកសញ្ញា — ចាប់ផ្តើមប្រមូល XP!',
+    'achievements.headerSubtitle': 'តាមដានការរីកចម្រើនរបស់អ្នក។ ដោះសោបន្ថែមទៀត។',
+    'achievements.filterAll': 'ទាំងអស់',
+    'achievements.filterUnlocked': 'បានដោះសោ',
+    'achievements.filterLocked': 'ចាក់សោ',
+    'achievements.unlocked': 'បានដោះសោ',
+    'achievements.locked': 'ចាក់សោ',
+    'achievements.xpProgress': '@current / @max XP',
+    'achievements.moreComingSoon':
+        'សមិទ្ធផលបន្ថែមទៀតនឹងមកដល់ក្នុងពេលឆាប់ៗនេះ!',
+    'achievements.moreComingSoonSub':
+        'បន្តការរៀនសូត្រ និងរង់ចាំផ្លាកសញ្ញាថ្មីៗ។',
+    'achievements.motivationTitle': 'ជំហានតូចៗ។ សមិទ្ធផលធំធេង។',
+    'achievements.motivationSubtitle': 'បន្តការរៀនសូត្រ បន្តការលូតលាស់!',
+    'achievements.noUnlockedBadges':
+        'មិនទាន់មានផ្លាកសញ្ញាដែលបានដោះសោនៅឡើយទេ។ បំពេញកិច្ចការ និងកម្រងសំណួរដើម្បីទទួលបានផ្លាកសញ្ញា!',
+    'achievements.noLockedBadges':
+        'អស្ចារ្យណាស់! អ្នកបានដោះសោផ្លាកសញ្ញាទាំងអស់ហើយ!',
     'saved.all': 'ទាំងអស់',
     'savedType.POST': 'ប្រកាស',
     'savedType.DISCUSSION': 'ការពិភាក្សា',
@@ -2380,6 +2488,17 @@ class AppTranslations extends Translations {
     'quiz.rankGlobally': 'មើលចំណាត់ថ្នាក់របស់អ្នក',
     'quiz.backToDashboard': 'ត្រឡប់ទៅផ្ទាំងកម្រងសំណួរ',
     'quiz.chooseQuizCategory': 'ជ្រើសរើសប្រភេទកម្រងសំណួរ',
+    'quiz.categoryHeaderSubtitle': 'ជ្រើសរើសប្រភេទដើម្បីចាប់ផ្តើមរៀន។',
+    'quiz.searchCategories': 'ស្វែងរកប្រភេទ...',
+    'quiz.noMatchingCategories': 'គ្មានប្រភេទណាត្រូវនឹងការស្វែងរករបស់អ្នកទេ។',
+    'quiz.noRecentQuizzes': 'មិនទាន់មានកម្រងសំណួរដែលបានលេងនៅឡើយទេ។',
+    'quiz.noRecentQuizzesSubtitle':
+        'ចាប់ផ្តើមកម្រងសំណួរដំបូងរបស់អ្នក ដើម្បីបង្ហាញនៅទីនេះ។',
+    'quiz.challengeFriendsTitle': 'ប្រកួតប្រជែងជាមួយមិត្តភក្តិរបស់អ្នក!',
+    'quiz.challengeFriendsSubtitle':
+        'លេងកម្រងសំណួរ ១ ទល់ ១ ហើយមើលថាអ្នកណាឆ្លាតជាង។',
+    'quiz.lastPlayed': 'លេងចុងក្រោយ @time',
+    'quiz.categoryFinanceDesc': 'ពង្រីកចំណេះដឹងផ្នែកហិរញ្ញវត្ថុរបស់អ្នក',
     'quiz.chooseQuiz': 'ជ្រើសរើសកម្រងសំណួរ',
     'quiz.noQuizzes': 'មិនមានកម្រងសំណួរ',
     'quiz.noQuizzesForCategory': 'មិនមានកម្រងសំណួរសម្រាប់ @category នៅឡើយទេ',
@@ -2431,10 +2550,32 @@ class AppTranslations extends Translations {
     'quiz.leaderboard': 'តារាងចំណាត់ថ្នាក់',
     'quiz.challenge': 'ប្រកួត',
     'quiz.multiplayerQuiz': 'កម្រងសំណួរ ១ ទល់ ១',
+    'quiz.multiplayerSubtitle': 'ប្រកួតប្រជែងជាមួយមិត្តភក្តិ ឬជួបគូប្រកួតថ្មី។',
     'quiz.playAgainstOpponent': 'ស្វែងរកគូប្រកួត និងប្រកួតផ្ទាល់',
     'quiz.chooseMultiplayerQuiz': 'ជ្រើសរើសកម្រងសំណួរសម្រាប់ប្រកួត ១ ទល់ ១',
     'quiz.chooseMultiplayerQuizDescription':
-        'ឆ្លើយសំណួរតាមល្បឿនរបស់អ្នក និងមើលពិន្ទុគូប្រកួតបច្ចុប្បន្ន។',
+        'ឆ្លើយសំណួរតាមល្បឿនរបស់អ្នក និងមើលពិន្ទុគូប្រកួតបច្ចុប្បន្នក្នុងពេលជាក់ស្តែង។',
+    'quiz.searchQuizzes': 'ស្វែងរកកម្រងសំណួរ...',
+    'quiz.noMatchingQuizzes': 'គ្មានកម្រងសំណួរណាត្រូវនឹងការស្វែងរករបស់អ្នកទេ។',
+    'quiz.all': 'ទាំងអស់',
+    'quiz.cantFindQuiz': 'រកមិនឃើញអ្វីដែលអ្នកចង់បានមែនទេ?',
+    'quiz.moreQuizzesComingSoon': 'កម្រងសំណួរជាច្រើនទៀតនឹងមកដល់ឆាប់ៗ!',
+    'quiz.matchmakingSubtitle':
+        'យើងនឹងផ្គូផ្គងអ្នកជាមួយអ្នកលេងដែលមានកម្រិតប្រហាក់ប្រហែលគ្នា។',
+    'quiz.realtimeFeature': 'ពេលវេលាជាក់ស្តែង',
+    'quiz.realtimeFeatureDesc': 'មើលពិន្ទុពេលកំពុងលេង',
+    'quiz.fairMatchFeature': 'ការប្រកួតយុត្តិធម៌',
+    'quiz.fairMatchFeatureDesc': 'អ្នកលេងកម្រិតប្រហាក់ប្រហែល',
+    'quiz.safeFunFeature': 'សុវត្ថិភាព & សប្បាយ',
+    'quiz.safeFunFeatureDesc': 'លេងនិងរៀនជាមួយគ្នា',
+    'quiz.didYouKnow': 'តើអ្នកដឹងទេ?',
+    'quiz.didYouKnowTip':
+        'កម្រងសំណួរ ១ ទល់ ១ ជួយអ្នករៀនបានលឿន និងបង្កើនការលើកទឹកចិត្ត!',
+    'quiz.cancelMatch': 'បោះបង់ការប្រកួត',
+    'quiz.opponentFound': 'រកឃើញគូប្រកួតហើយ!',
+    'quiz.preparingMatch': 'កំពុងរៀបចំការប្រកួតរបស់អ្នក...',
+    'quiz.levelIndicator': 'កម្រិត @level',
+    'quiz.levelUnknown': '???',
     'quiz.loadingMultiplayer': 'កំពុងផ្ទុកកម្រងសំណួរប្រកួត...',
     'quiz.connectingToMatch': 'កំពុងភ្ជាប់ទៅសេវាកម្មប្រកួត...',
     'quiz.findingOpponent': 'កំពុងស្វែងរកគូប្រកួត...',
@@ -2443,6 +2584,20 @@ class AppTranslations extends Translations {
     'quiz.opponentAnswered': 'គូប្រកួតរបស់អ្នកបានឆ្លើយត្រូវ។',
     'quiz.answerTimedOut': 'អស់ពេល។ កំពុងបន្តទៅសំណួរបន្ទាប់។',
     'quiz.answerSubmitted': 'បានដាក់ស្នើចម្លើយ។',
+    'quiz.multiplayerGameplaySubtitle':
+        'ឆ្លើយឱ្យបានរហ័ស និងយកឈ្នះគូប្រកួតរបស់អ្នក!',
+    'quiz.chooseCorrectAnswer': 'ជ្រើសរើសចម្លើយដែលត្រឹមត្រូវ។',
+    'quiz.submitAnswer': 'ដាក់ស្នើចម្លើយ',
+    'quiz.matchComplete': 'ការប្រកួតបានបញ្ចប់!',
+    'quiz.matchWonSubtitle':
+        'ការប្រកួតបានល្អឥតខ្ចោះ! បន្តរក្សាភាពឆ្នើមនេះទៀត។',
+    'quiz.matchLostSubtitle':
+        'ការខិតខំប្រឹងប្រែងយ៉ាងល្អ! បន្តរៀន និងលេងម្ដងទៀត។',
+    'quiz.matchTieSubtitle':
+        'ការប្រកួតប្រជែងគ្នាយ៉ាងស្វិតស្វាញ! លេងម្ដងទៀតដើម្បីស្វែងរកអ្នកឈ្នះ។',
+    'quiz.keepGoingTitle': 'បន្តដំណើរទៅមុខទៀត!',
+    'quiz.keepGoingMessage':
+        'រាល់កម្រងសំណួរជួយឱ្យអ្នករៀន និងអភិវឌ្ឍ។ ប្រកួតជាមួយអ្នកផ្សេងដើម្បីទទួលបានពិន្ទុកាន់តែខ្ពស់!',
     'quiz.calculatingResult': 'កំពុងគណនាលទ្ធផលចុងក្រោយ...',
     'quiz.matchWon': 'អ្នកបានឈ្នះការប្រកួត!',
     'quiz.matchLost': 'បានបញ្ចប់ការប្រកួត',
@@ -2517,6 +2672,21 @@ class AppTranslations extends Translations {
         'ប្រវត្តិរូបតារាងចំណាត់ថ្នាក់នេះមិនអាចប្រើបានទេ',
     'leaderboard.achievementsUnavailable':
         'ព័ត៌មានសមិទ្ធផលមិនទាន់មានពីសេវាកម្មបច្ចុប្បន្នទេ',
+    'leaderboard.globalRank': 'ចំណាត់ថ្នាក់សកល',
+    'leaderboard.totalPointsEarned': 'ពិន្ទុសរុបដែលទទួលបាន',
+    'leaderboard.outOfAllLearners': 'ក្នុងចំណោមអ្នករៀនទាំងអស់',
+    'leaderboard.currentLevel': 'កម្រិតបច្ចុប្បន្ន',
+    'leaderboard.xpToNextLevel': '@xp XP ទៀតដល់កម្រិតបន្ទាប់',
+    'leaderboard.xpProgress': '@current / @max XP',
+    'leaderboard.achievements': 'សមិទ្ធផល',
+    'leaderboard.seeAll': 'មើលទាំងអស់',
+    'leaderboard.viewRanking': 'មើលចំណាត់ថ្នាក់',
+    'leaderboard.viewRankingSubtitle': 'មើលកន្លែងដែល @name ឈរលើពិភពលោក',
+    'leaderboard.keepLearning': 'បន្តការរៀនសូត្រ បន្តការលូតលាស់!',
+    'leaderboard.smallStepsBigKnowledge': 'ជំហានតូចៗ\nចំណេះដឹងធំធេង',
+    'leaderboard.profileMotivationQuote':
+        '“ការរីកចម្រើនបន្តិចបន្តួចជារៀងរាល់ថ្ងៃ នឹងនាំឱ្យទទួលបានលទ្ធផលដ៏អស្ចារ្យ។”',
+    'leaderboard.profileMotivationSub': 'បន្តដំណើរទៅមុខទៀត!',
 
     // ── Settings ────────────────────────────────────────────────────────
     'settings.title': 'ការកំណត់',
@@ -2531,6 +2701,21 @@ class AppTranslations extends Translations {
     'settings.languageKhmer': 'ភាសាខ្មែរ',
     'settings.notifications': 'ការជូនដំណឹង',
     'settings.notificationsEnabled': 'បើកការជូនដំណឹង',
+    'settings.notificationPreferences': 'ចំណូលចិត្តការជូនដំណឹង',
+    'settings.notificationPreferencesHint':
+        'ជ្រើសរើសការរំលឹកផលិតភាពដែលអ្នកចង់ទទួល',
+    'settings.notificationPreferencesError':
+        'មិនអាចទាញយកចំណូលចិត្តការជូនដំណឹងបានទេ',
+    'settings.retryNotificationPreferences': 'ព្យាយាមម្តងទៀត',
+    'settings.productivityTaskNotifications': 'ការរំលឹកកិច្ចការ',
+    'settings.productivityTaskNotificationsHint':
+        'ការរំលឹកនៅពេលកិច្ចការដល់ពេលកំណត់',
+    'settings.productivityHabitNotifications': 'ចង្វាក់នៃទម្លាប់',
+    'settings.productivityHabitNotificationsHint':
+        'បច្ចុប្បន្នភាពនៅពេលកត់ត្រាចង្វាក់ទម្លាប់',
+    'settings.productivityGoalNotifications': 'ដំណាក់កាលគោលដៅ',
+    'settings.productivityGoalNotificationsHint':
+        'បច្ចុប្បន្នភាពនៅពេលសម្រេចបានដំណាក់កាលគោលដៅ',
     'settings.interface': 'ចំណុចប្រទាក់',
     'settings.interfaceHint': 'កំណត់ការរុករក និងបែបផែនរបស់អ្នក',
     'settings.glassmorphism': 'បែបផែនកញ្ចក់ (Glassmorphism)',

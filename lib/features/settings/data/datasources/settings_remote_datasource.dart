@@ -22,4 +22,24 @@ class SettingsRemoteDatasource {
       parse: (data) => UserSettingsMapper.fromJson(ApiClient.asMap(data)),
     );
   }
+
+  Future<List<NotificationPreferenceEntity>> getNotificationPreferences() {
+    return _client.get(
+      ApiEndpoints.notificationPreferences,
+      parse: (data) =>
+          ApiClient.asList(data, NotificationPreferenceMapper.fromJson),
+    );
+  }
+
+  Future<NotificationPreferenceEntity> updateNotificationPreference({
+    required String notificationType,
+    required bool enabled,
+  }) {
+    return _client.put(
+      ApiEndpoints.notificationPreference(notificationType),
+      body: NotificationPreferenceMapper.updateBody(enabled: enabled),
+      parse: (data) =>
+          NotificationPreferenceMapper.fromJson(ApiClient.asMap(data)),
+    );
+  }
 }

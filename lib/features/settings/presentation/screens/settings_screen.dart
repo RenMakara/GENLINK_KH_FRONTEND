@@ -108,6 +108,8 @@ class SettingsScreen extends GetView<SettingsController> {
                   accent: AppColors.danger,
                   title: 'settings.notifications'.tr,
                   subtitle: 'settings.notificationsHint'.tr,
+                  onTap: () =>
+                      Get.toNamed<void>(AppRoutes.settingsNotifications),
                   trailing: Switch(
                     value: settings.notificationEnabled,
                     onChanged: controller.setNotificationEnabled,

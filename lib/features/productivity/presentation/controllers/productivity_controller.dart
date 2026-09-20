@@ -20,6 +20,7 @@ class ProductivityController extends GetxController {
 
   final isLoading = false.obs;
   final isRefreshing = false.obs;
+  final isFocusHistoryLoading = false.obs;
   final errorMessage = RxnString();
   final busyIds = <String>{}.obs;
 
@@ -30,6 +31,7 @@ class ProductivityController extends GetxController {
   }
 
   Future<void> load() async {
+    if (isLoading.value) return;
     isLoading.value = true;
     errorMessage.value = null;
     try {
@@ -40,6 +42,7 @@ class ProductivityController extends GetxController {
   }
 
   Future<void> reload() async {
+    if (isRefreshing.value || isLoading.value) return;
     isRefreshing.value = true;
     try {
       await _loadData();
@@ -103,8 +106,14 @@ class ProductivityController extends GetxController {
   }
 
   Future<void> loadFocusHistory() async {
-    final page = await repository.getFocusHistory();
-    focusHistory.assignAll(page.content);
+    if (isFocusHistoryLoading.value) return;
+    isFocusHistoryLoading.value = true;
+    try {
+      final page = await repository.getFocusHistory();
+      focusHistory.assignAll(page.content);
+    } finally {
+      isFocusHistoryLoading.value = false;
+    }
   }
 
   Future<void> loadMotivation({String? category}) async {

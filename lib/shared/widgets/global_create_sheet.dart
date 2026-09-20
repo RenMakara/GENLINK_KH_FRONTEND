@@ -8,7 +8,6 @@ import '../../design_system/typography/app_typography.dart';
 import '../../features/community/presentation/screens/create_discussion_screen.dart';
 import '../../features/community/presentation/screens/create_event_screen.dart';
 import '../../features/community/presentation/screens/create_post_screen.dart';
-import '../../features/community/presentation/widgets/community_creation_flow.dart';
 import '../../features/community/presentation/widgets/story_creation_picker_sheet.dart';
 import 'package:genlink_frontend/app/routes/app_routes.dart';
 import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_set_screen.dart';
@@ -243,15 +242,12 @@ class GlobalCreateSheet extends StatelessWidget {
             'create.dialogShortContentDesc'.tr !=
                 'create.dialogShortContentDesc'
         ? 'create.dialogShortContentDesc'.tr
-        : 'Create and share short video clips or reels directly to your Story or Community feed.';
-    final openStoryText =
-        'create.openStoryCreator'.tr.isNotEmpty &&
-            'create.openStoryCreator'.tr != 'create.openStoryCreator'
-        ? 'create.openStoryCreator'.tr
-        : ('create.actionStory'.tr.isNotEmpty &&
-                  'create.actionStory'.tr != 'create.actionStory'
-              ? 'create.actionStory'.tr
-              : 'Open Story Creator');
+        : 'Create and share a short video directly to the GenLink Short Content feed.';
+    final createShortContentText =
+        'shortContent.create'.tr.isNotEmpty &&
+            'shortContent.create'.tr != 'shortContent.create'
+        ? 'shortContent.create'.tr
+        : 'Create Short Content';
     final cancelText =
         'common.cancel'.tr.isNotEmpty && 'common.cancel'.tr != 'common.cancel'
         ? 'common.cancel'.tr
@@ -346,10 +342,10 @@ class GlobalCreateSheet extends StatelessWidget {
             ),
             onPressed: () {
               Navigator.of(ctx).pop();
-              CommunityCreationFlow.openCreateStory();
+              Get.toNamed(AppRoutes.shortContentCreate);
             },
             child: Text(
-              openStoryText,
+              createShortContentText,
               style: TextStyle(
                 fontFamily: AppTypography.englishFontFamily,
                 fontFamilyFallback: _fontFallbacks,

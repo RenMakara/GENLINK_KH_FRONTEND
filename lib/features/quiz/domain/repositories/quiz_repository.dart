@@ -11,6 +11,4 @@ abstract class QuizRepository {
   );
 
   Future<List<QuizAttemptSummary>> getQuizHistory();
-
-  Future<List<LeaderboardEntry>> getLeaderboard(String category, String period);
 }

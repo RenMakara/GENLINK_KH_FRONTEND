@@ -7,6 +7,10 @@ abstract interface class MobilePushRegistrationService {
 
   /// Deactivates the current device remotely when [remote] is true. When a
   /// session has expired, callers can clear local state without making another
-  /// request with an expired access token.
-  Future<void> deactivateCurrentDevice({bool remote = true});
+  /// request with an expired access token. Logout should wait for an in-flight
+  /// registration before the server invalidates the access token.
+  Future<void> deactivateCurrentDevice({
+    bool remote = true,
+    bool waitForRegistration = true,
+  });
 }

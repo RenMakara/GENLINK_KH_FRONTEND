@@ -270,8 +270,9 @@ class QuizInProgressScreen extends GetView<QuizController> {
       }
       final question =
           controller.questions[controller.currentQuestionIndex.value];
-      final selected =
-          controller.selectedAnswers[controller.currentQuestionIndex.value];
+      final selected = controller.selectedOptionIndexForQuestion(
+        controller.currentQuestionIndex.value,
+      );
 
       return Column(
         children: List.generate(question.options.length, (i) {
@@ -279,10 +280,8 @@ class QuizInProgressScreen extends GetView<QuizController> {
             label: question.options[i].text,
             index: i,
             isSelected: selected == i,
-            onTap: () => controller.selectAnswer(
-              controller.currentQuestionIndex.value,
-              i,
-            ),
+            onTap: () =>
+                controller.selectAnswer(question.id, question.options[i].id),
           );
         }),
       );
@@ -328,7 +327,7 @@ class QuizInProgressScreen extends GetView<QuizController> {
                   radius: AppRadius.pill,
                   onPressed: () {
                     if (isLast) {
-                      Get.toNamed('/quiz/review');
+                      controller.skipQuestion();
                     } else {
                       controller.nextQuestion();
                     }

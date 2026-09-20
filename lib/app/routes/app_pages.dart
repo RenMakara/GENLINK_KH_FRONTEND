@@ -32,16 +32,10 @@ import '../../features/notification/notification_feature.dart';
 import '../../features/quiz/presentation/bindings/quiz_binding.dart';
 import '../../features/quiz/presentation/screens/quiz_dashboard_screen.dart';
 import '../../features/quiz/presentation/screens/category_selection_screen.dart';
-import '../../features/quiz/presentation/screens/find_opponent_screen.dart';
-import '../../features/quiz/presentation/screens/opponent_found_screen.dart';
+import '../../features/quiz/presentation/screens/multiplayer_quiz_screen.dart';
 import '../../features/quiz/presentation/screens/quiz_in_progress_screen.dart';
 import '../../features/quiz/presentation/screens/review_submit_screen.dart';
 import '../../features/quiz/presentation/screens/result_screen.dart';
-import '../../features/quiz/presentation/screens/claim_reward_screen.dart';
-import '../../features/quiz/presentation/screens/reward_animation_screen.dart';
-import '../../features/quiz/presentation/screens/reward_claimed_screen.dart';
-import '../../features/quiz/presentation/screens/leaderboard_screen.dart';
-import '../../features/quiz/presentation/screens/top_rank_detail_screen.dart';
 import '../../features/leaderboard/presentation/bindings/leaderboard_binding.dart';
 import '../../features/leaderboard/presentation/screens/leaderboard_home_screen.dart';
 import '../../features/leaderboard/presentation/screens/full_ranking_screen.dart';
@@ -49,7 +43,6 @@ import '../../features/leaderboard/presentation/screens/top_rank_detail_screen.d
     as lb_detail;
 import '../../features/leaderboard/presentation/screens/achievements_screen.dart'
     as lb_achievements;
-import '../../features/leaderboard/presentation/screens/invite_friends_screen.dart';
 import '../../features/splash/presentation/bindings/splash_binding.dart';
 import '../../features/splash/presentation/screens/splash_screen.dart';
 import '../../features/splash/presentation/screens/welcome_screen.dart';
@@ -156,14 +149,8 @@ abstract final class AppPages {
       middlewares: [AuthMiddleware()],
     ),
     GetPage<dynamic>(
-      name: AppRoutes.quizMatchmaking,
-      page: () => const FindOpponentScreen(),
-      binding: QuizBinding(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage<dynamic>(
-      name: AppRoutes.quizOpponentFound,
-      page: () => const OpponentFoundScreen(),
+      name: AppRoutes.quizMultiplayer,
+      page: () => const MultiplayerQuizScreen(),
       binding: QuizBinding(),
       middlewares: [AuthMiddleware()],
     ),
@@ -185,37 +172,6 @@ abstract final class AppPages {
       binding: QuizBinding(),
       middlewares: [AuthMiddleware()],
     ),
-    GetPage<dynamic>(
-      name: AppRoutes.quizClaimReward,
-      page: () => const ClaimRewardScreen(),
-      binding: QuizBinding(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage<dynamic>(
-      name: AppRoutes.quizRewardAnimation,
-      page: () => const RewardAnimationScreen(),
-      binding: QuizBinding(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage<dynamic>(
-      name: AppRoutes.quizRewardClaimed,
-      page: () => const RewardClaimedScreen(),
-      binding: QuizBinding(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage<dynamic>(
-      name: AppRoutes.quizLeaderboard,
-      page: () => const LeaderboardScreen(),
-      binding: QuizBinding(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage<dynamic>(
-      name: AppRoutes.quizTopRank,
-      page: () => const TopRankDetailScreen(),
-      binding: QuizBinding(),
-      middlewares: [AuthMiddleware()],
-    ),
-
     GetPage<dynamic>(
       name: AppRoutes.leaderboard,
       page: () => const LeaderboardHomeScreen(),
@@ -240,13 +196,6 @@ abstract final class AppPages {
       binding: LeaderboardBinding(),
       middlewares: [AuthMiddleware()],
     ),
-    GetPage<dynamic>(
-      name: AppRoutes.leaderboardInvite,
-      page: () => const InviteFriendsScreen(),
-      binding: LeaderboardBinding(),
-      middlewares: [AuthMiddleware()],
-    ),
-
     GetPage<dynamic>(
       name: AppRoutes.profileSetup,
       page: () => const ProfileSetupScreen(),

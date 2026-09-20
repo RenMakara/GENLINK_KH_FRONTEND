@@ -12,7 +12,6 @@ abstract class QuizRemoteDataSource {
     List<Map<String, String>> answers,
   );
   Future<List<QuizAttemptSummary>> getQuizHistory();
-  Future<List<LeaderboardEntry>> getLeaderboard(String category, String period);
 }
 
 class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
@@ -105,27 +104,11 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
       body: {'answers': answers},
       parse: (data) {
         final response = ApiClient.asMap(data);
-        final results = _asObjectList(response['results'])
-            .map(
-              (resultJson) => QuizQuestionResult(
-                questionId: (resultJson['questionId'] ?? '').toString(),
-                selectedOptionId: (resultJson['selectedOptionId'] ?? '')
-                    .toString(),
-                correctOptionId: (resultJson['correctOptionId'] ?? '')
-                    .toString(),
-                correct: resultJson['correct'] == true,
-              ),
-            )
-            .toList(growable: false);
-        final correct =
-            (response['correctCount'] as num?)?.toInt() ??
-            results.where((result) => result.correct).length;
-        final total =
-            (response['totalQuestions'] as num?)?.toInt() ??
-            (results.isNotEmpty ? results.length : answers.length);
-        final score =
-            (response['score'] as num?)?.toInt() ??
-            (total == 0 ? 0 : (correct * 100 / total).round());
+        final results = _asObjectList(
+          response['results'],
+        ).map(QuizQuestionResult.fromJson).toList(growable: false);
+        final correct = (response['correctCount'] as num?)?.toInt() ?? 0;
+        final total = (response['totalQuestions'] as num?)?.toInt() ?? 0;
         return QuizResult(
           attemptId: (response['attemptId'] ?? '').toString(),
           correct: correct,
@@ -133,8 +116,7 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
           total: total,
           timeTakenSeconds: 0,
           xpEarned: (response['xpEarned'] as num?)?.toInt() ?? 0,
-          coinsEarned: (response['coinsEarned'] as num?)?.toInt() ?? 0,
-          accuracyPercent: score,
+          accuracyPercent: (response['score'] as num?)?.toInt() ?? 0,
           results: results,
         );
       },
@@ -147,31 +129,6 @@ class QuizRemoteDataSourceImpl implements QuizRemoteDataSource {
       ApiEndpoints.quizHistory,
       parse: (data) =>
           _asObjectList(data).map(QuizAttemptSummary.fromJson).toList(),
-    );
-  }
-
-  @override
-  Future<List<LeaderboardEntry>> getLeaderboard(
-    String category,
-    String period,
-  ) async {
-    return _apiClient.get(
-      ApiEndpoints.leaderboards,
-      query: {'category': category, 'period': period},
-      parse: (data) {
-        final entries = data['entries'] as List? ?? [];
-        return entries
-            .map(
-              (e) => LeaderboardEntry(
-                rank: e['rank'] ?? 0,
-                name: e['name'] ?? '',
-                avatarUrl: e['avatarUrl'] ?? '',
-                xp: (e['points'] as num?)?.toInt() ?? 0,
-                isCurrentUser: false,
-              ),
-            )
-            .toList();
-      },
     );
   }
 

@@ -15,6 +15,8 @@ import '../../../../design_system/widgets/surfaces/app_surface.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../../../chat/presentation/bindings/chat_binding.dart';
 import '../../../chat/presentation/controllers/chat_controller.dart';
+import '../../../chat/chat_navigation.dart';
+
 import 'package:genlink_frontend/features/community/presentation/controllers/community_controller.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/full_screen_image_viewer.dart';
 import 'package:genlink_frontend/features/community/presentation/widgets/post_card_widget.dart';
@@ -838,14 +840,17 @@ class _PublicActionRowState extends State<_PublicActionRow> {
         ChatBinding().dependencies();
       }
       final chatController = Get.find<ChatController>();
+      debugPrint('[CHAT-NAV] source = PublicProfile, userId = ${widget.profile.userId}, currentRoute = ${Get.currentRoute}, controller = ${identityHashCode(chatController)}');
       final conv = await chatController.openPrivateChat(
         widget.profile.userId,
         name: widget.profile.fullName,
         avatar: widget.profile.avatarUrl,
       );
       if (conv != null && mounted) {
-        Get.toNamed(AppRoutes.chatDetail, arguments: {'roomId': conv.id});
+        debugPrint('[CHAT-NAV] PublicProfile openPrivateChat returned conv.id = ${conv.id}, calling openChatDetail');
+        ChatNavigation.openChatDetail(conv.id, conversation: conv);
       }
+
     } catch (e) {
       if (mounted) {
         Get.snackbar(

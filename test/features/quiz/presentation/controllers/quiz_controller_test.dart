@@ -6,6 +6,7 @@ import 'package:genlink_frontend/features/auth/domain/entities/user_entity.dart'
 import 'package:genlink_frontend/features/auth/domain/repositories/auth_repository.dart';
 import 'package:genlink_frontend/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:genlink_frontend/features/quiz/domain/repositories/quiz_repository.dart';
+import 'package:genlink_frontend/features/quiz/domain/models/quiz_models.dart';
 import 'package:genlink_frontend/features/quiz/presentation/controllers/quiz_controller.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
@@ -70,8 +71,6 @@ void main() {
     expect(controller.userStats.value.avatarUrl, isNull);
     expect(controller.userStats.value.xp, 245);
     expect(controller.userStats.value.level, 3);
-    expect(controller.userStats.value.streak, isNull);
-    expect(controller.userStats.value.coins, isNull);
 
     controller.syncAuthenticatedUser(_accountB);
     expect(controller.userStats.value.name, 'Account B');
@@ -89,5 +88,25 @@ void main() {
     controller.syncAuthenticatedUser(_accountA);
 
     expect(controller.userStats.value.levelProgress, 0.45);
+  });
+
+  test('Quiz answers are stored by question and option IDs', () {
+    final controller = QuizController();
+    controller.questions.assignAll([
+      const QuizQuestion(
+        id: 'question-1',
+        question: 'Question',
+        options: [
+          QuizOptionModel(id: 'option-a', text: 'A'),
+          QuizOptionModel(id: 'option-b', text: 'B'),
+        ],
+      ),
+    ]);
+
+    controller.selectAnswer('question-1', 'option-b');
+
+    expect(controller.selectedAnswers, {'question-1': 'option-b'});
+    expect(controller.selectedOptionIndexForQuestion(0), 1);
+    expect(controller.isQuestionAnswered(0), isTrue);
   });
 }

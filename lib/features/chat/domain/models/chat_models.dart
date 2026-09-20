@@ -203,9 +203,12 @@ class ChatMessageModel {
         DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
         DateTime.now();
     final backendType = (json['type'] as String?) ?? 'TEXT';
+    final resolvedConversationId = conversationId.isNotEmpty
+        ? conversationId
+        : (json['roomId'] ?? json['conversationId'] ?? json['chatRoomId'] ?? '').toString();
     return ChatMessageModel(
       id: json['messageId']?.toString() ?? json['id']?.toString() ?? '',
-      conversationId: conversationId,
+      conversationId: resolvedConversationId,
       senderId: sender['userId']?.toString() ?? json['senderId']?.toString() ?? '',
       senderName:
           (sender['fullName'] as String?) ??
@@ -302,6 +305,7 @@ class ChatMessageModel {
     return {
       'id': id,
       'conversationId': conversationId,
+      'roomId': conversationId,
       'senderId': senderId,
       'senderName': senderName,
       'senderAvatar': senderAvatar,
@@ -424,6 +428,7 @@ class ChatConversationModel {
 
   factory ChatConversationModel.fromRoomResponse(
     Map<String, dynamic> json, {
+    String? roomId,
     String? participantUserId,
   }) {
     final type = (json['type'] as String?) ?? 'PRIVATE';
@@ -441,12 +446,15 @@ class ChatConversationModel {
         final rawParticipant = member['user'] is Map ? member['user'] : member;
         if (rawParticipant is! Map) continue;
         final participant = rawParticipant.cast<String, dynamic>();
-        firstParticipant ??= participant;
         final userId =
             participant['userId']?.toString() ?? participant['id']?.toString();
-        if (targetUserId == null || userId == targetUserId) {
+        if (targetUserId != null && userId == targetUserId) {
           counterpart = participant;
           break;
+        }
+        firstParticipant ??= participant;
+        if (targetUserId == null && counterpart.isEmpty) {
+          counterpart = participant;
         }
       }
       counterpart = counterpart.isEmpty
@@ -461,8 +469,13 @@ class ChatConversationModel {
     final avatar = (counterpart['avatarUrl'] as String?) ??
         'assets/images/user_profile.png';
 
+    final resolvedId = json['roomId']?.toString() ??
+        json['id']?.toString() ??
+        roomId ??
+        '';
+
     return ChatConversationModel(
-      id: json['roomId']?.toString() ?? json['id']?.toString() ?? '',
+      id: resolvedId,
       name: name,
       avatar: avatar,
       profileUserId: isGroup

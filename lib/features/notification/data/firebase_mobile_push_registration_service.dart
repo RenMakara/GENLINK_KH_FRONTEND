@@ -27,18 +27,30 @@ class FirebaseMobilePushRegistrationService
   String? _registeredDeviceId;
   String? _registeredToken;
   bool _sessionActive = false;
+  int _sessionGeneration = 0;
 
   @override
-  Future<void> registerCurrentDevice() =>
-      _registrationInFlight ??= _registerCurrentDevice().whenComplete(() {
-        _registrationInFlight = null;
-      });
+  Future<void> registerCurrentDevice() {
+    final inFlight = _registrationInFlight;
+    if (inFlight != null) return inFlight;
 
-  Future<void> _registerCurrentDevice() async {
+    final generation = ++_sessionGeneration;
+    _sessionActive = true;
+    final registration = _registerCurrentDevice(generation);
+    late final Future<void> trackedRegistration;
+    trackedRegistration = registration.whenComplete(() {
+      if (identical(_registrationInFlight, trackedRegistration)) {
+        _registrationInFlight = null;
+      }
+    });
+    _registrationInFlight = trackedRegistration;
+    return trackedRegistration;
+  }
+
+  Future<void> _registerCurrentDevice(int generation) async {
     final platform = _platformName;
     if (platform == null) return;
 
-    _sessionActive = true;
     if (Firebase.apps.isEmpty) {
       debugPrint(
         '[FCM] Firebase is not initialized; device registration skipped.',
@@ -52,7 +64,7 @@ class FirebaseMobilePushRegistrationService
       badge: true,
       sound: true,
     );
-    if (!_sessionActive) return;
+    if (!_isCurrentSession(generation)) return;
 
     if (permission.authorizationStatus == AuthorizationStatus.denied) {
       debugPrint(
@@ -62,26 +74,30 @@ class FirebaseMobilePushRegistrationService
     }
 
     final token = (await messaging.getToken())?.trim();
-    if (token == null || token.isEmpty || !_sessionActive) {
+    if (token == null || token.isEmpty || !_isCurrentSession(generation)) {
       debugPrint('[FCM] No registration token is available yet.');
       return;
     }
 
-    await _registerToken(platform, token);
-    if (!_sessionActive) return;
+    await _registerToken(platform, token, generation);
+    if (!_isCurrentSession(generation)) return;
 
     _tokenRefreshSubscription ??= messaging.onTokenRefresh.listen((nextToken) {
-      if (_sessionActive) {
-        unawaited(_registerRefreshedToken(platform, nextToken));
+      if (_isCurrentSession(generation)) {
+        unawaited(_registerRefreshedToken(platform, nextToken, generation));
       }
     });
   }
 
-  Future<void> _registerRefreshedToken(String platform, String token) async {
+  Future<void> _registerRefreshedToken(
+    String platform,
+    String token,
+    int generation,
+  ) async {
     try {
       final normalized = token.trim();
-      if (normalized.isEmpty || !_sessionActive) return;
-      await _registerToken(platform, normalized);
+      if (normalized.isEmpty || !_isCurrentSession(generation)) return;
+      await _registerToken(platform, normalized, generation);
     } catch (error, stackTrace) {
       debugPrint(
         '[FCM] Token refresh registration failed: $error\n$stackTrace',
@@ -89,15 +105,19 @@ class FirebaseMobilePushRegistrationService
     }
   }
 
-  Future<void> _registerToken(String platform, String token) async {
-    if (!_sessionActive) return;
+  Future<void> _registerToken(
+    String platform,
+    String token,
+    int generation,
+  ) async {
+    if (!_isCurrentSession(generation)) return;
 
     final previousDeviceId = _registeredDeviceId;
     if (previousDeviceId != null &&
         _registeredToken != null &&
         _registeredToken != token) {
       await _deactivateRemotely(previousDeviceId);
-      if (!_sessionActive) return;
+      if (!_isCurrentSession(generation)) return;
     }
 
     final response = await apiClient.put<Map<String, dynamic>>(
@@ -109,7 +129,7 @@ class FirebaseMobilePushRegistrationService
 
     // Logout can race with the token request. Remove a row that was created
     // after logout instead of leaving it associated with the old account.
-    if (!_sessionActive) {
+    if (!_isCurrentSession(generation)) {
       if (deviceId != null && deviceId.isNotEmpty) {
         await _deactivateRemotely(deviceId);
       }
@@ -124,11 +144,26 @@ class FirebaseMobilePushRegistrationService
   }
 
   @override
-  Future<void> deactivateCurrentDevice({bool remote = true}) async {
+  Future<void> deactivateCurrentDevice({
+    bool remote = true,
+    bool waitForRegistration = true,
+  }) async {
     _sessionActive = false;
+    _sessionGeneration++;
     final subscription = _tokenRefreshSubscription;
     _tokenRefreshSubscription = null;
     await subscription?.cancel();
+
+    final registration = _registrationInFlight;
+    if (waitForRegistration && registration != null) {
+      try {
+        await registration;
+      } catch (error, stackTrace) {
+        // Registration is supplemental. A failed in-flight request must not
+        // block logout or local session cleanup.
+        debugPrint('[FCM] In-flight registration stopped: $error\n$stackTrace');
+      }
+    }
 
     final deviceId = _registeredDeviceId;
     _registeredDeviceId = null;
@@ -147,6 +182,9 @@ class FirebaseMobilePushRegistrationService
       debugPrint('[FCM] Device deactivation failed: $error\n$stackTrace');
     }
   }
+
+  bool _isCurrentSession(int generation) =>
+      _sessionActive && generation == _sessionGeneration;
 
   String? get _platformName {
     if (kIsWeb) return null;

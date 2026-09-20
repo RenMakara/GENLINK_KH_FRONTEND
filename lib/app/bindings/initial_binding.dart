@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../core/localization/localization_service.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/app_realtime_service.dart';
 import '../../core/network/dio_provider.dart';
 import '../../core/network/interceptors/auth_interceptor.dart';
 import '../../core/network/interceptors/error_interceptor.dart';
@@ -72,7 +73,13 @@ class InitialBinding extends Bindings {
       permanent: true,
     );
 
+    final realtimeService = AppRealtimeService(secureStorage: secureStorage);
+    Get.put<AppRealtimeService>(realtimeService, permanent: true);
+
     void handleSessionCleared() {
+      if (Get.isRegistered<AppRealtimeService>()) {
+        Get.find<AppRealtimeService>().disconnect();
+      }
       PaintingBinding.instance.imageCache.clear();
       PaintingBinding.instance.imageCache.clearLiveImages();
       mainController.reset();

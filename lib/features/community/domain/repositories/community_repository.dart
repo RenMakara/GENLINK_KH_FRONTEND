@@ -100,6 +100,7 @@ abstract class CommunityRepository {
     required String title,
     required String content,
     required String category,
+    bool? anonymous,
   });
 
   Future<bool> deleteDiscussion(String discussionId);

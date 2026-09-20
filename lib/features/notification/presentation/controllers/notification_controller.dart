@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
+import '../../../chat/chat_navigation.dart';
+
 import '../../../community/presentation/bindings/community_binding.dart';
 import '../../../community/presentation/controllers/community_controller.dart';
 import '../../../community/presentation/controllers/story_controller.dart';
@@ -21,7 +24,7 @@ import '../../../productivity/productivity_screen.dart';
 import '../../data/repositories/notification_repository_impl.dart';
 import '../../domain/models/notification_model.dart';
 
-class NotificationController extends GetxController {
+class NotificationController extends GetxController with WidgetsBindingObserver {
   final NotificationRepositoryImpl repository;
 
   NotificationController({required this.repository});
@@ -55,15 +58,24 @@ class NotificationController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    WidgetsBinding.instance.addObserver(this);
     scrollController.addListener(_onScroll);
     fetchNotifications();
   }
 
   @override
   void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
     scrollController.removeListener(_onScroll);
     scrollController.dispose();
     super.onClose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      syncLatestNotifications();
+    }
   }
 
   void _onScroll() {
@@ -191,22 +203,161 @@ class NotificationController extends GetxController {
   }
 
   Future<void> addActivityNotification(NotificationModel notif) async {
-    final isDuplicate = notifications.any(
-      (n) =>
-          n.id == notif.id ||
-          (n.targetId == notif.targetId &&
-              n.senderName == notif.senderName &&
-              n.type == notif.type &&
-              DateTime.now().difference(n.timestamp).inSeconds < 60),
-    );
+    await onRealtimeNotificationReceived(notif);
+  }
 
-    if (isDuplicate) return;
+  /// Handles incoming realtime notifications (from STOMP or FCM foreground).
+  ///
+  /// Immediately inserts at the correct chronological index, increments unread count,
+  /// triggers reactive UI observers, and kicks off a background sync with the backend.
+  Future<void> onRealtimeNotificationReceived(NotificationModel model) async {
+    final modelDeliveryId = model.metadata?['deliveryId']?.toString();
+    final modelDedupeKey = model.metadata?['dedupeKey']?.toString();
 
-    notifications.insert(0, notif);
-    if (!notif.isRead) {
-      totalUnreadCount.value++;
+    final isDuplicate = notifications.any((n) {
+      if (n.id.isNotEmpty && n.id == model.id) return true;
+      final nDeliveryId = n.metadata?['deliveryId']?.toString();
+      if (modelDeliveryId != null &&
+          nDeliveryId != null &&
+          modelDeliveryId == nDeliveryId) {
+        return true;
+      }
+      final nDedupeKey = n.metadata?['dedupeKey']?.toString();
+      if (modelDedupeKey != null &&
+          nDedupeKey != null &&
+          modelDedupeKey == nDedupeKey) {
+        return true;
+      }
+      if (n.targetId != null &&
+          n.targetId == model.targetId &&
+          n.type == model.type &&
+          (n.title == model.title || n.senderName == model.senderName) &&
+          n.timestamp.difference(model.timestamp).abs().inSeconds < 60) {
+        return true;
+      }
+      return false;
+    });
+
+    if (!isDuplicate) {
+      int insertIndex = 0;
+      while (insertIndex < notifications.length &&
+          notifications[insertIndex].timestamp.isAfter(model.timestamp)) {
+        insertIndex++;
+      }
+      notifications.insert(insertIndex, model);
+      if (!model.isRead) {
+        totalUnreadCount.value++;
+      }
+      notifications.refresh();
     }
-    notifications.refresh();
+  }
+
+  /// Parses raw JSON payload from STOMP `/user/queue/notifications` and dispatches it.
+  Future<void> onRealtimeNotificationReceivedFromJson(
+    Map<String, dynamic> json,
+  ) async {
+    try {
+      final model = NotificationModel.fromJson(json);
+      await onRealtimeNotificationReceived(model);
+    } catch (e) {
+      debugPrint('[NotificationController] Failed to parse realtime json: $e');
+      await syncLatestNotifications();
+    }
+  }
+
+  /// Adapts FCM foreground push payload and dispatches it.
+  Future<void> onRealtimeNotificationReceivedFromPayload(dynamic payload) async {
+    try {
+      if (payload is Map<String, dynamic>) {
+        await onRealtimeNotificationReceivedFromJson(payload);
+        return;
+      }
+      final title = payload.title?.toString() ?? '';
+      final body = payload.body?.toString() ?? '';
+      final type = payload.type?.toString() ?? 'SYSTEM';
+      final deliveryId = payload.deliveryId?.toString();
+      final referenceType = payload.referenceType?.toString();
+      final referenceId = payload.referenceId?.toString();
+      final dedupeKey = payload.dedupeKey?.toString();
+
+      final json = <String, dynamic>{
+        'id': deliveryId ?? dedupeKey ?? '$type:$referenceId',
+        'type': type,
+        'title': title,
+        'body': body,
+        'message': body,
+        'referenceType': referenceType,
+        'referenceId': referenceId,
+        'targetType': referenceType,
+        'targetId': referenceId,
+        'createdAt': DateTime.now().toUtc().toIso8601String(),
+        'readStatus': false,
+        'metadata': {
+          'deliveryId': ?deliveryId,
+          'dedupeKey': ?dedupeKey,
+        },
+      };
+      final model = NotificationModel.fromJson(json);
+      await onRealtimeNotificationReceived(model);
+    } catch (e) {
+      debugPrint('[NotificationController] Failed to process payload: $e');
+      await syncLatestNotifications();
+    }
+  }
+
+  /// Harmonizes local state with database records (IDs, timestamps, counts).
+  Future<void> syncLatestNotifications() async {
+    try {
+      final results = await Future.wait([
+        repository.getNotifications(page: 0, size: pageSize),
+        repository.getUnreadCount(),
+      ]);
+      final pageResult = results[0] as NotificationPage;
+      final count = results[1] as int;
+
+      final unreadLocal = notifications.where((n) => !n.isRead).length;
+      totalUnreadCount.value = (count > 0 || unreadLocal == 0) ? count : unreadLocal;
+
+      final existingIds = notifications.map((n) => n.id).toSet();
+      final newItems =
+          pageResult.items.where((n) => !existingIds.contains(n.id)).toList();
+
+      if (newItems.isNotEmpty) {
+        for (final item in newItems.reversed) {
+          final optimisticIdx = notifications.indexWhere(
+            (n) =>
+                n.targetId != null &&
+                n.targetId == item.targetId &&
+                n.type == item.type &&
+                n.timestamp.difference(item.timestamp).abs().inSeconds < 120,
+          );
+
+          if (optimisticIdx != -1) {
+            notifications[optimisticIdx] = item;
+          } else {
+            int insertIndex = 0;
+            while (insertIndex < notifications.length &&
+                notifications[insertIndex].timestamp.isAfter(item.timestamp)) {
+              insertIndex++;
+            }
+            notifications.insert(insertIndex, item);
+          }
+        }
+        notifications.refresh();
+      } else {
+        for (final remote in pageResult.items) {
+          final idx = notifications.indexWhere((n) => n.id == remote.id);
+          if (idx != -1 && notifications[idx].isRead != remote.isRead) {
+            notifications[idx].isRead = remote.isRead;
+          }
+        }
+        notifications.refresh();
+      }
+    } catch (_) {
+      if (totalUnreadCount.value == 0) {
+        totalUnreadCount.value = notifications.where((n) => !n.isRead).length;
+      }
+    }
   }
 
   Future<void> markAsRead(String id) async {
@@ -282,14 +433,14 @@ class NotificationController extends GetxController {
         targetType == 'CHAT_ROOM' ||
         targetType == 'CHATROOM') {
       if (targetId != null && targetId.isNotEmpty) {
-        Get.toNamed<void>(
-          AppRoutes.chatDetail,
-          arguments: {'roomId': targetId},
-        );
+        debugPrint('[CHAT-NAV] source = Notification, targetId = $targetId, currentRoute = ${Get.currentRoute}');
+        ChatNavigation.openChatDetail(targetId);
       } else {
+        debugPrint('[CHAT-NAV] source = Notification (empty targetId), currentRoute = ${Get.currentRoute}');
         Get.toNamed<void>(AppRoutes.chat);
       }
       return;
+
     }
 
     // ── Post / Comments Navigation ───────────────────────────────────────

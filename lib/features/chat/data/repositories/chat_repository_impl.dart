@@ -117,4 +117,8 @@ class ChatRepositoryImpl {
   Future<int> getUnreadCount() {
     return remoteDataSource.fetchUnreadCount();
   }
+
+  Future<List<Map<String, dynamic>>> searchUsers(String query) {
+    return remoteDataSource.searchUsers(query);
+  }
 }

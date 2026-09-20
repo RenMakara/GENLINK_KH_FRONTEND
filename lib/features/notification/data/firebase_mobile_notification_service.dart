@@ -21,6 +21,8 @@ import '../../productivity/presentation/habit_feature/habit_screen.dart';
 import '../../productivity/presentation/task_feature/task_home_screen.dart';
 import '../../productivity/productivity_screen.dart';
 import '../../chat/presentation/controllers/chat_controller.dart';
+import '../../chat/chat_navigation.dart';
+
 import '../presentation/controllers/notification_controller.dart';
 
 const _mobilePushChannelId = 'genlink_mobile_push';
@@ -263,10 +265,11 @@ class MobilePushNotificationRouter {
       case MobilePushNotificationDestination.chat:
         final roomId = payload.referenceId;
         if (roomId != null && roomId.isNotEmpty) {
-          Get.toNamed<void>(AppRoutes.chatDetail, arguments: {'roomId': roomId});
+          ChatNavigation.openChatDetail(roomId);
         } else {
           Get.toNamed<void>(AppRoutes.chat);
         }
+
       case MobilePushNotificationDestination.events:
         Get.to<void>(() => const EventsScreen());
       case MobilePushNotificationDestination.friendRequests:
@@ -406,7 +409,8 @@ class FirebaseMobileNotificationService {
       );
 
       if (Get.isRegistered<NotificationController>()) {
-        Get.find<NotificationController>().fetchUnreadCount();
+        Get.find<NotificationController>()
+            .onRealtimeNotificationReceivedFromPayload(payload);
       }
       final isChat = payload.type.toUpperCase().contains('CHAT') ||
           (payload.referenceType?.toUpperCase() == 'CHAT_ROOM') ||

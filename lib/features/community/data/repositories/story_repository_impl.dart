@@ -299,13 +299,20 @@ class StoryRepositoryImpl implements StoryRepository {
       );
     }
 
+    final finalSettings = (serverStory.settings.visibility != StoryPrivacy.public || resolvedSettings.visibility == StoryPrivacy.public)
+        ? serverStory.settings
+        : serverStory.settings.copyWith(visibility: resolvedSettings.visibility);
+
     return StoryItemModel(
       id: serverStory.id,
       type: type,
       mediaUrl: serverStory.mediaUrl ?? finalMediaUrl,
       textContent: textContent ?? serverStory.textContent,
       location: location,
-      settings: serverStory.settings,
+      settings: finalSettings,
+      visibility: finalSettings.visibilityLabel,
+      replyPrivacy: finalSettings.replyPermissionLabel,
+      allowReactions: finalSettings.allowReactions,
       bgGradientStart: bgGradientStart ?? '0xFF0F172A',
       bgGradientEnd: bgGradientEnd ?? '0xFF1E293B',
       layers: layers ?? const [],
@@ -409,12 +416,14 @@ class StoryRepositoryImpl implements StoryRepository {
     final caption = json['caption'] as String? ?? json['textContent'] as String?;
     final seen = json['seen'] as bool? ?? false;
 
-    final rawVisibility = json['visibility'] as String?;
+    final rawVisibility = (json['visibility'] ?? json['storyPrivacy'] ?? json['privacy']) as String?;
     final rawReply = (json['replyPermission'] ?? json['replyPrivacy']) as String?;
     final rawAllowReactions = json['allowReactions'] as bool? ?? true;
 
     final settings = StorySettings(
-      visibility: StoryPrivacy.fromString(rawVisibility ?? 'PUBLIC'),
+      visibility: rawVisibility != null
+          ? StoryPrivacy.fromString(rawVisibility)
+          : StoryPrivacy.public,
       replyPermission: StoryReplyPermission.fromString(rawReply ?? 'EVERYONE'),
       allowReactions: rawAllowReactions,
     );

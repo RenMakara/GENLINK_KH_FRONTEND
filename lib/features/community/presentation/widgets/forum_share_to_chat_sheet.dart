@@ -68,7 +68,8 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
 
     try {
       await _chatController.openConversation(conv);
-      await _chatController.shareForumDiscussion(conv, widget.topic);
+      _chatController.textController.text = widget.topic.title;
+      await _chatController.sendMessage(type: 'shared_discussion');
 
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();

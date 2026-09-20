@@ -1,24 +1,20 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
-import '../../data/datasources/chat_websocket_client.dart';
 import '../../data/repositories/chat_repository_impl.dart';
 import '../../domain/models/chat_models.dart';
 
-class ChatController extends GetxController {
+class ChatController extends GetxController with WidgetsBindingObserver {
   final ChatRepositoryImpl repository;
-  final ChatWebSocketClient? webSocketClient;
 
-  ChatController({
-    required this.repository,
-    this.webSocketClient,
-  });
-
-  StreamSubscription? _wsSubscription;
+  ChatController({required this.repository}) {
+    debugPrint('[CHAT-LIFECYCLE] controller instance = ${identityHashCode(this)} created');
+  }
 
   final conversations = <ChatConversationModel>[].obs;
   final activeMessages = <ChatMessageModel>[].obs;
   final activeConversation = Rxn<ChatConversationModel>();
+  final activeRoomId = RxnString();
 
   final replyingToMessage = Rxn<ChatMessageModel>();
   final pinnedMessage = Rxn<ChatMessageModel>();
@@ -32,35 +28,67 @@ class ChatController extends GetxController {
   final TextEditingController textController = TextEditingController();
   final ScrollController scrollController = ScrollController();
 
+  final Set<String> _recentReceivedMessageIds = <String>{};
+  int _messageLoadSequence = 0;
+
   @override
   void onInit() {
     super.onInit();
+    debugPrint('[CHAT-LIFECYCLE] controller instance = ${identityHashCode(this)} onInit');
+    WidgetsBinding.instance.addObserver(this);
     fetchConversations();
     fetchUnreadCount();
-    if (webSocketClient != null) {
-      _wsSubscription = webSocketClient!.messageStream.listen(onMessageReceived);
-      webSocketClient!.connect();
-    }
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+    debugPrint('[CHAT-LIFECYCLE] controller instance = ${identityHashCode(this)} onReady');
   }
 
   @override
   void onClose() {
-    _wsSubscription?.cancel();
-    webSocketClient?.disconnect();
+    debugPrint('[CHAT-LIFECYCLE] controller instance = ${identityHashCode(this)} onClose');
+    WidgetsBinding.instance.removeObserver(this);
     textController.dispose();
     scrollController.dispose();
     super.onClose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      fetchUnreadCount();
+      if (conversations.isNotEmpty) {
+        fetchConversations();
+      }
+      final currentRoomId = activeRoomId.value;
+      if (currentRoomId != null && currentRoomId.isNotEmpty) {
+        repository.getMessages(currentRoomId).then((msgs) {
+          if (activeRoomId.value == currentRoomId) {
+            activeMessages.assignAll(msgs);
+          }
+        }).catchError((_) {}).whenComplete(() {
+          if (activeRoomId.value == currentRoomId) {
+            isLoadingMessages.value = false;
+          }
+        });
+      }
+    }
+  }
+
   int get totalUnreadCount {
-    if (unreadCount.value > 0) return unreadCount.value;
-    return conversations.fold(0, (sum, item) => sum + item.unreadCount);
+    final localCount =
+        conversations.fold(0, (sum, item) => sum + item.unreadCount);
+    return unreadCount.value > localCount ? unreadCount.value : localCount;
   }
 
   Future<void> fetchUnreadCount() async {
     try {
       final count = await repository.getUnreadCount();
-      unreadCount.value = count;
+      final localCount =
+          conversations.fold(0, (sum, item) => sum + item.unreadCount);
+      unreadCount.value = count > localCount ? count : localCount;
     } catch (_) {
       unreadCount.value =
           conversations.fold(0, (sum, item) => sum + item.unreadCount);
@@ -74,108 +102,198 @@ class ChatController extends GetxController {
       conversations.assignAll(list);
       final localCount =
           conversations.fold(0, (sum, item) => sum + item.unreadCount);
-      if (unreadCount.value == 0 || localCount > 0) {
+      if (unreadCount.value == 0 || localCount > unreadCount.value) {
         unreadCount.value = localCount;
       }
     } catch (e) {
-      Get.snackbar(
-        'Chats unavailable',
-        'Could not load your chats. Pull to retry.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      if (Get.context != null &&
+          Get.isSnackbarOpen != true &&
+          Get.key.currentState != null) {
+        Get.snackbar(
+          'Chats unavailable',
+          'Could not load your chats. Pull to retry.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     } finally {
       isLoadingConversations.value = false;
     }
   }
 
-  Future<ChatConversationModel?> openConversationById(String roomId) async {
-    if (roomId.isEmpty) return null;
+  bool _isPostFrameRefreshScheduled = false;
 
-    final existingIdx = conversations.indexWhere((c) => c.id == roomId);
-    if (existingIdx != -1) {
-      final conv = conversations[existingIdx];
-      await openConversation(conv);
-      return conv;
+  void safeRefreshConversations() {
+    void doRefresh() {
+      _isPostFrameRefreshScheduled = false;
+      conversations.refresh();
+      unreadCount.value =
+          conversations.fold(0, (sum, item) => sum + item.unreadCount);
     }
 
-    try {
-      await fetchConversations();
-      final foundIdx = conversations.indexWhere((c) => c.id == roomId);
-      if (foundIdx != -1) {
-        final conv = conversations[foundIdx];
-        await openConversation(conv);
-        return conv;
+    final binding = WidgetsBinding.instance;
+    if (binding.schedulerPhase != SchedulerPhase.idle) {
+      if (!_isPostFrameRefreshScheduled) {
+        _isPostFrameRefreshScheduled = true;
+        binding.addPostFrameCallback((_) => doRefresh());
       }
-    } catch (_) {}
-
-    try {
-      final room = await repository.getRoom(roomId);
-      conversations.insert(0, room);
-      conversations.refresh();
-      await openConversation(room);
-      return room;
-    } catch (_) {
-      final fallbackRoom = ChatConversationModel(
-        id: roomId,
-        name: 'Chat Room',
-        avatar: 'assets/images/user_profile.png',
-        lastMessage: '',
-        lastMessageTime: 'Just now',
-      );
-      conversations.insert(0, fallbackRoom);
-      conversations.refresh();
-      await openConversation(fallbackRoom);
-      return fallbackRoom;
+    } else {
+      doRefresh();
     }
   }
 
-  Future<void> openConversation(ChatConversationModel conv) async {
-    activeConversation.value = conv;
+  /// Leaves the active conversation, clearing active room state and messages.
+  /// If [roomId] is provided, only leaves if it matches the current active room.
+  void leaveConversation({String? roomId}) {
+    if (roomId != null && activeRoomId.value != roomId) {
+      debugPrint('[CHAT-STATE] leaveConversation ignored: roomId ($roomId) != activeRoomId (${activeRoomId.value})');
+      return;
+    }
+    _messageLoadSequence++;
+    debugPrint('[CHAT-STATE] activeMessages.clear() reason = leaveConversation, roomId = $roomId, activeRoomId = ${activeRoomId.value}, sequence = $_messageLoadSequence');
+    activeRoomId.value = null;
+    activeConversation.value = null;
+    activeMessages.clear();
+    isLoadingMessages.value = false;
     replyingToMessage.value = null;
-    pinnedMessage.value = conv.pinnedMessage;
-    conv.unreadCount = 0;
-    conversations.refresh();
-    unreadCount.value =
-        conversations.fold(0, (sum, item) => sum + item.unreadCount);
-    try {
-      await repository.markConversationRead(conv.id);
-    } catch (_) {}
+    pinnedMessage.value = null;
+    typingUserName.value = null;
+  }
 
+  /// Canonical method to ensure conversation messages and room metadata are loaded.
+  /// Idempotent: If messages for [roomId] are already loaded and active, avoids redundant clearing or re-fetching.
+  /// If switching rooms or loading anew, cleanly clears old messages, sets activeRoomId, and loads history.
+  Future<ChatConversationModel?> ensureConversationLoaded(
+    String roomId, {
+    ChatConversationModel? conversation,
+  }) async {
+    final cleanRoomId = roomId.trim();
+    if (cleanRoomId.isEmpty) return null;
+
+    debugPrint('[CHAT-LOAD] roomId = $cleanRoomId, activeRoomId = ${activeRoomId.value}, activeConversation = ${activeConversation.value?.id}, activeMessages.length = ${activeMessages.length}, isLoadingMessages = ${isLoadingMessages.value}, _messageLoadSequence = $_messageLoadSequence');
+
+    // 1. Resolve conversation metadata (passed in, existing in conversations, or provisional)
+    ChatConversationModel? targetConv = conversation;
+    if (targetConv == null) {
+      if (activeConversation.value?.id == cleanRoomId) {
+        targetConv = activeConversation.value;
+      } else {
+        final existingIdx = conversations.indexWhere((c) => c.id == cleanRoomId);
+        if (existingIdx != -1) {
+          targetConv = conversations[existingIdx];
+        }
+      }
+    }
+
+    final isSameRoom = activeRoomId.value == cleanRoomId ||
+        (activeRoomId.value == null && activeConversation.value?.id == cleanRoomId);
+    final hasActiveMessages = activeMessages.isNotEmpty &&
+        activeMessages.every((m) =>
+            m.conversationId == cleanRoomId ||
+            'private_${m.conversationId}' == cleanRoomId ||
+            m.conversationId == 'private_$cleanRoomId');
+
+    // 2. Check if already fully loaded for this room
+    if (isSameRoom && hasActiveMessages && !isLoadingMessages.value) {
+      debugPrint('[CHAT-LOAD] roomId=$cleanRoomId, activeRoomId=${activeRoomId.value}, messages=${activeMessages.length}, isLoading=${isLoadingMessages.value}, decision=ALREADY_LOADED (isSameRoom: $isSameRoom, hasActiveMessages: $hasActiveMessages)');
+      activeRoomId.value = cleanRoomId;
+      if (targetConv != null && activeConversation.value != targetConv) {
+        activeConversation.value = targetConv;
+      }
+      return activeConversation.value;
+    }
+
+    debugPrint('[CHAT-LOAD] roomId=$cleanRoomId, activeRoomId=${activeRoomId.value}, messages=${activeMessages.length}, isLoading=${isLoadingMessages.value}, decision=NEEDS_LOAD (isSameRoom: $isSameRoom, hasActiveMessages: $hasActiveMessages, isLoading: ${isLoadingMessages.value})');
+
+    // 3. Set active room and provisional state immediately
+    final requestId = ++_messageLoadSequence;
+    activeRoomId.value = cleanRoomId;
+
+    if (targetConv != null) {
+      activeConversation.value = targetConv;
+      targetConv.unreadCount = 0;
+      safeRefreshConversations();
+    } else if (activeConversation.value == null ||
+        activeConversation.value!.id != cleanRoomId) {
+      activeConversation.value = ChatConversationModel(
+        id: cleanRoomId,
+        name: 'Chat',
+        avatar: 'assets/images/user_profile.png',
+        lastMessage: '',
+        lastMessageTime: 'Just now',
+        unreadCount: 0,
+      );
+    }
+
+    // Clear stale messages when opening / switching / reloading
+    debugPrint('[CHAT-STATE] activeMessages.clear() reason = ensureConversationLoaded (switching/reloading), roomId = $cleanRoomId, activeRoomId = ${activeRoomId.value}, sequence = $requestId');
+    activeMessages.clear();
+    replyingToMessage.value = null;
+    pinnedMessage.value = activeConversation.value?.pinnedMessage;
     isLoadingMessages.value = true;
+
+    // Mark as read on backend asynchronously and refresh unread count
+    repository.markConversationRead(cleanRoomId).then((_) {
+      fetchUnreadCount();
+    }).catchError((_) {});
+
+    // 4. Fetch messages directly for this room with race protection
+    debugPrint('[CHAT-API] GET messages roomId = $cleanRoomId, requestSequence = $requestId');
     try {
-      final msgs = await repository.getMessages(conv.id);
-      if (msgs.isNotEmpty) {
+      final msgs = await repository.getMessages(cleanRoomId);
+      debugPrint('[CHAT-API] response roomId = $cleanRoomId, messageCount = ${msgs.length}, requestSequence = $requestId, currentSequence = $_messageLoadSequence, activeRoomId = ${activeRoomId.value}');
+      if (activeRoomId.value == cleanRoomId && _messageLoadSequence == requestId) {
+        debugPrint('[CHAT-API] APPLIED roomId = $cleanRoomId, count = ${msgs.length}');
+        debugPrint('[CHAT-STATE] activeMessages.assignAll() roomId = $cleanRoomId, count = ${msgs.length}');
         activeMessages.assignAll(msgs);
         final pinned = msgs.firstWhereOrNull((m) => m.isPinned);
         if (pinned != null) {
           pinnedMessage.value = pinned;
         }
-      } else if (activeMessages.isNotEmpty &&
-          activeMessages.first.conversationId != conv.id) {
-        activeMessages.clear();
+        _scrollToBottom();
+      } else {
+        debugPrint('[CHAT-API] DISCARDED roomId = $cleanRoomId, reason = ${activeRoomId.value != cleanRoomId ? "activeRoomId changed (expected $cleanRoomId but was ${activeRoomId.value})" : "sequence mismatch (requestId $requestId != $_messageLoadSequence)"}');
       }
-      _scrollToBottom();
     } catch (e) {
-      // Preserve local messages for mock / demo state resilience
-      if (activeMessages.isEmpty && conv.lastMessage.isNotEmpty) {
-        activeMessages.add(
-          ChatMessageModel(
-            id: 'msg_last_${conv.id}',
-            conversationId: conv.id,
-            senderId: 'other',
-            senderName: conv.name,
-            senderAvatar: conv.avatar,
-            content: conv.lastMessage,
-            timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-            timeAgo: conv.lastMessageTime,
-            isMine: false,
-          ),
-        );
-      }
+      debugPrint('[CHAT-API] ERROR roomId = $cleanRoomId, error = $e');
     } finally {
-      isLoadingMessages.value = false;
+      if (activeRoomId.value == cleanRoomId) {
+        isLoadingMessages.value = false;
+      }
     }
+
+    // 5. If metadata was provisional or needs enrichment, fetch room in parallel
+    if (activeConversation.value == null ||
+        activeConversation.value!.name == 'Chat' ||
+        !conversations.any((c) => c.id == cleanRoomId)) {
+      try {
+        final room = await repository.getRoom(cleanRoomId);
+        if (activeRoomId.value == cleanRoomId && _messageLoadSequence == requestId) {
+          final enriched =
+              room.id.isEmpty ? room.copyWith(id: cleanRoomId) : room;
+          activeConversation.value = enriched;
+          final idx = conversations.indexWhere((c) => c.id == cleanRoomId);
+          if (idx != -1) {
+            conversations[idx] = enriched;
+          } else {
+            conversations.insert(0, enriched);
+          }
+          safeRefreshConversations();
+        }
+      } catch (_) {}
+    }
+
+    fetchUnreadCount();
+    return activeConversation.value;
   }
+
+  Future<ChatConversationModel?> openConversationById(String roomId) async {
+    return ensureConversationLoaded(roomId);
+  }
+
+  Future<void> openConversation(ChatConversationModel conv) async {
+    await ensureConversationLoaded(conv.id, conversation: conv);
+  }
+
 
   Future<ChatConversationModel?> openPrivateChat(
     String userId, {
@@ -183,12 +301,13 @@ class ChatController extends GetxController {
     String? avatar,
   }) async {
     // 1. Check if conversation already exists locally for this user
-    // Stable participant UUID match, never relying on display names (Risk F)
     final existingIdx = conversations.indexWhere((c) {
-      if (c.id == userId ||
-          c.profileUserId == userId ||
-          c.id == 'private_$userId' ||
-          c.id == 'room_$userId') {
+      if (c.id == userId || c.id == 'private_$userId' || c.id == 'room_$userId') {
+        return true;
+      }
+      if (name != null &&
+          name.isNotEmpty &&
+          c.name.trim().toLowerCase() == name.trim().toLowerCase()) {
         return true;
       }
       return false;
@@ -207,9 +326,7 @@ class ChatController extends GetxController {
     // 2. Otherwise open via repository or create fallback
     try {
       final conv = await repository.openPrivateChat(userId);
-      final backendIdx = conversations.indexWhere(
-        (c) => c.id == conv.id || (conv.profileUserId != null && c.profileUserId == conv.profileUserId),
-      );
+      final backendIdx = conversations.indexWhere((c) => c.id == conv.id);
       if (backendIdx != -1) {
         conversations[backendIdx] = conv.copyWith(isArchived: false);
         _moveConversationToTop(conversations[backendIdx]);
@@ -221,21 +338,17 @@ class ChatController extends GetxController {
       await openConversation(openedConv);
       return openedConv;
     } catch (e) {
-      final fallbackConv = ChatConversationModel(
-        id: 'private_$userId',
-        name: name ?? 'User',
-        avatar: avatar ?? 'assets/images/user_profile.png',
-        profileUserId: userId,
-        isGroup: false,
-        isOnline: true,
-        lastMessage: '',
-        lastMessageTime: 'Just now',
-        unreadCount: 0,
-      );
-      conversations.insert(0, fallbackConv);
-      conversations.refresh();
-      await openConversation(fallbackConv);
-      return fallbackConv;
+      debugPrint('[CHAT-API] openPrivateChat failed for userId=$userId: $e');
+      if (Get.context != null &&
+          Get.isSnackbarOpen != true &&
+          Get.key.currentState != null) {
+        Get.snackbar(
+          'Chat unavailable',
+          'Could not start conversation. Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      return null;
     }
   }
 
@@ -243,26 +356,6 @@ class ChatController extends GetxController {
     String name,
     List<String> memberUserIds,
   ) async {
-    final uuidRegex = RegExp(r'^[0-9a-fA-F-]{36}$');
-    final hasFakeIds = memberUserIds.any((id) => !uuidRegex.hasMatch(id));
-
-    if (hasFakeIds) {
-      // Demo / offline fallback: do not send invalid UUID strings to real backend
-      final demoGroup = ChatConversationModel(
-        id: 'group_${DateTime.now().millisecondsSinceEpoch}',
-        name: name,
-        avatar: 'assets/images/group_avatar.png',
-        isGroup: true,
-        lastMessage: 'Group created',
-        lastMessageTime: 'Just now',
-        membersCount: memberUserIds.length + 1,
-      );
-      conversations.insert(0, demoGroup);
-      conversations.refresh();
-      await openConversation(demoGroup);
-      return demoGroup;
-    }
-
     try {
       final newGroup = await repository.createGroup(name, memberUserIds);
       conversations.insert(0, newGroup);
@@ -394,11 +487,8 @@ class ChatController extends GetxController {
     replyingToMessage.value = null;
     isSendingMessage.value = true;
 
-    ChatMessageModel newMsg;
-    final isRealBackendRoom = RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(conv.id);
-
     try {
-      newMsg = await repository.sendMessage(
+      final newMsg = await repository.sendMessage(
         conv.id,
         text.isEmpty
             ? (type == 'image' ? '📷 Photo' : 'Shared attachment')
@@ -407,45 +497,47 @@ class ChatController extends GetxController {
         mediaUrl: mediaUrl,
         replyTo: effectiveReplyTo,
       );
-    } catch (_) {
-      // Risk E: Do not silently disguise real backend failures as successful
-      newMsg = ChatMessageModel(
-        id: 'msg_local_${DateTime.now().millisecondsSinceEpoch}',
-        conversationId: conv.id,
-        senderId: 'current_user',
-        senderName: 'Me',
-        content: text.isEmpty
-            ? (type == 'image' ? '📷 Photo' : 'Shared attachment')
-            : text,
-        timestamp: DateTime.now(),
-        timeAgo: 'Just now',
-        isMine: true,
-        deliveryStatus: isRealBackendRoom ? 'failed' : 'read',
-        messageType: type,
-        mediaUrl: mediaUrl,
-        replyTo: effectiveReplyTo,
-      );
 
-      if (isRealBackendRoom) {
+      final currentRoom = activeRoomId.value ?? activeConversation.value?.id;
+      if (currentRoom == conv.id &&
+          !activeMessages.any((m) => m.id == newMsg.id)) {
+        activeMessages.add(newMsg);
+      }
+      conv.lastMessage = newMsg.content;
+      conv.lastMessageTime = 'Just now';
+      conv.unreadCount = 0;
+      _moveConversationToTop(conv);
+      conversations.refresh();
+      _scrollToBottom();
+    } catch (e) {
+      debugPrint('[CHAT-API] sendMessage failed for conv=${conv.id}: $e');
+      textController.text = text;
+      if (effectiveReplyTo != null) {
+        replyingToMessage.value = ChatMessageModel(
+          id: effectiveReplyTo.messageId,
+          conversationId: conv.id,
+          senderId: '',
+          senderName: effectiveReplyTo.senderName,
+          content: effectiveReplyTo.content,
+          timestamp: DateTime.now(),
+          timeAgo: '',
+          isMine: false,
+          messageType: effectiveReplyTo.messageType,
+          mediaUrl: effectiveReplyTo.mediaUrl,
+        );
+      }
+      if (Get.context != null &&
+          Get.isSnackbarOpen != true &&
+          Get.key.currentState != null) {
         Get.snackbar(
-          'Message not sent',
-          'Could not deliver message to the server.',
+          'Failed to send',
+          'Unable to deliver your message. Please check your connection.',
           snackPosition: SnackPosition.BOTTOM,
         );
       }
     } finally {
       isSendingMessage.value = false;
     }
-
-    if (!activeMessages.any((m) => m.id == newMsg.id)) {
-      activeMessages.add(newMsg);
-    }
-    conv.lastMessage = newMsg.content;
-    conv.lastMessageTime = 'Just now';
-    conv.unreadCount = 0;
-    _moveConversationToTop(conv);
-    conversations.refresh();
-    _scrollToBottom();
   }
 
   Future<bool> deleteMessage(String messageId) async {
@@ -470,54 +562,98 @@ class ChatController extends GetxController {
   Future<bool> deleteConversation(String conversationId) async {
     try {
       await repository.deleteConversation(conversationId);
-    } catch (_) {}
-    conversations.removeWhere((c) => c.id == conversationId);
-    if (activeConversation.value?.id == conversationId) {
-      activeConversation.value = null;
-      activeMessages.clear();
+      conversations.removeWhere((c) => c.id == conversationId);
+      if (activeRoomId.value == conversationId ||
+          activeConversation.value?.id == conversationId) {
+        leaveConversation(roomId: conversationId);
+      }
+      conversations.refresh();
+      return true;
+    } catch (e) {
+      if (Get.context != null &&
+          Get.isSnackbarOpen != true &&
+          Get.key.currentState != null) {
+        Get.snackbar(
+          'Delete failed',
+          'Could not delete conversation.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      return false;
     }
-    conversations.refresh();
-    return true;
   }
 
   Future<bool> archiveConversation(String conversationId) async {
     try {
       await repository.archiveConversation(conversationId);
-    } catch (_) {}
-    final idx = conversations.indexWhere((c) => c.id == conversationId);
-    if (idx != -1) {
-      final updated = conversations[idx].copyWith(isArchived: true);
-      conversations[idx] = updated;
-      conversations.refresh();
+      final idx = conversations.indexWhere((c) => c.id == conversationId);
+      if (idx != -1) {
+        final updated = conversations[idx].copyWith(isArchived: true);
+        conversations[idx] = updated;
+        conversations.refresh();
+      }
+      return true;
+    } catch (e) {
+      if (Get.context != null &&
+          Get.isSnackbarOpen != true &&
+          Get.key.currentState != null) {
+        Get.snackbar(
+          'Archive failed',
+          'Could not archive conversation.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      return false;
     }
-    return true;
   }
 
   Future<bool> unarchiveConversation(String conversationId) async {
     try {
       await repository.unarchiveConversation(conversationId);
-    } catch (_) {}
-    final idx = conversations.indexWhere((c) => c.id == conversationId);
-    if (idx != -1) {
-      final updated = conversations[idx].copyWith(isArchived: false);
-      conversations[idx] = updated;
-      conversations.refresh();
+      final idx = conversations.indexWhere((c) => c.id == conversationId);
+      if (idx != -1) {
+        final updated = conversations[idx].copyWith(isArchived: false);
+        conversations[idx] = updated;
+        conversations.refresh();
+      }
+      return true;
+    } catch (e) {
+      if (Get.context != null &&
+          Get.isSnackbarOpen != true &&
+          Get.key.currentState != null) {
+        Get.snackbar(
+          'Unarchive failed',
+          'Could not unarchive conversation.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      return false;
     }
-    return true;
   }
 
   Future<bool> muteConversation(String conversationId) async {
     try {
       await repository.muteConversation(conversationId);
-    } catch (_) {}
-    final idx = conversations.indexWhere((c) => c.id == conversationId);
-    if (idx != -1) {
-      final current = conversations[idx];
-      final updated = current.copyWith(isMuted: !current.isMuted);
-      conversations[idx] = updated;
-      conversations.refresh();
+      final idx = conversations.indexWhere((c) => c.id == conversationId);
+      if (idx != -1) {
+        final current = conversations[idx];
+        final updated = current.copyWith(isMuted: !current.isMuted);
+        conversations[idx] = updated;
+        conversations.refresh();
+      }
+      return true;
+    } catch (e) {
+      if (Get.context != null &&
+          Get.isSnackbarOpen != true &&
+          Get.key.currentState != null) {
+        Get.snackbar(
+          'Mute failed',
+          'Could not update mute status.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      return false;
     }
-    return true;
   }
 
   Future<ChatMessageModel> sendStoryReply({
@@ -528,18 +664,14 @@ class ChatController extends GetxController {
     String? storyId,
     String? userId,
   }) async {
-    // 1. Find existing conversation or open real backend conversation
-    // Risk C: Never fabricate private_<id> when real userId is available
+    // 1. Find existing conversation or create a new one
     var convIndex = conversations.indexWhere((c) {
       if (userId != null && userId.isNotEmpty) {
-        if (c.id == userId ||
-            c.profileUserId == userId ||
-            c.id == 'private_$userId' ||
-            c.id == 'room_$userId') {
+        if (c.id == userId || c.id == 'private_$userId' || c.id == 'room_$userId') {
           return true;
         }
       }
-      return false;
+      return c.name.trim().toLowerCase() == userName.trim().toLowerCase();
     });
 
     ChatConversationModel conv;
@@ -547,76 +679,28 @@ class ChatController extends GetxController {
     if (convIndex != -1) {
       conv = conversations.removeAt(convIndex);
     } else {
-      if (userId != null && userId.isNotEmpty) {
-        try {
-          conv = await repository.openPrivateChat(userId);
-        } catch (_) {
-          conv = ChatConversationModel(
-            id: 'private_$userId',
-            name: userName,
-            avatar: userAvatar,
-            profileUserId: userId,
-            isGroup: false,
-            isOnline: true,
-            lastMessage: message,
-            lastMessageTime: 'Just now',
-            unreadCount: 0,
-          );
-        }
-      } else {
-        final safeId = userName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
-        conv = ChatConversationModel(
-          id: 'private_$safeId',
-          name: userName,
-          avatar: userAvatar,
-          isGroup: false,
-          isOnline: true,
-          lastMessage: message,
-          lastMessageTime: 'Just now',
-          unreadCount: 0,
-        );
-      }
+      final safeId = (userId != null && userId.isNotEmpty)
+          ? userId
+          : userName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '_');
+      conv = ChatConversationModel(
+        id: 'private_$safeId',
+        name: userName,
+        avatar: userAvatar,
+        isGroup: false,
+        isOnline: true,
+        lastMessage: message,
+        lastMessageTime: 'Just now',
+        unreadCount: 0,
+      );
     }
 
-    // 2. Call Repository send message API, with resilient fallback for local mock/demo
-    ChatMessageModel newMsg;
-    final isRealBackendRoom = RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(conv.id);
-    try {
-      newMsg = await repository.sendMessage(
-        conv.id,
-        message,
-        messageType: 'story_reply',
-        mediaUrl: mediaUrl,
-      );
-    } catch (_) {
-      // Fallback local message for mock / demo / offline state
-      newMsg = ChatMessageModel(
-        id: 'msg_story_${DateTime.now().millisecondsSinceEpoch}',
-        conversationId: conv.id,
-        senderId: 'current_user',
-        senderName: 'Me',
-        content: message,
-        timestamp: DateTime.now(),
-        timeAgo: 'Just now',
-        isMine: true,
-        deliveryStatus: isRealBackendRoom ? 'failed' : 'read',
-        messageType: 'story_reply',
-        mediaUrl: mediaUrl,
-        storyReference: StoryReference(
-          storyId: storyId,
-          mediaUrl: mediaUrl,
-          isExpired: false,
-        ),
-      );
-
-      if (isRealBackendRoom) {
-        Get.snackbar(
-          'Message not sent',
-          'Could not deliver story reply to the server.',
-          snackPosition: SnackPosition.BOTTOM,
-        );
-      }
-    }
+    // 2. Call Repository send message API
+    final newMsg = await repository.sendMessage(
+      conv.id,
+      message,
+      messageType: 'story_reply',
+      mediaUrl: mediaUrl,
+    );
 
     // 3. Update conversation metadata and place at top of list
     conv.lastMessage = message;
@@ -626,18 +710,25 @@ class ChatController extends GetxController {
     conversations.refresh();
 
     // 4. Set as active conversation and switch activeMessages cleanly without leaking prior conversation messages
-    if (activeConversation.value?.id != conv.id) {
+    if (activeRoomId.value != conv.id) {
+      activeRoomId.value = conv.id;
       activeConversation.value = conv;
+      activeMessages.clear();
       replyingToMessage.value = null;
       pinnedMessage.value = conv.pinnedMessage;
       try {
         final existingMsgs = await repository.getMessages(conv.id);
-        activeMessages.assignAll(existingMsgs);
+        if (activeRoomId.value == conv.id) {
+          activeMessages.assignAll(existingMsgs);
+        }
       } catch (_) {
-        activeMessages.clear();
+        if (activeRoomId.value == conv.id) {
+          activeMessages.clear();
+        }
       }
     }
-    if (!activeMessages.any((m) => m.id == newMsg.id)) {
+    if (activeRoomId.value == conv.id &&
+        !activeMessages.any((m) => m.id == newMsg.id)) {
       activeMessages.add(newMsg);
     }
     _scrollToBottom();
@@ -646,49 +737,110 @@ class ChatController extends GetxController {
   }
 
   void onMessageReceived(ChatMessageModel message) {
-    // Risk A: Incoming backend ChatMessageResponse must contain enough information
-    // for the frontend to identify the actual conversation/room.
-    // Do NOT guess a conversation from display names.
-    ChatConversationModel? targetConv;
-    int targetIdx = -1;
-
-    // 1. Try matching by conversationId / roomId
-    if (message.conversationId.isNotEmpty) {
-      targetIdx = conversations.indexWhere((c) => c.id == message.conversationId);
+    final activeId = activeRoomId.value ?? activeConversation.value?.id;
+    final rawId = message.id;
+    final isDuplicate = rawId.isNotEmpty &&
+        (_recentReceivedMessageIds.contains(rawId) ||
+            _recentReceivedMessageIds.contains('chat-msg:$rawId'));
+    if (rawId.isNotEmpty) {
+      if (_recentReceivedMessageIds.length > 200) {
+        _recentReceivedMessageIds.remove(_recentReceivedMessageIds.first);
+      }
+      _recentReceivedMessageIds.add(rawId);
+      _recentReceivedMessageIds.add('chat-msg:$rawId');
     }
 
-    // 2. If not matched and message is from another participant, match 1-to-1 by participant userId (UUID)
-    if (targetIdx == -1 && message.senderId.isNotEmpty) {
-      targetIdx = conversations.indexWhere(
-        (c) => !c.isGroup && (c.profileUserId == message.senderId || c.id == message.senderId),
-      );
-    }
-
-    if (targetIdx != -1) {
-      targetConv = conversations[targetIdx];
-    }
-
-    final isCurrentActive =
-        targetConv != null && activeConversation.value?.id == targetConv.id;
-
-    if (isCurrentActive) {
+    if (activeId != null && activeId == message.conversationId) {
       final exists = activeMessages.any((m) => m.id == message.id);
       if (!exists) {
         activeMessages.add(message);
         _scrollToBottom();
       }
-      repository.markConversationRead(targetConv.id);
+      repository.markConversationRead(message.conversationId).catchError((_) => false);
     }
 
-    if (targetConv != null) {
-      targetConv.lastMessage = message.content;
-      targetConv.lastMessageTime = 'Just now';
-      if (!isCurrentActive) {
-        targetConv.unreadCount += 1;
+    final idx = conversations.indexWhere((c) => c.id == message.conversationId);
+    if (idx != -1) {
+      final conv = conversations[idx];
+      conv.lastMessage = message.content;
+      conv.lastMessageTime = 'Just now';
+      if (activeId != message.conversationId && !isDuplicate) {
+        conv.unreadCount += 1;
+        unreadCount.value += 1;
       }
-      _moveConversationToTop(targetConv);
-      conversations.refresh();
+      _moveConversationToTop(conv);
+      safeRefreshConversations();
+      final localCount =
+          conversations.fold(0, (sum, item) => sum + item.unreadCount);
+      if (localCount > unreadCount.value) {
+        unreadCount.value = localCount;
+      }
+    } else if (activeId != message.conversationId && !isDuplicate) {
+      // Incoming message for a conversation not yet in local conversations list
+      unreadCount.value += 1;
+      fetchUnreadCount();
+      fetchConversations();
     }
+  }
+
+  /// Handles chat notification frames received on STOMP `/user/queue/notifications`.
+  /// Ensures unread badges and previews increment in real time even when incoming via notification topic,
+  /// with strict deduplication against `/user/queue/chat` frames so counts never double-increment.
+  void onChatNotificationReceived(Map<String, dynamic> json) {
+    final roomId = (json['referenceId'] ?? json['roomId'] ?? '').toString();
+    final activeId = activeRoomId.value ?? activeConversation.value?.id;
+    if (activeId != null && activeId.isNotEmpty && activeId == roomId) {
+      return;
+    }
+
+    final dedupeKey =
+        (json['dedupeKey'] ?? json['deliveryId'] ?? '').toString();
+    String? rawMsgId;
+    if (dedupeKey.contains(':')) {
+      final parts = dedupeKey.split(':');
+      if (parts.length >= 2 && parts[1].isNotEmpty) {
+        rawMsgId = parts[1];
+      }
+    }
+
+    final isDuplicate = (dedupeKey.isNotEmpty &&
+            _recentReceivedMessageIds.contains(dedupeKey)) ||
+        (rawMsgId != null && _recentReceivedMessageIds.contains(rawMsgId)) ||
+        (rawMsgId != null &&
+            _recentReceivedMessageIds.contains('chat-msg:$rawMsgId'));
+
+    if (isDuplicate) {
+      return;
+    }
+
+    if (dedupeKey.isNotEmpty) {
+      if (_recentReceivedMessageIds.length > 200) {
+        _recentReceivedMessageIds.remove(_recentReceivedMessageIds.first);
+      }
+      _recentReceivedMessageIds.add(dedupeKey);
+    }
+    if (rawMsgId != null && rawMsgId.isNotEmpty) {
+      _recentReceivedMessageIds.add(rawMsgId);
+      _recentReceivedMessageIds.add('chat-msg:$rawMsgId');
+    }
+
+    if (roomId.isNotEmpty) {
+      final idx = conversations.indexWhere((c) => c.id == roomId);
+      if (idx != -1) {
+        final conv = conversations[idx];
+        conv.unreadCount += 1;
+        final preview = json['message']?.toString();
+        if (preview != null && preview.isNotEmpty) {
+          conv.lastMessage = preview;
+          conv.lastMessageTime = 'Just now';
+        }
+        _moveConversationToTop(conv);
+        safeRefreshConversations();
+      }
+    }
+
+    unreadCount.value += 1;
+    fetchUnreadCount();
   }
 
   void _moveConversationToTop(ChatConversationModel conv) {

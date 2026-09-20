@@ -1809,14 +1809,25 @@ class _CommunityScreenState extends State<CommunityScreen>
                                 width: 0.6,
                               ),
                             ),
-                            child: Text(
-                              categoryDisplay,
-                              style: TextStyle(
-                                color: textSecondary,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.2,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _getCategoryIconData(ev.category),
+                                  size: 11,
+                                  color: isDark ? Colors.white70 : textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  categoryDisplay,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white70 : textSecondary,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           if (ev.isPaid) ...[
@@ -1865,7 +1876,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                                         ? Icons.bookmark_rounded
                                         : Icons.bookmark_border_rounded,
                                     color: ev.isBookmarked
-                                        ? AppColors.communityAccent
+                                        ? (isDark ? Colors.white : Colors.black87)
                                         : textMuted,
                                     size: 19,
                                   ),
@@ -2033,6 +2044,40 @@ class _CommunityScreenState extends State<CommunityScreen>
         ),
       ),
     );
+  }
+
+  IconData _getCategoryIconData(String cat) {
+    switch (cat.toLowerCase()) {
+      case 'technology':
+        return Icons.computer_outlined;
+      case 'design':
+      case 'arts':
+      case 'art':
+        return Icons.palette_outlined;
+      case 'business':
+        return Icons.business_center_outlined;
+      case 'career':
+        return Icons.work_outline_rounded;
+      case 'education':
+        return Icons.school_outlined;
+      case 'workshop':
+        return Icons.build_outlined;
+      case 'competition':
+        return Icons.emoji_events_outlined;
+      case 'sports':
+      case 'sport':
+        return Icons.sports_soccer_outlined;
+      case 'social':
+        return Icons.people_outline_rounded;
+      case 'entertainment':
+        return Icons.movie_outlined;
+      case 'seminar':
+        return Icons.groups_outlined;
+      case 'hackathon':
+        return Icons.terminal_outlined;
+      default:
+        return Icons.category_outlined;
+    }
   }
 }
 

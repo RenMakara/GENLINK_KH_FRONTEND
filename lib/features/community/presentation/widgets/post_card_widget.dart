@@ -1715,14 +1715,25 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                                   width: 0.6,
                                 ),
                               ),
-                              child: Text(
-                                categoryDisplay.toUpperCase(),
-                                style: TextStyle(
-                                  color: isDark ? Colors.white70 : textSecondary,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _getCategoryIconData(event.category),
+                                    size: 11,
+                                    color: isDark ? Colors.white70 : textSecondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    categoryDisplay.toUpperCase(),
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white70 : textSecondary,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             if (event.isPaid)
@@ -1945,6 +1956,40 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
         ),
       ),
     );
+  }
+
+  IconData _getCategoryIconData(String cat) {
+    switch (cat.toLowerCase()) {
+      case 'technology':
+        return Icons.computer_outlined;
+      case 'design':
+      case 'arts':
+      case 'art':
+        return Icons.palette_outlined;
+      case 'business':
+        return Icons.business_center_outlined;
+      case 'career':
+        return Icons.work_outline_rounded;
+      case 'education':
+        return Icons.school_outlined;
+      case 'workshop':
+        return Icons.build_outlined;
+      case 'competition':
+        return Icons.emoji_events_outlined;
+      case 'sports':
+      case 'sport':
+        return Icons.sports_soccer_outlined;
+      case 'social':
+        return Icons.people_outline_rounded;
+      case 'entertainment':
+        return Icons.movie_outlined;
+      case 'seminar':
+        return Icons.groups_outlined;
+      case 'hackathon':
+        return Icons.terminal_outlined;
+      default:
+        return Icons.category_outlined;
+    }
   }
 }
 

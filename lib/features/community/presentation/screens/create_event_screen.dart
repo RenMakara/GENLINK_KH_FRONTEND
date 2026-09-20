@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/errors/app_error.dart';
+import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/widgets/notifications/app_notification_banner.dart';
 import '../../domain/models/community_models.dart';
 import '../controllers/community_controller.dart';
@@ -225,15 +226,20 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
     if (hasContent) {
       final isDark = Theme.of(context).brightness == Brightness.dark;
-      final dialogBg = isDark ? const Color(0xFF1E2228) : Colors.white;
-      final titleColor = isDark ? Colors.white : Colors.black87;
-      final contentColor = isDark ? Colors.white70 : Colors.black54;
+      final dialogBg = isDark ? const Color(0xFF1E1E22) : Colors.white;
+      final titleColor = isDark ? Colors.white : AppColors.lightTextPrimary;
+      final contentColor = isDark ? Colors.white70 : AppColors.lightTextSecondary;
 
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: dialogBg,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: isDark
+                ? BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 0.8)
+                : BorderSide(color: Colors.black.withValues(alpha: 0.08), width: 0.8),
+          ),
           title: Text(
             'community.discardDraft'.tr.isNotEmpty &&
                     'community.discardDraft'.tr != 'community.discardDraft'
@@ -241,7 +247,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 : 'Discard Event?',
             style: TextStyle(
               color: titleColor,
-              fontSize: 16,
+              fontSize: 17,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -250,8 +256,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                     'community.discardMessage'.tr != 'community.discardMessage'
                 ? 'community.discardMessage'.tr
                 : 'You have unsaved changes. Are you sure you want to discard this event?',
-            style: TextStyle(color: contentColor, fontSize: 14),
+            style: TextStyle(color: contentColor, fontSize: 14, height: 1.4),
           ),
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
@@ -260,22 +267,33 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         'community.keepEditing'.tr != 'community.keepEditing'
                     ? 'community.keepEditing'.tr
                     : 'Keep Editing',
-                style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
+                style: TextStyle(
+                  color: isDark ? Colors.white60 : Colors.black54,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
               ),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () {
                 Navigator.pop(ctx);
                 Navigator.pop(context);
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
               child: Text(
                 'community.discard'.tr.isNotEmpty &&
                         'community.discard'.tr != 'community.discard'
                     ? 'community.discard'.tr
                     : 'Discard',
                 style: const TextStyle(
-                  color: Colors.redAccent,
                   fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
               ),
             ),
@@ -443,6 +461,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF161618) : Colors.white;
     final textPrimary = isDark ? Colors.white : Colors.black87;
+    final textSecondary = isDark ? Colors.white70 : Colors.black54;
     final border = isDark ? const Color(0xFF2E2E32) : const Color(0xFFE5E7EB);
     final tileActive = isDark ? const Color(0xFF222226) : const Color(0xFFF3F4F6);
 
@@ -513,9 +532,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                         color: isSelected ? tileActive : Colors.transparent,
                         child: Row(
                           children: [
-                            Text(
-                              _getCategoryIcon(cat),
-                              style: const TextStyle(fontSize: 18),
+                            Icon(
+                              _getCategoryIconData(cat),
+                              size: 20,
+                              color: isDark ? Colors.white70 : textSecondary,
                             ),
                             const SizedBox(width: 14),
                             Expanded(
@@ -548,24 +568,37 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     );
   }
 
-  String _getCategoryIcon(String cat) {
+  IconData _getCategoryIconData(String cat) {
     switch (cat.toLowerCase()) {
       case 'technology':
-        return '💻';
+        return Icons.computer_outlined;
       case 'design':
-        return '🎨';
+      case 'arts':
+      case 'art':
+        return Icons.palette_outlined;
       case 'business':
-        return '💼';
+        return Icons.business_center_outlined;
       case 'career':
-        return '🚀';
+        return Icons.work_outline_rounded;
       case 'education':
-        return '📚';
+        return Icons.school_outlined;
+      case 'workshop':
+        return Icons.build_outlined;
+      case 'competition':
+        return Icons.emoji_events_outlined;
+      case 'sports':
+      case 'sport':
+        return Icons.sports_soccer_outlined;
       case 'social':
-        return '🎉';
+        return Icons.people_outline_rounded;
       case 'entertainment':
-        return '🎬';
+        return Icons.movie_outlined;
+      case 'seminar':
+        return Icons.groups_outlined;
+      case 'hackathon':
+        return Icons.terminal_outlined;
       default:
-        return '📌';
+        return Icons.category_outlined;
     }
   }
 
@@ -986,7 +1019,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                             children: [
                               Icon(
                                 _selectedCategory != null
-                                    ? Icons.category
+                                    ? _getCategoryIconData(_selectedCategory!)
                                     : Icons.category_outlined,
                                 color: _selectedCategory != null
                                     ? (isDark ? Colors.white : Colors.black)

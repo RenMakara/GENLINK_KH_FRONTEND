@@ -385,11 +385,27 @@ class EventModel {
     final orgName =
         organizerObj?['fullName'] as String? ??
         organizerObj?['username'] as String? ??
+        organizerObj?['name'] as String? ??
+        organizerObj?['displayName'] as String? ??
         json['organizerName'] as String? ??
         '';
     final orgAvatar =
         organizerObj?['avatarUrl'] as String? ??
-        json['organizerAvatar'] as String?;
+        organizerObj?['avatar'] as String? ??
+        organizerObj?['profileImage'] as String? ??
+        organizerObj?['profileImageUrl'] as String? ??
+        organizerObj?['profilePicture'] as String? ??
+        organizerObj?['picture'] as String? ??
+        organizerObj?['image'] as String? ??
+        json['organizerAvatar'] as String? ??
+        json['organizerAvatarUrl'] as String? ??
+        json['avatarUrl'] as String? ??
+        json['profileImage'] as String? ??
+        json['profileImageUrl'] as String? ??
+        json['picture'] as String?;
+    final cleanOrgAvatar = (orgAvatar != null && orgAvatar.trim().isNotEmpty)
+        ? orgAvatar.trim()
+        : null;
 
     final parsedStart =
         parseDt(json['startDateTime']) ?? parseDt(json['dateTime']);
@@ -436,7 +452,7 @@ class EventModel {
       subtitle: json['subtitle'] as String? ?? '',
       organizerName: orgName,
       organizerId: orgId,
-      organizerAvatar: orgAvatar,
+      organizerAvatar: cleanOrgAvatar,
       eventType: eventTypeVal,
       mode: modeVal,
       location: loc,

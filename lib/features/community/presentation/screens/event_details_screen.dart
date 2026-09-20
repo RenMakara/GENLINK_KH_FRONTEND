@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/app_error.dart';
 import '../../../../design_system/colors/app_colors.dart';
 import '../../../../design_system/radius/app_radius.dart';
@@ -109,6 +110,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         ? (controller.events.firstWhereOrNull((e) => e.id == _event.id) ?? _event)
         : _event;
 
+    final currentUserId = CurrentUser.id;
+    final isOrganizer = event.organizerName.trim().toLowerCase() == 'me' ||
+        (currentUserId.isNotEmpty && event.organizerId == currentUserId);
+
     final textPrimary = isDark ? Colors.white : AppColors.lightTextPrimary;
     final textSecondary = isDark ? Colors.white70 : AppColors.lightTextSecondary;
     final surfacePrimary = isDark ? const Color(0xFF141414) : Colors.white;
@@ -207,6 +212,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                     iconColor: isSaved ? Colors.white : Colors.white,
                                     onTap: () {
                                       _triggerBookmarkAnimation();
+                                      setState(() => _isBookmarked = !isSaved);
                                       controller.toggleEventBookmark(event.id);
                                       final nowSaved = !isSaved;
                                       _showSnackBar(
@@ -251,6 +257,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                 _showSnackBar(context, isDark, 'community.share'.tr);
                               },
                             ),
+                            if (isOrganizer) ...[
+                              const SizedBox(width: 8),
+                              _buildOwnerMoreButton(
+                                context: context,
+                                event: event,
+                                isDark: isDark,
+                                textPrimary: textPrimary,
+                                controller: controller,
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -276,14 +292,25 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                                   width: 0.8,
                                 ),
                               ),
-                              child: Text(
-                                _localizedCategory(event.category).toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _getCategoryIconData(event.category),
+                                    size: 13,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    _localizedCategory(event.category).toUpperCase(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -520,6 +547,233 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     );
   }
 
+  IconData _getCategoryIconData(String cat) {
+    switch (cat.toLowerCase()) {
+      case 'technology':
+        return Icons.computer_outlined;
+      case 'design':
+      case 'arts':
+      case 'art':
+        return Icons.palette_outlined;
+      case 'business':
+        return Icons.business_center_outlined;
+      case 'career':
+        return Icons.work_outline_rounded;
+      case 'education':
+        return Icons.school_outlined;
+      case 'workshop':
+        return Icons.build_outlined;
+      case 'competition':
+        return Icons.emoji_events_outlined;
+      case 'sports':
+      case 'sport':
+        return Icons.sports_soccer_outlined;
+      case 'social':
+        return Icons.people_outline_rounded;
+      case 'entertainment':
+        return Icons.movie_outlined;
+      case 'seminar':
+        return Icons.groups_outlined;
+      case 'hackathon':
+        return Icons.terminal_outlined;
+      default:
+        return Icons.category_outlined;
+    }
+  }
+
+  Widget _buildOwnerMoreButton({
+    required BuildContext context,
+    required EventModel event,
+    required bool isDark,
+    required Color textPrimary,
+    required CommunityController? controller,
+  }) {
+    return PopupMenuButton<String>(
+      icon: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.5),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.2),
+            width: 0.8,
+          ),
+        ),
+        child: const Center(
+          child: Icon(Icons.more_horiz_rounded, color: Colors.white, size: 20),
+        ),
+      ),
+      padding: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: isDark ? const Color(0xFF1E1E20) : Colors.white,
+      onSelected: (val) => _handleOwnerAction(
+        context: context,
+        action: val,
+        event: event,
+        isDark: isDark,
+        controller: controller,
+      ),
+      itemBuilder: (ctx) => [
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.edit_outlined, size: 18, color: textPrimary),
+              const SizedBox(width: 8),
+              Text(
+                'community.editEvent'.tr.isNotEmpty &&
+                        'community.editEvent'.tr != 'community.editEvent'
+                    ? 'community.editEvent'.tr
+                    : 'Edit Event',
+                style: TextStyle(color: textPrimary, fontSize: 13.5),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.delete_outline_rounded,
+                size: 18,
+                color: AppColors.danger,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'community.deleteEvent'.tr.isNotEmpty &&
+                        'community.deleteEvent'.tr != 'community.deleteEvent'
+                    ? 'community.deleteEvent'.tr
+                    : 'Delete Event',
+                style: const TextStyle(
+                  color: AppColors.danger,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleOwnerAction({
+    required BuildContext context,
+    required String action,
+    required EventModel event,
+    required bool isDark,
+    required CommunityController? controller,
+  }) async {
+    if (action == 'edit') {
+      final updated = await Get.to<EventModel?>(
+        () => CreateEventScreen(
+          eventToEdit: event,
+          returnCreatedEvent: true,
+        ),
+      );
+      if (updated != null && mounted) {
+        setState(() {
+          _event = updated;
+        });
+        if (controller != null) {
+          controller.fetchEventDetails(updated.id);
+        }
+      }
+    } else if (action == 'delete') {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E1E22) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'community.deleteEvent'.tr.isNotEmpty &&
+                    'community.deleteEvent'.tr != 'community.deleteEvent'
+                ? '${'community.deleteEvent'.tr}?'
+                : 'Delete Event?',
+            style: TextStyle(
+              color: isDark ? Colors.white : AppColors.lightTextPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 17,
+            ),
+          ),
+          content: Text(
+            'community.deleteEventConfirm'.tr.isNotEmpty &&
+                    'community.deleteEventConfirm'.tr != 'community.deleteEventConfirm'
+                ? 'community.deleteEventConfirm'.tr
+                : 'Are you sure you want to delete this event? This action cannot be undone.',
+            style: TextStyle(
+              color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx, false),
+              child: Text(
+                'common.cancel'.tr.isNotEmpty &&
+                        'common.cancel'.tr != 'common.cancel'
+                    ? 'common.cancel'.tr
+                    : 'Cancel',
+                style: TextStyle(
+                  color: isDark ? Colors.white60 : Colors.black54,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogCtx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                elevation: 0,
+              ),
+              child: Text(
+                'common.delete'.tr.isNotEmpty &&
+                        'common.delete'.tr != 'common.delete'
+                    ? 'common.delete'.tr
+                    : 'Delete',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        try {
+          if (controller != null) {
+            await controller.deleteEvent(event.id);
+          }
+          if (mounted) {
+            Navigator.pop(this.context, true);
+            AppNotificationBanner.showSuccess(
+              context: Get.context ?? this.context,
+              title: 'Event Deleted',
+              message: 'Your event has been successfully deleted.',
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            final errorMsg = e is AppError
+                ? e.message
+                : 'Failed to delete event. Please try again.';
+            AppNotificationBanner.showDanger(
+              context: this.context,
+              title: 'Error',
+              message: errorMsg,
+            );
+          }
+        }
+      }
+    }
+  }
+
   Widget _buildOrganizerCard({
     required BuildContext context,
     required EventModel event,
@@ -538,6 +792,31 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         ? event.organizerName
         : 'GenLink Community';
 
+    String? effectiveAvatar = (event.organizerAvatar != null && event.organizerAvatar!.trim().isNotEmpty)
+        ? event.organizerAvatar!.trim()
+        : null;
+
+    if (effectiveAvatar == null &&
+        currentUserId.isNotEmpty &&
+        event.organizerId == currentUserId) {
+      final currentAvatar = CurrentUser.avatarUrl?.trim();
+      if (currentAvatar != null && currentAvatar.isNotEmpty) {
+        effectiveAvatar = currentAvatar;
+      }
+    }
+
+    ImageProvider? avatarProvider;
+    if (effectiveAvatar != null && effectiveAvatar.isNotEmpty) {
+      if (effectiveAvatar.startsWith('assets/')) {
+        avatarProvider = AssetImage(effectiveAvatar);
+      } else {
+        final fullUrl = effectiveAvatar.startsWith('http')
+            ? effectiveAvatar
+            : '${AppConfig.apiBaseUrl}${effectiveAvatar.startsWith('/') ? '' : '/'}$effectiveAvatar';
+        avatarProvider = NetworkImage(fullUrl);
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -550,8 +829,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
           CircleAvatar(
             radius: 22,
             backgroundColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA),
-            backgroundImage: const AssetImage('assets/images/user_profile.png'),
-            onBackgroundImageError: (exception, stackTrace) {},
+            foregroundImage: avatarProvider,
+            onForegroundImageError: avatarProvider != null ? (exception, stackTrace) {} : null,
             child: Text(
               orgName.isNotEmpty ? orgName[0].toUpperCase() : 'G',
               style: TextStyle(
@@ -604,147 +883,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               color: isDark ? const Color(0xFF1E1E20) : Colors.white,
               onSelected: (val) async {
-                if (val == 'edit') {
-                  final updated = await Get.to<EventModel?>(
-                    () => CreateEventScreen(
-                      eventToEdit: event,
-                      returnCreatedEvent: true,
-                    ),
-                  );
-                  if (updated != null && mounted) {
-                    setState(() {
-                      _event = updated;
-                    });
-                    if (controller != null) {
-                      controller.fetchEventDetails(updated.id);
-                    }
-                  }
-                } else if (val == 'delete') {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (dialogCtx) => AlertDialog(
-                      backgroundColor: isDark ? const Color(0xFF1E1E22) : Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      title: Text(
-                        'community.deleteEvent'.tr.isNotEmpty &&
-                                'community.deleteEvent'.tr != 'community.deleteEvent'
-                            ? '${'community.deleteEvent'.tr}?'
-                            : 'Delete Event?',
-                        style: TextStyle(
-                          color: isDark ? Colors.white : AppColors.lightTextPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 17,
-                        ),
-                      ),
-                      content: Text(
-                        'community.deleteEventConfirm'.tr.isNotEmpty &&
-                                'community.deleteEventConfirm'.tr != 'community.deleteEventConfirm'
-                            ? 'community.deleteEventConfirm'.tr
-                            : 'Are you sure you want to delete this event? This action cannot be undone.',
-                        style: TextStyle(
-                          color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
-                          fontSize: 14,
-                          height: 1.4,
-                        ),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogCtx, false),
-                          child: Text(
-                            'common.cancel'.tr.isNotEmpty &&
-                                    'common.cancel'.tr != 'common.cancel'
-                                ? 'common.cancel'.tr
-                                : 'Cancel',
-                            style: TextStyle(
-                              color: isDark ? Colors.white60 : Colors.black54,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(dialogCtx, true),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFEF4444),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            elevation: 0,
-                          ),
-                          child: Text(
-                            'common.delete'.tr.isNotEmpty &&
-                                    'common.delete'.tr != 'common.delete'
-                                ? 'common.delete'.tr
-                                : 'Delete',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (confirmed == true) {
-                    try {
-                      if (controller != null) {
-                        await controller.deleteEvent(event.id);
-                      }
-                      if (mounted) {
-                        Navigator.pop(this.context, true);
-                        AppNotificationBanner.showSuccess(
-                          context: Get.context ?? this.context,
-                          title: 'Event Deleted',
-                          message: 'Your event has been successfully deleted.',
-                        );
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        final errorMsg = e is AppError
-                            ? e.message
-                            : 'Failed to delete event. Please try again.';
-                        AppNotificationBanner.showDanger(
-                          context: this.context,
-                          title: 'Error',
-                          message: errorMsg,
-                        );
-                      }
-                    }
-                  }
-                } else if (val == 'remove_cover') {
+                if (val == 'remove_cover') {
                   setState(() {
-                    _event = EventModel(
-                      id: event.id,
-                      title: event.title,
-                      subtitle: event.subtitle,
-                      organizerName: event.organizerName,
-                      organizerId: event.organizerId,
-                      organizerAvatar: event.organizerAvatar,
-                      eventType: event.eventType,
-                      mode: event.mode,
-                      location: event.location,
-                      locationName: event.locationName,
-                      onlineLink: event.onlineLink,
-                      meetingUrl: event.meetingUrl,
-                      latitude: event.latitude,
-                      longitude: event.longitude,
-                      dateString: event.dateString,
-                      timeString: event.timeString,
-                      startDateTime: event.startDateTime,
-                      endDateTime: event.endDateTime,
-                      description: event.description,
-                      category: event.category,
-                      isPaid: event.isPaid,
-                      price: event.price,
-                      priceKhr: event.priceKhr,
-                      currency: event.currency,
+                    _event = _event.copyWith(
                       imageUrl: '',
                       coverImageFile: null,
-                      attendeeLimit: event.attendeeLimit,
-                      attendeesCount: event.attendeesCount,
-                      status: event.status,
-                      language: event.language,
-                      myRsvpStatus: event.myRsvpStatus,
-                      isRsvped: event.isRsvped,
-                      isFull: event.isFull,
-                      isBookmarked: event.isBookmarked,
-                      attendeeAvatars: event.attendeeAvatars,
                     );
                     if (controller != null) {
                       final idx = controller.events.indexWhere((e) => e.id == event.id);
@@ -754,6 +897,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                     }
                   });
                   _showSnackBar(context, isDark, 'Cover image removed');
+                } else {
+                  await _handleOwnerAction(
+                    context: context,
+                    action: val,
+                    event: event,
+                    isDark: isDark,
+                    controller: controller,
+                  );
                 }
               },
               itemBuilder: (ctx) => [

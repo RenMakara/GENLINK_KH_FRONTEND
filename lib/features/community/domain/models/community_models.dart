@@ -744,14 +744,15 @@ class ForumTopicModel {
   bool isLiked;
   final bool isPinned;
   final bool isOwner;
+  final bool isAnonymous;
   final List<ForumLikerModel> likers;
 
   ForumTopicModel({
     required this.id,
-    this.authorId,
+    String? authorId,
     required this.title,
-    required this.authorName,
-    this.authorAvatar = 'assets/images/user_profile.png',
+    required String authorName,
+    String authorAvatar = '',
     required this.category,
     required this.content,
     this.upvotes = 0,
@@ -761,11 +762,15 @@ class ForumTopicModel {
     this.isLiked = false,
     this.isPinned = false,
     this.isOwner = false,
+    this.isAnonymous = false,
     this.isBookmarked = false,
     this.likers = const [],
-  });
+  })  : authorId = isAnonymous ? null : authorId,
+        authorName = isAnonymous ? 'Anonymous' : authorName,
+        authorAvatar = isAnonymous ? '' : authorAvatar;
 
   final bool isBookmarked;
+  bool get mine => isOwner;
 
   /// Evaluates whether the given user ID matches this discussion's author ID.
   /// Uses stable author ID comparison when available, and respects session ownership.
@@ -794,15 +799,21 @@ class ForumTopicModel {
     bool? isLiked,
     bool? isPinned,
     bool? isOwner,
+    bool? isAnonymous,
     bool? isBookmarked,
     List<ForumLikerModel>? likers,
   }) {
+    final effectiveAnonymous = isAnonymous ?? this.isAnonymous;
     return ForumTopicModel(
       id: id ?? this.id,
-      authorId: authorId ?? this.authorId,
+      authorId: effectiveAnonymous ? null : (authorId ?? this.authorId),
       title: title ?? this.title,
-      authorName: authorName ?? this.authorName,
-      authorAvatar: authorAvatar ?? this.authorAvatar,
+      authorName: effectiveAnonymous
+          ? 'Anonymous'
+          : (authorName ?? this.authorName),
+      authorAvatar: effectiveAnonymous
+          ? ''
+          : (authorAvatar ?? this.authorAvatar),
       category: category ?? this.category,
       content: content ?? this.content,
       upvotes: upvotes ?? this.upvotes,
@@ -812,28 +823,38 @@ class ForumTopicModel {
       isLiked: isLiked ?? this.isLiked,
       isPinned: isPinned ?? this.isPinned,
       isOwner: isOwner ?? this.isOwner,
+      isAnonymous: effectiveAnonymous,
       isBookmarked: isBookmarked ?? this.isBookmarked,
       likers: likers ?? this.likers,
     );
   }
 
   factory ForumTopicModel.fromJson(Map<String, dynamic> json) {
+    final rawAnonymous = json['anonymous'] as bool? ??
+        json['isAnonymous'] as bool?;
     final authorObj = json['author'] is Map<String, dynamic>
         ? json['author'] as Map<String, dynamic>
         : null;
-    final authorName =
-        authorObj?['fullName'] as String? ??
-        json['authorName'] as String? ??
-        json['username'] as String? ??
-        'User';
-    final authorAvatar =
-        authorObj?['avatarUrl'] as String? ??
-        json['authorAvatar'] as String? ??
-        'assets/images/user_profile.png';
-    final authorId =
-        authorObj?['userId'] as String? ??
-        json['authorId'] as String? ??
-        json['userId'] as String?;
+    final isAnonymous = rawAnonymous ??
+        (authorObj == null && json['authorName'] == 'Anonymous');
+
+    final authorName = isAnonymous
+        ? 'Anonymous'
+        : (authorObj?['fullName'] as String? ??
+            authorObj?['username'] as String? ??
+            json['authorName'] as String? ??
+            json['username'] as String? ??
+            'User');
+    final authorAvatar = isAnonymous
+        ? ''
+        : (authorObj?['avatarUrl'] as String? ??
+            json['authorAvatar'] as String? ??
+            '');
+    final authorId = isAnonymous
+        ? null
+        : (authorObj?['userId'] as String? ??
+            json['authorId'] as String? ??
+            json['userId'] as String?);
 
     final rawDate = json['createdAt'] as String? ?? json['timeAgo'] as String?;
     final parsedUtc = CommunityDateFormatter.parseToUtc(rawDate);
@@ -856,9 +877,7 @@ class ForumTopicModel {
       authorId: authorId,
       title: json['title'] as String? ?? '',
       authorName: authorName,
-      authorAvatar: authorAvatar.isNotEmpty
-          ? authorAvatar
-          : 'assets/images/user_profile.png',
+      authorAvatar: isAnonymous ? '' : authorAvatar,
       category: json['category'] as String? ?? 'General',
       content: json['content'] as String? ?? '',
       upvotes:
@@ -877,6 +896,7 @@ class ForumTopicModel {
           json['reactedByMe'] as bool? ?? json['isLiked'] as bool? ?? false,
       isPinned: json['isPinned'] as bool? ?? false,
       isOwner: json['mine'] as bool? ?? json['isOwner'] as bool? ?? false,
+      isAnonymous: isAnonymous,
       isBookmarked: json['isBookmarked'] as bool? ??
           json['savedByMe'] as bool? ??
           false,
@@ -887,10 +907,11 @@ class ForumTopicModel {
   Map<String, dynamic> toJson() {
     return {
       'discussionId': id,
-      'authorId': authorId,
+      'id': id,
+      'authorId': isAnonymous ? null : authorId,
       'title': title,
-      'authorName': authorName,
-      'authorAvatar': authorAvatar,
+      'authorName': isAnonymous ? 'Anonymous' : authorName,
+      'authorAvatar': isAnonymous ? '' : authorAvatar,
       'category': category,
       'content': content,
       'upvotes': upvotes,
@@ -900,6 +921,8 @@ class ForumTopicModel {
       'isLiked': isLiked,
       'isPinned': isPinned,
       'isOwner': isOwner,
+      'isAnonymous': isAnonymous,
+      'anonymous': isAnonymous,
       'isBookmarked': isBookmarked,
       'likers': likers.map((l) => l.toJson()).toList(),
     };

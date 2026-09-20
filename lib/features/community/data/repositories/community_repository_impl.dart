@@ -218,12 +218,14 @@ class CommunityRepositoryImpl implements CommunityRepository {
     required String title,
     required String content,
     required String category,
+    bool? anonymous,
   }) {
     return remoteDataSource.updateDiscussion(
       discussionId,
       title: title,
       content: content,
       category: category,
+      anonymous: anonymous,
     );
   }
 

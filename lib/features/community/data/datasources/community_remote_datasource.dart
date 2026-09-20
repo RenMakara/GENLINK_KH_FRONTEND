@@ -390,17 +390,54 @@ class CommunityRemoteDataSource {
     );
   }
 
-  Future<bool> toggleBookmark(String postId) async {
-    try {
-      await guardDio(
-        () => dio.post<dynamic>(ApiEndpoints.communityPostBookmark(postId)),
-      );
-    } catch (_) {}
-    final idx = _mockPosts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      _mockPosts[idx].isBookmarked = !_mockPosts[idx].isBookmarked;
+  Future<bool> toggleBookmark(
+    String postId, {
+    bool? isCurrentlyBookmarked,
+  }) async {
+    if (isCurrentlyBookmarked != null) {
+      try {
+        final response = await guardDio(
+          () => isCurrentlyBookmarked
+              ? dio.delete<dynamic>(
+                  ApiEndpoints.profileSavedItem('POST', postId),
+                )
+              : dio.post<dynamic>(
+                  ApiEndpoints.profileSaved,
+                  data: {
+                    'itemType': 'POST',
+                    'itemId': postId,
+                  },
+                ),
+        );
+        if (response.statusCode == 200 ||
+            response.statusCode == 201 ||
+            response.statusCode == 204) {
+          final idx = _mockPosts.indexWhere((p) => p.id == postId);
+          if (idx != -1) {
+            _mockPosts[idx].isBookmarked = !isCurrentlyBookmarked;
+          }
+          return true;
+        }
+      } catch (_) {}
     }
-    return true;
+
+    final response = await guardDio(
+      () => dio.post<dynamic>(ApiEndpoints.communityPostBookmark(postId)),
+    );
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 204) {
+      final idx = _mockPosts.indexWhere((p) => p.id == postId);
+      if (idx != -1) {
+        _mockPosts[idx].isBookmarked = !_mockPosts[idx].isBookmarked;
+      }
+      return true;
+    }
+
+    throw const AppError(
+      message: 'Failed to update bookmark',
+      errorCode: 'BOOKMARK_UPDATE_FAILED',
+    );
   }
 
   Future<bool> repostPost(
@@ -905,7 +942,15 @@ class CommunityRemoteDataSource {
       final body = response.data;
       final data = body is Map<String, dynamic> ? (body['data'] ?? body) : null;
       if (data is Map<String, dynamic>) {
-        return ForumTopicModel.fromJson(data);
+        final topic = ForumTopicModel.fromJson(data);
+        if (anonymous) {
+          return topic.copyWith(
+            isAnonymous: true,
+            authorName: 'Anonymous',
+            authorAvatar: '',
+          );
+        }
+        return topic;
       }
     }
     throw AppError(
@@ -919,18 +964,33 @@ class CommunityRemoteDataSource {
     required String title,
     required String content,
     required String category,
+    bool? anonymous,
   }) async {
+    final payload = <String, dynamic>{
+      'title': title,
+      'content': content,
+      'category': category,
+      'anonymous': ?anonymous,
+    };
     final response = await guardDio(
       () => dio.put<dynamic>(
         ApiEndpoints.communityDiscussionDetail(discussionId),
-        data: {'title': title, 'content': content, 'category': category},
+        data: payload,
       ),
     );
     if (response.statusCode == 200) {
       final body = response.data;
       final data = body is Map<String, dynamic> ? (body['data'] ?? body) : null;
       if (data is Map<String, dynamic>) {
-        return ForumTopicModel.fromJson(data);
+        final topic = ForumTopicModel.fromJson(data);
+        if (anonymous == true || (anonymous == null && topic.isAnonymous)) {
+          return topic.copyWith(
+            isAnonymous: true,
+            authorName: 'Anonymous',
+            authorAvatar: '',
+          );
+        }
+        return topic;
       }
     }
     throw AppError(
@@ -981,6 +1041,9 @@ class CommunityRemoteDataSource {
     int page = 0,
     int size = 20,
   }) async {
+    if (discussionId.trim().isEmpty) {
+      return [];
+    }
     final response = await guardDio(
       () => dio.get<dynamic>(
         ApiEndpoints.communityDiscussionReactions(discussionId),
@@ -1032,7 +1095,7 @@ class CommunityRemoteDataSource {
     if (response.statusCode == 200 ||
         response.statusCode == 201 ||
         response.statusCode == 204) {
-      return !isCurrentlyBookmarked;
+      return true;
     }
     throw const AppError(
       message: 'Failed to update bookmark',

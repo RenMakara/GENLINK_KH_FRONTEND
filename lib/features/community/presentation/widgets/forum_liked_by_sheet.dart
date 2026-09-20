@@ -19,7 +19,9 @@ class ForumLikedBySheet extends StatefulWidget {
     BuildContext context, {
     required String discussionId,
     List<ForumLikerModel> initialLikers = const [],
+    bool isOwner = true,
   }) {
+    if (!isOwner || discussionId.trim().isEmpty) return;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -55,10 +57,10 @@ class _ForumLikedBySheetState extends State<ForumLikedBySheet> {
     }
 
     final cached = _controller.discussionLikers[widget.discussionId];
-    if (widget.initialLikers.isNotEmpty) {
-      _likers = List<ForumLikerModel>.from(widget.initialLikers);
-    } else if (cached != null && cached.isNotEmpty) {
+    if (cached != null && cached.isNotEmpty) {
       _likers = List<ForumLikerModel>.from(cached);
+    } else if (widget.initialLikers.isNotEmpty) {
+      _likers = List<ForumLikerModel>.from(widget.initialLikers);
     } else {
       _likers = [];
     }
@@ -103,6 +105,7 @@ class _ForumLikedBySheetState extends State<ForumLikedBySheet> {
         setState(() {
           _likers = fetched;
           _isLoading = false;
+          _hasError = false;
           _hasMore = fetched.length >= 20;
         });
       }
@@ -110,9 +113,7 @@ class _ForumLikedBySheetState extends State<ForumLikedBySheet> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          if (_likers.isEmpty) {
-            _hasError = true;
-          }
+          _hasError = true;
         });
       }
     }
@@ -274,6 +275,7 @@ class _ForumLikedBySheetState extends State<ForumLikedBySheet> {
               ),
               const SizedBox(height: 12),
               ElevatedButton(
+                key: const Key('retry_load_likers_button'),
                 onPressed: _loadLikers,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isDark
@@ -355,6 +357,7 @@ class _ForumLikedBySheetState extends State<ForumLikedBySheet> {
             !liker.avatarUrl.contains('default_avatar');
 
         return ListTile(
+          key: Key('liker_tile_${liker.id}'),
           dense: true,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 2),

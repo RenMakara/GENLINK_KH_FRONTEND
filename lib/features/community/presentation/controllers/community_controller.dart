@@ -51,9 +51,9 @@ class CommunityController extends GetxController {
     return '';
   }
 
-  final selectedCategory = 'Feed'.obs;
+  final selectedCategory = 'For You'.obs;
   final selectedForumCategory = 'All'.obs;
-  final categories = ['Feed', 'Forum', 'Event'];
+  final categories = ['For You', 'Feed', 'Forum', 'Event'];
 
   final isLoadingFeed = false.obs;
   final isRefreshingFeed = false.obs;
@@ -728,6 +728,7 @@ class CommunityController extends GetxController {
   final isPublishingDiscussion = false.obs;
   final inFlightDiscussionLikes = <String>{}.obs;
   final inFlightCommentLikes = <String>{}.obs;
+  final inFlightDiscussionReposts = <String>{}.obs;
 
   final discussionLikers = <String, List<ForumLikerModel>>{}.obs;
   final isLoadingDiscussionLikers = <String, bool>{}.obs;
@@ -774,6 +775,9 @@ class CommunityController extends GetxController {
     int page = 0,
     int size = 20,
   }) async {
+    if (discussionId.trim().isEmpty) {
+      return [];
+    }
     isLoadingDiscussionLikers[discussionId] = true;
     try {
       final likers = await repository.getDiscussionLikers(
@@ -799,8 +803,15 @@ class CommunityController extends GetxController {
           forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
       if (latestIdx != -1) {
         final topic = forumLatestDiscussions[latestIdx];
-        forumLatestDiscussions[latestIdx] =
-            topic.copyWith(likers: mergedLikers);
+        // If page 0 returned less than size items, mergedLikers contains all real likers.
+        // Sync upvotes with real backend reactions so count and list never mismatch.
+        final alignedUpvotes = (page == 0 && likers.length < size)
+            ? mergedLikers.length
+            : (mergedLikers.length > topic.upvotes ? mergedLikers.length : topic.upvotes);
+        forumLatestDiscussions[latestIdx] = topic.copyWith(
+          likers: mergedLikers,
+          upvotes: alignedUpvotes,
+        );
         forumLatestDiscussions.refresh();
       }
       return mergedLikers;
@@ -829,6 +840,10 @@ class CommunityController extends GetxController {
         page: 1,
         limit: 20,
       );
+      for (final d in fetched) {
+        discussionBookmarks[d.id] = d.isBookmarked;
+      }
+      discussionBookmarks.refresh();
       forumLatestDiscussions.assignAll(fetched);
     } catch (e) {
       hasForumError.value = true;
@@ -842,6 +857,7 @@ class CommunityController extends GetxController {
   }
 
   Future<bool> toggleDiscussionLike(String discussionId) async {
+    if (discussionId.isEmpty) return false;
     if (inFlightDiscussionLikes.contains(discussionId)) return false;
     inFlightDiscussionLikes.add(discussionId);
 
@@ -856,43 +872,17 @@ class CommunityController extends GetxController {
       final item = forumLatestDiscussions[latestIdx];
       prevLiked = item.isLiked;
       prevUpvotes = item.upvotes;
-      prevLikers = List<ForumLikerModel>.from(discussionLikers[discussionId] ?? item.likers);
+      prevLikers = List<ForumLikerModel>.from(
+        discussionLikers[discussionId] ?? item.likers,
+      );
 
       item.isLiked = !prevLiked;
       item.upvotes += item.isLiked ? 1 : -1;
+      if (item.upvotes < 0) item.upvotes = 0;
 
-      final updatedLikers = List<ForumLikerModel>.from(prevLikers);
-      final currentUserId = this.currentUserId;
-      final currentUserName = this.currentUserName;
-
-      if (item.isLiked) {
-        if (currentUserId != null &&
-            currentUserId.isNotEmpty &&
-            !updatedLikers.any((l) => l.id == currentUserId)) {
-          updatedLikers.insert(
-            0,
-            ForumLikerModel(
-              id: currentUserId,
-              fullName: currentUserName.isNotEmpty
-                  ? currentUserName
-                  : (CurrentUser.name.isNotEmpty ? CurrentUser.name : 'User'),
-              username: CurrentUser.username.isNotEmpty
-                  ? CurrentUser.username
-                  : '@$currentUserName',
-              avatarUrl: CurrentUser.avatarUrl ?? '',
-            ),
-          );
-        }
-      } else {
-        if (currentUserId != null && currentUserId.isNotEmpty) {
-          updatedLikers.removeWhere((l) => l.id == currentUserId);
-        }
-      }
-
-      discussionLikers[discussionId] = updatedLikers;
-      discussionLikers.refresh();
-
-      forumLatestDiscussions[latestIdx] = item.copyWith(likers: updatedLikers);
+      // We NEVER insert synthetic/mock current user into the likers list.
+      // The likers list must strictly represent authentic backend reactions.
+      forumLatestDiscussions[latestIdx] = item;
       forumLatestDiscussions.refresh();
     }
 
@@ -904,8 +894,13 @@ class CommunityController extends GetxController {
       if (!success) {
         _rollbackDiscussionLike(discussionId, prevLiked, prevUpvotes, prevLikers);
       } else {
-        fetchDiscussionLikers(discussionId)
-            .catchError((_) => <ForumLikerModel>[]);
+        // Fetch authentic backend reactions and populate real likers ONLY if current user is owner
+        final discussion = forumLatestDiscussions.firstWhereOrNull((d) => d.id == discussionId);
+        final isOwner = discussion?.isOwner ?? (discussion?.checkIsOwner(currentUserId) ?? false);
+        if (isOwner) {
+          await fetchDiscussionLikers(discussionId)
+              .catchError((_) => <ForumLikerModel>[]);
+        }
       }
       return success;
     } catch (_) {
@@ -968,22 +963,25 @@ class CommunityController extends GetxController {
     }
   }
 
-  Future<bool> toggleDiscussionBookmark(String discussionId) async {
-    final idx = forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
-    bool prevBookmarked = false;
-    if (idx != -1) {
-      final item = forumLatestDiscussions[idx];
-      prevBookmarked = item.isBookmarked;
-      final updated = item.copyWith(isBookmarked: !prevBookmarked);
-      forumLatestDiscussions[idx] = updated;
-      forumLatestDiscussions.refresh();
-    } else if (discussionBookmarks.containsKey(discussionId)) {
-      prevBookmarked = discussionBookmarks[discussionId]!;
-    }
+  void clearBookmarkCache() {
+    discussionBookmarks.clear();
+  }
 
+  Future<bool> toggleDiscussionBookmark(String discussionId) async {
+    if (discussionId.trim().isEmpty) return false;
+
+    final prevBookmarked = isDiscussionBookmarked(discussionId);
     final newStatus = !prevBookmarked;
+
     discussionBookmarks[discussionId] = newStatus;
     discussionBookmarks.refresh();
+
+    final idx = forumLatestDiscussions.indexWhere((d) => d.id == discussionId);
+    if (idx != -1) {
+      forumLatestDiscussions[idx] =
+          forumLatestDiscussions[idx].copyWith(isBookmarked: newStatus);
+      forumLatestDiscussions.refresh();
+    }
 
     try {
       final success = await repository.toggleDiscussionBookmark(
@@ -991,60 +989,127 @@ class CommunityController extends GetxController {
         isCurrentlyBookmarked: prevBookmarked,
       );
       if (!success) {
-        if (idx != -1) {
-          forumLatestDiscussions[idx] = forumLatestDiscussions[idx]
-              .copyWith(isBookmarked: prevBookmarked);
-          forumLatestDiscussions.refresh();
-        }
-        discussionBookmarks[discussionId] = prevBookmarked;
-        discussionBookmarks.refresh();
+        _rollbackDiscussionBookmark(discussionId, prevBookmarked, idx);
+        return false;
       }
-      return success;
+      return true;
     } catch (_) {
-      if (idx != -1) {
-        forumLatestDiscussions[idx] =
-            forumLatestDiscussions[idx].copyWith(isBookmarked: prevBookmarked);
-        forumLatestDiscussions.refresh();
-      }
-      discussionBookmarks[discussionId] = prevBookmarked;
-      discussionBookmarks.refresh();
+      _rollbackDiscussionBookmark(discussionId, prevBookmarked, idx);
       return false;
     }
   }
 
-  bool repostDiscussion(ForumTopicModel discussion, {String? caption}) {
-    if (discussion.checkIsOwner(currentUserId)) {
+  void _rollbackDiscussionBookmark(
+    String discussionId,
+    bool prevBookmarked,
+    int idx,
+  ) {
+    discussionBookmarks[discussionId] = prevBookmarked;
+    discussionBookmarks.refresh();
+    if (idx != -1) {
+      forumLatestDiscussions[idx] =
+          forumLatestDiscussions[idx].copyWith(isBookmarked: prevBookmarked);
+      forumLatestDiscussions.refresh();
+    }
+  }
+
+  Future<bool> repostDiscussion(ForumTopicModel discussion, {String? caption}) async {
+    final effectiveUserId = currentUserId ?? (CurrentUser.id.isNotEmpty ? CurrentUser.id : null);
+    if (discussion.checkIsOwner(effectiveUserId)) {
       return false;
     }
+    if (inFlightDiscussionReposts.contains(discussion.id)) {
+      return false;
+    }
+    inFlightDiscussionReposts.add(discussion.id);
+
+    final effectiveReposterId = (effectiveUserId != null && effectiveUserId.isNotEmpty)
+        ? effectiveUserId
+        : 'current_user';
+    final effectiveReposterName =
+        (currentUserName.isNotEmpty && currentUserName != 'Guest')
+            ? currentUserName
+            : (CurrentUser.name.isNotEmpty && CurrentUser.name != 'Guest'
+                ? CurrentUser.name
+                : 'You');
+
     final idx = posts.indexWhere((p) => p.id == discussion.id);
+    CommunityPostModel? originalPost;
+    CommunityPostModel? newlyCreatedPost;
+
     if (idx != -1) {
-      repostPost(discussion.id, caption: caption);
+      originalPost = posts[idx];
+      posts[idx] = originalPost.copyWith(
+        sharesCount: originalPost.sharesCount + 1,
+        isRepostedByMe: true,
+        repostedBy: effectiveReposterName,
+        repostCaption: caption,
+        reposterId: effectiveReposterId,
+        originalPostId: originalPost.id,
+      );
+      posts.refresh();
     } else {
-      final repostedPost = CommunityPostModel(
+      final isAnonDiscussion = discussion.isAnonymous ||
+          discussion.authorName.trim().toLowerCase() == 'anonymous' ||
+          ('community.anonymous'.tr.isNotEmpty &&
+              discussion.authorName.trim().toLowerCase() ==
+                  'community.anonymous'.tr.toLowerCase());
+      newlyCreatedPost = CommunityPostModel(
         id: 'repost_${DateTime.now().millisecondsSinceEpoch}',
-        userId: discussion.authorId ?? 'unknown',
-        authorName: discussion.authorName,
-        authorTag: discussion.authorName.replaceAll('@', ''),
-        authorAvatar: discussion.authorAvatar,
+        userId: isAnonDiscussion ? 'anonymous' : (discussion.authorId ?? 'unknown'),
+        authorName: isAnonDiscussion ? 'Anonymous' : discussion.authorName,
+        authorTag: isAnonDiscussion ? 'anonymous' : discussion.authorName.replaceAll('@', ''),
+        authorAvatar: isAnonDiscussion ? '' : discussion.authorAvatar,
         timeAgo: 'Just now',
         content: discussion.title +
             (discussion.content.isNotEmpty ? '\n${discussion.content}' : ''),
         community: discussion.category,
         sharesCount: 1,
         isRepostedByMe: true,
-        repostedBy: currentUserName,
+        repostedBy: effectiveReposterName,
         repostCaption: caption,
-        reposterId: currentUserId,
+        reposterId: effectiveReposterId,
         originalPostId: discussion.id,
       );
-      posts.insert(0, repostedPost);
+      posts.insert(0, newlyCreatedPost);
       posts.refresh();
-
-      repository
-          .repostPost(discussion.id, caption: caption, reposterId: currentUserId)
-          .catchError((_) => false);
     }
-    return true;
+
+    try {
+      final success = await repository.repostPost(
+        discussion.id,
+        caption: caption,
+        reposterId: effectiveReposterId,
+      );
+      if (!success) {
+        if (idx != -1 && originalPost != null) {
+          final revertIdx = posts.indexWhere((p) => p.id == discussion.id);
+          if (revertIdx != -1) {
+            posts[revertIdx] = originalPost;
+            posts.refresh();
+          }
+        } else if (newlyCreatedPost != null) {
+          posts.removeWhere((p) => p.id == newlyCreatedPost!.id);
+          posts.refresh();
+        }
+        return false;
+      }
+      return true;
+    } catch (e) {
+      if (idx != -1 && originalPost != null) {
+        final revertIdx = posts.indexWhere((p) => p.id == discussion.id);
+        if (revertIdx != -1) {
+          posts[revertIdx] = originalPost;
+          posts.refresh();
+        }
+      } else if (newlyCreatedPost != null) {
+        posts.removeWhere((p) => p.id == newlyCreatedPost!.id);
+        posts.refresh();
+      }
+      return false;
+    } finally {
+      inFlightDiscussionReposts.remove(discussion.id);
+    }
   }
 
   Future<ForumTopicModel> addDiscussion({
@@ -1062,12 +1127,20 @@ class CommunityController extends GetxController {
 
     isPublishingDiscussion.value = true;
     try {
-      final createdTopic = await repository.createDiscussion(
+      var createdTopic = await repository.createDiscussion(
         title: title,
         content: content,
         category: category,
         anonymous: anonymous,
       );
+
+      if (anonymous) {
+        createdTopic = createdTopic.copyWith(
+          isAnonymous: true,
+          authorName: 'Anonymous',
+          authorAvatar: '',
+        );
+      }
 
       forumLatestDiscussions.insert(0, createdTopic);
       forumLatestDiscussions.refresh();
@@ -1083,14 +1156,25 @@ class CommunityController extends GetxController {
     required String title,
     required String content,
     required String category,
+    bool? anonymous,
   }) async {
     try {
-      final updatedTopic = await repository.updateDiscussion(
+      var updatedTopic = await repository.updateDiscussion(
         discussionId,
         title: title,
         content: content,
         category: category,
+        anonymous: anonymous,
       );
+
+      if (anonymous == true ||
+          (anonymous == null && updatedTopic.isAnonymous)) {
+        updatedTopic = updatedTopic.copyWith(
+          isAnonymous: true,
+          authorName: 'Anonymous',
+          authorAvatar: '',
+        );
+      }
 
       final forumIdx = forumLatestDiscussions.indexWhere(
         (d) => d.id == discussionId,
@@ -1126,23 +1210,17 @@ class CommunityController extends GetxController {
     discussionDetailError.value = '';
     try {
       final detail = await repository.getDiscussionDetails(discussionId);
-      final bookmarked = isDiscussionBookmarked(discussionId);
-      final resolvedDetail = detail.copyWith(
-        isBookmarked: bookmarked || detail.isBookmarked,
-      );
-      if (resolvedDetail.isBookmarked) {
-        discussionBookmarks[discussionId] = true;
-      }
+      discussionBookmarks[discussionId] = detail.isBookmarked;
+      discussionBookmarks.refresh();
+
       final idx = forumLatestDiscussions.indexWhere(
         (d) => d.id == discussionId,
       );
       if (idx != -1) {
-        forumLatestDiscussions[idx] = resolvedDetail;
+        forumLatestDiscussions[idx] = detail;
         forumLatestDiscussions.refresh();
       }
-      checkDiscussionBookmarkStatus(discussionId)
-          .catchError((_) => false);
-      return resolvedDetail;
+      return detail;
     } catch (e) {
       discussionDetailError.value = e is AppError
           ? e.message
@@ -1192,7 +1270,8 @@ class CommunityController extends GetxController {
         !isLoadingMore.value &&
         !isLoadingFeed.value &&
         hasMorePosts.value &&
-        selectedCategory.value == 'Feed') {
+        (selectedCategory.value == 'Feed' ||
+            selectedCategory.value == 'For You')) {
       loadMorePosts();
     }
   }
@@ -1215,6 +1294,9 @@ class CommunityController extends GetxController {
       );
       if (existingIndex != -1) {
         events[existingIndex] = attachedEvent.copyWith();
+        changed = true;
+      } else {
+        events.add(attachedEvent.copyWith());
         changed = true;
       }
     }
@@ -1627,14 +1709,39 @@ class CommunityController extends GetxController {
     }
   }
 
-  void toggleBookmark(String postId) {
+  Future<bool> toggleBookmark(String postId) async {
+    if (postId.trim().isEmpty) return false;
     final idx = posts.indexWhere((p) => p.id == postId);
-    if (idx != -1) {
-      final p = posts[idx];
-      p.isBookmarked = !p.isBookmarked;
-      posts[idx] = p.copyWith();
+    if (idx == -1) return false;
+
+    final p = posts[idx];
+    final prevBookmarked = p.isBookmarked;
+    final newStatus = !prevBookmarked;
+
+    p.isBookmarked = newStatus;
+    posts[idx] = p.copyWith(isBookmarked: newStatus);
+    posts.refresh();
+
+    try {
+      final success = await repository.toggleBookmark(postId);
+      if (!success) {
+        _rollbackBookmark(postId, prevBookmarked);
+        return false;
+      }
+      return true;
+    } catch (_) {
+      _rollbackBookmark(postId, prevBookmarked);
+      return false;
+    }
+  }
+
+  void _rollbackBookmark(String postId, bool prevBookmarked) {
+    final currentIdx = posts.indexWhere((item) => item.id == postId);
+    if (currentIdx != -1) {
+      final item = posts[currentIdx];
+      item.isBookmarked = prevBookmarked;
+      posts[currentIdx] = item.copyWith(isBookmarked: prevBookmarked);
       posts.refresh();
-      repository.toggleBookmark(postId);
     }
   }
 

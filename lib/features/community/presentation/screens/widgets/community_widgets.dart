@@ -6,6 +6,7 @@ import 'package:genlink_frontend/design_system/radius/app_radius.dart';
 import 'package:genlink_frontend/design_system/spacing/app_spacing.dart';
 import '../../widgets/community_design_tokens.dart';
 import '../../widgets/forum_liked_by_sheet.dart';
+import '../../widgets/forum_repost_dialog.dart';
 import '../../widgets/forum_share_to_chat_sheet.dart';
 import '../../../domain/models/community_models.dart';
 import '../../controllers/community_controller.dart';
@@ -128,6 +129,7 @@ class ForumLikedByPreview extends StatelessWidget {
   final List<ForumLikerModel> likers;
   final VoidCallback? onTap;
   final bool isDark;
+  final bool isOwner;
 
   const ForumLikedByPreview({
     super.key,
@@ -135,11 +137,12 @@ class ForumLikedByPreview extends StatelessWidget {
     this.likers = const [],
     this.onTap,
     required this.isDark,
+    this.isOwner = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (likesCount <= 0) return const SizedBox.shrink();
+    if (!isOwner || likesCount <= 0) return const SizedBox.shrink();
 
     final textSecondary =
         isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
@@ -287,6 +290,7 @@ class ForumThreadCard extends StatefulWidget {
   final List<ForumLikerModel> likers;
   final String? discussionId;
   final bool isOwner;
+  final bool isAnonymous;
   final bool isBookmarked;
   final VoidCallback? onTap;
   final VoidCallback? onLikeTap;
@@ -312,6 +316,7 @@ class ForumThreadCard extends StatefulWidget {
     required this.likes,
     this.isPinned = false,
     this.isLiked = false,
+    this.isAnonymous = false,
     this.isBookmarked = false,
     this.likers = const [],
     this.discussionId,
@@ -327,6 +332,8 @@ class ForumThreadCard extends StatefulWidget {
     this.onAuthorTap,
     this.onMoreTap,
   });
+
+  bool get mine => isOwner;
 
   @override
   State<ForumThreadCard> createState() => _ForumThreadCardState();
@@ -413,10 +420,16 @@ class _ForumThreadCardState extends State<ForumThreadCard>
     if (widget.onShareToChatTap != null) {
       widget.onShareToChatTap!();
     } else {
+      final bool isAnon = widget.isAnonymous ||
+          widget.author.trim().toLowerCase() == 'anonymous' ||
+          ('community.anonymous'.tr.isNotEmpty &&
+              widget.author.trim().toLowerCase() ==
+                  'community.anonymous'.tr.toLowerCase());
       final topic = ForumTopicModel(
         id: widget.discussionId ?? '',
         title: widget.title,
-        authorName: widget.author,
+        authorName: isAnon ? 'Anonymous' : widget.author,
+        authorAvatar: isAnon ? '' : (widget.avatarUrl ?? ''),
         category: widget.category,
         content: widget.content ?? '',
         timeAgo: widget.timeAgo,
@@ -425,6 +438,7 @@ class _ForumThreadCardState extends State<ForumThreadCard>
         upvotes: widget.likes,
         repliesCount: widget.replies,
         isBookmarked: widget.isBookmarked,
+        isAnonymous: isAnon,
         likers: widget.likers,
       );
       ForumShareToChatSheet.show(context, topic: topic);
@@ -448,6 +462,20 @@ class _ForumThreadCardState extends State<ForumThreadCard>
     final formattedTime =
         formatCommunityTimestamp(widget.createdAt ?? widget.timeAgo);
 
+    final bool effectiveAnonymous = widget.isAnonymous ||
+        widget.author.trim().toLowerCase() == 'anonymous' ||
+        ('community.anonymous'.tr.isNotEmpty &&
+            widget.author.trim().toLowerCase() ==
+                'community.anonymous'.tr.toLowerCase());
+    final String displayAuthor = effectiveAnonymous
+        ? ('community.anonymous'.tr.isNotEmpty &&
+                'community.anonymous'.tr != 'community.anonymous'
+            ? 'community.anonymous'.tr
+            : 'Anonymous')
+        : widget.author;
+    final VoidCallback? effectiveAuthorTap =
+        effectiveAnonymous ? null : widget.onAuthorTap;
+
     return Container(
       margin: const EdgeInsets.only(bottom: CommunityCardStyle.cardBottomMargin),
       decoration: CommunityCardStyle.cardDecoration(context),
@@ -467,34 +495,44 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     GestureDetector(
-                      onTap: widget.onAuthorTap,
+                      onTap: effectiveAuthorTap,
                       child: CircleAvatar(
                         radius: 19,
                         backgroundColor: isDark
                             ? AppColors.darkSurfaceSecondary
                             : AppColors.lightBgSecondary,
-                        onBackgroundImageError: (widget.avatarUrl != null &&
+                        onBackgroundImageError: (!effectiveAnonymous &&
+                                widget.avatarUrl != null &&
                                 widget.avatarUrl!.isNotEmpty)
                             ? (exception, stackTrace) {}
                             : null,
-                        backgroundImage: (widget.avatarUrl != null &&
+                        backgroundImage: (!effectiveAnonymous &&
+                                widget.avatarUrl != null &&
                                 widget.avatarUrl!.isNotEmpty)
                             ? (widget.avatarUrl!.startsWith('assets/')
                                 ? AssetImage(widget.avatarUrl!) as ImageProvider
                                 : NetworkImage(widget.avatarUrl!))
                             : null,
-                        child: (widget.avatarUrl == null || widget.avatarUrl!.isEmpty)
-                            ? Text(
-                                widget.author.isNotEmpty
-                                    ? widget.author.characters.first.toUpperCase()
-                                    : 'U',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: textSecondary,
-                                ),
+                        child: effectiveAnonymous
+                            ? Icon(
+                                Icons.person_outline,
+                                size: 20,
+                                color: textMuted,
                               )
-                            : null,
+                            : ((widget.avatarUrl == null ||
+                                    widget.avatarUrl!.isEmpty)
+                                ? Text(
+                                    widget.author.isNotEmpty
+                                        ? widget.author.characters.first
+                                            .toUpperCase()
+                                        : 'U',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: textSecondary,
+                                    ),
+                                  )
+                                : null),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -504,12 +542,12 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           GestureDetector(
-                            onTap: widget.onAuthorTap,
+                            onTap: effectiveAuthorTap,
                             child: Text.rich(
                               TextSpan(
                                 children: [
                                   TextSpan(
-                                    text: widget.author,
+                                    text: displayAuthor,
                                     style: theme.textTheme.titleSmall?.copyWith(
                                           color: textPrimary,
                                           fontWeight: FontWeight.w700,
@@ -618,25 +656,27 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                         ),
                   ),
                 ],
-                if (widget.likes > 0) ...[
+                if (widget.isOwner && widget.likes > 0) ...[
                   const SizedBox(height: 6),
                   ForumLikedByPreview(
                     likesCount: widget.likes,
                     likers: widget.likers,
                     isDark: isDark,
+                    isOwner: widget.isOwner,
                     onTap: () => _handleLikedByTap(context),
                   ),
                 ],
                 const SizedBox(height: 8),
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final isCompact = constraints.maxWidth < 280;
-                    final hPad = isCompact ? 3.0 : 6.0;
-                    final gap = isCompact ? 4.0 : 8.0;
+                    final isCompact = constraints.maxWidth < 320;
+                    final hPad = isCompact ? 4.0 : 6.0;
+                    final gap = isCompact ? 8.0 : 16.0;
 
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        // 1. Like (icon + real count)
                         Material(
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -692,108 +732,70 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                           ),
                         ),
                         SizedBox(width: gap),
-                        Flexible(
-                          child: Material(
-                            color: Colors.transparent,
+                        // 2. Comment (icon + real count, no text)
+                        Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: InkWell(
+                            onTap: widget.onCommentTap ?? widget.onTap,
                             borderRadius: BorderRadius.circular(AppRadius.pill),
-                            child: InkWell(
-                              onTap: widget.onCommentTap ?? widget.onTap,
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: hPad,
-                                  vertical: 4,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.chat_bubble_outline_rounded,
-                                      color: textSecondary,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        "${widget.replies} ${'community.comments'.tr.isNotEmpty && 'community.comments'.tr != 'community.comments' ? ('community.comments'.tr == 'Comments' ? 'comments' : 'community.comments'.tr) : 'comments'}",
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: theme.textTheme.labelMedium?.copyWith(
-                                              color: textSecondary,
-                                              fontSize: 12.5,
-                                              fontWeight: FontWeight.w600,
-                                            ) ??
-                                            TextStyle(
-                                              color: textSecondary,
-                                              fontSize: 12.5,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: hPad,
+                                vertical: 4,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.chat_bubble_outline_rounded,
+                                    color: textSecondary,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "${widget.replies}",
+                                    style: theme.textTheme.labelMedium?.copyWith(
+                                          color: textSecondary,
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                        ) ??
+                                        TextStyle(
+                                          color: textSecondary,
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                         ),
                         SizedBox(width: gap),
-                        Flexible(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(minWidth: 24),
-                            child: Material(
-                              color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
-                              child: InkWell(
-                                key: const Key('forum_card_repost_button'),
-                                onTap: widget.onRepostTap ?? () => _handleRepost(context),
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: hPad,
-                                    vertical: 4,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.repeat_rounded,
-                                        color: textSecondary,
-                                        size: 18,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Flexible(
-                                        child: Text(
-                                          'community.repost'.tr.isNotEmpty &&
-                                                  'community.repost'.tr != 'community.repost'
-                                              ? 'community.repost'.tr
-                                              : 'Repost',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: theme.textTheme.labelMedium?.copyWith(
-                                                color: textSecondary,
-                                                fontSize: 12.5,
-                                                fontWeight: FontWeight.w600,
-                                              ) ??
-                                              TextStyle(
-                                                color: textSecondary,
-                                                fontSize: 12.5,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                        // 3. Repost (icon only, no text)
+                        Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: InkWell(
+                            key: const Key('forum_card_repost_button'),
+                            onTap: widget.onRepostTap ?? () => _handleRepost(context),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: hPad,
+                                vertical: 4,
+                              ),
+                              child: Icon(
+                                Icons.repeat_rounded,
+                                color: textSecondary,
+                                size: 18,
                               ),
                             ),
                           ),
                         ),
-                        if (!isCompact)
-                          const Spacer()
-                        else
-                          const SizedBox(width: 4),
+                        SizedBox(width: gap),
+                        // 4. Save (icon only, no text)
                         Material(
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -821,7 +823,8 @@ class _ForumThreadCardState extends State<ForumThreadCard>
                             ),
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: gap),
+                        // 5. Share to Chat (icon only, no text)
                         Material(
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -855,15 +858,17 @@ class _ForumThreadCardState extends State<ForumThreadCard>
   }
 
   void _handleLikedByTap(BuildContext context) {
+    if (!widget.isOwner || widget.likes <= 0) return;
     if (widget.onLikedByTap != null) {
       widget.onLikedByTap!();
       return;
     }
-    if (widget.discussionId != null && widget.discussionId!.isNotEmpty) {
+    if (widget.discussionId != null && widget.discussionId!.trim().isNotEmpty) {
       ForumLikedBySheet.show(
         context,
         discussionId: widget.discussionId!,
         initialLikers: widget.likers,
+        isOwner: widget.isOwner,
       );
     }
   }
@@ -881,163 +886,29 @@ class _ForumThreadCardState extends State<ForumThreadCard>
       );
       return;
     }
-    _showRepostDialog(context);
-  }
-
-  void _showRepostDialog(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final surface =
-        isDark ? AppColors.darkSurfacePrimary : AppColors.lightSurfacePrimary;
-    final surfaceSecondary =
-        isDark ? AppColors.darkSurfaceSecondary : AppColors.lightBgSecondary;
-    final textPrimary =
-        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final textSecondary =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final textMuted =
-        isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
-    final borderSubtle =
-        isDark ? AppColors.darkBorderSubtle : AppColors.lightBorderSubtle;
-
-    final captionController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.squircle),
-          side: BorderSide(color: borderSubtle),
-        ),
-        title: Text(
-          'community.repostContent'.tr.isNotEmpty &&
-                  'community.repostContent'.tr != 'community.repostContent'
-              ? 'community.repostContent'.tr
-              : 'Repost',
-          style: theme.textTheme.titleMedium?.copyWith(
-                color: textPrimary,
-                fontWeight: FontWeight.bold,
-              ) ??
-              TextStyle(
-                color: textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'community.repostingOriginal'.tr.isNotEmpty &&
-                      'community.repostingOriginal'.tr !=
-                          'community.repostingOriginal'
-                  ? 'community.repostingOriginal'
-                      .trParams({'name': widget.author})
-                  : 'Reposting discussion by ${widget.author}',
-              style: theme.textTheme.bodySmall?.copyWith(color: textSecondary) ??
-                  TextStyle(color: textSecondary, fontSize: 13),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              decoration: BoxDecoration(
-                color: surfaceSecondary,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: borderSubtle),
-              ),
-              padding: const EdgeInsets.all(AppSpacing.sm + 4),
-              child: TextField(
-                controller: captionController,
-                minLines: 2,
-                maxLines: 4,
-                style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: textPrimary) ??
-                    TextStyle(color: textPrimary, fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: 'community.repostQuoteHint'.tr.isNotEmpty &&
-                          'community.repostQuoteHint'.tr !=
-                              'community.repostQuoteHint'
-                      ? 'community.repostQuoteHint'.tr
-                      : 'Add a thought...',
-                  hintStyle: theme.textTheme.bodyMedium
-                          ?.copyWith(color: textMuted) ??
-                      TextStyle(color: textMuted, fontSize: 14),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-            child: Text(
-              'common.cancel'.tr.isNotEmpty &&
-                      'common.cancel'.tr != 'common.cancel'
-                  ? 'common.cancel'.tr
-                  : 'Cancel',
-              style: theme.textTheme.labelMedium?.copyWith(
-                    color: textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ) ??
-                  TextStyle(
-                    color: textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              if (Get.isRegistered<CommunityController>()) {
-                final c = Get.find<CommunityController>();
-                if (widget.discussionId != null) {
-                  c.repostPost(widget.discussionId!,
-                      caption: captionController.text);
-                }
-              }
-              AppNotificationBanner.showSuccess(
-                context: context,
-                title: 'community.reposted'.tr.isNotEmpty &&
-                        'community.reposted'.tr != 'community.reposted'
-                    ? 'community.reposted'.tr
-                    : '✓ Reposted',
-                message: 'Discussion has been reposted to your feed.',
-                icon: Icons.repeat_rounded,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: 12,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-              ),
-            ),
-            child: Text(
-              'community.repostNow'.tr.isNotEmpty &&
-                      'community.repostNow'.tr != 'community.repostNow'
-                  ? 'community.repostNow'.tr
-                  : 'Repost Now',
-              style: TextStyle(
-                color: isDark
-                    ? AppColors.darkTextInverse
-                    : AppColors.lightTextInverse,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
+    final bool isAnon = widget.isAnonymous ||
+        widget.author.trim().toLowerCase() == 'anonymous' ||
+        ('community.anonymous'.tr.isNotEmpty &&
+            widget.author.trim().toLowerCase() ==
+                'community.anonymous'.tr.toLowerCase());
+    final topic = ForumTopicModel(
+      id: widget.discussionId ?? '',
+      authorName: isAnon ? 'Anonymous' : widget.author,
+      authorAvatar: isAnon ? '' : (widget.avatarUrl ?? ''),
+      title: widget.title,
+      category: widget.category,
+      content: widget.content ?? '',
+      timeAgo: widget.timeAgo,
+      createdAt: widget.createdAt,
+      isLiked: widget.isLiked,
+      upvotes: widget.likes,
+      repliesCount: widget.replies,
+      isBookmarked: widget.isBookmarked,
+      isAnonymous: isAnon,
+      likers: widget.likers,
+      isOwner: widget.isOwner,
     );
+    ForumRepostDialog.show(context, topic: topic);
   }
 }
 

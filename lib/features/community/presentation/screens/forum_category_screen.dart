@@ -6,7 +6,6 @@ import '../../../../design_system/radius/app_radius.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
 import '../../../../design_system/widgets/buttons/app_back_button.dart';
 import '../../domain/models/community_models.dart';
-import '../../../../shared/utils/current_user.dart';
 import '../controllers/community_controller.dart';
 import 'forum_discussion_screen.dart';
 import '../widgets/forum_share_to_chat_sheet.dart';
@@ -77,40 +76,13 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
     final prevUpvotes = topic.upvotes;
     final prevLikers = topic.likers;
 
-    final updatedLikers = List<ForumLikerModel>.from(prevLikers);
-    final currentUserId = _controller.currentUserId;
-    final currentUserName = _controller.currentUserName;
-
     final newLiked = !prevLiked;
-    if (newLiked) {
-      if (currentUserId != null &&
-          currentUserId.isNotEmpty &&
-          !updatedLikers.any((l) => l.id == currentUserId)) {
-        updatedLikers.insert(
-          0,
-          ForumLikerModel(
-            id: currentUserId,
-            fullName: currentUserName.isNotEmpty
-                ? currentUserName
-                : CurrentUser.name,
-            username: CurrentUser.username.isNotEmpty
-                ? CurrentUser.username
-                : '@$currentUserName',
-            avatarUrl: CurrentUser.avatarUrl ?? '',
-          ),
-        );
-      }
-    } else {
-      if (currentUserId != null && currentUserId.isNotEmpty) {
-        updatedLikers.removeWhere((l) => l.id == currentUserId);
-      }
-    }
+    final newUpvotes = (prevUpvotes + (newLiked ? 1 : -1)).clamp(0, 999999);
 
     setState(() {
       _discussions[index] = topic.copyWith(
         isLiked: newLiked,
-        upvotes: prevUpvotes + (newLiked ? 1 : -1),
-        likers: updatedLikers,
+        upvotes: newUpvotes,
       );
     });
 
@@ -123,6 +95,16 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
           likers: prevLikers,
         );
       });
+    } else if (mounted) {
+      final realLikers = _controller.discussionLikers[topic.id];
+      if (realLikers != null) {
+        setState(() {
+          _discussions[index] = _discussions[index].copyWith(
+            likers: realLikers,
+            upvotes: realLikers.isNotEmpty ? realLikers.length : _discussions[index].upvotes,
+          );
+        });
+      }
     }
   }
 
@@ -290,8 +272,10 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
         final topic = _discussions[index];
         return ForumThreadCard(
           title: topic.title,
-          author: topic.authorName,
-          avatarUrl: topic.authorAvatar,
+          author: topic.isAnonymous ? 'Anonymous' : topic.authorName,
+          avatarUrl: topic.isAnonymous
+              ? null
+              : (topic.authorAvatar.isNotEmpty ? topic.authorAvatar : null),
           timeAgo: topic.timeAgo,
           createdAt: topic.createdAt,
           content: topic.content,
@@ -304,6 +288,7 @@ class _ForumCategoryScreenState extends State<ForumCategoryScreen> {
           likers: topic.likers,
           discussionId: topic.id,
           isOwner: topic.checkIsOwner(_controller.currentUserId),
+          isAnonymous: topic.isAnonymous,
           onTap: () =>
               Get.to(() => ForumDiscussionScreen(discussion: topic)),
           onCommentTap: () =>

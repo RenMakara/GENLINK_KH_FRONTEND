@@ -79,7 +79,9 @@ class BottomNavBar extends StatelessWidget {
     try {
       if (index == 0 && Get.isRegistered<CommunityController>()) {
         final c = Get.find<CommunityController>();
-        if (c.scrollController.hasClients && c.scrollController.offset > 0) {
+        final hasScrolledPosition = c.scrollController.hasClients &&
+            c.scrollController.positions.any((position) => position.pixels > 0);
+        if (hasScrolledPosition) {
           await c.scrollController.animateTo(
             0.0,
             duration: const Duration(milliseconds: 300),

@@ -68,7 +68,11 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
 
     try {
       await _chatController.openConversation(conv);
-      await _chatController.shareForumDiscussion(conv, widget.topic);
+      final sharedText = [
+        widget.topic.title.trim(),
+        if (widget.topic.content.trim().isNotEmpty) widget.topic.content.trim(),
+      ].join('\n\n');
+      await _chatController.sendSharedText(conv, sharedText);
 
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
@@ -304,7 +308,7 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.chat_outlined,
+                          Icon(Icons.chat,
                               color: textMuted, size: 36),
                           const SizedBox(height: 8),
                           Text(

@@ -170,6 +170,7 @@ class _MockCommunityRepository implements CommunityRepository {
     required String title,
     required String content,
     required String category,
+    bool? anonymous,
   }) async => ForumTopicModel(
     id: discussionId,
     authorId: 'user_me',

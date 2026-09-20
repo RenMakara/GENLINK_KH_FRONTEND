@@ -1264,16 +1264,20 @@ class CommunityController extends GetxController {
   }
 
   void _onScrollListener() {
-    if (scrollController.hasClients &&
-        scrollController.position.pixels >=
-            scrollController.position.maxScrollExtent - 200 &&
-        !isLoadingMore.value &&
-        !isLoadingFeed.value &&
-        hasMorePosts.value &&
-        (selectedCategory.value == 'Feed' ||
-            selectedCategory.value == 'For You')) {
-      loadMorePosts();
+    if (!scrollController.hasClients ||
+        !scrollController.positions.any(
+          (position) =>
+              position.pixels >= position.maxScrollExtent - 200,
+        ) ||
+        isLoadingMore.value ||
+        isLoadingFeed.value ||
+        !hasMorePosts.value ||
+        (selectedCategory.value != 'Feed' &&
+            selectedCategory.value != 'For You')) {
+      return;
     }
+
+    loadMorePosts();
   }
 
   void setCategory(String cat) {

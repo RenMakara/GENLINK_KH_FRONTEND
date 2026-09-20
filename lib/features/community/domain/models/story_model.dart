@@ -129,12 +129,13 @@ enum StoryPrivacy {
   }
 
   static StoryPrivacy fromString(String? val) {
-    if (val == null) return StoryPrivacy.friends;
+    if (val == null) return StoryPrivacy.public;
     final lower = val.toLowerCase().replaceAll(' ', '_');
     if (lower == 'public') return StoryPrivacy.public;
+    if (lower == 'friends') return StoryPrivacy.friends;
     if (lower == 'only_me' || lower == 'onlyme') return StoryPrivacy.onlyMe;
     if (lower == 'custom') return StoryPrivacy.custom;
-    return StoryPrivacy.friends;
+    return StoryPrivacy.public;
   }
 }
 
@@ -241,7 +242,7 @@ class StoryItemModel {
   }) : settings =
            settings ??
            StorySettings(
-             visibility: StoryPrivacy.fromString(visibility ?? 'Friends'),
+             visibility: StoryPrivacy.fromString(visibility ?? 'Public'),
              replyPermission: StoryReplyPermission.fromString(
                replyPrivacy ?? 'Everyone',
              ),

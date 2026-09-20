@@ -3332,9 +3332,9 @@ class _StoryCreatorScreenState extends State<StoryCreatorScreen> {
 
       if (widget.existingStory != null) {
         final newSettings = StorySettings(
-          visibility: _selectedVisibility == 'Public' ? StoryPrivacy.public : (_selectedVisibility == 'Only Me' ? StoryPrivacy.onlyMe : StoryPrivacy.friends),
-          replyPermission: widget.existingStory!.settings.replyPermission,
-          allowReactions: widget.existingStory!.settings.allowReactions,
+          visibility: _storySettings.visibility,
+          replyPermission: _storySettings.replyPermission,
+          allowReactions: _storySettings.allowReactions,
         );
         final updatedStory = StoryItemModel(
           id: widget.existingStory!.id,

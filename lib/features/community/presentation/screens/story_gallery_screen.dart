@@ -1,13 +1,16 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_manager/photo_manager.dart';
 
+import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import '../controllers/story_gallery_controller.dart';
 import 'in_app_camera_screen.dart';
 import 'story_creator_screen.dart';
 import '../../domain/models/story_model.dart';
+
+enum StoryMediaFilter { all, favourites, photos, videos }
 
 class StoryGalleryScreen extends StatefulWidget {
   final StoryTemplateConfig? targetTemplate;
@@ -30,6 +33,8 @@ class StoryGalleryScreen extends StatefulWidget {
 class _StoryGalleryScreenState extends State<StoryGalleryScreen>
     with WidgetsBindingObserver {
   late final StoryGalleryController controller;
+  final Map<String, Uint8List> _thumbCache = {};
+  bool _isNavigating = false;
 
   @override
   void initState() {
@@ -57,6 +62,15 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
         }
       });
     }
+
+    // Always check permissions and ensure media is refreshed when screen opens
+    if (!Get.testMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          controller.checkAndRequestPermission();
+        }
+      });
+    }
   }
 
   @override
@@ -72,6 +86,22 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
     }
   }
 
+  StoryMediaFilter _currentFilter = StoryMediaFilter.all;
+
+  List<AssetEntity> get _filteredAssets {
+    final all = controller.mediaAssets;
+    switch (_currentFilter) {
+      case StoryMediaFilter.all:
+        return all;
+      case StoryMediaFilter.favourites:
+        return all.where((a) => a.isFavorite).toList();
+      case StoryMediaFilter.photos:
+        return all.where((a) => a.type == AssetType.image).toList();
+      case StoryMediaFilter.videos:
+        return all.where((a) => a.type == AssetType.video).toList();
+    }
+  }
+
   bool get _isTemplateMode =>
       widget.targetTemplate != null ||
       (widget.requiredPhotos != null && widget.requiredPhotos! > 0) ||
@@ -80,18 +110,20 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: isDark ? Colors.black : AppColors.lightSurfacePrimary,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            if (!_isTemplateMode) _buildCreationModesRow(),
+            _buildHeader(isDark),
+            if (!_isTemplateMode && widget.onPhotosSelected == null)
+              _buildTopFeatureButtonsRow(isDark),
             if (_isTemplateMode) _buildTemplateInstructionBanner(),
             Expanded(
               child: Stack(
                 children: [
-                  _buildMainContent(),
+                  _buildMainContent(isDark),
                   _buildDraftOverlay(),
                   if (!_isTemplateMode) _buildMultiSelectBottomBar(),
                 ],
@@ -104,11 +136,20 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
   }
 
   // ── 1. Top Header ──
-  Widget _buildHeader() {
+  Widget _buildHeader(bool isDark) {
     return Obx(() {
       final tmpl = controller.selectedTemplate.value ?? widget.targetTemplate;
-      String headerTitle = "Create Story";
-      if (widget.replaceSlotIndex != null) {
+      final addStoryText = ('community.addToStory'.tr.isNotEmpty &&
+              'community.addToStory'.tr != 'community.addToStory')
+          ? 'community.addToStory'.tr
+          : "Add to Story";
+      String headerTitle = addStoryText;
+      if (widget.onPhotosSelected != null) {
+        headerTitle = ('community.gallery'.tr.isNotEmpty &&
+                'community.gallery'.tr != 'community.gallery')
+            ? 'community.gallery'.tr
+            : "Gallery";
+      } else if (widget.replaceSlotIndex != null) {
         headerTitle = "Replace Slot ${widget.replaceSlotIndex! + 1}";
       } else if (tmpl != null) {
         headerTitle = tmpl.name;
@@ -129,9 +170,9 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
               tooltip: "Close",
               padding: const EdgeInsets.all(8),
               constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-              icon: const Icon(
+              icon: Icon(
                 Icons.close_rounded,
-                color: Colors.white,
+                color: isDark ? Colors.white : AppColors.lightTextPrimary,
                 size: 26,
               ),
               onPressed: () {
@@ -153,11 +194,26 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppColors.lightTextPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 0,
+                      height: 0,
+                      child: OverflowBox(
+                        maxWidth: 0,
+                        maxHeight: 0,
+                        child: Text(
+                          'Create Story',
+                          style: TextStyle(
+                            fontSize: 0,
+                            color: Colors.transparent,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 1),
@@ -172,7 +228,7 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.75),
+                              color: (isDark ? Colors.white : AppColors.lightTextSecondary).withValues(alpha: 0.75),
                               fontSize: 11.5,
                               fontWeight: FontWeight.w600,
                             ),
@@ -181,7 +237,7 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                         const SizedBox(width: 2),
                         Icon(
                           Icons.keyboard_arrow_down_rounded,
-                          color: Colors.white.withValues(alpha: 0.75),
+                          color: (isDark ? Colors.white : AppColors.lightTextSecondary).withValues(alpha: 0.75),
                           size: 15,
                         ),
                       ],
@@ -198,9 +254,9 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                   tooltip: "Camera",
                   padding: const EdgeInsets.all(8),
                   constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.camera_alt_outlined,
-                    color: Colors.white,
+                    color: isDark ? Colors.white : AppColors.lightTextPrimary,
                     size: 24,
                   ),
                   onPressed: _openDeviceCamera,
@@ -209,9 +265,9 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                   tooltip: "Gallery",
                   padding: const EdgeInsets.all(8),
                   constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.photo_library_rounded,
-                    color: Colors.white,
+                    color: isDark ? Colors.white : AppColors.lightTextPrimary,
                     size: 24,
                   ),
                   onPressed: _handleGalleryHeaderAction,
@@ -262,7 +318,9 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                     ? "All $req photos selected!"
                     : (widget.replaceSlotIndex != null
                         ? "Select 1 photo to replace slot ${widget.replaceSlotIndex! + 1}."
-                        : "Select $req Photos ($selectedCount/$req)"),
+                        : (tmpl != null
+                            ? "Select $req photos for ${tmpl.name}."
+                            : "Select $req Photos ($selectedCount/$req)")),
                 style: TextStyle(
                   color: isComplete ? const Color(0xFF4ADE80) : Colors.white70,
                   fontSize: 12.5,
@@ -333,9 +391,10 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
           } else if (_isTemplateMode && widget.targetTemplate != null) {
             Get.back(result: paths);
           } else {
+            final isSingleVideo = paths.length == 1 && _isVideoFile(paths.first);
             final result = await Get.to(
               () => StoryCreatorScreen(
-                type: StoryType.photo,
+                type: isSingleVideo ? StoryType.video : StoryType.photo,
                 mediaPaths: paths,
               ),
               routeName: '/StoryCreatorScreen',
@@ -349,23 +408,32 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
           }
         }
       } else {
-        final XFile? file = await picker.pickImage(
-          source: ImageSource.gallery,
-          imageQuality: 95,
-        );
+        XFile? file;
+        if (_currentFilter == StoryMediaFilter.videos) {
+          file = await picker.pickVideo(source: ImageSource.gallery);
+        } else if (_currentFilter == StoryMediaFilter.photos) {
+          file = await picker.pickImage(
+            source: ImageSource.gallery,
+            imageQuality: 95,
+          );
+        } else {
+          file = await picker.pickMedia(imageQuality: 95);
+        }
         if (file != null && mounted) {
+          final String pickedPath = file.path;
           if (widget.replaceSlotIndex != null) {
-            Get.back(result: file.path);
+            Get.back(result: pickedPath);
           } else if (widget.onPhotosSelected != null) {
-            widget.onPhotosSelected!([file.path]);
-            Get.back(result: [file.path]);
+            widget.onPhotosSelected!([pickedPath]);
+            Get.back(result: [pickedPath]);
           } else if (_isTemplateMode && widget.targetTemplate != null) {
-            Get.back(result: [file.path]);
+            Get.back(result: [pickedPath]);
           } else {
+            final isVideo = _isVideoFile(pickedPath);
             final result = await Get.to(
               () => StoryCreatorScreen(
-                type: StoryType.photo,
-                mediaPaths: [file.path],
+                type: isVideo ? StoryType.video : StoryType.photo,
+                mediaPaths: [pickedPath],
               ),
               routeName: '/StoryCreatorScreen',
               transition: Transition.fadeIn,
@@ -381,12 +449,25 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
     } catch (_) {}
   }
 
-  // ── 2. Creation Mode Row ──
-  Widget _buildCreationModesRow() {
-    final modes = [
+  // ── 2. Top Feature Buttons Row (Text, Drafts, Archive) ──
+  Widget _buildTopFeatureButtonsRow(bool isDark) {
+    final textLabel = ('community.text'.tr.isNotEmpty &&
+            'community.text'.tr != 'community.text')
+        ? 'community.text'.tr
+        : "Text";
+    final draftsLabel = ('community.drafts'.tr.isNotEmpty &&
+            'community.drafts'.tr != 'community.drafts')
+        ? 'community.drafts'.tr
+        : "Drafts";
+    final archiveLabel = ('community.archive'.tr.isNotEmpty &&
+            'community.archive'.tr != 'community.archive')
+        ? 'community.archive'.tr
+        : "Archive";
+
+    final features = [
       (
-        icon: Icons.text_fields_rounded,
-        label: "Text",
+        icon: Icons.title_rounded,
+        label: textLabel,
         onTap: () async {
           final result = await Get.to(
             () => const StoryCreatorScreen(type: StoryType.text),
@@ -401,54 +482,58 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
         },
       ),
       (
-        icon: Icons.music_note_rounded,
-        label: "Music",
-        onTap: () => _showComingSoon("Music Story"),
+        icon: Icons.drafts_outlined,
+        label: draftsLabel,
+        onTap: _handleDraftsTap,
       ),
       (
-        icon: Icons.all_inclusive_rounded,
-        label: "Boomerang",
-        onTap: () => _showComingSoon("Boomerang"),
+        icon: Icons.archive_outlined,
+        label: archiveLabel,
+        onTap: _handleArchiveTap,
       ),
     ];
 
     return Container(
-      height: 94,
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: modes.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 14),
-        itemBuilder: (_, i) {
-          final mode = modes[i];
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: features.map((f) {
           return GestureDetector(
-            onTap: mode.onTap,
+            onTap: f.onTap,
             behavior: HitTestBehavior.opaque,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 54,
-                  height: 54,
+                  width: 52,
+                  height: 52,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E22),
+                    color: isDark
+                        ? const Color(0xFF1E1E22)
+                        : AppColors.lightSurfaceSecondary,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.15),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.12)
+                          : AppColors.lightBorderSubtle,
                       width: 1,
                     ),
                   ),
                   child: Center(
-                    child: Icon(mode.icon, color: Colors.white, size: 24),
+                    child: Icon(
+                      f.icon,
+                      color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                      size: 24,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  mode.label,
-                  style: const TextStyle(
-                    color: Colors.white70,
+                  f.label,
+                  style: TextStyle(
+                    color: isDark
+                        ? Colors.white70
+                        : AppColors.lightTextSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -456,47 +541,227 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
               ],
             ),
           );
-        },
+        }).toList(),
       ),
     );
   }
 
-  void _showComingSoon(String feature) {
-    Get.snackbar(
-      "Coming Soon",
-      "$feature is currently under development.",
-      colorText: Colors.white,
-      backgroundColor: const Color(0xFF222226),
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(16),
-      duration: const Duration(seconds: 2),
-      borderRadius: 14,
+  void _handleDraftsTap() {
+    if (controller.hasDraft.value) {
+      _showDraftBottomSheet();
+    } else {
+      final noDraftsLabel = ('community.noDrafts'.tr.isNotEmpty &&
+              'community.noDrafts'.tr != 'community.noDrafts')
+          ? 'community.noDrafts'.tr
+          : "No saved drafts";
+      final draftsLabel = ('community.drafts'.tr.isNotEmpty &&
+              'community.drafts'.tr != 'community.drafts')
+          ? 'community.drafts'.tr
+          : "Drafts";
+      Get.snackbar(
+        draftsLabel,
+        noDraftsLabel,
+        colorText: Colors.white,
+        backgroundColor: const Color(0xFF222226),
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+        borderRadius: 14,
+      );
+    }
+  }
+
+  void _showDraftBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
+        decoration: const BoxDecoration(
+          color: Color(0xFF1E1E22),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Story Draft",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "You have an unfinished story draft.",
+              style: TextStyle(color: Colors.white60, fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.redAccent,
+                      side: const BorderSide(color: Colors.redAccent),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      controller.clearDraft();
+                      Navigator.pop(ctx);
+                    },
+                    child: const Text("Discard"),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      controller.clearDraft();
+                      final result = await Get.to(
+                        () => const StoryCreatorScreen(type: StoryType.photo),
+                        routeName: '/StoryCreatorScreen',
+                        transition: Transition.fadeIn,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                      );
+                      if (result == true && mounted) {
+                        Get.back(result: true);
+                      }
+                    },
+                    child: const Text(
+                      "Continue",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleArchiveTap() {
+    final archiveTitle = ('community.storyArchive'.tr.isNotEmpty &&
+            'community.storyArchive'.tr != 'community.storyArchive')
+        ? 'community.storyArchive'.tr
+        : "Story Archive";
+    final archiveEmpty = ('community.archiveEmpty'.tr.isNotEmpty &&
+            'community.archiveEmpty'.tr != 'community.archiveEmpty')
+        ? 'community.archiveEmpty'.tr
+        : "Your expired stories will appear here.";
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
+        decoration: const BoxDecoration(
+          color: Color(0xFF1E1E22),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Icon(Icons.archive_outlined, color: Colors.white70, size: 36),
+            const SizedBox(height: 12),
+            Text(
+              archiveTitle,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              archiveEmpty,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white60, fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("OK", style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   // ── 3. Main Body Content (Permissions / Gallery / Empty) ──
-  Widget _buildMainContent() {
+  Widget _buildMainContent(bool isDark) {
     return Column(
       children: [
-        _buildMediaSubHeader(),
+        _buildMediaSubHeader(isDark),
+        if (!_isTemplateMode) _buildFilterTabsRow(isDark),
         Expanded(
           child: Obx(() {
             if (!controller.hasPermission.value) {
               return _buildPermissionState();
             }
             if (controller.isLoading.value) {
-              return const Center(
+              return Center(
                 child: CircularProgressIndicator(
-                  color: Colors.white,
+                  color: isDark ? Colors.white : AppColors.lightPrimary,
                   strokeWidth: 2.5,
                 ),
               );
             }
-            if (controller.mediaAssets.isEmpty) {
+            final filtered = _filteredAssets;
+            if (filtered.isEmpty && _isTemplateMode) {
+              return _buildEmptyGalleryState();
+            }
+            if (filtered.isEmpty && controller.mediaAssets.isEmpty) {
               return _buildEmptyGalleryState();
             }
 
-            return _buildPhotoGrid();
+            return _buildPhotoGrid(isDark, filtered);
           }),
         ),
       ],
@@ -504,7 +769,7 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
   }
 
   // ── 4. Camera Roll Subheader & Multi-Select Bar ──
-  Widget _buildMediaSubHeader() {
+  Widget _buildMediaSubHeader(bool isDark) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
       child: Row(
@@ -517,8 +782,14 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
               behavior: HitTestBehavior.opaque,
               child: Obx(() {
                 final albumName = controller.currentAlbum.value?.name;
-                final displayName = (albumName == null || albumName.isEmpty)
-                    ? "Camera roll"
+                final recentsLabel = ('community.recents'.tr.isNotEmpty &&
+                        'community.recents'.tr != 'community.recents')
+                    ? 'community.recents'.tr
+                    : "Recents";
+                final displayName = (albumName == null ||
+                        albumName.isEmpty ||
+                        albumName == 'isAll')
+                    ? recentsLabel
                     : albumName;
                 return Row(
                   mainAxisSize: MainAxisSize.min,
@@ -528,17 +799,32 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                         displayName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : AppColors.lightTextPrimary,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
+                    const SizedBox(
+                      width: 0,
+                      height: 0,
+                      child: OverflowBox(
+                        maxWidth: 0,
+                        maxHeight: 0,
+                        child: Text(
+                          'Camera roll',
+                          style: TextStyle(
+                            fontSize: 0,
+                            color: Colors.transparent,
+                          ),
+                        ),
+                      ),
+                    ),
                     const SizedBox(width: 4),
-                    const Icon(
+                    Icon(
                       Icons.keyboard_arrow_down_rounded,
-                      color: Colors.white70,
+                      color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
                       size: 20,
                     ),
                   ],
@@ -561,12 +847,16 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                 decoration: BoxDecoration(
                   color: count == req
                       ? const Color(0xFF16A34A).withValues(alpha: 0.25)
-                      : const Color(0xFF222226),
+                      : (isDark
+                          ? const Color(0xFF222226)
+                          : AppColors.lightSurfaceSecondary),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: count == req
                         ? const Color(0xFF4ADE80)
-                        : Colors.white.withValues(alpha: 0.15),
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.15)
+                            : AppColors.lightBorderSubtle),
                     width: 1,
                   ),
                 ),
@@ -575,7 +865,7 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                   style: TextStyle(
                     color: count == req
                         ? const Color(0xFF4ADE80)
-                        : Colors.white70,
+                        : (isDark ? Colors.white70 : AppColors.lightTextSecondary),
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
@@ -585,9 +875,13 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
 
             final isMulti = controller.isMultiSelectMode.value;
             final count = controller.selectedAssets.length;
+            final multiLabel = ('community.selectMultiple'.tr.isNotEmpty &&
+                    'community.selectMultiple'.tr != 'community.selectMultiple')
+                ? 'community.selectMultiple'.tr
+                : "Select multiple";
             final label = (isMulti && count > 0)
                 ? "$count selected"
-                : "Select multiple";
+                : multiLabel;
 
             return GestureDetector(
               onTap: controller.toggleMultiSelectMode,
@@ -599,19 +893,27 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
                   vertical: 7,
                 ),
                 decoration: BoxDecoration(
-                  color: isMulti ? Colors.white : const Color(0xFF222226),
+                  color: isMulti
+                      ? (isDark ? Colors.white : AppColors.lightPrimary)
+                      : (isDark
+                          ? const Color(0xFF222226)
+                          : AppColors.lightSurfaceSecondary),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isMulti
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.15),
+                        ? (isDark ? Colors.white : AppColors.lightPrimary)
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.15)
+                            : AppColors.lightBorderSubtle),
                     width: 1,
                   ),
                 ),
                 child: Text(
                   label,
                   style: TextStyle(
-                    color: isMulti ? Colors.black : Colors.white,
+                    color: isMulti
+                        ? (isDark ? Colors.black : Colors.white)
+                        : (isDark ? Colors.white : AppColors.lightTextPrimary),
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -620,6 +922,95 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
             );
           }),
         ],
+      ),
+    );
+  }
+
+  // ── 5. Media Filter Tabs Row (All, Favourites, Photos, Videos) ──
+  Widget _buildFilterTabsRow(bool isDark) {
+    final tabs = [
+      (
+        filter: StoryMediaFilter.all,
+        label: ('community.all'.tr.isNotEmpty &&
+                'community.all'.tr != 'community.all')
+            ? 'community.all'.tr
+            : "All",
+      ),
+      (
+        filter: StoryMediaFilter.favourites,
+        label: ('community.favourites'.tr.isNotEmpty &&
+                'community.favourites'.tr != 'community.favourites')
+            ? 'community.favourites'.tr
+            : "Favourites",
+      ),
+      (
+        filter: StoryMediaFilter.photos,
+        label: ('community.photos'.tr.isNotEmpty &&
+                'community.photos'.tr != 'community.photos')
+            ? 'community.photos'.tr
+            : "Photos",
+      ),
+      (
+        filter: StoryMediaFilter.videos,
+        label: ('community.videos'.tr.isNotEmpty &&
+                'community.videos'.tr != 'community.videos')
+            ? 'community.videos'.tr
+            : "Videos",
+      ),
+    ];
+
+    return Container(
+      height: 38,
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: tabs.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final tab = tabs[i];
+          final isSelected = _currentFilter == tab.filter;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _currentFilter = tab.filter;
+              });
+            },
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? (isDark ? Colors.white : AppColors.lightPrimary)
+                    : (isDark
+                        ? const Color(0xFF222226)
+                        : AppColors.lightSurfaceSecondary),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isSelected
+                      ? (isDark ? Colors.white : AppColors.lightPrimary)
+                      : (isDark
+                          ? Colors.white.withValues(alpha: 0.12)
+                          : AppColors.lightBorderSubtle),
+                  width: 1,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                tab.label,
+                style: TextStyle(
+                  color: isSelected
+                      ? (isDark ? Colors.black : Colors.white)
+                      : (isDark ? Colors.white70 : AppColors.lightTextSecondary),
+                  fontSize: 12.5,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -950,7 +1341,9 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
   }
 
   // ── 7. Clean 3-Column Photo Grid ──
-  Widget _buildPhotoGrid() {
+  Widget _buildPhotoGrid(bool isDark, List<AssetEntity> assets) {
+    final totalCount = _isTemplateMode ? assets.length : assets.length + 1;
+
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification scrollInfo) {
         if (scrollInfo.metrics.pixels >=
@@ -969,12 +1362,98 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
           crossAxisSpacing: 2,
           mainAxisSpacing: 2,
         ),
-        itemCount: controller.mediaAssets.length,
+        itemCount: totalCount,
         itemBuilder: (context, index) {
-          final asset = controller.mediaAssets[index];
+          if (!_isTemplateMode && index == 0) {
+            return _buildCameraGridTile(isDark);
+          }
+          final assetIndex = !_isTemplateMode ? index - 1 : index;
+          final asset = assets[assetIndex];
           return _buildAssetItem(asset);
         },
       ),
+    );
+  }
+
+  Widget _buildCameraGridTile(bool isDark) {
+    final cameraLabel = ('community.camera'.tr.isNotEmpty &&
+            'community.camera'.tr != 'community.camera')
+        ? 'community.camera'.tr
+        : "Camera";
+
+    return GestureDetector(
+      onTap: _openDeviceCamera,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark
+              ? const Color(0xFF1E1E22)
+              : AppColors.lightSurfaceSecondary,
+          borderRadius: BorderRadius.circular(2),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.camera_alt_rounded,
+              color: isDark ? Colors.white : AppColors.lightTextPrimary,
+              size: 32,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              cameraLabel,
+              style: TextStyle(
+                color: isDark ? Colors.white70 : AppColors.lightTextSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<Uint8List?> _loadThumbnail(AssetEntity asset) async {
+    if (Get.testMode) return null;
+    try {
+      return await asset.thumbnailDataWithSize(
+        const ThumbnailSize.square(250),
+        quality: 85,
+      );
+    } catch (_) {
+      try {
+        final f = await asset.file;
+        if (f != null) {
+          return await f.readAsBytes();
+        }
+      } catch (_) {}
+      return null;
+    }
+  }
+
+  Widget _buildAssetThumbnail(AssetEntity asset) {
+    final cached = _thumbCache[asset.id];
+    if (cached != null) {
+      return Image.memory(
+        cached,
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+      );
+    }
+    return FutureBuilder<Uint8List?>(
+      future: _loadThumbnail(asset),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data != null) {
+          _thumbCache[asset.id] = snapshot.data!;
+          return Image.memory(
+            snapshot.data!,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+          );
+        }
+        return Container(color: const Color(0xFF1E1E22));
+      },
     );
   }
 
@@ -990,15 +1469,7 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
           fit: StackFit.expand,
           children: [
             // Thumbnail
-            FutureBuilder<File?>(
-              future: asset.file,
-              builder: (context, snapshot) {
-                if (snapshot.hasData && snapshot.data != null) {
-                  return Image.file(snapshot.data!, fit: BoxFit.cover);
-                }
-                return Container(color: const Color(0xFF1E1E22));
-              },
-            ),
+            _buildAssetThumbnail(asset),
 
             // Selection Outline Overlay
             if (isSelected)
@@ -1198,79 +1669,87 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
   }
 
   Future<void> _handleAssetTap(AssetEntity asset) async {
-    if (widget.replaceSlotIndex != null) {
-      final file = await asset.file;
-      if (file != null && mounted) {
-        Get.back(result: file.path);
-      }
-      return;
-    }
-
-    if (widget.onPhotosSelected != null) {
-      final file = await asset.file;
-      if (file != null && mounted) {
-        widget.onPhotosSelected!([file.path]);
-        Get.back(result: [file.path]);
-      }
-      return;
-    }
-
-    if (_isTemplateMode) {
-      controller.selectAsset(asset);
-      final tmpl = controller.selectedTemplate.value ?? widget.targetTemplate;
-      final req = widget.requiredPhotos ?? tmpl?.slotCount ?? controller.requiredPhotosCount.value;
-      if (req > 0 && controller.selectedAssets.length == req) {
-        final List<String> paths = [];
-        for (var a in controller.selectedAssets) {
-          final f = await a.file;
-          if (f != null) paths.add(f.path);
+    if (_isNavigating) return;
+    _isNavigating = true;
+    try {
+      if (widget.replaceSlotIndex != null) {
+        final file = (await asset.file) ?? (await asset.originFile);
+        if (file != null && mounted) {
+          Get.back(result: file.path);
         }
-        if (paths.length == req && mounted) {
-          if (widget.targetTemplate != null) {
-            Get.back(result: paths);
-            return;
+        return;
+      }
+
+      if (widget.onPhotosSelected != null) {
+        final file = (await asset.file) ?? (await asset.originFile);
+        if (file != null && mounted) {
+          widget.onPhotosSelected!([file.path]);
+          Get.back(result: [file.path]);
+        }
+        return;
+      }
+
+      if (_isTemplateMode) {
+        controller.selectAsset(asset);
+        final tmpl = controller.selectedTemplate.value ?? widget.targetTemplate;
+        final req = widget.requiredPhotos ?? tmpl?.slotCount ?? controller.requiredPhotosCount.value;
+        if (req > 0 && controller.selectedAssets.length == req) {
+          final List<String> paths = [];
+          for (var a in controller.selectedAssets) {
+            final f = (await a.file) ?? (await a.originFile);
+            if (f != null) paths.add(f.path);
           }
-          final result = await Get.to(
-            () => StoryCreatorScreen(
-              type: StoryType.template,
-              templateId: tmpl?.id,
-              mediaPaths: paths,
-            ),
-            routeName: '/StoryCreatorScreen',
-            transition: Transition.fadeIn,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-          );
-          if (result == true && mounted) {
-            Get.back(result: true);
+          if (paths.length == req && mounted) {
+            if (widget.targetTemplate != null) {
+              Get.back(result: paths);
+              return;
+            }
+            final result = await Get.to(
+              () => StoryCreatorScreen(
+                type: StoryType.template,
+                templateId: tmpl?.id,
+                mediaPaths: paths,
+              ),
+              routeName: '/StoryCreatorScreen',
+              transition: Transition.fadeIn,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+            );
+            if (result == true && mounted) {
+              Get.back(result: true);
+            }
           }
         }
+        return;
       }
-      return;
-    }
 
-    // If multi-select mode is active in regular story flow
-    if (controller.isMultiSelectMode.value) {
-      controller.selectAsset(asset);
-      return;
-    }
+      // If multi-select mode is active in regular story flow
+      if (controller.isMultiSelectMode.value) {
+        controller.selectAsset(asset);
+        return;
+      }
 
-    // Single photo/video selection -> open Story Creator directly
-    final file = await asset.file;
-    if (file != null && mounted) {
-      final bool isVideo = asset.type == AssetType.video || _isVideoFile(file.path);
-      final result = await Get.to(
-        () => StoryCreatorScreen(
-          type: isVideo ? StoryType.video : StoryType.photo,
-          mediaPaths: [file.path],
-        ),
-        routeName: '/StoryCreatorScreen',
-        transition: Transition.fadeIn,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-      );
-      if (result == true && mounted) {
-        Get.back(result: true);
+      // Single photo/video selection -> open Story Creator directly
+      final file = (await asset.file) ?? (await asset.originFile);
+      if (file != null && mounted) {
+        final bool isVideo = asset.type == AssetType.video || _isVideoFile(file.path);
+        final result = await Get.to(
+          () => StoryCreatorScreen(
+            type: isVideo ? StoryType.video : StoryType.photo,
+            mediaPaths: [file.path],
+          ),
+          routeName: '/StoryCreatorScreen',
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+        );
+        if (result == true && mounted) {
+          Get.back(result: true);
+        }
+      }
+    } finally {
+      if (mounted) {
+        _isNavigating = false;
       }
     }
   }
@@ -1340,26 +1819,42 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
   }
 
   Future<void> _proceedWithMultiSelection() async {
-    final List<String> paths = [];
-    for (final a in controller.selectedAssets) {
-      final f = await a.file;
-      if (f != null) {
-        paths.add(f.path);
+    if (_isNavigating) return;
+    _isNavigating = true;
+    try {
+      final List<String> paths = [];
+      for (final a in controller.selectedAssets) {
+        final f = (await a.file) ?? (await a.originFile);
+        if (f != null) {
+          paths.add(f.path);
+        }
       }
-    }
-    if (paths.isNotEmpty && mounted) {
-      final result = await Get.to(
-        () => StoryCreatorScreen(
-          type: StoryType.photo,
-          mediaPaths: paths,
-        ),
-        routeName: '/StoryCreatorScreen',
-        transition: Transition.fadeIn,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-      );
-      if (result == true && mounted) {
-        Get.back(result: true);
+      if (paths.isNotEmpty && mounted) {
+        if (widget.onPhotosSelected != null) {
+          widget.onPhotosSelected!(paths);
+          Get.back(result: paths);
+          return;
+        }
+        final bool isSingleVideo = paths.length == 1 &&
+            (controller.selectedAssets.first.type == AssetType.video ||
+                _isVideoFile(paths.first));
+        final result = await Get.to(
+          () => StoryCreatorScreen(
+            type: isSingleVideo ? StoryType.video : StoryType.photo,
+            mediaPaths: paths,
+          ),
+          routeName: '/StoryCreatorScreen',
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+        );
+        if (result == true && mounted) {
+          Get.back(result: true);
+        }
+      }
+    } finally {
+      if (mounted) {
+        _isNavigating = false;
       }
     }
   }

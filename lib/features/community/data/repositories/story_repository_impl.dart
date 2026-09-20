@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/errors/app_error.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
 import '../../../../shared/utils/current_user.dart';
@@ -93,7 +94,12 @@ class StoryRepositoryImpl implements StoryRepository {
         }),
       );
 
-      final ownerGroupIdx = remoteGroups.indexWhere((g) =>
+      final cleanRemoteGroups = remoteGroups.where((g) {
+        final id = g.userId.toLowerCase();
+        return !id.startsWith('demo_') && !id.startsWith('mock_');
+      }).toList();
+
+      final ownerGroupIdx = cleanRemoteGroups.indexWhere((g) =>
           g.isOwner || (currentUserId.isNotEmpty && g.userId == currentUserId));
 
       if (ownerGroupIdx == -1) {
@@ -109,9 +115,9 @@ class StoryRepositoryImpl implements StoryRepository {
           hasUnseen: false,
           stories: [],
         );
-        return [ownerGroup, ...remoteGroups];
+        return [ownerGroup, ...cleanRemoteGroups];
       } else {
-        final ownerGroup = remoteGroups[ownerGroupIdx];
+        final ownerGroup = cleanRemoteGroups[ownerGroupIdx];
         final updatedOwnerGroup = StoryGroupModel(
           userId: ownerGroup.userId,
           userName: ownerGroup.userName,
@@ -125,7 +131,7 @@ class StoryRepositoryImpl implements StoryRepository {
           stories: ownerGroup.stories,
         );
 
-        final otherGroups = List<StoryGroupModel>.from(remoteGroups)
+        final otherGroups = List<StoryGroupModel>.from(cleanRemoteGroups)
           ..removeAt(ownerGroupIdx);
 
         return [updatedOwnerGroup, ...otherGroups];
@@ -176,6 +182,13 @@ class StoryRepositoryImpl implements StoryRepository {
     List<StoryTemplateSlot>? templateSlots,
   }) async {
     final client = _client;
+    if (client == null) {
+      throw const AppError(
+        message: 'ApiClient is unavailable',
+        errorCode: 'API_CLIENT_UNAVAILABLE',
+      );
+    }
+
     final uploadService = _uploadService;
 
     final resolvedSettings = settings ??
@@ -185,7 +198,16 @@ class StoryRepositoryImpl implements StoryRepository {
           allowReactions: allowReactions,
         );
 
-    String finalMediaUrl = mediaUrl ?? '';
+    String finalMediaUrl = mediaUrl?.trim() ?? '';
+    if (finalMediaUrl.isEmpty && templateSlots != null) {
+      for (final slot in templateSlots) {
+        if (slot.mediaPath != null && slot.mediaPath!.trim().isNotEmpty) {
+          finalMediaUrl = slot.mediaPath!.trim();
+          break;
+        }
+      }
+    }
+
     bool isVideo = type == StoryType.video || (finalMediaUrl.isNotEmpty && _isVideoPath(finalMediaUrl));
     debugPrint('[StoryUpload] Starting Story creation (type: $type, initial mediaUrl: $finalMediaUrl, isVideo: $isVideo)');
 
@@ -195,86 +217,95 @@ class StoryRepositoryImpl implements StoryRepository {
       final cleanPath = finalMediaUrl.replaceAll(RegExp(r'^file://'), '');
       final file = File(cleanPath);
 
-      if (file.existsSync() && uploadService != null) {
-        debugPrint('[StoryUpload] Uploading local media file: $cleanPath');
-        final bytes = await file.readAsBytes();
-        final contentType = _detectContentType(cleanPath, isVideo);
-
-        final mediaEntity = await uploadService.upload(
-          bytes: bytes,
-          contentType: contentType,
-          purpose: MediaPurpose.story,
+      if (!file.existsSync()) {
+        throw AppError(
+          message: 'Media file not found: $cleanPath',
+          errorCode: 'MEDIA_NOT_FOUND',
         );
-        finalMediaUrl = mediaEntity.url;
-        debugPrint('[StoryUpload] Upload completed. CDN media URL: $finalMediaUrl');
       }
-    } else if (finalMediaUrl.isEmpty && (type == StoryType.text || layers?.isNotEmpty == true)) {
-      if (uploadService != null) {
-        try {
-          debugPrint('[StoryUpload] Rendering text story canvas to PNG and uploading...');
-          final startColor = _parseColor(bgGradientStart, const Color(0xFF0F172A));
-          final endColor = _parseColor(bgGradientEnd, const Color(0xFF1E293B));
-          final pngBytes = await _renderCanvasToPng(
-            textContent: textContent ?? '',
-            startColor: startColor,
-            endColor: endColor,
-            layers: layers ?? const [],
-          );
 
-          final mediaEntity = await uploadService.upload(
-            bytes: pngBytes,
-            contentType: 'image/png',
-            purpose: MediaPurpose.story,
-          );
-          finalMediaUrl = mediaEntity.url;
-          isVideo = false;
-          debugPrint('[StoryUpload] Text story canvas uploaded. CDN media URL: $finalMediaUrl');
-        } catch (e) {
-          debugPrint('[StoryRepository] Canvas rendering upload fallback: $e');
-        }
+      if (uploadService == null) {
+        throw const AppError(
+          message: 'Media upload service is unavailable',
+          errorCode: 'UPLOAD_SERVICE_UNAVAILABLE',
+        );
       }
+
+      debugPrint('[StoryUpload] Uploading local media file: $cleanPath');
+      final bytes = file.readAsBytesSync();
+      final contentType = _detectContentType(cleanPath, isVideo);
+
+      final mediaEntity = await uploadService.upload(
+        bytes: bytes,
+        contentType: contentType,
+        purpose: MediaPurpose.story,
+      );
+      finalMediaUrl = mediaEntity.url;
+      debugPrint('[StoryUpload] Upload completed. CDN media URL: $finalMediaUrl');
+    } else if (finalMediaUrl.isEmpty && (type == StoryType.text || layers?.isNotEmpty == true)) {
+      if (uploadService == null) {
+        throw const AppError(
+          message: 'Media upload service is unavailable for story canvas',
+          errorCode: 'UPLOAD_SERVICE_UNAVAILABLE',
+        );
+      }
+
+      debugPrint('[StoryUpload] Rendering text story canvas to PNG and uploading...');
+      final startColor = _parseColor(bgGradientStart, const Color(0xFF0F172A));
+      final endColor = _parseColor(bgGradientEnd, const Color(0xFF1E293B));
+      final pngBytes = await _renderCanvasToPng(
+        textContent: textContent ?? '',
+        startColor: startColor,
+        endColor: endColor,
+        layers: layers ?? const [],
+      );
+
+      final mediaEntity = await uploadService.upload(
+        bytes: pngBytes,
+        contentType: 'image/png',
+        purpose: MediaPurpose.story,
+      );
+      finalMediaUrl = mediaEntity.url;
+      isVideo = false;
+      debugPrint('[StoryUpload] Text story canvas uploaded. CDN media URL: $finalMediaUrl');
     }
 
-    if (client != null && finalMediaUrl.isNotEmpty) {
-      debugPrint('[StoryUpload] Posting Story to ${ApiEndpoints.stories} with mediaUrl: $finalMediaUrl');
-      final serverStory = await client.post(
-        ApiEndpoints.stories,
-        body: {
-          'mediaUrl': finalMediaUrl,
-          'mediaType': isVideo ? 'VIDEO' : 'IMAGE',
-          'caption': textContent,
-        },
-        parse: (data) => _storyFromJson(ApiClient.asMap(data)),
+    if (finalMediaUrl.trim().isEmpty) {
+      throw const AppError(
+        message: 'Story media URL cannot be empty',
+        errorCode: 'INVALID_MEDIA_URL',
       );
-      debugPrint('[StoryUpload] Story successfully posted to backend, storyId: ${serverStory.id}');
+    }
 
-      return StoryItemModel(
-        id: serverStory.id.isNotEmpty ? serverStory.id : 'story_${DateTime.now().millisecondsSinceEpoch}',
-        type: type,
-        mediaUrl: serverStory.mediaUrl ?? (finalMediaUrl.isNotEmpty ? finalMediaUrl : null),
-        textContent: textContent ?? serverStory.textContent,
-        location: location,
-        settings: resolvedSettings,
-        bgGradientStart: bgGradientStart ?? '0xFF0F172A',
-        bgGradientEnd: bgGradientEnd ?? '0xFF1E293B',
-        layers: layers ?? const [],
-        bgScale: bgScale,
-        bgOffset: bgOffset ?? Offset.zero,
-        bgRotation: bgRotation,
-        templateId: templateId,
-        templateSlots: templateSlots ?? const [],
-        timeAgo: serverStory.timeAgo,
-        createdAt: serverStory.createdAt,
+    debugPrint('[StoryUpload] Posting Story to ${ApiEndpoints.stories} with mediaUrl: $finalMediaUrl');
+    final serverStory = await client.post(
+      ApiEndpoints.stories,
+      body: {
+        'mediaUrl': finalMediaUrl,
+        'mediaType': isVideo ? 'VIDEO' : 'IMAGE',
+        'caption': textContent,
+        'visibility': _toBackendVisibility(resolvedSettings.visibility),
+        'replyPermission': _toBackendReplyPermission(resolvedSettings.replyPermission),
+        'allowReactions': resolvedSettings.allowReactions,
+      },
+      parse: (data) => _storyFromJson(ApiClient.asMap(data)),
+    );
+    debugPrint('[StoryUpload] Story successfully posted to backend, storyId: ${serverStory.id}');
+
+    if (serverStory.id.trim().isEmpty) {
+      throw const AppError(
+        message: 'Backend failed to return a valid story ID',
+        errorCode: 'INVALID_STORY_ID',
       );
     }
 
     return StoryItemModel(
-      id: 'story_${DateTime.now().millisecondsSinceEpoch}',
+      id: serverStory.id,
       type: type,
-      mediaUrl: (finalMediaUrl.isNotEmpty ? finalMediaUrl : (mediaUrl != null && mediaUrl.isNotEmpty ? mediaUrl : null)),
-      textContent: textContent,
+      mediaUrl: serverStory.mediaUrl ?? finalMediaUrl,
+      textContent: textContent ?? serverStory.textContent,
       location: location,
-      settings: resolvedSettings,
+      settings: serverStory.settings,
       bgGradientStart: bgGradientStart ?? '0xFF0F172A',
       bgGradientEnd: bgGradientEnd ?? '0xFF1E293B',
       layers: layers ?? const [],
@@ -283,9 +314,24 @@ class StoryRepositoryImpl implements StoryRepository {
       bgRotation: bgRotation,
       templateId: templateId,
       templateSlots: templateSlots ?? const [],
-      timeAgo: 'Just now',
-      createdAt: DateTime.now(),
+      timeAgo: serverStory.timeAgo,
+      createdAt: serverStory.createdAt,
     );
+  }
+
+  @override
+  Future<StoryItemModel?> getStoryById(String storyId) async {
+    final client = _client;
+    if (client == null) return null;
+    try {
+      return await client.get(
+        ApiEndpoints.storyItem(storyId),
+        parse: (data) => _storyFromJson(ApiClient.asMap(data)),
+      );
+    } catch (e) {
+      debugPrint('[StoryRepository] getStoryById error: $e');
+      return null;
+    }
   }
 
   @override
@@ -342,32 +388,7 @@ class StoryRepositoryImpl implements StoryRepository {
         return [];
       }
     }
-    return [
-      StoryViewerModel(
-        id: 'v1',
-        userName: 'Chhaeng Sokuntheara',
-        userAvatar: 'assets/images/sokuntheara_profile.png',
-        viewedTimeAgo: '10m ago',
-      ),
-      StoryViewerModel(
-        id: 'v2',
-        userName: 'Heng Chansela',
-        userAvatar: 'assets/images/heng_chansela_profile.png',
-        viewedTimeAgo: '20m ago',
-      ),
-      StoryViewerModel(
-        id: 'v3',
-        userName: 'អំណត់',
-        userAvatar: 'assets/images/amnot_profile.jpg',
-        viewedTimeAgo: '25m ago',
-      ),
-      StoryViewerModel(
-        id: 'v4',
-        userName: 'Sum Sambo',
-        userAvatar: 'assets/images/sum_sambo_profile.png',
-        viewedTimeAgo: '40m ago',
-      ),
-    ];
+    return [];
   }
 
   @override
@@ -388,6 +409,16 @@ class StoryRepositoryImpl implements StoryRepository {
     final caption = json['caption'] as String? ?? json['textContent'] as String?;
     final seen = json['seen'] as bool? ?? false;
 
+    final rawVisibility = json['visibility'] as String?;
+    final rawReply = (json['replyPermission'] ?? json['replyPrivacy']) as String?;
+    final rawAllowReactions = json['allowReactions'] as bool? ?? true;
+
+    final settings = StorySettings(
+      visibility: StoryPrivacy.fromString(rawVisibility ?? 'PUBLIC'),
+      replyPermission: StoryReplyPermission.fromString(rawReply ?? 'EVERYONE'),
+      allowReactions: rawAllowReactions,
+    );
+
     return StoryItemModel(
       id: storyId,
       type: mediaType == 'VIDEO' ? StoryType.video : StoryType.photo,
@@ -396,12 +427,37 @@ class StoryRepositoryImpl implements StoryRepository {
       timeAgo: _timeAgo(createdAt),
       createdAt: createdAt,
       isViewed: seen,
-      visibility: json['visibility'] as String? ?? 'Public',
-      replyPrivacy: json['replyPrivacy'] as String? ?? 'Everyone',
-      allowReactions: json['allowReactions'] as bool? ?? true,
+      settings: settings,
+      visibility: settings.visibilityLabel,
+      replyPrivacy: settings.replyPermissionLabel,
+      allowReactions: settings.allowReactions,
       location: json['location'] as String?,
       templateId: json['templateId'] as String?,
     );
+  }
+
+  String _toBackendVisibility(StoryPrivacy privacy) {
+    switch (privacy) {
+      case StoryPrivacy.public:
+        return 'PUBLIC';
+      case StoryPrivacy.friends:
+        return 'FRIENDS';
+      case StoryPrivacy.onlyMe:
+        return 'ONLY_ME';
+      case StoryPrivacy.custom:
+        return 'CUSTOM';
+    }
+  }
+
+  String _toBackendReplyPermission(StoryReplyPermission permission) {
+    switch (permission) {
+      case StoryReplyPermission.everyone:
+        return 'EVERYONE';
+      case StoryReplyPermission.friends:
+        return 'FRIENDS';
+      case StoryReplyPermission.off:
+        return 'OFF';
+    }
   }
 
   String _timeAgo(DateTime? time) {

@@ -520,6 +520,7 @@ class CommunityPostModel {
       pollTotalVotes: parsedTotalVotes,
       hasVoted: parsedHasVoted,
       myOptionId: parsedMyOptionId,
+      location: json['location'] as String? ?? json['locationName'] as String?,
       comments:
           (json['commentsList'] as List<dynamic>?)
               ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
@@ -569,6 +570,7 @@ class CommunityPostModel {
       'category': category,
       'videoUrl': videoUrl,
       'eventId': eventId,
+      if (location != null) 'location': location,
       if (attachedEvent != null) 'attachedEvent': attachedEvent!.toJson(),
       if (pollQuestion != null) ...{
         'pollId': pollId,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,9 +9,8 @@ import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/design_system/typography/app_typography.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/create_discussion_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/create_event_screen.dart';
-import 'package:genlink_frontend/features/community/presentation/screens/create_opportunity_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/create_post_screen.dart';
-import 'package:genlink_frontend/features/community/presentation/widgets/story_creation_picker_sheet.dart';
+import 'package:genlink_frontend/features/community/presentation/widgets/community_creation_flow.dart';
 import 'package:genlink_frontend/features/finance/presentation/budget_feature/budget_set_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/expense_feature/expense_add_screen.dart';
 import 'package:genlink_frontend/features/finance/presentation/saving_goal_feature/saving_goals_create.dart'
@@ -23,6 +23,7 @@ import 'package:genlink_frontend/features/productivity/presentation/screens/crea
 class GlobalCreateSheet extends StatelessWidget {
   final bool fromPostComposer;
   final Rect? anchorRect;
+  final VoidCallback? onClose;
   final VoidCallback? onSelectMedia;
   final VoidCallback? onSelectPoll;
   final VoidCallback? onSelectCelebration;
@@ -35,6 +36,7 @@ class GlobalCreateSheet extends StatelessWidget {
     super.key,
     this.fromPostComposer = false,
     this.anchorRect,
+    this.onClose,
     this.onSelectMedia,
     this.onSelectPoll,
     this.onSelectCelebration,
@@ -49,10 +51,39 @@ class GlobalCreateSheet extends StatelessWidget {
     AppTypography.englishFontFamily,
   ];
 
+  static OverlayEntry? _activeComposerOverlay;
+  static Completer<void>? _activeComposerCompleter;
+  static FocusNode? _activeEditorFocusNode;
+
+  static bool get isComposerPopupOpen => _activeComposerOverlay != null;
+
+  static void closeComposerPopup() {
+    final entry = _activeComposerOverlay;
+    _activeComposerOverlay = null;
+    if (entry != null) {
+      try {
+        if (entry.mounted) {
+          entry.remove();
+        }
+      } catch (_) {}
+    }
+    if (_activeComposerCompleter != null && !_activeComposerCompleter!.isCompleted) {
+      _activeComposerCompleter!.complete();
+    }
+    _activeComposerCompleter = null;
+    if (_activeEditorFocusNode != null && _activeEditorFocusNode!.canRequestFocus) {
+      if (!_activeEditorFocusNode!.hasFocus) {
+        _activeEditorFocusNode!.requestFocus();
+      }
+    }
+    _activeEditorFocusNode = null;
+  }
+
   static Future<void> show(
     BuildContext context, {
     bool fromPostComposer = false,
     Rect? anchorRect,
+    FocusNode? focusNode,
     VoidCallback? onSelectMedia,
     VoidCallback? onSelectPoll,
     VoidCallback? onSelectCelebration,
@@ -62,23 +93,71 @@ class GlobalCreateSheet extends StatelessWidget {
     VoidCallback? onSelectEvent,
   }) {
     if (fromPostComposer) {
-      return Navigator.of(context, rootNavigator: false).push<void>(
-        _ComposerAttachmentPopupRoute(
-          anchorRect: anchorRect,
-          builder: (popupContext) => GlobalCreateSheet(
-            fromPostComposer: true,
-            anchorRect: anchorRect,
-            onSelectMedia: onSelectMedia,
-            onSelectPoll: onSelectPoll,
-            onSelectCelebration: onSelectCelebration,
-            onSelectDiscussion: onSelectDiscussion,
-            onSelectJob: onSelectJob,
-            onSelectDocument: onSelectDocument,
-            onSelectEvent: onSelectEvent,
-          ),
-        ),
+      // If already open, toggle close
+      if (isComposerPopupOpen) {
+        closeComposerPopup();
+        return Future.value();
+      }
+
+      final overlay = Overlay.maybeOf(context, rootOverlay: false) ??
+          Overlay.maybeOf(context, rootOverlay: true);
+      if (overlay == null) return Future.value();
+
+      _activeEditorFocusNode = focusNode;
+      final completer = Completer<void>();
+      _activeComposerCompleter = completer;
+
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+
+      late final OverlayEntry entry;
+      entry = OverlayEntry(
+        builder: (overlayContext) {
+          return Material(
+            type: MaterialType.transparency,
+            child: DefaultTextStyle(
+              style: const TextStyle(
+                decoration: TextDecoration.none,
+                fontFamily: AppTypography.englishFontFamily,
+                fontFamilyFallback: GlobalCreateSheet.fontFallbacks,
+              ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: closeComposerPopup,
+                      child: Container(
+                        color: isDark
+                            ? Colors.black.withValues(alpha: 0.18)
+                            : Colors.black.withValues(alpha: 0.10),
+                      ),
+                    ),
+                  ),
+                  GlobalCreateSheet(
+                    fromPostComposer: true,
+                    anchorRect: anchorRect,
+                    onClose: closeComposerPopup,
+                    onSelectMedia: onSelectMedia,
+                    onSelectPoll: onSelectPoll,
+                    onSelectCelebration: onSelectCelebration,
+                    onSelectDiscussion: onSelectDiscussion,
+                    onSelectJob: onSelectJob,
+                    onSelectDocument: onSelectDocument,
+                    onSelectEvent: onSelectEvent,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       );
+
+      _activeComposerOverlay = entry;
+      overlay.insert(entry);
+
+      return completer.future;
     }
+
     return showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -104,8 +183,16 @@ class GlobalCreateSheet extends StatelessWidget {
     return (tr.isNotEmpty && tr != key) ? tr : fallback;
   }
 
+  void _close(BuildContext context) {
+    if (onClose != null) {
+      onClose!();
+    } else {
+      Navigator.of(context).pop();
+    }
+  }
+
   void _navigate(BuildContext context, Widget screen, {String? routeName}) {
-    Navigator.of(context).pop();
+    _close(context);
     Get.to(
       () => screen,
       routeName: routeName,
@@ -114,7 +201,7 @@ class GlobalCreateSheet extends StatelessWidget {
   }
 
   void _openPostCreator(BuildContext context) {
-    Navigator.of(context).pop();
+    _close(context);
     final currentRoute = Get.currentRoute;
     final modalName = ModalRoute.of(context)?.settings.name;
     final isAlreadyInPostComposer =
@@ -132,12 +219,12 @@ class GlobalCreateSheet extends StatelessWidget {
   }
 
   void _openStoryCreator(BuildContext context) {
-    Navigator.of(context).pop();
-    StoryCreationPickerSheet.show(context);
+    _close(context);
+    CommunityCreationFlow.openCreateStory(context);
   }
 
   void _openQuiz(BuildContext context) {
-    Navigator.of(context).pop();
+    _close(context);
     Get.toNamed(AppRoutes.quizDashboard);
   }
 
@@ -151,7 +238,7 @@ class GlobalCreateSheet extends StatelessWidget {
     Color iconBorder,
     bool isDark,
   ) {
-    Navigator.of(context).pop();
+    _close(context);
     final dialogTitle = _tr('create.actionChallenge', 'Challenge');
     final dialogDesc = _tr(
       'create.dialogChallengeDesc',
@@ -390,24 +477,9 @@ class GlobalCreateSheet extends StatelessWidget {
                         physics: const BouncingScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
                         children: [
-                          // ── COMMUNITY ──────────────────────
-                          _CategoryHeader(
-                            title: _tr(
-                              'create.categoryCommunity',
-                              'COMMUNITY',
-                            ).toUpperCase(),
-                            textColor: isDark
-                                ? const Color(0xFFE2E4E8)
-                                : const Color(0xFF2C3036),
-                            isCommunity: true,
-                          ),
                           _FeatureRow(
                             icon: Icons.article_outlined,
                             title: _tr('create.actionPost', 'Post'),
-                            subtitle: _tr(
-                              'create.actionPostDesc',
-                              'Share an update with your network',
-                            ),
                             rowBg: rowBg,
                             border: border,
                             iconBg: iconBg,
@@ -415,16 +487,11 @@ class GlobalCreateSheet extends StatelessWidget {
                             textPrimary: textPrimary,
                             textSecondary: textSecondary,
                             isDark: isDark,
-                            isCommunity: true,
                             onTap: () => _openPostCreator(context),
                           ),
                           _FeatureRow(
                             icon: Icons.amp_stories_outlined,
                             title: _tr('create.actionStory', 'Story'),
-                            subtitle: _tr(
-                              'create.actionStoryDesc',
-                              'Share photo or video to your story',
-                            ),
                             rowBg: rowBg,
                             border: border,
                             iconBg: iconBg,
@@ -432,16 +499,11 @@ class GlobalCreateSheet extends StatelessWidget {
                             textPrimary: textPrimary,
                             textSecondary: textSecondary,
                             isDark: isDark,
-                            isCommunity: true,
                             onTap: () => _openStoryCreator(context),
                           ),
                           _FeatureRow(
                             icon: Icons.event_outlined,
                             title: _tr('create.actionEvent', 'Event'),
-                            subtitle: _tr(
-                              'create.actionEventDesc',
-                              'Host an event or community meetup',
-                            ),
                             rowBg: rowBg,
                             border: border,
                             iconBg: iconBg,
@@ -449,7 +511,6 @@ class GlobalCreateSheet extends StatelessWidget {
                             textPrimary: textPrimary,
                             textSecondary: textSecondary,
                             isDark: isDark,
-                            isCommunity: true,
                             onTap: () => _navigate(
                               context,
                               const CreateEventScreen(),
@@ -459,10 +520,6 @@ class GlobalCreateSheet extends StatelessWidget {
                           _FeatureRow(
                             icon: Icons.forum_outlined,
                             title: _tr('create.actionDiscussion', 'Discussion'),
-                            subtitle: _tr(
-                              'create.actionDiscussionDesc',
-                              'Start a topic in the forum',
-                            ),
                             rowBg: rowBg,
                             border: border,
                             iconBg: iconBg,
@@ -470,29 +527,15 @@ class GlobalCreateSheet extends StatelessWidget {
                             textPrimary: textPrimary,
                             textSecondary: textSecondary,
                             isDark: isDark,
-                            isCommunity: true,
                             onTap: () => _navigate(
                               context,
                               const CreateDiscussionScreen(),
                               routeName: '/CreateDiscussionScreen',
                             ),
                           ),
-
-                          // ── PRODUCTIVITY ───────────────────
-                          _CategoryHeader(
-                            title: _tr(
-                              'create.categoryProductivity',
-                              'PRODUCTIVITY',
-                            ).toUpperCase(),
-                            textColor: textSecondary,
-                          ),
                           _FeatureRow(
                             icon: Icons.flag_outlined,
                             title: _tr('create.actionGoal', 'Goal'),
-                            subtitle: _tr(
-                              'create.actionGoalDesc',
-                              'Set a personal or skill goal',
-                            ),
                             rowBg: rowBg,
                             border: border,
                             iconBg: iconBg,
@@ -509,10 +552,6 @@ class GlobalCreateSheet extends StatelessWidget {
                           _FeatureRow(
                             icon: Icons.check_circle_outline_rounded,
                             title: _tr('create.actionTodo', 'To-Do'),
-                            subtitle: _tr(
-                              'create.actionTodoDesc',
-                              'Add a task to your daily plan',
-                            ),
                             rowBg: rowBg,
                             border: border,
                             iconBg: iconBg,
@@ -529,10 +568,6 @@ class GlobalCreateSheet extends StatelessWidget {
                           _FeatureRow(
                             icon: Icons.local_fire_department_outlined,
                             title: _tr('create.actionHabit', 'Habit'),
-                            subtitle: _tr(
-                              'create.actionHabitDesc',
-                              'Build a daily or weekly routine',
-                            ),
                             rowBg: rowBg,
                             border: border,
                             iconBg: iconBg,
@@ -546,22 +581,9 @@ class GlobalCreateSheet extends StatelessWidget {
                               routeName: '/CreateHabitScreen',
                             ),
                           ),
-
-                          // ── FINANCIAL ──────────────────────
-                          _CategoryHeader(
-                            title: _tr(
-                              'create.categoryFinancial',
-                              'FINANCIAL',
-                            ).toUpperCase(),
-                            textColor: textSecondary,
-                          ),
                           _FeatureRow(
                             icon: Icons.receipt_long_outlined,
                             title: _tr('create.actionExpense', 'Expense'),
-                            subtitle: _tr(
-                              'create.actionExpenseDesc',
-                              'Log your daily spending',
-                            ),
                             rowBg: rowBg,
                             border: border,
                             iconBg: iconBg,
@@ -581,10 +603,6 @@ class GlobalCreateSheet extends StatelessWidget {
                               'create.actionSavingGoal',
                               'Saving Goal',
                             ),
-                            subtitle: _tr(
-                              'create.actionSavingGoalDesc',
-                              'Create a target to save money',
-                            ),
                             rowBg: rowBg,
                             border: border,
                             iconBg: iconBg,
@@ -601,10 +619,6 @@ class GlobalCreateSheet extends StatelessWidget {
                           _FeatureRow(
                             icon: Icons.pie_chart_outline_rounded,
                             title: _tr('create.actionBudget', 'Budget'),
-                            subtitle: _tr(
-                              'create.actionBudgetDesc',
-                              'Allocate monthly budget limits',
-                            ),
                             rowBg: rowBg,
                             border: border,
                             iconBg: iconBg,
@@ -618,22 +632,9 @@ class GlobalCreateSheet extends StatelessWidget {
                               routeName: '/SetBudgetScreen',
                             ),
                           ),
-
-                          // ── ENTERTAINMENT ──────────────────
-                          _CategoryHeader(
-                            title: _tr(
-                              'create.categoryEntertainment',
-                              'ENTERTAINMENT',
-                            ).toUpperCase(),
-                            textColor: textSecondary,
-                          ),
                           _FeatureRow(
                             icon: Icons.quiz_outlined,
                             title: _tr('create.actionQuiz', 'Quiz'),
-                            subtitle: _tr(
-                              'create.actionQuizDesc',
-                              'Test knowledge and earn XP',
-                            ),
                             rowBg: rowBg,
                             border: border,
                             iconBg: iconBg,
@@ -646,10 +647,6 @@ class GlobalCreateSheet extends StatelessWidget {
                           _FeatureRow(
                             icon: Icons.emoji_events_outlined,
                             title: _tr('create.actionChallenge', 'Challenge'),
-                            subtitle: _tr(
-                              'create.actionChallengeDesc',
-                              'Join and complete daily challenges',
-                            ),
                             rowBg: rowBg,
                             border: border,
                             iconBg: iconBg,
@@ -706,6 +703,8 @@ class GlobalCreateSheet extends StatelessWidget {
     final iconBorder = isDark
         ? const Color(0x20FFFFFF)
         : const Color(0x10000000);
+    final dialogBg = isDark ? const Color(0xFF181A20) : Colors.white;
+    final dialogBorder = isDark ? const Color(0xFF282B35) : const Color(0xFFE2E4EA);
 
     final screenSize = MediaQuery.sizeOf(context);
     final screenWidth = screenSize.width;
@@ -814,8 +813,8 @@ class GlobalCreateSheet extends StatelessWidget {
                                 const SizedBox(height: 1),
                                 Text(
                                   _tr(
-                                    'create.subtitleMore',
-                                    'More ways to share and connect.',
+                                    'create.subtitle',
+                                    'What would you like to create?',
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -835,8 +834,9 @@ class GlobalCreateSheet extends StatelessWidget {
                           Material(
                             color: Colors.transparent,
                             child: InkWell(
+                              canRequestFocus: false,
                               borderRadius: BorderRadius.circular(10),
-                              onTap: () => Navigator.of(context).pop(),
+                              onTap: () => _close(context),
                               child: Container(
                                 width: 20,
                                 height: 20,
@@ -861,7 +861,7 @@ class GlobalCreateSheet extends StatelessWidget {
 
                     Divider(height: 1, thickness: 0.5, color: rowDivider),
 
-                    // 7 Options
+                    // Options in one continuous list (excluding redundant Post)
                     Flexible(
                       child: SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
@@ -870,16 +870,35 @@ class GlobalCreateSheet extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             _ComposerGlassOption(
-                              icon: Icons.poll_outlined,
-                              title: _tr('community.poll', 'Poll'),
+                              icon: Icons.amp_stories_outlined,
+                              title: _tr('create.actionStory', 'Story'),
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                              iconBg: iconBg,
+                              iconBorder: iconBorder,
+                              isDark: isDark,
+                              onTap: () => _openStoryCreator(context),
+                            ),
+                            Divider(height: 1, thickness: 0.5, color: rowDivider, indent: 8, endIndent: 8),
+                            _ComposerGlassOption(
+                              icon: Icons.event_outlined,
+                              title: _tr('create.actionEvent', 'Event'),
                               textPrimary: textPrimary,
                               textSecondary: textSecondary,
                               iconBg: iconBg,
                               iconBorder: iconBorder,
                               isDark: isDark,
                               onTap: () {
-                                Navigator.of(context).pop();
-                                onSelectPoll?.call();
+                                _close(context);
+                                if (onSelectEvent != null) {
+                                  onSelectEvent!();
+                                } else {
+                                  Get.to(
+                                    () => const CreateEventScreen(),
+                                    routeName: '/CreateEventScreen',
+                                    transition: Transition.cupertino,
+                                  );
+                                }
                               },
                             ),
                             Divider(height: 1, thickness: 0.5, color: rowDivider, indent: 8, endIndent: 8),
@@ -892,103 +911,138 @@ class GlobalCreateSheet extends StatelessWidget {
                               iconBorder: iconBorder,
                               isDark: isDark,
                               onTap: () {
-                                Navigator.of(context).pop();
+                                _close(context);
                                 if (onSelectDiscussion != null) {
                                   onSelectDiscussion!();
                                 } else {
-                                  _navigate(
-                                    context,
-                                    const CreateDiscussionScreen(),
+                                  Get.to(
+                                    () => const CreateDiscussionScreen(),
                                     routeName: '/CreateDiscussionScreen',
+                                    transition: Transition.cupertino,
                                   );
                                 }
                               },
                             ),
                             Divider(height: 1, thickness: 0.5, color: rowDivider, indent: 8, endIndent: 8),
                             _ComposerGlassOption(
-                              icon: Icons.celebration_outlined,
-                              title: _tr('community.celebration', 'Celebration'),
+                              icon: Icons.flag_outlined,
+                              title: _tr('create.actionGoal', 'Goal'),
                               textPrimary: textPrimary,
                               textSecondary: textSecondary,
                               iconBg: iconBg,
                               iconBorder: iconBorder,
                               isDark: isDark,
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                onSelectCelebration?.call();
-                              },
+                              onTap: () => _navigate(
+                                context,
+                                const productivity_goal.CreateGoalScreen(),
+                                routeName: '/CreateGoalScreen',
+                              ),
                             ),
                             Divider(height: 1, thickness: 0.5, color: rowDivider, indent: 8, endIndent: 8),
                             _ComposerGlassOption(
-                              icon: Icons.work_outline_rounded,
-                              title: _tr('community.job', 'Job'),
+                              icon: Icons.check_circle_outline_rounded,
+                              title: _tr('create.actionTodo', 'To-Do'),
                               textPrimary: textPrimary,
                               textSecondary: textSecondary,
                               iconBg: iconBg,
                               iconBorder: iconBorder,
                               isDark: isDark,
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                if (onSelectJob != null) {
-                                  onSelectJob!();
-                                } else {
-                                  _navigate(
-                                    context,
-                                    const CreateOpportunityScreen(),
-                                    routeName: '/CreateOpportunityScreen',
-                                  );
-                                }
-                              },
+                              onTap: () => _navigate(
+                                context,
+                                const CreateTaskScreen(),
+                                routeName: '/CreateTaskScreen',
+                              ),
                             ),
                             Divider(height: 1, thickness: 0.5, color: rowDivider, indent: 8, endIndent: 8),
                             _ComposerGlassOption(
-                              icon: Icons.description_outlined,
-                              title: _tr('community.document', 'Document'),
+                              icon: Icons.local_fire_department_outlined,
+                              title: _tr('create.actionHabit', 'Habit'),
                               textPrimary: textPrimary,
                               textSecondary: textSecondary,
                               iconBg: iconBg,
                               iconBorder: iconBorder,
                               isDark: isDark,
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                onSelectDocument?.call();
-                              },
+                              onTap: () => _navigate(
+                                context,
+                                const CreateHabitScreen(),
+                                routeName: '/CreateHabitScreen',
+                              ),
                             ),
                             Divider(height: 1, thickness: 0.5, color: rowDivider, indent: 8, endIndent: 8),
                             _ComposerGlassOption(
-                              icon: Icons.photo_library_outlined,
-                              title: _tr('community.media', 'Media'),
+                              icon: Icons.receipt_long_outlined,
+                              title: _tr('create.actionExpense', 'Expense'),
                               textPrimary: textPrimary,
                               textSecondary: textSecondary,
                               iconBg: iconBg,
                               iconBorder: iconBorder,
                               isDark: isDark,
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                onSelectMedia?.call();
-                              },
+                              onTap: () => _navigate(
+                                context,
+                                const AddExpenseScreen(),
+                                routeName: '/AddExpenseScreen',
+                              ),
                             ),
                             Divider(height: 1, thickness: 0.5, color: rowDivider, indent: 8, endIndent: 8),
                             _ComposerGlassOption(
-                              icon: Icons.event_outlined,
-                              title: _tr('create.actionEvent', 'Event'),
+                              icon: Icons.savings_outlined,
+                              title: _tr('create.actionSavingGoal', 'Saving Goal'),
                               textPrimary: textPrimary,
                               textSecondary: textSecondary,
                               iconBg: iconBg,
                               iconBorder: iconBorder,
                               isDark: isDark,
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                if (onSelectEvent != null) {
-                                  onSelectEvent!();
-                                } else {
-                                  _navigate(
-                                    context,
-                                    const CreateEventScreen(),
-                                    routeName: '/CreateEventScreen',
-                                  );
-                                }
-                              },
+                              onTap: () => _navigate(
+                                context,
+                                const finance_saving_goal.CreateGoalScreen(),
+                                routeName: '/CreateSavingGoalScreen',
+                              ),
+                            ),
+                            Divider(height: 1, thickness: 0.5, color: rowDivider, indent: 8, endIndent: 8),
+                            _ComposerGlassOption(
+                              icon: Icons.pie_chart_outline_rounded,
+                              title: _tr('create.actionBudget', 'Budget'),
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                              iconBg: iconBg,
+                              iconBorder: iconBorder,
+                              isDark: isDark,
+                              onTap: () => _navigate(
+                                context,
+                                const SetBudgetScreen(),
+                                routeName: '/SetBudgetScreen',
+                              ),
+                            ),
+                            Divider(height: 1, thickness: 0.5, color: rowDivider, indent: 8, endIndent: 8),
+                            _ComposerGlassOption(
+                              icon: Icons.quiz_outlined,
+                              title: _tr('create.actionQuiz', 'Quiz'),
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                              iconBg: iconBg,
+                              iconBorder: iconBorder,
+                              isDark: isDark,
+                              onTap: () => _openQuiz(context),
+                            ),
+                            Divider(height: 1, thickness: 0.5, color: rowDivider, indent: 8, endIndent: 8),
+                            _ComposerGlassOption(
+                              icon: Icons.emoji_events_outlined,
+                              title: _tr('create.actionChallenge', 'Challenge'),
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                              iconBg: iconBg,
+                              iconBorder: iconBorder,
+                              isDark: isDark,
+                              onTap: () => _showChallengeDialog(
+                                context,
+                                dialogBg,
+                                textPrimary,
+                                textSecondary,
+                                dialogBorder,
+                                iconBg,
+                                iconBorder,
+                                isDark,
+                              ),
                             ),
                           ],
                         ),
@@ -1067,9 +1121,31 @@ class GlobalCreateSheet extends StatelessWidget {
           top: placeAbove
               ? null
               : (resolvedAnchor.bottom + gap),
-          child: SizedBox(
-            width: popupWidth,
-            child: positionedChild,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {},
+            child: SizedBox(
+              width: popupWidth,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 160),
+                curve: Curves.easeOutCubic,
+                builder: (context, val, child) {
+                  return Opacity(
+                    opacity: val,
+                    child: Transform.scale(
+                      scale: 0.92 + (0.08 * val),
+                      alignment: Alignment(
+                        ((pointerLocalX / popupWidth) * 2 - 1).clamp(-1.0, 1.0),
+                        placeAbove ? 1.0 : -1.0,
+                      ),
+                      child: child,
+                    ),
+                  );
+                },
+                child: positionedChild,
+              ),
+            ),
           ),
         ),
       ],
@@ -1077,44 +1153,9 @@ class GlobalCreateSheet extends StatelessWidget {
   }
 }
 
-class _CategoryHeader extends StatelessWidget {
-  final String title;
-  final Color textColor;
-  final bool isCommunity;
-
-  const _CategoryHeader({
-    required this.title,
-    required this.textColor,
-    this.isCommunity = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 2,
-        top: isCommunity ? 4 : 14,
-        bottom: 8,
-      ),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontFamily: AppTypography.englishFontFamily,
-          fontFamilyFallback: GlobalCreateSheet.fontFallbacks,
-          color: textColor,
-          fontSize: isCommunity ? 11.5 : 11.0,
-          fontWeight: isCommunity ? FontWeight.w700 : FontWeight.w600,
-          letterSpacing: 0.8,
-        ),
-      ),
-    );
-  }
-}
-
 class _FeatureRow extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String? subtitle;
   final VoidCallback onTap;
   final Color rowBg;
   final Color border;
@@ -1123,12 +1164,10 @@ class _FeatureRow extends StatelessWidget {
   final Color textPrimary;
   final Color textSecondary;
   final bool isDark;
-  final bool isCommunity;
 
   const _FeatureRow({
     required this.icon,
     required this.title,
-    this.subtitle,
     required this.onTap,
     required this.rowBg,
     required this.border,
@@ -1137,7 +1176,6 @@ class _FeatureRow extends StatelessWidget {
     required this.textPrimary,
     required this.textSecondary,
     required this.isDark,
-    this.isCommunity = false,
   });
 
   @override
@@ -1161,7 +1199,7 @@ class _FeatureRow extends StatelessWidget {
           splashColor: textPrimary.withValues(alpha: 0.08),
           highlightColor: textPrimary.withValues(alpha: 0.04),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             child: Row(
               children: [
                 Container(
@@ -1179,48 +1217,21 @@ class _FeatureRow extends StatelessWidget {
                     size: 19,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: AppTypography.englishFontFamily,
-                          fontFamilyFallback: GlobalCreateSheet.fontFallbacks,
-                          color: textPrimary,
-                          fontSize: 14,
-                          fontWeight:
-                              isCommunity ? FontWeight.w700 : FontWeight.w600,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      if (subtitle != null && subtitle!.isNotEmpty) ...[
-                        const SizedBox(height: 1),
-                        Text(
-                          subtitle!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: AppTypography.englishFontFamily,
-                            fontFamilyFallback: GlobalCreateSheet.fontFallbacks,
-                            color: textSecondary,
-                            fontSize: 11.5,
-                            height: 1.2,
-                          ),
-                        ),
-                      ],
-                    ],
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: AppTypography.englishFontFamily,
+                      fontFamilyFallback: GlobalCreateSheet.fontFallbacks,
+                      color: textPrimary,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
+                    ),
                   ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: textSecondary.withValues(alpha: 0.55),
-                  size: 18,
                 ),
               ],
             ),
@@ -1257,6 +1268,7 @@ class _ComposerGlassOption extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        canRequestFocus: false,
         onTap: () {
           HapticFeedback.selectionClick();
           onTap();
@@ -1367,68 +1379,4 @@ class _TrianglePainter extends CustomPainter {
       oldDelegate.color != color ||
       oldDelegate.borderColor != borderColor ||
       oldDelegate.pointingDown != pointingDown;
-}
-
-class _ComposerAttachmentPopupRoute<T> extends PopupRoute<T> {
-  final WidgetBuilder builder;
-  final Rect? anchorRect;
-
-  _ComposerAttachmentPopupRoute({
-    required this.builder,
-    this.anchorRect,
-    super.settings,
-  });
-
-  @override
-  Color? get barrierColor => Colors.black.withValues(alpha: 0.16);
-
-  @override
-  bool get barrierDismissible => true;
-
-  @override
-  String? get barrierLabel => 'Dismiss';
-
-  @override
-  Duration get transitionDuration => const Duration(milliseconds: 180);
-
-  @override
-  Widget buildPage(
-    BuildContext context,
-    Animation<double> animation,
-    Animation<double> secondaryAnimation,
-  ) {
-    return Material(
-      type: MaterialType.transparency,
-      child: DefaultTextStyle(
-        style: const TextStyle(
-          decoration: TextDecoration.none,
-          fontFamily: AppTypography.englishFontFamily,
-          fontFamilyFallback: GlobalCreateSheet.fontFallbacks,
-        ),
-        child: builder(context),
-      ),
-    );
-  }
-
-  @override
-  Widget buildTransitions(
-    BuildContext context,
-    Animation<double> animation,
-    Animation<double> secondaryAnimation,
-    Widget child,
-  ) {
-    final curved = CurvedAnimation(
-      parent: animation,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    );
-    return FadeTransition(
-      opacity: curved,
-      child: ScaleTransition(
-        scale: Tween<double>(begin: 0.92, end: 1.0).animate(curved),
-        alignment: const Alignment(0.85, 0.95),
-        child: child,
-      ),
-    );
-  }
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:genlink_frontend/app/routes/app_routes.dart';
 import 'package:genlink_frontend/core/localization/app_translations.dart';
+import 'package:genlink_frontend/core/storage/local_storage.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/create_discussion_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/create_event_screen.dart';
@@ -110,10 +112,21 @@ class _FakeSavingGoalController extends GetxController
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _MockLocalStorage extends LocalStorage {
+  _MockLocalStorage() : super(storage: const FlutterSecureStorage());
+  @override
+  Future<String?> readStoryDraft() async => null;
+  @override
+  Future<void> saveStoryDraft(String draftJson) async {}
+  @override
+  Future<void> deleteStoryDraft() async {}
+}
+
 void main() {
   setUp(() {
     Get.reset();
     Get.testMode = true;
+    Get.put<LocalStorage>(_MockLocalStorage(), permanent: true);
     Get.put<ExpenseController>(_FakeExpenseController(), permanent: true);
     Get.put<BudgetController>(_FakeBudgetController(), permanent: true);
     Get.put<SavingGoalController>(_FakeSavingGoalController(), permanent: true);
@@ -173,54 +186,48 @@ void main() {
   }
 
   group('GlobalCreateSheet UI Redesign and Navigation Tests', () {
-    testWidgets('renders all 4 categories and all 12 approved features with chevrons in English', (tester) async {
+    testWidgets('renders all 12 approved features in a clean continuous list without categories or chevrons in English', (tester) async {
       await openSheet(tester);
 
       expect(find.text('Create'), findsOneWidget);
       expect(find.text('What would you like to create?'), findsOneWidget);
 
-      // Verify all 4 category headers are present
-      expect(find.text('COMMUNITY'), findsOneWidget);
-      expect(find.text('PRODUCTIVITY'), findsOneWidget);
-      expect(find.text('FINANCIAL'), findsOneWidget);
-      expect(find.text('ENTERTAINMENT'), findsOneWidget);
+      // Verify category headers are NOT present
+      expect(find.text('COMMUNITY'), findsNothing);
+      expect(find.text('PRODUCTIVITY'), findsNothing);
+      expect(find.text('FINANCIAL'), findsNothing);
+      expect(find.text('ENTERTAINMENT'), findsNothing);
 
-      // Verify COMMUNITY features
+      // Verify all 12 features
       expect(find.text('Post'), findsOneWidget);
       expect(find.text('Story'), findsOneWidget);
       expect(find.text('Event'), findsOneWidget);
       expect(find.text('Discussion'), findsOneWidget);
-
-      // Verify PRODUCTIVITY features
       expect(find.text('Goal'), findsOneWidget);
       expect(find.text('To-Do'), findsOneWidget);
       expect(find.text('Habit'), findsOneWidget);
-
-      // Verify FINANCIAL features
       expect(find.text('Expense'), findsOneWidget);
       expect(find.text('Saving Goal'), findsOneWidget);
       expect(find.text('Budget'), findsOneWidget);
-
-      // Verify ENTERTAINMENT features
       expect(find.text('Quiz'), findsOneWidget);
       expect(find.text('Challenge'), findsOneWidget);
 
       // Verify unapproved features are NOT present
       expect(find.text('Short Content'), findsNothing);
+      expect(find.text('Job'), findsNothing);
+      expect(find.text('Document'), findsNothing);
+      expect(find.text('Poll'), findsNothing);
+      expect(find.text('Celebration'), findsNothing);
 
-      // Verify right-side chevrons exist for each item (at least 12)
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(12));
+      // Verify right-side chevrons are NOT present
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
     });
 
     testWidgets('renders properly in Light Mode without errors', (tester) async {
       await openSheet(tester, themeMode: ThemeMode.light);
 
       expect(find.text('Create'), findsOneWidget);
-      expect(find.text('COMMUNITY'), findsOneWidget);
-      expect(find.text('PRODUCTIVITY'), findsOneWidget);
-      expect(find.text('FINANCIAL'), findsOneWidget);
-      expect(find.text('ENTERTAINMENT'), findsOneWidget);
-
+      expect(find.text('COMMUNITY'), findsNothing);
       expect(find.text('Post'), findsOneWidget);
       expect(find.text('Goal'), findsOneWidget);
       expect(find.text('Expense'), findsOneWidget);
@@ -233,11 +240,7 @@ void main() {
       await openSheet(tester, themeMode: ThemeMode.dark);
 
       expect(find.text('Create'), findsOneWidget);
-      expect(find.text('COMMUNITY'), findsOneWidget);
-      expect(find.text('PRODUCTIVITY'), findsOneWidget);
-      expect(find.text('FINANCIAL'), findsOneWidget);
-      expect(find.text('ENTERTAINMENT'), findsOneWidget);
-
+      expect(find.text('COMMUNITY'), findsNothing);
       expect(find.text('Story'), findsOneWidget);
       expect(find.text('To-Do'), findsOneWidget);
       expect(find.text('Saving Goal'), findsOneWidget);
@@ -246,17 +249,17 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('renders categories and actions in Khmer without overflow', (tester) async {
+    testWidgets('renders actions in Khmer without overflow', (tester) async {
       await openSheet(tester, locale: const Locale('km', 'KH'));
 
       expect(find.text('បង្កើត'), findsOneWidget);
       expect(find.text('តើអ្នកចង់បង្កើតអ្វី?'), findsOneWidget);
 
-      // Category headers in Khmer
-      expect(find.text('សហគមន៍'), findsOneWidget);
-      expect(find.text('ផលិតភាព'), findsOneWidget);
-      expect(find.text('ហិរញ្ញវត្ថុ'), findsOneWidget);
-      expect(find.text('ការកម្សាន្ត'), findsOneWidget);
+      // Category headers should NOT be present
+      expect(find.text('សហគមន៍'), findsNothing);
+      expect(find.text('ផលិតភាព'), findsNothing);
+      expect(find.text('ហិរញ្ញវត្ថុ'), findsNothing);
+      expect(find.text('ការកម្សាន្ត'), findsNothing);
 
       // Action items in Khmer
       expect(find.text('ប្រកាស'), findsOneWidget);
@@ -283,7 +286,8 @@ void main() {
       );
 
       expect(find.text('បង្កើត'), findsOneWidget);
-      expect(find.text('សហគមន៍'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('គោលដៅសន្សំ'), 50.0);
+      expect(find.text('គោលដៅសន្សំ'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -294,7 +298,7 @@ void main() {
       );
 
       expect(find.text('Create'), findsOneWidget);
-      expect(find.text('COMMUNITY'), findsOneWidget);
+      expect(find.text('COMMUNITY'), findsNothing);
       expect(find.text('Post'), findsOneWidget);
       expect(find.text('Quiz'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -461,7 +465,6 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      bool mediaSelected = false;
       await tester.pumpWidget(
         GetMaterialApp(
           translations: AppTranslations(),
@@ -472,7 +475,6 @@ void main() {
                 onPressed: () => GlobalCreateSheet.show(
                   context,
                   fromPostComposer: true,
-                  onSelectMedia: () => mediaSelected = true,
                 ),
                 child: const Text('Open'),
               ),
@@ -485,11 +487,10 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Media'), findsOneWidget);
-      await tester.tap(find.text('Media'));
-      await tester.pumpAndSettle();
-
-      expect(mediaSelected, isTrue);
+      expect(find.text('Media'), findsNothing);
+      expect(find.text('Post'), findsNothing);
+      expect(find.text('Discussion'), findsOneWidget);
+      expect(find.text('Story'), findsOneWidget);
     });
   });
 }

@@ -1680,6 +1680,12 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
         return;
       }
 
+      // If multi-select mode is active (whether from story flow or post composer gallery)
+      if (controller.isMultiSelectMode.value) {
+        controller.selectAsset(asset);
+        return;
+      }
+
       if (widget.onPhotosSelected != null) {
         final file = (await asset.file) ?? (await asset.originFile);
         if (file != null && mounted) {
@@ -1720,12 +1726,6 @@ class _StoryGalleryScreenState extends State<StoryGalleryScreen>
             }
           }
         }
-        return;
-      }
-
-      // If multi-select mode is active in regular story flow
-      if (controller.isMultiSelectMode.value) {
-        controller.selectAsset(asset);
         return;
       }
 

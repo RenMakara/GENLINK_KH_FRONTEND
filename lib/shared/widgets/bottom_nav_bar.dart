@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import '../../design_system/widgets/avatar/app_avatar.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/community/presentation/controllers/community_controller.dart';
+import '../../features/community/presentation/widgets/community_creation_flow.dart';
 import '../../features/finance/presentation/controllers/finance_controller.dart';
 import '../../features/home/presentation/controllers/home_controller.dart';
 import '../../features/profile/presentation/controllers/profile_controller.dart';
@@ -1064,6 +1065,10 @@ class _PlusButtonState extends State<_PlusButton>
                         child: InkWell(
                           customBorder: const CircleBorder(),
                           onTap: _handleTap,
+                          onLongPress: () {
+                            HapticFeedback.heavyImpact();
+                            CommunityCreationFlow.openCreateMenu(context);
+                          },
                           child: Center(
                             child: Icon(
                               Icons.add_rounded,

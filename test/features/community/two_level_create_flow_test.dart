@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -8,7 +9,7 @@ import 'package:genlink_frontend/features/community/presentation/controllers/com
 import 'package:genlink_frontend/features/community/presentation/screens/create_post_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/create_event_screen.dart';
 import 'package:genlink_frontend/features/community/presentation/screens/create_discussion_screen.dart';
-import 'package:genlink_frontend/features/community/presentation/screens/create_opportunity_screen.dart';
+import 'package:genlink_frontend/features/community/presentation/widgets/community_creation_flow.dart';
 import 'package:genlink_frontend/shared/widgets/bottom_nav_bar.dart';
 import 'package:genlink_frontend/shared/widgets/global_create_sheet.dart';
 
@@ -227,11 +228,13 @@ void main() {
         expect(find.text("What's on your mind?"), findsOneWidget);
         expect(find.byIcon(Icons.close_rounded), findsOneWidget);
         expect(find.text('Public'), findsOneWidget);
-        expect(find.byIcon(Icons.schedule_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.schedule_outlined), findsNothing);
         expect(find.text('Post'), findsOneWidget);
 
-        expect(find.byIcon(Icons.image_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.camera_alt_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.photo_library_outlined), findsOneWidget);
         expect(find.byIcon(Icons.gif_box_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.poll_outlined), findsOneWidget);
         expect(
           find.byIcon(Icons.sentiment_satisfied_alt_outlined),
           findsOneWidget,
@@ -270,14 +273,32 @@ void main() {
         expect(find.byType(GlobalCreateSheet), findsOneWidget);
         expect(find.text('Create'), findsWidgets);
 
-        // Verify compact glass pill options
-        expect(find.text('Poll'), findsOneWidget);
-        expect(find.text('Discussion'), findsOneWidget);
-        expect(find.text('Celebration'), findsOneWidget);
-        expect(find.text('Job'), findsOneWidget);
-        expect(find.text('Document'), findsOneWidget);
-        expect(find.text('Media'), findsOneWidget);
+        // Verify compact glass pill options - exactly the 11 features (excluding Post)
+        expect(
+          find.descendant(
+            of: find.byType(GlobalCreateSheet),
+            matching: find.text('Post'),
+          ),
+          findsNothing,
+        );
+        expect(find.text('Story'), findsOneWidget);
         expect(find.text('Event'), findsWidgets);
+        expect(find.text('Discussion'), findsOneWidget);
+        expect(find.text('Goal'), findsOneWidget);
+        expect(find.text('To-Do'), findsOneWidget);
+        expect(find.text('Habit'), findsOneWidget);
+        expect(find.text('Expense'), findsOneWidget);
+        expect(find.text('Saving Goal'), findsOneWidget);
+        expect(find.text('Budget'), findsOneWidget);
+        expect(find.text('Quiz'), findsOneWidget);
+        expect(find.text('Challenge'), findsOneWidget);
+
+        // Verify excluded features are removed
+        expect(find.text('Poll'), findsNothing);
+        expect(find.text('Celebration'), findsNothing);
+        expect(find.text('Job'), findsNothing);
+        expect(find.text('Document'), findsNothing);
+        expect(find.text('Media'), findsNothing);
 
         // Verify category headers are removed
         expect(find.text('COMMUNITY'), findsNothing);
@@ -285,19 +306,8 @@ void main() {
         expect(find.text('FINANCIAL'), findsNothing);
         expect(find.text('ENTERTAINMENT'), findsNothing);
 
-        // Verify unrelated features are removed
-        expect(find.text('Goal'), findsNothing);
-        expect(find.text('To-Do'), findsNothing);
-        expect(find.text('Habit'), findsNothing);
-        expect(find.text('Expense'), findsNothing);
-        expect(find.text('Saving Goal'), findsNothing);
-        expect(find.text('Budget'), findsNothing);
-        expect(find.text('Quiz'), findsNothing);
-        expect(find.text('Challenge'), findsNothing);
-        expect(find.text('Short Content'), findsNothing);
-
-        // Verify right chevron arrows are present on the 7 options
-        expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(7));
+        // Verify right chevron arrows are present on the 11 options
+        expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(11));
 
         await tester.tap(find.byIcon(Icons.close_rounded).last);
         await tester.pumpAndSettle();
@@ -307,31 +317,6 @@ void main() {
           find.text('Preserve this draft text during modal open/close'),
           findsOneWidget,
         );
-      },
-    );
-
-    testWidgets(
-      'Tapping "Job" inside Create menu routes to CreateOpportunityScreen',
-      (tester) async {
-        final repo = MockCommunityRepository();
-        Get.put<CommunityController>(CommunityController(repository: repo));
-
-        await tester.pumpWidget(
-          GetMaterialApp(
-            translations: AppTranslations(),
-            locale: const Locale('en', 'US'),
-            home: const CreatePostScreen(),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byIcon(Icons.add_rounded));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Job'));
-        await tester.pumpAndSettle();
-
-        expect(find.byType(CreateOpportunityScreen), findsOneWidget);
       },
     );
 
@@ -386,7 +371,7 @@ void main() {
     );
 
     testWidgets(
-      'Tapping "Poll" inside Create menu activates poll attachment in Post Composer',
+      'Level 1: Bottom Navigation "+" with CommunityCreationFlow.openCreatePost immediately opens CreatePostScreen without GlobalCreateSheet',
       (tester) async {
         final repo = MockCommunityRepository();
         Get.put<CommunityController>(CommunityController(repository: repo));
@@ -395,76 +380,45 @@ void main() {
           GetMaterialApp(
             translations: AppTranslations(),
             locale: const Locale('en', 'US'),
-            home: const CreatePostScreen(),
+            home: Builder(
+              builder: (context) {
+                return Scaffold(
+                  bottomNavigationBar: BottomNavBar(
+                    currentIndex: 0,
+                    onTap: (_) {},
+                    onCenterTap: () =>
+                        CommunityCreationFlow.openCreatePost(context),
+                  ),
+                );
+              },
+            ),
           ),
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.add_rounded));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Poll'));
-        await tester.pumpAndSettle();
-
+        expect(find.byType(CreatePostScreen), findsNothing);
         expect(find.byType(GlobalCreateSheet), findsNothing);
-        expect(find.text('Ask a question...'), findsOneWidget);
-      },
-    );
 
-    testWidgets(
-      'Tapping "Celebration" inside Create menu attaches celebration in Post Composer',
-      (tester) async {
-        final repo = MockCommunityRepository();
-        Get.put<CommunityController>(CommunityController(repository: repo));
-
-        await tester.pumpWidget(
-          GetMaterialApp(
-            translations: AppTranslations(),
-            locale: const Locale('en', 'US'),
-            home: const CreatePostScreen(),
+        final centerPlusIcon = find.descendant(
+          of: find.byType(BottomNavBar),
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is Icon &&
+                (w.icon == Icons.add ||
+                    w.icon == Icons.add_rounded ||
+                    w.icon == CupertinoIcons.plus ||
+                    w.icon?.codePoint == 0xf489),
           ),
         );
+        expect(centerPlusIcon, findsOneWidget);
+        await tester.tap(centerPlusIcon);
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.add_rounded));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Celebration'));
-        await tester.pumpAndSettle();
-
+        // Verify CreatePostScreen is opened directly
+        expect(find.byType(CreatePostScreen), findsOneWidget);
+        // Verify GlobalCreateSheet was never opened
         expect(find.byType(GlobalCreateSheet), findsNothing);
-        expect(find.text('🥳 Celebrating'), findsOneWidget);
       },
     );
-
-    testWidgets('Tapping "Document" inside Create menu shows document notice', (
-      tester,
-    ) async {
-      final repo = MockCommunityRepository();
-      Get.put<CommunityController>(CommunityController(repository: repo));
-
-      await tester.pumpWidget(
-        GetMaterialApp(
-          translations: AppTranslations(),
-          locale: const Locale('en', 'US'),
-          home: const CreatePostScreen(),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byIcon(Icons.add_rounded));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Document'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(GlobalCreateSheet), findsNothing);
-      expect(
-        find.text(
-          'Documents and files can be attached as media or shared via links.',
-        ),
-        findsOneWidget,
-      );
-    });
   });
 }

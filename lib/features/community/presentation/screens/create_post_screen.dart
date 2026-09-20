@@ -12,8 +12,10 @@ import '../../../../shared/widgets/global_create_sheet.dart';
 import '../../domain/models/community_models.dart';
 import '../../domain/models/community_post_model.dart';
 import '../controllers/community_controller.dart';
+import 'create_discussion_screen.dart';
 import 'create_event_screen.dart';
 import 'event_details_screen.dart';
+import 'story_gallery_screen.dart';
 import '../../../media/presentation/media_picker.dart';
 
 class CreatePostScreen extends StatefulWidget {
@@ -111,42 +113,73 @@ class CreatePostScreenState extends State<CreatePostScreen> {
         lower.endsWith('.m4v');
   }
 
-  /// Unified gallery picker: allows the user to select images OR video.
+  /// Unified handler to attach selected media paths with mutual exclusion and no silent drops.
+  Future<void> _handleSelectedMediaPaths(List<String> paths) async {
+    if (paths.isEmpty) return;
+
+    final videoPaths = paths.where((p) => _isVideoPath(p)).toList();
+    final imagePaths = paths.where((p) => !videoPaths.contains(p)).toList();
+
+    if (videoPaths.isNotEmpty) {
+      if (_attachedImages.isNotEmpty) {
+        final replace = await _showMediaConflictDialog(videoReplacingImages: true);
+        if (!replace) return;
+      }
+      await _setVideoFile(videoPaths.first);
+    } else if (imagePaths.isNotEmpty) {
+      if (_attachedVideo != null) {
+        final replace = await _showMediaConflictDialog(videoReplacingImages: false);
+        if (!replace) return;
+        await _clearVideo();
+      }
+      setState(() {
+        _attachedImages.addAll(imagePaths);
+      });
+    }
+  }
+
+  /// Unified gallery picker: opens in-app media gallery with thumbnails and albums,
+  /// falling back gracefully to system picker if needed.
   Future<void> _pickGalleryMedia() async {
+    try {
+      final selected = await Get.to<List<String>>(
+        () => StoryGalleryScreen(
+          onPhotosSelected: (paths) {
+            // Returned by gallery
+          },
+        ),
+        routeName: '/StoryGalleryScreen',
+        transition: Transition.fadeIn,
+      );
+      if (selected != null && selected.isNotEmpty) {
+        await _handleSelectedMediaPaths(selected);
+        return;
+      }
+    } catch (e) {
+      debugPrint('[CreatePostScreen] StoryGallery pick fallback: $e');
+    }
+
+    // Fallback: pick using system ImagePicker with bounded resolution
     try {
       List<XFile> selected = [];
       try {
-        selected = await _picker.pickMultipleMedia();
+        selected = await _picker.pickMultiImage(
+          maxWidth: 1920,
+          maxHeight: 1920,
+          imageQuality: 85,
+        );
       } catch (e) {
-        debugPrint('[CreatePostScreen] pickMultipleMedia fallback to pickMultiImage: $e');
-        selected = await _picker.pickMultiImage();
+        debugPrint('[CreatePostScreen] pickMultiImage fallback to pickImage: $e');
+        final single = await _picker.pickImage(
+          source: ImageSource.gallery,
+          maxWidth: 1920,
+          maxHeight: 1920,
+          imageQuality: 85,
+        );
+        if (single != null) selected = [single];
       }
-      if (selected.isEmpty) return;
-
-      final videoFiles = selected
-          .where((f) =>
-              _isVideoPath(f.path) ||
-              (f.mimeType != null && f.mimeType!.toLowerCase().startsWith('video/')))
-          .toList();
-      final imageFiles = selected.where((f) => !videoFiles.contains(f)).toList();
-
-      if (videoFiles.isNotEmpty) {
-        // User selected a video (or video + images). Video post is priority.
-        if (_attachedImages.isNotEmpty) {
-          final replace = await _showMediaConflictDialog(videoReplacingImages: true);
-          if (!replace) return;
-        }
-        await _setVideoFile(videoFiles.first.path);
-      } else if (imageFiles.isNotEmpty) {
-        // User selected photos
-        if (_attachedVideo != null) {
-          final replace = await _showMediaConflictDialog(videoReplacingImages: false);
-          if (!replace) return;
-          await _clearVideo();
-        }
-        setState(() {
-          _attachedImages.addAll(imageFiles.map((e) => e.path));
-        });
+      if (selected.isNotEmpty) {
+        await _handleSelectedMediaPaths(selected.map((e) => e.path).toList());
       }
     } on PlatformException catch (e) {
       debugPrint('[CreatePostScreen] Gallery pick PlatformException: ${e.code} — ${e.message}');
@@ -193,7 +226,9 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     try {
       final XFile? captured = await _picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 95,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
       );
       if (captured != null) {
         final capturedPath = captured.path;
@@ -1200,6 +1235,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                       const SizedBox(height: 6),
                       TextField(
                         controller: questionController,
+                        cursorColor: textPrimary,
                         onChanged: (_) {
                           if (validationError != null) {
                             setSheetState(() => validationError = null);
@@ -1253,6 +1289,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                               Expanded(
                                 child: TextField(
                                   controller: ctrl,
+                                  cursorColor: textPrimary,
                                   onChanged: (_) {
                                     if (validationError != null) {
                                       setSheetState(() => validationError = null);
@@ -1348,23 +1385,6 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
-  void _showScheduleDialog() async {
-    final pickedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-    if (pickedTime != null && mounted) {
-      AppNotificationBanner.showInfo(
-        context: context,
-        title: 'community.postScheduled'.tr.isNotEmpty && 'community.postScheduled'.tr != 'community.postScheduled'
-            ? 'community.postScheduled'.tr
-            : 'Post Scheduled',
-        message: 'community.postScheduledAt'.tr.isNotEmpty && 'community.postScheduledAt'.tr != 'community.postScheduledAt'
-            ? 'community.postScheduledAt'.tr.replaceAll('@time', pickedTime.format(context))
-            : 'Your post is scheduled for ${pickedTime.format(context)}',
-      );
-    }
-  }
 
   bool get _canPost {
     final text = _textController.text.trim();
@@ -1555,7 +1575,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     final textSecondary = isDark ? const Color(0xFF8E9297) : const Color(0xFF65676B);
     final cardBg = isDark ? const Color(0xFF16181C) : const Color(0xFFF2F4F7);
     final cardBorder = isDark ? const Color(0xFF262B34) : const Color(0xFFE2E4E8);
-    final bottomBarBg = isDark ? const Color(0xFF101216) : Colors.white;
+    final bottomBarBg = isDark ? const Color(0xFF0C0E12) : Colors.white;
 
     final charCount = _textController.text.length;
 
@@ -1642,13 +1662,6 @@ class CreatePostScreenState extends State<CreatePostScreen> {
             ],
           ),
           actions: [
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
-              icon: Icon(Icons.schedule_outlined, color: textSecondary, size: 20),
-              tooltip: 'Schedule Post',
-              onPressed: _showScheduleDialog,
-            ),
             Padding(
               padding: const EdgeInsets.only(right: 8, top: 10, bottom: 10, left: 2),
               child: AnimatedContainer(
@@ -1706,6 +1719,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
 
         body: SafeArea(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
                 child: GestureDetector(
@@ -1791,9 +1805,44 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                             child: ListView.separated(
                               scrollDirection: Axis.horizontal,
                               physics: const BouncingScrollPhysics(),
-                              itemCount: _attachedImages.length,
+                              itemCount: _attachedImages.length + (_attachedImages.length < 10 ? 1 : 0),
                               separatorBuilder: (_, _) => const SizedBox(width: 8),
                               itemBuilder: (context, idx) {
+                                if (idx == _attachedImages.length) {
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: Material(
+                                      color: cardBg,
+                                      child: InkWell(
+                                        onTap: _pickGalleryMedia,
+                                        borderRadius: BorderRadius.circular(14),
+                                        child: Container(
+                                          width: 104,
+                                          height: 104,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(14),
+                                            border: Border.all(color: cardBorder, width: 0.8),
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(Icons.add_photo_alternate_outlined, color: textSecondary, size: 26),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'Add more',
+                                                style: TextStyle(
+                                                  color: textSecondary,
+                                                  fontSize: 11.5,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }
                                 final imgPath = _attachedImages[idx];
                                 return ClipRRect(
                                   borderRadius: BorderRadius.circular(14),
@@ -1961,15 +2010,22 @@ class CreatePostScreenState extends State<CreatePostScreen> {
 
               // ─── Bottom Attachment Toolbar ────────────────────────────────
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                width: double.infinity,
                 decoration: BoxDecoration(
                   color: bottomBarBg,
-                  border: Border(top: BorderSide(color: cardBorder, width: 0.8)),
+                  border: Border(
+                    top: BorderSide(
+                      color: cardBorder.withValues(alpha: isDark ? 0.5 : 0.7),
+                      width: 0.8,
+                    ),
+                  ),
                 ),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       // 1. Camera
                       _ToolbarBtn(
@@ -2021,10 +2077,9 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                           final event = await Get.to<EventModel>(
                             () => const CreateEventScreen(returnCreatedEvent: true),
                           );
-                          if (event != null) {
-                            setState(() {
-                              _attachedEvent = event;
-                            });
+                          if (event != null && mounted) {
+                            Get.back();
+                            Get.to(() => EventDetailsScreen(event: event));
                           }
                         },
                       ),
@@ -2036,7 +2091,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                         onPressed: _showLocationPickerSheet,
                       ),
 
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 6),
 
                       // 8. Inner "+" Button
                       Tooltip(
@@ -2087,10 +2142,19 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                       final event = await Get.to<EventModel>(
                                         () => const CreateEventScreen(returnCreatedEvent: true),
                                       );
-                                      if (event != null) {
-                                        setState(() {
-                                          _attachedEvent = event;
-                                        });
+                                      if (event != null && mounted) {
+                                        Get.back();
+                                        Get.to(() => EventDetailsScreen(event: event));
+                                      }
+                                    },
+                                    onSelectDiscussion: () async {
+                                      final created = await Get.to<bool>(
+                                        () => CreateDiscussionScreen(),
+                                        routeName: '/CreateDiscussionScreen',
+                                        transition: Transition.cupertino,
+                                      );
+                                      if (created == true && mounted) {
+                                        Get.back();
                                       }
                                     },
                                   );
@@ -2104,8 +2168,8 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                               },
                               borderRadius: BorderRadius.circular(10),
                               child: Container(
-                                width: 38,
-                                height: 34,
+                                width: 36,
+                                height: 36,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
@@ -2116,7 +2180,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                     width: 0.8,
                                   ),
                                 ),
-                                child: Icon(Icons.add_rounded, color: textPrimary, size: 22),
+                                child: Icon(Icons.add_rounded, color: textPrimary, size: 21),
                               ),
                             ),
                           ),
@@ -2473,6 +2537,7 @@ class _ToolbarBtnState extends State<_ToolbarBtn> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
         setState(() => _pressed = false);
@@ -2484,9 +2549,11 @@ class _ToolbarBtnState extends State<_ToolbarBtn> {
         child: AnimatedScale(
           scale: _pressed ? 0.85 : 1.0,
           duration: const Duration(milliseconds: 120),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
-            child: Icon(widget.icon, size: 23, color: widget.color),
+          child: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            child: Icon(widget.icon, size: 22, color: widget.color),
           ),
         ),
       ),

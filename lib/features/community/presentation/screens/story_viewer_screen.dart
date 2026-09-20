@@ -22,6 +22,8 @@ import '../widgets/story_interactive_like_button.dart';
 import '../widgets/demo_stories_data.dart';
 import '../../../notification/presentation/controllers/notification_controller.dart';
 import '../../../notification/domain/models/notification_model.dart';
+import 'package:video_player/video_player.dart';
+import '../widgets/story_video_player_widget.dart';
 
 class _CampusGroupItem {
   final String id;
@@ -244,6 +246,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   final GlobalKey _storyContentKey = GlobalKey();
 
   late AnimationController _progressAnimController;
+  VideoPlayerController? _activeVideoController;
   bool _isPaused = false;
   bool _isClosing = false;
 
@@ -312,7 +315,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
   @override
   void dispose() {
+    _progressAnimController.stop();
     _progressAnimController.dispose();
+    _activeVideoController?.pause();
+    _activeVideoController = null;
     _replyController.dispose();
     super.dispose();
   }
@@ -336,6 +342,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     _isClosing = true;
     _markCurrentStoryViewed();
     _progressAnimController.stop();
+    _activeVideoController?.pause();
+    _activeVideoController = null;
     Get.back();
   }
 
@@ -355,7 +363,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     if (story.textContent != null && story.textContent!.trim().isNotEmpty) {
       return const Duration(seconds: 7);
     }
-    if (story.mediaUrl != null && _isVideoFile(story.mediaUrl!)) {
+    if (story.type == StoryType.video ||
+        (story.mediaUrl != null && _isVideoFile(story.mediaUrl!))) {
       return const Duration(seconds: 10);
     }
     return const Duration(seconds: 6);
@@ -365,22 +374,72 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     _progressAnimController.stop();
     final story = _currentStory;
     _markCurrentStoryViewed();
-    final duration = _calculateStoryDuration(story);
-    _progressAnimController.duration = duration;
+
+    final isVideo = story != null &&
+        (story.type == StoryType.video ||
+            (story.mediaUrl != null && _isVideoFile(story.mediaUrl!)));
+
+    if (isVideo) {
+      _progressAnimController.reset();
+      if (_activeVideoController != null &&
+          _activeVideoController!.value.isInitialized) {
+        final dur = _activeVideoController!.value.duration;
+        _progressAnimController.duration =
+            dur > Duration.zero ? dur : const Duration(seconds: 10);
+        if (!_isPaused && !_isClosing) {
+          _progressAnimController.forward();
+        }
+      }
+    } else {
+      final duration = _calculateStoryDuration(story);
+      _progressAnimController.duration = duration;
+      _progressAnimController.reset();
+      if (!_isPaused && !_isClosing) {
+        _progressAnimController.forward();
+      }
+    }
+  }
+
+  void _onVideoControllerInitialized(
+    VideoPlayerController ctrl,
+    StoryItemModel story,
+  ) {
+    if (!mounted || _isClosing) return;
+    if (_currentStory?.id != story.id) return;
+
+    _activeVideoController = ctrl;
+    final dur = ctrl.value.duration;
+    final storyDuration =
+        (dur > Duration.zero) ? dur : const Duration(seconds: 10);
+    _progressAnimController.duration = storyDuration;
     _progressAnimController.reset();
     if (!_isPaused && !_isClosing) {
       _progressAnimController.forward();
     }
+    debugPrint(
+      '[StoryViewerScreen] Video initialized for story ${story.id}: duration=${ctrl.value.duration}, size=${ctrl.value.size}',
+    );
+  }
+
+  void _onVideoPlaybackError(String err, StoryItemModel story) {
+    debugPrint(
+      '[StoryViewerScreen] Video playback error for story ${story.id}: $err',
+    );
+    if (!mounted || _isClosing) return;
+    if (_currentStory?.id != story.id) return;
+    _progressAnimController.stop();
   }
 
   void _pauseStory() {
     setState(() => _isPaused = true);
     _progressAnimController.stop();
+    _activeVideoController?.pause();
   }
 
   void _resumeStory() {
     setState(() => _isPaused = false);
     if (!_isClosing && mounted) {
+      _activeVideoController?.play();
       _progressAnimController.forward();
     }
   }
@@ -405,6 +464,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
   void _nextStory() {
     _progressAnimController.stop();
+    _activeVideoController?.pause();
+    _activeVideoController = null;
     final group = _currentGroup;
     if (group == null) {
       _closeViewer();
@@ -432,6 +493,8 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
   void _previousStory() {
     _progressAnimController.stop();
+    _activeVideoController?.pause();
+    _activeVideoController = null;
     final group = _currentGroup;
     if (group == null) {
       _closeViewer();
@@ -2624,7 +2687,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   }
 
   bool _isVideoFile(String path) {
-    final p = path.toLowerCase();
+    final p = path.split('?').first.toLowerCase();
     return p.endsWith('.mp4') ||
         p.endsWith('.mov') ||
         p.endsWith('.m4v') ||
@@ -2804,75 +2867,28 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
 
     final url = story.mediaUrl!;
     if (story.type == StoryType.video || _isVideoFile(url)) {
-      mediaWidget = Container(
-        color: Colors.black,
-        child: Center(
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: double.infinity,
-                height: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(22),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white30, width: 2),
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow_rounded,
-                      color: Colors.white,
-                      size: 54,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white12),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.movie_rounded,
-                          color: Colors.white70,
-                          size: 16,
-                        ),
-                        SizedBox(width: 6),
-                        Text(
-                          "Video Story",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+      mediaWidget = StoryVideoPlayerWidget(
+        key: ValueKey("story_video_${story.id}"),
+        videoUrl: url,
+        isPlaying: !_isPaused,
+        isLooping: false,
+        fit: BoxFit.contain,
+        showControls: true,
+        onTap: () {
+          if (_isPaused) {
+            _resumeStory();
+          } else {
+            _pauseStory();
+          }
+        },
+        onControllerInitialized: (ctrl) =>
+            _onVideoControllerInitialized(ctrl, story),
+        onVideoEnd: () {
+          if (mounted && !_isClosing && _currentStory?.id == story.id) {
+            _nextStory();
+          }
+        },
+        onError: (err) => _onVideoPlaybackError(err, story),
       );
     } else if (url.startsWith('assets/')) {
       mediaWidget = Image.asset(

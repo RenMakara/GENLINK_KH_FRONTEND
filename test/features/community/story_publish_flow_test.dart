@@ -15,6 +15,8 @@ import 'package:genlink_frontend/features/community/presentation/screens/story_c
 import 'package:genlink_frontend/features/media/domain/entities/media_entity.dart';
 import 'package:genlink_frontend/features/media/domain/media_upload_service.dart';
 import 'package:genlink_frontend/features/media/domain/repositories/media_repository.dart';
+import 'package:genlink_frontend/features/community/presentation/screens/story_viewer_screen.dart';
+import 'package:genlink_frontend/features/community/presentation/widgets/story_video_player_widget.dart';
 
 class _MockLocalStorage extends LocalStorage {
   _MockLocalStorage() : super(storage: const FlutterSecureStorage());
@@ -770,6 +772,139 @@ void main() {
       );
       expect(onlyMeStory.settings.visibility, StoryPrivacy.onlyMe);
       expect(onlyMeStory.visibility, 'Only Me');
+    });
+
+    test('Test 19: Video Story publishing sends mediaType = VIDEO, real remote mediaUrl, and maps to StoryType.video', () async {
+      fakeApiClient.returnedStoryId = 'video_story_real_19';
+      final controller = Get.put(StoryController());
+      await controller.fetchStories();
+
+      final success = await controller.publishStory(
+        type: StoryType.video,
+        mediaUrl: 'https://cdn.genlink.com/stories/campus_tour.mp4',
+        textContent: 'Test video post',
+        visibility: 'Public',
+      );
+
+      expect(success, isTrue);
+      expect(fakeApiClient.lastPostBody!['mediaType'], 'VIDEO');
+      expect(fakeApiClient.lastPostBody!['mediaUrl'], 'https://cdn.genlink.com/stories/campus_tour.mp4');
+      expect(fakeApiClient.lastPostBody!['caption'], 'Test video post');
+
+      final ownerStories = controller.storyGroups.firstWhere((g) => g.isOwner).stories;
+      final createdStory = ownerStories.first;
+      expect(createdStory.id, 'video_story_real_19');
+      expect(createdStory.type, StoryType.video);
+      expect(createdStory.mediaUrl, 'https://cdn.genlink.com/stories/campus_tour.mp4');
+      expect(createdStory.textContent, 'Test video post');
+    });
+
+    test('Test 20: Failed video upload throws error, prevents story creation, and does not create fake story', () async {
+      fakeUploadService.shouldFail = true;
+      final repository = StoryRepositoryImpl(
+        apiClient: fakeApiClient,
+        mediaUploadService: fakeUploadService,
+      );
+
+      expect(
+        () => repository.createStory(
+          type: StoryType.video,
+          mediaUrl: 'assets/images/user_profile.png',
+        ),
+        throwsA(isA<AppError>()),
+      );
+      expect(fakeApiClient.postCallCount, 0);
+    });
+
+    test('Test 21: Empty or invalid media URL cannot create a fake Video Story', () async {
+      final repository = StoryRepositoryImpl(
+        apiClient: fakeApiClient,
+        mediaUploadService: fakeUploadService,
+      );
+
+      expect(
+        () => repository.createStory(
+          type: StoryType.video,
+          mediaUrl: '',
+        ),
+        throwsA(isA<AppError>()),
+      );
+
+      expect(
+        () => repository.createStory(
+          type: StoryType.video,
+          mediaUrl: 'non_existent_video_file.mp4',
+        ),
+        throwsA(isA<AppError>()),
+      );
+      expect(fakeApiClient.postCallCount, 0);
+    });
+
+    test('Test 22: Video Story preserves all privacy fields alongside mediaType = VIDEO', () async {
+      fakeApiClient.returnedStoryId = 'video_story_privacy_22';
+      final controller = Get.put(StoryController());
+      await controller.fetchStories();
+
+      final customSettings = const StorySettings(
+        visibility: StoryPrivacy.friends,
+        replyPermission: StoryReplyPermission.friends,
+        allowReactions: true,
+      );
+
+      final success = await controller.publishStory(
+        type: StoryType.video,
+        mediaUrl: 'https://cdn.genlink.com/stories/private_video.mp4',
+        textContent: 'Friends-only video story',
+        storySettings: customSettings,
+      );
+
+      expect(success, isTrue);
+      expect(fakeApiClient.lastPostBody!['mediaType'], 'VIDEO');
+      expect(fakeApiClient.lastPostBody!['visibility'], 'FRIENDS');
+      expect(fakeApiClient.lastPostBody!['replyPermission'], 'FRIENDS');
+      expect(fakeApiClient.lastPostBody!['allowReactions'], isTrue);
+
+      final ownerStories = controller.storyGroups.firstWhere((g) => g.isOwner).stories;
+      final createdStory = ownerStories.first;
+      expect(createdStory.type, StoryType.video);
+      expect(createdStory.settings.visibility, StoryPrivacy.friends);
+      expect(createdStory.settings.replyPermission, StoryReplyPermission.friends);
+      expect(createdStory.settings.allowReactions, isTrue);
+    });
+
+    testWidgets('Test 23: StoryViewerScreen renders StoryVideoPlayerWidget for video stories with proper keys', (tester) async {
+      final videoStory = StoryItemModel(
+        id: 'test_vid_viewer_23',
+        type: StoryType.video,
+        mediaUrl: 'https://cdn.genlink.com/stories/playback_test.mp4',
+        textContent: 'Test video post',
+        timeAgo: 'Just now',
+        createdAt: DateTime.now(),
+      );
+      final videoGroup = StoryGroupModel(
+        userId: 'owner_user_1',
+        userName: 'Sokny Enat',
+        userAvatar: 'assets/images/user_profile.png',
+        isOwner: true,
+        stories: [videoStory],
+      );
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          home: StoryViewerScreen(
+            initialGroupIndex: 0,
+            groups: [videoGroup],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(StoryViewerScreen), findsOneWidget);
+      expect(find.byType(StoryVideoPlayerWidget), findsOneWidget);
+      expect(find.byKey(const ValueKey('story_video_test_vid_viewer_23')), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 500));
     });
   });
 }

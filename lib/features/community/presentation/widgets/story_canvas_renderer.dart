@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:genlink_frontend/design_system/colors/app_colors.dart';
 import '../../domain/models/story_model.dart';
 import 'story_template_canvas.dart';
+import 'story_video_player_widget.dart';
 
 TextStyle getStoryTextStyle({
   required TextStyleType fontStyle,
@@ -526,76 +527,10 @@ Widget buildStoryBackground({
       errorBuilder: (context, error, stackTrace) =>
           placeholderWidget ?? const SizedBox.shrink(),
     );
-  } else if (isStoryVideoPath(mediaUrl)) {
-    mediaWidget = Container(
-      color: Colors.black,
-      child: Center(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: double.infinity,
-              height: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white30, width: 2),
-                  ),
-                  child: const Icon(
-                    Icons.play_arrow_rounded,
-                    color: Colors.white,
-                    size: 54,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white12),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.movie_rounded,
-                        color: Colors.white70,
-                        size: 16,
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        "Video Story",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+  } else if (isStoryVideoPath(mediaUrl) || storyType == StoryType.video) {
+    mediaWidget = StoryVideoPlayerWidget(
+      videoUrl: mediaUrl,
+      fit: BoxFit.contain,
     );
   } else if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
     mediaWidget = Image.network(

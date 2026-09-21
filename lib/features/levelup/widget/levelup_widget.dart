@@ -474,7 +474,6 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
                 e.type == selectedCat.key ||
                 (e.categoryKey != null && e.categoryKey == selectedCat.label);
           }).toList();
-    final completedCount = filtered.where((e) => e.completed).length;
 
     return Container(
       decoration: BoxDecoration(
@@ -482,114 +481,7 @@ class _GrowthDateDetailLayoutState extends State<GrowthDateDetailLayout> {
       ),
       child: Column(
         children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 10, 9),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.07)
-                              : Colors.black.withValues(alpha: 0.045),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.today_rounded,
-                          size: 16,
-                          color: textPrimary,
-                        ),
-                      ),
-                      const SizedBox(width: 9),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              MaterialLocalizations.of(
-                                context,
-                              ).formatMediumDate(widget.selectedDate),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: textPrimary,
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'levelup.activityForDay'.tr,
-                              style: TextStyle(
-                                color: textSecondary,
-                                fontSize: 9.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.06)
-                        : Colors.black.withValues(alpha: 0.035),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'levelup.completedCount'.trParams({
-                      'done': '$completedCount',
-                      'total': '${filtered.length}',
-                    }),
-                    style: TextStyle(
-                      color: textSecondary,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => widget.onDateSelected(
-                      widget.selectedDate.add(const Duration(days: 1)),
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.06)
-                            : Colors.black.withValues(alpha: 0.035),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.chevron_right_rounded,
-                        size: 20,
-                        color: textSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
+          const SizedBox(height: 10),
           // Categories
           SizedBox(
             height: 55,

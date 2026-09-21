@@ -316,8 +316,8 @@ class _ProfileSummaryCard extends StatelessWidget {
                   const SizedBox(height: AppSpacing.xs),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm + 2,
-                      vertical: AppSpacing.xs,
+                      horizontal: AppSpacing.sm,
+                      vertical: 3,
                     ),
                     decoration: BoxDecoration(
                       color: scheme.surfaceContainerHighest,
@@ -328,16 +328,20 @@ class _ProfileSummaryCard extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.school_outlined,
-                          size: 16,
+                          size: 14,
                           color: scheme.onSurface.withValues(alpha: 0.66),
                         ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          role.toUpperCase(),
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: scheme.onSurface.withValues(alpha: 0.66),
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.4,
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            role.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: scheme.onSurface.withValues(alpha: 0.66),
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                            ),
                           ),
                         ),
                       ],
@@ -347,10 +351,13 @@ class _ProfileSummaryCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
+          const SizedBox(width: AppSpacing.xs),
           IconButton(
             onPressed: onEdit,
             tooltip: 'profile.edit'.tr,
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             icon: Icon(Icons.edit_outlined, color: scheme.primary, size: 22),
           ),
         ],

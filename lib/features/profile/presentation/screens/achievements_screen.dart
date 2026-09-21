@@ -109,24 +109,20 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               const SizedBox(height: AppSpacing.xl),
 
               // 2. My Badges Header & Filter Bar
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'achievements.myBadges'.tr,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: semantic.primaryText,
-                    ),
-                  ),
-                  AchievementFilterBar(
-                    selectedFilter: _selectedFilter,
-                    onFilterChanged: (filter) {
-                      setState(() => _selectedFilter = filter);
-                    },
-                  ),
-                ],
+              Text(
+                'achievements.myBadges'.tr,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: semantic.primaryText,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              AchievementFilterBar(
+                selectedFilter: _selectedFilter,
+                onFilterChanged: (filter) {
+                  setState(() => _selectedFilter = filter);
+                },
               ),
               const SizedBox(height: AppSpacing.md),
 
@@ -192,7 +188,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     crossAxisCount: 2,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
-                    childAspectRatio: 0.80,
+                    childAspectRatio: 0.76,
                   ),
                   itemBuilder: (context, index) {
                     if (_selectedFilter == 'all' &&

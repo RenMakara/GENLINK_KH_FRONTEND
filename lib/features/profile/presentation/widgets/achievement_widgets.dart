@@ -99,29 +99,34 @@ class AchievementSummaryHeroCard extends StatelessWidget {
               // 3 Stats Columns
               Expanded(
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _HeroStatItem(
-                      value: '${profile.level}',
-                      label: 'achievements.level'.tr,
+                    Expanded(
+                      child: _HeroStatItem(
+                        value: '${profile.level}',
+                        label: 'achievements.level'.tr,
+                      ),
                     ),
                     Container(
                       height: 32,
                       width: 1,
                       color: Colors.white.withValues(alpha: 0.15),
                     ),
-                    _HeroStatItem(
-                      value: '${profile.totalXp}',
-                      label: 'achievements.totalXp'.tr,
+                    Expanded(
+                      child: _HeroStatItem(
+                        value: '${profile.totalXp}',
+                        label: 'achievements.totalXp'.tr,
+                      ),
                     ),
                     Container(
                       height: 32,
                       width: 1,
                       color: Colors.white.withValues(alpha: 0.15),
                     ),
-                    _HeroStatItem(
-                      value: '$earnedBadgesCount',
-                      label: 'achievements.badges'.tr,
+                    Expanded(
+                      child: _HeroStatItem(
+                        value: '$earnedBadgesCount',
+                        label: 'achievements.badges'.tr,
+                      ),
                     ),
                   ],
                 ),
@@ -148,26 +153,36 @@ class AchievementSummaryHeroCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'achievements.xpProgress'.trParams({
-                  'current': '${profile.totalXp}',
-                  'max': '${profile.xpForNextLevel}',
-                }),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Text(
+                  'achievements.xpProgress'.trParams({
+                    'current': '${profile.totalXp}',
+                    'max': '${profile.xpForNextLevel}',
+                  }),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-              Text(
-                'achievements.toNextLevel'.trParams({
-                  'xp': '$toNext',
-                  'level': '$nextLevel',
-                }),
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.72),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'achievements.toNextLevel'.trParams({
+                    'xp': '$toNext',
+                    'level': '$nextLevel',
+                  }),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -194,6 +209,8 @@ class _HeroStatItem extends StatelessWidget {
       children: [
         Text(
           value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 22,
@@ -204,6 +221,8 @@ class _HeroStatItem extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           label.toUpperCase(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.65),
             fontSize: 10,
@@ -229,29 +248,33 @@ class AchievementFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _FilterPill(
-          label: 'achievements.filterAll'.tr,
-          filterKey: 'all',
-          isSelected: selectedFilter == 'all',
-          onTap: () => onFilterChanged('all'),
-        ),
-        const SizedBox(width: 8),
-        _FilterPill(
-          label: 'achievements.filterUnlocked'.tr,
-          filterKey: 'unlocked',
-          isSelected: selectedFilter == 'unlocked',
-          onTap: () => onFilterChanged('unlocked'),
-        ),
-        const SizedBox(width: 8),
-        _FilterPill(
-          label: 'achievements.filterLocked'.tr,
-          filterKey: 'locked',
-          isSelected: selectedFilter == 'locked',
-          onTap: () => onFilterChanged('locked'),
-        ),
-      ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          _FilterPill(
+            label: 'achievements.filterAll'.tr,
+            filterKey: 'all',
+            isSelected: selectedFilter == 'all',
+            onTap: () => onFilterChanged('all'),
+          ),
+          const SizedBox(width: 8),
+          _FilterPill(
+            label: 'achievements.filterUnlocked'.tr,
+            filterKey: 'unlocked',
+            isSelected: selectedFilter == 'unlocked',
+            onTap: () => onFilterChanged('unlocked'),
+          ),
+          const SizedBox(width: 8),
+          _FilterPill(
+            label: 'achievements.filterLocked'.tr,
+            filterKey: 'locked',
+            isSelected: selectedFilter == 'locked',
+            onTap: () => onFilterChanged('locked'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -511,8 +534,8 @@ class AchievementComingSoonCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 18,
+        horizontal: 10,
+        vertical: 12,
       ),
       decoration: BoxDecoration(
         color: semantic.surface.withValues(alpha: 0.6),
@@ -526,8 +549,8 @@ class AchievementComingSoonCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: semantic.backgroundSecondary,
@@ -538,22 +561,26 @@ class AchievementComingSoonCard extends StatelessWidget {
               size: 20,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             'achievements.moreComingSoon'.tr,
             textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 12.5,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
               color: semantic.primaryText,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             'achievements.moreComingSoonSub'.tr,
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 10.5,
+              fontSize: 10,
               color: semantic.secondaryText,
             ),
           ),

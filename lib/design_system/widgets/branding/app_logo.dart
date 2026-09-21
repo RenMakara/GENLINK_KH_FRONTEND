@@ -50,8 +50,8 @@ class AppWordmark extends StatelessWidget {
 class AuthBrandLockup extends StatelessWidget {
   const AuthBrandLockup({
     super.key,
-    this.markSize = 44,
-    this.wordmarkHeight = 18,
+    this.markSize = 52,
+    this.wordmarkHeight = 26,
     this.alignment = MainAxisAlignment.start,
   });
 
@@ -61,17 +61,35 @@ class AuthBrandLockup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Semantics(
       image: true,
       label: 'GenLink KH',
       child: Row(
         key: const ValueKey('auth-brand-lockup'),
         mainAxisAlignment: alignment,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: alignment == MainAxisAlignment.center
             ? MainAxisSize.min
             : MainAxisSize.max,
         children: [
-          AppLogoMark(size: markSize),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(markSize * 0.28),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0EA5E9).withValues(
+                    alpha: isDark ? 0.35 : 0.18,
+                  ),
+                  blurRadius: markSize * 0.35,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: AppLogoMark(size: markSize),
+          ),
           const SizedBox(width: AppSpacing.md),
           AppWordmark(height: wordmarkHeight),
         ],

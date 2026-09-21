@@ -38,7 +38,7 @@ const AndroidNotificationChannel _androidChannel = AndroidNotificationChannel(
 );
 
 const AndroidInitializationSettings _androidInitializationSettings =
-    AndroidInitializationSettings('ic_launcher');
+    AndroidInitializationSettings('ic_stat_genlink');
 
 const DarwinInitializationSettings _darwinInitializationSettings =
     DarwinInitializationSettings(
@@ -59,7 +59,7 @@ const NotificationDetails _notificationDetails = NotificationDetails(
     channelDescription: _mobilePushChannelDescription,
     importance: Importance.high,
     priority: Priority.high,
-    icon: 'ic_launcher',
+    icon: 'ic_stat_genlink',
   ),
   iOS: DarwinNotificationDetails(
     presentAlert: true,

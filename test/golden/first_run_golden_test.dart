@@ -185,7 +185,7 @@ void main() {
     Get.put<CompletionController>(
       CompletionController(localStorage: Get.find<LocalStorage>()),
     );
-    await pumpScreen(tester, const CompletionScreen());
+    await pumpScreen(tester, const CompletionScreen(animate: false));
     await expectLater(
       find.byType(CompletionScreen),
       matchesGoldenFile('goldens/completion.png'),
@@ -198,7 +198,7 @@ void main() {
     );
     await pumpScreen(
       tester,
-      const CompletionScreen(),
+      const CompletionScreen(animate: false),
       brightness: Brightness.dark,
     );
     await expectLater(

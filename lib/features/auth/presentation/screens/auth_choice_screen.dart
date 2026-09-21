@@ -59,9 +59,24 @@ class AuthChoiceScreen extends StatelessWidget {
         ],
       ),
       children: [
-        const Align(
+        Align(
           alignment: Alignment.centerLeft,
-          child: AppLogoMark(size: 52),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0EA5E9).withValues(
+                    alpha: theme.brightness == Brightness.dark ? 0.35 : 0.18,
+                  ),
+                  blurRadius: 22,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const AppLogoMark(size: 60),
+          ),
         ),
         const SizedBox(height: AppSpacing.xl),
         Text.rich(
@@ -73,7 +88,7 @@ class AuthChoiceScreen extends StatelessWidget {
               TextSpan(text: '${'auth.welcomeTo'.tr} '),
               const WidgetSpan(
                 alignment: PlaceholderAlignment.middle,
-                child: AppWordmark(height: 18),
+                child: AppWordmark(height: 26),
               ),
             ],
           ),

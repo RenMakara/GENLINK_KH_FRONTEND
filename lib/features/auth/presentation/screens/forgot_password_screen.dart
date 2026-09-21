@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../design_system/spacing/app_spacing.dart';
+import '../../../../design_system/widgets/branding/app_logo.dart';
 import '../../../../design_system/widgets/buttons/app_button.dart';
 import '../../../../design_system/widgets/inputs/app_input.dart';
 import '../controllers/auth_controller.dart';
@@ -38,10 +39,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return AuthScaffold(
-      title: 'auth.forgotTitle'.tr,
-      subtitle: 'auth.forgotSubtitle'.tr,
       children: [
+        const AuthBrandLockup(),
+        const SizedBox(height: AppSpacing.xl),
+        Text('auth.forgotTitle'.tr, style: theme.textTheme.displayMedium),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'auth.forgotSubtitle'.tr,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.62),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
         Form(
           key: _formKey,
           child: Column(

@@ -19,7 +19,7 @@
             android:value="genlink_mobile_push" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_launcher" />
+            android:resource="@drawable/ic_stat_genlink" />
 
         <activity
             android:name=".MainActivity"

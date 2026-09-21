@@ -15,7 +15,7 @@ import '../controllers/community_controller.dart';
 import 'create_discussion_screen.dart';
 import 'create_event_screen.dart';
 import 'event_details_screen.dart';
-import 'story_gallery_screen.dart';
+import 'post_gallery_screen.dart';
 import '../../../media/presentation/media_picker.dart';
 
 class CreatePostScreen extends StatefulWidget {
@@ -34,6 +34,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
 
   String _selectedAudience = 'Public';
   List<String> _attachedImages = [];
+  List<String> _attachedMediaOrder = [];
   // ─── Step 3B-Frontend: Video state ────────────────────────────────────────
   String? _attachedVideo;          // local file path of the selected video
   VideoPlayerController? _previewVideoController; // preview controller
@@ -80,7 +81,12 @@ class CreatePostScreenState extends State<CreatePostScreen> {
       }
       if (widget.initialPost!.videoUrl != null && widget.initialPost!.videoUrl!.isNotEmpty) {
         _attachedVideo = widget.initialPost!.videoUrl;
+        _setVideoFile(widget.initialPost!.videoUrl!);
       }
+      _attachedMediaOrder = [
+        ..._attachedImages,
+        ?_attachedVideo,
+      ];
     }
     _textController.addListener(() {
       setState(() {});
@@ -89,6 +95,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
 
   @override
   void dispose() {
+    GlobalCreateSheet.closeComposerPopup();
     _textController.dispose();
     _editorFocusNode.dispose();
     _previewVideoController?.dispose(); // Step 3B: no controller leak
@@ -112,28 +119,40 @@ class CreatePostScreenState extends State<CreatePostScreen> {
         lower.endsWith('.m4v');
   }
 
-  /// Unified handler to attach selected media paths with mutual exclusion and no silent drops.
+  /// Unified handler to attach selected media paths without mutual exclusion and preserving selection order.
   Future<void> _handleSelectedMediaPaths(List<String> paths) async {
     if (paths.isEmpty) return;
 
     final videoPaths = paths.where((p) => _isVideoPath(p)).toList();
-    final imagePaths = paths.where((p) => !videoPaths.contains(p)).toList();
+    final imagePaths = paths.where((p) => !_isVideoPath(p)).toList();
 
-    if (videoPaths.isNotEmpty) {
-      if (_attachedImages.isNotEmpty) {
-        final replace = await _showMediaConflictDialog(videoReplacingImages: true);
-        if (!replace) return;
-      }
-      await _setVideoFile(videoPaths.first);
-    } else if (imagePaths.isNotEmpty) {
-      if (_attachedVideo != null) {
-        final replace = await _showMediaConflictDialog(videoReplacingImages: false);
-        if (!replace) return;
-        await _clearVideo();
-      }
+    // 1. Attach selected images without affecting existing video
+    if (imagePaths.isNotEmpty) {
       setState(() {
-        _attachedImages.addAll(imagePaths);
+        for (final p in imagePaths) {
+          if (!_attachedImages.contains(p)) {
+            _attachedImages.add(p);
+            _attachedMediaOrder.add(p);
+          }
+        }
       });
+    }
+
+    // 2. Attach selected video without removing images (at most 1 video allowed)
+    if (videoPaths.isNotEmpty) {
+      if (_attachedVideo != null && _attachedVideo != videoPaths.first) {
+        // Compact validation message: do NOT show large Replace dialog!
+        AppNotificationBanner.showWarning(
+          context: context,
+          title: 'Video Limit',
+          message: 'Only one video can be added to a post.',
+        );
+      } else if (_attachedVideo == null) {
+        await _setVideoFile(videoPaths.first);
+        if (!_attachedMediaOrder.contains(videoPaths.first)) {
+          _attachedMediaOrder.add(videoPaths.first);
+        }
+      }
     }
   }
 
@@ -141,21 +160,21 @@ class CreatePostScreenState extends State<CreatePostScreen> {
   /// falling back gracefully to system picker if needed.
   Future<void> _pickGalleryMedia() async {
     try {
-      final selected = await Get.to<List<String>>(
-        () => StoryGalleryScreen(
-          onPhotosSelected: (paths) {
-            // Returned by gallery
-          },
+      final result = await Get.to<PostGalleryResult>(
+        () => PostGalleryScreen(
+          initialSelectedImages: _attachedImages,
+          initialSelectedVideo: _attachedVideo,
+          initialMediaOrder: _attachedMediaOrder,
         ),
-        routeName: '/StoryGalleryScreen',
+        routeName: '/PostGalleryScreen',
         transition: Transition.fadeIn,
       );
-      if (selected != null && selected.isNotEmpty) {
-        await _handleSelectedMediaPaths(selected);
-        return;
+      if (result != null) {
+        await _applyGalleryResult(result);
       }
+      return;
     } catch (e) {
-      debugPrint('[CreatePostScreen] StoryGallery pick fallback: $e');
+      debugPrint('[CreatePostScreen] PostGallery pick fallback: $e');
     }
 
     // Fallback: pick using system ImagePicker with bounded resolution
@@ -215,13 +234,23 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     }
   }
 
-  Future<void> _pickCameraImage() async {
-    // If a video is attached, ask user before replacing it with camera photo
-    if (_attachedVideo != null) {
-      final replace = await _showMediaConflictDialog(videoReplacingImages: false);
-      if (!replace) return;
-      await _clearVideo();
+  Future<void> _applyGalleryResult(PostGalleryResult result) async {
+    setState(() {
+      _attachedImages = List.from(result.images);
+      _attachedMediaOrder = List.from(result.orderedMedia);
+    });
+    if (result.video != null) {
+      if (_attachedVideo != result.video) {
+        await _setVideoFile(result.video!);
+      }
+    } else {
+      if (_attachedVideo != null) {
+        await _clearVideo();
+      }
     }
+  }
+
+  Future<void> _pickCameraImage() async {
     try {
       final XFile? captured = await _picker.pickImage(
         source: ImageSource.camera,
@@ -233,6 +262,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
         final capturedPath = captured.path;
         setState(() {
           _attachedImages.add(capturedPath);
+          _attachedMediaOrder.add(capturedPath);
         });
       }
     } catch (e, stack) {
@@ -252,12 +282,12 @@ class CreatePostScreenState extends State<CreatePostScreen> {
 
   /// Initializes the [VideoPlayerController] for preview from [path].
   /// Disposes any previous controller first to prevent leaks.
+  /// Preserves attached images.
   Future<void> _setVideoFile(String path) async {
     // Dispose old controller cleanly
     final old = _previewVideoController;
     setState(() {
       _attachedVideo = path;
-      _attachedImages = []; // clear any images — video/image mutual exclusion
       _previewVideoController = null;
       _videoInitialized = false;
       _videoInitError = false;
@@ -285,6 +315,9 @@ class CreatePostScreenState extends State<CreatePostScreen> {
   Future<void> _clearVideo() async {
     final ctrl = _previewVideoController;
     setState(() {
+      if (_attachedVideo != null) {
+        _attachedMediaOrder.remove(_attachedVideo);
+      }
       _attachedVideo = null;
       _previewVideoController = null;
       _videoInitialized = false;
@@ -336,6 +369,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     });
   }
 
+
   @visibleForTesting
   void setPollForTesting(String question, List<String> options) {
     setState(() {
@@ -350,79 +384,36 @@ class CreatePostScreenState extends State<CreatePostScreen> {
   @visibleForTesting
   List<String> get pollOptionsList => _pollOptionsList;
 
-  /// Shows a conflict dialog when the user tries to switch between media types.
-  /// Returns true if the user confirms the replacement.
-  Future<bool> _showMediaConflictDialog({required bool videoReplacingImages}) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return AlertDialog(
-          backgroundColor: isDark ? const Color(0xFF1E2228) : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            videoReplacingImages
-                ? ('community.videoReplaceImages'.tr != 'community.videoReplaceImages'
-                    ? 'community.videoReplaceImages'.tr
-                    : 'Replace photos with video?')
-                : ('community.imagesReplaceVideo'.tr != 'community.imagesReplaceVideo'
-                    ? 'community.imagesReplaceVideo'.tr
-                    : 'Replace video with photos?'),
-            style: TextStyle(
-              color: isDark ? Colors.white : Colors.black87,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            videoReplacingImages
-                ? ('community.videoReplaceImagesMsg'.tr != 'community.videoReplaceImagesMsg'
-                    ? 'community.videoReplaceImagesMsg'.tr
-                    : 'Selecting a video will remove your selected photos. Continue?')
-                : ('community.imagesReplaceVideoMsg'.tr != 'community.imagesReplaceVideoMsg'
-                    ? 'community.imagesReplaceVideoMsg'.tr
-                    : 'Selecting photos will remove your selected video. Continue?'),
-            style: TextStyle(
-              color: isDark ? Colors.white70 : Colors.black54,
-              fontSize: 14,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(
-                'community.keepEditing'.tr != 'community.keepEditing'
-                    ? 'community.keepEditing'.tr
-                    : 'Cancel',
-                style: TextStyle(
-                  color: isDark ? Colors.white70 : Colors.black54,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(
-                'community.done'.tr != 'community.done' ? 'community.done'.tr : 'Replace',
-                style: TextStyle(
-                  color: isDark ? Colors.white : Colors.black87,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-    return result == true;
-  }
+  @visibleForTesting
+  List<String> get attachedMediaOrder => _attachedMediaOrder;
 
-  // ──────────────────────────────────────────────────────────────────────────
+  @visibleForTesting
+  Future<void> handleSelectedMediaPathsForTesting(List<String> paths) =>
+      _handleSelectedMediaPaths(paths);
+
+  @visibleForTesting
+  void removeImageForTesting(String path) => _removeImage(path);
+
+  @visibleForTesting
+  void removeImageAtForTesting(int index) => _removeImageAt(index);
+
+  @visibleForTesting
+  Future<void> applyGalleryResultForTesting(PostGalleryResult result) =>
+      _applyGalleryResult(result);
+
+  void _removeImage(String path) {
+    setState(() {
+      _attachedImages.remove(path);
+      _attachedMediaOrder.remove(path);
+    });
+  }
 
   void _removeImageAt(int index) {
     if (index >= 0 && index < _attachedImages.length) {
+      final path = _attachedImages[index];
       setState(() {
         _attachedImages.removeAt(index);
+        _attachedMediaOrder.remove(path);
       });
     }
   }
@@ -862,14 +853,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
-  void _showGifPickerSheet() async {
-    if (_attachedVideo != null) {
-      final replace = await _showMediaConflictDialog(videoReplacingImages: false);
-      if (!replace) return;
-      await _clearVideo();
-    }
-    if (!mounted) return;
-
+  void _showGifPickerSheet() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? const Color(0xFF16181C) : Colors.white;
     final cardBg = isDark ? const Color(0xFF1E2228) : const Color(0xFFF2F4F7);
@@ -985,6 +969,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                 onTap: () {
                                   setState(() {
                                     _attachedImages.add(url);
+                                    _attachedMediaOrder.add(url);
                                   });
                                   Navigator.pop(ctx);
                                 },
@@ -1399,8 +1384,8 @@ class CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   void _onBackPress() {
-    if (_isInnerPopupOpen) {
-      setState(() => _isInnerPopupOpen = false);
+    if (GlobalCreateSheet.isComposerPopupOpen) {
+      GlobalCreateSheet.closeComposerPopup();
       return;
     }
     if (_canPost) {
@@ -1579,7 +1564,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     final charCount = _textController.text.length;
 
     return PopScope(
-      canPop: (!_canPost || _isSubmitting) && !_isInnerPopupOpen,
+      canPop: (!_canPost || _isSubmitting) && !GlobalCreateSheet.isComposerPopupOpen,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
           _onBackPress();
@@ -1790,104 +1775,10 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                           _buildPollPreviewCard(isDark, cardBg, cardBorder, textPrimary, textSecondary),
                         ],
 
-                        // ─── Video preview ──────────────────────────────────────
-                        if (_attachedVideo != null) ...[
-                          const SizedBox(height: 8),
-                          _buildVideoPreview(isDark, cardBg, cardBorder, textSecondary),
-                        ],
-
-                        // ─── Multiple Image Preview: Horizontal Scrollable Strip ───
-                        if (_attachedImages.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          SizedBox(
-                            height: 104,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: _attachedImages.length + (_attachedImages.length < 10 ? 1 : 0),
-                              separatorBuilder: (_, _) => const SizedBox(width: 8),
-                              itemBuilder: (context, idx) {
-                                if (idx == _attachedImages.length) {
-                                  return ClipRRect(
-                                    borderRadius: BorderRadius.circular(14),
-                                    child: Material(
-                                      color: cardBg,
-                                      child: InkWell(
-                                        onTap: _pickGalleryMedia,
-                                        borderRadius: BorderRadius.circular(14),
-                                        child: Container(
-                                          width: 104,
-                                          height: 104,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(14),
-                                            border: Border.all(color: cardBorder, width: 0.8),
-                                          ),
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(Icons.add_photo_alternate_outlined, color: textSecondary, size: 26),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                'Add more',
-                                                style: TextStyle(
-                                                  color: textSecondary,
-                                                  fontSize: 11.5,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }
-                                final imgPath = _attachedImages[idx];
-                                return ClipRRect(
-                                  borderRadius: BorderRadius.circular(14),
-                                  child: Container(
-                                    width: 104,
-                                    height: 104,
-                                    decoration: BoxDecoration(
-                                      color: cardBg,
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(color: cardBorder, width: 0.8),
-                                    ),
-                                    child: Stack(
-                                      fit: StackFit.expand,
-                                      children: [
-                                        imgPath.startsWith('http')
-                                            ? Image.network(
-                                                imgPath,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (context, error, stackTrace) =>
-                                                    Icon(Icons.broken_image_outlined, color: textSecondary),
-                                              )
-                                            : imgPath.startsWith('assets/')
-                                                ? Image.asset(imgPath, fit: BoxFit.cover)
-                                                : Image.file(File(imgPath), fit: BoxFit.cover),
-                                        Positioned(
-                                          top: 5,
-                                          right: 5,
-                                          child: GestureDetector(
-                                            onTap: () => _removeImageAt(idx),
-                                            child: Container(
-                                              padding: const EdgeInsets.all(4),
-                                              decoration: const BoxDecoration(
-                                                color: Color(0xCC000000),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: const Icon(Icons.close, color: Colors.white, size: 12),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
+                        // ─── Unified Compact Horizontal Media Carousel (Images & Video) ───
+                        if (_attachedImages.isNotEmpty || _attachedVideo != null) ...[
+                          const SizedBox(height: 10),
+                          _buildUnifiedMediaCarousel(isDark, cardBg, cardBorder, textPrimary, textSecondary),
                         ],
 
                         // ─── Other Attachment Chips ─────────────────────────────
@@ -2107,6 +1998,19 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                               canRequestFocus: false,
                               onTap: () async {
                                 HapticFeedback.lightImpact();
+                                if (GlobalCreateSheet.isComposerPopupOpen) {
+                                  GlobalCreateSheet.closeComposerPopup();
+                                  if (mounted) {
+                                    setState(() {
+                                      _isInnerPopupOpen = false;
+                                    });
+                                  }
+                                  return;
+                                }
+                                final renderBox = btnContext.findRenderObject() as RenderBox?;
+                                final anchorRect = renderBox != null
+                                    ? (renderBox.localToGlobal(Offset.zero) & renderBox.size)
+                                    : null;
                                 setState(() {
                                   _isInnerPopupOpen = true;
                                 });
@@ -2114,6 +2018,8 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                   await GlobalCreateSheet.show(
                                     context,
                                     fromPostComposer: true,
+                                    anchorRect: anchorRect,
+                                    focusNode: _editorFocusNode,
                                     onSelectMedia: _pickGalleryMedia,
                                     onSelectPoll: _showPollCreatorSheet,
                                     onSelectCelebration: () {
@@ -2376,118 +2282,244 @@ class CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
-  // ─── Step 3B-Frontend: Video preview widget ───────────────────────────────
-  Widget _buildVideoPreview(bool isDark, Color cardBg, Color cardBorder, Color textSecondary) {
-    final ctrl = _previewVideoController;
+  // ─── Unified Compact Horizontal Media Carousel (Images & Video) ─────────────
+  Widget _buildUnifiedMediaCarousel(
+    bool isDark,
+    Color cardBg,
+    Color cardBorder,
+    Color textPrimary,
+    Color textSecondary,
+  ) {
+    // Build consolidated media order list without duplicates
+    final order = <String>[];
+    for (final p in _attachedMediaOrder) {
+      if ((_attachedImages.contains(p) || _attachedVideo == p) && !order.contains(p)) {
+        order.add(p);
+      }
+    }
+    for (final img in _attachedImages) {
+      if (!order.contains(img)) order.add(img);
+    }
+    if (_attachedVideo != null && !order.contains(_attachedVideo)) {
+      order.add(_attachedVideo!);
+    }
+
+    return SizedBox(
+      height: 104,
+      child: ListView.separated(
+        key: const Key('unified_media_carousel'),
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: order.length + 1, // items + [+ Add] button
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, idx) {
+          if (idx == order.length) {
+            return _buildCarouselAddMoreTile(cardBg, cardBorder, textSecondary);
+          }
+          final mediaPath = order[idx];
+          if (_isVideoPath(mediaPath)) {
+            return _buildCarouselVideoTile(mediaPath, isDark, cardBg, cardBorder, textSecondary);
+          } else {
+            return _buildCarouselImageTile(mediaPath, isDark, cardBg, cardBorder, textSecondary);
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildCarouselAddMoreTile(Color cardBg, Color cardBorder, Color textSecondary) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Material(
+        color: cardBg,
+        child: InkWell(
+          key: const Key('add_more_media_btn'),
+          onTap: _pickGalleryMedia,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            width: 104,
+            height: 104,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: cardBorder, width: 0.8),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.add_photo_alternate_outlined, color: textSecondary, size: 26),
+                const SizedBox(height: 4),
+                Text(
+                  '+ Add',
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCarouselImageTile(
+    String imgPath,
+    bool isDark,
+    Color cardBg,
+    Color cardBorder,
+    Color textSecondary,
+  ) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: Container(
+        width: 104,
+        height: 104,
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF16181C) : const Color(0xFFF2F4F7),
+          color: cardBg,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: cardBorder, width: 0.8),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            // ── Video area ──────────────────────────────────────────────
-            AspectRatio(
-              aspectRatio: (ctrl != null && _videoInitialized)
-                  ? ctrl.value.aspectRatio
-                  : 16 / 9,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Video or placeholder background
-                  if (ctrl != null && _videoInitialized)
-                    VideoPlayer(ctrl)
-                  else
-                    Container(
-                      color: isDark ? const Color(0xFF0C0E12) : const Color(0xFFE0E0E0),
-                    ),
+            imgPath.startsWith('http')
+                ? Image.network(
+                    imgPath,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        Icon(Icons.broken_image_outlined, color: textSecondary),
+                  )
+                : imgPath.startsWith('assets/')
+                    ? Image.asset(imgPath, fit: BoxFit.cover)
+                    : Image.file(File(imgPath), fit: BoxFit.cover),
+            Positioned(
+              top: 5,
+              right: 5,
+              child: GestureDetector(
+                key: Key('remove_img_${imgPath.hashCode}'),
+                onTap: () => _removeImage(imgPath),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Color(0xCC000000),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                  // Loading spinner
-                  if (_attachedVideo != null && !_videoInitialized && !_videoInitError)
-                    const CircularProgressIndicator(strokeWidth: 2),
+  Widget _buildCarouselVideoTile(
+    String videoPath,
+    bool isDark,
+    Color cardBg,
+    Color cardBorder,
+    Color textSecondary,
+  ) {
+    final ctrl = _previewVideoController;
+    return ClipRRect(
+      key: const Key('compact_video_preview'),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 104,
+        height: 104,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF16181C) : const Color(0xFFE2E4E8),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: cardBorder, width: 0.8),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          alignment: Alignment.center,
+          children: [
+            // Video preview / placeholder
+            if (ctrl != null && _videoInitialized)
+              SizedBox.expand(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: ctrl.value.size.width > 0 ? ctrl.value.size.width : 16,
+                    height: ctrl.value.size.height > 0 ? ctrl.value.size.height : 9,
+                    child: VideoPlayer(ctrl),
+                  ),
+                ),
+              )
+            else if (_videoInitError)
+              Center(
+                child: Icon(Icons.videocam_off_outlined, color: textSecondary, size: 28),
+              )
+            else
+              Container(
+                color: isDark ? const Color(0xFF121418) : const Color(0xFFD8DCE0),
+                child: const Center(
+                  child: Icon(Icons.videocam_rounded, color: Colors.white54, size: 30),
+                ),
+              ),
 
-                  // Error state
-                  if (_videoInitError)
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 32),
-                        const SizedBox(height: 6),
-                        Text(
-                          'community.videoLoadError'.tr != 'community.videoLoadError'
-                              ? 'community.videoLoadError'.tr
-                              : 'Unable to play video',
-                          style: const TextStyle(color: Colors.redAccent, fontSize: 12),
-                        ),
-                      ],
-                    ),
-
-                  // Play / pause overlay
-                  if (ctrl != null && _videoInitialized)
-                    Positioned.fill(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          setState(() {
-                            ctrl.value.isPlaying ? ctrl.pause() : ctrl.play();
-                          });
-                        },
-                        child: Center(
-                          child: AnimatedOpacity(
-                            opacity: ctrl.value.isPlaying ? 0.0 : 1.0,
-                            duration: const Duration(milliseconds: 200),
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                color: Color(0x88000000),
-                                shape: BoxShape.circle,
-                              ),
-                              padding: const EdgeInsets.all(14),
-                              child: Icon(
-                                ctrl.value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                color: Colors.white,
-                                size: 32,
-                              ),
-                            ),
-                          ),
-                        ),
+            // Video indicator badge at bottom-left
+            Positioned(
+              left: 5,
+              bottom: 5,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.75),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.videocam_rounded, color: Colors.white, size: 11),
+                    SizedBox(width: 3),
+                    Text(
+                      'VIDEO',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.4,
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
             ),
 
-            // ── Footer: label + remove ─────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  Icon(Icons.videocam_outlined, size: 16, color: textSecondary),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'community.videoReady'.tr != 'community.videoReady'
-                          ? 'community.videoReady'.tr
-                          : 'Video ready to post',
-                      style: TextStyle(color: textSecondary, fontSize: 12),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+            // Play / pause overlay if initialized
+            if (ctrl != null && _videoInitialized && !ctrl.value.isPlaying)
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Color(0x99000000),
+                    shape: BoxShape.circle,
                   ),
-                  GestureDetector(
-                    onTap: _clearVideo,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Color(0xCC000000),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.close, color: Colors.white, size: 14),
-                    ),
+                  child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
+                ),
+              ),
+
+            // Remove button (×) at top-right
+            Positioned(
+              top: 5,
+              right: 5,
+              child: GestureDetector(
+                key: const Key('remove_video_btn'),
+                onTap: _clearVideo,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Color(0xCC000000),
+                    shape: BoxShape.circle,
                   ),
-                ],
+                  child: const Icon(Icons.close, color: Colors.white, size: 12),
+                ),
               ),
             ),
           ],

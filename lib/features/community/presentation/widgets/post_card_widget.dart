@@ -18,8 +18,10 @@ import '../screens/event_details_screen.dart';
 import '../controllers/community_controller.dart';
 import 'comments_bottom_sheet.dart';
 import 'community_design_tokens.dart';
+import 'feed_video_playback_manager.dart';
 import 'full_screen_image_viewer.dart';
 import 'post_liked_by_sheet.dart';
+import 'forum_share_to_chat_sheet.dart';
 
 class PostCardWidget extends StatefulWidget {
   final CommunityPostModel post;
@@ -44,12 +46,14 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
 
   bool _isContentExpanded = false;
   int _currentImageIndex = 0;
+  final Map<int, double> _mediaAspectRatios = {};
 
   @override
   void didUpdateWidget(covariant PostCardWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.post.id != widget.post.id) {
       _currentImageIndex = 0;
+      _mediaAspectRatios.clear();
     }
   }
 
@@ -1105,143 +1109,188 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             child: Row(
               children: [
-                InkWell(
-                  key: Key('post_like_button_${widget.post.id}'),
-                  onTap: _onLikeTap,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                    child: ScaleTransition(
-                      scale: _likeScaleAnim,
-                      child: Icon(
-                        widget.post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                        color: widget.post.isLiked
-                            ? AppColors.likedAccent
-                            : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
-                        size: 18,
+                ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 44,
+                    minHeight: 44,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    child: InkWell(
+                      key: Key('post_like_button_${widget.post.id}'),
+                      onTap: _onLikeTap,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                        child: Center(
+                          child: ScaleTransition(
+                            scale: _likeScaleAnim,
+                            child: Icon(
+                              widget.post.isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                              color: widget.post.isLiked
+                                  ? AppColors.likedAccent
+                                  : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                              size: 20,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-                InkWell(
-                  key: Key('post_like_count_${widget.post.id}'),
-                  onTap: () {
-                    PostLikedBySheet.show(
-                      context,
-                      postId: widget.post.id,
-                      initialLikesCount: widget.post.likesCount,
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                    child: Text(
-                      "${widget.post.likesCount}",
-                      style: theme.textTheme.labelMedium?.copyWith(
-                            color: widget.post.isLiked
-                                ? AppColors.likedAccent
-                                : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12.5,
-                          ) ??
-                          TextStyle(
-                            color: widget.post.isLiked
-                                ? AppColors.likedAccent
-                                : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
+                ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minHeight: 44,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    child: InkWell(
+                      key: Key('post_like_count_${widget.post.id}'),
+                      onTap: () {
+                        PostLikedBySheet.show(
+                          context,
+                          postId: widget.post.id,
+                          initialLikesCount: widget.post.likesCount,
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                        child: Center(
+                          child: Text(
+                            "${widget.post.likesCount}",
+                            style: theme.textTheme.labelMedium?.copyWith(
+                                  color: widget.post.isLiked
+                                      ? AppColors.likedAccent
+                                      : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                                  fontWeight: widget.post.isLiked ? FontWeight.w700 : FontWeight.w600,
+                                  fontSize: 12.5,
+                                ) ??
+                                TextStyle(
+                                  color: widget.post.isLiked
+                                      ? AppColors.likedAccent
+                                      : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                                  fontSize: 12.5,
+                                  fontWeight: widget.post.isLiked ? FontWeight.w700 : FontWeight.w600,
+                                ),
                           ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 4),
 
-                InkWell(
-                  key: Key('post_comment_button_${widget.post.id}'),
-                  onTap: () {
-                    showModalBottomSheet(
-                       context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => CommentsBottomSheet(postId: widget.post.id),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    child: Row(
-                      children: [
-                        Icon(Icons.chat_bubble_outline_rounded, color: actionIconColor, size: 18),
-                        const SizedBox(width: 5),
-                        Text(
-                          "${widget.post.commentsCount}",
-                          style: theme.textTheme.labelMedium?.copyWith(
-                                color: actionIconColor,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12.5,
-                              ) ??
-                              TextStyle(color: actionIconColor, fontSize: 12.5, fontWeight: FontWeight.w600),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 44,
+                    minHeight: 44,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    child: InkWell(
+                      key: Key('post_comment_button_${widget.post.id}'),
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => CommentsBottomSheet(postId: widget.post.id),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.chat_bubble_outline_rounded, color: actionIconColor, size: 20),
+                            const SizedBox(width: 4),
+                            Text(
+                              "${widget.post.commentsCount}",
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                    color: actionIconColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12.5,
+                                  ) ??
+                                  TextStyle(color: actionIconColor, fontSize: 12.5, fontWeight: FontWeight.w600),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 4),
 
-                InkWell(
-                  key: Key('post_repost_button_${widget.post.id}'),
-                  onTap: _isOwnPost
-                      ? () {
-                          AppNotificationBanner.showWarning(
-                            context: context,
-                            title: "Cannot Repost",
-                            message: 'community.cannotRepostOwnPost'.tr,
-                          );
-                        }
-                      : () {
-                          if (widget.post.isRepostedByMe) {
-                            widget.controller.unrepostPost(widget.post.id);
-                            AppNotificationBanner.showInfo(
-                              context: context,
-                              title: 'community.unreposted'.tr,
-                              message: 'community.unrepostedMsg'.tr,
-                              icon: Icons.repeat_rounded,
-                            );
-                          } else {
-                            _showRepostDialog(context);
-                          }
-                        },
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.repeat_rounded,
-                          color: widget.post.isRepostedByMe
-                              ? AppColors.growthAccent
-                              : actionIconColor,
-                          size: 18,
+                ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 44,
+                    minHeight: 44,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    child: InkWell(
+                      key: Key('post_repost_button_${widget.post.id}'),
+                      onTap: _isOwnPost
+                          ? () {
+                              AppNotificationBanner.showWarning(
+                                context: context,
+                                title: "Cannot Repost",
+                                message: 'community.cannotRepostOwnPost'.tr,
+                              );
+                            }
+                          : () {
+                              if (widget.post.isRepostedByMe) {
+                                widget.controller.unrepostPost(widget.post.id);
+                                AppNotificationBanner.showInfo(
+                                  context: context,
+                                  title: 'community.unreposted'.tr,
+                                  message: 'community.unrepostedMsg'.tr,
+                                  icon: Icons.repeat_rounded,
+                                );
+                              } else {
+                                _showRepostDialog(context);
+                              }
+                            },
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.repeat_rounded,
+                              color: widget.post.isRepostedByMe
+                                  ? AppColors.growthAccent
+                                  : actionIconColor,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "${widget.post.repostsCount}",
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                    color: widget.post.isRepostedByMe
+                                        ? AppColors.growthAccent
+                                        : actionIconColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12.5,
+                                  ) ??
+                                  TextStyle(
+                                    color: widget.post.isRepostedByMe
+                                        ? AppColors.growthAccent
+                                        : actionIconColor,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 5),
-                        Text(
-                          "${widget.post.repostsCount}",
-                          style: theme.textTheme.labelMedium?.copyWith(
-                                color: widget.post.isRepostedByMe
-                                    ? AppColors.growthAccent
-                                    : actionIconColor,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12.5,
-                              ) ??
-                              TextStyle(
-                                color: widget.post.isRepostedByMe
-                                    ? AppColors.growthAccent
-                                    : actionIconColor,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -1249,45 +1298,81 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
                 const Spacer(),
 
                 Obx(() {
-                  final livePost = widget.controller.posts.firstWhereOrNull((p) => p.id == widget.post.id);
-                  final isBookmarked = livePost?.isBookmarked ?? widget.post.isBookmarked;
+                  final isBookmarked = widget.controller.isPostBookmarked(widget.post.id);
 
-                  return IconButton(
-                    key: Key('post_bookmark_button_${widget.post.id}'),
-                    onPressed: () {
-                      _bookmarkAnimController.forward(from: 0.0);
-                      widget.controller.toggleBookmark(widget.post.id);
-                    },
-                    icon: ScaleTransition(
-                      scale: _bookmarkScaleAnim,
-                      child: Icon(
-                        isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                        color: isBookmarked
-                            ? AppColors.warning
-                            : actionIconColor,
-                        size: 19,
+                  return Tooltip(
+                    message: isBookmarked ? 'community.removeBookmark'.tr : 'community.saveBookmark'.tr,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minWidth: 44,
+                        minHeight: 44,
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        child: InkWell(
+                          key: Key('post_bookmark_button_${widget.post.id}'),
+                          onTap: () {
+                            _bookmarkAnimController.forward(from: 0.0);
+                            widget.controller.toggleBookmark(widget.post.id);
+                          },
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                              child: ScaleTransition(
+                                scale: _bookmarkScaleAnim,
+                                child: Icon(
+                                  isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                                  color: isBookmarked
+                                      ? AppColors.warning
+                                      : actionIconColor,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    tooltip: isBookmarked ? 'community.removeBookmark'.tr : 'community.saveBookmark'.tr,
                   );
                 }),
 
-                IconButton(
-                  key: Key('post_share_button_${widget.post.id}'),
-                  onPressed: () {
-                    AppNotificationBanner.showInfo(
-                      context: context,
-                      title: "Share",
-                      message: "Post link copied to clipboard.",
-                      icon: Icons.ios_share_rounded,
-                    );
-                  },
-                  icon: Icon(
-                    Icons.ios_share_rounded,
-                    color: actionIconColor,
-                    size: 18,
+                Tooltip(
+                  message: 'community.shareToChat'.tr.isNotEmpty &&
+                          'community.shareToChat'.tr != 'community.shareToChat'
+                      ? 'community.shareToChat'.tr
+                      : 'Share',
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minWidth: 44,
+                      minHeight: 44,
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      child: InkWell(
+                        key: Key('post_share_button_${widget.post.id}'),
+                        onTap: () {
+                          ForumShareToChatSheet.show(
+                            context,
+                            post: widget.post,
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            child: Icon(
+                              Icons.ios_share_rounded,
+                              color: actionIconColor,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  tooltip: 'Share',
                 ),
               ],
             ),
@@ -1316,6 +1401,17 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
         return VideoPostMedia(
           key: ValueKey('video_${widget.post.id}_${single.url}'),
           videoUrl: single.url,
+          postId: widget.post.id,
+          slideIndex: 0,
+          isInCarousel: false,
+          isCurrentPage: true,
+          onAspectRatioResolved: (ratio) {
+            if (mounted && _mediaAspectRatios[0] != ratio) {
+              setState(() {
+                _mediaAspectRatios[0] = ratio;
+              });
+            }
+          },
         );
       } else {
         return Padding(
@@ -1328,6 +1424,13 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               allImages: [single.url],
               postId: widget.post.id,
               isSingle: true,
+              onAspectRatioResolved: (ratio) {
+                if (mounted && _mediaAspectRatios[0] != ratio) {
+                  setState(() {
+                    _mediaAspectRatios[0] = ratio;
+                  });
+                }
+              },
               onTap: () => _openFullScreenViewer(0, [single.url]),
             ),
           ),
@@ -1344,57 +1447,86 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
     if (count == 0) return const SizedBox.shrink();
 
     final activeIndex = _currentImageIndex.clamp(0, count - 1);
+    final activeItem = media[activeIndex];
     final allImageUrls =
         media.where((m) => !m.isVideo).map((m) => m.url).toList();
+
+    final double? currentRatio =
+        _mediaAspectRatios[activeIndex] ?? _mediaAspectRatios[0];
+    final double defaultRatio = activeItem.isVideo ? (16 / 9) : 1.0;
+    final double targetRatio = (currentRatio ?? defaultRatio).clamp(0.8, 1.85);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.lg - 2),
-        child: SizedBox(
-          height: 350,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              PageView.builder(
-                key: ValueKey('carousel_${widget.post.id}'),
-                physics: const BouncingScrollPhysics(),
-                itemCount: count,
-                onPageChanged: (idx) {
-                  setState(() {
-                    _currentImageIndex = idx;
-                  });
-                },
-                itemBuilder: (context, idx) {
-                  final item = media[idx];
-                  if (item.isVideo) {
-                    return VideoPostMedia(
-                      key: ValueKey(
-                        'carousel_video_${widget.post.id}_${item.url}_$idx',
-                      ),
-                      videoUrl: item.url,
-                      isInCarousel: true,
-                      isCurrentPage: activeIndex == idx,
-                    );
-                  } else {
-                    final imgIndex = allImageUrls.indexOf(item.url);
-                    return _FeedPostImageView(
-                      key: ValueKey(
-                        'carousel_img_${widget.post.id}_${item.url}_$idx',
-                      ),
-                      url: item.url,
-                      index: imgIndex >= 0 ? imgIndex : idx,
-                      allImages: allImageUrls,
-                      postId: widget.post.id,
-                      isSingle: false,
-                      onTap: () => _openFullScreenViewer(
-                        imgIndex >= 0 ? imgIndex : 0,
-                        allImageUrls,
-                      ),
-                    );
-                  }
-                },
-              ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final cardWidth = constraints.maxWidth;
+            final double rawHeight = cardWidth / targetRatio;
+            final double carouselHeight = rawHeight.clamp(200.0, 420.0);
+            return SizedBox(
+              width: cardWidth,
+              height: carouselHeight,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                PageView.builder(
+                  key: ValueKey('carousel_${widget.post.id}'),
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: count,
+                  onPageChanged: (idx) {
+                    setState(() {
+                      _currentImageIndex = idx;
+                    });
+                    FeedVideoPlaybackManager.instance.evaluateVisibility();
+                  },
+                  itemBuilder: (context, idx) {
+                    final item = media[idx];
+                    if (item.isVideo) {
+                      return VideoPostMedia(
+                        key: ValueKey(
+                          'carousel_video_${widget.post.id}_${item.url}_$idx',
+                        ),
+                        videoUrl: item.url,
+                        postId: widget.post.id,
+                        slideIndex: idx,
+                        isInCarousel: true,
+                        isCurrentPage: activeIndex == idx,
+                        onAspectRatioResolved: (ratio) {
+                          if (mounted && _mediaAspectRatios[idx] != ratio) {
+                            setState(() {
+                              _mediaAspectRatios[idx] = ratio;
+                            });
+                          }
+                        },
+                      );
+                    } else {
+                      final imgIndex = allImageUrls.indexOf(item.url);
+                      return _FeedPostImageView(
+                        key: ValueKey(
+                          'carousel_img_${widget.post.id}_${item.url}_$idx',
+                        ),
+                        url: item.url,
+                        index: imgIndex >= 0 ? imgIndex : idx,
+                        allImages: allImageUrls,
+                        postId: widget.post.id,
+                        isSingle: false,
+                        onAspectRatioResolved: (ratio) {
+                          if (mounted && _mediaAspectRatios[idx] != ratio) {
+                            setState(() {
+                              _mediaAspectRatios[idx] = ratio;
+                            });
+                          }
+                        },
+                        onTap: () => _openFullScreenViewer(
+                          imgIndex >= 0 ? imgIndex : 0,
+                          allImageUrls,
+                        ),
+                      );
+                    }
+                  },
+                ),
               // Subtle top-right index counter badge (e.g. "1/3")
               Positioned(
                 top: 10,
@@ -1453,9 +1585,11 @@ class _PostCardWidgetState extends State<PostCardWidget> with TickerProviderStat
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
+      },
+    ),
+  ),
+);
   }
 
   void _openFullScreenViewer(int index, List<String> allImages) {
@@ -2060,31 +2194,82 @@ class VideoPostMedia extends StatefulWidget {
   const VideoPostMedia({
     super.key,
     required this.videoUrl,
+    this.postId,
+    this.slideIndex = 0,
     this.isInCarousel = false,
     this.isCurrentPage = true,
+    this.onAspectRatioResolved,
   });
 
   final String videoUrl;
+  final String? postId;
+  final int slideIndex;
   final bool isInCarousel;
   final bool isCurrentPage;
+  final void Function(double aspectRatio)? onAspectRatioResolved;
 
   @override
   State<VideoPostMedia> createState() => _VideoPostMediaState();
 }
 
 class _VideoPostMediaState extends State<VideoPostMedia>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin
+    implements FeedVideoClient {
   VideoPlayerController? _ctrl;
   bool _initialized = false;
   bool _error = false;
   int _initToken = 0;
+  bool _manuallyPaused = false;
 
   @override
   bool get wantKeepAlive => widget.isInCarousel;
 
   @override
+  String get videoId =>
+      '${widget.postId ?? ''}_${widget.videoUrl}_${widget.slideIndex}';
+
+  @override
+  BuildContext? get clientContext => mounted ? context : null;
+
+  @override
+  bool get isEligible => widget.isCurrentPage && _initialized && !_error;
+
+  @override
+  bool get isManuallyPaused => _manuallyPaused;
+
+  @override
+  bool get isPlaying => _ctrl != null && _ctrl!.value.isPlaying;
+
+  @override
+  void playVideo() {
+    if (_ctrl != null && _initialized && !_ctrl!.value.isPlaying) {
+      _ctrl!.play();
+      if (mounted) setState(() {});
+    }
+  }
+
+  @override
+  void pauseVideo() {
+    if (_ctrl != null && _ctrl!.value.isPlaying) {
+      _ctrl!.pause();
+      if (mounted) setState(() {});
+    }
+  }
+
+  @override
+  void setManuallyPaused(bool paused) {
+    _manuallyPaused = paused;
+  }
+
+  @override
+  void resetManualPause() {
+    _manuallyPaused = false;
+  }
+
+  @override
   void initState() {
     super.initState();
+    FeedVideoPlaybackManager.instance.register(this);
     _initController(widget.videoUrl);
   }
 
@@ -2092,9 +2277,17 @@ class _VideoPostMediaState extends State<VideoPostMedia>
   void didUpdateWidget(covariant VideoPostMedia oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.videoUrl != widget.videoUrl) {
+      _manuallyPaused = false;
       _initController(widget.videoUrl);
     } else if (oldWidget.isCurrentPage && !widget.isCurrentPage) {
-      _ctrl?.pause();
+      pauseVideo();
+      FeedVideoPlaybackManager.instance.clearActiveClient(this);
+    } else if (!oldWidget.isCurrentPage && widget.isCurrentPage) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          FeedVideoPlaybackManager.instance.evaluateVisibility();
+        }
+      });
     }
   }
 
@@ -2109,7 +2302,8 @@ class _VideoPostMediaState extends State<VideoPostMedia>
     }
 
     VideoPlayerController ctrl;
-    final isRemote = trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://');
+    final isRemote =
+        trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://');
     try {
       if (isRemote) {
         ctrl = VideoPlayerController.networkUrl(Uri.parse(trimmedUrl));
@@ -2135,19 +2329,35 @@ class _VideoPostMediaState extends State<VideoPostMedia>
     }
 
     try {
-      debugPrint('[VideoPostMedia] Initializing controller for: $trimmedUrl (isRemote: $isRemote)');
+      debugPrint(
+          '[VideoPostMedia] Initializing controller for: $trimmedUrl (isRemote: $isRemote)');
       await ctrl.initialize();
       if (!mounted || currentToken != _initToken) {
-        debugPrint('[VideoPostMedia] Widget unmounted or superseded during init for: $trimmedUrl');
+        debugPrint(
+            '[VideoPostMedia] Widget unmounted or superseded during init for: $trimmedUrl');
         await ctrl.dispose();
         return;
       }
-      debugPrint('[VideoPostMedia] Controller initialized successfully: size=${ctrl.value.size}, duration=${ctrl.value.duration}');
+      debugPrint(
+          '[VideoPostMedia] Controller initialized successfully: size=${ctrl.value.size}, duration=${ctrl.value.duration}');
+
+      final ratio = ctrl.value.aspectRatio;
+      if (ratio > 0) {
+        widget.onAspectRatioResolved?.call(ratio);
+      }
+
       if (!widget.isCurrentPage) {
         ctrl.pause();
       }
+
       setState(() {
         _initialized = true;
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          FeedVideoPlaybackManager.instance.evaluateVisibility();
+        }
       });
     } catch (e) {
       debugPrint('[VideoPostMedia] Controller initialize error: $e');
@@ -2163,7 +2373,8 @@ class _VideoPostMediaState extends State<VideoPostMedia>
     if (ctrl == null) return;
 
     if (ctrl.value.hasError) {
-      debugPrint('[VideoPostMedia] Controller runtime error: ${ctrl.value.errorDescription}');
+      debugPrint(
+          '[VideoPostMedia] Controller runtime error: ${ctrl.value.errorDescription}');
       if (!_error) {
         setState(() => _error = true);
       }
@@ -2185,6 +2396,7 @@ class _VideoPostMediaState extends State<VideoPostMedia>
   @override
   void dispose() {
     _initToken++;
+    FeedVideoPlaybackManager.instance.unregister(this);
     _cleanupController();
     super.dispose();
   }
@@ -2192,7 +2404,10 @@ class _VideoPostMediaState extends State<VideoPostMedia>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final surfaceColor =
+        isDark ? const Color(0xFF14161A) : const Color(0xFFF2F4F7);
     final ctrl = _ctrl;
     final hasControllerError = ctrl != null && ctrl.value.hasError;
     final isErrorState = _error || hasControllerError;
@@ -2206,16 +2421,18 @@ class _VideoPostMediaState extends State<VideoPostMedia>
         // Video surface or placeholder background
         if (isInitialized)
           Center(
-            child: AspectRatio(
-              aspectRatio: ctrl.value.aspectRatio > 0
-                  ? ctrl.value.aspectRatio
-                  : 16 / 9,
-              child: VideoPlayer(ctrl),
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: SizedBox(
+                width: ctrl.value.size.width > 0 ? ctrl.value.size.width : 16,
+                height: ctrl.value.size.height > 0 ? ctrl.value.size.height : 9,
+                child: VideoPlayer(ctrl),
+              ),
             ),
           )
         else
           Container(
-            color: isDark ? const Color(0xFF0C0E12) : const Color(0xFF14161A),
+            color: surfaceColor,
           ),
 
         // Loading or buffering
@@ -2227,7 +2444,8 @@ class _VideoPostMediaState extends State<VideoPostMedia>
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 28),
+              const Icon(Icons.error_outline_rounded,
+                  color: Colors.redAccent, size: 28),
               const SizedBox(height: 4),
               Text(
                 'community.videoLoadError'.tr != 'community.videoLoadError'
@@ -2238,16 +2456,16 @@ class _VideoPostMediaState extends State<VideoPostMedia>
             ],
           ),
 
-        // Play / pause overlay
+        // Play / pause tap overlay & indicator
         if (isInitialized)
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () {
                 if (ctrl.value.isPlaying) {
-                  ctrl.pause();
+                  FeedVideoPlaybackManager.instance.userRequestedPause(this);
                 } else {
-                  ctrl.play();
+                  FeedVideoPlaybackManager.instance.userRequestedPlay(this);
                 }
               },
               child: Center(
@@ -2261,7 +2479,9 @@ class _VideoPostMediaState extends State<VideoPostMedia>
                     ),
                     padding: const EdgeInsets.all(12),
                     child: Icon(
-                      isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
                       color: Colors.white,
                       size: 28,
                     ),
@@ -2275,8 +2495,39 @@ class _VideoPostMediaState extends State<VideoPostMedia>
 
     if (widget.isInCarousel) {
       return Container(
-        color: isDark ? const Color(0xFF0C0E12) : const Color(0xFF14161A),
+        color: surfaceColor,
         alignment: Alignment.center,
+        child: videoSurface,
+      );
+    }
+
+    // Standalone single video presentation
+    final double? rawRatio = isInitialized && ctrl.value.aspectRatio > 0
+        ? ctrl.value.aspectRatio
+        : null;
+
+    Widget mediaContent;
+    if (rawRatio == null) {
+      mediaContent = AspectRatio(
+        aspectRatio: 16 / 9,
+        child: videoSurface,
+      );
+    } else if (rawRatio < 0.8) {
+      // Tall portrait (e.g. 9:16 = 0.5625):
+      // Cap height at 420 (matching single image portrait behavior in _FeedPostImageView)
+      // and fit with contain so entire video is visible without exploding the feed card.
+      mediaContent = Container(
+        height: 420,
+        width: double.infinity,
+        color: surfaceColor,
+        alignment: Alignment.center,
+        child: videoSurface,
+      );
+    } else {
+      // Standard aspect ratios (4:5 to 16:9, clamped to 1.85 max)
+      final clampedRatio = rawRatio.clamp(0.8, 1.85);
+      mediaContent = AspectRatio(
+        aspectRatio: clampedRatio,
         child: videoSurface,
       );
     }
@@ -2285,11 +2536,9 @@ class _VideoPostMediaState extends State<VideoPostMedia>
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.lg - 2),
-        child: AspectRatio(
-          aspectRatio: isInitialized && ctrl.value.aspectRatio > 0
-              ? ctrl.value.aspectRatio
-              : 16 / 9,
-          child: videoSurface,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 460),
+          child: mediaContent,
         ),
       ),
     );
@@ -2304,6 +2553,7 @@ class _FeedPostImageView extends StatefulWidget {
   final String postId;
   final bool isSingle;
   final VoidCallback onTap;
+  final void Function(double aspectRatio)? onAspectRatioResolved;
 
   const _FeedPostImageView({
     super.key,
@@ -2313,6 +2563,7 @@ class _FeedPostImageView extends StatefulWidget {
     required this.postId,
     this.isSingle = false,
     required this.onTap,
+    this.onAspectRatioResolved,
   });
 
   @override
@@ -2377,8 +2628,10 @@ class _FeedPostImageViewState extends State<_FeedPostImageView> {
           final w = info.image.width;
           final h = info.image.height;
           if (w > 0 && h > 0) {
+            final ratio = w / h;
+            widget.onAspectRatioResolved?.call(ratio);
             setState(() {
-              _aspectRatio = w / h;
+              _aspectRatio = ratio;
             });
           }
         },

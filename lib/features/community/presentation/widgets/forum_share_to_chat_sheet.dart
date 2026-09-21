@@ -8,24 +8,29 @@ import '../../../chat/domain/models/chat_models.dart';
 import '../../../chat/presentation/bindings/chat_binding.dart';
 import '../../../chat/presentation/controllers/chat_controller.dart';
 import '../../domain/models/community_models.dart';
+import '../../domain/models/community_post_model.dart';
 
 class ForumShareToChatSheet extends StatefulWidget {
-  final ForumTopicModel topic;
+  final ForumTopicModel? topic;
+  final CommunityPostModel? post;
 
   const ForumShareToChatSheet({
     super.key,
-    required this.topic,
-  });
+    this.topic,
+    this.post,
+  }) : assert(topic != null || post != null, 'Either topic or post must be provided');
 
   static void show(
     BuildContext context, {
-    required ForumTopicModel topic,
+    ForumTopicModel? topic,
+    CommunityPostModel? post,
   }) {
+    assert(topic != null || post != null, 'Either topic or post must be provided');
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => ForumShareToChatSheet(topic: topic),
+      builder: (ctx) => ForumShareToChatSheet(topic: topic, post: post),
     );
   }
 
@@ -68,10 +73,19 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
 
     try {
       await _chatController.openConversation(conv);
-      final sharedText = [
-        widget.topic.title.trim(),
-        if (widget.topic.content.trim().isNotEmpty) widget.topic.content.trim(),
-      ].join('\n\n');
+      final String sharedText;
+      if (widget.post != null) {
+        final p = widget.post!;
+        sharedText = p.content.trim().isNotEmpty
+            ? p.content.trim()
+            : 'Shared post by ${p.authorName}';
+      } else {
+        final t = widget.topic!;
+        sharedText = [
+          t.title.trim(),
+          if (t.content.trim().isNotEmpty) t.content.trim(),
+        ].join('\n\n');
+      }
       await _chatController.sendSharedText(conv, sharedText);
 
       if (!mounted) return;
@@ -82,15 +96,21 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
         arguments: {'roomId': conv.id},
       );
 
+      final isPost = widget.post != null;
       final successTitle = 'community.shareToChat'.tr.isNotEmpty &&
               'community.shareToChat'.tr != 'community.shareToChat'
           ? 'community.shareToChat'.tr
           : 'Share to Chat';
-      final successMsg = 'community.sharedDiscussionSuccess'.tr.isNotEmpty &&
-              'community.sharedDiscussionSuccess'.tr !=
-                  'community.sharedDiscussionSuccess'
-          ? 'community.sharedDiscussionSuccess'.tr
-          : 'Discussion shared to chat';
+      final successMsg = isPost
+          ? ('community.sharedPostSuccess'.tr.isNotEmpty &&
+                  'community.sharedPostSuccess'.tr != 'community.sharedPostSuccess'
+              ? 'community.sharedPostSuccess'.tr
+              : 'Post shared to chat')
+          : ('community.sharedDiscussionSuccess'.tr.isNotEmpty &&
+                  'community.sharedDiscussionSuccess'.tr !=
+                      'community.sharedDiscussionSuccess'
+              ? 'community.sharedDiscussionSuccess'.tr
+              : 'Discussion shared to chat');
 
       if (Get.context != null) {
         AppNotificationBanner.showSuccess(
@@ -105,7 +125,9 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
         AppNotificationBanner.showError(
           context: context,
           title: 'Error',
-          message: 'Failed to share discussion.',
+          message: widget.post != null
+              ? 'Failed to share post.'
+              : 'Failed to share discussion.',
         );
       }
     }
@@ -137,6 +159,24 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
             'community.shareToChat'.tr != 'community.shareToChat'
         ? 'community.shareToChat'.tr
         : 'Share to Chat';
+
+    final String previewTitle;
+    final String previewSubtitle;
+    final IconData previewIcon;
+
+    if (widget.post != null) {
+      final p = widget.post!;
+      previewTitle = p.content.trim().isNotEmpty
+          ? p.content.trim()
+          : (p.authorName.isNotEmpty ? 'Post by ${p.authorName}' : 'Feed Post');
+      previewSubtitle = p.authorName.isNotEmpty ? p.authorName : p.authorTag;
+      previewIcon = Icons.article_outlined;
+    } else {
+      final t = widget.topic!;
+      previewTitle = t.title;
+      previewSubtitle = t.authorName;
+      previewIcon = Icons.forum_rounded;
+    }
 
     return Container(
       key: const Key('forum_share_to_chat_sheet'),
@@ -201,7 +241,7 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
               ),
             ),
 
-            // Topic summary preview
+            // Preview summary card (Neutral styling)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               padding: const EdgeInsets.all(12),
@@ -216,13 +256,15 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: AppColors.brandPrimary.withValues(alpha: 0.12),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.forum_rounded,
-                      color: AppColors.brandPrimary,
+                    child: Icon(
+                      previewIcon,
+                      color: textPrimary,
                       size: 20,
                     ),
                   ),
@@ -232,7 +274,7 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.topic.title,
+                          previewTitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -243,7 +285,7 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          widget.topic.authorName,
+                          previewSubtitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -284,7 +326,10 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.pill),
-                    borderSide: const BorderSide(color: AppColors.brandPrimary),
+                    borderSide: BorderSide(
+                      color: isDark ? Colors.white70 : Colors.black87,
+                      width: 1.2,
+                    ),
                   ),
                 ),
               ),
@@ -308,7 +353,7 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.chat,
+                          Icon(Icons.chat_bubble_outline_rounded,
                               color: textMuted, size: 36),
                           const SizedBox(height: 8),
                           Text(
@@ -386,28 +431,28 @@ class _ForumShareToChatSheetState extends State<ForumShareToChatSheet> {
                           style: TextStyle(color: textMuted, fontSize: 12),
                         ),
                         trailing: isSending
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 22,
                                 height: 22,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: AppColors.brandPrimary,
+                                  color: isDark ? Colors.white : Colors.black,
                                 ),
                               )
                             : Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
+                                  horizontal: 14,
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.brandPrimary,
+                                  color: isDark ? Colors.white : Colors.black,
                                   borderRadius:
                                       BorderRadius.circular(AppRadius.pill),
                                 ),
                                 child: Text(
                                   'Send',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.black : Colors.white,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                   ),

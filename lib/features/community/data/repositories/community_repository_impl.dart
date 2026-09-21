@@ -116,6 +116,22 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<bool> togglePostBookmark(
+    String postId, {
+    required bool isCurrentlyBookmarked,
+  }) {
+    return remoteDataSource.toggleBookmark(
+      postId,
+      isCurrentlyBookmarked: isCurrentlyBookmarked,
+    );
+  }
+
+  @override
+  Future<bool> isPostBookmarked(String postId) {
+    return remoteDataSource.isPostBookmarked(postId);
+  }
+
+  @override
   Future<bool> repostPost(
     String postId, {
     String? caption,

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/errors/app_error.dart';
@@ -437,6 +438,31 @@ class CommunityRemoteDataSource {
       message: 'Failed to update bookmark',
       errorCode: 'BOOKMARK_UPDATE_FAILED',
     );
+  }
+
+  Future<bool> isPostBookmarked(String postId) async {
+    final cleanId = postId.trim();
+    if (cleanId.isEmpty) return false;
+    try {
+      final response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.profileSavedCheck,
+          queryParameters: {
+            'itemType': 'POST',
+            'itemId': cleanId,
+          },
+        ),
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        final data =
+            body is Map<String, dynamic> ? (body['data'] ?? body) : body;
+        if (data is Map<String, dynamic>) {
+          return data['saved'] as bool? ?? false;
+        }
+      }
+    } catch (_) {}
+    return false;
   }
 
   Future<bool> repostPost(
@@ -1030,30 +1056,85 @@ class CommunityRemoteDataSource {
     int page = 0,
     int size = 20,
   }) async {
-    if (discussionId.trim().isEmpty) {
+    final cleanId = discussionId.trim();
+    if (cleanId.isEmpty) {
       return [];
     }
-    final response = await guardDio(
-      () => dio.get<dynamic>(
-        ApiEndpoints.communityDiscussionReactions(discussionId),
-        queryParameters: {'page': page, 'size': size},
-      ),
-    );
+    Response<dynamic> response;
+    try {
+      response = await guardDio(
+        () => dio.get<dynamic>(
+          ApiEndpoints.communityDiscussionReactions(cleanId),
+          queryParameters: {
+            'page': page,
+            'size': size,
+          },
+        ),
+      );
+    } on AppError catch (e) {
+      if (e.statusCode == 404) {
+        try {
+          response = await guardDio(
+            () => dio.get<dynamic>(
+              '/api/v1/community/discussions/$cleanId/likes',
+              queryParameters: {
+                'page': page,
+                'size': size,
+              },
+            ),
+          );
+        } catch (_) {
+          rethrow;
+        }
+      } else {
+        rethrow;
+      }
+    }
     if (response.statusCode == 200 && response.data != null) {
-      final body = response.data;
-      dynamic rawData = body is Map<String, dynamic>
-          ? (body['data'] ?? body)
-          : body;
+      dynamic body = response.data;
+      if (body is String) {
+        try {
+          body = jsonDecode(body);
+        } catch (_) {}
+      }
+
+      dynamic rawData = body;
+      if (body is Map) {
+        final map = Map<String, dynamic>.from(body);
+        if (map['success'] == false) {
+          throw AppError(
+            message: map['message']?.toString() ??
+                'Failed to fetch discussion reactions',
+            errorCode: map['errorCode']?.toString() ??
+                'FETCH_DISCUSSION_REACTIONS_FAILED',
+          );
+        }
+        rawData = map['data'] ?? map;
+      }
+
       List<dynamic> content = [];
-      if (rawData is Map<String, dynamic>) {
-        content = (rawData['content'] as List<dynamic>?) ?? [];
+      if (rawData is Map) {
+        final dataMap = Map<String, dynamic>.from(rawData);
+        final list = dataMap['content'] ??
+            dataMap['items'] ??
+            dataMap['likers'] ??
+            dataMap['reactions'];
+        if (list is List) {
+          content = list;
+        }
       } else if (rawData is List) {
         content = rawData;
       }
-      return content
-          .whereType<Map<String, dynamic>>()
-          .map(ForumLikerModel.fromJson)
-          .toList();
+
+      final List<ForumLikerModel> likers = [];
+      for (final item in content) {
+        if (item is Map) {
+          likers.add(
+            ForumLikerModel.fromJson(Map<String, dynamic>.from(item)),
+          );
+        }
+      }
+      return likers;
     }
     throw AppError(
       message: 'Failed to fetch discussion reactions',

@@ -9,10 +9,20 @@
     <!-- Camera access for KHQR scanner -->
     <uses-permission android:name="android.permission.CAMERA" />
 
+    <!-- Media permissions for photo_manager and image_picker (photos & videos) -->
+    <!-- Android 13+ (API 33+) granular media permissions -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <!-- Android 14+ (API 34+) partial/selected photo access -->
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+    <!-- Android <= 12 (API <= 32) external storage read -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+
     <application
         android:label="GenLink KH"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:requestLegacyExternalStorage="true">
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
